@@ -83,10 +83,10 @@ an error:
 
 ```sql
 > SELECT * FROM Shipments;
-ERROR: Cannot convert table 'SHIPMENTS' to a stream
+ERROR: Cannot convert stream 'SHIPMENTS' to a table
 
 > SELECT STREAM * FROM Products;
-ERROR: Cannot convert stream 'PRODUCTS' to a table
+ERROR: Cannot convert table 'PRODUCTS' to a stream
 ```
 
 # Filtering rows
