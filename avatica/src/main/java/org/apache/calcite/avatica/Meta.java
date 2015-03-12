@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Command handler for getting various metadata. Should be implemented by each
@@ -206,10 +207,10 @@ public interface Meta {
 
     public MetaResultSet(int statementId, boolean ownStatement,
         Signature signature, Iterable<Object> iterable) {
-      this.signature = signature;
+      this.signature = Objects.requireNonNull(signature);
       this.statementId = statementId;
       this.ownStatement = ownStatement;
-      this.iterable = iterable;
+      this.iterable = iterable; // may be null
     }
   }
 
@@ -227,7 +228,7 @@ public interface Meta {
       assert (fieldNames != null)
           == (style == Style.RECORD_PROJECTION || style == Style.MAP);
       assert (fields != null) == (style == Style.RECORD_PROJECTION);
-      this.style = style;
+      this.style = Objects.requireNonNull(style);
       this.clazz = clazz;
       this.fields = fields;
       this.fieldNames = fieldNames;

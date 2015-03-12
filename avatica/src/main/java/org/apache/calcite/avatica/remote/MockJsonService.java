@@ -18,6 +18,8 @@ package org.apache.calcite.avatica.remote;
 
 import org.apache.calcite.avatica.AvaticaConnection;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,10 +46,21 @@ public class MockJsonService extends JsonService {
   /** Factory that creates a {@code MockJsonService}. */
   public static class Factory implements Service.Factory {
     public Service create(AvaticaConnection connection) {
-      final Map<String, String> map1 = new HashMap<String, String>();
-      map1.put(
-          "{\"request\":\"getSchemas\",\"catalog\":null,\"schemaPattern\":{\"s\":null}}",
-          "{\"response\":\"resultSet\", rows: []}");
+      final Map<String, String> map1 = new HashMap<>();
+      try {
+        map1.put(
+            "{\"request\":\"getSchemas\",\"catalog\":null,\"schemaPattern\":{\"s\":null}}",
+            "{\"response\":\"resultSet\", rows: []}");
+        map1.put(
+            JsonService.encode(new SchemasRequest(null, null)),
+            "{\"response\":\"resultSet\", rows: []}");
+        map1.put(
+            JsonService.encode(
+                new TablesRequest(null, null, null, Arrays.<String>asList())),
+            "{\"response\":\"resultSet\", rows: []}");
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       return new MockJsonService(map1);
     }
   }

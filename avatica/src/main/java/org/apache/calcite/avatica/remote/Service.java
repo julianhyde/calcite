@@ -32,6 +32,7 @@ import java.util.List;
 public interface Service {
   ResultSetResponse apply(CatalogsRequest request);
   ResultSetResponse apply(SchemasRequest request);
+  ResultSetResponse apply(TablesRequest request);
   PrepareResponse apply(PrepareRequest request);
   ResultSetResponse apply(PrepareAndExecuteRequest request);
   CreateStatementResponse apply(CreateStatementRequest request);
@@ -49,6 +50,7 @@ public interface Service {
   @JsonSubTypes({
       @JsonSubTypes.Type(value = CatalogsRequest.class, name = "getCatalogs"),
       @JsonSubTypes.Type(value = SchemasRequest.class, name = "getSchemas"),
+      @JsonSubTypes.Type(value = TablesRequest.class, name = "getTables"),
       @JsonSubTypes.Type(value = PrepareRequest.class, name = "prepare"),
       @JsonSubTypes.Type(value = PrepareAndExecuteRequest.class,
           name = "prepareAndExecute"),
@@ -93,6 +95,31 @@ public interface Service {
     }
 
     ResultSetResponse accept(Service service) {
+      return service.apply(this);
+    }
+  }
+
+  /** Request for
+   * {@link Meta#getTables(String, org.apache.calcite.avatica.Meta.Pat, org.apache.calcite.avatica.Meta.Pat, java.util.List)}
+   */
+  class TablesRequest extends Request {
+    public final String catalog;
+    public final String schemaPattern;
+    public final String tableNamePattern;
+    public final List<String> typeList;
+
+    @JsonCreator
+    public TablesRequest(@JsonProperty("catalog") String catalog,
+        @JsonProperty("schemaPattern") String schemaPattern,
+        @JsonProperty("tableNamePattern") String tableNamePattern,
+        @JsonProperty("typeList") List<String> typeList) {
+      this.catalog = catalog;
+      this.schemaPattern = schemaPattern;
+      this.tableNamePattern = tableNamePattern;
+      this.typeList = typeList;
+    }
+
+    @Override Response accept(Service service) {
       return service.apply(this);
     }
   }

@@ -91,6 +91,13 @@ public class LocalService implements Service {
     return toResponse(resultSet);
   }
 
+  public ResultSetResponse apply(TablesRequest request) {
+    final Meta.MetaResultSet resultSet =
+        meta.getTables(request.catalog, Meta.Pat.of(request.schemaPattern),
+            Meta.Pat.of(request.tableNamePattern), request.typeList);
+    return toResponse(resultSet);
+  }
+
   public PrepareResponse apply(PrepareRequest request) {
     final Meta.StatementHandle h =
         new Meta.StatementHandle(request.statementId);
@@ -105,16 +112,16 @@ public class LocalService implements Service {
     final Meta.MetaResultSet resultSet =
         meta.prepareAndExecute(h, request.sql, request.maxRowCount,
             new Meta.PrepareCallback() {
-              public Object getMonitor() {
+              @Override public Object getMonitor() {
                 return LocalService.class;
               }
 
-              public void clear() {}
+              @Override public void clear() {}
 
-              public void assign(Meta.Signature signature,
+              @Override public void assign(Meta.Signature signature,
                   Iterable<Object> iterable) {}
 
-              public void execute() {}
+              @Override public void execute() {}
             });
     return toResponse(resultSet);
   }

@@ -31,6 +31,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test for Avatica Remote JDBC driver.
@@ -48,6 +49,35 @@ public class RemoteDriverTest {
     assertThat(connection.isClosed(), is(false));
     connection.close();
     assertThat(connection.isClosed(), is(true));
+  }
+
+  @Test public void testSchemas() throws Exception {
+    final Connection connection =
+        DriverManager.getConnection("jdbc:avatica:remote:factory=" + MJS);
+    final ResultSet resultSet =
+        connection.getMetaData().getSchemas(null, null);
+    assertFalse(resultSet.next());
+    final ResultSetMetaData metaData = resultSet.getMetaData();
+    assertTrue(metaData.getColumnCount() >= 2);
+    assertEquals("TABLE_CATALOG", metaData.getColumnName(1));
+    assertEquals("TABLE_SCHEM", metaData.getColumnName(2));
+    resultSet.close();
+    connection.close();
+  }
+
+  @Test public void testTables() throws Exception {
+    final Connection connection =
+        DriverManager.getConnection("jdbc:avatica:remote:factory=" + MJS);
+    final ResultSet resultSet =
+        connection.getMetaData().getTables(null, null, null, new String[0]);
+    assertFalse(resultSet.next());
+    final ResultSetMetaData metaData = resultSet.getMetaData();
+    assertTrue(metaData.getColumnCount() >= 3);
+    assertEquals("TABLE_CAT", metaData.getColumnName(1));
+    assertEquals("TABLE_SCHEM", metaData.getColumnName(2));
+    assertEquals("TABLE_NAME", metaData.getColumnName(3));
+    resultSet.close();
+    connection.close();
   }
 
   @Ignore
