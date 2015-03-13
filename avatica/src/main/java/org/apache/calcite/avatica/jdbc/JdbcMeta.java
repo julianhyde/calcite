@@ -24,6 +24,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -374,7 +375,12 @@ public class JdbcMeta implements Meta {
   }
 
   public Signature prepare(StatementHandle h, String sql, int maxRowCount) {
-    return null;
+    // TODO: can't actually prepare an existing statement...
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      return signature(statement.getMetaData(), sql);
+    } catch (SQLException e) {
+      throw propagate(e);
+    }
   }
 
   public MetaResultSet prepareAndExecute(StatementHandle h, String sql,
