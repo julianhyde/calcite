@@ -58,6 +58,18 @@ public class MockJsonService extends JsonService {
             JsonService.encode(
                 new TablesRequest(null, null, null, Arrays.<String>asList())),
             "{\"response\":\"resultSet\", rows: []}");
+        map1.put(
+            "{\"request\":\"createStatement\",\"connectionId\":0}",
+            "{\"response\":\"createStatement\",\"id\":0}");
+        map1.put(
+            "{\"request\":\"prepareAndExecute\",\"statementId\":0,"
+                + "\"sql\":\"select * from (\\n  values (1, 'a'), (null, 'b'), (3, 'c')) as t (x, y)\",\"maxRowCount\":-1}",
+            "{\"response\":\"resultSet\",\"signature\": {\n"
+                + " \"columns\": [\n"
+                + "   {\"columnName\": \"X\", \"type\": {type: \"scalar\", id: 4, rep: \"INTEGER\"}},\n"
+                + "   {\"columnName\": \"Y\", \"type\": {type: \"scalar\", id: 12, rep: \"STRING\"}}\n"
+                + " ], \"cursorFactory\": {\"style\": \"ARRAY\"}\n"
+                + "}, \"rows\": [[1, \"a\"], [null, \"b\"], [3, \"c\"]]}");
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

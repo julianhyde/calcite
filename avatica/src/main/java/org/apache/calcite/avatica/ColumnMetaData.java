@@ -220,31 +220,31 @@ public class ColumnMetaData {
       @JsonSubTypes.Type(value = StructType.class, name = "struct"),
       @JsonSubTypes.Type(value = ArrayType.class, name = "array") })
   public static class AvaticaType {
-    public final int type;
-    public final String typeName;
+    public final int id;
+    public final String name;
 
     /** The type of the field that holds the value. Not a JDBC property. */
-    public final Rep representation;
+    public final Rep rep;
 
-    protected AvaticaType(int type, String typeName, Rep representation) {
-      this.type = type;
-      this.typeName = typeName;
-      this.representation = representation;
-      assert representation != null;
+    protected AvaticaType(int id, String name, Rep rep) {
+      this.id = id;
+      this.name = name;
+      this.rep = rep;
+      assert rep != null;
     }
 
     public String columnClassName() {
-      return SqlType.valueOf(type).clazz.getName();
+      return SqlType.valueOf(id).clazz.getName();
     }
   }
 
   /** Scalar type. */
   public static class ScalarType extends AvaticaType {
     @JsonCreator
-    public ScalarType(@JsonProperty("type") int type,
-        @JsonProperty("typeName") String typeName,
-        @JsonProperty("representation") Rep representation) {
-      super(type, typeName, representation);
+    public ScalarType(@JsonProperty("id") int id,
+        @JsonProperty("name") String name,
+        @JsonProperty("rep") Rep rep) {
+      super(id, name, rep);
     }
   }
 
