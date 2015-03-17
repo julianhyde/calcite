@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Implementation of {@link Meta} upon an existing JDBC data source. */
 public class JdbcMeta implements Meta {
@@ -72,7 +73,8 @@ public class JdbcMeta implements Meta {
     SQL_TYPE_TO_JAVA_TYPE.put(Types.ARRAY, Array.class);
   }
 
-  private final Map<Integer, StatementInfo> statementMap = new HashMap<>();
+  private final Map<Integer, StatementInfo> statementMap =
+      new ConcurrentHashMap<>();
 
   /**
    * Convert from JDBC metadata to Avatica columns.
@@ -370,7 +372,21 @@ public class JdbcMeta implements Meta {
     }
   }
 
-  private RuntimeException propagate(Throwable e) {
+  @Override public void closeStatement(StatementHandle h) {
+    Statement stmt = statementMap.get(h.id).statement;
+    if (stmt == null) {
+      return;
+    }
+    try {
+      stmt.close();
+    } catch (SQLException e) {
+      throw propagate(e);
+    } finally {
+      statementMap.remove(h.id);
+    }
+  }
+
+  protected static RuntimeException propagate(Throwable e) {
     if (e instanceof RuntimeException) {
       throw (RuntimeException) e;
     } else if (e instanceof Error) {

@@ -29,7 +29,7 @@ import java.util.List;
  *  upon a JDBC {@link java.sql.ResultSet}.
  *
  *  @see org.apache.calcite.avatica.jdbc.JdbcMeta */
-class JdbcResultSet extends Meta.MetaResultSet {
+public class JdbcResultSet extends Meta.MetaResultSet {
   protected JdbcResultSet(int statementId, boolean ownStatement,
       Meta.Signature signature, Meta.Frame firstFrame) {
     super(statementId, ownStatement, signature, firstFrame);
