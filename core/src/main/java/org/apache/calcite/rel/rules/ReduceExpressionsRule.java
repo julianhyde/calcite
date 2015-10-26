@@ -61,16 +61,15 @@ import org.apache.calcite.util.Stacks;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -519,46 +518,96 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
     // (e.g. "WHERE deptno = 1 AND deptno = 1")
     // (3) It will return false if there are inconsistent constraints (e.g.
     // "WHERE deptno = 1 AND deptno = 2")
-    final Multimap<RexNode, RexLiteral> multimap = LinkedListMultimap.create();
+    final Map<RexNode, RexLiteral> map = new HashMap<>();
+    final Set<RexNode> excludeSet = new HashSet<>();
     for (RexNode predicate : predicates.pulledUpPredicates) {
-      if (!gatherConstraints(multimap, predicate)) {
-        return ImmutableMap.of();
-      }
+      gatherConstraints(map, predicate, excludeSet);
     }
     final ImmutableMap.Builder<RexNode, RexLiteral> builder =
         ImmutableMap.builder();
-    for (Map.Entry<RexNode, Collection<RexLiteral>> entry
-        : multimap.asMap().entrySet()) {
-      // If collection has more than one element, the same column is
-      // constrained to different values, which is not satisfiable.
-      final Collection<RexLiteral> values = entry.getValue();
-      if (values.size() == 1) {
-        builder.put(entry.getKey(), Iterables.getOnlyElement(values));
+    for (Map.Entry<RexNode, RexLiteral> entry : map.entrySet()) {
+      RexNode rexNode = entry.getKey();
+      if (!overlap(rexNode, excludeSet)) {
+        builder.put(rexNode, entry.getValue());
       }
     }
     return builder.build();
   }
 
-  private static boolean gatherConstraints(Multimap<RexNode, RexLiteral> map,
-      RexNode predicate) {
+  private static boolean overlap(RexNode rexNode, Set<RexNode> set) {
+    if (!(rexNode instanceof RexLiteral)) {
+      if (rexNode instanceof RexCall) {
+        final List<RexNode> operands = ((RexCall) rexNode).getOperands();
+        for (RexNode r : operands) {
+          if (overlap(r, set)) {
+            return true;
+          }
+        }
+      } else {
+        return set.contains(rexNode);
+      }
+    }
+    return false;
+  }
+
+  // This function tries to decompose the RexNode which is a RexCall into
+  // non-literal RexNodes
+  private static Set<RexNode> decompose(RexNode rexNode) {
+    Set<RexNode> set = new HashSet<>();
+    if (!(rexNode instanceof RexLiteral)) {
+      if (rexNode instanceof RexCall) {
+        final List<RexNode> operands = ((RexCall) rexNode).getOperands();
+        for (RexNode r : operands) {
+          set.addAll(decompose(r));
+        }
+      } else {
+        set.add(rexNode);
+      }
+    }
+    return set;
+  }
+
+  private static void gatherConstraints(Map<RexNode, RexLiteral> map,
+      RexNode predicate, Set<RexNode> excludeSet) {
     if (predicate.getKind() != SqlKind.EQUALS) {
-      return false;
+      excludeSet.addAll(decompose(predicate));
+      return;
     }
     final List<RexNode> operands = ((RexCall) predicate).getOperands();
     if (operands.size() != 2) {
-      return false;
+      excludeSet.addAll(decompose(predicate));
+      return;
     }
+    // if it reaches here, we have rexNode equals rexNode
     final RexNode left = operands.get(0);
     final RexNode right = operands.get(1);
-    if (right instanceof RexLiteral) {
-      map.put(left, (RexLiteral) right);
-      return true;
+    // note that literals are immutable too and they can only be compared through
+    // values.
+    if (right instanceof RexLiteral && !excludeSet.contains(left)) {
+      RexLiteral existedValue = map.get(left);
+      if (existedValue == null) {
+        map.put(left, (RexLiteral) right);
+      } else {
+        if (!existedValue.getValue().equals(((RexLiteral) right).getValue())) {
+          // we found conflict values.
+          map.remove(left);
+          excludeSet.add(left);
+        }
+      }
+    } else if (left instanceof RexLiteral && !excludeSet.contains(right)) {
+      RexLiteral existedValue = map.get(right);
+      if (existedValue == null) {
+        map.put(right, (RexLiteral) left);
+      } else {
+        if (!existedValue.getValue().equals(((RexLiteral) left).getValue())) {
+          map.remove(right);
+          excludeSet.add(right);
+        }
+      }
+    } else {
+      // TODO: we may have literal equals literal
+      // or expression equals expressions
     }
-    if (left instanceof RexLiteral) {
-      map.put(right, (RexLiteral) left);
-      return true;
-    }
-    return false;
   }
 
   /** Pushes predicates into a CASE.
