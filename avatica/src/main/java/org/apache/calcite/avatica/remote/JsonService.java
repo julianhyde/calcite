@@ -43,6 +43,10 @@ public abstract class JsonService extends AbstractService {
    * responses to and from the peer service. */
   public abstract String apply(String request);
 
+  @Override SerializationType getSerializationType() {
+    return SerializationType.JSON;
+  }
+
   //@VisibleForTesting
   protected static <T> T decode(String response, Class<T> expectedType)
       throws IOException {
@@ -190,6 +194,14 @@ public abstract class JsonService extends AbstractService {
   public DatabasePropertyResponse apply(DatabasePropertyRequest request) {
     try {
       return decode(apply(encode(request)), DatabasePropertyResponse.class);
+    } catch (IOException e) {
+      throw handle(e);
+    }
+  }
+
+  public SyncResultsResponse apply(SyncResultsRequest request) {
+    try {
+      return decode(apply(encode(request)), SyncResultsResponse.class);
     } catch (IOException e) {
       throw handle(e);
     }

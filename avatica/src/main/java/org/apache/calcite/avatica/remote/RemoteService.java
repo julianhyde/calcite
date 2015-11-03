@@ -16,13 +16,7 @@
  */
 package org.apache.calcite.avatica.remote;
 
-import org.apache.calcite.avatica.AvaticaUtils;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Implementation of {@link org.apache.calcite.avatica.remote.Service}
@@ -30,42 +24,15 @@ import java.net.URL;
  * usually an HTTP server.
  */
 public class RemoteService extends JsonService {
-  private final URL url;
+  private final AvaticaHttpClient client;
 
-  public RemoteService(URL url) {
-    this.url = url;
+  public RemoteService(AvaticaHttpClient client) {
+    this.client = client;
   }
 
   @Override public String apply(String request) {
-    try {
-      final HttpURLConnection connection =
-          (HttpURLConnection) url.openConnection();
-      connection.setRequestMethod("POST");
-      connection.setDoInput(true);
-      connection.setDoOutput(true);
-      if (request.length() < 256) {
-        connection.setRequestProperty("request", request);
-      } else {
-        try (DataOutputStream wr
-            = new DataOutputStream(connection.getOutputStream())) {
-          wr.writeBytes(request);
-          wr.flush();
-          wr.close();
-        }
-      }
-      final int responseCode = connection.getResponseCode();
-      final InputStream inputStream;
-      if (responseCode != HttpURLConnection.HTTP_OK) {
-        inputStream = connection.getErrorStream();
-      } else {
-        inputStream = connection.getInputStream();
-      }
-
-      return AvaticaUtils.readFully(inputStream);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
+    byte[] response = client.send(request.getBytes(StandardCharsets.UTF_8));
+    return new String(response, StandardCharsets.UTF_8);
   }
 }
 

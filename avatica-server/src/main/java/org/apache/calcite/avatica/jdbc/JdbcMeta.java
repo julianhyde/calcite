@@ -23,6 +23,10 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.avatica.MissingResultsException;
+import org.apache.calcite.avatica.NoSuchConnectionException;
+import org.apache.calcite.avatica.NoSuchStatementException;
+import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.remote.TypedValue;
 
@@ -44,15 +48,14 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,10 +67,7 @@ public class JdbcMeta implements Meta {
 
   private static final String STMT_CACHE_KEY_BASE = "avatica.statementcache";
 
-  private static final String DEFAULT_CONN_ID =
-      UUID.fromString("00000000-0000-0000-0000-000000000000").toString();
-
-  /** Special value for {@link Statement#getLargeMaxRows()} that means fetch
+  /** Special value for {@code Statement#getLargeMaxRows()} that means fetch
    * an unlimited number of rows in a single batch.
    *
    * <p>Any other negative value will return an unlimited number of rows but
@@ -194,9 +194,14 @@ public class JdbcMeta implements Meta {
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
       final SqlType sqlType = SqlType.valueOf(metaData.getColumnType(i));
       final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of(sqlType.internal);
-      ColumnMetaData.AvaticaType t =
-          ColumnMetaData.scalar(metaData.getColumnType(i),
-              metaData.getColumnTypeName(i), rep);
+      final ColumnMetaData.AvaticaType t;
+      if (sqlType == SqlType.ARRAY || sqlType == SqlType.STRUCT || sqlType == SqlType.MULTISET) {
+        ColumnMetaData.AvaticaType arrayValueType = ColumnMetaData.scalar(Types.JAVA_OBJECT,
+            metaData.getColumnTypeName(i), ColumnMetaData.Rep.OBJECT);
+        t = ColumnMetaData.array(arrayValueType, metaData.getColumnTypeName(i), rep);
+      } else {
+        t = ColumnMetaData.scalar(metaData.getColumnType(i), metaData.getColumnTypeName(i), rep);
+      }
       ColumnMetaData md =
           new ColumnMetaData(i - 1, metaData.isAutoIncrement(i),
               metaData.isCaseSensitive(i), metaData.isSearchable(i),
@@ -214,7 +219,7 @@ public class JdbcMeta implements Meta {
   }
 
   /**
-   * Converts from JDBC metadata to Avatica parameters.
+   * Converts from JDBC metadata to Avatica parameters
    */
   protected static List<AvaticaParameter> parameters(ParameterMetaData metaData)
       throws SQLException {
@@ -273,10 +278,24 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getTables(catalog, schemaPattern.s,
               tableNamePattern.s, toArray(typeList));
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+    * Registers a StatementInfo for the given ResultSet, returning the id under
+    * which it is registered. This should be used for metadata ResultSets, which
+    * have an implicit statement created.
+    */
+  private int registerMetaStatement(ResultSet rs) throws SQLException {
+    final int id = statementIdGenerator.getAndIncrement();
+    StatementInfo statementInfo = new StatementInfo(rs.getStatement());
+    statementInfo.setResultSet(rs);
+    statementCache.put(id, statementInfo);
+    return id;
   }
 
   public MetaResultSet getColumns(ConnectionHandle ch, String catalog, Pat schemaPattern,
@@ -285,7 +304,8 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getColumns(catalog, schemaPattern.s,
               tableNamePattern.s, columnNamePattern.s);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -295,7 +315,8 @@ public class JdbcMeta implements Meta {
     try {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getSchemas(catalog, schemaPattern.s);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -304,7 +325,8 @@ public class JdbcMeta implements Meta {
   public MetaResultSet getCatalogs(ConnectionHandle ch) {
     try {
       final ResultSet rs = getConnection(ch.id).getMetaData().getCatalogs();
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -313,7 +335,8 @@ public class JdbcMeta implements Meta {
   public MetaResultSet getTableTypes(ConnectionHandle ch) {
     try {
       final ResultSet rs = getConnection(ch.id).getMetaData().getTableTypes();
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -325,7 +348,8 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getProcedures(catalog, schemaPattern.s,
               procedureNamePattern.s);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -337,7 +361,8 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getProcedureColumns(catalog,
               schemaPattern.s, procedureNamePattern.s, columnNamePattern.s);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -349,7 +374,8 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getColumnPrivileges(catalog, schema,
               table, columnNamePattern.s);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -361,7 +387,8 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getTablePrivileges(catalog,
               schemaPattern.s, tableNamePattern.s);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -377,7 +404,8 @@ public class JdbcMeta implements Meta {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getBestRowIdentifier(catalog, schema,
               table, scope, nullable);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -391,7 +419,8 @@ public class JdbcMeta implements Meta {
     try {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getVersionColumns(catalog, schema, table);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -405,7 +434,8 @@ public class JdbcMeta implements Meta {
     try {
       final ResultSet rs =
           getConnection(ch.id).getMetaData().getPrimaryKeys(catalog, schema, table);
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -430,7 +460,8 @@ public class JdbcMeta implements Meta {
   public MetaResultSet getTypeInfo(ConnectionHandle ch) {
     try {
       final ResultSet rs = getConnection(ch.id).getMetaData().getTypeInfo();
-      return JdbcResultSet.create(DEFAULT_CONN_ID, -1, rs, UNLIMITED_COUNT);
+      int stmtId = registerMetaStatement(rs);
+      return JdbcResultSet.create(ch.id, stmtId, rs);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -480,7 +511,7 @@ public class JdbcMeta implements Meta {
     return null;
   }
 
-  public Iterable<Object> createIterable(StatementHandle handle,
+  public Iterable<Object> createIterable(StatementHandle handle, QueryState state,
       Signature signature, List<TypedValue> parameterValues, Frame firstFrame) {
     return null;
   }
@@ -491,7 +522,8 @@ public class JdbcMeta implements Meta {
     }
     Connection conn = connectionCache.getIfPresent(id);
     if (conn == null) {
-      throw new RuntimeException("Connection not found: invalid id, closed, or expired: " + id);
+      throw new NoSuchConnectionException("Connection not found: invalid id, closed, or expired: "
+          + id);
     }
     return conn;
   }
@@ -522,8 +554,9 @@ public class JdbcMeta implements Meta {
       LOG.trace("closing statement " + h);
     }
     try {
-      if (info.resultSet != null) {
-        info.resultSet.close();
+      ResultSet results = info.getResultSet();
+      if (info.isResultSetInitialized() && null != results) {
+        results.close();
       }
       info.statement.close();
     } catch (SQLException e) {
@@ -646,12 +679,11 @@ public class JdbcMeta implements Meta {
   }
 
   public ExecuteResult prepareAndExecute(StatementHandle h, String sql,
-      long maxRowCount, PrepareCallback callback) {
+      long maxRowCount, PrepareCallback callback) throws NoSuchStatementException {
     try {
       final StatementInfo info = statementCache.getIfPresent(h.id);
       if (info == null) {
-        throw new RuntimeException("Statement not found, potentially expired. "
-            + h);
+        throw new NoSuchStatementException(h);
       }
       final Statement statement = info.statement;
       // Special handling of maxRowCount as JDBC 0 is unlimited, our meta 0 row
@@ -661,18 +693,18 @@ public class JdbcMeta implements Meta {
         statement.setMaxRows(0);
       }
       boolean ret = statement.execute(sql);
-      info.resultSet = statement.getResultSet();
-      assert ret || info.resultSet == null;
+      info.setResultSet(statement.getResultSet());
+      // Either execute(sql) returned true or the resultSet was null
+      assert ret || null == info.getResultSet();
       final List<MetaResultSet> resultSets = new ArrayList<>();
-      if (info.resultSet == null) {
+      if (null == info.getResultSet()) {
         // Create a special result set that just carries update count
         resultSets.add(
             JdbcResultSet.count(h.connectionId, h.id,
                 AvaticaUtils.getLargeUpdateCount(statement)));
       } else {
         resultSets.add(
-            JdbcResultSet.create(h.connectionId, h.id, info.resultSet,
-                maxRowCount));
+            JdbcResultSet.create(h.connectionId, h.id, info.getResultSet(), maxRowCount));
       }
       if (LOG.isTraceEnabled()) {
         LOG.trace("prepAndExec statement " + h);
@@ -684,19 +716,51 @@ public class JdbcMeta implements Meta {
     }
   }
 
-  public Frame fetch(StatementHandle h, long offset, int fetchMaxRowCount) {
+  public boolean syncResults(StatementHandle sh, QueryState state, long offset)
+      throws NoSuchStatementException {
+    try {
+      final Connection conn = getConnection(sh.connectionId);
+      final StatementInfo info = statementCache.getIfPresent(sh.id);
+      if (null == info) {
+        throw new NoSuchStatementException(sh);
+      }
+      final Statement statement = info.statement;
+      // Let the state recreate the necessary ResultSet on the Statement
+      info.setResultSet(state.invoke(conn, statement));
+
+      if (null != info.getResultSet()) {
+        // If it is non-null, try to advance to the requested offset.
+        return info.advanceResultSetToOffset(info.getResultSet(), offset);
+      }
+
+      // No results, nothing to do. Client can move on.
+      return false;
+    } catch (SQLException e) {
+      throw propagate(e);
+    }
+  }
+
+  public Frame fetch(StatementHandle h, long offset, int fetchMaxRowCount) throws
+      NoSuchStatementException, MissingResultsException {
     if (LOG.isTraceEnabled()) {
       LOG.trace("fetching " + h + " offset:" + offset + " fetchMaxRowCount:"
           + fetchMaxRowCount);
     }
     try {
-      final StatementInfo statementInfo = Objects.requireNonNull(
-          statementCache.getIfPresent(h.id),
-          "Statement not found, potentially expired. " + h);
-      if (statementInfo.resultSet == null) {
+      final StatementInfo statementInfo = statementCache.getIfPresent(h.id);
+      if (null == statementInfo) {
+        // Statement might have expired, or never existed on this server.
+        throw new NoSuchStatementException(h);
+      }
+
+      if (!statementInfo.isResultSetInitialized()) {
+        // The Statement exists, but the results are missing. Need to call syncResults(...)
+        throw new MissingResultsException(h);
+      }
+      if (statementInfo.getResultSet() == null) {
         return Frame.EMPTY;
       } else {
-        return JdbcResultSet.frame(statementInfo.resultSet, offset,
+        return JdbcResultSet.frame(statementInfo, statementInfo.getResultSet(), offset,
             fetchMaxRowCount, calendar);
       }
     } catch (SQLException e) {
@@ -712,15 +776,16 @@ public class JdbcMeta implements Meta {
   }
 
   @Override public ExecuteResult execute(StatementHandle h,
-      List<TypedValue> parameterValues, long maxRowCount) {
+      List<TypedValue> parameterValues, long maxRowCount) throws NoSuchStatementException {
     try {
       if (MetaImpl.checkParameterValueHasNull(parameterValues)) {
         throw new SQLException("exception while executing query: unbound parameter");
       }
 
-      final StatementInfo statementInfo = Objects.requireNonNull(
-          statementCache.getIfPresent(h.id),
-          "Statement not found, potentially expired. " + h);
+      final StatementInfo statementInfo = statementCache.getIfPresent(h.id);
+      if (null == statementInfo) {
+        throw new NoSuchStatementException(h);
+      }
       final List<MetaResultSet> resultSets = new ArrayList<>();
       final PreparedStatement preparedStatement =
           (PreparedStatement) statementInfo.statement;
@@ -744,14 +809,16 @@ public class JdbcMeta implements Meta {
           signature2 = h.signature;
         }
 
-        statementInfo.resultSet = preparedStatement.getResultSet();
-        if (statementInfo.resultSet == null) {
+        // Make sure we set this for subsequent fetch()'s to find the result set.
+        statementInfo.setResultSet(preparedStatement.getResultSet());
+
+        if (statementInfo.getResultSet() == null) {
           frame = Frame.EMPTY;
           resultSets.add(JdbcResultSet.empty(h.connectionId, h.id, signature2));
         } else {
           resultSets.add(
               JdbcResultSet.create(h.connectionId, h.id,
-                  statementInfo.resultSet, maxRowCount, signature2));
+                  statementInfo.getResultSet(), maxRowCount, signature2));
         }
       } else {
         resultSets.add(
@@ -762,16 +829,6 @@ public class JdbcMeta implements Meta {
       return new ExecuteResult(resultSets);
     } catch (SQLException e) {
       throw propagate(e);
-    }
-  }
-
-  /** All we know about a statement. */
-  private static class StatementInfo {
-    final Statement statement; // sometimes a PreparedStatement
-    ResultSet resultSet;
-
-    private StatementInfo(Statement statement) {
-      this.statement = Objects.requireNonNull(statement);
     }
   }
 
@@ -889,8 +946,8 @@ public class JdbcMeta implements Meta {
                 + notification.getCause());
       }
       try {
-        if (doomed.resultSet != null) {
-          doomed.resultSet.close();
+        if (doomed.getResultSet() != null) {
+          doomed.getResultSet().close();
         }
         if (doomed.statement != null) {
           doomed.statement.close();

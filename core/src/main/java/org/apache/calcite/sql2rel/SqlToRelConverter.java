@@ -88,6 +88,7 @@ import org.apache.calcite.sql.SemiJoinType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -2068,11 +2069,13 @@ public class SqlToRelConverter {
 
     // Expand table macro if possible. It's more efficient than
     // LogicalTableFunctionScan.
+    final SqlCallBinding callBinding =
+        new SqlCallBinding(bb.scope.getValidator(), bb.scope, call);
     if (operator instanceof SqlUserDefinedTableMacro) {
       final SqlUserDefinedTableMacro udf =
           (SqlUserDefinedTableMacro) operator;
-      final TranslatableTable table = udf.getTable(typeFactory,
-        call.getOperandList());
+      final TranslatableTable table =
+          udf.getTable(typeFactory, callBinding.operands());
       final RelDataType rowType = table.getRowType(typeFactory);
       RelOptTable relOptTable = RelOptTableImpl.create(null, rowType, table);
       RelNode converted = toRel(relOptTable);
@@ -2083,7 +2086,7 @@ public class SqlToRelConverter {
     Type elementType;
     if (operator instanceof SqlUserDefinedTableFunction) {
       SqlUserDefinedTableFunction udtf = (SqlUserDefinedTableFunction) operator;
-      elementType = udtf.getElementType(typeFactory, call.getOperandList());
+      elementType = udtf.getElementType(typeFactory, callBinding.operands());
     } else {
       elementType = null;
     }
@@ -4173,7 +4176,8 @@ public class SqlToRelConverter {
           return agg.lookupAggregates(call);
         }
       }
-      return exprConverter.convertCall(this, call);
+      return exprConverter.convertCall(this,
+          new SqlCallBinding(validator, scope, call).permutedCall());
     }
 
     // implement SqlVisitor

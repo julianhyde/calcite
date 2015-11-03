@@ -20,16 +20,19 @@ import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 
+import java.sql.Array;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.TreeMap;
 
 /** Implementation of {@link org.apache.calcite.avatica.Meta.MetaResultSet}
  *  upon a JDBC {@link java.sql.ResultSet}.
@@ -85,7 +88,7 @@ class JdbcResultSet extends Meta.MetaResultSet {
       } else {
         fetchRowCount = (int) maxRowCount;
       }
-      final Meta.Frame firstFrame = frame(resultSet, 0, fetchRowCount, calendar);
+      final Meta.Frame firstFrame = frame(null, resultSet, 0, fetchRowCount, calendar);
       if (firstFrame.done) {
         resultSet.close();
       }
@@ -111,7 +114,7 @@ class JdbcResultSet extends Meta.MetaResultSet {
 
   /** Creates a frame containing a given number or unlimited number of rows
    * from a result set. */
-  static Meta.Frame frame(ResultSet resultSet, long offset,
+  static Meta.Frame frame(StatementInfo info, ResultSet resultSet, long offset,
       int fetchMaxRowCount, Calendar calendar) throws SQLException {
     final ResultSetMetaData metaData = resultSet.getMetaData();
     final int columnCount = metaData.getColumnCount();
@@ -123,7 +126,13 @@ class JdbcResultSet extends Meta.MetaResultSet {
     // Meta prepare/prepareAndExecute 0 return 0 row and done
     boolean done = fetchMaxRowCount == 0;
     for (int i = 0; fetchMaxRowCount < 0 || i < fetchMaxRowCount; i++) {
-      if (!resultSet.next()) {
+      final boolean hasRow;
+      if (null != info) {
+        hasRow = info.next();
+      } else {
+        hasRow = resultSet.next();
+      }
+      if (!hasRow) {
         done = true;
         resultSet.close();
         break;
@@ -172,6 +181,31 @@ class JdbcResultSet extends Meta.MetaResultSet {
     case Types.TIMESTAMP:
       final Timestamp aTimestamp = resultSet.getTimestamp(j + 1, calendar);
       return aTimestamp == null ? null : aTimestamp.getTime();
+    case Types.ARRAY:
+      final Array array = resultSet.getArray(j + 1);
+      if (null == array) {
+        return null;
+      }
+      ResultSet arrayValues = array.getResultSet();
+      TreeMap<Integer, Object> map = new TreeMap<>();
+      while (arrayValues.next()) {
+        // column 1 is the index in the array, column 2 is the value.
+        // Recurse on `getValue` to unwrap nested types correctly.
+        // `j` is zero-indexed and incremented for us, thus we have `1` being used twice.
+        map.put(arrayValues.getInt(1), getValue(arrayValues, array.getBaseType(), 1, calendar));
+      }
+      // If the result set is not in the same order as the actual Array, TreeMap fixes that.
+      // Need to make a concrete list to ensure Jackson serialization.
+      //return new ListLike<Object>(new ArrayList<>(map.values()), ListLikeType.ARRAY);
+      return new ArrayList<>(map.values());
+    case Types.STRUCT:
+      Struct struct = resultSet.getObject(j + 1, Struct.class);
+      Object[] attrs = struct.getAttributes();
+      List<Object> list = new ArrayList<>(attrs.length);
+      for (Object o : attrs) {
+        list.add(o);
+      }
+      return list;
     default:
       return resultSet.getObject(j + 1);
     }

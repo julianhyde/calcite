@@ -84,7 +84,7 @@ public class ProtobufHandlerTest {
     frameRows.add(new Object[] {true, "my_string"});
 
     Meta.Frame frame = Frame.create(0, true, frameRows);
-    FetchResponse response = new FetchResponse(frame);
+    FetchResponse response = new FetchResponse(frame, false, false);
 
     when(translation.parseRequest(serializedRequest)).thenReturn(request);
     when(service.apply(request)).thenReturn(response);
@@ -105,17 +105,22 @@ public class ProtobufHandlerTest {
     List<Common.Row> rows = protoFrame.getRowsList();
     assertEquals(1, rows.size());
     Common.Row row = rows.get(0);
-    List<Common.TypedValue> rowValues = row.getValueList();
-    assertEquals(2, rowValues.size());
+    List<Common.ColumnValue> columnValues = row.getValueList();
+    assertEquals(2, columnValues.size());
 
-    Iterator<Common.TypedValue> iter = rowValues.iterator();
+    Iterator<Common.ColumnValue> iter = columnValues.iterator();
     assertTrue(iter.hasNext());
-    Common.TypedValue value = iter.next();
+    Common.ColumnValue column = iter.next();
+    assertEquals(1, column.getValueCount());
+
+    Common.TypedValue value = column.getValue(0);
     assertEquals(Common.Rep.BOOLEAN, value.getType());
     assertEquals(true, value.getBoolValue());
 
     assertTrue(iter.hasNext());
-    value = iter.next();
+    column = iter.next();
+    assertEquals(1, column.getValueCount());
+    value = column.getValue(0);
     assertEquals(Common.Rep.STRING, value.getType());
     assertEquals("my_string", value.getStringValue());
   }

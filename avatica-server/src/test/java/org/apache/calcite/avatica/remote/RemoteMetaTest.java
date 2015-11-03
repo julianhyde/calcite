@@ -29,11 +29,13 @@ import org.apache.calcite.avatica.server.AvaticaProtobufHandler;
 import org.apache.calcite.avatica.server.HttpServer;
 import org.apache.calcite.avatica.server.Main;
 import org.apache.calcite.avatica.server.Main.HandlerFactory;
+import org.apache.calcite.avatica.util.ArrayImpl;
 
 import com.google.common.cache.Cache;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,12 +43,16 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -54,6 +60,7 @@ import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -338,6 +345,7 @@ public class RemoteMetaTest {
     }
   }
 
+  @Ignore("[CALCITE-942] AvaticaConnection should fail-fast when closed.")
   @Test public void testRemoteConnectionClosing() throws Exception {
     AvaticaConnection conn = (AvaticaConnection) DriverManager.getConnection(url);
     // Verify connection is usable
@@ -348,9 +356,9 @@ public class RemoteMetaTest {
     try {
       conn.createStatement();
       fail("expected exception");
-    } catch (RuntimeException e) {
+    } catch (SQLException e) {
       assertThat(e.getMessage(),
-          containsString("Connection not found: invalid id, closed, or expired"));
+          containsString("Connection is closed"));
     }
   }
 
@@ -373,6 +381,69 @@ public class RemoteMetaTest {
         final String substring = "unexpected token: FOOBARBAZ";
         assertTrue("Message should contain '" + substring + "', was '" + e.getMessage() + ",",
             stacktrace.contains(substring));
+      }
+    } finally {
+      ConnectionSpec.getDatabaseLock().unlock();
+    }
+  }
+
+  @Test public void testRemoteColumnsMeta() throws Exception {
+    // Verify all columns are retrieved, thus that frame-based fetching works correctly for columns
+    int rowCount = 0;
+    try (AvaticaConnection conn = (AvaticaConnection) DriverManager.getConnection(url)) {
+      ResultSet rs = conn.getMetaData().getColumns(null, null, null, null);
+      while (rs.next()) {
+        rowCount++;
+      }
+      rs.close();
+
+      // The implicitly created statement should have been closed
+      assertTrue(rs.getStatement().isClosed());
+    }
+    // default fetch size is 100, we are well beyond it
+    assertTrue(rowCount > 900);
+  }
+
+  @Test public void testArrays() throws SQLException {
+    ConnectionSpec.getDatabaseLock().lock();
+    try (AvaticaConnection conn = (AvaticaConnection) DriverManager.getConnection(url);
+         Statement stmt = conn.createStatement()) {
+      ResultSet resultSet =
+          stmt.executeQuery("select * from (values ('a', array['b', 'c']));");
+
+      assertTrue(resultSet.next());
+      assertEquals("a", resultSet.getString(1));
+      Array arr = resultSet.getArray(2);
+      assertTrue(arr instanceof ArrayImpl);
+      Object[] values = (Object[]) ((ArrayImpl) arr).getArray();
+      assertArrayEquals(new String[]{"b", "c"}, values);
+    } finally {
+      ConnectionSpec.getDatabaseLock().unlock();
+    }
+  }
+
+  @Test public void testBinaryAndStrings() throws Exception {
+    final String tableName = "testbinaryandstrs";
+    final byte[] data = "asdf".getBytes(StandardCharsets.UTF_8);
+    ConnectionSpec.getDatabaseLock().lock();
+    try (final Connection conn = DriverManager.getConnection(url);
+        final Statement stmt = conn.createStatement()) {
+      assertFalse(stmt.execute("DROP TABLE IF EXISTS " + tableName));
+      assertFalse(stmt.execute("CREATE TABLE " + tableName + "(id int, bin BINARY(4))"));
+      try (final PreparedStatement prepStmt = conn.prepareStatement(
+          "INSERT INTO " + tableName + " values(1, ?)")) {
+        prepStmt.setBytes(1, data);
+        assertFalse(prepStmt.execute());
+      }
+      try (ResultSet results = stmt.executeQuery("SELECT id, bin from " + tableName)) {
+        assertTrue(results.next());
+        assertEquals(1, results.getInt(1));
+        // byte comparison should work
+        assertArrayEquals("Bytes were " + Arrays.toString(results.getBytes(2)),
+            data, results.getBytes(2));
+        // as should string
+        assertEquals(new String(data, StandardCharsets.UTF_8), results.getString(2));
+        assertFalse(results.next());
       }
     } finally {
       ConnectionSpec.getDatabaseLock().unlock();

@@ -129,7 +129,7 @@ tablePrimary:
   |   '(' query ')'
   |   values
   |   UNNEST '(' expression ')'
-  |   '(' TABLE expression ')'
+  |   TABLE '(' [ SPECIFIC ] functionName '(' expression [, expression ]* ')' ')'
 
 values:
       VALUES expression [, expression ]*
@@ -395,7 +395,7 @@ Not implemented:
 | CASE value<br/>WHEN value1 [, value11 ]* THEN result1<br/>[ WHEN valueN [, valueN1 ]* THEN resultN ]*<br/>[ ELSE resultZ ]<br/> END | Simple case
 | CASE<br/>WHEN condition1 THEN result1<br/>[ WHEN conditionN THEN resultN ]*<br/>[ ELSE resultZ ]<br/>END | Searched case
 | NULLIF(value, value) | Returns NULL if the values are the same.<br/><br/>For example, <code>NULLIF(5, 5)</code> returns NULL; <code>NULLIF(5, 0)</code> returns 5.
-| COALESCE(value, value [, value]* ) | Provides a value if the first value is null.<br/><br/>For example, <code>COALESCE(NULL, 5)</code> returns 5.
+| COALESCE(value, value [, value ]* ) | Provides a value if the first value is null.<br/><br/>For example, <code>COALESCE(NULL, 5)</code> returns 5.
 
 ### Type conversion
 
@@ -409,10 +409,10 @@ Not implemented:
 |:--------------- |:-----------
 | ROW (value [, value]* ) | Creates a row from a list of values.
 | (value [, value]* )     | Creates a row from a list of values.
-| map [ key ]     | Returns the element of a map with a particular key.
-| array [ index ] | Returns the element at a particular location in an array.
-| ARRAY [ value [, value ]* ] | Creates an array from a list of values.
-| MAP [ key, value [, key, value ]* ] | Creates a map from a list of key-value pairs.
+| map '[' key ']'     | Returns the element of a map with a particular key.
+| array '[' index ']' | Returns the element at a particular location in an array.
+| ARRAY '[' value [, value ]* ']' | Creates an array from a list of values.
+| MAP '[' key, value [, key, value ]* ']' | Creates a map from a list of key-value pairs.
 
 ### Collection functions
 
@@ -594,3 +594,121 @@ Not implemented:
 | GROUPING(expression) | Returns 1 if expression is rolled up in the current row's grouping set, 0 otherwise
 | GROUP_ID()           | Returns an integer that uniquely identifies the combination of grouping keys
 | GROUPING_ID(expression [, expression ] * ) | Returns a bit vector of the given grouping expressions
+
+### User-defined functions
+
+Calcite is extensible. You can define each kind of function using user code.
+For each kind of function there are often several ways to define a function,
+varying from convenient to efficient.
+
+To implement a *scalar function*, there are 3 options:
+
+* Create a class with a public static `eval` method,
+  and register the class;
+* Create a class with a public non-static `eval` method,
+  and a public constructor with no arguments,
+  and register the class;
+* Create a class with one or more public static methods,
+  and register each class/method combination.
+
+To implement an *aggregate function*, there are 2 options:
+
+* Create a class with public static `init`, `add` and `result` methods,
+  and register the class;
+* Create a class with public non-static `init`, `add` and `result` methods,
+  and a  public constructor with no arguments,
+  and register the class.
+
+Optionally, add a public `merge` method to the class; this allows Calcite to
+generate code that merges sub-totals.
+
+Optionally, make your class implement the
+[SqlSplittableAggFunction]({{ site.apiRoot }}/org/apache/calcite/sql/SqlSplittableAggFunction.html)
+interface; this allows Calcite to decompose the function across several stages
+of aggregation, roll up from summary tables, and push it through joins.
+
+To implement a *table function*, there are 3 options:
+
+* Create a class with a static `eval` method that returns
+  [ScannableTable]({{ site.apiRoot }}/org/apache/calcite/schema/ScannableTable.html)
+  or
+  [QueryableTable]({{ site.apiRoot }}/org/apache/calcite/schema/QueryableTable.html),
+  and register the class;
+* Create a class with a non-static `eval` method that returns
+  [ScannableTable]({{ site.apiRoot }}/org/apache/calcite/schema/ScannableTable.html)
+  or
+  [QueryableTable]({{ site.apiRoot }}/org/apache/calcite/schema/QueryableTable.html),
+  and register the class;
+* Create a class with one or more public static methods that return
+  [ScannableTable]({{ site.apiRoot }}/org/apache/calcite/schema/ScannableTable.html)
+  or
+  [QueryableTable]({{ site.apiRoot }}/org/apache/calcite/schema/QueryableTable.html),
+  and register each class/method combination.
+
+To implement a *table macro*, there are 3 options:
+
+* Create a class with a static `eval` method that returns
+  [TranslatableTable]({{ site.apiRoot }}/org/apache/calcite/schema/TranslatableTable.html),
+  and register the class;
+* Create a class with a non-static `eval` method that returns
+  [TranslatableTable]({{ site.apiRoot }}/org/apache/calcite/schema/TranslatableTable.html),
+  and register the class;
+* Create a class with one or more public static methods that return
+  [TranslatableTable]({{ site.apiRoot }}/org/apache/calcite/schema/TranslatableTable.html),
+  and register each class/method combination.
+
+Calcite deduces the parameter types and result type of a function from the
+parameter and return types of the Java method that implements it. Further, you
+can specify the name and optionality of each parameter using the
+[Parameter]({{ site.apiRoot }}/org/apache/calcite/linq4j/function/Parameter.html)
+annotation.
+
+### Calling functions with named and optional parameters
+
+Usually when you call a function, you need to specify all of its parameters,
+in order. But that can be a problem if a function has a lot of parameters,
+and especially if you want to add more parameters over time.
+
+To solve this problem, the SQL standard allows you to pass parameters by name,
+and to define parameters which are optional (that is, have a default value
+that is used if they are not specified).
+
+Suppose you have a function `f`, declared as in the following pseudo syntax:
+
+```FUNCTION f(
+  INTEGER a,
+  INTEGER b DEFAULT NULL,
+  INTEGER c,
+  INTEGER d DEFAULT NULL,
+  INTEGER e DEFAULT NULL) RETURNS INTEGER```
+
+All of the function's parameters have names, and parameters `b`, `d` and `e`
+have a default value of `NULL` and are therefore optional.
+(In Calcite, `NULL` is the only allowable default value for optional parameters;
+this may change
+[in future](https://issues.apache.org/jira/browse/CALCITE-947).)
+
+When calling a function with optional parameters,
+you can omit optional arguments at the end of the list, or use the `DEFAULT`
+keyword for any optional arguments.
+Here are some examples:
+
+* `f(1, 2, 3, 4, 5)` provides a value to each parameter, in order;
+* `f(1, 2, 3, 4)` omits `e`, which gets its default value, `NULL`;
+* `f(1, DEFAULT, 3)` omits `d` and `e`,
+  and specifies to use the default value of `b`;
+* `f(1, DEFAULT, 3, DEFAULT, DEFAULT)` has the same effect as the previous
+  example;
+* `f(1, 2)` is not legal, because `c` is not optional;
+* `f(1, 2, DEFAULT, 4)` is not legal, because `c` is not optional.
+
+You can specify arguments by name using the `=>` syntax.
+If one argument is named, they all must be.
+Arguments may be in any other, but must not specify any argument more than once,
+and you need to provide a value for every parameter which is not optional.
+Here are some examples:
+
+* `f(c => 3, d => 1, a => 0)` is equivalent to `f(0, NULL, 3, 1, NULL)`;
+* `f(c => 3, d => 1)` is not legal, because you have not specified a value for
+  `a` and `a` is not optional.
+

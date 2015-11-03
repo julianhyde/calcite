@@ -17,6 +17,7 @@
 package org.apache.calcite.avatica.remote;
 
 import com.google.protobuf.Descriptors.Descriptor;
+
 import com.google.protobuf.Message;
 
 /**
@@ -29,6 +30,10 @@ public abstract class ProtobufService extends AbstractService {
    * responses to and from the peer service.
    */
   public abstract Response _apply(Request request);
+
+  @Override SerializationType getSerializationType() {
+    return SerializationType.PROTOBUF;
+  }
 
   @Override public ResultSetResponse apply(CatalogsRequest request) {
     return finagle((ResultSetResponse) _apply(request));
@@ -92,6 +97,10 @@ public abstract class ProtobufService extends AbstractService {
 
   @Override public ExecuteResponse apply(ExecuteRequest request) {
     return finagle((ExecuteResponse) _apply(request));
+  }
+
+  @Override public SyncResultsResponse apply(SyncResultsRequest request) {
+    return (SyncResultsResponse) _apply(request);
   }
 
   /**
