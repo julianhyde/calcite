@@ -14,24 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.avatica;
+package org.apache.calcite.config;
 
-import org.apache.calcite.avatica.remote.Service;
+/** Strategy for how NULL values are to be sorted if NULLS FIRST or NULLS LAST
+ * are not specified in an item in the ORDER BY clause. */
+public enum NullCollation {
+  /** Nulls first for DESC, nulls last for ASC. */
+  HIGH,
+  /** Nulls last for DESC, nulls first for ASC. */
+  LOW,
+  /** Nulls first for DESC and ASC. */
+  FIRST,
+  /** Nulls last for DESC and ASC. */
+  LAST;
 
-/**
- * Connection configuration.
- */
-public interface ConnectionConfig {
-  /** @see BuiltInConnectionProperty#SCHEMA */
-  String schema();
-  /** @see BuiltInConnectionProperty#TIME_ZONE */
-  String timeZone();
-  /** @see BuiltInConnectionProperty#FACTORY */
-  Service.Factory factory();
-  /** @see BuiltInConnectionProperty#URL */
-  String url();
-  /** @see BuiltInConnectionProperty#SERIALIZATION */
-  String serialization();
+  /** Returns whether NULL values should appear last.
+   *
+   * @param desc Whether sort is descending
+   */
+  public boolean last(boolean desc) {
+    switch (this) {
+    case FIRST:
+      return false;
+    case LAST:
+      return true;
+    case LOW:
+      return desc;
+    case HIGH:
+    default:
+      return !desc;
+    }
+  }
 }
 
-// End ConnectionConfig.java
+// End NullCollation.java

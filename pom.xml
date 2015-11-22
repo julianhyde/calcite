@@ -27,7 +27,7 @@ limitations under the License.
   <groupId>org.apache.calcite</groupId>
   <artifactId>calcite</artifactId>
   <packaging>pom</packaging>
-  <version>1.5.0-incubating-SNAPSHOT</version>
+  <version>1.6.0-SNAPSHOT</version>
 
   <!-- More project information. -->
   <name>Calcite</name>
@@ -49,7 +49,7 @@ limitations under the License.
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <top.dir>${project.basedir}</top.dir>
     <version.major>1</version.major>
-    <version.minor>4</version.minor>
+    <version.minor>5</version.minor>
   </properties>
 
   <issueManagement>
@@ -89,34 +89,34 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-avatica</artifactId>
-        <version>1.5.0-incubating-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-avatica</artifactId>
-        <version>1.5.0-incubating-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
         <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-avatica-server</artifactId>
-        <version>1.5.0-incubating-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-core</artifactId>
-        <version>1.5.0-incubating-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-core</artifactId>
         <type>test-jar</type>
-        <version>1.5.0-incubating-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-linq4j</artifactId>
-        <version>1.5.0-incubating-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
       </dependency>
 
       <!-- Now third-party dependencies, sorted by groupId and artifactId. -->
@@ -589,6 +589,8 @@ limitations under the License.
             </tag>
           </tags>
           <additionalparam>-tag sql.2003:a:xxx</additionalparam>
+          <notimestamp>true</notimestamp>
+          <windowtitle>Apache Calcite API</windowtitle>
         </configuration>
       </plugin>
     </plugins>

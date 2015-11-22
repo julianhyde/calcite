@@ -14,24 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.avatica;
+package org.apache.calcite.avatica.jdbc;
 
-import org.apache.calcite.avatica.remote.Service;
+import org.junit.Test;
+
+import java.sql.SQLException;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
- * Connection configuration.
+ * Unit tests for {@link JdbcMeta}.
  */
-public interface ConnectionConfig {
-  /** @see BuiltInConnectionProperty#SCHEMA */
-  String schema();
-  /** @see BuiltInConnectionProperty#TIME_ZONE */
-  String timeZone();
-  /** @see BuiltInConnectionProperty#FACTORY */
-  Service.Factory factory();
-  /** @see BuiltInConnectionProperty#URL */
-  String url();
-  /** @see BuiltInConnectionProperty#SERIALIZATION */
-  String serialization();
+public class JdbcMetaTest {
+
+  @Test public void testExceptionPropagation() throws SQLException {
+    JdbcMeta meta = new JdbcMeta("url");
+    final Throwable e = new Exception();
+    final RuntimeException rte;
+    try {
+      meta.propagate(e);
+      fail("Expected an exception to be thrown");
+    } catch (RuntimeException caughtException) {
+      rte = caughtException;
+      assertThat(rte.getCause(), is(e));
+    }
+  }
 }
 
-// End ConnectionConfig.java
+// End JdbcMetaTest.java

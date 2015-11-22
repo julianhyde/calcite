@@ -39,6 +39,11 @@ public enum CalciteConnectionProperty implements ConnectionProperty {
   /** Whether Calcite should create materializations. */
   CREATE_MATERIALIZATIONS("createMaterializations", Type.BOOLEAN, true, false),
 
+  /** How NULL values should be sorted if neither NULLS FIRST nor NULLS LAST are
+   * specified. The defult, HIGH, sorts NULL values the same as Oracle. */
+  DEFAULT_NULL_COLLATION("defaultNullCollation", Type.ENUM, NullCollation.HIGH,
+      true),
+
   /** URI of the model. */
   MODEL("model", Type.STRING, null, false),
 
@@ -69,8 +74,8 @@ public enum CalciteConnectionProperty implements ConnectionProperty {
    * generates code that implements the Enumerable interface. */
   SPARK("spark", Type.BOOLEAN, false, false),
 
-  /** Timezone, for example 'gmt-3'. Default is the JVM's time zone. */
-  TIMEZONE("timezone", Type.STRING, null, false),
+  /** Time zone, for example 'gmt-3'. Default is the JVM's time zone. */
+  TIME_ZONE("timeZone", Type.STRING, null, false),
 
   /** If the planner should try de-correlating as much as it is possible.
    * If true (the default), Calcite de-correlates the plan. */
@@ -88,8 +93,12 @@ public enum CalciteConnectionProperty implements ConnectionProperty {
 
   private static final Map<String, CalciteConnectionProperty> NAME_TO_PROPS;
 
+  /** Deprecated; use {@link #TIME_ZONE}. */
+  @Deprecated // to be removed before 2.0
+  public static final CalciteConnectionProperty TIMEZONE = TIME_ZONE;
+
   static {
-    NAME_TO_PROPS = new HashMap<String, CalciteConnectionProperty>();
+    NAME_TO_PROPS = new HashMap<>();
     for (CalciteConnectionProperty p : CalciteConnectionProperty.values()) {
       NAME_TO_PROPS.put(p.camelName.toUpperCase(), p);
       NAME_TO_PROPS.put(p.name(), p);
@@ -124,6 +133,7 @@ public enum CalciteConnectionProperty implements ConnectionProperty {
   public PropEnv wrap(Properties properties) {
     return new PropEnv(parse(properties, NAME_TO_PROPS), this);
   }
+
 }
 
 // End CalciteConnectionProperty.java

@@ -116,7 +116,7 @@ The subproject under example/csv provides a CSV adapter, which is
 fully functional for use in applications but is also simple enough to
 serve as a good template if you are writing your own adapter.
 
-See the <a href="{{ site.baseurl }}/tutorial.html">tutorial</a> for information on using
+See the <a href="{{ site.baseurl }}/docs/tutorial.html">tutorial</a> for information on using
 the CSV adapter and writing other adapters.
 
 See the <a href="howto.html">HOWTO</a> for more information about
@@ -139,7 +139,7 @@ The following features are complete.
   (syntax as <a
   href="http://www.postgresql.org/docs/8.4/static/sql-select.html#SQL-LIMIT">Postgres</a>);
   more details in the [SQL reference](reference.html)
-* Local and remote JDBC drivers; see [Avatica](avatica.html)
+* Local and remote JDBC drivers; see [Avatica](avatica_overview.html)
 * Several [adapters](adapter.html)
 
 
