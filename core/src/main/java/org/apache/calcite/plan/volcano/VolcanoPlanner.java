@@ -598,6 +598,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     this.mapRel2Subset.clear();
     this.relImportances.clear();
     this.ruleQueue.clear();
+    this.ruleNames.clear();
   }
 
   public boolean addRule(RelOptRule rule) {
@@ -1982,7 +1983,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
           new VolcanoRuleMatch(
               volcanoPlanner,
               getOperand0(),
-              rels);
+              rels,
+              nodeInputs);
       volcanoPlanner.ruleQueue.addMatch(match);
     }
   }
