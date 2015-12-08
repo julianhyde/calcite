@@ -3178,15 +3178,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validateSequenceValue(SqlValidatorScope scope, SqlIdentifier id) {
-    // FIXME: We should not be creating namespace at validate time, if at all.
-    // How is an identifier resolved to a table?
-    final IdentifierNamespace newNs =
-        new IdentifierNamespace(
-            this, id, null, null, scope);
-    registerNamespace(null, null, newNs, false);
-    validateNamespace(newNs);
+    // Resolve identifier as a table.
+    final SqlValidatorNamespace ns = scope.getTableNamespace(id.names);
+    if (ns == null) {
+      throw newValidationError(id, RESOURCE.tableNameNotFound(id.toString()));
+    }
 
     // We've found a table. But is it a sequence?
+    if (!(ns instanceof TableNamespace)) {
+      throw newValidationError(id, RESOURCE.notASequence(id.toString()));
+    }
     final SqlValidatorTable table = newNs.resolve().getTable();
     final Table table1 = ((RelOptTable) table).unwrap(Table.class);
     switch (table1.getJdbcTableType()) {
