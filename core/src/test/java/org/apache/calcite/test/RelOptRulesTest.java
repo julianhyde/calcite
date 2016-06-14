@@ -1802,6 +1802,21 @@ public class RelOptRulesTest extends RelOptTestBase {
             + " where d.deptno + 10 = e.deptno * 2");
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-750">[CALCITE-750]
+   * Allow windowed aggregate on top of regular aggregate</a>. */
+  @Test public void testNestedAggregates() {
+    final HepProgram program = HepProgram.builder()
+            .addRuleInstance(ProjectToWindowRule.PROJECT)
+            .build();
+    final String sql = "SELECT\n"
+            + "  avg(sum(sal) + 2 * min(empno) + 3 * avg(empno))\n"
+            + "  over (partition by deptno)\n"
+            + "from emp\n"
+            + "group by deptno";
+    checkPlanning(program, sql);
+  }
+
 }
 
 // End RelOptRulesTest.java

@@ -67,8 +67,8 @@ public class SqlOverOperator extends SqlBinaryOperator {
     if (!aggCall.getOperator().isAggregator()) {
       throw validator.newValidationError(aggCall, RESOURCE.overNonAggregate());
     }
-    validator.validateWindow(call.operand(1), scope, aggCall);
-    validator.validateAggregateParams(aggCall, null, scope);
+    final SqlNode window = call.operand(1);
+    validator.validateWindow(window, scope, aggCall);
   }
 
   public RelDataType deriveType(

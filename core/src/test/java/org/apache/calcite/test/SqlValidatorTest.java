@@ -6210,10 +6210,20 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkFails(
         "select sum(^max(min(empno))^) from emp",
         ERR_NESTED_AGG);
+  }
 
-    // in OVER clause
-    checkFails(
-        "select ^sum(max(empno)) OVER^ (order by deptno ROWS 2 PRECEDING) from emp",
+  @Test public void testNestedAggOver() {
+    // windowed agg applied to agg is OK
+    check("select sum(max(empno))\n"
+        + "  OVER (order by deptno ROWS 2 PRECEDING)\n"
+        + "from emp");
+    check("select sum(max(empno)) OVER w\n"
+        + "from emp\n"
+        + "window w as (order by deptno ROWS 2 PRECEDING)");
+
+    // in OVER clause with more than one level of nesting
+    checkFails("select ^avg(sum(min(sal))) OVER (partition by deptno)^\n"
+        + "from emp group by deptno",
         ERR_NESTED_AGG);
 
     // OVER in clause

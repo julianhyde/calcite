@@ -2447,11 +2447,15 @@ public class SqlToRelConverter {
       // agg converter knows which aggregations are required
 
       selectList.accept(aggConverter);
+      // Assert we don't have dangling items left in the stack
+      assert !aggConverter.inOver;
       for (SqlNode expr : orderExprList) {
         expr.accept(aggConverter);
+        assert !aggConverter.inOver;
       }
       if (having != null) {
         having.accept(aggConverter);
+        assert !aggConverter.inOver;
       }
 
       // compute inputs to the aggregator
@@ -4313,6 +4317,9 @@ public class SqlToRelConverter {
     private final Map<AggregateCall, RexNode> aggCallMapping =
         Maps.newHashMap();
 
+    /** Are we directly inside a windowed aggregate? */
+    private boolean inOver = false;
+
     /**
      * Creates an AggConverter.
      *
@@ -4423,13 +4430,28 @@ public class SqlToRelConverter {
         // for now do not detect aggregates in subqueries.
         return null;
       }
-      // ignore window aggregates and ranking functions (associated with OVER operator)
+      final boolean prevInOver = inOver;
+      // Ignore window aggregates and ranking functions (associated with OVER
+      // operator). However, do not ignore nested window aggregates.
       if (call.getOperator().getKind() == SqlKind.OVER) {
-        return null;
+        if (call.operand(0).getKind() == SqlKind.RANK) {
+          return null;
+        }
+        // Track aggregate nesting levels only within an OVER operator.
+        inOver = true;
       }
+
+      // Do not translate the top level window aggregate. Only do so for
+      // nested aggregates, if present
       if (call.getOperator().isAggregator()) {
-        translateAgg(call, null, call);
-        return null;
+        if (inOver) {
+          // Add the parent aggregate level before visiting its children
+          inOver = false;
+        } else {
+          // We're beyond the one ignored level
+          translateAgg(call, null, call);
+          return null;
+        }
       }
       for (SqlNode operand : call.getOperandList()) {
         // Operands are occasionally null, e.g. switched CASE arg 0.
@@ -4437,6 +4459,8 @@ public class SqlToRelConverter {
           operand.accept(this);
         }
       }
+      // Remove the parent aggregate level after visiting its children
+      inOver = prevInOver;
       return null;
     }
 

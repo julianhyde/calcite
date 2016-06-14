@@ -40,7 +40,14 @@ class AggFinder extends SqlBasicVisitor<Void> {
   //~ Instance fields --------------------------------------------------------
 
   private final SqlOperatorTable opTab;
+
+  /** Whether to find windowed aggregates. */
   private final boolean over;
+
+  /** Whether to find regular (non-windowed) aggregates. */
+  private boolean aggregate;
+
+  private final AggFinder delegate;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -48,12 +55,18 @@ class AggFinder extends SqlBasicVisitor<Void> {
    * Creates an AggFinder.
    *
    * @param opTab Operator table
-   * @param over Whether to find windowed function calls {@code Agg(x) OVER
+   * @param over Whether to find windowed function calls {@code agg(x) OVER
    *             windowSpec}
+   * @param aggregate Whether to find non-windowed aggregate calls
+   * @param delegate Finder to which to delegate when processing the arguments
+   *                  to a non-windowed aggregate
    */
-  AggFinder(SqlOperatorTable opTab, boolean over) {
+  AggFinder(SqlOperatorTable opTab, boolean over, boolean aggregate,
+      AggFinder delegate) {
     this.opTab = opTab;
     this.over = over;
+    this.aggregate = aggregate;
+    this.delegate = delegate;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -88,8 +101,14 @@ class AggFinder extends SqlBasicVisitor<Void> {
 
   public Void visit(SqlCall call) {
     final SqlOperator operator = call.getOperator();
+    // If nested aggregates disallowed or found an aggregate at invalid level
     if (operator.isAggregator()) {
-      throw new Util.FoundOne(call);
+      if (delegate != null) {
+        return call.getOperator().acceptCall(delegate, call);
+      }
+      if (aggregate) {
+        throw new Util.FoundOne(call);
+      }
     }
     // User-defined function may not be resolved yet.
     if (operator instanceof SqlFunction) {
@@ -100,7 +119,10 @@ class AggFinder extends SqlBasicVisitor<Void> {
             sqlFunction.getFunctionType(), FUNCTION, list);
         for (SqlOperator sqlOperator : list) {
           if (sqlOperator.isAggregator()) {
-            throw new Util.FoundOne(call);
+            // If nested aggregates disallowed or found aggregate at invalid level
+            if (aggregate) {
+              throw new Util.FoundOne(call);
+            }
           }
         }
       }

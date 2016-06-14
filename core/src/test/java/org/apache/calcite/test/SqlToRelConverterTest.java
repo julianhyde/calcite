@@ -961,6 +961,18 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         "${plan}");
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-750">[CALCITE-750]
+   * Allow windowed aggregate on top of regular aggregate</a>. */
+  @Test public void testNestedAggregates() {
+    final String sql = "SELECT\n"
+        + "  avg(sum(sal) + 2 * min(empno) + 3 * avg(empno))\n"
+        + "  over (partition by deptno)\n"
+        + "from emp\n"
+        + "group by deptno";
+    sql(sql).ok();
+  }
+
   /**
    * Test one of the custom conversions which is recognized by the class of the
    * operator (in this case,
