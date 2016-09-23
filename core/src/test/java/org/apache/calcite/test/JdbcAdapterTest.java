@@ -442,6 +442,36 @@ class JdbcAdapterTest {
   }
 
   /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-1382">[CALCITE-1382]
+   * ClassCastException in JDBC adapter</a>. */
+  @Test public void testJoinPlan3() {
+    final String sql = "SELECT count(*) FROM (\n"
+        + "  SELECT count(emp.empno) `Count Emp`, dept.dname `Department Name`\n"
+        + "  FROM emp emp\n"
+        + "  JOIN dept dept ON emp.deptno = dept.deptno\n"
+        + "  JOIN salgrade salgrade ON emp.comm = salgrade.hisal\n"
+        + "  WHERE dept.dname LIKE '%A%' GROUP BY emp.deptno, dept.dname)";
+    final String expected = "SELECT COUNT(*) FROM (\n"
+        + "SELECT count(\"emp\".empno) AS \"Count Emp\", \"dept\".dname AS \"Department Name\"\n"
+        + "FROM emp AS \"emp\"\n"
+        + "INNER JOIN (\n"
+        + "SELECT deptno, dname\n"
+        + "FROM dept\n"
+        + "WHERE dname LIKE '%A%'\n"
+        + ") AS \"dept\" ON \"emp\".deptno = \"dept\".deptno\n"
+        + "INNER JOIN (\n"
+        + "SELECT hisal \n"
+        + "FROM salgrade \n"
+        + ") AS \"salgrade\" ON \"emp\".comm = \"salgrade\".hisal "
+        + "GROUP BY \"emp\".deptno, \"dept\".dname"
+        + ") AS \"t\"";
+    CalciteAssert.model(JdbcTest.SCOTT_MODEL)
+        .with(Lex.MYSQL)
+        .query(sql)
+        .returns(expected);
+  }
+
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-657">[CALCITE-657]
    * NullPointerException when executing JdbcAggregate implement method</a>. */
   @Test void testJdbcAggregate() throws Exception {
