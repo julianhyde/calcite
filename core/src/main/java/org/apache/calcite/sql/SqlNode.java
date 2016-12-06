@@ -122,7 +122,7 @@ public abstract class SqlNode implements Cloneable {
   }
 
   public String toString() {
-    return toSqlString(null).getSql();
+    return toSqlString((SqlDialect) null).getSql();
   }
 
   /**
