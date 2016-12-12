@@ -122,15 +122,14 @@ public abstract class Prepare {
    * Optimizes a query plan.
    *
    * @param root Root of relational expression tree
+   * @param planner Planner
    * @param materializations Tables known to be populated with a given query
    * @param lattices Lattices
    * @return an equivalent optimized relational expression
    */
-  protected RelRoot optimize(RelRoot root,
+  protected RelRoot optimize(RelRoot root, RelOptPlanner planner,
       final List<Materialization> materializations,
       final List<CalciteSchema.LatticeEntry> lattices) {
-    final RelOptPlanner planner = root.rel.getCluster().getPlanner();
-
     final DataContext dataContext = context.getDataContext();
     planner.setExecutor(new RexExecutorImpl(dataContext));
 
@@ -277,18 +276,20 @@ public abstract class Prepare {
 
     Hook.TRIMMED.run(root.rel);
 
+    RelOptPlanner planner = null; // TODO:
+
     // Display physical plan after decorrelation.
     if (sqlExplain != null) {
       switch (sqlExplain.getDepth()) {
       case PHYSICAL:
       default:
-        root = optimize(root, getMaterializations(), getLattices());
+        root = optimize(root, planner, getMaterializations(), getLattices());
         return createPreparedExplanation(null, parameterRowType, root,
             sqlExplain.getFormat(), sqlExplain.getDetailLevel());
       }
     }
 
-    root = optimize(root, getMaterializations(), getLattices());
+    root = optimize(root, planner, getMaterializations(), getLattices());
 
     if (timingTracer != null) {
       timingTracer.traceTime("end optimization");

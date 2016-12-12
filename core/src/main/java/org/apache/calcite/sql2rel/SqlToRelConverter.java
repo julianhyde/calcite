@@ -18,13 +18,14 @@ package org.apache.calcite.sql2rel;
 
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSamplingParameters;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollation;
@@ -264,7 +265,7 @@ public class SqlToRelConverter {
    * @param viewExpander    Preparing statement
    * @param validator       Validator
    * @param catalogReader   Schema
-   * @param planner         Planner
+   * @param xyz         Planner
    * @param rexBuilder      Rex builder
    * @param convertletTable Expression converter
    */
@@ -273,11 +274,11 @@ public class SqlToRelConverter {
       RelOptTable.ViewExpander viewExpander,
       SqlValidator validator,
       Prepare.CatalogReader catalogReader,
-      RelOptPlanner planner,
+      Xyz xyz,
       RexBuilder rexBuilder,
       SqlRexConvertletTable convertletTable) {
     this(viewExpander, validator, catalogReader,
-        RelOptCluster.create(planner, rexBuilder), convertletTable,
+        RelOptCluster.create(xyz, rexBuilder), convertletTable,
         Config.DEFAULT);
   }
 
@@ -301,11 +302,8 @@ public class SqlToRelConverter {
       SqlRexConvertletTable convertletTable,
       Config config) {
     this.viewExpander = viewExpander;
-    this.opTab =
-        (validator
-            == null) ? SqlStdOperatorTable.instance()
-            : validator.getOperatorTable();
-    this.validator = validator;
+    this.opTab = validator.getOperatorTable();
+    this.validator = Preconditions.checkNotNull(validator);
     this.catalogReader = catalogReader;
     this.subQueryConverter = new NoOpSubQueryConverter();
     this.rexBuilder = cluster.getRexBuilder();
@@ -2903,7 +2901,7 @@ public class SqlToRelConverter {
   }
 
   protected RelNode decorrelateQuery(RelNode rootRel) {
-    return RelDecorrelator.decorrelateQuery(rootRel);
+    return RelDecorrelator.decorrelateQuery(rootRel, Contexts.empty());
   }
 
   /**

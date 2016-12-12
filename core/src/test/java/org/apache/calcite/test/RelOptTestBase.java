@@ -16,6 +16,9 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
@@ -144,13 +147,15 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
     planner.registerMetadataProviders(list);
     RelMetadataProvider plannerChain =
         ChainedRelMetadataProvider.of(list);
-    relInitial.getCluster().setMetadataProvider(plannerChain);
+    final RelOptCluster cluster = relInitial.getCluster();
+    final Context context = Contexts.empty();
+    cluster.setMetadataProvider(plannerChain);
 
     RelNode relBefore;
     if (preProgram == null) {
       relBefore = relInitial;
     } else {
-      HepPlanner prePlanner = new HepPlanner(preProgram);
+      HepPlanner prePlanner = new HepPlanner(cluster, preProgram);
       prePlanner.setRoot(relInitial);
       relBefore = prePlanner.findBestExp();
     }
@@ -167,7 +172,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       final String planMid = NL + RelOptUtil.toString(r);
       diffRepos.assertEquals("planMid", "${planMid}", planMid);
       SqlToRelTestBase.assertValid(r);
-      r = RelDecorrelator.decorrelateQuery(r);
+      r = RelDecorrelator.decorrelateQuery(r, context);
     }
     final String planAfter = NL + RelOptUtil.toString(r);
     if (unchanged) {

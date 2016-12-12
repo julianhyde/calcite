@@ -21,6 +21,7 @@ import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.plan.AbstractRelOptPlanner;
 import org.apache.calcite.plan.CommonRelSubExprRule;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptCostImpl;
@@ -100,36 +101,40 @@ public class HepPlanner extends AbstractRelOptPlanner {
   /**
    * Creates a new HepPlanner that allows DAG.
    *
-   * @param program program controlling rule application
+   * @param cluster Cluster
+   * @param program Program controlling rule application
    */
-  public HepPlanner(HepProgram program) {
-    this(program, null, false, null, RelOptCostImpl.FACTORY);
+  public HepPlanner(RelOptCluster cluster, HepProgram program) {
+    this(cluster, program, null, false, null, RelOptCostImpl.FACTORY);
   }
 
   /**
    * Creates a new HepPlanner that allows DAG.
    *
-   * @param program program controlling rule application
-   * @param context to carry while planning
+   * @param cluster Cluster
+   * @param program Program controlling rule application
+   * @param context Context to carry while planning
    */
-  public HepPlanner(HepProgram program, Context context) {
-    this(program, context, false, null, RelOptCostImpl.FACTORY);
+  public HepPlanner(RelOptCluster cluster, HepProgram program,
+      Context context) {
+    this(cluster, program, context, false, null, RelOptCostImpl.FACTORY);
   }
 
   /**
    * Creates a new HepPlanner with the option to keep the graph a
    * tree(noDAG=true) or allow DAG(noDAG=false).
    *
-   * @param program    program controlling rule application
+   * @param cluster    Cluster
+   * @param program    Program controlling rule application
    * @param onCopyHook Function to call when a node is copied
    */
-  public HepPlanner(
+  public HepPlanner(RelOptCluster cluster,
       HepProgram program,
       Context context,
       boolean noDAG,
       Function2<RelNode, RelNode, Void> onCopyHook,
       RelOptCostFactory costFactory) {
-    super(costFactory, context);
+    super(cluster, costFactory, context);
     this.mainProgram = program;
     this.onCopyHook =
         Util.first(onCopyHook, Functions.<RelNode, RelNode, Void>ignore2());

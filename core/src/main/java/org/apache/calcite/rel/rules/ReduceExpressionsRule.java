@@ -462,7 +462,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
     boolean reduced = reduceExpressionsInternal(rel, expList, predicates);
 
     // Simplify predicates in place
-    RexExecutor executor = rel.getCluster().getPlanner().getExecutor();
+    RexExecutor executor = rel.getCluster().xyz.getExecutor();
     if (executor == null) {
       executor = RexUtil.EXECUTOR;
     }
@@ -537,7 +537,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
     }
 
     // Compute the values they reduce to.
-    RexExecutor executor = rel.getCluster().getPlanner().getExecutor();
+    RexExecutor executor = rel.getCluster().xyz.getExecutor();
     if (executor == null) {
       // Cannot reduce expressions: caller has not set an executor in their
       // environment. Caller should execute something like the following before

@@ -52,16 +52,22 @@ import java.util.Set;
 public abstract class RelOptMaterializations {
 
   /**
-   * Returns a list of RelNode transformed from all possible combination of
-   * materialized view uses. Big queries will likely have more than one
+   * Returns a list of {@link RelNode}s transformed with all possible
+   * combinations of materialized view uses.
+   *
+   * <p>Big queries will likely have more than one
    * transformed RelNode, e.g., (t1 group by c1) join (t2 group by c2).
+   *
    * @param rel               the original RelNode
    * @param materializations  the materialized view list
+   * @param context Context
+   *
    * @return the list of transformed RelNode together with their corresponding
    *         materialized views used in the transformation.
    */
   public static List<Pair<RelNode, List<RelOptMaterialization>>> useMaterializedViews(
-      final RelNode rel, List<RelOptMaterialization> materializations) {
+      final RelNode rel, List<RelOptMaterialization> materializations,
+      Context context) {
     final List<RelOptMaterialization> applicableMaterializations =
         getApplicableMaterializations(rel, materializations);
     final List<Pair<RelNode, List<RelOptMaterialization>>> applied =
@@ -70,10 +76,10 @@ public abstract class RelOptMaterializations {
         Pair.<RelNode, List<RelOptMaterialization>>of(
             rel, ImmutableList.<RelOptMaterialization>of()));
     for (RelOptMaterialization m : applicableMaterializations) {
-      int count = applied.size();
+      final int count = applied.size();
       for (int i = 0; i < count; i++) {
         Pair<RelNode, List<RelOptMaterialization>> current = applied.get(i);
-        List<RelNode> sub = substitute(current.left, m);
+        List<RelNode> sub = substitute(current.left, m, context);
         if (!sub.isEmpty()) {
           ImmutableList.Builder<RelOptMaterialization> builder =
               ImmutableList.builder();
@@ -181,8 +187,8 @@ public abstract class RelOptMaterializations {
         }
       };
 
-  private static List<RelNode> substitute(
-      RelNode root, RelOptMaterialization materialization) {
+  private static List<RelNode> substitute(RelNode root,
+      RelOptMaterialization materialization, Context context) {
     // First, if the materialization is in terms of a star table, rewrite
     // the query in terms of the star table.
     if (materialization.starTable != null) {
@@ -202,7 +208,8 @@ public abstract class RelOptMaterializations {
             .addRuleInstance(ProjectRemoveRule.INSTANCE)
             .build();
 
-    final HepPlanner hepPlanner = new HepPlanner(program);
+    final HepPlanner hepPlanner =
+        new HepPlanner(root.getCluster(), program, context);
     hepPlanner.setRoot(target);
     target = hepPlanner.findBestExp();
 
@@ -210,7 +217,7 @@ public abstract class RelOptMaterializations {
     root = hepPlanner.findBestExp();
 
     return new MaterializedViewSubstitutionVisitor(target, root)
-            .go(materialization.tableRel);
+        .go(materialization.tableRel);
   }
 
   /**

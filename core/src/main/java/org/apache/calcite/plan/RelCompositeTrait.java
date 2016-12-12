@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.plan.hep.HepProgramBuilder;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
@@ -95,7 +97,7 @@ class RelCompositeTrait<T extends RelMultipleTrait> implements RelTrait {
     return false;
   }
 
-  public void register(RelOptPlanner planner) {
+  public void register(HepProgramBuilder programBuilder) {
   }
 
   /** Returns an immutable list of the traits in this composite trait. */

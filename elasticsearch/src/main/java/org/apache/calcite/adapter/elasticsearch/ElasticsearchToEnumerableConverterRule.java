@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.elasticsearch;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -33,7 +34,7 @@ public class ElasticsearchToEnumerableConverterRule extends ConverterRule {
         "ElasticsearchToEnumerableConverterRule");
   }
 
-  @Override public RelNode convert(RelNode relNode) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode relNode) {
     RelTraitSet newTraitSet = relNode.getTraitSet().replace(getOutConvention());
     return new ElasticsearchToEnumerableConverter(relNode.getCluster(), newTraitSet, relNode);
   }

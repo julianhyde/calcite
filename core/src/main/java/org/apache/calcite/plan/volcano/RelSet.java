@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.plan.volcano;
 
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTrait;
@@ -141,16 +140,16 @@ class RelSet {
    * particular calling convention. An expression may be in the set several
    * times with different calling conventions (and hence different costs).
    */
-  public RelSubset add(RelNode rel) {
+  public RelSubset add(VolcanoPlanner planner, RelNode rel) {
     assert equivalentSet == null : "adding to a dead set";
     final RelTraitSet traitSet = rel.getTraitSet().simplify();
-    final RelSubset subset = getOrCreateSubset(rel.getCluster(), traitSet);
+    final RelSubset subset = getOrCreateSubset(planner, traitSet);
     subset.add(rel);
     return subset;
   }
 
-  private void addAbstractConverters(
-      VolcanoPlanner planner, RelOptCluster cluster, RelSubset subset, boolean subsetToOthers) {
+  private void addAbstractConverters(VolcanoPlanner planner, RelSubset subset,
+      boolean subsetToOthers) {
     // Converters from newly introduced subset to all the remaining one (vice versa), only if
     // we can convert.  No point adding converters if it is not possible.
     for (RelSubset other : subsets) {
@@ -188,14 +187,14 @@ class RelSet {
         boolean needConvert = false;
         if (subsetToOthers) {
           // We can convert from subset to other.  So, add converter with subset as child and
-          // traitset as the other's traitset.
+          // trait set as the other's trait set.
           canConvert = traitDef.canConvert(
-              cluster.getPlanner(), curRelTrait, curOtherTrait, subset);
+              planner, curRelTrait, curOtherTrait, subset);
           needConvert = !curRelTrait.satisfies(curOtherTrait);
         } else {
           // We can convert from others to subset.
           canConvert = traitDef.canConvert(
-              cluster.getPlanner(), curOtherTrait, curRelTrait, other);
+              planner, curOtherTrait, curRelTrait, other);
           needConvert = !curOtherTrait.satisfies(curRelTrait);
         }
 
@@ -212,11 +211,13 @@ class RelSet {
       if (addAbstractConverter && numTraitNeedConvert > 0) {
         if (subsetToOthers) {
           final AbstractConverter converter =
-              new AbstractConverter(cluster, subset, null, other.getTraitSet());
+              new AbstractConverter(planner.cluster, subset, null,
+                  other.getTraitSet());
           planner.register(converter, other);
         } else {
           final AbstractConverter converter =
-              new AbstractConverter(cluster, other, null, subset.getTraitSet());
+              new AbstractConverter(planner.cluster, other, null,
+                  subset.getTraitSet());
           planner.register(converter, subset);
         }
       }
@@ -224,22 +225,19 @@ class RelSet {
   }
 
   RelSubset getOrCreateSubset(
-      RelOptCluster cluster,
+      VolcanoPlanner planner,
       RelTraitSet traits) {
     RelSubset subset = getSubset(traits);
     if (subset == null) {
-      subset = new RelSubset(cluster, this, traits);
+      subset = new RelSubset(planner, this, traits);
 
-      final VolcanoPlanner planner =
-          (VolcanoPlanner) cluster.getPlanner();
-
-      addAbstractConverters(planner, cluster, subset, true);
+      addAbstractConverters(planner, subset, true);
 
       // Need to first add to subset before adding the abstract converters (for others->subset)
       // since otherwise during register() the planner will try to add this subset again.
       subsets.add(subset);
 
-      addAbstractConverters(planner, cluster, subset, false);
+      addAbstractConverters(planner, subset, false);
 
       if (planner.listener != null) {
         postEquivalenceEvent(planner, subset);
@@ -263,17 +261,16 @@ class RelSet {
    * {@link org.apache.calcite.plan.volcano.RelSubset}. (Called only from
    * {@link org.apache.calcite.plan.volcano.RelSubset#add}.
    *
+   * @param planner Owning planner
    * @param rel Relational expression
    */
-  void addInternal(RelNode rel) {
+  void addInternal(VolcanoPlanner planner, RelNode rel) {
     if (!rels.contains(rel)) {
       rels.add(rel);
       for (RelTrait trait : rel.getTraitSet()) {
         assert trait == trait.getTraitDef().canonize(trait);
       }
 
-      VolcanoPlanner planner =
-          (VolcanoPlanner) rel.getCluster().getPlanner();
       if (planner.listener != null) {
         postEquivalenceEvent(planner, rel);
       }
@@ -320,8 +317,7 @@ class RelSet {
     for (RelSubset otherSubset : otherSet.subsets) {
       planner.ruleQueue.subsetImportances.remove(otherSubset);
       RelSubset subset =
-          getOrCreateSubset(
-              otherSubset.getCluster(),
+          getOrCreateSubset(planner,
               otherSubset.getTraitSet());
       if (otherSubset.bestCost.isLt(subset.bestCost)) {
         subset.bestCost = otherSubset.bestCost;

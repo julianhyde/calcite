@@ -159,7 +159,7 @@ public class RelMdPercentageOriginalRows
 
   // Ditto for getNonCumulativeCost
   public RelOptCost getNonCumulativeCost(RelNode rel, RelMetadataQuery mq) {
-    return rel.computeSelfCost(rel.getCluster().getPlanner(), mq);
+    return rel.computeSelfCost(null, mq);
   }
 
   private static Double quotientForPercentage(

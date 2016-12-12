@@ -65,9 +65,10 @@ public class FrameworksTest {
   @Test public void testOptimize() {
     RelNode x =
         Frameworks.withPlanner(new Frameworks.PlannerAction<RelNode>() {
-          public RelNode apply(RelOptCluster cluster,
+          public RelNode apply(RelOptPlanner planner,
               RelOptSchema relOptSchema,
               SchemaPlus rootSchema) {
+            final RelOptCluster cluster = planner.getCluster();
             final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
             final Table table = new AbstractTable() {
               public RelDataType getRowType(RelDataTypeFactory typeFactory) {
@@ -103,7 +104,6 @@ public class FrameworksTest {
 
             // Specify that the result should be in Enumerable convention.
             final RelNode rootRel = filter;
-            final RelOptPlanner planner = cluster.getPlanner();
             RelTraitSet desiredTraits =
                 cluster.traitSet().replace(EnumerableConvention.INSTANCE);
             final RelNode rootRel2 = planner.changeTraits(rootRel,
@@ -150,18 +150,18 @@ public class FrameworksTest {
   private void checkTypeSystem(final int expected, FrameworkConfig config) {
     Frameworks.withPrepare(
         new Frameworks.PrepareAction<Void>(config) {
-          @Override public Void apply(RelOptCluster cluster,
+          @Override public Void apply(RelOptPlanner planner,
               RelOptSchema relOptSchema, SchemaPlus rootSchema,
               CalciteServerStatement statement) {
+            final RelOptCluster cluster = planner.getCluster();
+            final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
             final RelDataType type =
-                cluster.getTypeFactory()
-                    .createSqlType(SqlTypeName.DECIMAL, 30, 2);
+                typeFactory.createSqlType(SqlTypeName.DECIMAL, 30, 2);
+            final RexBuilder rexBuilder = cluster.getRexBuilder();
             final RexLiteral literal =
-                cluster.getRexBuilder().makeExactLiteral(BigDecimal.ONE, type);
+                rexBuilder.makeExactLiteral(BigDecimal.ONE, type);
             final RexNode call =
-                cluster.getRexBuilder().makeCall(SqlStdOperatorTable.PLUS,
-                    literal,
-                    literal);
+                rexBuilder.makeCall(SqlStdOperatorTable.PLUS, literal, literal);
             assertEquals(expected, call.getType().getPrecision());
             return null;
           }

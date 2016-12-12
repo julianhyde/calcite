@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -31,17 +32,17 @@ public class EnumerableCorrelateRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableCorrelateRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalCorrelate c = (LogicalCorrelate) rel;
     final RelTraitSet traitSet =
         c.getTraitSet().replace(EnumerableConvention.INSTANCE);
     return new EnumerableCorrelate(
         rel.getCluster(),
         traitSet,
-        convert(c.getLeft(), c.getLeft().getTraitSet()
-            .replace(EnumerableConvention.INSTANCE)),
-        convert(c.getRight(), c.getRight().getTraitSet()
-            .replace(EnumerableConvention.INSTANCE)),
+        call.convert(c.getLeft(),
+            c.getLeft().getTraitSet().replace(EnumerableConvention.INSTANCE)),
+        call.convert(c.getRight(),
+            c.getRight().getTraitSet().replace(EnumerableConvention.INSTANCE)),
         c.getCorrelationId(),
         c.getRequiredColumns(),
         c.getJoinType());

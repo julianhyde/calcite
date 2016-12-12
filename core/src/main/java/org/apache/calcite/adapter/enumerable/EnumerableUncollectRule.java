@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -32,14 +33,14 @@ class EnumerableUncollectRule extends ConverterRule {
         "EnumerableUncollectRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final Uncollect uncollect = (Uncollect) rel;
     final RelTraitSet traitSet =
         uncollect.getTraitSet().replace(EnumerableConvention.INSTANCE);
     final RelNode input = uncollect.getInput();
-    final RelNode newInput = convert(input,
-        input.getTraitSet().replace(EnumerableConvention.INSTANCE));
-    return EnumerableUncollect.create(traitSet, newInput,
+    return EnumerableUncollect.create(traitSet,
+        call.convert(input,
+            input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
         uncollect.withOrdinality);
   }
 }

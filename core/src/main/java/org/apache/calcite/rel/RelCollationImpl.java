@@ -17,9 +17,9 @@
 package org.apache.calcite.rel;
 
 import org.apache.calcite.plan.RelMultipleTrait;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.util.Util;
@@ -109,7 +109,7 @@ public class RelCollationImpl implements RelCollation {
     return iterator.hasNext() ? -1 : 0;
   }
 
-  public void register(RelOptPlanner planner) {}
+  public void register(HepProgramBuilder programBuilder) {}
 
   public boolean satisfies(RelTrait trait) {
     return this == trait

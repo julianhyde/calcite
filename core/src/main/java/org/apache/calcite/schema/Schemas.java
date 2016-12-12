@@ -32,9 +32,12 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.materialize.Lattice;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.BuiltInMethod;
@@ -384,6 +387,13 @@ public final class Schemas {
       final CalciteSchema schema,
       final List<String> schemaPath) {
     return new CalcitePrepare.Context() {
+      final RelOptCluster cluster =
+          RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory));
+
+      public RelOptCluster getCluster() {
+        return cluster;
+      }
+
       public JavaTypeFactory getTypeFactory() {
         return typeFactory;
       }

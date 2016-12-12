@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -742,10 +743,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
     RelNode rel =
         convertSql("select deptno, count(*) from emp where deptno > 10 "
             + "group by deptno having count(*) = 0");
-    rel.getCluster().setMetadataProvider(
-        new CachingRelMetadataProvider(
-            rel.getCluster().getMetadataProvider(),
-            rel.getCluster().getPlanner()));
+    final RelOptCluster cluster = rel.getCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
+    cluster.setMetadataProvider(
+        new CachingRelMetadataProvider(cluster.getMetadataProvider(), planner));
     final RelMetadataQuery mq = RelMetadataQuery.instance();
     Double result = mq.getSelectivity(rel, null);
     assertThat(result,
@@ -961,7 +962,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     // Now add a cache. Only the first request for each piece of metadata
     // generates a new call to the provider.
-    final RelOptPlanner planner = rel.getCluster().getPlanner();
+    final RelOptPlanner planner = new VolcanoPlanner(rel.getCluster());
     rel.getCluster().setMetadataProvider(
         new CachingRelMetadataProvider(
             rel.getCluster().getMetadataProvider(), planner));
@@ -996,10 +997,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelOptTable deptTable = join.getInput(1).getTable();
     Frameworks.withPlanner(
         new Frameworks.PlannerAction<Void>() {
-          public Void apply(RelOptCluster cluster,
+          public Void apply(RelOptPlanner planner,
               RelOptSchema relOptSchema,
               SchemaPlus rootSchema) {
-            checkCollation(cluster, empTable, deptTable);
+            checkCollation(planner.getCluster(), empTable, deptTable);
             return null;
           }
         });
@@ -1139,10 +1140,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelOptTable deptTable = join.getInput(1).getTable();
     Frameworks.withPlanner(
         new Frameworks.PlannerAction<Void>() {
-          public Void apply(RelOptCluster cluster,
+          public Void apply(RelOptPlanner planner,
               RelOptSchema relOptSchema,
               SchemaPlus rootSchema) {
-            checkAverageRowSize(cluster, empTable, deptTable);
+            checkAverageRowSize(planner.getCluster(), empTable, deptTable);
             return null;
           }
         });
@@ -1283,10 +1284,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelOptTable deptTable = join.getInput(1).getTable();
     Frameworks.withPlanner(
         new Frameworks.PlannerAction<Void>() {
-          public Void apply(RelOptCluster cluster,
+          public Void apply(RelOptPlanner planner,
               RelOptSchema relOptSchema,
               SchemaPlus rootSchema) {
-            checkPredicates(cluster, empTable, deptTable);
+            checkPredicates(planner.getCluster(), empTable, deptTable);
             return null;
           }
         });

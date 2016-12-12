@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -33,7 +34,7 @@ public class EnumerableTableModifyRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableTableModificationRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalTableModify modify =
         (LogicalTableModify) rel;
     final ModifiableTable modifiableTable =
@@ -47,7 +48,7 @@ public class EnumerableTableModifyRule extends ConverterRule {
         modify.getCluster(), traitSet,
         modify.getTable(),
         modify.getCatalogReader(),
-        convert(modify.getInput(), traitSet),
+        call.convert(modify.getInput(), traitSet),
         modify.getOperation(),
         modify.getUpdateColumnList(),
         modify.getSourceExpressionList(),

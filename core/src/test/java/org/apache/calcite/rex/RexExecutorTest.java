@@ -20,7 +20,7 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -69,9 +69,9 @@ public class RexExecutorTest {
   protected void check(final Action action) throws Exception {
     Frameworks.withPrepare(
         new Frameworks.PrepareAction<Void>() {
-          public Void apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+          public Void apply(RelOptPlanner planner, RelOptSchema relOptSchema,
               SchemaPlus rootSchema, CalciteServerStatement statement) {
-            final RexBuilder rexBuilder = cluster.getRexBuilder();
+            final RexBuilder rexBuilder = planner.getCluster().getRexBuilder();
             DataContext dataContext =
                 Schemas.createDataContext(statement.getConnection());
             final RexExecutorImpl executor = new RexExecutorImpl(dataContext);

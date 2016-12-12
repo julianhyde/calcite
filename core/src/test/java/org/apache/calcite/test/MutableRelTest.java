@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -186,13 +188,15 @@ public class MutableRelTest {
     final SqlToRelTestBase test = new SqlToRelTestBase() {
     };
     RelNode origRel = test.createTester().convertSqlToRel(sql).rel;
+    final Context context = Contexts.empty();
     if (decorrelate) {
-      origRel = RelDecorrelator.decorrelateQuery(origRel);
+      origRel = RelDecorrelator.decorrelateQuery(origRel, context);
     }
     if (rules != null) {
       final HepProgram hepProgram =
           new HepProgramBuilder().addRuleCollection(rules).build();
-      final HepPlanner hepPlanner = new HepPlanner(hepProgram);
+      final HepPlanner hepPlanner =
+          new HepPlanner(origRel.getCluster(), hepProgram, context);
       hepPlanner.setRoot(origRel);
       origRel = hepPlanner.findBestExp();
     }

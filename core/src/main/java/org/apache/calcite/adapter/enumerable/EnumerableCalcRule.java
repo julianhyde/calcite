@@ -17,7 +17,9 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalCalc;
@@ -34,13 +36,13 @@ class EnumerableCalcRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableCalcRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalCalc calc = (LogicalCalc) rel;
     final RelNode input = calc.getInput();
-    return EnumerableCalc.create(
-        convert(input,
-            input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
-        calc.getProgram());
+    final RelTraitSet toTraits =
+        input.getTraitSet().replace(EnumerableConvention.INSTANCE);
+    final RelNode convertedInput = call.convert(input, toTraits);
+    return EnumerableCalc.create(convertedInput, calc.getProgram());
   }
 }
 

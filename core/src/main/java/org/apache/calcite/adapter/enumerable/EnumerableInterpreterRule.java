@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.interpreter.BindableConvention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
@@ -36,7 +37,7 @@ public class EnumerableInterpreterRule extends ConverterRule {
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     return EnumerableInterpreter.create(rel, 0.5d);
   }
 }

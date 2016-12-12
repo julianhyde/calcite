@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterImpl;
@@ -93,7 +94,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
           BindableConvention.INSTANCE, "EnumerableToBindableConverterRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       return new EnumerableBindable(rel.getCluster(), rel);
     }
   }

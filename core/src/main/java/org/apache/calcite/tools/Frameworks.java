@@ -19,8 +19,8 @@ package org.apache.calcite.tools;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
@@ -63,10 +63,10 @@ public class Frameworks {
   }
 
   /** Piece of code to be run in a context where a planner is available. The
-   * planner is accessible from the {@code cluster} parameter, as are several
+   * cluster is accessible from the {@code planner} parameter, as are several
    * other useful objects. */
   public interface PlannerAction<R> {
-    R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+    R apply(RelOptPlanner planner, RelOptSchema relOptSchema,
         SchemaPlus rootSchema);
   }
 
@@ -90,7 +90,7 @@ public class Frameworks {
       return config;
     }
 
-    public abstract R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+    public abstract R apply(RelOptPlanner planner, RelOptSchema relOptSchema,
         SchemaPlus rootSchema, CalciteServerStatement statement);
   }
 
@@ -105,12 +105,12 @@ public class Frameworks {
       final FrameworkConfig config) {
     return withPrepare(
         new Frameworks.PrepareAction<R>(config) {
-          public R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+          public R apply(RelOptPlanner planner, RelOptSchema relOptSchema,
               SchemaPlus rootSchema, CalciteServerStatement statement) {
             final CalciteSchema schema =
                 CalciteSchema.from(
                     Util.first(config.getDefaultSchema(), rootSchema));
-            return action.apply(cluster, relOptSchema, schema.root().plus());
+            return action.apply(planner, relOptSchema, schema.root().plus());
           }
         });
   }

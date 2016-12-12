@@ -18,10 +18,10 @@ package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 
 /**
  * Family of calling conventions that return results as an
@@ -54,7 +54,7 @@ public enum EnumerableConvention implements Convention {
     return this == trait;
   }
 
-  public void register(RelOptPlanner planner) {}
+  public void register(HepProgramBuilder programBuilder) {}
 
   public boolean canConvertConvention(Convention toConvention) {
     return false;

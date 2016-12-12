@@ -17,27 +17,58 @@
 package org.apache.calcite.plan;
 
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.util.CancelFlag;
-import org.apache.calcite.util.trace.CalciteTrace;
-
-import org.slf4j.Logger;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
- * A <code>RelOptPlanner</code> is a query optimizer: it transforms a relational
- * expression into a semantically equivalent relational expression, according to
- * a given set of rules and a cost model.
+ *
+ * Changes:<ul>
+ *
+ * <li>{@code RelTrait#register(RelOptPlanner)}
+ * becomes {@link RelTrait#register(org.apache.calcite.plan.hep.HepProgramBuilder)}
+ *
+ * <li>Remove {@code RelOptCluster#getPlanner()}
+ *
+ * <li>{@code RelOptRule#convert(RelNode, RelTrait)}
+ * becomes non-static and moves to
+ * {@link RelOptRuleCall#convert(RelNode, RelTraitSet)},
+ * {@link RelOptRuleCall#convert(RelNode, RelTrait)},
+ * {@link RelOptRuleCall#convertList(List, RelTrait)}.
+ *
+ * <li>New first argument for
+ * {@link org.apache.calcite.rel.convert.ConverterRule#convert(RelOptRuleCall, RelNode)}
+ *
+ * <li>Changed first arg of {@link RelOptCluster#create(Xyz, RexBuilder)}
+ * from {@link RelOptPlanner} to {@link Xyz}
+ *
+ * <li>Changed first arg of
+ * {@link org.apache.calcite.tools.Frameworks.PlannerAction#apply(RelOptPlanner, RelOptSchema, SchemaPlus)}
+ * from {@link RelOptCluster} to {@link RelOptPlanner}
+ *
+ * <li>Changed first arg of
+ * {@link org.apache.calcite.tools.Frameworks.PrepareAction#apply(RelOptPlanner, RelOptSchema, SchemaPlus, CalciteServerStatement)}
+ * from {@link RelOptCluster} to {@link RelOptPlanner}
+ *
+ * <li>Removed
+ * {@link org.apache.calcite.prepare.CalcitePrepareImpl}.createCluster(RexBuilder);
+ * the cluster is now created as part of the
+ * {@link org.apache.calcite.jdbc.CalcitePrepare.Context}
+ * (TODO: remove from Context and move to a next-stage context)
+ *
+ * <li>Constructor of {@link org.apache.calcite.rel.core.TableScan} and
+ * {@link org.apache.calcite.rel.core.TableModify}
+ * used to call {@link RelOptPlanner#registerSchema(RelOptSchema)},
+ * no longer</li>
+ *
+ * <li>{@link RelNode#computeSelfCost(RelOptPlanner, RelMetadataQuery)}
+ * first argument is not always null; get cost factory from the this.cluster</li>
+ * </ul>
+ *
  */
-public interface RelOptPlanner {
+public class Xyz {
   //~ Static fields/initializers ---------------------------------------------
 
-  Logger LOGGER = CalciteTrace.getPlannerTracer();
+//  Logger LOGGER = CalciteTrace.getPlannerTracer();
 
   //~ Methods ----------------------------------------------------------------
 
@@ -46,14 +77,14 @@ public interface RelOptPlanner {
    *
    * @param rel Relational expression
    */
-  void setRoot(RelNode rel);
+//  void setRoot(RelNode rel);
 
   /**
    * Returns the root node of this query.
    *
    * @return Root node
    */
-  RelNode getRoot();
+//  RelNode getRoot();
 
   /**
    * Registers a rel trait definition. If the {@link RelTraitDef} has already
@@ -62,28 +93,22 @@ public interface RelOptPlanner {
    * @return whether the RelTraitDef was added, as per
    * {@link java.util.Collection#add}
    */
-  boolean addRelTraitDef(RelTraitDef relTraitDef);
+//  boolean addRelTraitDef(RelTraitDef relTraitDef);
 
   /**
    * Clear all the registered RelTraitDef.
    */
-  void clearRelTraitDefs();
+//  void clearRelTraitDefs();
 
   /**
    * Returns the list of active trait types.
    */
-  List<RelTraitDef> getRelTraitDefs();
+  List<RelTraitDef> getRelTraitDefs() { throw new UnsupportedOperationException(); }
 
   /**
-   * Removes all internal state, including all registered rules,
-   * materialized views, and lattices.
+   * Removes all internal state, including all rules.
    */
-  void clear();
-
-  /**
-   * Returns the list of all registered rules.
-   */
-  List<RelOptRule> getRules();
+//  void clear();
 
   /**
    * Registers a rule.
@@ -98,7 +123,7 @@ public interface RelOptPlanner {
    * @return whether the rule was added, as per
    * {@link java.util.Collection#add}
    */
-  boolean addRule(RelOptRule rule);
+//  boolean addRule(RelOptRule rule);
 
   /**
    * Removes a rule.
@@ -106,7 +131,7 @@ public interface RelOptPlanner {
    * @return true if the rule was present, as per
    * {@link java.util.Collection#remove(Object)}
    */
-  boolean removeRule(RelOptRule rule);
+//  boolean removeRule(RelOptRule rule);
 
   /**
    * Provides the Context created when this planner was constructed.
@@ -114,7 +139,7 @@ public interface RelOptPlanner {
    * @return Never null; either an externally defined context, or a dummy
    * context that returns null for each requested interface
    */
-  Context getContext();
+//  Context getContext();
 
   /**
    * Sets the exclusion filter to use for this planner. Rules which match the
@@ -124,7 +149,7 @@ public interface RelOptPlanner {
    * @param exclusionFilter pattern to match for exclusion; null to disable
    *                        filtering
    */
-  void setRuleDescExclusionFilter(Pattern exclusionFilter);
+//  void setRuleDescExclusionFilter(Pattern exclusionFilter);
 
   /**
    * Does nothing.
@@ -135,8 +160,8 @@ public interface RelOptPlanner {
    *
    * @param cancelFlag flag which the planner should periodically check
    */
-  @Deprecated // to be removed before 2.0
-  void setCancelFlag(CancelFlag cancelFlag);
+//  @Deprecated // to be removed before 2.0
+//  void setCancelFlag(CancelFlag cancelFlag);
 
   /**
    * Changes a relational expression to an equivalent one with a different set
@@ -148,14 +173,14 @@ public interface RelOptPlanner {
    * @return Relational expression with desired traits. Never null, but may be
    *   abstract
    */
-  RelNode changeTraits(RelNode rel, RelTraitSet toTraits);
+//  RelNode changeTraits(RelNode rel, RelTraitSet toTraits);
 
   /**
    * Negotiates an appropriate planner to deal with distributed queries. The
    * idea is that the schemas decide among themselves which has the most
    * knowledge. Right now, the local planner retains control.
    */
-  RelOptPlanner chooseDelegate();
+//  Xyz chooseDelegate();
 
   /**
    * Defines a pair of relational expressions that are equivalent.
@@ -169,7 +194,7 @@ public interface RelOptPlanner {
    * sub-expression then it can be optimized by using {@code tableRel}
    * instead.</p>
    */
-  void addMaterialization(RelOptMaterialization materialization);
+//  void addMaterialization(RelOptMaterialization materialization);
 
   /**
    * Defines a lattice.
@@ -177,25 +202,25 @@ public interface RelOptPlanner {
    * <p>The lattice may have materializations; it is not necessary to call
    * {@link #addMaterialization} for these; they are registered implicitly.
    */
-  void addLattice(RelOptLattice lattice);
+//  void addLattice(RelOptLattice lattice);
 
   /**
    * Retrieves a lattice, given its star table.
    */
-  RelOptLattice getLattice(RelOptTable table);
+//  RelOptLattice getLattice(RelOptTable table);
 
   /**
    * Finds the most efficient expression to implement this query.
    *
    * @throws CannotPlanException if cannot find a plan
    */
-  RelNode findBestExp();
+//  RelNode findBestExp();
 
   /**
    * Returns the factory that creates
-   * {@link org.apache.calcite.plan.RelOptCost}s.
+   * {@link RelOptCost}s.
    */
-  RelOptCostFactory getCostFactory();
+//  RelOptCostFactory getCostFactory();
 
   /**
    * Computes the cost of a RelNode. In most cases, this just dispatches to
@@ -205,14 +230,14 @@ public interface RelOptPlanner {
    * @param mq Metadata query
    * @return estimated cost
    */
-  RelOptCost getCost(RelNode rel, RelMetadataQuery mq);
+//  RelOptCost getCost(RelNode rel, RelMetadataQuery mq);
 
   /**
    * @deprecated Use {@link #getCost(RelNode, RelMetadataQuery)}
    * or, better, call {@link RelMetadataQuery#getCumulativeCost(RelNode)}.
    */
-  @Deprecated // to be removed before 2.0
-  RelOptCost getCost(RelNode rel);
+//  @Deprecated // to be removed before 2.0
+//  RelOptCost getCost(RelNode rel);
 
   /**
    * Registers a relational expression in the expression bank.
@@ -228,9 +253,9 @@ public interface RelOptPlanner {
    * @param equivRel Relational expression it is equivalent to (may be null)
    * @return the same expression, or an equivalent existing expression
    */
-  RelNode register(
-      RelNode rel,
-      RelNode equivRel);
+//  RelNode register(
+//      RelNode rel,
+//      RelNode equivRel);
 
   /**
    * Registers a relational expression if it is not already registered.
@@ -245,7 +270,7 @@ public interface RelOptPlanner {
    * @param equivRel Relational expression it is equivalent to (may be null)
    * @return Registered relational expression
    */
-  RelNode ensureRegistered(RelNode rel, RelNode equivRel);
+//  RelNode ensureRegistered(RelNode rel, RelNode equivRel);
 
   /**
    * Determines whether a relational expression has been registered.
@@ -253,20 +278,20 @@ public interface RelOptPlanner {
    * @param rel expression to test
    * @return whether rel has been registered
    */
-  boolean isRegistered(RelNode rel);
+//  boolean isRegistered(RelNode rel);
 
   /**
    * Tells this planner that a schema exists. This is the schema's chance to
    * tell the planner about all of the special transformation rules.
    */
-  void registerSchema(RelOptSchema schema);
+//  void registerSchema(RelOptSchema schema);
 
   /**
    * Adds a listener to this planner.
    *
    * @param newListener new listener to be notified of events
    */
-  void addListener(RelOptListener newListener);
+//  void addListener(RelOptListener newListener);
 
   /**
    * Gives this planner a chance to register one or more
@@ -279,7 +304,7 @@ public interface RelOptPlanner {
    *
    * @param list receives planner's custom providers, if any
    */
-  void registerMetadataProviders(List<RelMetadataProvider> list);
+//  void registerMetadataProviders(List<RelMetadataProvider> list);
 
   /**
    * Gets a timestamp for a given rel's metadata. This timestamp is used by
@@ -289,7 +314,7 @@ public interface RelOptPlanner {
    * @param rel rel of interest
    * @return timestamp of last change which might affect metadata derivation
    */
-  long getRelMetadataTimestamp(RelNode rel);
+//  long getRelMetadataTimestamp(RelNode rel);
 
   /**
    * Sets the importance of a relational expression.
@@ -303,7 +328,7 @@ public interface RelOptPlanner {
    * @param rel        Relational expression
    * @param importance Importance
    */
-  void setImportance(RelNode rel, double importance);
+//  void setImportance(RelNode rel, double importance);
 
   /**
    * Registers a class of RelNode. If this class of RelNode has been seen
@@ -311,7 +336,7 @@ public interface RelOptPlanner {
    *
    * @param node Relational expression
    */
-  void registerClass(RelNode node);
+//  void registerClass(RelNode node);
 
   /**
    * Creates an empty trait set. It contains all registered traits, and the
@@ -322,33 +347,34 @@ public interface RelOptPlanner {
    *
    * @return Empty trait set
    */
-  RelTraitSet emptyTraitSet();
+  RelTraitSet emptyTraitSet() { throw new UnsupportedOperationException(); }
 
   /** Sets the object that can execute scalar expressions. */
-  void setExecutor(RexExecutor executor);
+//  void setExecutor(Executor executor);
 
   /** Returns the executor used to evaluate constant expressions. */
-  RexExecutor getExecutor();
+  public RelOptPlanner.Executor getExecutor() { throw new UnsupportedOperationException(); }
 
   /** Called when a relational expression is copied to a similar expression. */
-  void onCopy(RelNode rel, RelNode newRel);
+//  void onCopy(RelNode rel, RelNode newRel);
 
-  /** Returns the cluster. */
-  RelOptCluster getCluster();
-
-  /** @deprecated Use {@link RexExecutor} */
-  @Deprecated // to be removed before 2.0
-  interface Executor extends RexExecutor {
-  }
+  /** Can reduce expressions, writing a literal for each into a list. */
+//  interface Executor {
+    /**
+     * Reduces expressions, and writes their results into {@code reducedValues}.
+     */
+//    void reduce(RexBuilder rexBuilder, List<RexNode> constExps,
+//        List<RexNode> reducedValues);
+//  }
 
   /**
-   * Thrown by {@link org.apache.calcite.plan.RelOptPlanner#findBestExp()}.
+   * Thrown by {@link Xyz#findBestExp()}.
    */
-  class CannotPlanException extends RuntimeException {
-    public CannotPlanException(String message) {
-      super(message);
-    }
-  }
+//  class CannotPlanException extends RuntimeException {
+//    public CannotPlanException(String message) {
+//      super(message);
+//    }
+//  }
 }
 
-// End RelOptPlanner.java
+// End Xyz.java

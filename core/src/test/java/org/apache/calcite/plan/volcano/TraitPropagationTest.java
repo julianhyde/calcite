@@ -32,6 +32,7 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
@@ -120,11 +121,11 @@ public class TraitPropagationTest {
    * Materialized anonymous class for simplicity
    */
   private static class PropAction {
-    public RelNode apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+    public RelNode apply(VolcanoPlanner planner, RelOptSchema relOptSchema,
         SchemaPlus rootSchema) {
+      final RelOptCluster cluster = planner.getCluster();
       final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
       final RexBuilder rexBuilder = cluster.getRexBuilder();
-      final RelOptPlanner planner = cluster.getPlanner();
 
       final RelDataType stringType = typeFactory.createJavaType(String.class);
       final RelDataType integerType = typeFactory.createJavaType(Integer.class);
@@ -203,7 +204,7 @@ public class TraitPropagationTest {
               RelFieldCollation.Direction.ASCENDING,
               RelFieldCollation.NullDirection.FIRST));
       RelTraitSet desiredTraits = empty.replace(PHYSICAL).replace(collation);
-      RelNode convertedInput = convert(rel.getInput(), desiredTraits);
+      RelNode convertedInput = call.convert(rel.getInput(), desiredTraits);
       call.transformTo(
           new PhysAgg(rel.getCluster(), empty.replace(PHYSICAL),
               convertedInput, rel.indicator, rel.getGroupSet(),
@@ -228,7 +229,7 @@ public class TraitPropagationTest {
     public void onMatch(RelOptRuleCall call) {
       LogicalProject rel = call.rel(0);
       RelNode rawInput = call.rel(1);
-      RelNode input = convert(rawInput, PHYSICAL);
+      RelNode input = call.convert(rawInput, PHYSICAL);
 
       if (subsetHack && input instanceof RelSubset) {
         RelSubset subset = (RelSubset) input;
@@ -240,8 +241,9 @@ public class TraitPropagationTest {
           } else {
             RelTraitSet outcome = child.getTraitSet().replace(PHYSICAL);
             call.transformTo(
-                new PhysProj(rel.getCluster(), outcome, convert(child, outcome),
-                    rel.getChildExps(), rel.getRowType()));
+                new PhysProj(rel.getCluster(), outcome,
+                    call.convert(child, outcome), rel.getChildExps(),
+                    rel.getRowType()));
           }
         }
       } else {
@@ -260,14 +262,14 @@ public class TraitPropagationTest {
       super(Sort.class, Convention.NONE, PHYSICAL, "PhysSortRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final Sort sort = (Sort) rel;
-      final RelNode input = convert(sort.getInput(),
+      final RelNode input = call.convert(sort.getInput(),
           rel.getCluster().traitSetOf(PHYSICAL));
       return new PhysSort(
           rel.getCluster(),
           input.getTraitSet().plus(sort.getCollation()),
-          convert(input, input.getTraitSet().replace(PHYSICAL)),
+          call.convert(input, input.getTraitSet().replace(PHYSICAL)),
           sort.getCollation(),
           null,
           null);
@@ -414,8 +416,10 @@ public class TraitPropagationTest {
               prepareContext.getDefaultSchemaPath(),
               typeFactory);
     final RexBuilder rexBuilder = new RexBuilder(typeFactory);
-    final RelOptPlanner planner = new VolcanoPlanner(config.getCostFactory(),
-        config.getContext());
+    final Xyz xyz = new Xyz();
+    final RelOptCluster cluster = RelOptCluster.create(xyz, rexBuilder);
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster,
+        config.getCostFactory(), config.getContext());
 
     // set up rules before we generate cluster
     planner.clearRelTraitDefs();
@@ -427,8 +431,7 @@ public class TraitPropagationTest {
       planner.addRule(r);
     }
 
-    final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
-    return action.apply(cluster, catalogReader,
+    return action.apply(planner, catalogReader,
         prepareContext.getRootSchema().plus());
   }
 }

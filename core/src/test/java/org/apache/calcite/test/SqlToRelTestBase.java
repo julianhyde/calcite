@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptSchemaWithSampling;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -473,7 +474,6 @@ public abstract class SqlToRelTestBase {
    * {@link MockRelOptSchema} and {@link MockRelOptPlanner}.
    */
   public static class TesterImpl implements Tester {
-    private RelOptPlanner planner;
     private SqlOperatorTable opTab;
     private final DiffRepository diffRepos;
     private final boolean enableDecorrelate;
@@ -582,7 +582,7 @@ public abstract class SqlToRelTestBase {
         final SqlToRelConverter.Config config) {
       final RexBuilder rexBuilder = new RexBuilder(typeFactory);
       RelOptCluster cluster =
-          RelOptCluster.create(getPlanner(), rexBuilder);
+          RelOptCluster.create(new Xyz(), rexBuilder);
       if (clusterFactory != null) {
         cluster = clusterFactory.apply(cluster);
       }
@@ -599,13 +599,6 @@ public abstract class SqlToRelTestBase {
 
     protected RelDataTypeFactory createTypeFactory() {
       return new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
-    }
-
-    protected final RelOptPlanner getPlanner() {
-      if (planner == null) {
-        planner = createPlanner();
-      }
-      return planner;
     }
 
     public SqlNode parseQuery(String sql) throws Exception {

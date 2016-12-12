@@ -52,14 +52,12 @@ class EnumerableLimitRule extends RelOptRule {
           null,
           null);
     }
-    RelNode x = convert(
-        input,
-        input.getTraitSet().replace(EnumerableConvention.INSTANCE));
     call.transformTo(
         new EnumerableLimit(
             sort.getCluster(),
             traitSet,
-            x,
+            call.convert(input,
+                input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
             sort.offset,
             sort.fetch));
   }

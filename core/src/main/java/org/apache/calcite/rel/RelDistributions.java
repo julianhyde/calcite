@@ -16,8 +16,8 @@
  */
 package org.apache.calcite.rel;
 
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
@@ -168,7 +168,7 @@ public class RelDistributions {
       return false;
     }
 
-    public void register(RelOptPlanner planner) {
+    public void register(HepProgramBuilder programBuilder) {
     }
   }
 }

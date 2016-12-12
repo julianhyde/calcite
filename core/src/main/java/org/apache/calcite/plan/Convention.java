@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 
 /**
@@ -78,7 +79,7 @@ public interface Convention extends RelTrait {
       return getName();
     }
 
-    public void register(RelOptPlanner planner) {}
+    public void register(HepProgramBuilder programBuilder) {}
 
     public boolean satisfies(RelTrait trait) {
       return this == trait;

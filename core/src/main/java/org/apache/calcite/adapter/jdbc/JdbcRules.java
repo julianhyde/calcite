@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
@@ -141,13 +142,13 @@ public class JdbcRules {
       super(LogicalJoin.class, Convention.NONE, out, "JdbcJoinRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       LogicalJoin join = (LogicalJoin) rel;
       final List<RelNode> newInputs = new ArrayList<>();
       for (RelNode input : join.getInputs()) {
         if (!(input.getConvention() == getOutTrait())) {
           input =
-              convert(input,
+              call.convert(input,
                   input.getTraitSet().replace(out));
         }
         newInputs.add(input);
@@ -277,7 +278,7 @@ public class JdbcRules {
       super(LogicalCalc.class, Convention.NONE, out, "JdbcCalcRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalCalc calc = (LogicalCalc) rel;
 
       // If there's a multiset, let FarragoMultisetSplitter work on it
@@ -287,7 +288,7 @@ public class JdbcRules {
       }
 
       return new JdbcCalc(rel.getCluster(), rel.getTraitSet().replace(out),
-          convert(calc.getInput(), calc.getTraitSet().replace(out)),
+          call.convert(calc.getInput(), calc.getTraitSet().replace(out)),
           calc.getProgram());
     }
   }
@@ -350,15 +351,14 @@ public class JdbcRules {
       super(LogicalProject.class, Convention.NONE, out, "JdbcProjectRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
 
+      final RelNode input = project.getInput();
       return new JdbcProject(
           rel.getCluster(),
           rel.getTraitSet().replace(out),
-          convert(
-              project.getInput(),
-              project.getInput().getTraitSet().replace(out)),
+          call.convert(input, input.getTraitSet().replace(out)),
           project.getProjects(),
           project.getRowType());
     }
@@ -411,14 +411,14 @@ public class JdbcRules {
       super(LogicalFilter.class, Convention.NONE, out, "JdbcFilterRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
 
+      final RelNode input = filter.getInput();
       return new JdbcFilter(
           rel.getCluster(),
           rel.getTraitSet().replace(out),
-          convert(filter.getInput(),
-              filter.getInput().getTraitSet().replace(out)),
+          call.convert(input, input.getTraitSet().replace(out)),
           filter.getCondition());
     }
   }
@@ -454,7 +454,7 @@ public class JdbcRules {
       super(LogicalAggregate.class, Convention.NONE, out, "JdbcAggregateRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalAggregate agg = (LogicalAggregate) rel;
       if (agg.getGroupSets().size() != 1) {
         // GROUPING SETS not supported; see
@@ -465,7 +465,7 @@ public class JdbcRules {
           agg.getTraitSet().replace(out);
       try {
         return new JdbcAggregate(rel.getCluster(), traitSet,
-            convert(agg.getInput(), out), agg.indicator, agg.getGroupSet(),
+            call.convert(agg.getInput(), out), agg.indicator, agg.getGroupSet(),
             agg.getGroupSets(), agg.getAggCallList());
       } catch (InvalidRelException e) {
         LOGGER.debug(e.toString());
@@ -536,7 +536,7 @@ public class JdbcRules {
       super(Sort.class, Convention.NONE, out, "JdbcSortRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final Sort sort = (Sort) rel;
       if (sort.offset != null || sort.fetch != null) {
         // Cannot implement "OFFSET n FETCH n" currently.
@@ -544,7 +544,7 @@ public class JdbcRules {
       }
       final RelTraitSet traitSet = sort.getTraitSet().replace(out);
       return new JdbcSort(rel.getCluster(), traitSet,
-          convert(sort.getInput(), traitSet), sort.getCollation());
+          call.convert(sort.getInput(), traitSet), sort.getCollation());
     }
   }
 
@@ -584,12 +584,12 @@ public class JdbcRules {
       super(LogicalUnion.class, Convention.NONE, out, "JdbcUnionRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalUnion union = (LogicalUnion) rel;
       final RelTraitSet traitSet =
           union.getTraitSet().replace(out);
       return new JdbcUnion(rel.getCluster(), traitSet,
-          convertList(union.getInputs(), out), union.all);
+          call.convertList(union.getInputs(), out), union.all);
     }
   }
 
@@ -627,7 +627,7 @@ public class JdbcRules {
       super(LogicalIntersect.class, Convention.NONE, out, "JdbcIntersectRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalIntersect intersect = (LogicalIntersect) rel;
       if (intersect.all) {
         return null; // INTERSECT ALL not implemented
@@ -635,7 +635,7 @@ public class JdbcRules {
       final RelTraitSet traitSet =
           intersect.getTraitSet().replace(out);
       return new JdbcIntersect(rel.getCluster(), traitSet,
-          convertList(intersect.getInputs(), out), false);
+          call.convertList(intersect.getInputs(), out), false);
     }
   }
 
@@ -671,7 +671,7 @@ public class JdbcRules {
       super(LogicalMinus.class, Convention.NONE, out, "JdbcMinusRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalMinus minus = (LogicalMinus) rel;
       if (minus.all) {
         return null; // EXCEPT ALL not implemented
@@ -679,7 +679,7 @@ public class JdbcRules {
       final RelTraitSet traitSet =
           rel.getTraitSet().replace(out);
       return new JdbcMinus(rel.getCluster(), traitSet,
-          convertList(minus.getInputs(), out), false);
+          call.convertList(minus.getInputs(), out), false);
     }
   }
 
@@ -711,7 +711,7 @@ public class JdbcRules {
           "JdbcTableModificationRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalTableModify modify =
           (LogicalTableModify) rel;
       final ModifiableTable modifiableTable =
@@ -726,7 +726,7 @@ public class JdbcRules {
           modify.getCluster(), traitSet,
           modify.getTable(),
           modify.getCatalogReader(),
-          convert(modify.getInput(), traitSet),
+          call.convert(modify.getInput(), traitSet),
           modify.getOperation(),
           modify.getUpdateColumnList(),
           modify.getSourceExpressionList(),
@@ -785,7 +785,7 @@ public class JdbcRules {
       super(LogicalValues.class, Convention.NONE, out, "JdbcValuesRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       LogicalValues values = (LogicalValues) rel;
       return new JdbcValues(values.getCluster(), values.getRowType(),
           values.getTuples(), values.getTraitSet().replace(out));

@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -24,6 +25,7 @@ import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.runtime.PredicateImpl;
 import org.apache.calcite.util.CancelFlag;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -49,6 +51,8 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
   private static final Pattern INTEGER_PATTERN = Pattern.compile("[0-9]+");
 
   //~ Instance fields --------------------------------------------------------
+
+  public final RelOptCluster cluster;
 
   /**
    * Maps rule description to rule, just to ensure that rules' descriptions
@@ -78,10 +82,10 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
   /**
    * Creates an AbstractRelOptPlanner.
    */
-  protected AbstractRelOptPlanner(RelOptCostFactory costFactory,
-      Context context) {
-    assert costFactory != null;
-    this.costFactory = costFactory;
+  protected AbstractRelOptPlanner(RelOptCluster cluster,
+      RelOptCostFactory costFactory, Context context) {
+    this.cluster = cluster;
+    this.costFactory = Preconditions.checkNotNull(costFactory);
     if (context == null) {
       context = Contexts.empty();
     }
@@ -107,6 +111,10 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
   public RelOptCostFactory getCostFactory() {
     return costFactory;
+  }
+
+  public RelOptCluster getCluster() {
+    return cluster;
   }
 
   @SuppressWarnings("deprecation")
@@ -226,7 +234,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
     for (RelTrait trait : node.getTraitSet()) {
       if (traits.add(trait)) {
-        trait.register(this);
+        trait.register((HepProgramBuilder) (Object) this); // TODO:
       }
     }
   }

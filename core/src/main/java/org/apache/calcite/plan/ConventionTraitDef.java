@@ -29,9 +29,12 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nonnull;
 
 /**
@@ -132,6 +135,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
       RelNode rel,
       Convention toConvention,
       boolean allowInfiniteCostConverters) {
+    final RelOptRuleCall call = new DummyRuleCall(planner);
     final RelMetadataQuery mq = RelMetadataQuery.instance();
     final ConversionData conversionData = getConversionData(planner);
 
@@ -154,8 +158,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
         }
         if (previous != null) {
           converted =
-              changeConvention(
-                  converted, previous, arc,
+              changeConvention(call, converted, previous, arc,
                   conversionData.mapArcToConverterRule);
           if (converted == null) {
             throw new AssertionError("Converter from " + previous + " to " + arc
@@ -174,10 +177,8 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
    * Tries to convert a relational expression to the target convention of an
    * arc.
    */
-  private RelNode changeConvention(
-      RelNode rel,
-      Convention source,
-      Convention target,
+  private RelNode changeConvention(RelOptRuleCall call, RelNode rel,
+      Convention source, Convention target,
       final Multimap<Pair<Convention, Convention>, ConverterRule>
           mapArcToConverterRule) {
     assert source == rel.getConvention();
@@ -188,7 +189,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
     for (ConverterRule rule : mapArcToConverterRule.get(key)) {
       assert rule.getInTrait() == source;
       assert rule.getOutTrait() == target;
-      RelNode converted = rule.convert(rel);
+      RelNode converted = rule.convert(call, rel);
       if (converted != null) {
         return converted;
       }
@@ -244,6 +245,20 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
         Convention fromConvention,
         Convention toConvention) {
       return getPathMap().getShortestPath(fromConvention, toConvention);
+    }
+  }
+
+  /** Dummy implementation of {@link org.apache.calcite.plan.RelOptRuleCall}
+   * to carry context into trait conversion logic. */
+  public static class DummyRuleCall extends RelOptRuleCall {
+    public DummyRuleCall(RelOptPlanner planner) {
+      super(planner, null, new RelNode[0],
+          ImmutableMap.<RelNode, List<RelNode>>of(),
+          ImmutableList.<RelNode>of());
+    }
+
+    public void transformTo(RelNode rel, Map<RelNode, RelNode> equiv) {
+      throw new UnsupportedOperationException();
     }
   }
 }

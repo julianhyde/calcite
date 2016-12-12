@@ -124,9 +124,6 @@ public abstract class TableModify extends SingleRel {
       Preconditions.checkArgument(updateColumnList == null);
       Preconditions.checkArgument(sourceExpressionList == null);
     }
-    if (table.getRelOptSchema() != null) {
-      cluster.getPlanner().registerSchema(table.getRelOptSchema());
-    }
     this.flattened = flattened;
   }
 

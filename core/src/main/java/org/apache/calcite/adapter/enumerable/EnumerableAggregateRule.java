@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelNode;
@@ -33,7 +34,7 @@ class EnumerableAggregateRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableAggregateRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalAggregate agg = (LogicalAggregate) rel;
     final RelTraitSet traitSet =
         agg.getTraitSet().replace(EnumerableConvention.INSTANCE);
@@ -41,7 +42,7 @@ class EnumerableAggregateRule extends ConverterRule {
       return new EnumerableAggregate(
           rel.getCluster(),
           traitSet,
-          convert(agg.getInput(), EnumerableConvention.INSTANCE),
+          call.convert(agg.getInput(), EnumerableConvention.INSTANCE),
           agg.indicator,
           agg.getGroupSet(),
           agg.getGroupSets(),

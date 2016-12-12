@@ -21,6 +21,7 @@ import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
@@ -182,12 +183,12 @@ class ElasticsearchRules {
       super(Sort.class, Convention.NONE, ElasticsearchRel.CONVENTION, "ElasticsearchSortRule");
     }
 
-    @Override public RelNode convert(RelNode relNode) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode relNode) {
       final Sort sort = (Sort) relNode;
       final RelTraitSet traitSet = sort.getTraitSet().replace(out).replace(sort.getCollation());
       return new ElasticsearchSort(relNode.getCluster(), traitSet,
-        convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)), sort.getCollation(),
-        sort.offset, sort.fetch);
+          call.convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
+          sort.getCollation(), sort.offset, sort.fetch);
     }
   }
 
@@ -203,12 +204,12 @@ class ElasticsearchRules {
         "ElasticsearchFilterRule");
     }
 
-    @Override public RelNode convert(RelNode relNode) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode relNode) {
       final LogicalFilter filter = (LogicalFilter) relNode;
       final RelTraitSet traitSet = filter.getTraitSet().replace(out);
       return new ElasticsearchFilter(relNode.getCluster(), traitSet,
-        convert(filter.getInput(), out),
-        filter.getCondition());
+          call.convert(filter.getInput(), out),
+          filter.getCondition());
     }
   }
 
@@ -224,11 +225,12 @@ class ElasticsearchRules {
         "ElasticsearchProjectRule");
     }
 
-    @Override public RelNode convert(RelNode relNode) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode relNode) {
       final LogicalProject project = (LogicalProject) relNode;
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
       return new ElasticsearchProject(project.getCluster(), traitSet,
-        convert(project.getInput(), out), project.getProjects(), project.getRowType());
+          call.convert(project.getInput(), out), project.getProjects(),
+          project.getRowType());
     }
   }
 }

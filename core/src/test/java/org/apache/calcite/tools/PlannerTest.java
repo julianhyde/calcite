@@ -927,14 +927,13 @@ public class PlannerTest {
           "MockJdbcProjectRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final EnumerableProject project = (EnumerableProject) rel;
-
+      final RelNode input = project.getInput();
       return new JdbcRules.JdbcProject(
           rel.getCluster(),
           rel.getTraitSet().replace(getOutConvention()),
-          convert(project.getInput(),
-              project.getInput().getTraitSet().replace(getOutConvention())),
+          call.convert(input, input.getTraitSet().replace(getOutConvention())),
           project.getProjects(),
           project.getRowType());
     }
@@ -951,7 +950,7 @@ public class PlannerTest {
           EnumerableConvention.INSTANCE, out, "MockJdbcTableRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final EnumerableTableScan scan =
           (EnumerableTableScan) rel;
       return new MockJdbcTableScan(scan.getCluster(),

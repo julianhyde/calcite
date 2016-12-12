@@ -1317,7 +1317,7 @@ public class SubstitutionVisitor {
     }
 
     RexExecutorImpl rexImpl =
-        (RexExecutorImpl) (rel.cluster.getPlanner().getExecutor());
+        (RexExecutorImpl) (rel.cluster.xyz.getExecutor());
     RexImplicationChecker rexImplicationChecker =
         new RexImplicationChecker(
             rel.cluster.getRexBuilder(), rexImpl, rel.rowType);

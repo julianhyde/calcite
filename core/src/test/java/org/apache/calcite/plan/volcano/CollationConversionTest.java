@@ -63,7 +63,8 @@ public class CollationConversionTest {
       new TestRelCollationTraitDef();
 
   @Test public void testCollationConversion() {
-    final VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(COLLATION_TRAIT_DEF);
 
@@ -71,7 +72,6 @@ public class CollationConversionTest {
     planner.addRule(new LeafTraitRule());
     planner.addRule(ExpandConversionRule.INSTANCE);
 
-    final RelOptCluster cluster = newCluster(planner);
     final NoneLeafRel leafRel = new NoneLeafRel(cluster, "a");
     final NoneSingleRel singleRel = new NoneSingleRel(cluster, leafRel);
     final RelNode convertedRel =
@@ -108,7 +108,7 @@ public class CollationConversionTest {
       NoneSingleRel single = call.rel(0);
       RelNode input = single.getInput();
       RelNode physInput =
-          convert(input,
+          call.convert(input,
               single.getTraitSet()
                   .replace(PHYS_CALLING_CONVENTION)
                   .plus(ROOT_COLLATION));

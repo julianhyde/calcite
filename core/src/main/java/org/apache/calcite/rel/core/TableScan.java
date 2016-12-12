@@ -57,9 +57,6 @@ public abstract class TableScan extends AbstractRelNode {
       RelOptTable table) {
     super(cluster, traitSet);
     this.table = table;
-    if (table.getRelOptSchema() != null) {
-      cluster.getPlanner().registerSchema(table.getRelOptSchema());
-    }
   }
 
   /**

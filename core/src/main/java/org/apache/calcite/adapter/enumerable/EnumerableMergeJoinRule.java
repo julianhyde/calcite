@@ -19,6 +19,7 @@ package org.apache.calcite.adapter.enumerable;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelCollation;
@@ -48,7 +49,7 @@ class EnumerableMergeJoinRule extends ConverterRule {
         "EnumerableMergeJoinRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     LogicalJoin join = (LogicalJoin) rel;
     final JoinInfo info =
         JoinInfo.of(join.getLeft(), join.getRight(), join.getCondition());
@@ -79,7 +80,7 @@ class EnumerableMergeJoinRule extends ConverterRule {
         collations.add(RelCollations.shift(collation, offset));
         traits = traits.replace(collation);
       }
-      newInputs.add(convert(ord.e, traits));
+      newInputs.add(call.convert(ord.e, traits));
       offset += ord.e.getRowType().getFieldCount();
     }
     final RelNode left = newInputs.get(0);

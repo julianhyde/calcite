@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -32,11 +33,11 @@ class EnumerableFilterRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableFilterRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalFilter filter = (LogicalFilter) rel;
     return new EnumerableFilter(rel.getCluster(),
         rel.getTraitSet().replace(EnumerableConvention.INSTANCE),
-        convert(filter.getInput(),
+        call.convert(filter.getInput(),
             filter.getInput().getTraitSet()
                 .replace(EnumerableConvention.INSTANCE)),
         filter.getCondition());

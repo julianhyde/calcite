@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalValues;
@@ -31,7 +32,7 @@ public class EnumerableValuesRule extends ConverterRule {
         "EnumerableValuesRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     LogicalValues values = (LogicalValues) rel;
     return EnumerableValues.create(values.getCluster(), values.getRowType(),
         values.getTuples());

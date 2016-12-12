@@ -3344,7 +3344,7 @@ public abstract class RelOptUtil {
       return true;
     }
     RexExecutorImpl rexImpl =
-        (RexExecutorImpl) r.getCluster().getPlanner().getExecutor();
+        (RexExecutorImpl) r.getCluster().xyz.getExecutor();
     final RexImplicationChecker checker =
         new RexImplicationChecker(rexBuilder, rexImpl, rowType);
     final RexNode first =

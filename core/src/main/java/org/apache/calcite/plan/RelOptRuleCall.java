@@ -21,8 +21,10 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.trace.CalciteTrace;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import org.slf4j.Logger;
 
@@ -225,6 +227,71 @@ public abstract class RelOptRuleCall {
     transformTo(rel, ImmutableMap.<RelNode, RelNode>of());
   }
 
+  /**
+   * Converts a relation expression to a given set of traits, if it does not
+   * already have those traits.
+   *
+   * @param rel      Relational expression to convert
+   * @param toTraits desired traits
+   * @return a relational expression with the desired traits; never null
+   */
+  public RelNode convert(RelNode rel, RelTraitSet toTraits) {
+    if (rel.getTraitSet().size() < toTraits.size()) {
+      new RelTraitPropagationVisitor(planner, toTraits).go(rel);
+    }
+
+    RelTraitSet outTraits = rel.getTraitSet();
+    for (int i = 0; i < toTraits.size(); i++) {
+      RelTrait toTrait = toTraits.getTrait(i);
+      if (toTrait != null) {
+        outTraits = outTraits.replace(i, toTrait);
+      }
+    }
+
+    if (rel.getTraitSet().matches(outTraits)) {
+      return rel;
+    }
+
+    return planner.changeTraits(rel, outTraits);
+  }
+
+  /**
+   * Converts one trait of a relational expression, if it does not
+   * already have that trait.
+   *
+   * @param rel      Relational expression to convert
+   * @param toTrait  Desired trait
+   * @return a relational expression with the desired trait; never null
+   */
+  public RelNode convert(RelNode rel, RelTrait toTrait) {
+    RelTraitSet outTraits = rel.getTraitSet();
+    if (toTrait != null) {
+      outTraits = outTraits.replace(toTrait);
+    }
+
+    if (rel.getTraitSet().matches(outTraits)) {
+      return rel;
+    }
+
+    return planner.changeTraits(rel, outTraits.simplify());
+  }
+
+  /**
+   * Converts a list of relational expressions.
+   *
+   * @param rels     Relational expressions
+   * @param trait   Trait to add to each relational expression
+   * @return List of converted relational expressions, never null
+   */
+  public List<RelNode> convertList(List<RelNode> rels,
+      final RelTrait trait) {
+    return Lists.transform(rels,
+        new Function<RelNode, RelNode>() {
+          public RelNode apply(RelNode rel) {
+            return convert(rel, rel.getTraitSet().replace(trait));
+          }
+        });
+  }
   /** Creates a {@link org.apache.calcite.tools.RelBuilder} to be used by
    * code within the call. The {@link RelOptRule#relBuilderFactory} argument contains policies
    * such as what implementation of {@link Filter} to create. */

@@ -18,6 +18,7 @@ package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelNode;
@@ -41,16 +42,14 @@ class EnumerableJoinRule extends ConverterRule {
         "EnumerableJoinRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     LogicalJoin join = (LogicalJoin) rel;
     List<RelNode> newInputs = new ArrayList<>();
     for (RelNode input : join.getInputs()) {
       if (!(input.getConvention() instanceof EnumerableConvention)) {
         input =
-            convert(
-                input,
-                input.getTraitSet()
-                    .replace(EnumerableConvention.INSTANCE));
+            call.convert(input,
+                input.getTraitSet().replace(EnumerableConvention.INSTANCE));
       }
       newInputs.add(input);
     }

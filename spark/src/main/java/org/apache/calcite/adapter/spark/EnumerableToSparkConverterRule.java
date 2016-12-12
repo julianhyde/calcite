@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.spark;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -36,7 +37,7 @@ public class EnumerableToSparkConverterRule extends ConverterRule {
         "EnumerableToSparkConverterRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     RelTraitSet newTraitSet = rel.getTraitSet().replace(getOutTrait());
     return new EnumerableToSparkConverter(
         rel.getCluster(), newTraitSet, rel);

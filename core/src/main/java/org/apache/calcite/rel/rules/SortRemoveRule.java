@@ -56,7 +56,7 @@ public class SortRemoveRule extends RelOptRule {
     assert collation == sort.getTraitSet()
         .getTrait(RelCollationTraitDef.INSTANCE);
     final RelTraitSet traits = sort.getInput().getTraitSet().replace(collation);
-    call.transformTo(convert(sort.getInput(), traits));
+    call.transformTo(call.convert(sort.getInput(), traits));
   }
 }
 

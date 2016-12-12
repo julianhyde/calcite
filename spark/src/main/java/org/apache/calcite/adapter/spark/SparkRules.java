@@ -36,6 +36,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -106,7 +107,7 @@ public abstract class SparkRules {
           "EnumerableToSparkConverterRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       return new EnumerableToSparkConverter(rel.getCluster(),
           rel.getTraitSet().replace(SparkRel.CONVENTION), rel);
     }
@@ -123,7 +124,7 @@ public abstract class SparkRules {
           "SparkToEnumerableConverterRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       return new SparkToEnumerableConverter(rel.getCluster(),
           rel.getTraitSet().replace(EnumerableConvention.INSTANCE), rel);
     }
@@ -139,7 +140,7 @@ public abstract class SparkRules {
           "SparkValuesRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       LogicalValues values = (LogicalValues) rel;
       return new SparkValues(
           values.getCluster(),
@@ -226,7 +227,7 @@ public abstract class SparkRules {
           "SparkCalcRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalCalc calc = (LogicalCalc) rel;
 
       // If there's a multiset, let FarragoMultisetSplitter work on it
@@ -237,11 +238,11 @@ public abstract class SparkRules {
         return null;
       }
 
+      final RelNode input = calc.getInput();
       return new SparkCalc(
           rel.getCluster(),
           rel.getTraitSet().replace(SparkRel.CONVENTION),
-          convert(calc.getInput(),
-              calc.getInput().getTraitSet().replace(SparkRel.CONVENTION)),
+          call.convert(input, input.getTraitSet().replace(SparkRel.CONVENTION)),
           program);
     }
   }

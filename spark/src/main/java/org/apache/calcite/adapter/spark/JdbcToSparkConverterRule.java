@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.spark;
 
 import org.apache.calcite.adapter.jdbc.JdbcConvention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -34,7 +35,7 @@ public class JdbcToSparkConverterRule extends ConverterRule {
         "JdbcToSparkConverterRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     RelTraitSet newTraitSet = rel.getTraitSet().replace(getOutTrait());
     return new JdbcToSparkConverter(rel.getCluster(), newTraitSet, rel);
   }

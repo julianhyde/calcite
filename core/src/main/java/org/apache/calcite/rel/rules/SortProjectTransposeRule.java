@@ -128,7 +128,7 @@ public class SortProjectTransposeRule extends RelOptRule {
     Map<RelNode, RelNode> equiv;
     if (sort.offset == null
         && sort.fetch == null
-        && cluster.getPlanner().getRelTraitDefs()
+        && call.getPlanner().getRelTraitDefs()
             .contains(RelCollationTraitDef.INSTANCE)) {
       equiv = ImmutableMap.of((RelNode) newSort, project.getInput());
     } else {

@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -30,6 +31,7 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 
@@ -57,10 +59,10 @@ class PlannerTests {
         }
       };
 
-  static RelOptCluster newCluster(VolcanoPlanner planner) {
+  static RelOptCluster newCluster() {
     final RelDataTypeFactory typeFactory =
-        new SqlTypeFactoryImpl(org.apache.calcite.rel.type.RelDataTypeSystem.DEFAULT);
-    return RelOptCluster.create(planner, new RexBuilder(typeFactory));
+        new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
+    return RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory));
   }
 
   /** Leaf relational expression. */
@@ -196,7 +198,7 @@ class PlannerTests {
       NoneSingleRel single = call.rel(0);
       RelNode input = single.getInput();
       RelNode physInput =
-          convert(input,
+          call.convert(input,
               single.getTraitSet().replace(PHYS_CALLING_CONVENTION));
       call.transformTo(
           new PhysSingleRel(single.getCluster(), physInput));

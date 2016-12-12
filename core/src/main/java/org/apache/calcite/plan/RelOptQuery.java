@@ -46,7 +46,7 @@ public class RelOptQuery {
    */
   final Map<String, RelNode> mapCorrelToRel;
 
-  private final RelOptPlanner planner;
+  private final RelOptCluster cluster;
   final AtomicInteger nextCorrel;
 
   //~ Constructors -----------------------------------------------------------
@@ -58,13 +58,14 @@ public class RelOptQuery {
    */
   @Deprecated // to be removed before 2.0
   public RelOptQuery(RelOptPlanner planner) {
-    this(planner, new AtomicInteger(0), new HashMap<String, RelNode>());
+    this(planner.getCluster(), new AtomicInteger(0),
+        new HashMap<String, RelNode>());
   }
 
   /** For use by RelOptCluster only. */
-  RelOptQuery(RelOptPlanner planner, AtomicInteger nextCorrel,
+  RelOptQuery(RelOptCluster cluster, AtomicInteger nextCorrel,
       Map<String, RelNode> mapCorrelToRel) {
-    this.planner = planner;
+    this.cluster = cluster;
     this.nextCorrel = nextCorrel;
     this.mapCorrelToRel = mapCorrelToRel;
   }
@@ -95,8 +96,7 @@ public class RelOptQuery {
   public RelOptCluster createCluster(
       RelDataTypeFactory typeFactory,
       RexBuilder rexBuilder) {
-    return new RelOptCluster(planner, typeFactory, rexBuilder, nextCorrel,
-        mapCorrelToRel);
+    throw new AssertionError();
   }
 
   /**

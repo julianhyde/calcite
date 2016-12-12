@@ -52,14 +52,14 @@ import static org.junit.Assert.assertTrue;
 public class ComboRuleTest {
 
   @Test public void testCombo() {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new ComboRule());
     planner.addRule(new AddIntermediateNodeRule());
     planner.addRule(new GoodSingleRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel = new NoneLeafRel(cluster, "a");
     NoneSingleRel singleRel = new NoneSingleRel(cluster, leafRel);
     NoneSingleRel singleRel2 = new NoneSingleRel(cluster, singleRel);

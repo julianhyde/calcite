@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -32,12 +33,12 @@ class EnumerableUnionRule extends ConverterRule {
         "EnumerableUnionRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalUnion union = (LogicalUnion) rel;
     final EnumerableConvention out = EnumerableConvention.INSTANCE;
     final RelTraitSet traitSet = union.getTraitSet().replace(out);
     return new EnumerableUnion(rel.getCluster(), traitSet,
-        convertList(union.getInputs(), out), union.all);
+        call.convertList(union.getInputs(), out), union.all);
   }
 }
 

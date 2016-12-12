@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
@@ -75,10 +75,9 @@ public class SqlToRelConverterExtendedTest extends SqlToRelConverterTest {
     // Convert JSON back to rel tree.
     Frameworks.withPlanner(
         new Frameworks.PlannerAction<Object>() {
-          public Object apply(RelOptCluster cluster,
+          public Object apply(RelOptPlanner planner,
               RelOptSchema relOptSchema, SchemaPlus rootSchema) {
-            final RelJsonReader reader = new RelJsonReader(
-                cluster,
+            final RelJsonReader reader = new RelJsonReader(planner.getCluster(),
                 schemas[0], rootSchema);
             try {
               RelNode x = reader.read(json);

@@ -18,6 +18,7 @@ package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -34,7 +35,7 @@ public class EnumerableTableScanRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableTableScanRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     LogicalTableScan scan = (LogicalTableScan) rel;
     final RelOptTable relOptTable = scan.getTable();
     final Table table = relOptTable.unwrap(Table.class);

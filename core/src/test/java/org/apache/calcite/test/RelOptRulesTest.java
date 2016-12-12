@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
@@ -2716,7 +2717,8 @@ public class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from sales.emp e right join (\n"
         + "select * from sales.dept d) using (deptno)\n"
         + "order by name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    final RelOptCluster cluster = null; // TODO:
+    checkPlanning(tester, preProgram, new HepPlanner(cluster, program), sql);
   }
 
   /** Test case for

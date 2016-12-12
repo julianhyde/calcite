@@ -18,7 +18,6 @@ package org.apache.calcite.plan.volcano;
 
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -97,17 +96,20 @@ public class RelSubset extends AbstractRelNode {
    */
   boolean boosted;
 
+  final VolcanoPlanner planner;
+
   //~ Constructors -----------------------------------------------------------
 
   RelSubset(
-      RelOptCluster cluster,
+      VolcanoPlanner planner,
       RelSet set,
       RelTraitSet traits) {
-    super(cluster, traits);
+    super(planner.cluster, traits);
     this.set = set;
     this.boosted = false;
+    this.planner = planner;
     assert traits.allSimple();
-    computeBestCost(cluster.getPlanner());
+    computeBestCost(planner);
     recomputeDigest();
   }
 
@@ -256,7 +258,6 @@ public class RelSubset extends AbstractRelNode {
       return;
     }
 
-    VolcanoPlanner planner = (VolcanoPlanner) rel.getCluster().getPlanner();
     if (planner.listener != null) {
       RelOptListener.RelEquivalenceEvent event =
           new RelOptListener.RelEquivalenceEvent(
@@ -273,7 +274,7 @@ public class RelSubset extends AbstractRelNode {
       RelOptUtil.equal("rowtype of new rel", rel.getRowType(),
           "rowtype of set", getRowType(), Litmus.THROW);
     }
-    set.addInternal(rel);
+    set.addInternal(planner, rel);
     Set<CorrelationId> variablesSet = RelOptUtil.getVariablesSet(rel);
     Set<CorrelationId> variablesStopped = rel.getVariablesSet();
     if (false) {

@@ -30,6 +30,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -107,8 +108,8 @@ public class VolcanoPlannerTraitTest {
 
   @Ignore
   @Test public void testDoubleConversion() {
-    VolcanoPlanner planner = new VolcanoPlanner();
-
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
@@ -120,8 +121,6 @@ public class VolcanoPlannerTraitTest {
             "AltToAlt2ConverterRule"));
     planner.addRule(new PhysLeafRule());
     planner.addRule(new IterSingleRule());
-
-    RelOptCluster cluster = newCluster(planner);
 
     NoneLeafRel noneLeafRel =
         RelOptUtil.addTrait(
@@ -162,8 +161,8 @@ public class VolcanoPlannerTraitTest {
   }
 
   @Test public void testRuleMatchAfterConversion() {
-    VolcanoPlanner planner = new VolcanoPlanner();
-
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
@@ -171,8 +170,6 @@ public class VolcanoPlannerTraitTest {
     planner.addRule(new PhysLeafRule());
     planner.addRule(new IterSingleRule());
     planner.addRule(new IterSinglePhysMergeRule());
-
-    RelOptCluster cluster = newCluster(planner);
 
     NoneLeafRel noneLeafRel =
         RelOptUtil.addTrait(
@@ -195,8 +192,8 @@ public class VolcanoPlannerTraitTest {
 
   @Ignore
   @Test public void testTraitPropagation() {
-    VolcanoPlanner planner = new VolcanoPlanner();
-
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
@@ -208,8 +205,6 @@ public class VolcanoPlannerTraitTest {
             "AltToAlt2ConverterRule"));
     planner.addRule(new PhysLeafRule());
     planner.addRule(new IterSingleRule2());
-
-    RelOptCluster cluster = newCluster(planner);
 
     NoneLeafRel noneLeafRel =
         RelOptUtil.addTrait(
@@ -272,7 +267,7 @@ public class VolcanoPlannerTraitTest {
       this.ordinal = altTraitOrdinal++;
     }
 
-    public void register(RelOptPlanner planner) {}
+    public void register(HepProgramBuilder programBuilder) {}
 
     public RelTraitDef getTraitDef() {
       return traitDef;
@@ -334,7 +329,9 @@ public class VolcanoPlannerTraitTest {
           ConverterRule rule = traitAndRule.right;
 
           if (trait == toTrait) {
-            RelNode converted = rule.convert(rel);
+            final ConventionTraitDef.DummyRuleCall call =
+                new ConventionTraitDef.DummyRuleCall(planner);
+            RelNode converted = rule.convert(call, rel);
             if ((converted != null)
                 && (!planner.getCost(converted, mq).isInfinite()
                 || allowInfiniteCostConverters)) {
@@ -393,14 +390,12 @@ public class VolcanoPlannerTraitTest {
       return label;
     }
 
-    // implement RelNode
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner,
         RelMetadataQuery mq) {
       return planner.getCostFactory().makeInfiniteCost();
     }
 
-    // implement RelNode
-    protected RelDataType deriveRowType() {
+    @Override protected RelDataType deriveRowType() {
       final RelDataTypeFactory typeFactory = getCluster().getTypeFactory();
       return typeFactory.builder()
           .add("this", typeFactory.createJavaType(Void.TYPE))
@@ -440,8 +435,7 @@ public class VolcanoPlannerTraitTest {
           label);
     }
 
-    // implement RelNode
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner,
         RelMetadataQuery mq) {
       return planner.getCostFactory().makeTinyCost();
     }
@@ -458,14 +452,12 @@ public class VolcanoPlannerTraitTest {
       super(cluster, traits, child);
     }
 
-    // implement RelNode
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner,
         RelMetadataQuery mq) {
       return planner.getCostFactory().makeInfiniteCost();
     }
 
-    // implement RelNode
-    protected RelDataType deriveRowType() {
+    @Override protected RelDataType deriveRowType() {
       return getInput().getRowType();
     }
 
@@ -513,8 +505,7 @@ public class VolcanoPlannerTraitTest {
           child);
     }
 
-    // implement RelNode
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner,
         RelMetadataQuery mq) {
       return planner.getCostFactory().makeTinyCost();
     }
@@ -538,12 +529,10 @@ public class VolcanoPlannerTraitTest {
       super(operand(NoneLeafRel.class, any()));
     }
 
-    // implement RelOptRule
-    public Convention getOutConvention() {
+    @Override public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 
-    // implement RelOptRule
     public void onMatch(RelOptRuleCall call) {
       NoneLeafRel leafRel = call.rel(0);
       call.transformTo(
@@ -560,8 +549,7 @@ public class VolcanoPlannerTraitTest {
       super(operand(NoneSingleRel.class, any()));
     }
 
-    // implement RelOptRule
-    public Convention getOutConvention() {
+    @Override public Convention getOutConvention() {
       return EnumerableConvention.INSTANCE;
     }
 
@@ -569,12 +557,11 @@ public class VolcanoPlannerTraitTest {
       return getOutConvention();
     }
 
-    // implement RelOptRule
     public void onMatch(RelOptRuleCall call) {
       NoneSingleRel rel = call.rel(0);
 
       RelNode converted =
-          convert(
+          call.convert(
               rel.getInput(0),
               rel.getTraitSet().replace(getOutTrait()));
 
@@ -592,8 +579,7 @@ public class VolcanoPlannerTraitTest {
       super(operand(NoneSingleRel.class, any()));
     }
 
-    // implement RelOptRule
-    public Convention getOutConvention() {
+    @Override public Convention getOutConvention() {
       return EnumerableConvention.INSTANCE;
     }
 
@@ -601,12 +587,11 @@ public class VolcanoPlannerTraitTest {
       return getOutConvention();
     }
 
-    // implement RelOptRule
     public void onMatch(RelOptRuleCall call) {
       NoneSingleRel rel = call.rel(0);
 
       RelNode converted =
-          convert(
+          call.convert(
               rel.getInput(0),
               rel.getTraitSet().replace(getOutTrait()));
 
@@ -639,7 +624,7 @@ public class VolcanoPlannerTraitTest {
       this.toTrait = toTrait;
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       return new AltTraitConverter(
           rel.getCluster(),
           rel,
@@ -686,7 +671,7 @@ public class VolcanoPlannerTraitTest {
           "PhysToIteratorRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       return new PhysToIteratorConverter(
           rel.getCluster(),
           rel);

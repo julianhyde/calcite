@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -32,7 +33,7 @@ public class EnumerableTableFunctionScanRule extends ConverterRule {
         EnumerableConvention.INSTANCE, "EnumerableTableFunctionScanRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final RelTraitSet traitSet =
         rel.getTraitSet().replace(EnumerableConvention.INSTANCE);
     LogicalTableFunctionScan tbl = (LogicalTableFunctionScan) rel;

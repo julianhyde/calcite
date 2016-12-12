@@ -18,7 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RexImplicationChecker;
 import org.apache.calcite.rel.type.RelDataType;
@@ -405,7 +405,7 @@ public class RexImplicationCheckerTest {
       final Holder<RexExecutorImpl> holder = Holder.of(null);
       Frameworks.withPrepare(
           new Frameworks.PrepareAction<Void>() {
-            public Void apply(RelOptCluster cluster,
+            public Void apply(RelOptPlanner planner,
                 RelOptSchema relOptSchema,
                 SchemaPlus rootSchema,
                 CalciteServerStatement statement) {

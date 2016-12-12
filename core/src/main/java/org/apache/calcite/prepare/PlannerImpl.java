@@ -28,6 +28,7 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable.ViewExpander;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -139,12 +140,13 @@ public class PlannerImpl implements Planner {
     ensure(State.STATE_1_RESET);
     Frameworks.withPlanner(
         new Frameworks.PlannerAction<Void>() {
-          public Void apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+          public Void apply(RelOptPlanner planner, RelOptSchema relOptSchema,
               SchemaPlus rootSchema) {
             Util.discard(rootSchema); // use our own defaultSchema
-            typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
-            planner = cluster.getPlanner();
-            planner.setExecutor(executor);
+            typeFactory =
+                (JavaTypeFactory) planner.getCluster().getTypeFactory();
+            PlannerImpl.this.planner = planner;
+            PlannerImpl.this.planner.setExecutor(executor);
             return null;
           }
         },
@@ -222,7 +224,7 @@ public class PlannerImpl implements Planner {
     ensure(State.STATE_4_VALIDATED);
     assert validatedSqlNode != null;
     final RexBuilder rexBuilder = createRexBuilder();
-    final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
+    final RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder);
     final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
         .withTrimUnusedFields(false).withConvertTableAccess(false).build();
     final SqlToRelConverter sqlToRelConverter =
@@ -231,7 +233,8 @@ public class PlannerImpl implements Planner {
     root =
         sqlToRelConverter.convertQuery(validatedSqlNode, false, true);
     root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
-    root = root.withRel(RelDecorrelator.decorrelateQuery(root.rel));
+    root = root.withRel(
+        RelDecorrelator.decorrelateQuery(root.rel, planner.getContext()));
     state = State.STATE_5_CONVERTED;
     return root;
   }
@@ -240,7 +243,7 @@ public class PlannerImpl implements Planner {
    * interface for {@link org.apache.calcite.tools.Planner}. */
   public class ViewExpanderImpl implements ViewExpander {
     @Override public RelRoot expandView(RelDataType rowType, String queryString,
-      List<String> schemaPath, List<String> viewPath) {
+        List<String> schemaPath, List<String> viewPath) {
       SqlParser parser = SqlParser.create(queryString, parserConfig);
       SqlNode sqlNode;
       try {
@@ -259,7 +262,7 @@ public class PlannerImpl implements Planner {
       final SqlNode validatedSqlNode = validator.validate(sqlNode);
 
       final RexBuilder rexBuilder = createRexBuilder();
-      final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
+      final RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder);
       final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
           .withTrimUnusedFields(false).withConvertTableAccess(false).build();
       final SqlToRelConverter sqlToRelConverter =
@@ -268,7 +271,8 @@ public class PlannerImpl implements Planner {
 
       root = sqlToRelConverter.convertQuery(validatedSqlNode, true, false);
       root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
-      root = root.withRel(RelDecorrelator.decorrelateQuery(root.rel));
+      root = root.withRel(
+          RelDecorrelator.decorrelateQuery(root.rel, planner.getContext()));
 
       return PlannerImpl.this.root;
     }
@@ -308,7 +312,7 @@ public class PlannerImpl implements Planner {
     rel.getCluster().setMetadataProvider(
         new CachingRelMetadataProvider(
             rel.getCluster().getMetadataProvider(),
-            rel.getCluster().getPlanner()));
+            planner));
     Program program = programs.get(ruleSetIndex);
     return program.run(planner, rel, requiredOutputTraits,
         ImmutableList.<RelOptMaterialization>of(),

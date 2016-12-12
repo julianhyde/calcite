@@ -20,6 +20,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -140,7 +141,7 @@ public class RelBuilder {
     this.cluster = cluster;
     this.relOptSchema = relOptSchema;
     if (context == null) {
-      context = Contexts.EMPTY_CONTEXT;
+      context = Contexts.empty();
     }
     this.simplify = Hook.REL_BUILDER_SIMPLIFY.get(true);
     this.aggregateFactory =
@@ -175,23 +176,21 @@ public class RelBuilder {
             RelFactories.DEFAULT_TABLE_SCAN_FACTORY);
     this.executor =
         Util.first(context.unwrap(RexExecutor.class),
-            Util.first(cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR));
+            Util.first(cluster.xyz.getExecutor(), RexUtil.EXECUTOR));
   }
 
   /** Creates a RelBuilder. */
   public static RelBuilder create(FrameworkConfig config) {
-    final RelOptCluster[] clusters = {null};
-    final RelOptSchema[] relOptSchemas = {null};
+    final Holder<Pair<RelOptCluster, RelOptSchema>> h = Holder.of(null);
     Frameworks.withPrepare(
         new Frameworks.PrepareAction<Void>(config) {
-          public Void apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+          public Void apply(RelOptPlanner planner, RelOptSchema relOptSchema,
               SchemaPlus rootSchema, CalciteServerStatement statement) {
-            clusters[0] = cluster;
-            relOptSchemas[0] = relOptSchema;
+            h.set(Pair.of(planner.getCluster(), relOptSchema));
             return null;
           }
         });
-    return new RelBuilder(config.getContext(), clusters[0], relOptSchemas[0]);
+    return new RelBuilder(config.getContext(), h.get().left, h.get().right);
   }
 
   /** Returns the type factory. */
@@ -818,8 +817,8 @@ public class RelBuilder {
   /** Creates a {@link org.apache.calcite.rel.core.Project} of the given list
    * of expressions.
    *
-   * <p>Infers names as would {@link #project(Iterable, Iterable)} if all
-   * suggested names were null.
+   * <p>Infers names as would {@link #project(Iterable, Iterable, boolean)} if
+   * all suggested names were null.
    *
    * @param nodes Expressions
    */
@@ -829,6 +828,9 @@ public class RelBuilder {
 
   /** Creates a {@link org.apache.calcite.rel.core.Project} of the given list
    * of expressions and field names.
+   *
+   * <p>Infers names as would {@link #project(Iterable, Iterable, boolean)} if
+   * all suggested names were null.
    *
    * @param nodes Expressions
    * @param fieldNames field names for expressions

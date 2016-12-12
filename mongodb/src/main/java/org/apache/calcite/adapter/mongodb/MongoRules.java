@@ -21,6 +21,7 @@ import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.InvalidRelException;
@@ -270,13 +271,13 @@ public class MongoRules {
           "MongoSortRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final Sort sort = (Sort) rel;
       final RelTraitSet traitSet =
           sort.getTraitSet().replace(out)
               .replace(sort.getCollation());
       return new MongoSort(rel.getCluster(), traitSet,
-          convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
+          call.convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
           sort.getCollation(), sort.offset, sort.fetch);
     }
   }
@@ -293,13 +294,11 @@ public class MongoRules {
           "MongoFilterRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
       final RelTraitSet traitSet = filter.getTraitSet().replace(out);
-      return new MongoFilter(
-          rel.getCluster(),
-          traitSet,
-          convert(filter.getInput(), out),
+      return new MongoFilter(rel.getCluster(), traitSet,
+          call.convert(filter.getInput(), out),
           filter.getCondition());
     }
   }
@@ -316,11 +315,11 @@ public class MongoRules {
           "MongoProjectRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
       return new MongoProject(project.getCluster(), traitSet,
-          convert(project.getInput(), out), project.getProjects(),
+          call.convert(project.getInput(), out), project.getProjects(),
           project.getRowType());
     }
   }
@@ -506,7 +505,7 @@ public class MongoRules {
           "MongoAggregateRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalAggregate agg = (LogicalAggregate) rel;
       final RelTraitSet traitSet =
           agg.getTraitSet().replace(out);
@@ -514,7 +513,7 @@ public class MongoRules {
         return new MongoAggregate(
             rel.getCluster(),
             traitSet,
-            convert(agg.getInput(), traitSet.simplify()),
+            call.convert(agg.getInput(), traitSet.simplify()),
             agg.indicator,
             agg.getGroupSet(),
             agg.getGroupSets(),

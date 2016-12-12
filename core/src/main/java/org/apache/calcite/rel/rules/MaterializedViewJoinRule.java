@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptMaterializations;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -117,9 +118,10 @@ public class MaterializedViewJoinRule extends RelOptRule {
     final RelNode project = call.rel(0).copy(call.rel(0).getTraitSet(), ImmutableList.of(join));
 
     // Convert the input expression into a MultiJoin
-    RelOptPlanner planner = call.getPlanner();
+    final RelOptPlanner planner = call.getPlanner();
+    final RelOptCluster cluster = planner.getCluster();
     final HepPlanner hepPlanner =
-        new HepPlanner(multiJoinProgram, planner.getContext());
+        new HepPlanner(cluster, multiJoinProgram, planner.getContext());
     hepPlanner.setRoot(project);
     RelNode best = hepPlanner.findBestExp();
 
@@ -157,8 +159,9 @@ public class MaterializedViewJoinRule extends RelOptRule {
           RelOptMaterializations.getApplicableMaterializations(join, materializations);
 
       // Prepare a planner to convert views to MultiJoins
-      HepPlanner hepPlanner =
-          new HepPlanner(multiJoinProgram, planner.getContext());
+      final RelOptCluster cluster = planner.getCluster();
+      final HepPlanner hepPlanner =
+          new HepPlanner(cluster, multiJoinProgram, planner.getContext());
 
       for (RelOptMaterialization materialization : applicableMaterializations) {
         // Skip over single table views

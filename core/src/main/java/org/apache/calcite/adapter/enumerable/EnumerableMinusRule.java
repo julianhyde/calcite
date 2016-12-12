@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -32,7 +33,7 @@ class EnumerableMinusRule extends ConverterRule {
         "EnumerableMinusRule");
   }
 
-  public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final LogicalMinus minus = (LogicalMinus) rel;
     if (minus.all) {
       return null; // EXCEPT ALL not implemented
@@ -42,7 +43,7 @@ class EnumerableMinusRule extends ConverterRule {
         rel.getTraitSet().replace(
             EnumerableConvention.INSTANCE);
     return new EnumerableMinus(rel.getCluster(), traitSet,
-        convertList(minus.getInputs(), out), false);
+        call.convertList(minus.getInputs(), out), false);
   }
 }
 

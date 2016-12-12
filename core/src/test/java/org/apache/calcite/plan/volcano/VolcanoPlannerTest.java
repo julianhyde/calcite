@@ -72,13 +72,11 @@ public class VolcanoPlannerTest {
    * Tests transformation of a leaf from NONE to PHYS.
    */
   @Test public void testTransformLeaf() {
-    VolcanoPlanner planner = new VolcanoPlanner();
-
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-
     planner.addRule(new PhysLeafRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -96,13 +94,13 @@ public class VolcanoPlannerTest {
    * Tests transformation of a single+leaf from NONE to PHYS.
    */
   @Test public void testTransformSingleGood() {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new GoodSingleRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -125,7 +123,8 @@ public class VolcanoPlannerTest {
    * once per rel in a set or rel in a subset)
    */
   @Test public void testSubsetRule() {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
@@ -133,7 +132,6 @@ public class VolcanoPlannerTest {
     final List<String> buf = new ArrayList<>();
     planner.addRule(new SubsetRule(buf));
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -173,13 +171,13 @@ public class VolcanoPlannerTest {
    */
   @Ignore // broken, because ReformedSingleRule matches child traits strictly
   @Test public void testTransformSingleReformed() {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new ReformedSingleRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -198,7 +196,8 @@ public class VolcanoPlannerTest {
   }
 
   private void removeTrivialProject(boolean useRule) {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.ambitious = true;
 
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
@@ -217,14 +216,13 @@ public class VolcanoPlannerTest {
             PHYS_CALLING_CONVENTION,
             EnumerableConvention.INSTANCE,
             "PhysToIteratorRule") {
-          public RelNode convert(RelNode rel) {
+          public RelNode convert(RelOptRuleCall call, RelNode rel) {
             return new PhysToIteratorConverter(
                 rel.getCluster(),
                 rel);
           }
         });
 
-    RelOptCluster cluster = newCluster(planner);
     PhysLeafRel leafRel =
         new PhysLeafRel(
             cluster,
@@ -265,14 +263,14 @@ public class VolcanoPlannerTest {
    */
   @Ignore // broken, because ReformedSingleRule matches child traits strictly
   @Test public void testRemoveSingleReformed() {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.ambitious = true;
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new ReformedRemoveSingleRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -300,7 +298,8 @@ public class VolcanoPlannerTest {
    * first).
    */
   @Test public void testRemoveSingleGood() {
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.ambitious = true;
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
@@ -308,7 +307,6 @@ public class VolcanoPlannerTest {
     planner.addRule(new GoodSingleRule());
     planner.addRule(new GoodRemoveSingleRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -337,14 +335,14 @@ public class VolcanoPlannerTest {
   @Test public void testListener() {
     TestListener listener = new TestListener();
 
-    VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addListener(listener);
 
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
 
-    RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
         new NoneLeafRel(
             cluster,
@@ -525,10 +523,9 @@ public class VolcanoPlannerTest {
 
     public void onMatch(RelOptRuleCall call) {
       NoneSingleRel singleRel = call.rel(0);
-      RelNode childRel = call.rel(1);
+      RelNode input = call.rel(1);
       RelNode physInput =
-          convert(
-              childRel,
+          call.convert(input,
               singleRel.getTraitSet().replace(PHYS_CALLING_CONVENTION));
       call.transformTo(
           new PhysSingleRel(
@@ -589,7 +586,7 @@ public class VolcanoPlannerTest {
               operand(PhysLeafRel.class, any())));
     }
 
-    public Convention getOutConvention() {
+    @Override public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 

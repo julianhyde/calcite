@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.plan.hep.HepProgramBuilder;
+
 /**
  * RelTrait represents the manifestation of a relational expression trait within
  * a trait definition. For example, a {@code CallingConvention.JAVA} is a trait
@@ -80,11 +82,11 @@ public interface RelTrait {
    * Registers a trait instance with the planner.
    *
    * <p>This is an opportunity to add rules that relate to that trait. However,
-   * typical implementations will do nothing.</p>
+   * typical implementations will do nothing.
    *
-   * @param planner Planner
+   * @param programBuilder Program builder
    */
-  void register(RelOptPlanner planner);
+  void register(HepProgramBuilder programBuilder);
 }
 
 // End RelTrait.java

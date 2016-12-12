@@ -146,6 +146,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
   //~ Instance fields --------------------------------------------------------
 
   private final RelBuilder relBuilder;
+  private final RelOptCluster cluster;
 
   // map built during translation
   private CorelMap cm;
@@ -175,6 +176,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       CorelMap cm,
       Context context) {
     this.cm = cm;
+    this.cluster = cluster;
     this.rexBuilder = cluster.getRexBuilder();
     this.context = context;
     relBuilder = RelFactories.LOGICAL_BUILDER.create(cluster, null);
@@ -192,7 +194,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
    * @return Equivalent query with all
    * {@link org.apache.calcite.rel.logical.LogicalCorrelate} instances removed
    */
-  public static RelNode decorrelateQuery(RelNode rootRel) {
+  public static RelNode decorrelateQuery(RelNode rootRel, Context context) {
     final CorelMap corelMap = new CorelMapBuilder().build(rootRel);
     if (!corelMap.hasCorrelation()) {
       return rootRel;
@@ -200,8 +202,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
     final RelOptCluster cluster = rootRel.getCluster();
     final RelDecorrelator decorrelator =
-        new RelDecorrelator(cluster, corelMap,
-            cluster.getPlanner().getContext());
+        new RelDecorrelator(cluster, corelMap, context);
 
     RelNode newRootRel = decorrelator.removeCorrelationViaRule(rootRel);
 
@@ -287,11 +288,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
   private HepPlanner createPlanner(HepProgram program) {
     // Create a planner with a hook to update the mapping tables when a
     // node is copied when it is registered.
-    return new HepPlanner(
-        program,
-        context,
-        true,
-        createCopyHook(),
+    return new HepPlanner(cluster, program, context, true, createCopyHook(),
         RelOptCostImpl.FACTORY);
   }
 

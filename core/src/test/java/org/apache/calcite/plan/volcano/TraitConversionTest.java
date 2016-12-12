@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -57,7 +58,8 @@ public class TraitConversionTest {
       new SimpleDistribution("SINGLETON");
 
   @Test public void testTraitConversion() {
-    final VolcanoPlanner planner = new VolcanoPlanner();
+    final RelOptCluster cluster = newCluster();
+    final VolcanoPlanner planner = new VolcanoPlanner(cluster);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(NEW_TRAIT_DEF_INSTANCE);
 
@@ -65,7 +67,6 @@ public class TraitConversionTest {
     planner.addRule(new SingleLeafTraitRule());
     planner.addRule(ExpandConversionRule.INSTANCE);
 
-    final RelOptCluster cluster = newCluster(planner);
     final NoneLeafRel leafRel = new NoneLeafRel(cluster, "a");
     final NoneSingleRel singleRel = new NoneSingleRel(cluster, leafRel);
     final RelNode convertedRel =
@@ -104,7 +105,7 @@ public class TraitConversionTest {
       NoneSingleRel single = call.rel(0);
       RelNode input = single.getInput();
       RelNode physInput =
-          convert(input,
+          call.convert(input,
               single.getTraitSet()
                   .replace(PHYS_CALLING_CONVENTION)
                   .plus(SIMPLE_DISTRIBUTION_RANDOM));
@@ -209,7 +210,7 @@ public class TraitConversionTest {
 
     }
 
-    @Override public void register(RelOptPlanner planner) {}
+    @Override public void register(HepProgramBuilder programBuilder) {}
   }
 
   /**

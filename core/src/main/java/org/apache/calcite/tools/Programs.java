@@ -197,8 +197,8 @@ public class Programs {
           RelTraitSet requiredOutputTraits,
           List<RelOptMaterialization> materializations,
           List<RelOptLattice> lattices) {
-        final HepPlanner hepPlanner = new HepPlanner(hepProgram,
-            null, noDag, null, RelOptCostImpl.FACTORY);
+        final HepPlanner hepPlanner = new HepPlanner(planner.getCluster(),
+            hepProgram, null, noDag, null, RelOptCostImpl.FACTORY);
 
         List<RelMetadataProvider> list = Lists.newArrayList();
         if (metadataProvider != null) {
@@ -406,7 +406,7 @@ public class Programs {
       final CalciteConnectionConfig config =
           planner.getContext().unwrap(CalciteConnectionConfig.class);
       if (config != null && config.forceDecorrelate()) {
-        return RelDecorrelator.decorrelateQuery(rel);
+        return RelDecorrelator.decorrelateQuery(rel, planner.getContext());
       }
       return rel;
     }

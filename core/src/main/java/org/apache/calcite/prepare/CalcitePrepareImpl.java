@@ -62,6 +62,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollation;
@@ -136,6 +137,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -301,7 +303,9 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final Convention resultConvention =
         enableBindable ? BindableConvention.INSTANCE
             : EnumerableConvention.INSTANCE;
-    final HepPlanner planner = new HepPlanner(new HepProgramBuilder().build());
+    final RelOptCluster cluster = context.getCluster();
+    final HepProgram program = new HepProgramBuilder().build();
+    final HepPlanner planner = new HepPlanner(cluster, program);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     final SqlToRelConverter.ConfigBuilder configBuilder =
@@ -462,12 +466,6 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     return StandardConvertletTable.INSTANCE;
   }
 
-  /** Factory method for cluster. */
-  protected RelOptCluster createCluster(RelOptPlanner planner,
-      RexBuilder rexBuilder) {
-    return RelOptCluster.create(planner, rexBuilder);
-  }
-
   /** Creates a collection of planner factories.
    *
    * <p>The collection must have at least one factory, and each factory must
@@ -505,8 +503,9 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     if (externalContext == null) {
       externalContext = Contexts.of(prepareContext.config());
     }
+    final RelOptCluster cluster = prepareContext.getCluster();
     final VolcanoPlanner planner =
-        new VolcanoPlanner(costFactory, externalContext);
+        new VolcanoPlanner(cluster, costFactory, externalContext);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     if (ENABLE_COLLATION_TRAIT) {
       planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
@@ -1019,13 +1018,11 @@ public class CalcitePrepareImpl implements CalcitePrepare {
             prepareContext.config().caseSensitive(),
             schema.path(null),
             typeFactory);
-    final RexBuilder rexBuilder = new RexBuilder(typeFactory);
     final RelOptPlanner planner =
         createPlanner(prepareContext,
             action.getConfig().getContext(),
             action.getConfig().getCostFactory());
-    final RelOptCluster cluster = createCluster(planner, rexBuilder);
-    return action.apply(cluster, catalogReader,
+    return action.apply(planner, catalogReader,
         prepareContext.getRootSchema().plus(), statement);
   }
 
@@ -1072,21 +1069,16 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       return prepare_(
           new Supplier<RelNode>() {
             public RelNode get() {
-              final RelOptCluster cluster =
-                  prepare.createCluster(planner, rexBuilder);
-              return new LixToRelTranslator(cluster, CalcitePreparingStmt.this)
-                  .translate(queryable);
+              final LixToRelTranslator translator =
+                  new LixToRelTranslator(planner.getCluster(),
+                      CalcitePreparingStmt.this);
+              return translator.translate(queryable);
             }
           }, resultType);
     }
 
     public PreparedResult prepareRel(final RelNode rel) {
-      return prepare_(
-          new Supplier<RelNode>() {
-            public RelNode get() {
-              return rel;
-            }
-          }, rel.getRowType());
+      return prepare_(Suppliers.ofInstance(rel), rel.getRowType());
     }
 
     private PreparedResult prepare_(Supplier<RelNode> fn,
@@ -1125,7 +1117,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
 
       final List<Materialization> materializations = ImmutableList.of();
       final List<CalciteSchema.LatticeEntry> lattices = ImmutableList.of();
-      root = optimize(root, materializations, lattices);
+      root = optimize(root, planner, materializations, lattices);
 
       if (timingTracer != null) {
         timingTracer.traceTime("end optimization");
@@ -1138,7 +1130,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         SqlValidator validator,
         CatalogReader catalogReader,
         SqlToRelConverter.Config config) {
-      final RelOptCluster cluster = prepare.createCluster(planner, rexBuilder);
+      final RelOptCluster cluster = planner.getCluster();
       SqlToRelConverter sqlToRelConverter =
           new SqlToRelConverter(this, validator, catalogReader, cluster,
               convertletTable, config);

@@ -54,10 +54,7 @@ public class CalcRemoveRule extends RelOptRule {
     }
     RelNode input = calc.getInput();
     input = call.getPlanner().register(input, calc);
-    call.transformTo(
-        convert(
-            input,
-            calc.getTraitSet()));
+    call.transformTo(call.convert(input, calc.getTraitSet()));
   }
 }
 

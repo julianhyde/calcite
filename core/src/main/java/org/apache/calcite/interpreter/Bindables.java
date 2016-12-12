@@ -246,12 +246,12 @@ public class Bindables {
           BindableConvention.INSTANCE, "BindableFilterRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
+      final RelNode input = filter.getInput();
       return BindableFilter.create(
-          convert(filter.getInput(),
-              filter.getInput().getTraitSet()
-                  .replace(BindableConvention.INSTANCE)),
+          call.convert(input,
+              input.getTraitSet().replace(BindableConvention.INSTANCE)),
           filter.getCondition());
     }
   }
@@ -309,13 +309,13 @@ public class Bindables {
           BindableConvention.INSTANCE, "BindableProjectRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
+      final RelNode input = project.getInput();
       return new BindableProject(rel.getCluster(),
           rel.getTraitSet().replace(BindableConvention.INSTANCE),
-          convert(project.getInput(),
-              project.getInput().getTraitSet()
-                  .replace(BindableConvention.INSTANCE)),
+          call.convert(input,
+              input.getTraitSet().replace(BindableConvention.INSTANCE)),
           project.getProjects(),
           project.getRowType());
     }
@@ -359,13 +359,13 @@ public class Bindables {
           "BindableSortRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final Sort sort = (Sort) rel;
       final RelTraitSet traitSet =
           sort.getTraitSet().replace(BindableConvention.INSTANCE);
       final RelNode input = sort.getInput();
       return new BindableSort(rel.getCluster(), traitSet,
-          convert(input,
+          call.convert(input,
               input.getTraitSet().replace(BindableConvention.INSTANCE)),
           sort.getCollation(), sort.offset, sort.fetch);
     }
@@ -409,17 +409,17 @@ public class Bindables {
           "BindableJoinRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalJoin join = (LogicalJoin) rel;
       final BindableConvention out = BindableConvention.INSTANCE;
       final RelTraitSet traitSet = join.getTraitSet().replace(out);
+      final RelNode left = join.getLeft();
+      final RelNode right = join.getRight();
       return new BindableJoin(rel.getCluster(), traitSet,
-          convert(join.getLeft(),
-              join.getLeft().getTraitSet()
-                  .replace(BindableConvention.INSTANCE)),
-          convert(join.getRight(),
-              join.getRight().getTraitSet()
-                  .replace(BindableConvention.INSTANCE)),
+          call.convert(left,
+              left.getTraitSet().replace(BindableConvention.INSTANCE)),
+          call.convert(right,
+              right.getTraitSet().replace(BindableConvention.INSTANCE)),
           join.getCondition(), join.getVariablesSet(), join.getJoinType());
     }
   }
@@ -472,12 +472,12 @@ public class Bindables {
           "BindableUnionRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalUnion union = (LogicalUnion) rel;
       final BindableConvention out = BindableConvention.INSTANCE;
       final RelTraitSet traitSet = union.getTraitSet().replace(out);
       return new BindableUnion(rel.getCluster(), traitSet,
-          convertList(union.getInputs(), out), union.all);
+          call.convertList(union.getInputs(), out), union.all);
     }
   }
 
@@ -540,7 +540,7 @@ public class Bindables {
           "BindableValuesRule");
     }
 
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
       LogicalValues values = (LogicalValues) rel;
       return new BindableValues(values.getCluster(), values.getRowType(),
           values.getTuples(),
@@ -611,14 +611,14 @@ public class Bindables {
           BindableConvention.INSTANCE, "BindableAggregateRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalAggregate agg = (LogicalAggregate) rel;
       final RelTraitSet traitSet =
           agg.getTraitSet().replace(BindableConvention.INSTANCE);
       try {
         return new BindableAggregate(rel.getCluster(), traitSet,
-            convert(agg.getInput(), traitSet), agg.indicator, agg.getGroupSet(),
-            agg.getGroupSets(), agg.getAggCallList());
+            call.convert(agg.getInput(), traitSet), agg.indicator,
+            agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList());
       } catch (InvalidRelException e) {
         RelOptPlanner.LOGGER.debug(e.toString());
         return null;
@@ -669,15 +669,14 @@ public class Bindables {
           "BindableWindowRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalWindow winAgg = (LogicalWindow) rel;
       final RelTraitSet traitSet =
           winAgg.getTraitSet().replace(BindableConvention.INSTANCE);
       final RelNode input = winAgg.getInput();
-      final RelNode convertedInput =
-          convert(input,
-              input.getTraitSet().replace(BindableConvention.INSTANCE));
-      return new BindableWindow(rel.getCluster(), traitSet, convertedInput,
+      return new BindableWindow(rel.getCluster(), traitSet,
+          call.convert(input,
+              input.getTraitSet().replace(BindableConvention.INSTANCE)),
           winAgg.getConstants(), winAgg.getRowType(), winAgg.groups);
     }
   }

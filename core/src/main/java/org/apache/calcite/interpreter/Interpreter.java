@@ -85,7 +85,7 @@ public class Interpreter extends AbstractEnumerable<Object[]>
         .addRuleInstance(FilterTableScanRule.INTERPRETER)
         .addRuleInstance(ProjectTableScanRule.INSTANCE)
         .addRuleInstance(ProjectTableScanRule.INTERPRETER).build();
-    final HepPlanner planner = new HepPlanner(hepProgram);
+    final HepPlanner planner = new HepPlanner(rootRel.getCluster(), hepProgram);
     planner.setRoot(rootRel);
     rootRel = planner.findBestExp();
     return rootRel;

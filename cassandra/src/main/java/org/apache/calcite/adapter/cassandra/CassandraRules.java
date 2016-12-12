@@ -211,20 +211,21 @@ public class CassandraRules {
       LogicalFilter filter = call.rel(0);
       CassandraTableScan scan = call.rel(1);
       if (filter.getTraitSet().contains(Convention.NONE)) {
-        final RelNode converted = convert(filter, scan);
+        final RelNode converted = convert(call, filter, scan);
         if (converted != null) {
           call.transformTo(converted);
         }
       }
     }
 
-    public RelNode convert(LogicalFilter filter, CassandraTableScan scan) {
+    public RelNode convert(RelOptRuleCall call, LogicalFilter filter,
+        CassandraTableScan scan) {
       final RelTraitSet traitSet = filter.getTraitSet().replace(CassandraRel.CONVENTION);
       final Pair<List<String>, List<String>> keyFields = scan.cassandraTable.getKeyFields();
       return new CassandraFilter(
           filter.getCluster(),
           traitSet,
-          convert(filter.getInput(), CassandraRel.CONVENTION),
+          call.convert(filter.getInput(), CassandraRel.CONVENTION),
           filter.getCondition(),
           keyFields.left,
           keyFields.right,
@@ -254,11 +255,11 @@ public class CassandraRules {
       return true;
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
       return new CassandraProject(project.getCluster(), traitSet,
-          convert(project.getInput(), out), project.getProjects(),
+          call.convert(project.getInput(), out), project.getProjects(),
           project.getRowType());
     }
   }
@@ -292,12 +293,13 @@ public class CassandraRules {
       super(operand(Sort.class, null, SORT_PREDICATE, CASSANDRA_OP), "CassandraSortRule");
     }
 
-    public RelNode convert(Sort sort, CassandraFilter filter) {
+    public RelNode convert(RelOptRuleCall call, Sort sort,
+        CassandraFilter filter) {
       final RelTraitSet traitSet =
           sort.getTraitSet().replace(CassandraRel.CONVENTION)
               .replace(sort.getCollation());
       return new CassandraSort(sort.getCluster(), traitSet,
-          convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
+          call.convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
           sort.getCollation());
     }
 
@@ -371,7 +373,7 @@ public class CassandraRules {
     public void onMatch(RelOptRuleCall call) {
       final Sort sort = call.rel(0);
       CassandraFilter filter = call.rel(2);
-      final RelNode converted = convert(sort, filter);
+      final RelNode converted = convert(call, sort, filter);
       if (converted != null) {
         call.transformTo(converted);
       }
@@ -390,17 +392,18 @@ public class CassandraRules {
         "CassandraLimitRule");
     }
 
-    public RelNode convert(EnumerableLimit limit) {
+    public RelNode convert(RelOptRuleCall call, EnumerableLimit limit) {
       final RelTraitSet traitSet =
           limit.getTraitSet().replace(CassandraRel.CONVENTION);
       return new CassandraLimit(limit.getCluster(), traitSet,
-        convert(limit.getInput(), CassandraRel.CONVENTION), limit.offset, limit.fetch);
+        call.convert(limit.getInput(), CassandraRel.CONVENTION), limit.offset,
+          limit.fetch);
     }
 
     /** @see org.apache.calcite.rel.convert.ConverterRule */
     public void onMatch(RelOptRuleCall call) {
       final EnumerableLimit limit = call.rel(0);
-      final RelNode converted = convert(limit);
+      final RelNode converted = convert(call, limit);
       if (converted != null) {
         call.transformTo(converted);
       }

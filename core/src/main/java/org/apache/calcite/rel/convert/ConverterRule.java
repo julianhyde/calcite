@@ -93,7 +93,7 @@ public abstract class ConverterRule extends RelOptRule {
     return inTrait.getTraitDef();
   }
 
-  public abstract RelNode convert(RelNode rel);
+  public abstract RelNode convert(RelOptRuleCall call, RelNode rel);
 
   /**
    * Returns true if this rule can convert <em>any</em> relational expression
@@ -112,7 +112,7 @@ public abstract class ConverterRule extends RelOptRule {
   public void onMatch(RelOptRuleCall call) {
     RelNode rel = call.rel(0);
     if (rel.getTraitSet().contains(inTrait)) {
-      final RelNode converted = convert(rel);
+      final RelNode converted = convert(call, rel);
       if (converted != null) {
         call.transformTo(converted);
       }

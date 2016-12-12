@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.SemiJoin;
@@ -33,13 +34,13 @@ class EnumerableSemiJoinRule extends ConverterRule {
         "EnumerableSemiJoinRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelOptRuleCall call, RelNode rel) {
     final SemiJoin semiJoin = (SemiJoin) rel;
     final List<RelNode> newInputs = new ArrayList<>();
     for (RelNode input : semiJoin.getInputs()) {
       if (!(input.getConvention() instanceof EnumerableConvention)) {
         input =
-            convert(input,
+            call.convert(input,
                 input.getTraitSet().replace(EnumerableConvention.INSTANCE));
       }
       newInputs.add(input);

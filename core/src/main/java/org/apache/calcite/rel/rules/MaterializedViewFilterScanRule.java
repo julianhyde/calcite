@@ -17,6 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.MaterializedViewSubstitutionVisitor;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptMaterializations;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -84,8 +85,9 @@ public class MaterializedViewFilterScanRule extends RelOptRule {
         if (RelOptUtil.areRowTypesEqual(scan.getRowType(),
             materialization.queryRel.getRowType(), false)) {
           RelNode target = materialization.queryRel;
+          final RelOptCluster cluster = planner.getCluster();
           final HepPlanner hepPlanner =
-              new HepPlanner(program, planner.getContext());
+              new HepPlanner(cluster, program, planner.getContext());
           hepPlanner.setRoot(target);
           target = hepPlanner.findBestExp();
           List<RelNode> subs = new MaterializedViewSubstitutionVisitor(target, root)

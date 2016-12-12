@@ -23,6 +23,7 @@ import org.apache.calcite.plan.AbstractRelOptPlanner;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
@@ -252,12 +253,21 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   //~ Constructors -----------------------------------------------------------
 
   /**
-   * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize
+   * Creates an uninitialized <code>VolcanoPlanner</code>. To fully initialize
    * it, the caller must register the desired set of relations, rules, and
    * calling conventions.
    */
+  @Deprecated // to be removed before 2.0
   public VolcanoPlanner() {
-    this(null, null);
+    this(null, null, null);
+  }
+
+  /**
+   * Creates a <code>VolcanoPlanner</code> with default cost factory and no
+   * external context.
+   */
+  public VolcanoPlanner(RelOptCluster cluster) {
+    this(cluster, null, null);
   }
 
   /**
@@ -265,16 +275,26 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * it, the caller must register the desired set of relations, rules, and
    * calling conventions.
    */
+  @Deprecated // to be removed before 2.0
   public VolcanoPlanner(Context externalContext) {
-    this(null, externalContext);
+    this(null, null, externalContext);
   }
 
   /**
    * Creates a {@code VolcanoPlanner} with a given cost factory.
    */
+  @Deprecated // to be removed before 2.0
   public VolcanoPlanner(RelOptCostFactory costFactory, //
       Context externalContext) {
-    super(costFactory == null ? VolcanoCost.FACTORY : costFactory, //
+    this(null, costFactory, externalContext);
+  }
+
+  /**
+   * Creates a {@code VolcanoPlanner} with a given cost factory.
+   */
+  public VolcanoPlanner(RelOptCluster cluster, RelOptCostFactory costFactory,
+      Context externalContext) {
+    super(cluster, costFactory == null ? VolcanoCost.FACTORY : costFactory,
         externalContext);
     this.zeroCost = this.costFactory.makeZeroCost();
   }
@@ -348,7 +368,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     // Register rels using materialized views.
     final List<Pair<RelNode, List<RelOptMaterialization>>> materializationUses =
-        RelOptMaterializations.useMaterializedViews(originalRoot, materializations);
+        RelOptMaterializations.useMaterializedViews(originalRoot, materializations,
+            getContext());
     for (Pair<RelNode, List<RelOptMaterialization>> use : materializationUses) {
       RelNode rel = use.left;
       Hook.SUB.run(rel);
@@ -550,7 +571,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       return rel2;
     }
 
-    return rel2.set.getOrCreateSubset(rel.getCluster(), toTraits.simplify());
+    return rel2.set.getOrCreateSubset(this, toTraits.simplify());
   }
 
   public RelOptPlanner chooseDelegate() {
@@ -999,7 +1020,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       return null;
     }
     if (createIfMissing) {
-      return set.getOrCreateSubset(rel.getCluster(), traits);
+      return set.getOrCreateSubset(this, traits);
     }
     return set.getSubset(traits);
   }
@@ -1338,8 +1359,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     do {
       set = set.equivalentSet;
     } while (set.equivalentSet != null);
-    return set.getOrCreateSubset(
-        subset.getCluster(), subset.getTraitSet());
+    return set.getOrCreateSubset(this, subset.getTraitSet());
   }
 
   /**
@@ -1415,10 +1435,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     // Was the set we merged with the root? If so, the result is the new
     // root.
     if (set2 == getSet(root)) {
-      root =
-          set.getOrCreateSubset(
-              root.getCluster(),
-              root.getTraitSet());
+      root = set.getOrCreateSubset(this, root.getTraitSet());
       ensureRootConverters();
     }
 
@@ -1471,10 +1488,6 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
     assert !isRegistered(rel) : "already been registered: " + rel;
-    if (rel.getCluster().getPlanner() != this) {
-      throw new AssertionError("Relational expression " + rel
-          + " belongs to a different planner than is currently being used.");
-    }
 
     // Now is a good time to ensure that the relational expression
     // implements the interface required by its calling convention.
@@ -1644,7 +1657,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   }
 
   private RelSubset addRelToSet(RelNode rel, RelSet set) {
-    RelSubset subset = set.add(rel);
+    RelSubset subset = set.add(this, rel);
     mapRel2Subset.put(rel, subset);
 
     // While a tree of RelNodes is being registered, sometimes nodes' costs

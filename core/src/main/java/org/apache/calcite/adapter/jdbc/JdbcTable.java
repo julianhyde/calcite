@@ -28,6 +28,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.Prepare.CatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
@@ -186,7 +187,7 @@ class JdbcTable extends AbstractQueryableTable
       RelOptTable table, CatalogReader catalogReader, RelNode input,
       Operation operation, List<String> updateColumnList,
       List<RexNode> sourceExpressionList, boolean flattened) {
-    jdbcSchema.convention.register(cluster.getPlanner());
+    jdbcSchema.convention.register((HepProgramBuilder) (Object) cluster); // TODO:
 
     return new LogicalTableModify(cluster, cluster.traitSetOf(Convention.NONE),
         table, catalogReader, input, operation, updateColumnList,

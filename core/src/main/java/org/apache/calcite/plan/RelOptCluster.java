@@ -40,7 +40,7 @@ public class RelOptCluster {
   //~ Instance fields --------------------------------------------------------
 
   private final RelDataTypeFactory typeFactory;
-  private final RelOptPlanner planner;
+  public final Xyz xyz;
   private final AtomicInteger nextCorrel;
   private final Map<String, RelNode> mapCorrelToRel;
   private RexNode originalExpression;
@@ -57,10 +57,10 @@ public class RelOptCluster {
   @Deprecated // to be removed before 2.0
   RelOptCluster(
       RelOptQuery query,
-      RelOptPlanner planner,
+      Xyz xyz,
       RelDataTypeFactory typeFactory,
       RexBuilder rexBuilder) {
-    this(planner, typeFactory, rexBuilder, query.nextCorrel,
+    this(xyz, typeFactory, rexBuilder, query.nextCorrel,
         query.mapCorrelToRel);
   }
 
@@ -69,27 +69,27 @@ public class RelOptCluster {
    *
    * <p>For use only from {@link #create} and {@link RelOptQuery}.
    */
-  RelOptCluster(RelOptPlanner planner, RelDataTypeFactory typeFactory,
+  RelOptCluster(Xyz xyz, RelDataTypeFactory typeFactory,
       RexBuilder rexBuilder, AtomicInteger nextCorrel,
       Map<String, RelNode> mapCorrelToRel) {
     this.nextCorrel = nextCorrel;
     this.mapCorrelToRel = mapCorrelToRel;
-    this.planner = Preconditions.checkNotNull(planner);
+    this.xyz = Preconditions.checkNotNull(xyz);
     this.typeFactory = Preconditions.checkNotNull(typeFactory);
     this.rexBuilder = rexBuilder;
     this.originalExpression = rexBuilder.makeLiteral("?");
 
     // set up a default rel metadata provider,
-    // giving the planner first crack at everything
+    // giving the xyz first crack at everything
     setMetadataProvider(DefaultRelMetadataProvider.INSTANCE);
-    this.emptyTraitSet = planner.emptyTraitSet();
-    assert emptyTraitSet.size() == planner.getRelTraitDefs().size();
+    this.emptyTraitSet = xyz.emptyTraitSet();
+    assert emptyTraitSet.size() == xyz.getRelTraitDefs().size();
   }
 
   /** Creates a cluster. */
-  public static RelOptCluster create(RelOptPlanner planner,
+  public static RelOptCluster create(Xyz xyz,
       RexBuilder rexBuilder) {
-    return new RelOptCluster(planner, rexBuilder.getTypeFactory(),
+    return new RelOptCluster(xyz, rexBuilder.getTypeFactory(),
         rexBuilder, new AtomicInteger(0), new HashMap<String, RelNode>());
   }
 
@@ -97,7 +97,7 @@ public class RelOptCluster {
 
   @Deprecated // to be removed before 2.0
   public RelOptQuery getQuery() {
-    return new RelOptQuery(planner, nextCorrel, mapCorrelToRel);
+    return new RelOptQuery(this, nextCorrel, mapCorrelToRel);
   }
 
   @Deprecated // to be removed before 2.0
@@ -108,10 +108,6 @@ public class RelOptCluster {
   @Deprecated // to be removed before 2.0
   public void setOriginalExpression(RexNode originalExpression) {
     this.originalExpression = originalExpression;
-  }
-
-  public RelOptPlanner getPlanner() {
-    return planner;
   }
 
   public RelDataTypeFactory getTypeFactory() {
