@@ -62,6 +62,7 @@ public interface RelOptPlanner {
    * @return whether the RelTraitDef was added, as per
    * {@link java.util.Collection#add}
    */
+  @Deprecated // TODO: remove method (trait defs must exist in RelOptCluster)
   boolean addRelTraitDef(RelTraitDef relTraitDef);
 
   /**

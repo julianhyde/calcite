@@ -27,8 +27,10 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,7 +63,7 @@ public class RelOptCluster {
       RelDataTypeFactory typeFactory,
       RexBuilder rexBuilder) {
     this(xyz, typeFactory, rexBuilder, query.nextCorrel,
-        query.mapCorrelToRel);
+        query.mapCorrelToRel, ImmutableList.<RelTraitDef>of());
   }
 
   /**
@@ -71,7 +73,7 @@ public class RelOptCluster {
    */
   RelOptCluster(Xyz xyz, RelDataTypeFactory typeFactory,
       RexBuilder rexBuilder, AtomicInteger nextCorrel,
-      Map<String, RelNode> mapCorrelToRel) {
+      Map<String, RelNode> mapCorrelToRel, List<RelTraitDef> traitDefs) {
     this.nextCorrel = nextCorrel;
     this.mapCorrelToRel = mapCorrelToRel;
     this.xyz = Preconditions.checkNotNull(xyz);
@@ -82,15 +84,24 @@ public class RelOptCluster {
     // set up a default rel metadata provider,
     // giving the xyz first crack at everything
     setMetadataProvider(DefaultRelMetadataProvider.INSTANCE);
-    this.emptyTraitSet = xyz.emptyTraitSet();
-    assert emptyTraitSet.size() == xyz.getRelTraitDefs().size();
+    RelTraitSet traitSet = RelTraitSet.createEmpty();
+    for (RelTraitDef traitDef : traitDefs) {
+      if (traitDef.multiple()) {
+        // TODO: restructure RelTraitSet to allow a list of entries
+        //  for any given trait
+      }
+      traitSet = traitSet.plus(traitDef.getDefault());
+    }
+    this.emptyTraitSet = traitSet;
+    assert emptyTraitSet.size() == traitDefs.size();
   }
 
   /** Creates a cluster. */
   public static RelOptCluster create(Xyz xyz,
-      RexBuilder rexBuilder) {
+      RexBuilder rexBuilder, List<RelTraitDef> traitDefs) {
     return new RelOptCluster(xyz, rexBuilder.getTypeFactory(),
-        rexBuilder, new AtomicInteger(0), new HashMap<String, RelNode>());
+        rexBuilder, new AtomicInteger(0), new HashMap<String, RelNode>(),
+        traitDefs);
   }
 
   //~ Methods ----------------------------------------------------------------

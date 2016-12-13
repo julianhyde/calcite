@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -388,7 +389,8 @@ public final class Schemas {
       final List<String> schemaPath) {
     return new CalcitePrepare.Context() {
       final RelOptCluster cluster =
-          RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory));
+          RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory),
+              ImmutableList.<RelTraitDef>of());
 
       public RelOptCluster getCluster() {
         return cluster;

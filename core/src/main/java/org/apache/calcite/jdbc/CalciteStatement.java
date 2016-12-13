@@ -21,7 +21,10 @@ import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.server.CalciteServerStatement;
+
+import com.google.common.collect.ImmutableList;
 
 import java.sql.SQLException;
 
@@ -65,7 +68,8 @@ public abstract class CalciteStatement extends AvaticaStatement {
   }
 
   public CalciteConnectionImpl.ContextImpl createPrepareContext() {
-    return new CalciteConnectionImpl.ContextImpl(getConnection());
+    return new CalciteConnectionImpl.ContextImpl(getConnection(),
+        ImmutableList.<RelTraitDef>of());
   }
 
   protected <T> CalcitePrepare.CalciteSignature<T> prepare(
@@ -79,7 +83,7 @@ public abstract class CalciteStatement extends AvaticaStatement {
       throw new AssertionError("invalid statement", e);
     }
     final CalcitePrepare.Context prepareContext =
-        serverStatement.createPrepareContext();
+        serverStatement.createPrepareContext(ImmutableList.<RelTraitDef>of());
     return prepare.prepareQueryable(prepareContext, queryable);
   }
 

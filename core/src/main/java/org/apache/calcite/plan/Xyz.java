@@ -347,10 +347,12 @@ public class Xyz {
    *
    * @return Empty trait set
    */
-  RelTraitSet emptyTraitSet() { throw new UnsupportedOperationException(); }
+  public RelTraitSet emptyTraitSet() { throw new UnsupportedOperationException(); }
 
   /** Sets the object that can execute scalar expressions. */
-//  void setExecutor(Executor executor);
+  public void setExecutor(RelOptPlanner.Executor executor) {
+    throw new UnsupportedOperationException();
+  }
 
   /** Returns the executor used to evaluate constant expressions. */
   public RelOptPlanner.Executor getExecutor() { throw new UnsupportedOperationException(); }

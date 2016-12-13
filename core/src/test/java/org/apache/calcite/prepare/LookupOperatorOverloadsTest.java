@@ -19,6 +19,7 @@ package org.apache.calcite.prepare;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TableFunction;
 import org.apache.calcite.schema.impl.AbstractSchema;
@@ -140,7 +141,7 @@ public class LookupOperatorOverloadsTest {
       final CalciteServerStatement statement =
           connection.createStatement().unwrap(CalciteServerStatement.class);
       final CalcitePrepare.Context prepareContext =
-          statement.createPrepareContext();
+          statement.createPrepareContext(ImmutableList.<RelTraitDef>of());
       final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
       CalciteCatalogReader reader =
           new CalciteCatalogReader(prepareContext.getRootSchema(), false,

@@ -224,7 +224,8 @@ public class PlannerImpl implements Planner {
     ensure(State.STATE_4_VALIDATED);
     assert validatedSqlNode != null;
     final RexBuilder rexBuilder = createRexBuilder();
-    final RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder);
+    final RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder,
+        ImmutableList.<RelTraitDef>of());
     final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
         .withTrimUnusedFields(false).withConvertTableAccess(false).build();
     final SqlToRelConverter sqlToRelConverter =
@@ -262,7 +263,8 @@ public class PlannerImpl implements Planner {
       final SqlNode validatedSqlNode = validator.validate(sqlNode);
 
       final RexBuilder rexBuilder = createRexBuilder();
-      final RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder);
+      final RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder,
+          ImmutableList.<RelTraitDef>of());
       final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
           .withTrimUnusedFields(false).withConvertTableAccess(false).build();
       final SqlToRelConverter sqlToRelConverter =

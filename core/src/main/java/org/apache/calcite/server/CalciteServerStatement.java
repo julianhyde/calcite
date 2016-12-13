@@ -19,15 +19,20 @@ package org.apache.calcite.server;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.plan.RelTraitDef;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Statement within a Calcite server.
  */
 public interface CalciteServerStatement {
-  /** Creates a context for preparing a statement for execution. */
-  CalcitePrepare.Context createPrepareContext();
+  /** Creates a context for preparing a statement for execution.
+   *
+   * @param traitDefs Traits to be considered during preparation/planning
+   */
+  CalcitePrepare.Context createPrepareContext(List<RelTraitDef> traitDefs);
 
   /** Returns the connection. */
   CalciteConnection getConnection();

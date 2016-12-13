@@ -58,10 +58,9 @@ public class TraitConversionTest {
       new SimpleDistribution("SINGLETON");
 
   @Test public void testTraitConversion() {
-    final RelOptCluster cluster = newCluster();
+    final RelOptCluster cluster =
+        newCluster(ConventionTraitDef.INSTANCE, NEW_TRAIT_DEF_INSTANCE);
     final VolcanoPlanner planner = new VolcanoPlanner(cluster);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(NEW_TRAIT_DEF_INSTANCE);
 
     planner.addRule(new RandomSingleTraitRule());
     planner.addRule(new SingleLeafTraitRule());

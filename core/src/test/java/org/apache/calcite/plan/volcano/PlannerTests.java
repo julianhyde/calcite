@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -34,6 +35,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
+
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
@@ -59,10 +62,11 @@ class PlannerTests {
         }
       };
 
-  static RelOptCluster newCluster() {
+  static RelOptCluster newCluster(RelTraitDef... traitDefs) {
     final RelDataTypeFactory typeFactory =
         new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
-    return RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory));
+    return RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory),
+        ImmutableList.copyOf(traitDefs));
   }
 
   /** Leaf relational expression. */

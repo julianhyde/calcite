@@ -166,7 +166,8 @@ public class RelOptRulesTest extends RelOptTestBase {
 
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ReduceExpressionsRule.class);
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner hepPlanner = new HepPlanner(cluster, builder.build());
     hepPlanner.addRule(ReduceExpressionsRule.FILTER_INSTANCE);
 
     final String sql = "select sal\n"
@@ -204,7 +205,8 @@ public class RelOptRulesTest extends RelOptTestBase {
 
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ReduceExpressionsRule.class);
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner hepPlanner = new HepPlanner(cluster, builder.build());
     hepPlanner.addRule(ReduceExpressionsRule.FILTER_INSTANCE);
 
     final String sql = "select sal\n"
@@ -217,7 +219,8 @@ public class RelOptRulesTest extends RelOptTestBase {
   @Test public void testReduceNullableCase() {
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ReduceExpressionsRule.class);
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner hepPlanner = new HepPlanner(cluster, builder.build());
     hepPlanner.addRule(ReduceExpressionsRule.PROJECT_INSTANCE);
 
     final String sql = "SELECT CASE WHEN 1=2 "
@@ -244,7 +247,8 @@ public class RelOptRulesTest extends RelOptTestBase {
 
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ProjectToWindowRule.class);
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner hepPlanner = new HepPlanner(cluster, builder.build());
     hepPlanner.addRule(ProjectToWindowRule.PROJECT);
 
     final String sql = "select\n"
@@ -338,27 +342,25 @@ public class RelOptRulesTest extends RelOptTestBase {
             + " where dname = 'Charlie'");
   }
 
-  private void basePushFilterPastAggWithGroupingSets(boolean unchanged)
-      throws Exception {
+  private Sql basePushFilterPastAggWithGroupingSets() throws Exception {
     final HepProgram preProgram =
-            HepProgram.builder()
-                .addRuleInstance(ProjectMergeRule.INSTANCE)
-                .addRuleInstance(FilterProjectTransposeRule.INSTANCE)
-                .build();
+        HepProgram.builder()
+            .addRuleInstance(ProjectMergeRule.INSTANCE)
+            .addRuleInstance(FilterProjectTransposeRule.INSTANCE)
+            .build();
     final HepProgram program =
-            HepProgram.builder()
-                .addRuleInstance(FilterAggregateTransposeRule.INSTANCE)
-                .build();
-    checkPlanning(tester, preProgram, new HepPlanner(program), "${sql}",
-        unchanged);
+        HepProgram.builder()
+            .addRuleInstance(FilterAggregateTransposeRule.INSTANCE)
+            .build();
+    return sql("${sql}").withPre(preProgram).with(program);
   }
 
   @Test public void testPushFilterPastAggWithGroupingSets1() throws Exception {
-    basePushFilterPastAggWithGroupingSets(true);
+    basePushFilterPastAggWithGroupingSets().checkUnchanged();
   }
 
   @Test public void testPushFilterPastAggWithGroupingSets2() throws Exception {
-    basePushFilterPastAggWithGroupingSets(false);
+    basePushFilterPastAggWithGroupingSets().check();
   }
 
   /** Test case for
@@ -382,7 +384,7 @@ public class RelOptRulesTest extends RelOptTestBase {
             .build();
     final String sql = "select deptno from emp\n"
         + "group by deptno having count(*) > 1";
-    checkPlanUnchanged(new HepPlanner(program), sql);
+    sql(sql).with(program).checkUnchanged();
   }
 
   /** Test case for
@@ -398,9 +400,10 @@ public class RelOptRulesTest extends RelOptTestBase {
         HepProgram.builder()
             .addRuleInstance(FilterAggregateTransposeRule.INSTANCE)
             .build();
-    checkPlanning(tester, preProgram, new HepPlanner(program),
-        "select emp.deptno, count(*) from emp where emp.sal > '12' "
-            + "group by emp.deptno\n", false);
+    final String sql = "select emp.deptno, count(*) from emp\n"
+        + "where emp.sal > '12'\n"
+        + "group by emp.deptno\n";
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   /** Test case for
@@ -434,7 +437,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from dept a\n"
         + "left join dept b on b.deptno > 10\n"
         + "right join dept c on b.deptno > 10\n";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testJoinProjectTranspose() {
@@ -455,7 +458,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from dept a\n"
         + "left join dept b on b.deptno > 10\n"
         + "right join dept c on b.deptno > 10\n";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   /** Test case for
@@ -704,7 +707,8 @@ public class RelOptRulesTest extends RelOptTestBase {
             .addRuleInstance(SemiJoinRule.PROJECT)
             .build();
 
-    HepPlanner planner = new HepPlanner(program);
+    final RelOptCluster cluster = converter.getCluster();
+    final HepPlanner planner = new HepPlanner(cluster, program);
     planner.setRoot(root.rel);
     root = root.withRel(planner.findBestExp());
 
@@ -1253,7 +1257,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select d.deptno"
         + " from dept d"
         + " where d.deptno=7 and d.deptno=8";
-    checkPlanning(new HepPlanner(program), sql);
+    sql(sql).with(program).check();
   }
 
   /** Test case for
@@ -1395,13 +1399,13 @@ public class RelOptRulesTest extends RelOptTestBase {
         .build();
 
     // Remove the executor
-    tester.convertSqlToRel("values 1").rel.getCluster().getPlanner()
+    tester.convertSqlToRel("values 1").rel.getCluster().xyz
         .setExecutor(null);
 
     // Rule should not fire, but there should be no NPE
     final String sql =
         "select * from (values (1,2)) where 1 + 2 > 3 + CAST(NULL AS INTEGER)";
-    checkPlanUnchanged(new HepPlanner(program), sql);
+    sql(sql).with(program).checkUnchanged();
   }
 
   @Test public void testAlreadyFalseEliminatesFilter() throws Exception {
@@ -1503,38 +1507,46 @@ public class RelOptRulesTest extends RelOptTestBase {
   }
 
   private void checkPlanning(String query) throws Exception {
-    final Tester tester1 = tester.withCatalogReaderFactory(
-        new Function<RelDataTypeFactory, Prepare.CatalogReader>() {
-          public Prepare.CatalogReader apply(RelDataTypeFactory typeFactory) {
-            return new MockCatalogReader(typeFactory, true) {
-              @Override public MockCatalogReader init() {
-                // CREATE SCHEMA abc;
-                // CREATE TABLE a(a INT);
-                // ...
-                // CREATE TABLE j(j INT);
-                MockSchema schema = new MockSchema("SALES");
-                registerSchema(schema);
-                final RelDataType intType =
-                    typeFactory.createSqlType(SqlTypeName.INTEGER);
-                for (int i = 0; i < 10; i++) {
-                  String t = String.valueOf((char) ('A' + i));
-                  MockTable table = MockTable.create(this, schema, t, false, 100);
-                  table.addColumn(t, intType);
-                  registerTable(table);
-                }
-                return this;
-              }
-              // CHECKSTYLE: IGNORE 1
-            }.init();
-          }
-        });
     HepProgram program = new HepProgramBuilder()
         .addMatchOrder(HepMatchOrder.BOTTOM_UP)
         .addRuleInstance(ProjectRemoveRule.INSTANCE)
         .addRuleInstance(JoinToMultiJoinRule.INSTANCE)
         .build();
-    checkPlanning(tester1, null,
-        new HepPlanner(program), query);
+    sql(query)
+        .withTransform(
+            new Function<Tester, Tester>() {
+              public Tester apply(Tester tester) {
+                return tester.withCatalogReaderFactory(
+                    new Function<RelDataTypeFactory, Prepare.CatalogReader>() {
+                      public Prepare.CatalogReader
+                      apply(RelDataTypeFactory typeFactory) {
+                        return new MockCatalogReader(typeFactory, true) {
+                          @Override public MockCatalogReader init() {
+                            // CREATE SCHEMA abc;
+                            // CREATE TABLE a(a INT);
+                            // ...
+                            // CREATE TABLE j(j INT);
+                            MockSchema schema = new MockSchema("SALES");
+                            registerSchema(schema);
+                            final RelDataType intType =
+                                typeFactory.createSqlType(SqlTypeName.INTEGER);
+                            for (int i = 0; i < 10; i++) {
+                              String t = String.valueOf((char) ('A' + i));
+                              MockTable table =
+                                  MockTable.create(this, schema, t, false, 100);
+                              table.addColumn(t, intType);
+                              registerTable(table);
+                            }
+                            return this;
+                          }
+                          // CHECKSTYLE: IGNORE 1
+                        }.init();
+                      }
+                    });
+              }
+            })
+        .with(program)
+        .check();
   }
 
   @Test public void testConvertMultiJoinRuleOuterJoins() throws Exception {
@@ -1883,7 +1895,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         .build();
 
     final String sql = "select sum(empno) from emp where false group by deptno";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testEmptyAggregateEmptyKey() {
@@ -1896,8 +1908,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         .build();
 
     final String sql = "select sum(empno) from emp where false";
-    final boolean unchanged = true;
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql, unchanged);
+    sql(sql).withPre(preProgram).with(program).checkUnchanged();
   }
 
   @Test public void testEmptyAggregateEmptyKeyWithAggregateValuesRule() {
@@ -2084,7 +2095,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "  from emp"
         + "  where sal > 5000)"
         + "group by ename, sal, deptno";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testPullFilterThroughAggregateGroupingSets()
@@ -2101,7 +2112,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "  from emp"
         + "  where sal > 5000)"
         + "group by rollup(ename, sal, deptno)";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).with(preProgram).with(program).check();
   }
 
   private void basePullConstantTroughAggregate() throws Exception {
@@ -2178,7 +2189,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select 2, deptno, job from emp as e1\n"
         + "union all\n"
         + "select 1, deptno, job from emp as e2";
-    checkPlanUnchanged(new HepPlanner(program), sql);
+    sql(sql).with(program).checkUnchanged();
   }
 
   @Test public void testPullConstantThroughUnion3()
@@ -2244,7 +2255,8 @@ public class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(FilterProjectTransposeRule.INSTANCE)
         .addRuleInstance(FilterSetOpTransposeRule.INSTANCE)
         .build();
-    final HepPlanner planner = new HepPlanner(program);
+    final RelOptCluster cluster = tester.createCluster();
+    final HepPlanner planner = new HepPlanner(cluster, program);
 
     final RelRoot root = tester.convertSqlToRel(sql);
     final RelNode relInitial = root.rel;
@@ -2273,7 +2285,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(JoinPushTransitivePredicatesRule.INSTANCE)
         .addRuleCollection(Arrays.asList(extraRules))
         .build();
-    final HepPlanner planner2 = new HepPlanner(program2);
+    final HepPlanner planner2 = new HepPlanner(cluster, program2);
     planner.registerMetadataProviders(list);
     planner2.setRoot(relBefore);
     RelNode relAfter = planner2.findBestExp();
@@ -2424,7 +2436,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "  rank() over(partition by  deptno order by sal) as r "
         + "  from emp) e1\n"
         + "where r < 2";
-    checkPlanUnchanged(new HepPlanner(program), sql);
+    sql(sql).with(program).checkUnchanged();
   }
 
   @Test public void testPushFilterWithRankExpr() throws Exception {
@@ -2436,7 +2448,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "  rank() over(partition by  deptno order by sal) + 1 as r "
         + "  from emp) e1\n"
         + "where r < 2";
-    checkPlanUnchanged(new HepPlanner(program), sql);
+    sql(sql).with(program).checkUnchanged();
   }
 
   /** Test case for
@@ -2446,7 +2458,8 @@ public class RelOptRulesTest extends RelOptTestBase {
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ProjectToWindowRule.class);
 
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner hepPlanner = new HepPlanner(cluster, builder.build());
     hepPlanner.addRule(ProjectToWindowRule.PROJECT);
 
     final String sql = "select\n"
@@ -2464,7 +2477,8 @@ public class RelOptRulesTest extends RelOptTestBase {
   @Test public void testWindowInParenthesis() {
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ProjectToWindowRule.class);
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner hepPlanner = new HepPlanner(cluster, builder.build());
     hepPlanner.addRule(ProjectToWindowRule.PROJECT);
 
     final String sql = "select count(*) over (w), count(*) over w\n"
@@ -2501,7 +2515,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from (select * from sales.emp where empno = 10) as e\n"
         + "join sales.dept as d on e.job = d.name\n"
         + "group by e.job,d.name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testPushAggregateThroughJoin2() throws Exception {
@@ -2516,7 +2530,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "join sales.dept as d on e.job = d.name\n"
         + "and e.deptno + e.empno = d.deptno + 5\n"
         + "group by e.job,d.name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testPushAggregateThroughJoin3() throws Exception {
@@ -2530,7 +2544,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from (select * from sales.emp where empno = 10) as e\n"
         + "join sales.dept as d on e.empno < d.deptno\n"
         + "group by e.empno,d.deptno";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql, true);
+    sql(sql).withPre(preProgram).with(program).checkUnchanged();
   }
 
   /** Test case for
@@ -2574,7 +2588,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from (select * from sales.emp where empno = 10) as e\n"
         + "join sales.dept as d on e.job = d.name\n"
         + "group by e.job,d.name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   /** Push a variety of aggregate functions. */
@@ -2593,7 +2607,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from sales.emp as e\n"
         + "join sales.dept as d on e.job = d.name\n"
         + "group by e.job,d.name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   /** Push a aggregate functions into a relation that is unique on the join
@@ -2611,7 +2625,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "join (select distinct name from sales.dept) as d\n"
         + "  on e.job = d.name\n"
         + "group by d.name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   /** Push count(*) through join, no GROUP BY. */
@@ -2624,7 +2638,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         .build();
     final String sql =
         "select count(*) from sales.emp join sales.dept on job = name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testSwapOuterJoin() throws Exception {
@@ -2656,9 +2670,9 @@ public class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(SortJoinTransposeRule.INSTANCE)
         .build();
     final String sql = "select * from sales.emp e left join (\n"
-            + "select * from sales.dept d) using (deptno)\n"
-            + "order by sal limit 10";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+        + "select * from sales.dept d) using (deptno)\n"
+        + "order by sal limit 10";
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testSortJoinTranspose2() {
@@ -2671,7 +2685,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from sales.emp e right join (\n"
             + "select * from sales.dept d) using (deptno)\n"
             + "order by name";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql);
+    sql(sql).withPre(preProgram).with(program).check();
   }
 
   @Test public void testSortJoinTranspose3() {
@@ -2685,7 +2699,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from sales.emp left join (\n"
         + "select * from sales.dept) using (deptno)\n"
         + "order by sal, name limit 10";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql, true);
+    sql(sql).withPre(preProgram).with(program).checkUnchanged();
   }
 
   /** Test case for
@@ -2696,7 +2710,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     Tester tester = new TesterImpl(getDiffRepos(), true, true, false, false,
         null, null) {
       @Override public RelOptPlanner createPlanner() {
-        return new MockRelOptPlanner() {
+        return new MockRelOptPlanner(createCluster()) {
           @Override public List<RelTraitDef> getRelTraitDefs() {
             return ImmutableList.<RelTraitDef>of(RelCollationTraitDef.INSTANCE);
           }
@@ -2737,7 +2751,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from sales.emp e right join (\n"
         + "select * from sales.dept d) using (deptno)\n"
         + "limit 10";
-    checkPlanning(tester, preProgram, new HepPlanner(program), sql, true);
+    sql(sql).withPre(preProgram).with(program).checkUnchanged();
   }
 
   /** Test case for
@@ -2828,7 +2842,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from sales.emp\n"
         + "where deptno = 10\n"
         + "group by deptno, sal";
-    checkPlanning(new HepPlanner(program), sql);
+    sql(sql).with(program).check();
   }
 
   /** Tests {@link AggregateProjectPullUpConstantsRule} where reduction is not
@@ -2841,7 +2855,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "from sales.emp\n"
         + "where deptno = 10\n"
         + "group by deptno";
-    checkPlanUnchanged(new HepPlanner(program), sql);
+    sql(sql).with(program).checkUnchanged();
   }
 
   /** Tests {@link AggregateProjectPullUpConstantsRule} where both keys are
@@ -2855,15 +2869,16 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "where sal is null and job = 'Clerk'\n"
         + "group by sal, job\n"
         + "having count(*) > 3";
-    checkPlanning(new HepPlanner(program), sql);
+    sql(sql).with(program).check();
   }
 
   @Test public void testReduceExpressionsNot() {
     HepProgram program = new HepProgramBuilder()
         .addRuleInstance(ReduceExpressionsRule.FILTER_INSTANCE)
         .build();
-    checkPlanUnchanged(new HepPlanner(program),
-        "select * from (values (false),(true)) as q (col1) where not(col1)");
+    final String sql = "select * from (values (false),(true)) as q (col1)\n"
+        + "where not(col1)";
+    sql(sql).with(program).checkUnchanged();
   }
 
   private Sql checkSubQuery(String sql) {
@@ -2872,7 +2887,7 @@ public class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(SubQueryRemoveRule.FILTER)
         .addRuleInstance(SubQueryRemoveRule.JOIN)
         .build();
-    return sql(sql).with(new HepPlanner(program)).expand(false);
+    return sql(sql).with(program).expand(false);
   }
 
   /** Tests expanding a sub-query, specifically an uncorrelated scalar

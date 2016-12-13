@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSamplingParameters;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.prepare.Prepare;
@@ -278,8 +279,8 @@ public class SqlToRelConverter {
       RexBuilder rexBuilder,
       SqlRexConvertletTable convertletTable) {
     this(viewExpander, validator, catalogReader,
-        RelOptCluster.create(xyz, rexBuilder), convertletTable,
-        Config.DEFAULT);
+        RelOptCluster.create(xyz, rexBuilder, ImmutableList.<RelTraitDef>of()),
+        convertletTable, Config.DEFAULT);
   }
 
   @Deprecated // to be removed before 2.0

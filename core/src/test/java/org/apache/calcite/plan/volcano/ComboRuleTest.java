@@ -52,9 +52,8 @@ import static org.junit.Assert.assertTrue;
 public class ComboRuleTest {
 
   @Test public void testCombo() {
-    final RelOptCluster cluster = newCluster();
+    final RelOptCluster cluster = newCluster(ConventionTraitDef.INSTANCE);
     final VolcanoPlanner planner = new VolcanoPlanner(cluster);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new ComboRule());
     planner.addRule(new AddIntermediateNodeRule());

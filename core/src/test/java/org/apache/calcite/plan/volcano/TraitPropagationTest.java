@@ -31,6 +31,7 @@ import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTrait;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.plan.volcano.AbstractConverter.ExpandConversionRule;
@@ -408,7 +409,7 @@ public class TraitPropagationTest {
     final CalciteServerStatement statement = connection
         .createStatement().unwrap(CalciteServerStatement.class);
     final CalcitePrepare.Context prepareContext =
-          statement.createPrepareContext();
+          statement.createPrepareContext(ImmutableList.<RelTraitDef>of());
     final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
     CalciteCatalogReader catalogReader =
           new CalciteCatalogReader(prepareContext.getRootSchema(),
@@ -417,14 +418,11 @@ public class TraitPropagationTest {
               typeFactory);
     final RexBuilder rexBuilder = new RexBuilder(typeFactory);
     final Xyz xyz = new Xyz();
-    final RelOptCluster cluster = RelOptCluster.create(xyz, rexBuilder);
+    final RelOptCluster cluster = RelOptCluster.create(xyz, rexBuilder,
+        ImmutableList.<RelTraitDef>of(RelCollationTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE));
     final VolcanoPlanner planner = new VolcanoPlanner(cluster,
         config.getCostFactory(), config.getContext());
-
-    // set up rules before we generate cluster
-    planner.clearRelTraitDefs();
-    planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.clear();
     for (RelOptRule r : rules) {

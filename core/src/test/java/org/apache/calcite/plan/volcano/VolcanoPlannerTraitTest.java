@@ -108,10 +108,9 @@ public class VolcanoPlannerTraitTest {
 
   @Ignore
   @Test public void testDoubleConversion() {
-    final RelOptCluster cluster = newCluster();
+    final RelOptCluster cluster =
+        newCluster(ConventionTraitDef.INSTANCE, ALT_TRAIT_DEF);
     final VolcanoPlanner planner = new VolcanoPlanner(cluster);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(ALT_TRAIT_DEF);
 
     planner.addRule(new PhysToIteratorConverterRule());
     planner.addRule(
@@ -161,10 +160,9 @@ public class VolcanoPlannerTraitTest {
   }
 
   @Test public void testRuleMatchAfterConversion() {
-    final RelOptCluster cluster = newCluster();
+    final RelOptCluster cluster =
+        newCluster(ConventionTraitDef.INSTANCE, ALT_TRAIT_DEF);
     final VolcanoPlanner planner = new VolcanoPlanner(cluster);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(ALT_TRAIT_DEF);
 
     planner.addRule(new PhysToIteratorConverterRule());
     planner.addRule(new PhysLeafRule());
@@ -192,10 +190,9 @@ public class VolcanoPlannerTraitTest {
 
   @Ignore
   @Test public void testTraitPropagation() {
-    final RelOptCluster cluster = newCluster();
+    final RelOptCluster cluster =
+        newCluster(ConventionTraitDef.INSTANCE, ALT_TRAIT_DEF);
     final VolcanoPlanner planner = new VolcanoPlanner(cluster);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(ALT_TRAIT_DEF);
 
     planner.addRule(new PhysToIteratorConverterRule());
     planner.addRule(

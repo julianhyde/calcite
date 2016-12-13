@@ -61,6 +61,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -306,7 +307,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final RelOptCluster cluster = context.getCluster();
     final HepProgram program = new HepProgramBuilder().build();
     final HepPlanner planner = new HepPlanner(cluster, program);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+    assert cluster.traitSet().isEnabled(ConventionTraitDef.INSTANCE);
 
     final SqlToRelConverter.ConfigBuilder configBuilder =
         SqlToRelConverter.configBuilder().withTrimUnusedFields(true);
@@ -506,9 +507,9 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final RelOptCluster cluster = prepareContext.getCluster();
     final VolcanoPlanner planner =
         new VolcanoPlanner(cluster, costFactory, externalContext);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+    assert cluster.traitSet().isEnabled(ConventionTraitDef.INSTANCE);
     if (ENABLE_COLLATION_TRAIT) {
-      planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
+      assert cluster.traitSet().isEnabled(RelCollationTraitDef.INSTANCE);
       planner.registerAbstractRelationalRules();
     }
     RelOptUtil.registerAbstractRels(planner);
@@ -1006,8 +1007,13 @@ public class CalcitePrepareImpl implements CalcitePrepare {
   /** Executes a prepare action. */
   public <R> R perform(CalciteServerStatement statement,
       Frameworks.PrepareAction<R> action) {
+    List<RelTraitDef> traitDefs = new ArrayList<>();
+    traitDefs.add(ConventionTraitDef.INSTANCE);
+    if (ENABLE_COLLATION_TRAIT) {
+      traitDefs.add(RelCollationTraitDef.INSTANCE);
+    }
     final CalcitePrepare.Context prepareContext =
-        statement.createPrepareContext();
+        statement.createPrepareContext(traitDefs);
     final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
     final CalciteSchema schema =
         action.getConfig().getDefaultSchema() != null

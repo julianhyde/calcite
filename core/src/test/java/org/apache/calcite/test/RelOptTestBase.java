@@ -84,7 +84,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
    * @param sql     SQL query
    */
   protected void checkPlanning(HepProgram program, String sql) {
-    checkPlanning(new HepPlanner(program), sql);
+    checkPlanning(new HepPlanner(tester.createCluster(), program), sql);
   }
 
   /**
@@ -172,7 +172,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       final String planMid = NL + RelOptUtil.toString(r);
       diffRepos.assertEquals("planMid", "${planMid}", planMid);
       SqlToRelTestBase.assertValid(r);
-      r = RelDecorrelator.decorrelateQuery(r, context);
+      r = RelDecorrelator.decorrelateQuery(r, planner.getContext());
     }
     final String planAfter = NL + RelOptUtil.toString(r);
     if (unchanged) {
@@ -221,13 +221,14 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
     }
 
     public Sql with(HepProgram program) {
-      return new Sql(sql, preProgram, new HepPlanner(program), hooks,
-          transforms);
+      final RelOptCluster cluster = tester.createCluster();
+      final HepPlanner planner = new HepPlanner(cluster, program);
+      return new Sql(sql, preProgram, planner, hooks, transforms);
     }
 
     /** Adds a transform that will be applied to {@link #tester}
      * just before running the query. */
-    private Sql withTransform(Function<Tester, Tester> transform) {
+    public Sql withTransform(Function<Tester, Tester> transform) {
       return new Sql(sql, preProgram, hepPlanner, hooks,
           FlatLists.append(transforms, transform));
     }

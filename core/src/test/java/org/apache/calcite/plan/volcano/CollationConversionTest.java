@@ -63,10 +63,9 @@ public class CollationConversionTest {
       new TestRelCollationTraitDef();
 
   @Test public void testCollationConversion() {
-    final RelOptCluster cluster = newCluster();
+    final RelOptCluster cluster =
+        newCluster(ConventionTraitDef.INSTANCE, COLLATION_TRAIT_DEF);
     final VolcanoPlanner planner = new VolcanoPlanner(cluster);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(COLLATION_TRAIT_DEF);
 
     planner.addRule(new SingleNodeRule());
     planner.addRule(new LeafTraitRule());

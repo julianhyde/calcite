@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptSchemaWithSampling;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
@@ -239,6 +240,8 @@ public abstract class SqlToRelTestBase {
     Tester withClusterFactory(Function<RelOptCluster, RelOptCluster> function);
 
     boolean isLateDecorrelate();
+
+    RelOptCluster createCluster();
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -578,16 +581,21 @@ public abstract class SqlToRelTestBase {
     protected SqlToRelConverter createSqlToRelConverter(
         final SqlValidator validator,
         final Prepare.CatalogReader catalogReader,
-        final RelDataTypeFactory typeFactory,
+        final RelDataTypeFactory typeFactory, // TODO:
         final SqlToRelConverter.Config config) {
-      final RexBuilder rexBuilder = new RexBuilder(typeFactory);
-      RelOptCluster cluster =
-          RelOptCluster.create(new Xyz(), rexBuilder);
+      RelOptCluster cluster = createCluster();
+      return new SqlToRelConverter(null, validator, catalogReader, cluster,
+          StandardConvertletTable.INSTANCE, config);
+    }
+
+    public RelOptCluster createCluster() {
+      final RexBuilder rexBuilder = new RexBuilder(getTypeFactory());
+      RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder,
+          ImmutableList.<RelTraitDef>of());
       if (clusterFactory != null) {
         cluster = clusterFactory.apply(cluster);
       }
-      return new SqlToRelConverter(null, validator, catalogReader, cluster,
-          StandardConvertletTable.INSTANCE, config);
+      return cluster;
     }
 
     protected final RelDataTypeFactory getTypeFactory() {
@@ -648,7 +656,7 @@ public abstract class SqlToRelTestBase {
     }
 
     public RelOptPlanner createPlanner() {
-      return new MockRelOptPlanner();
+      return new MockRelOptPlanner(createCluster());
     }
 
     public void assertConvertsTo(

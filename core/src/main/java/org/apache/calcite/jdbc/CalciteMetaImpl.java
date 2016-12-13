@@ -36,6 +36,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -570,7 +571,8 @@ public class CalciteMetaImpl extends MetaImpl {
     }
     h.signature =
         calciteConnection.parseQuery(CalcitePrepare.Query.of(sql),
-            statement.createPrepareContext(), maxRowCount);
+            statement.createPrepareContext(ImmutableList.<RelTraitDef>of()),
+            maxRowCount);
     statement.setSignature(h.signature);
     return h;
   }
@@ -593,7 +595,8 @@ public class CalciteMetaImpl extends MetaImpl {
         CalciteServerStatement statement =
             calciteConnection.server.getStatement(h);
         signature = calciteConnection.parseQuery(CalcitePrepare.Query.of(sql),
-            statement.createPrepareContext(), maxRowCount);
+            statement.createPrepareContext(ImmutableList.<RelTraitDef>of()),
+            maxRowCount);
         statement.setSignature(signature);
         callback.assign(signature, null, -1);
       }

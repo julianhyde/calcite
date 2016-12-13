@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.hep.HepMatchOrder;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
@@ -57,9 +58,8 @@ public class HepPlannerTest extends RelOptTestBase {
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addRuleClass(CoerceInputsRule.class);
 
-    HepPlanner planner =
-        new HepPlanner(
-            programBuilder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner planner = new HepPlanner(cluster, programBuilder.build());
 
     planner.addRule(new CoerceInputsRule(LogicalUnion.class, false));
     planner.addRule(new CoerceInputsRule(LogicalIntersect.class, false));
@@ -75,9 +75,8 @@ public class HepPlannerTest extends RelOptTestBase {
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addRuleByDescription("FilterToCalcRule");
 
-    HepPlanner planner =
-        new HepPlanner(
-            programBuilder.build());
+    final RelOptCluster cluster = tester.createCluster();
+    HepPlanner planner = new HepPlanner(cluster, programBuilder.build());
 
     planner.addRule(FilterToCalcRule.INSTANCE);
 

@@ -43,6 +43,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.Xyz;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
@@ -195,8 +196,10 @@ abstract class CalciteConnectionImpl
       int resultSetConcurrency,
       int resultSetHoldability) throws SQLException {
     try {
+      final ContextImpl context =
+          new ContextImpl(this, ImmutableList.<RelTraitDef>of());
       final Meta.Signature signature =
-          parseQuery(query, new ContextImpl(this), -1);
+          parseQuery(query, context, -1);
       final CalcitePreparedStatement calcitePreparedStatement =
           (CalcitePreparedStatement) factory.newPreparedStatement(this, null,
               signature, resultSetType, resultSetConcurrency, resultSetHoldability);
@@ -452,10 +455,10 @@ abstract class CalciteConnectionImpl
     private final CalciteConnectionImpl connection;
     final RelOptCluster cluster;
 
-    ContextImpl(CalciteConnectionImpl connection) {
+    ContextImpl(CalciteConnectionImpl connection, List<RelTraitDef> traitDefs) {
       this.connection = Preconditions.checkNotNull(connection);
       final RexBuilder rexBuilder = new RexBuilder(connection.typeFactory);
-      cluster = RelOptCluster.create(new Xyz(), rexBuilder);
+      cluster = RelOptCluster.create(new Xyz(), rexBuilder, traitDefs);
     }
 
     public RelOptCluster getCluster() {
@@ -523,8 +526,8 @@ abstract class CalciteConnectionImpl
       this.connection = Preconditions.checkNotNull(connection);
     }
 
-    public ContextImpl createPrepareContext() {
-      return new ContextImpl(connection);
+    public ContextImpl createPrepareContext(List<RelTraitDef> traitDefs) {
+      return new ContextImpl(connection, traitDefs);
     }
 
     public CalciteConnection getConnection() {
