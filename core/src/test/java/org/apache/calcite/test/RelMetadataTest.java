@@ -962,7 +962,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     // Now add a cache. Only the first request for each piece of metadata
     // generates a new call to the provider.
-    final RelOptPlanner planner = new VolcanoPlanner(rel.getCluster());
+    final RelOptPlanner planner = new MockRelOptPlanner(rel.getCluster());
     rel.getCluster().setMetadataProvider(
         new CachingRelMetadataProvider(
             rel.getCluster().getMetadataProvider(), planner));

@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
@@ -64,6 +65,18 @@ import java.util.List;
  * first argument is not always null; get cost factory from the this.cluster</li>
  * </ul>
  *
+ *
+ * <p>Deferred:</p>
+ *
+ * <ul>
+ *
+ * <li>Moving {#link {@link RelOptPlanner#setExecutor(RelOptPlanner.Executor)}
+ * and  {#link {@link RelOptPlanner#getExecutor()}
+ * to {@link RelOptCluster}.
+ * (I think that {@code RelOptCluster} should query {@link Context} for an
+ * {@code ExecutorFactory}, then pass a {@link DataContext} to the factory.
+ *
+ * </ul>
  */
 public class Xyz {
   //~ Static fields/initializers ---------------------------------------------
