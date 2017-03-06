@@ -125,7 +125,7 @@ public interface RelOptTable extends Wrapper {
 
   /** Contains the context needed to convert a a table into a relational
    * expression. */
-  interface ToRelContext extends ViewExpander {
+  interface ToRelContext extends ViewExpander, Wrapper {
     RelOptCluster getCluster();
   }
 }

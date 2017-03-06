@@ -16,9 +16,6 @@
  */
 package org.apache.calcite.rel.rel2sql;
 
-import org.apache.calcite.plan.RelOptLattice;
-import org.apache.calcite.plan.RelOptMaterialization;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
@@ -36,9 +33,6 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.Programs;
-import org.apache.calcite.tools.RuleSet;
-import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Function;
@@ -568,9 +562,8 @@ public class RelToSqlConverterTest {
 
     final HepProgram program =
         new HepProgramBuilder().addRuleClass(UnionMergeRule.class).build();
-    final RuleSet rules = RuleSets.ofList(UnionMergeRule.INSTANCE);
     sql(query)
-        .optimize(rules, new HepPlanner(program))
+        .optimize(program)
         .ok(expected);
   }
 
@@ -943,14 +936,14 @@ public class RelToSqlConverterTest {
       return new Sql(schemaSpec, sql, dialect, transforms);
     }
 
-    Sql optimize(final RuleSet ruleSet, final RelOptPlanner relOptPlanner) {
+    Sql optimize(final HepProgram program) {
       return new Sql(schemaSpec, sql, dialect,
           FlatLists.append(transforms, new Function<RelNode, RelNode>() {
             public RelNode apply(RelNode r) {
-              Program program = Programs.of(ruleSet);
-              return program.run(relOptPlanner, r, r.getTraitSet(),
-                  ImmutableList.<RelOptMaterialization>of(),
-                  ImmutableList.<RelOptLattice>of());
+              final HepPlanner planner =
+                  new HepPlanner(r.getCluster(), program);
+              planner.setRoot(r);
+              return planner.findBestExp();
             }
           }));
     }

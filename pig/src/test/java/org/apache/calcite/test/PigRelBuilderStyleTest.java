@@ -24,6 +24,7 @@ import org.apache.calcite.adapter.pig.PigRules;
 import org.apache.calcite.adapter.pig.PigTable;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
@@ -229,7 +230,7 @@ public class PigRelBuilderStyleTest extends AbstractPigTest {
   private RelOptPlanner getVolcanoPlanner(RelNode root) {
     final RelBuilderFactory builderFactory =
         RelBuilder.proto(PigRelFactories.ALL_PIG_REL_FACTORIES);
-    final RelOptPlanner planner = root.getCluster().getPlanner(); // VolcanoPlanner
+    final RelOptPlanner planner = new VolcanoPlanner(root.getCluster());
     for (RelOptRule r : PigRules.ALL_PIG_OPT_RULES) {
       planner.addRule(r);
     }

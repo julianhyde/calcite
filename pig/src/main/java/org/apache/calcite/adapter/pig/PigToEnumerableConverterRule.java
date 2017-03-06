@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.pig;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -34,7 +35,7 @@ public class PigToEnumerableConverterRule extends ConverterRule {
         "PigToEnumerableConverterRule");
   }
 
-  @Override public RelNode convert(RelNode rel) {
+  public RelNode convert(RelOptRuleCall call, RelNode rel) {
     RelTraitSet newTraitSet = rel.getTraitSet().replace(getOutConvention());
     return new PigToEnumerableConverter(rel.getCluster(), newTraitSet, rel);
   }

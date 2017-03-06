@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.adapter.druid;
 
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -117,9 +118,11 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
       RelOptTable relOptTable) {
     final RelOptCluster cluster = context.getCluster();
     final TableScan scan = LogicalTableScan.create(cluster, relOptTable);
+    final CalciteConnectionConfig config =
+        context.unwrap(CalciteConnectionConfig.class);
     return DruidQuery.create(cluster,
         cluster.traitSetOf(BindableConvention.INSTANCE), relOptTable, this,
-        ImmutableList.<RelNode>of(scan));
+        ImmutableList.<RelNode>of(scan), config.approximateTopN());
   }
 
   /** Creates a {@link RelDataType} from a map of

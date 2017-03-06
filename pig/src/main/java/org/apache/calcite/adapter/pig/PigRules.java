@@ -18,6 +18,7 @@ package org.apache.calcite.adapter.pig;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -57,11 +58,12 @@ public class PigRules {
       super(LogicalFilter.class, Convention.NONE, PigRel.CONVENTION, "PigFilterRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
       final RelTraitSet traitSet = filter.getTraitSet().replace(PigRel.CONVENTION);
       return new PigFilter(rel.getCluster(), traitSet,
-          convert(filter.getInput(), PigRel.CONVENTION), filter.getCondition());
+          call.convert(filter.getInput(), PigRel.CONVENTION),
+          filter.getCondition());
     }
   }
 
@@ -76,7 +78,7 @@ public class PigRules {
       super(LogicalTableScan.class, Convention.NONE, PigRel.CONVENTION, "PigTableScanRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalTableScan scan = (LogicalTableScan) rel;
       final RelTraitSet traitSet = scan.getTraitSet().replace(PigRel.CONVENTION);
       return new PigTableScan(rel.getCluster(), traitSet, scan.getTable());
@@ -94,7 +96,7 @@ public class PigRules {
       super(LogicalProject.class, Convention.NONE, PigRel.CONVENTION, "PigProjectRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(PigRel.CONVENTION);
       return new PigProject(project.getCluster(), traitSet, project.getInput(),
@@ -113,7 +115,7 @@ public class PigRules {
       super(LogicalAggregate.class, Convention.NONE, PigRel.CONVENTION, "PigAggregateRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalAggregate agg = (LogicalAggregate) rel;
       final RelTraitSet traitSet = agg.getTraitSet().replace(PigRel.CONVENTION);
       return new PigAggregate(agg.getCluster(), traitSet, agg.getInput(),
@@ -132,7 +134,7 @@ public class PigRules {
       super(LogicalJoin.class, Convention.NONE, PigRel.CONVENTION, "PigJoinRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    public RelNode convert(RelOptRuleCall call, RelNode rel) {
       final LogicalJoin join = (LogicalJoin) rel;
       final RelTraitSet traitSet = join.getTraitSet().replace(PigRel.CONVENTION);
       return new PigJoin(join.getCluster(), traitSet, join.getLeft(), join.getRight(),

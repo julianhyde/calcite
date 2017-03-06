@@ -3077,6 +3077,10 @@ public class SqlToRelConverter {
         return cluster;
       }
 
+      public <C> C unwrap(Class<C> aClass) {
+        return null;
+      }
+
       @Override public RelRoot expandView(
           RelDataType rowType,
           String queryString,

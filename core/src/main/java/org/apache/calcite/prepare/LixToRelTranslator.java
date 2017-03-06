@@ -17,6 +17,7 @@
 package org.apache.calcite.prepare;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
@@ -62,6 +63,14 @@ class LixToRelTranslator implements RelOptTable.ToRelContext {
 
   public RelOptCluster getCluster() {
     return cluster;
+  }
+
+  public <C> C unwrap(Class<C> aClass) {
+    if (aClass.isAssignableFrom(CalciteConnectionConfig.class)) {
+      return (C) CalciteConnectionConfig.class.cast(
+          preparingStmt.context.config());
+    }
+    return null;
   }
 
   public RelRoot expandView(RelDataType rowType, String queryString,

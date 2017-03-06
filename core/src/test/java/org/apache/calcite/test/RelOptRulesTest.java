@@ -232,13 +232,12 @@ public class RelOptRulesTest extends RelOptTestBase {
   @Test public void testReduceNullableCase2() {
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ReduceExpressionsRule.class);
-    HepPlanner hepPlanner = new HepPlanner(builder.build());
-    hepPlanner.addRule(ReduceExpressionsRule.PROJECT_INSTANCE);
+    builder.addRuleInstance(ReduceExpressionsRule.PROJECT_INSTANCE);
 
     final String sql = "SELECT deptno, ename, CASE WHEN 1=2 "
       + "THEN substring(ename, 1, cast(2 as int)) ELSE NULL end from emp"
       + " group by deptno, ename, case when 1=2 then substring(ename,1, cast(2 as int))  else null end";
-    sql(sql).with(hepPlanner).check();
+    sql(sql).with(builder.build()).check();
   }
 
   @Test public void testProjectToWindowRuleForMultipleWindows() {

@@ -39,7 +39,7 @@ import java.util.List;
  * <li>New first argument for
  * {@link org.apache.calcite.rel.convert.ConverterRule#convert(RelOptRuleCall, RelNode)}
  *
- * <li>Changed first arg of {@link RelOptCluster#create(Xyz, RexBuilder)}
+ * <li>Changed first arg of {@link RelOptCluster#create(Xyz, RexBuilder, List)}
  * from {@link RelOptPlanner} to {@link Xyz}
  *
  * <li>Changed first arg of
@@ -70,7 +70,7 @@ import java.util.List;
  *
  * <ul>
  *
- * <li>Moving {#link {@link RelOptPlanner#setExecutor(RelOptPlanner.Executor)}
+ * <li>Moving {#link {@link RelOptPlanner#setExecutor(RexExecutor)}
  * and  {#link {@link RelOptPlanner#getExecutor()}
  * to {@link RelOptCluster}.
  * (I think that {@code RelOptCluster} should query {@link Context} for an

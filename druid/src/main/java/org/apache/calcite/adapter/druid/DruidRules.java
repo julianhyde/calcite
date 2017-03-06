@@ -76,12 +76,14 @@ public class DruidRules {
       PROJECT, AGGREGATE, PROJECT_SORT, SORT, SORT_PROJECT);
 
   /** Predicate that returns whether Druid can not handle an aggregate. */
-  private static final Predicate<Aggregate> BAD_AGG =
-      new PredicateImpl<Aggregate>() {
-        public boolean test(Aggregate aggregate) {
+  private static final Predicate<Pair<RelOptRuleCall, Aggregate>> BAD_AGG =
+      new PredicateImpl<Pair<RelOptRuleCall, Aggregate>>() {
+        public boolean test(Pair<RelOptRuleCall, Aggregate> pair) {
+          final Aggregate aggregate = pair.right;
+          final RelOptRuleCall call = pair.left;
           final CalciteConnectionConfig config =
-                  aggregate.getCluster().getPlanner().getContext()
-                      .unwrap(CalciteConnectionConfig.class);
+              call.getPlanner().getContext()
+                  .unwrap(CalciteConnectionConfig.class);
           for (AggregateCall aggregateCall : aggregate.getAggCallList()) {
             switch (aggregateCall.getAggregation().getKind()) {
             case COUNT:
@@ -315,7 +317,7 @@ public class DruidRules {
       }
       if (aggregate.indicator
               || aggregate.getGroupSets().size() != 1
-              || BAD_AGG.apply(aggregate)
+              || BAD_AGG.apply(Pair.of(call, aggregate))
               || !validAggregate(aggregate, query)) {
         return;
       }
@@ -356,7 +358,7 @@ public class DruidRules {
       }
       if (aggregate.indicator
               || aggregate.getGroupSets().size() != 1
-              || BAD_AGG.apply(aggregate)
+              || BAD_AGG.apply(Pair.of(call, aggregate))
               || !validAggregate(aggregate, timestampIdx)) {
         return;
       }

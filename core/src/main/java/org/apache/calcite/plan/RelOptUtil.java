@@ -2714,6 +2714,10 @@ public abstract class RelOptUtil {
         return cluster;
       }
 
+      public <C> C unwrap(Class<C> aClass) {
+        return null;
+      }
+
       public RelRoot expandView(RelDataType rowType, String queryString,
           List<String> schemaPath, List<String> viewPath) {
         throw new UnsupportedOperationException();
