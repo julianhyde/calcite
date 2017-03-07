@@ -18,6 +18,7 @@ package org.apache.calcite.plan;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexExecutor;
 
 import java.util.List;
 
@@ -39,15 +40,16 @@ import java.util.List;
  * <li>New first argument for
  * {@link org.apache.calcite.rel.convert.ConverterRule#convert(RelOptRuleCall, RelNode)}
  *
- * <li>Changed first arg of {@link RelOptCluster#create(Xyz, RexBuilder, List)}
+ * <li>Changed first arg of
+ * {@link RelOptCluster#create(Xyz, org.apache.calcite.rex.RexBuilder, List)}
  * from {@link RelOptPlanner} to {@link Xyz}
  *
  * <li>Changed first arg of
- * {@link org.apache.calcite.tools.Frameworks.PlannerAction#apply(RelOptPlanner, RelOptSchema, SchemaPlus)}
+ * {@link org.apache.calcite.tools.Frameworks.PlannerAction#apply(RelOptPlanner, RelOptSchema, org.apache.calcite.schema.SchemaPlus)}
  * from {@link RelOptCluster} to {@link RelOptPlanner}
  *
  * <li>Changed first arg of
- * {@link org.apache.calcite.tools.Frameworks.PrepareAction#apply(RelOptPlanner, RelOptSchema, SchemaPlus, CalciteServerStatement)}
+ * {@link org.apache.calcite.tools.Frameworks.PrepareAction#apply(RelOptPlanner, RelOptSchema, org.apache.calcite.schema.SchemaPlus, org.apache.calcite.server.CalciteServerStatement)}
  * from {@link RelOptCluster} to {@link RelOptPlanner}
  *
  * <li>Removed
@@ -61,10 +63,23 @@ import java.util.List;
  * used to call {@link RelOptPlanner#registerSchema(RelOptSchema)},
  * no longer</li>
  *
- * <li>{@link RelNode#computeSelfCost(RelOptPlanner, RelMetadataQuery)}
+ * <li>{@link RelNode#computeSelfCost(RelOptPlanner, org.apache.calcite.rel.metadata.RelMetadataQuery)}
  * first argument is not always null; get cost factory from the this.cluster</li>
  * </ul>
  *
+ * <p>To do:
+ *
+ * <ul>
+ *
+ * <li>Remove {@link RelOptCluster#mapCorrelToRel} or make it an immutable map
+ *
+ * <li>Remove {@link RelOptQuery#mapCorrelToRel} or make it an immutable map
+ *
+ * <li>Deprecate {@link RelOptPlanner#setExecutor(RexExecutor)} and remove uses
+ *
+ * <li>Deprecate {@link RelOptPlanner#getExecutor()} and remove uses
+ *
+ * </ul>
  *
  * <p>Deferred:</p>
  *
@@ -79,6 +94,8 @@ import java.util.List;
  * </ul>
  */
 public class Xyz {
+  private RexExecutor executor;
+
   //~ Static fields/initializers ---------------------------------------------
 
 //  Logger LOGGER = CalciteTrace.getPlannerTracer();
@@ -363,12 +380,14 @@ public class Xyz {
   public RelTraitSet emptyTraitSet() { throw new UnsupportedOperationException(); }
 
   /** Sets the object that can execute scalar expressions. */
-  public void setExecutor(RelOptPlanner.Executor executor) {
-    throw new UnsupportedOperationException();
+  public void setExecutor(RexExecutor executor) {
+    this.executor = executor;
   }
 
   /** Returns the executor used to evaluate constant expressions. */
-  public RelOptPlanner.Executor getExecutor() { throw new UnsupportedOperationException(); }
+  public RexExecutor getExecutor() {
+    return executor;
+  }
 
   /** Called when a relational expression is copied to a similar expression. */
 //  void onCopy(RelNode rel, RelNode newRel);

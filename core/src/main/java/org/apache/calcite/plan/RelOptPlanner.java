@@ -326,9 +326,11 @@ public interface RelOptPlanner {
   RelTraitSet emptyTraitSet();
 
   /** Sets the object that can execute scalar expressions. */
+  @Deprecated // to be removed before 2.0
   void setExecutor(RexExecutor executor);
 
   /** Returns the executor used to evaluate constant expressions. */
+  @Deprecated // to be removed before 2.0
   RexExecutor getExecutor();
 
   /** Called when a relational expression is copied to a similar expression. */

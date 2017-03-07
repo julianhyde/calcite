@@ -25,8 +25,6 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rex.RexExecutorImpl;
-import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.util.Pair;
 
 import com.google.common.collect.ImmutableList;
@@ -56,7 +54,6 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
   /** Creates MockRelOptPlanner. */
   public MockRelOptPlanner(RelOptCluster cluster) {
     super(cluster, RelOptCostImpl.FACTORY, null);
-    setExecutor(new RexExecutorImpl(Schemas.createDataContext(null)));
   }
 
   // implement RelOptPlanner

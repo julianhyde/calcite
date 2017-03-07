@@ -175,8 +175,7 @@ public class RelBuilder {
         Util.first(context.unwrap(RelFactories.TableScanFactory.class),
             RelFactories.DEFAULT_TABLE_SCAN_FACTORY);
     this.executor =
-        Util.first(context.unwrap(RexExecutor.class),
-            Util.first(cluster.xyz.getExecutor(), RexUtil.EXECUTOR));
+        Util.first(context.unwrap(RexExecutor.class), RexUtil.EXECUTOR);
   }
 
   /** Creates a RelBuilder. */

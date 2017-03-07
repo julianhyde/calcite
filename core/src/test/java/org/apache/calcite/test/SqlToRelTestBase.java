@@ -40,6 +40,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexExecutorImpl;
+import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -590,7 +592,9 @@ public abstract class SqlToRelTestBase {
 
     public RelOptCluster createCluster() {
       final RexBuilder rexBuilder = new RexBuilder(getTypeFactory());
-      RelOptCluster cluster = RelOptCluster.create(new Xyz(), rexBuilder,
+      final Xyz xyz = new Xyz();
+      xyz.setExecutor(new RexExecutorImpl(Schemas.createDataContext(null)));
+      RelOptCluster cluster = RelOptCluster.create(xyz, rexBuilder,
           ImmutableList.<RelTraitDef>of());
       if (clusterFactory != null) {
         cluster = clusterFactory.apply(cluster);
