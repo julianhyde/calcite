@@ -37,6 +37,7 @@ import org.apache.calcite.rex.RexBuilderTest;
 import org.apache.calcite.rex.RexExecutorTest;
 import org.apache.calcite.runtime.BinarySearchTest;
 import org.apache.calcite.runtime.EnumerablesTest;
+import org.apache.calcite.runtime.HilbertTest;
 import org.apache.calcite.sql.SqlSetOptionOperatorTest;
 import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.sql.parser.SqlUnParserTest;
@@ -89,6 +90,7 @@ import org.junit.runners.Suite;
     RelOptUtilTest.class,
     RelCollationTest.class,
     UtilTest.class,
+    HilbertTest.class,
     PrecedenceClimbingParserTest.class,
     SourceTest.class,
     MappingTest.class,
