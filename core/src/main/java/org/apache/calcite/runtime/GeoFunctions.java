@@ -534,6 +534,20 @@ public class GeoFunctions {
     return geom.transform(srid);
   }
 
+  // Space-filling curves
+
+  /** Returns the position of a point on the Hilbert curve,
+   * or null if it is not a 2-dimensional point. */
+  public static Long hilbert(Geom geom) {
+    final Geometry g = geom.g();
+    if (g instanceof Point) {
+      final double x = ((Point) g).getX();
+      final double y = ((Point) g).getY();
+      return new HilbertCurve2D(8).toIndex(x, y);
+    }
+    return null;
+  }
+
   // Inner classes ============================================================
 
   /** How the "buffer" command terminates the end of a line. */

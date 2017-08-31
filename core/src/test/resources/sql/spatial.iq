@@ -1235,4 +1235,18 @@ WY, Yellowstone NP
 CA, Yosemite NP
 !ok
 
+# Space-filling curves.
+select x, y, hilbert(ST_Point(x, y))
+from (
+  values (0.0, 0.0),
+     (0, 1),
+     (1, 0),
+     (0, -1),
+     (10, 10),
+     (20, 20)) as t(x, y);
+!ok
+
+values hilbert(ST_Point(20.0, 20.0));
+!ok
+
 # End spatial.iq
