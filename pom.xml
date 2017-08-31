@@ -130,6 +130,7 @@ limitations under the License.
     <spark.version>2.2.0</spark.version>
     <sqlline.version>1.5.0</sqlline.version>
     <tpcds.version>1.2</tpcds.version>
+    <uzaygezen.version>0.2</uzaygezen.version>
     <xalan.version>2.7.1</xalan.version>
     <xerces.version>2.9.1</xerces.version>
     <sketches.version>0.9.0</sketches.version>
@@ -285,6 +286,11 @@ limitations under the License.
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.uzaygezen</groupId>
+        <artifactId>uzaygezen-core</artifactId>
+        <version>${uzaygezen.version}</version>
       </dependency>
       <dependency>
         <groupId>com.h2database</groupId>
