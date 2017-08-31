@@ -16,14 +16,14 @@
  */
 package org.apache.calcite.runtime;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
 
 import static org.apache.calcite.runtime.Hilbert.bit;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Unit test for {@link Hilbert}.
@@ -82,5 +82,3 @@ public class HilbertTest {
   }
 
 }
-
-// End HilbertTest.java

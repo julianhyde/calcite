@@ -183,5 +183,3 @@ public class Hilbert {
     return (int) ((x[w] >> bit) & 1);
   }
 }
-
-// End Hilbert.java
