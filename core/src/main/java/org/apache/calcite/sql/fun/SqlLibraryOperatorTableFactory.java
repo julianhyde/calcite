@@ -16,11 +16,8 @@
  */
 package org.apache.calcite.sql.fun;
 
-import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.runtime.GeoFunctions;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.util.ListSqlOperatorTable;
 import org.apache.calcite.util.Util;
 
@@ -85,9 +82,7 @@ public class SqlLibraryOperatorTableFactory {
         standard = true;
         break;
       case SPATIAL:
-        list.addAll(
-            CalciteCatalogReader.operatorTable(GeoFunctions.class.getName(),
-                SqlGeoFunctions.class.getName()).getOperatorList());
+        list.addAll(SqlStdOperatorTables.spatialInstance().getOperatorList());
         break;
       default:
         custom = true;
@@ -116,7 +111,7 @@ public class SqlLibraryOperatorTableFactory {
     SqlOperatorTable operatorTable = new ListSqlOperatorTable(list.build());
     if (standard) {
       operatorTable =
-          ChainedSqlOperatorTable.of(SqlStdOperatorTable.instance(),
+          SqlStdOperatorTables.chain(SqlStdOperatorTable.instance(),
               operatorTable);
     }
     return operatorTable;

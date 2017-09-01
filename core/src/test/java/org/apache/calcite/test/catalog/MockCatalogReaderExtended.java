@@ -18,9 +18,6 @@ package org.apache.calcite.test.catalog;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
-import org.apache.calcite.rel.type.RelRecordType;
-import org.apache.calcite.rel.type.StructKind;
 import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -106,7 +103,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
         new CompoundNameColumn("F0", "C0", f.intType),
         new CompoundNameColumn("F1", "C1", f.intTypeNull));
     final List<CompoundNameColumn> extendedColumns =
-        new ArrayList<CompoundNameColumn>(columnsExtended);
+        new ArrayList<>(columnsExtended);
     extendedColumns.add(new CompoundNameColumn("F2", "C2", f.varchar20Type));
     final CompoundNameColumnResolver structExtendedTableResolver =
         new CompoundNameColumnResolver(extendedColumns, "F0");
@@ -173,21 +170,12 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     final MockTable nullableRowsTable =
         MockTable.create(this, nullableRowsSchema, "NR_T1", false, 100);
     RelDataType bigIntNotNull = typeFactory.createSqlType(SqlTypeName.BIGINT);
-    RelDataType nullableRecordType = new RelRecordType(
-        StructKind.FULLY_QUALIFIED,
-        Arrays.asList(
-            new RelDataTypeFieldImpl(
-                "NOT_NULL_FIELD",
-                0,
-                bigIntNotNull),
-            new RelDataTypeFieldImpl(
-                "NULLABLE_FIELD",
-                0,
-                typeFactory.createTypeWithNullability(bigIntNotNull, true)
-            )
-        ),
-        true
-    );
+    RelDataType nullableRecordType =
+        typeFactory.builder()
+            .nullableRecord(true)
+            .add("NOT_NULL_FIELD", bigIntNotNull)
+            .add("NULLABLE_FIELD", bigIntNotNull).nullable(true)
+            .build();
 
     nullableRowsTable.addColumn("ROW_COLUMN", nullableRecordType, false);
     nullableRowsTable.addColumn(
@@ -195,6 +183,18 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
         typeFactory.createArrayType(nullableRecordType, -1),
         true);
     registerTable(nullableRowsTable);
+
+    MockSchema geoSchema = new MockSchema("GEO");
+    registerSchema(geoSchema);
+    final MockTable restaurantTable =
+        MockTable.create(this, geoSchema, "RESTAURANTS", false, 100);
+    restaurantTable.addColumn("NAME", f.varchar20Type, true);
+    restaurantTable.addColumn("LATITUDE", f.intType);
+    restaurantTable.addColumn("LONGITUDE", f.intType);
+    restaurantTable.addColumn("TYPE", f.varchar10Type);
+    restaurantTable.addColumn("HILBERT", f.bigintType);
+    restaurantTable.addMonotonic("HILBERT");
+    registerTable(restaurantTable);
 
     return this;
   }
