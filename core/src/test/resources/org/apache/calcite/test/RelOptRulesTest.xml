@@ -5803,6 +5803,21 @@ LogicalProject(EXPR$0=[$0], EXPR$1=[$1])
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testSpatialDWithinToHilbert">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_Point(10.0, 20.0),
+                 ST_Point(r.latitude, r.longitude), 10)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LATITUDE=[$1], LONGITUDE=[$2], TYPE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 10)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+    </TestCase>
     <TestCase name="testExpressionInWindowFunction">
         <Resource name="sql">
             <![CDATA[select

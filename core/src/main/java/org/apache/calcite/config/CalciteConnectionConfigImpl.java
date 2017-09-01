@@ -20,12 +20,10 @@ import org.apache.calcite.avatica.ConnectionConfigImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.model.JsonSchema;
-import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.runtime.GeoFunctions;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.OracleSqlOperatorTable;
-import org.apache.calcite.sql.fun.SqlGeoFunctions;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
@@ -113,9 +111,7 @@ public class CalciteConnectionConfigImpl extends ConnectionConfigImpl
       tables.add(OracleSqlOperatorTable.instance());
       return;
     case "spatial":
-      tables.add(
-          CalciteCatalogReader.operatorTable(GeoFunctions.class.getName(),
-              SqlGeoFunctions.class.getName()));
+      tables.add(SqlStdOperatorTables.spatialInstance());
       return;
     default:
       throw new IllegalArgumentException("Unknown operator table: " + s);

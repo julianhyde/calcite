@@ -20,6 +20,7 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.apache.calcite.linq4j.function.Hints;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.function.Strict;
 import org.apache.calcite.util.Util;
@@ -427,6 +428,7 @@ public class GeoFunctions {
 
   /** Returns whether {@code geom1} and {@code geom2} are within
    * {@code distance} of each other. */
+  @Hints({"SqlKind:ST_DWITHIN"})
   public static boolean ST_DWithin(Geom geom1, Geom geom2, double distance) {
     final double distance1 =
         GeometryEngine.distance(geom1.g(), geom2.g(), geom1.sr());

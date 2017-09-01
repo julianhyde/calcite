@@ -120,12 +120,12 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.type.ExtraSqlTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
@@ -844,8 +844,16 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final SqlOperatorTable opTab0 =
         context.config().fun(SqlOperatorTable.class,
             SqlStdOperatorTable.instance());
-    final SqlOperatorTable opTab =
-        ChainedSqlOperatorTable.of(opTab0, catalogReader);
+    final List<SqlOperatorTable> list = new ArrayList<>();
+    list.add(opTab0);
+    list.add(catalogReader);
+    // TODO figure out whether we need this
+/*
+    if (context.config().conformance().allowGeometry()) {
+      list.add(SqlStdOperatorTables.spatialInstance());
+    }
+*/
+    final SqlOperatorTable opTab = SqlStdOperatorTables.chain(list);
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     final SqlConformance conformance = context.config().conformance();
     return new CalciteSqlValidator(opTab, catalogReader, typeFactory,

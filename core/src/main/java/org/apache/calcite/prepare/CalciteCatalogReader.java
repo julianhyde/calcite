@@ -19,6 +19,7 @@ package org.apache.calcite.prepare;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.linq4j.function.Hints;
 import org.apache.calcite.model.ModelHandler;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.type.RelDataType;
@@ -37,6 +38,7 @@ import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
@@ -322,7 +324,10 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
             function.getParameters().get(i).isOptional());
     final List<RelDataType> paramTypes = toSql(typeFactory, argTypes);
     if (function instanceof ScalarFunction) {
-      return new SqlUserDefinedFunction(name, infer((ScalarFunction) function),
+      final SqlKind kind = kind(function);
+      final SqlReturnTypeInference returnTypeInference =
+          infer((ScalarFunction) function);
+      return new SqlUserDefinedFunction(name, kind, returnTypeInference,
           InferTypes.explicit(argTypes), typeChecker, paramTypes, function);
     } else if (function instanceof AggregateFunction) {
       return new SqlUserDefinedAggFunction(name,
@@ -339,6 +344,21 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
     } else {
       throw new AssertionError("unknown function type " + function);
     }
+  }
+
+  private static SqlKind kind(Function function) {
+    if (function instanceof ScalarFunctionImpl) {
+      Hints hints =
+          ((ScalarFunctionImpl) function).method.getAnnotation(Hints.class);
+      if (hints != null) {
+        for (String hint : hints.value()) {
+          if (hint.startsWith("SqlKind:")) {
+            return SqlKind.valueOf(hint.substring("SqlKind:".length()));
+          }
+        }
+      }
+    }
+    return SqlKind.OTHER_FUNCTION;
   }
 
   private static SqlReturnTypeInference infer(final ScalarFunction function) {

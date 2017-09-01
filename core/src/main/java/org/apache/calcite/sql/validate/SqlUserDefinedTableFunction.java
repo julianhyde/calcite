@@ -21,6 +21,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TableFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -44,7 +45,8 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction
       SqlOperandTypeChecker operandTypeChecker,
       List<RelDataType> paramTypes,
       TableFunction function) {
-    super(opName, returnTypeInference, operandTypeInference, operandTypeChecker,
+    super(opName, SqlKind.OTHER_FUNCTION,
+        returnTypeInference, operandTypeInference, operandTypeChecker,
         paramTypes, function, SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION);
   }
 

@@ -98,6 +98,7 @@ import org.apache.calcite.rel.rules.SortJoinTransposeRule;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
 import org.apache.calcite.rel.rules.SortRemoveConstantKeysRule;
 import org.apache.calcite.rel.rules.SortUnionTransposeRule;
+import org.apache.calcite.rel.rules.SpatialRules;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.rel.rules.TableScanRule;
 import org.apache.calcite.rel.rules.UnionMergeRule;
@@ -113,9 +114,11 @@ import org.apache.calcite.sql.SemiJoinType;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReader;
+import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -2006,37 +2009,6 @@ public class RelOptRulesTest extends RelOptTestBase {
               // CHECKSTYLE: IGNORE 1
             })
         .with(program);
-  }
-
-  private void checkPlanning0(String query) throws Exception {
-    final Tester tester1 = tester.withCatalogReaderFactory(
-        (typeFactory, caseSensitive) -> new MockCatalogReader(typeFactory, caseSensitive) {
-          @Override public MockCatalogReader init() {
-            // CREATE SCHEMA abc;
-            // CREATE TABLE a(a INT);
-            // ...
-            // CREATE TABLE j(j INT);
-            MockSchema schema = new MockSchema("SALES");
-            registerSchema(schema);
-            final RelDataType intType =
-                typeFactory.createSqlType(SqlTypeName.INTEGER);
-            for (int i = 0; i < 10; i++) {
-              String t = String.valueOf((char) ('A' + i));
-              MockTable table = MockTable.create(this, schema, t, false, 100);
-              table.addColumn(t, intType);
-              registerTable(table);
-            }
-            return this;
-          }
-          // CHECKSTYLE: IGNORE 1
-        });
-    HepProgram program = new HepProgramBuilder()
-        .addMatchOrder(HepMatchOrder.BOTTOM_UP)
-        .addRuleInstance(ProjectRemoveRule.INSTANCE)
-        .addRuleInstance(JoinToMultiJoinRule.INSTANCE)
-        .build();
-    checkPlanning(tester1, null,
-        new HepPlanner(program), query);
   }
 
   @Test public void testConvertMultiJoinRuleOuterJoins() throws Exception {
@@ -4091,6 +4063,24 @@ public class RelOptRulesTest extends RelOptTestBase {
     final RelNode relAfter = hepPlanner.findBestExp();
     final String planAfter = NL + RelOptUtil.toString(relAfter);
     diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
+  }
+
+  /** Tests that a call to {@code ST_DWithin}
+   * is rewritten with an additional range predicate. */
+  @Test public void testSpatialDWithinToHilbert() throws Exception {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
+        + "                 ST_Point(r.latitude, r.longitude), 10)";
+    HepProgram program = new HepProgramBuilder()
+        .addRuleInstance(SpatialRules.INSTANCE)
+        .build();
+    sql(sql)
+        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
+            new MockCatalogReaderExtended(typeFactory, caseSensitive).init())
+        .withConformance(SqlConformanceEnum.LENIENT)
+        .with(program)
+        .check();
   }
 }
 

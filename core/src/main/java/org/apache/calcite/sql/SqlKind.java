@@ -962,6 +962,13 @@ public enum SqlKind {
   /** {@code FOREIGN KEY} constraint. */
   FOREIGN_KEY,
 
+  // Spatial functions. They are registered as "user-defined functions" but it
+  // is convenient to have a "kind" so that we can quickly match them in planner
+  // rules.
+
+  /** {@code ST_DWithin} geo-spatial function. */
+  ST_DWITHIN,
+
   // DDL and session control statements follow. The list is not exhaustive: feel
   // free to add more.
 

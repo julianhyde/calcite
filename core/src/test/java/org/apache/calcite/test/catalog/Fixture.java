@@ -32,6 +32,7 @@ import java.util.Arrays;
 final class Fixture {
   final RelDataType intType;
   final RelDataType intTypeNull;
+  final RelDataType bigintType;
   final RelDataType varchar10Type;
   final RelDataType varchar10TypeNull;
   final RelDataType varchar20Type;
@@ -53,6 +54,7 @@ final class Fixture {
   Fixture(RelDataTypeFactory typeFactory) {
     intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
     intTypeNull = typeFactory.createTypeWithNullability(intType, true);
+    bigintType = typeFactory.createSqlType(SqlTypeName.BIGINT);
     varchar10Type = typeFactory.createSqlType(SqlTypeName.VARCHAR, 10);
     varchar10TypeNull = typeFactory.createTypeWithNullability(varchar10Type, true);
     varchar20Type = typeFactory.createSqlType(SqlTypeName.VARCHAR, 20);
