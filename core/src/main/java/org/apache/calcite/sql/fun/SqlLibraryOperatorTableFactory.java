@@ -16,22 +16,11 @@
  */
 package org.apache.calcite.sql.fun;
 
-import org.apache.calcite.config.CalciteConnectionConfigImpl;
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.model.ModelHandler;
-import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.runtime.GeoFunctions;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.util.ListSqlOperatorTable;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -39,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.lang.reflect.Field;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -69,9 +57,6 @@ public class SqlLibraryOperatorTableFactory {
   public static final SqlLibraryOperatorTableFactory INSTANCE =
       new SqlLibraryOperatorTableFactory(SqlLibraryOperators.class);
 
-  private static final Supplier<SqlOperatorTable> SPATIAL_SUPPLIER =
-      Suppliers.memoize(SqlLibraryOperatorTableFactory::createSpatial);
-
   private SqlLibraryOperatorTableFactory(Class... classes) {
     this.classes = ImmutableList.copyOf(classes);
   }
@@ -97,7 +82,7 @@ public class SqlLibraryOperatorTableFactory {
         standard = true;
         break;
       case SPATIAL:
-        list.addAll(SPATIAL_SUPPLIER.get().getOperatorList());
+        list.addAll(SqlStdOperatorTables.spatialInstance().getOperatorList());
         break;
       default:
         custom = true;
@@ -126,7 +111,7 @@ public class SqlLibraryOperatorTableFactory {
     SqlOperatorTable operatorTable = new ListSqlOperatorTable(list.build());
     if (standard) {
       operatorTable =
-          ChainedSqlOperatorTable.of(SqlStdOperatorTable.instance(),
+          SqlStdOperatorTables.chain(SqlStdOperatorTable.instance(),
               operatorTable);
     }
     return operatorTable;
@@ -170,23 +155,5 @@ public class SqlLibraryOperatorTableFactory {
       throw new RuntimeException("populating SqlOperatorTable for library "
           + librarySet, e);
     }
-  }
-
-  /** Creates the Spatial operator table. */
-  private static SqlOperatorTable createSpatial() {
-    if (true) {
-      return CalciteCatalogReader.operatorTable(
-          GeoFunctions.class.getName(),
-          SqlGeoFunctions.class.getName());
-    }
-    final CalciteSchema root = CalciteSchema.createRootSchema(false);
-    SchemaPlus rootSchema = root.plus();
-    final ImmutableList<String> path = ImmutableList.of();
-    ModelHandler.addFunctions(rootSchema, null, path,
-        GeoFunctions.class.getName(), "*", true);
-    final RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
-    final CalciteConnectionConfigImpl config =
-        new CalciteConnectionConfigImpl(new Properties());
-    return new CalciteCatalogReader(root, path, typeFactory, config);
   }
 }

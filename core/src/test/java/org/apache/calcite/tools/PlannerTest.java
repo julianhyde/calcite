@@ -70,13 +70,13 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.util.ListSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -176,7 +176,7 @@ public class PlannerTest {
             SqlExplainLevel.EXPPLAN_ATTRIBUTES));
   }
 
-  @Test public void testParseFails() throws SqlParseException {
+  @Test public void testParseFails() {
     Planner planner = getPlanner(null);
     try {
       SqlNode parse =
@@ -210,7 +210,7 @@ public class PlannerTest {
   @Test public void testValidateUserDefinedAggregate() throws Exception {
     final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
     SqlOperatorTable opTab =
-        ChainedSqlOperatorTable.of(stdOpTab,
+        SqlStdOperatorTables.chain(stdOpTab,
             new ListSqlOperatorTable(
                 ImmutableList.of(new MyCountAggFunction())));
     final SchemaPlus rootSchema = Frameworks.createRootSchema(true);

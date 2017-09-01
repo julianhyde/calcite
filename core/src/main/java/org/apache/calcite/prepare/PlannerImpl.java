@@ -45,9 +45,9 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.RelDecorrelator;
@@ -329,7 +329,7 @@ public class PlannerImpl implements Planner, ViewExpander {
   private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
     final SqlConformance conformance = conformance();
     final SqlOperatorTable opTab =
-        ChainedSqlOperatorTable.of(operatorTable, catalogReader);
+        SqlStdOperatorTables.chain(operatorTable, catalogReader);
     final SqlValidator validator =
         new CalciteSqlValidator(opTab, catalogReader, typeFactory, conformance);
     validator.setIdentifierExpansion(true);

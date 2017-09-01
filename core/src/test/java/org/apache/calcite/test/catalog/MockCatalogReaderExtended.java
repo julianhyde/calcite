@@ -101,7 +101,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
         new CompoundNameColumn("F0", "C0", f.intType),
         new CompoundNameColumn("F1", "C1", f.intTypeNull));
     final List<CompoundNameColumn> extendedColumns =
-        new ArrayList<CompoundNameColumn>(columnsExtended);
+        new ArrayList<>(columnsExtended);
     extendedColumns.add(new CompoundNameColumn("F2", "C2", f.varchar20Type));
     final CompoundNameColumnResolver structExtendedTableResolver =
         new CompoundNameColumnResolver(extendedColumns, "F0");
@@ -160,6 +160,18 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     complexTypeColumnsTable.addColumn("intArrayMultisetType", f.intArrayMultisetType);
     complexTypeColumnsTable.addColumn("rowArrayMultisetType", f.rowArrayMultisetType);
     registerTable(complexTypeColumnsTable);
+
+    MockSchema geoSchema = new MockSchema("GEO");
+    registerSchema(geoSchema);
+    final MockTable restaurantTable =
+        MockTable.create(this, geoSchema, "RESTAURANTS", false, 100);
+    restaurantTable.addColumn("NAME", f.varchar20Type, true);
+    restaurantTable.addColumn("LATITUDE", f.intType);
+    restaurantTable.addColumn("LONGITUDE", f.intType);
+    restaurantTable.addColumn("TYPE", f.varchar10Type);
+    restaurantTable.addColumn("HILBERT", f.bigintType);
+    restaurantTable.addMonotonic("HILBERT");
+    registerTable(restaurantTable);
 
     return this;
   }
