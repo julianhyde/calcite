@@ -1976,7 +1976,39 @@ public class RelOptRulesTest extends RelOptTestBase {
             + "and d.name = 'foo'");
   }
 
-  private void checkPlanning(String query) throws Exception {
+  /** Creates an environment for testing multi-join queries. */
+  private Sql multiJoin(String query) throws Exception {
+    HepProgram program = new HepProgramBuilder()
+        .addMatchOrder(HepMatchOrder.BOTTOM_UP)
+        .addRuleInstance(ProjectRemoveRule.INSTANCE)
+        .addRuleInstance(JoinToMultiJoinRule.INSTANCE)
+        .build();
+    return sql(query)
+        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
+            new MockCatalogReader(typeFactory, caseSensitive) {
+              @Override public MockCatalogReader init() {
+                // CREATE SCHEMA abc;
+                // CREATE TABLE a(a INT);
+                // ...
+                // CREATE TABLE j(j INT);
+                MockSchema schema = new MockSchema("SALES");
+                registerSchema(schema);
+                final RelDataType intType =
+                    typeFactory.createSqlType(SqlTypeName.INTEGER);
+                for (int i = 0; i < 10; i++) {
+                  String t = String.valueOf((char) ('A' + i));
+                  MockTable table = MockTable.create(this, schema, t, false, 100);
+                  table.addColumn(t, intType);
+                  registerTable(table);
+                }
+                return this;
+              }
+              // CHECKSTYLE: IGNORE 1
+            })
+        .with(program);
+  }
+
+  private void checkPlanning0(String query) throws Exception {
     final Tester tester1 = tester.withCatalogReaderFactory(
         (typeFactory, caseSensitive) -> new MockCatalogReader(typeFactory, caseSensitive) {
           @Override public MockCatalogReader init() {
@@ -2008,7 +2040,7 @@ public class RelOptRulesTest extends RelOptTestBase {
   }
 
   @Test public void testConvertMultiJoinRuleOuterJoins() throws Exception {
-    checkPlanning("select * from "
+    final String sql = "select * from "
         + "    (select * from "
         + "        (select * from "
         + "            (select * from A right outer join B on a = b) "
@@ -2024,25 +2056,29 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "        on a = e and b = f and c = g and d = h) "
         + "    inner join "
         + "    (select * from I inner join J on i = j) "
-        + "    on a = i and h = j");
+        + "    on a = i and h = j";
+    multiJoin(sql).check();
   }
 
   @Test public void testConvertMultiJoinRuleOuterJoins2() throws Exception {
     // in (A right join B) join C, pushing C is not allowed;
     // therefore there should be 2 MultiJoin
-    checkPlanning("select * from A right join B on a = b join C on b = c");
+    multiJoin("select * from A right join B on a = b join C on b = c")
+        .check();
   }
 
   @Test public void testConvertMultiJoinRuleOuterJoins3() throws Exception {
     // in (A join B) left join C, pushing C is allowed;
     // therefore there should be 1 MultiJoin
-    checkPlanning("select * from A join B on a = b left join C on b = c");
+    multiJoin("select * from A join B on a = b left join C on b = c")
+        .check();
   }
 
   @Test public void testConvertMultiJoinRuleOuterJoins4() throws Exception {
     // in (A join B) right join C, pushing C is not allowed;
     // therefore there should be 2 MultiJoin
-    checkPlanning("select * from A join B on a = b right join C on b = c");
+    multiJoin("select * from A join B on a = b right join C on b = c")
+        .check();
   }
 
   @Test public void testPushSemiJoinPastProject() throws Exception {
