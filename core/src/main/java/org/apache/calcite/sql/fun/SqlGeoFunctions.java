@@ -51,7 +51,7 @@ public class SqlGeoFunctions {
 
   /** Calculates a regular grid of polygons based on {@code geom}.
    *
-   * @see GeoFunctions#ST_MakeGrid */
+   * @see GeoFunctions ST_MakeGrid */
   @SuppressWarnings({"WeakerAccess", "unused"})
   public static ScannableTable ST_MakeGrid(final GeoFunctions.Geom geom,
       final BigDecimal deltaX, final BigDecimal deltaY) {
@@ -60,7 +60,7 @@ public class SqlGeoFunctions {
 
   /** Calculates a regular grid of points based on {@code geom}.
    *
-   * @see GeoFunctions#ST_MakeGridPoints */
+   * @see GeoFunctions ST_MakeGridPoints */
   @SuppressWarnings({"WeakerAccess", "unused"})
   public static ScannableTable ST_MakeGridPoints(final GeoFunctions.Geom geom,
       final BigDecimal deltaX, final BigDecimal deltaY) {

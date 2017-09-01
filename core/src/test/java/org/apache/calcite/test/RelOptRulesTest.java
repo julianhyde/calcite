@@ -2661,40 +2661,40 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
-  private void checkPlanning(String query) {
-    final Tester tester1 = tester.withCatalogReaderFactory(
-        (typeFactory, caseSensitive) -> new MockCatalogReader(typeFactory, caseSensitive) {
-          @Override public MockCatalogReader init() {
-            // CREATE SCHEMA abc;
-            // CREATE TABLE a(a INT);
-            // ...
-            // CREATE TABLE j(j INT);
-            MockSchema schema = new MockSchema("SALES");
-            registerSchema(schema);
-            final RelDataType intType =
-                typeFactory.createSqlType(SqlTypeName.INTEGER);
-            for (int i = 0; i < 10; i++) {
-              String t = String.valueOf((char) ('A' + i));
-              MockTable table = MockTable.create(this, schema, t, false, 100);
-              table.addColumn(t, intType);
-              registerTable(table);
-            }
-            return this;
-          }
-          // CHECKSTYLE: IGNORE 1
-        });
+  /** Creates an environment for testing multi-join queries. */
+  private Sql multiJoin(String query) {
     HepProgram program = new HepProgramBuilder()
         .addMatchOrder(HepMatchOrder.BOTTOM_UP)
         .addRuleInstance(CoreRules.PROJECT_REMOVE)
         .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
         .build();
-    sql(query).withTester(t -> tester1)
-        .with(program)
-        .check();
+    return sql(query)
+        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
+            new MockCatalogReader(typeFactory, caseSensitive) {
+              @Override public MockCatalogReader init() {
+                // CREATE SCHEMA abc;
+                // CREATE TABLE a(a INT);
+                // ...
+                // CREATE TABLE j(j INT);
+                MockSchema schema = new MockSchema("SALES");
+                registerSchema(schema);
+                final RelDataType intType =
+                    typeFactory.createSqlType(SqlTypeName.INTEGER);
+                for (int i = 0; i < 10; i++) {
+                  String t = String.valueOf((char) ('A' + i));
+                  MockTable table = MockTable.create(this, schema, t, false, 100);
+                  table.addColumn(t, intType);
+                  registerTable(table);
+                }
+                return this;
+              }
+              // CHECKSTYLE: IGNORE 1
+            })
+        .with(program);
   }
 
   @Test void testConvertMultiJoinRuleOuterJoins() {
-    checkPlanning("select * from "
+    final String sql = "select * from "
         + "    (select * from "
         + "        (select * from "
         + "            (select * from A right outer join B on a = b) "
@@ -2710,25 +2710,29 @@ class RelOptRulesTest extends RelOptTestBase {
         + "        on a = e and b = f and c = g and d = h) "
         + "    inner join "
         + "    (select * from I inner join J on i = j) "
-        + "    on a = i and h = j");
+        + "    on a = i and h = j";
+    multiJoin(sql).check();
   }
 
   @Test void testConvertMultiJoinRuleOuterJoins2() {
     // in (A right join B) join C, pushing C is not allowed;
     // therefore there should be 2 MultiJoin
-    checkPlanning("select * from A right join B on a = b join C on b = c");
+    multiJoin("select * from A right join B on a = b join C on b = c")
+        .check();
   }
 
   @Test void testConvertMultiJoinRuleOuterJoins3() {
     // in (A join B) left join C, pushing C is allowed;
     // therefore there should be 1 MultiJoin
-    checkPlanning("select * from A join B on a = b left join C on b = c");
+    multiJoin("select * from A join B on a = b left join C on b = c")
+        .check();
   }
 
   @Test void testConvertMultiJoinRuleOuterJoins4() {
     // in (A join B) right join C, pushing C is not allowed;
     // therefore there should be 2 MultiJoin
-    checkPlanning("select * from A join B on a = b right join C on b = c");
+    multiJoin("select * from A join B on a = b right join C on b = c")
+        .check();
   }
 
   @Test void testPushSemiJoinPastProject() {
