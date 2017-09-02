@@ -27,9 +27,10 @@ import java.util.List;
 public interface RelReferentialConstraint {
   //~ Methods ----------------------------------------------------------------
 
-  /**
-   * Returns the number of columns in the keys.
-   */
+  /** Returns the number of columns in the keys.
+   *
+   * @deprecated Use {@code getColumnPairs().size()} */
+  @Deprecated
   int getNumColumns();
 
   /**The qualified name of the referencing table, e.g. DEPT. */
