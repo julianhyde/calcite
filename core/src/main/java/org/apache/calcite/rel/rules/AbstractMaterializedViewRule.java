@@ -68,6 +68,7 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.graph.DefaultDirectedGraph;
 import org.apache.calcite.util.graph.DefaultEdge;
 import org.apache.calcite.util.graph.DirectedGraph;
+import org.apache.calcite.util.mapping.IntPair;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
@@ -1988,21 +1989,25 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
             tableVNameToTableRefs.get(constraint.getTargetQualifiedName());
         for (RelTableRef parentTRef : parentTableRefs) {
           boolean canBeRewritten = true;
-          Multimap<RexTableInputRef, RexTableInputRef> equiColumns =
-                  ArrayListMultimap.create();
-          for (int pos = 0; pos < constraint.getNumColumns(); pos++) {
-            int foreignKeyPos = constraint.getColumnPairs().get(pos).source;
-            RelDataType foreignKeyColumnType =
-                tRef.getTable().getRowType().getFieldList().get(foreignKeyPos).getType();
-            RexTableInputRef foreignKeyColumnRef =
-                RexTableInputRef.of(tRef, foreignKeyPos, foreignKeyColumnType);
-            int uniqueKeyPos = constraint.getColumnPairs().get(pos).target;
-            RexTableInputRef uniqueKeyColumnRef = RexTableInputRef.of(parentTRef, uniqueKeyPos,
-                parentTRef.getTable().getRowType().getFieldList().get(uniqueKeyPos).getType());
+          final Multimap<RexTableInputRef, RexTableInputRef> equiColumns =
+              ArrayListMultimap.create();
+          final List<RelDataTypeField> foreignFields =
+              tRef.getTable().getRowType().getFieldList();
+          final List<RelDataTypeField> uniqueFields =
+              parentTRef.getTable().getRowType().getFieldList();
+          for (IntPair pair : constraint.getColumnPairs()) {
+            final RelDataType foreignKeyColumnType =
+                foreignFields.get(pair.source).getType();
+            final RexTableInputRef foreignKeyColumnRef =
+                RexTableInputRef.of(tRef, pair.source, foreignKeyColumnType);
+            final RelDataType uniqueKeyColumnType =
+                uniqueFields.get(pair.target).getType();
+            final RexTableInputRef uniqueKeyColumnRef =
+                RexTableInputRef.of(parentTRef, pair.target, uniqueKeyColumnType);
             if (!foreignKeyColumnType.isNullable()
                 && sourceEC.getEquivalenceClassesMap().containsKey(uniqueKeyColumnRef)
-                && sourceEC.getEquivalenceClassesMap().get(uniqueKeyColumnRef).contains(
-                    foreignKeyColumnRef)) {
+                && sourceEC.getEquivalenceClassesMap().get(uniqueKeyColumnRef)
+                    .contains(foreignKeyColumnRef)) {
               equiColumns.put(foreignKeyColumnRef, uniqueKeyColumnRef);
             } else {
               canBeRewritten = false;
