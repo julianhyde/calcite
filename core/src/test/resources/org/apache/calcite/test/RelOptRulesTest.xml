@@ -5808,12 +5808,19 @@ LogicalProject(EXPR$0=[$0], EXPR$1=[$1])
             <![CDATA[select *
 from GEO.Restaurants as r
 where ST_DWithin(ST_Point(10.0, 20.0),
-                 ST_Point(r.latitude, r.longitude), 10)]]>
+                 ST_Point(r.longitude, r.latitude), 6)]]>
         </Resource>
         <Resource name="planBefore">
             <![CDATA[
-LogicalProject(NAME=[$0], LATITUDE=[$1], LONGITUDE=[$2], TYPE=[$3], HILBERT=[$4])
-  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 10)])
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 6)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[AND(OR(AND(>=($4, 36496), <=($4, 36520)), AND(>=($4, 36456), <=($4, 36464)), AND(>=($4, 33252), <=($4, 33254)), AND(>=($4, 33236), <=($4, 33244)), AND(>=($4, 33164), <=($4, 33176)), AND(>=($4, 33112), <=($4, 33156)), AND(>=($4, 33092), <=($4, 33100)), AND(>=($4, 33055), <=($4, 33080)), AND(>=($4, 33050), <=($4, 33053)), AND(>=($4, 33033), <=($4, 33035))), ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 6))])
     LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
 ]]>
         </Resource>
@@ -7957,6 +7964,49 @@ LogicalProject(EMPNO=[$0])
           LogicalProject(i=[true])
             LogicalFilter(condition=[<($0, 20)])
               LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testSpatialDWithinToHilbertNegative">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_Point(10.0, 20.0),
+                 ST_Point(r.longitude, r.latitude), -2)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), -2)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalValues(tuples=[[]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testSpatialDWithinToHilbertZero">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_Point(10.0, 20.0),
+                 ST_Point(r.longitude, r.latitude), 0)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 0)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[AND(=($4, 33139), ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 0))])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
 ]]>
         </Resource>
     </TestCase>

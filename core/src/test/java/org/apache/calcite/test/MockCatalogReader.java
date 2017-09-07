@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -38,6 +39,9 @@ import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.MetadataDef;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.DynamicRecordTypeImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeComparability;
@@ -77,7 +81,9 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.ObjectSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -623,11 +629,44 @@ public class MockCatalogReader extends CalciteCatalogReader {
     final MockTable restaurantTable =
         MockTable.create(this, geoSchema, "RESTAURANTS", false, 100);
     restaurantTable.addColumn("NAME", f.varchar20Type, true);
-    restaurantTable.addColumn("LATITUDE", f.intType);
     restaurantTable.addColumn("LONGITUDE", f.intType);
-    restaurantTable.addColumn("TYPE", f.varchar10Type);
+    restaurantTable.addColumn("LATITUDE", f.intType);
+    restaurantTable.addColumn("CUISINE", f.varchar10Type);
     restaurantTable.addColumn("HILBERT", f.bigintType);
     restaurantTable.addMonotonic("HILBERT");
+    restaurantTable.addWrap(
+        new BuiltInMetadata.AllPredicates.Handler() {
+          public RelOptPredicateList getAllPredicates(RelNode r,
+              RelMetadataQuery mq) {
+            // Return the predicate:
+            //  r.hilbert = hilbert(r.longitude, r.latitude)
+            final RexBuilder rexBuilder = r.getCluster().getRexBuilder();
+            final RexInputRef refLongitude = rexBuilder.makeInputRef(r, 1);
+            final RexInputRef refLatitude = rexBuilder.makeInputRef(r, 2);
+            final RexInputRef refHilbert = rexBuilder.makeInputRef(r, 4);
+            return RelOptPredicateList.of(rexBuilder,
+                ImmutableList.of(
+                    rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+                        refHilbert,
+                        rexBuilder.makeCall(hilbertOp(),
+                            refLongitude, refLatitude))));
+          }
+
+          SqlOperator hilbertOp() {
+            for (SqlOperator op
+                : SqlStdOperatorTables.spatialInstance().getOperatorList()) {
+              if (op.getKind() == SqlKind.HILBERT
+                  && op.getOperandCountRange().isValidCount(2)) {
+                return op;
+              }
+            }
+            throw new AssertionError();
+          }
+
+          public MetadataDef<BuiltInMetadata.AllPredicates> getDef() {
+            return BuiltInMetadata.AllPredicates.DEF;
+          }
+        });
     registerTable(restaurantTable);
 
     return this;
@@ -745,26 +784,33 @@ public class MockCatalogReader extends CalciteCatalogReader {
     protected final InitializerExpressionFactory initializerFactory;
     protected final Set<String> rolledUpColumns = new HashSet<>();
 
+    /** Wrapped objects that can be obtained by calling
+     * {@link #unwrap(Class)}. Initially an immutable list, but converted to
+     * a mutable array list on first assignment. */
+    protected List<Object> wraps;
+
     public MockTable(MockCatalogReader catalogReader, String catalogName,
         String schemaName, String name, boolean stream, double rowCount,
         ColumnResolver resolver,
         InitializerExpressionFactory initializerFactory) {
-      this(catalogReader, ImmutableList.of(catalogName, schemaName, name), stream, rowCount,
-          resolver, initializerFactory);
+      this(catalogReader, ImmutableList.of(catalogName, schemaName, name),
+          stream, rowCount, resolver, initializerFactory, ImmutableList.of());
     }
 
     public void registerRolledUpColumn(String columnName) {
       rolledUpColumns.add(columnName);
     }
 
-    private MockTable(MockCatalogReader catalogReader, List<String> names, boolean stream,
-        double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerFactory) {
+    private MockTable(MockCatalogReader catalogReader, List<String> names,
+        boolean stream, double rowCount, ColumnResolver resolver,
+        InitializerExpressionFactory initializerFactory, List<Object> wraps) {
       this.catalogReader = catalogReader;
       this.stream = stream;
       this.rowCount = rowCount;
       this.names = names;
       this.resolver = resolver;
       this.initializerFactory = initializerFactory;
+      this.wraps = ImmutableList.copyOf(wraps);
     }
 
     /**
@@ -787,6 +833,14 @@ public class MockCatalogReader extends CalciteCatalogReader {
       for (String name : monotonicColumnSet) {
         addMonotonic(name);
       }
+      this.wraps = ImmutableList.of();
+    }
+
+    void addWrap(Object wrap) {
+      if (wraps instanceof ImmutableList) {
+        wraps = new ArrayList<>(wraps);
+      }
+      wraps.add(wrap);
     }
 
     /** Implementation of AbstractModifiableTable. */
@@ -846,7 +900,8 @@ public class MockCatalogReader extends CalciteCatalogReader {
     }
 
     @Override protected RelOptTable extend(final Table extendedTable) {
-      return new MockTable(catalogReader, names, stream, rowCount, resolver, initializerFactory) {
+      return new MockTable(catalogReader, names, stream, rowCount, resolver,
+          initializerFactory, wraps) {
         @Override public RelDataType getRowType() {
           return extendedTable.getRowType(catalogReader.typeFactory);
         }
@@ -902,6 +957,11 @@ public class MockCatalogReader extends CalciteCatalogReader {
             ? new ModifiableTable(Util.last(names))
                 : new ModifiableTableWithCustomColumnResolving(Util.last(names));
         return clazz.cast(table);
+      }
+      for (Object handler : wraps) {
+        if (clazz.isInstance(handler)) {
+          return clazz.cast(handler);
+        }
       }
       return null;
     }
@@ -1004,7 +1064,7 @@ public class MockCatalogReader extends CalciteCatalogReader {
         boolean stream, double rowCount, ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory) {
       super(catalogReader, ImmutableList.of(catalogName, schemaName, name), stream, rowCount,
-          resolver, initializerExpressionFactory);
+          resolver, initializerExpressionFactory, ImmutableList.of());
       this.modifiableViewTable = modifiableViewTable;
     }
 

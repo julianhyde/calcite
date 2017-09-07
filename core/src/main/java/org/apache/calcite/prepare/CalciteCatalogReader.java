@@ -401,7 +401,21 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
   }
 
   public List<SqlOperator> getOperatorList() {
-    return null;
+    final ImmutableList.Builder<SqlOperator> b = ImmutableList.builder();
+    for (List<String> schemaPath : schemaPaths) {
+      CalciteSchema schema =
+          SqlValidatorUtil.getSchema(rootSchema, schemaPath, nameMatcher);
+      if (schema != null) {
+        for (String name : schema.getFunctionNames()) {
+          for (Function function : schema.getFunctions(name, true)) {
+            b.add(
+                toOp(new SqlIdentifier(name, SqlParserPos.ZERO),
+                    function));
+          }
+        }
+      }
+    }
+    return b.build();
   }
 
   public CalciteSchema getRootSchema() {

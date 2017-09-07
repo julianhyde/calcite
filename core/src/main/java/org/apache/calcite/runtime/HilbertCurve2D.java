@@ -45,7 +45,7 @@ public class HilbertCurve2D implements SpaceFillingCurve2D {
   final CompactHilbertCurve chc;
   private final int resolution;
 
-  HilbertCurve2D(int resolution) {
+  public HilbertCurve2D(int resolution) {
     this.resolution = resolution;
     precision = (long) Math.pow(2, resolution);
     chc = new CompactHilbertCurve(new int[] {resolution, resolution});
