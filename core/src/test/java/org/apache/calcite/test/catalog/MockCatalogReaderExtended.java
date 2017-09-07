@@ -189,9 +189,9 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     final MockTable restaurantTable =
         MockTable.create(this, geoSchema, "RESTAURANTS", false, 100);
     restaurantTable.addColumn("NAME", f.varchar20Type, true);
-    restaurantTable.addColumn("LATITUDE", f.intType);
     restaurantTable.addColumn("LONGITUDE", f.intType);
-    restaurantTable.addColumn("TYPE", f.varchar10Type);
+    restaurantTable.addColumn("LATITUDE", f.intType);
+    restaurantTable.addColumn("CUISINE", f.varchar10Type);
     restaurantTable.addColumn("HILBERT", f.bigintType);
     restaurantTable.addMonotonic("HILBERT");
     registerTable(restaurantTable);

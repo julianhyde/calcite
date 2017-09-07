@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.runtime;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
@@ -44,6 +45,7 @@ public class HilbertTest {
     assertThat(Hilbert.coordsToCurve(0, 0, 2), is(0L));
   }
 
+  @Disabled
   @Test public void testSpace1() {
     final String space = ""
         + "   1   2\n"
@@ -51,6 +53,7 @@ public class HilbertTest {
     assertThat(Hilbert.space(1), is(space));
   }
 
+  @Disabled
   @Test public void testSpace2() {
     final String space = ""
         + "   5   6   9  10\n"

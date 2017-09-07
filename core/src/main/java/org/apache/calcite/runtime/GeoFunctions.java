@@ -241,22 +241,26 @@ public class GeoFunctions {
   }
 
   /**  Alias for {@link #ST_Point(BigDecimal, BigDecimal)}. */
+  @Hints({"SqlKind:ST_POINT"})
   public static Geom ST_MakePoint(BigDecimal x, BigDecimal y) {
     return ST_Point(x, y);
   }
 
   /**  Alias for {@link #ST_Point(BigDecimal, BigDecimal, BigDecimal)}. */
+  @Hints({"SqlKind:ST_POINT3"})
   public static Geom ST_MakePoint(BigDecimal x, BigDecimal y, BigDecimal z) {
     return ST_Point(x, y, z);
   }
 
   /**  Constructs a 2D point from coordinates. */
+  @Hints({"SqlKind:ST_POINT"})
   public static Geom ST_Point(BigDecimal x, BigDecimal y) {
     // NOTE: Combine the double and BigDecimal variants of this function
     return point(x.doubleValue(), y.doubleValue());
   }
 
   /**  Constructs a 3D point from coordinates. */
+  @Hints({"SqlKind:ST_POINT3"})
   public static Geom ST_Point(BigDecimal x, BigDecimal y, BigDecimal z) {
     final Geometry g = new Point(x.doubleValue(), y.doubleValue(),
         z.doubleValue());
@@ -540,6 +544,7 @@ public class GeoFunctions {
 
   /** Returns the position of a point on the Hilbert curve,
    * or null if it is not a 2-dimensional point. */
+  @Hints({"SqlKind:HILBERT"})
   public static Long hilbert(Geom geom) {
     final Geometry g = geom.g();
     if (g instanceof Point) {
@@ -548,6 +553,12 @@ public class GeoFunctions {
       return new HilbertCurve2D(8).toIndex(x, y);
     }
     return null;
+  }
+
+  /** Returns the position of a point on the Hilbert curve. */
+  @Hints({"SqlKind:HILBERT"})
+  public static long hilbert(BigDecimal x, BigDecimal y) {
+    return new HilbertCurve2D(8).toIndex(x.doubleValue(), y.doubleValue());
   }
 
   // Inner classes ============================================================

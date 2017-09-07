@@ -6106,6 +6106,17 @@ class RelOptRulesTest extends RelOptTestBase {
     diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
   }
 
+  private Sql spatial(String sql) {
+    HepProgram program = new HepProgramBuilder()
+        .addRuleInstance(SpatialRules.INSTANCE)
+        .build();
+    return sql(sql)
+        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
+            new MockCatalogReaderExtended(typeFactory, caseSensitive).init())
+        .withConformance(SqlConformanceEnum.LENIENT)
+        .with(program);
+  }
+
   /** Tests that a call to {@code ST_DWithin}
    * is rewritten with an additional range predicate. */
   @Test void testSpatialDWithinToHilbert() {
@@ -6113,15 +6124,25 @@ class RelOptRulesTest extends RelOptTestBase {
         + "from GEO.Restaurants as r\n"
         + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
         + "                 ST_Point(r.latitude, r.longitude), 10)";
-    HepProgram program = new HepProgramBuilder()
-        .addRuleInstance(SpatialRules.INSTANCE)
-        .build();
-    sql(sql)
-        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
-            new MockCatalogReaderExtended(typeFactory, caseSensitive).init())
-        .withConformance(SqlConformanceEnum.LENIENT)
-        .with(program)
-        .check();
+    spatial(sql).check();
+  }
+
+  /** Tests that a call to {@code ST_DWithin}
+   * is rewritten with an additional range predicate. */
+  @Test void testSpatialDWithinToHilbertZero() {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
+        + "                 ST_Point(r.longitude, r.latitude), 0)";
+    spatial(sql).check();
+  }
+
+  @Test void testSpatialDWithinToHilbertNegative() {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
+        + "                 ST_Point(r.longitude, r.latitude), -2)";
+    spatial(sql).check();
   }
 
   @Test void testOversimplifiedCaseStatement() {

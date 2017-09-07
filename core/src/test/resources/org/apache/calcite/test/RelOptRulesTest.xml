@@ -4169,7 +4169,9 @@ LogicalProject(EXPR$0=[CAST(/($2, $3)):INTEGER NOT NULL])
     </TestCase>
     <TestCase name="testNoOversimplificationBelowIsNull">
         <Resource name="sql">
-            <![CDATA[select * from emp where ( (empno=1 and mgr=1) or (empno=null and mgr=1) ) is null]]>
+            <![CDATA[select *
+from emp
+where ( (empno=1 and mgr=1) or (empno=null and mgr=1) ) is null]]>
         </Resource>
         <Resource name="planBefore">
             <![CDATA[
@@ -8569,8 +8571,15 @@ where ST_DWithin(ST_Point(10.0, 20.0),
         </Resource>
         <Resource name="planBefore">
             <![CDATA[
-LogicalProject(NAME=[$0], LATITUDE=[$1], LONGITUDE=[$2], TYPE=[$3], HILBERT=[$4])
-  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 10)])
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0:DECIMAL(3, 1), 20.0:DECIMAL(3, 1)), ST_POINT($2, $1), 10)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[AND(OR(AND(>=($4, 36496), <=($4, 36520)), AND(>=($4, 36456), <=($4, 36464)), AND(>=($4, 33252), <=($4, 33254)), AND(>=($4, 33236), <=($4, 33244)), AND(>=($4, 33164), <=($4, 33176)), AND(>=($4, 33112), <=($4, 33156)), AND(>=($4, 33092), <=($4, 33100)), AND(>=($4, 33055), <=($4, 33080)), AND(>=($4, 33050), <=($4, 33053)), AND(>=($4, 33033), <=($4, 33035))), ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 6))])
     LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
 ]]>
         </Resource>
@@ -8600,8 +8609,9 @@ LogicalProject(EXPR$0=[1])
     </TestCase>
     <TestCase name="testDistinctCountMultipleViaJoin">
         <Resource name="sql">
-            <![CDATA[select deptno, count(distinct ename), count(distinct job, ename),
-count(distinct deptno, job), sum(sal)
+            <![CDATA[select deptno, count(distinct ename),
+  count(distinct job, ename),
+  count(distinct deptno, job), sum(sal)
 from sales.emp group by deptno]]>
         </Resource>
         <Resource name="planBefore">
@@ -8633,7 +8643,8 @@ LogicalProject(DEPTNO=[$0], EXPR$1=[$3], EXPR$2=[$5], EXPR$3=[$7], EXPR$4=[$1])
     </TestCase>
     <TestCase name="testDistinctCountMultiple">
         <Resource name="sql">
-            <![CDATA[select deptno, count(distinct ename), count(distinct job)
+            <![CDATA[select deptno, count(distinct ename),
+  count(distinct job)
 from sales.emp group by deptno]]>
         </Resource>
         <Resource name="planBefore">
@@ -8676,7 +8687,8 @@ LogicalAggregate(group=[{}], EXPR$0=[COUNT($0) FILTER $2], EXPR$1=[COUNT($1) FIL
     </TestCase>
     <TestCase name="testDistinctCountMixed">
         <Resource name="sql">
-            <![CDATA[select deptno, count(distinct deptno, job) as cddj, sum(sal) as s
+            <![CDATA[select deptno, count(distinct deptno, job) as cddj,
+  sum(sal) as s
 from sales.emp group by deptno]]>
         </Resource>
         <Resource name="planBefore">
@@ -9032,7 +9044,8 @@ LogicalAggregate(group=[{}], VOLUME=[$SUM0($0)], C1_SUM_SAL=[SUM($1)])
     </TestCase>
     <TestCase name="testPushDistinctAggregateIntoJoin">
         <Resource name="sql">
-            <![CDATA[select count(distinct sal) from sales.emp join sales.dept on job = name]]>
+            <![CDATA[select count(distinct sal) from sales.emp
+ join sales.dept on job = name]]>
         </Resource>
         <Resource name="planBefore">
             <![CDATA[
@@ -9414,6 +9427,49 @@ LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {0}, {1}, {}]], EXPR$2=[SUM($2
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testSpatialDWithinToHilbertNegative">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_Point(10.0, 20.0),
+                 ST_Point(r.longitude, r.latitude), -2)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0:DECIMAL(3, 1), 20.0:DECIMAL(3, 1)), ST_POINT($1, $2), -2)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalValues(tuples=[[]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testSpatialDWithinToHilbertZero">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_Point(10.0, 20.0),
+                 ST_Point(r.longitude, r.latitude), 0)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT(10.0:DECIMAL(3, 1), 20.0:DECIMAL(3, 1)), ST_POINT($1, $2), 0)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[AND(=($4, 33139), ST_DWITHIN(ST_POINT(10.0, 20.0), ST_POINT($1, $2), 0))])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+    </TestCase>
     <TestCase name="testAggregateRemove6">
         <Resource name="sql">
             <![CDATA[select deptno, max(sal) from sales.emp group by deptno
@@ -9487,7 +9543,8 @@ LogicalAggregate(group=[{7}])
     </TestCase>
     <TestCase name="testAggregateJoinRemove2">
         <Resource name="sql">
-            <![CDATA[select e.deptno, count(distinct e.job) from sales.emp e
+            <![CDATA[select e.deptno, count(distinct e.job)
+from sales.emp e
 left outer join sales.dept d on e.deptno = d.deptno
 group by e.deptno]]>
         </Resource>
@@ -9509,7 +9566,8 @@ LogicalAggregate(group=[{7}], EXPR$1=[COUNT(DISTINCT $2)])
     </TestCase>
     <TestCase name="testAggregateJoinRemove3">
         <Resource name="sql">
-            <![CDATA[select e.deptno, count(distinct d.name) from sales.emp e
+            <![CDATA[select e.deptno, count(distinct d.name)
+from sales.emp e
 left outer join sales.dept d on e.deptno = d.deptno
 group by e.deptno]]>
         </Resource>
@@ -9533,7 +9591,8 @@ LogicalAggregate(group=[{7}], EXPR$1=[COUNT(DISTINCT $10)])
     </TestCase>
     <TestCase name="testAggregateJoinRemove4">
         <Resource name="sql">
-            <![CDATA[select distinct d.deptno from sales.emp e
+            <![CDATA[select distinct d.deptno
+from sales.emp e
 right outer join sales.dept d on e.deptno = d.deptno]]>
         </Resource>
         <Resource name="planBefore">
@@ -9554,7 +9613,8 @@ LogicalProject(DEPTNO=[$0])
     </TestCase>
     <TestCase name="testAggregateJoinRemove5">
         <Resource name="sql">
-            <![CDATA[select d.deptno, count(distinct d.name) from sales.emp e
+            <![CDATA[select d.deptno, count(distinct d.name)
+from sales.emp e
 right outer join sales.dept d on e.deptno = d.deptno
 group by d.deptno]]>
         </Resource>
@@ -9576,7 +9636,8 @@ LogicalAggregate(group=[{0}], EXPR$1=[COUNT(DISTINCT $1)])
     </TestCase>
     <TestCase name="testAggregateJoinRemove6">
         <Resource name="sql">
-            <![CDATA[select d.deptno, count(distinct e.job) from sales.emp e
+            <![CDATA[select d.deptno, count(distinct e.job)
+from sales.emp e
 right outer join sales.dept d on e.deptno = d.deptno
 group by d.deptno]]>
         </Resource>
@@ -12739,7 +12800,10 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($0)], EXPR$1=[COUNT($0)], EXPR$2=[BIT_O
     </TestCase>
     <TestCase name="testProjectJoinTransposeItem">
         <Resource name="sql">
-            <![CDATA[select t1.c_nationkey[0], t2.c_nationkey[0] from sales.customer as t1 left outer join sales.customer as t2 on t1.c_nationkey[0] = t2.c_nationkey[0]]]>
+            <![CDATA[select t1.c_nationkey[0], t2.c_nationkey[0]
+from sales.customer as t1
+left outer join sales.customer as t2
+on t1.c_nationkey[0] = t2.c_nationkey[0]]]>
         </Resource>
         <Resource name="planBefore">
             <![CDATA[
@@ -12766,7 +12830,9 @@ LogicalProject(EXPR$0=[$1], EXPR$1=[$3])
     </TestCase>
     <TestCase name="testSimplifyItemIsNotNull">
         <Resource name="sql">
-            <![CDATA[select * from sales.customer as t1 where t1.c_nationkey[0] is not null]]>
+            <![CDATA[select *
+from sales.customer as t1
+where t1.c_nationkey[0] is not null]]>
         </Resource>
         <Resource name="planBefore">
             <![CDATA[

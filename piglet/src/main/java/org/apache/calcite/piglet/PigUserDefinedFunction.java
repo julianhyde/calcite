@@ -36,6 +36,7 @@ import java.util.List;
 /** Pig user-defined function. */
 public class PigUserDefinedFunction extends SqlUserDefinedFunction {
   public final FuncSpec funcSpec;
+
   private PigUserDefinedFunction(SqlIdentifier opName,
       SqlReturnTypeInference returnTypeInference,
       SqlOperandTypeInference operandTypeInference,
@@ -43,8 +44,8 @@ public class PigUserDefinedFunction extends SqlUserDefinedFunction {
       List<RelDataType> paramTypes,
       Function function,
       FuncSpec funcSpec) {
-    super(opName, SqlKind.OTHER, returnTypeInference, operandTypeInference,
-        operandTypeChecker, paramTypes, function,
+    super(opName, SqlKind.OTHER_FUNCTION, returnTypeInference,
+        operandTypeInference, operandTypeChecker, paramTypes, function,
         SqlFunctionCategory.USER_DEFINED_CONSTRUCTOR);
     this.funcSpec = funcSpec;
   }
