@@ -38,5 +38,3 @@ import static java.lang.annotation.ElementType.TYPE;
 public @interface Hints {
   String[] value();
 }
-
-// End Hints.java

@@ -20,6 +20,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
@@ -37,6 +38,7 @@ import java.util.List;
  */
 public class PigUserDefinedFunction extends SqlUserDefinedFunction {
   public final FuncSpec funcSpec;
+
   private PigUserDefinedFunction(SqlIdentifier opName,
       SqlReturnTypeInference returnTypeInference,
       SqlOperandTypeInference operandTypeInference,
@@ -44,8 +46,8 @@ public class PigUserDefinedFunction extends SqlUserDefinedFunction {
       List<RelDataType> paramTypes,
       Function function,
       FuncSpec funcSpec) {
-    super(opName, returnTypeInference, operandTypeInference, operandTypeChecker, paramTypes,
-        function,
+    super(opName, SqlKind.OTHER_FUNCTION, returnTypeInference,
+        operandTypeInference, operandTypeChecker, paramTypes, function,
         SqlFunctionCategory.USER_DEFINED_CONSTRUCTOR);
     this.funcSpec = funcSpec;
   }

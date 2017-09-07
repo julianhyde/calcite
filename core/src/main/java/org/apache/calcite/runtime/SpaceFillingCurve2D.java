@@ -91,6 +91,10 @@ public interface SpaceFillingCurve2D {
     public boolean contained() {
       return true;
     }
+
+    @Override public String toString() {
+      return "covered(" + lower + ", " + upper + ")";
+    }
   }
 
   /** Range that is not contained. */
@@ -101,6 +105,10 @@ public interface SpaceFillingCurve2D {
 
     public boolean contained() {
       return false;
+    }
+
+    @Override public String toString() {
+      return "overlap(" + lower + ", " + upper + ")";
     }
   }
 

@@ -79,5 +79,3 @@ public class SqlStdOperatorTables extends ReflectiveSqlOperatorTable {
     return chain(ImmutableList.copyOf(tables));
   }
 }
-
-// End SqlStdOperatorTables.java

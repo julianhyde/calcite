@@ -147,17 +147,17 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReader;
+import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
-import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.tools.RuleSet;
@@ -5979,22 +5979,43 @@ public class RelOptRulesTest extends RelOptTestBase {
     diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
   }
 
+  private Sql spatial(String sql) {
+    HepProgram program = new HepProgramBuilder()
+        .addRuleInstance(SpatialRules.INSTANCE)
+        .build();
+    return sql(sql)
+        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
+            new MockCatalogReaderExtended(typeFactory, caseSensitive).init())
+        .withConformance(SqlConformanceEnum.LENIENT)
+        .with(program);
+  }
+
   /** Tests that a call to {@code ST_DWithin}
    * is rewritten with an additional range predicate. */
   @Test public void testSpatialDWithinToHilbert() throws Exception {
     final String sql = "select *\n"
         + "from GEO.Restaurants as r\n"
         + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
-        + "                 ST_Point(r.latitude, r.longitude), 10)";
-    HepProgram program = new HepProgramBuilder()
-        .addRuleInstance(SpatialRules.INSTANCE)
-        .build();
-    sql(sql)
-        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
-            new MockCatalogReaderExtended(typeFactory, caseSensitive).init())
-        .withConformance(SqlConformanceEnum.LENIENT)
-        .with(program)
-        .check();
+        + "                 ST_Point(r.longitude, r.latitude), 6)";
+    spatial(sql).check();
+  }
+
+  /** Tests that a call to {@code ST_DWithin}
+   * is rewritten with an additional range predicate. */
+  @Test public void testSpatialDWithinToHilbertZero() throws Exception {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
+        + "                 ST_Point(r.longitude, r.latitude), 0)";
+    spatial(sql).check();
+  }
+
+  @Test public void testSpatialDWithinToHilbertNegative() throws Exception {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
+        + "                 ST_Point(r.longitude, r.latitude), -2)";
+    spatial(sql).check();
   }
 
   @Test public void testOversimplifiedCaseStatement() {
