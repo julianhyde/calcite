@@ -98,7 +98,7 @@ public class Hilbert {
    * <blockquote>
    *   <pre>
    *     X[0] = A D G J M               X[2]|
-   *     X[1] = B E H K N         <-------> | /X[1]
+   *     X[1] = B E H K N         &lt;-------&gt; | /X[1]
    *     X[2] = C F I L O              axes |/
    *            high low                    0------ X[0]
    *   </pre>
