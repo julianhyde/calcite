@@ -4103,6 +4103,25 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "                 ST_Point(r.longitude, r.latitude), -2)";
     spatial(sql).check();
   }
+
+  /** As {@link #testSpatialDWithinToHilbert()} but arguments reversed. */
+  @Test public void testSpatialDWithinReversed() throws Exception {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(ST_Point(r.longitude, r.latitude),\n"
+        + "                 ST_Point(10.0, 20.0), 6)";
+    spatial(sql).check();
+  }
+
+  /** Points within a given distance of a line. */
+  @Test public void testSpatialDWithinLine() throws Exception {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_DWithin(\n"
+        + "  ST_MakeLine(ST_Point(8.0, 20.0), ST_Point(12.0, 20.0)),\n"
+        + "  ST_Point(r.longitude, r.latitude), 4)";
+    spatial(sql).check();
+  }
 }
 
 // End RelOptRulesTest.java

@@ -7967,6 +7967,50 @@ LogicalProject(EMPNO=[$0])
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testSpatialDWithinLine">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_MakeLine(ST_Point(8.0, 20.0), ST_Point(12.0, 20.0)),
+                 ST_Point(r.longitude, r.latitude), 4)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_MAKELINE(ST_POINT(8.0, 20.0), ST_POINT(12.0, 20.0)), ST_POINT($1, $2), 4)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[AND(OR(AND(>=($4, 36517), <=($4, 36519)), AND(>=($4, 36505), <=($4, 36507)), AND(>=($4, 36501), <=($4, 36503)), AND(>=($4, 36457), <=($4, 36459)), AND(>=($4, 33236), <=($4, 33240)), AND(>=($4, 33164), <=($4, 33176)), AND(>=($4, 33112), <=($4, 33156)), AND(>=($4, 33092), <=($4, 33100)), AND(>=($4, 33064), <=($4, 33076))), ST_DWITHIN(ST_MAKELINE(ST_POINT(8.0, 20.0), ST_POINT(12.0, 20.0)), ST_POINT($1, $2), 4))])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testSpatialDWithinReversed">
+        <Resource name="sql">
+            <![CDATA[select *
+from GEO.Restaurants as r
+where ST_DWithin(ST_Point(r.longitude, r.latitude),
+                 ST_Point(10.0, 20.0), 6)]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[ST_DWITHIN(ST_POINT($1, $2), ST_POINT(10.0, 20.0), 6)])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+LogicalProject(NAME=[$0], LONGITUDE=[$1], LATITUDE=[$2], CUISINE=[$3], HILBERT=[$4])
+  LogicalFilter(condition=[AND(OR(AND(>=($4, 36496), <=($4, 36520)), AND(>=($4, 36456), <=($4, 36464)), AND(>=($4, 33252), <=($4, 33254)), AND(>=($4, 33236), <=($4, 33244)), AND(>=($4, 33164), <=($4, 33176)), AND(>=($4, 33112), <=($4, 33156)), AND(>=($4, 33092), <=($4, 33100)), AND(>=($4, 33055), <=($4, 33080)), AND(>=($4, 33050), <=($4, 33053)), AND(>=($4, 33033), <=($4, 33035))), ST_DWITHIN(ST_POINT($1, $2), ST_POINT(10.0, 20.0), 6))])
+    LogicalTableScan(table=[[CATALOG, GEO, RESTAURANTS]])
+]]>
+        </Resource>
+    </TestCase>
     <TestCase name="testSpatialDWithinToHilbertNegative">
         <Resource name="sql">
             <![CDATA[select *

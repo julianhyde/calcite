@@ -975,6 +975,9 @@ public enum SqlKind {
   /** The {@code ST_Point} function that makes a 3D point. */
   ST_POINT3,
 
+  /** The {@code ST_MakeLine} function that makes a line. */
+  ST_MAKE_LINE,
+
   /** The {@code Hilbert} function that converts (x, y) to a position on a
    * Hilbert space-filling curve. */
   HILBERT,
