@@ -71,13 +71,15 @@ SELECT ST_PointFromText('POINT(-71.064544 42.28787)');
 
 ## Query rewrites
 
-One class of rewrites uses Hilbert space-filling curves. Suppose that a table
+One class of rewrites uses
+[Hilbert space-filling curves](https://en.wikipedia.org/wiki/Hilbert_curve).
+Suppose that a table
 has columns `x` and `y` denoting the position of a point and also a column `h`
 denoting the distance of that point along a curve. Then a predicate involving
 distance of (x, y) from a fixed point can be translated into a predicate
 involving ranges of h.
 
-Suppose we have a `Restaurants` table as follows:
+Suppose we have a table with the locations of restaurants:
 
 {% highlight sql %}
 CREATE TABLE Restaurants (
@@ -86,13 +88,15 @@ CREATE TABLE Restaurants (
   VARCHAR(20) cuisine,
   INT x NOT NULL,
   INT y NOT NULL,
-  INT h  NOT NULL CHECK (h = ST_Hilbert(x, y)))
+  INT h  NOT NULL DERIVED (ST_Hilbert(x, y)))
 SORT KEY (h);
 {% endhighlight %}
 
-(The DDL syntax is imaginary, but illustrates the fact that `h` is the position
-on the Hilbert curve of point (`x`, `y`), and also that the table is sorted on
-`h`.)
+The optimizer requires that `h` is the position on the Hilbert curve of
+point (`x`, `y`), and also requires that the table is sorted on `h`.
+The `DERIVED` and `SORT KEY` clauses in the DDL syntax are invented for the
+purposes of this example, but a clustered table with a `CHECK` constraint
+would work just as well.
 
 The query
 
@@ -123,14 +127,26 @@ The rewritten query contains a collection of ranges on `h` followed by the
 original `ST_DWithin` predicate. The range predicates are evaluated first and
 are very fast because the table is sorted on `h`.
 
-Here is the full set of supported rewrites
+Here is the full set of transformations:
 
-| Before | Rewritten to | Exact?
-|:------ |: ----------- |: ---
-| ST_Contains(&#8203;ST_Rectangle(&#8203;X - D, X + D, Y - D, Y + D), ST_Point(a, b))) | (h BETWEEN C1 AND C2<br/>OR ...<br/>OR h BETWEEN C7 AND C8) | Yes
-| ST_DWithin(&#8203;ST_Point(a, b), ST_Point(X, Y), D))<br/><br/>ST_Distance(&#8203;ST_Point(a, b), ST_Point(X, Y))) <= D<br/><br/>ST_Contains(&#8203;ST_Buffer(ST_Point(a, b), D), ST_Point(X, Y)) | (h BETWEEN C1 AND C2<br/>OR ...<br/>OR h BETWEEN C7 AND C8)<br/>AND p | No
+| Description | Expression
+|:----------- |: ------
+| Test whether a constant rectangle (X, X2, Y, Y2) contains a point (a, b)<br/><br/>Rewrite to use Hilbert index | ST_Contains(&#8203;ST_Rectangle(&#8203;X, X2, Y, Y2), ST_Point(a, b)))<br/><br/>h BETWEEN C1 AND C2<br/>OR ...<br/>OR h BETWEEN C<sub>2k</sub> AND C<sub>2k+1</sub>
+| Test whether a constant geometry G contains a point (a, b)<br/><br/>Rewrite to use bounding box of constant geometry, which is also constant, then use previous rewrite to Hilbert range(s) | ST_Contains(&#8203;ST_Envelope(&#8203;G), ST_Point(a, b))<br/><br/>ST_Contains(&#8203;ST_Rectangle(&#8203;X, X2, Y, Y2), ST_Point(a, b)))
+| Test whether a point (a, b) is within a buffer around a constant point (X, Y)<br/><br/>Special case of previous, because buffer is a constant geometry | ST_Contains(&#8203;ST_Buffer(ST_Point(a, b), D), ST_Point(X, Y))
+| Test whether a point (a, b) is within a constant distance D of a constant point (X, Y)<br/><br/>First, convert to buffer, then use previous rewrite for constant geometry | ST_DWithin(&#8203;ST_Point(a, b), ST_Point(X, Y), D))<br/><br/>ST_Contains(&#8203;ST_Buffer(&#8203;ST_Point(&#8203;X, Y), D), ST_Point(a, b))
+| Test whether a constant point (X, Y) is within a constant distance D of a point (a, b)<br/><br/>Reverse arguments of call to <code>ST_DWithin</code>, then use previous rewrite | ST_DWithin(&#8203;ST_Point(X, Y), ST_Point(a, b), D))<br/><br/>ST_Contains(&#8203;ST_Buffer(&#8203;ST_Point(&#8203;X, Y), D), ST_Point(a, b))
 
-In the above, `a` and `b` are variables, `X`, `Y` and `D` are constants.
+In the above, `a` and `b` are variables, `X`, `X2`, `Y`, `Y2`, `D` and `G` are
+constants.
+
+Many rewrites are inexact: there are some points where the predicate would
+return false but the rewritten predicate returns true.
+For example, a rewrite might convert a test whether a point is in a circle to a
+test for whether the point is in the circle's bounding square.
+These rewrites are worth performing because they are much quicker to apply,
+and often allow range scans on the Hilbert index.
+But for safety, Calcite applies the original predicate, to remove false positives.
 
 ## Acknowledgements
 
