@@ -183,6 +183,23 @@ public class GeoFunctions {
     // in SqlGeoFunctions.
   }
 
+  /** Creates a rectangular Polygon. */
+  public static Geom ST_MakeEnvelope(BigDecimal xMin, BigDecimal yMin,
+      BigDecimal xMax, BigDecimal yMax, int srid) {
+    return ST_GeomFromText("POLYGON(("
+        + xMin + " " + yMin + ", "
+        + xMin + " " + yMax + ", "
+        + xMax + " " + yMax + ", "
+        + xMax + " " + yMin + ", "
+        + xMin + " " + yMin + "))", srid);
+  }
+
+  /** Creates a rectangular Polygon. */
+  public static Geom ST_MakeEnvelope(BigDecimal xMin, BigDecimal yMin,
+      BigDecimal xMax, BigDecimal yMax) {
+    return ST_MakeEnvelope(xMin, yMin, xMax, yMax, NO_SRID);
+  }
+
   /**  Creates a line-string from the given POINTs (or MULTIPOINTs). */
   @Hints({"SqlKind:ST_MAKE_LINE"})
   public static Geom ST_MakeLine(Geom geom1, Geom geom2) {
@@ -294,6 +311,7 @@ public class GeoFunctions {
   // Geometry predicates ======================================================
 
   /** Returns whether {@code geom1} contains {@code geom2}. */
+  @Hints({"SqlKind:ST_CONTAINS"})
   public static boolean ST_Contains(Geom geom1, Geom geom2) {
     return GeometryEngine.contains(geom1.g(), geom2.g(), geom1.sr());
   }

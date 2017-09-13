@@ -132,8 +132,8 @@ Here is the full set of transformations:
 | Description | Expression
 |:----------- |: ------
 | Test whether a constant rectangle (X, X2, Y, Y2) contains a point (a, b)<br/><br/>Rewrite to use Hilbert index | ST_Contains(&#8203;ST_Rectangle(&#8203;X, X2, Y, Y2), ST_Point(a, b)))<br/><br/>h BETWEEN C1 AND C2<br/>OR ...<br/>OR h BETWEEN C<sub>2k</sub> AND C<sub>2k+1</sub>
-| Test whether a constant geometry G contains a point (a, b)<br/><br/>Rewrite to use bounding box of constant geometry, which is also constant, then use previous rewrite to Hilbert range(s) | ST_Contains(&#8203;ST_Envelope(&#8203;G), ST_Point(a, b))<br/><br/>ST_Contains(&#8203;ST_Rectangle(&#8203;X, X2, Y, Y2), ST_Point(a, b)))
-| Test whether a point (a, b) is within a buffer around a constant point (X, Y)<br/><br/>Special case of previous, because buffer is a constant geometry | ST_Contains(&#8203;ST_Buffer(ST_Point(a, b), D), ST_Point(X, Y))
+| Test whether a constant geometry G contains a point (a, b)<br/><br/>Rewrite to use bounding box of constant geometry, which is also constant, then rewrite to Hilbert range(s) as above | ST_Contains(&#8203;ST_Envelope(&#8203;G), ST_Point(a, b))<br/><br/>ST_Contains(&#8203;ST_Rectangle(&#8203;X, X2, Y, Y2), ST_Point(a, b)))
+| Test whether a point (a, b) is within a buffer around a constant point (X, Y)<br/><br/>Special case of previous, because buffer is a constant geometry | ST_Contains(&#8203;ST_Buffer(&#8203;ST_Point(a, b), D), ST_Point(X, Y))
 | Test whether a point (a, b) is within a constant distance D of a constant point (X, Y)<br/><br/>First, convert to buffer, then use previous rewrite for constant geometry | ST_DWithin(&#8203;ST_Point(a, b), ST_Point(X, Y), D))<br/><br/>ST_Contains(&#8203;ST_Buffer(&#8203;ST_Point(&#8203;X, Y), D), ST_Point(a, b))
 | Test whether a constant point (X, Y) is within a constant distance D of a point (a, b)<br/><br/>Reverse arguments of call to <code>ST_DWithin</code>, then use previous rewrite | ST_DWithin(&#8203;ST_Point(X, Y), ST_Point(a, b), D))<br/><br/>ST_Contains(&#8203;ST_Buffer(&#8203;ST_Point(&#8203;X, Y), D), ST_Point(a, b))
 

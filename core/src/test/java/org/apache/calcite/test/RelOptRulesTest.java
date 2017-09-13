@@ -4066,7 +4066,9 @@ public class RelOptRulesTest extends RelOptTestBase {
   }
 
   private Sql spatial(String sql) {
-    HepProgram program = new HepProgramBuilder()
+    final HepProgram program = new HepProgramBuilder()
+        .addRuleInstance(ReduceExpressionsRule.PROJECT_INSTANCE)
+        .addRuleInstance(ReduceExpressionsRule.FILTER_INSTANCE)
         .addRuleInstance(SpatialRules.INSTANCE)
         .build();
     return sql(sql)
@@ -4121,6 +4123,26 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "  ST_MakeLine(ST_Point(8.0, 20.0), ST_Point(12.0, 20.0)),\n"
         + "  ST_Point(r.longitude, r.latitude), 4)";
     spatial(sql).check();
+  }
+
+  /** Points near a constant point, using ST_Contains and ST_Buffer. */
+  @Test public void testSpatialContainsPoint() throws Exception {
+    final String sql = "select *\n"
+        + "from GEO.Restaurants as r\n"
+        + "where ST_Contains(\n"
+        + "  ST_Buffer(ST_Point(10.0, 20.0), 6),\n"
+        + "  ST_Point(r.longitude, r.latitude))";
+    spatial(sql).check();
+  }
+
+  /** Constant reduction on geo-spatial expression. */
+  @Test public void testSpatialReduce() throws Exception {
+    final String sql = "select\n"
+        + "  ST_Buffer(ST_Point(0.0, 1.0), 2) as b\n"
+        + "from GEO.Restaurants as r";
+    spatial(sql)
+        .withProperty(Hook.REL_BUILDER_SIMPLIFY, false)
+        .check();
   }
 }
 

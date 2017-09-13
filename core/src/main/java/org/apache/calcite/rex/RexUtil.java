@@ -465,6 +465,18 @@ public class RexUtil {
     };
   }
 
+  /** Returns a visitor that finds nodes of given {@link SqlKind}s. */
+  public static RexFinder find(final Set<SqlKind> kinds) {
+    return new RexFinder() {
+      @Override public Void visitCall(RexCall call) {
+        if (kinds.contains(call.getKind())) {
+          throw Util.FoundOne.NULL;
+        }
+        return super.visitCall(call);
+      }
+    };
+  }
+
   /** Returns a visitor that finds a particular {@link RexInputRef}. */
   public static RexFinder find(final RexInputRef ref) {
     return new RexFinder() {

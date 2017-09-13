@@ -265,7 +265,17 @@ EXPR$0
 # Not implemented
 
 # ST_MakeEnvelope(xMin, yMin, xMax, yMax  [, srid ]) Creates a rectangular Polygon
-# Not implemented
+SELECT ST_AsText(ST_MakeEnvelope(10.0, 10.0, 11.0, 11.0, 4326));
+
+EXPR$0
+MULTIPOLYGON (((10 10, 11 10, 11 11, 10 11, 10 10)))
+!ok
+
+SELECT ST_AsText(ST_MakeEnvelope(12.0, -1.0, 6.0, 4.0, 4326));
+
+EXPR$0
+MULTIPOLYGON (((12 -1, 12 4, 6 4, 6 -1, 12 -1)))
+!ok
 
 # ST_MakeGrid(geom, deltaX, deltaY) Calculates a regular grid of polygons based on *geom*
 SELECT * FROM TABLE(ST_MakeGrid(ST_Point(13.0,22.0), 10.0, 5.0));
@@ -835,7 +845,7 @@ EXPR$0
 SELECT ST_Buffer(
  ST_GeomFromText('POINT(100 90)'),
  50, 'quad_segs=8');
-at org.apache.calcite.runtime.GeoFunctions.todo
+at org.apache.calcite.runtime.Geometries.todo
 !error GeoFunctions
 
 # ST_BUFFER(geom, bufferSize, quadSegs) variant - not implemented
@@ -843,7 +853,7 @@ at org.apache.calcite.runtime.GeoFunctions.todo
 SELECT ST_Buffer(
  ST_GeomFromText('POINT(100 90)'),
  50, 2);
-at org.apache.calcite.runtime.GeoFunctions.todo
+at org.apache.calcite.runtime.Geometries.todo
 !error GeoFunctions
 !}
 

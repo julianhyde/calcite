@@ -20,6 +20,8 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.GeoFunctions;
+import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -301,6 +303,8 @@ public class RexLiteral extends RexNode {
     case ROW:
     case MULTISET:
       return value instanceof List;
+    case GEOMETRY:
+      return value instanceof Geometries.Geom;
     case ANY:
       // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains
       // an integer literal surrounded by a cast function.
@@ -547,6 +551,9 @@ public class RexLiteral extends RexNode {
               return list.size();
             }
           });
+      break;
+    case GEOMETRY:
+      pw.print(GeoFunctions.ST_AsWKT((Geometries.Geom) value));
       break;
     default:
       assert valueMatchesType(value, typeName, true);

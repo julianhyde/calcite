@@ -978,6 +978,10 @@ public enum SqlKind {
   /** The {@code ST_MakeLine} function that makes a line. */
   ST_MAKE_LINE,
 
+  /** The {@code ST_Contains} function that tests whether one geometry contains
+   * another. */
+  ST_CONTAINS,
+
   /** The {@code Hilbert} function that converts (x, y) to a position on a
    * Hilbert space-filling curve. */
   HILBERT,
