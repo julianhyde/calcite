@@ -39,23 +39,26 @@ import org.apache.calcite.tools.RelBuilderFactory;
 
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Point;
+import com.google.common.collect.ImmutableList;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
  * Collection of planner rules that convert
  * calls to spatial functions into more efficient expressions.
  *
- * <p>The rules allow Calcite to use spatial indexes. For example is rewritten
+ * <p>The rules allow Calcite to use spatial indexes. For example the following
+ * query:
  *
  * <blockquote>SELECT ...
  * FROM Restaurants AS r
  * WHERE ST_DWithin(ST_Point(10, 20), ST_Point(r.latitude, r.longitude), 5)
  * </blockquote>
  *
- * <p>to
+ * <p>is rewritten to
  *
  * <blockquote>SELECT ...
  * FROM Restaurants AS r
@@ -82,7 +85,7 @@ public abstract class SpatialRules {
   private SpatialRules() {}
 
   private static final RexUtil.RexFinder DWITHIN_FINDER =
-      RexUtil.find(SqlKind.ST_DWITHIN);
+      RexUtil.find(EnumSet.of(SqlKind.ST_DWITHIN, SqlKind.ST_CONTAINS));
 
   private static final RexUtil.RexFinder HILBERT_FINDER =
       RexUtil.find(SqlKind.HILBERT);
@@ -90,46 +93,16 @@ public abstract class SpatialRules {
   public static final RelOptRule INSTANCE =
       new FilterHilbertRule(RelFactories.LOGICAL_BUILDER);
 
-
   /** Returns a geometry if an expression is constant, null otherwise. */
   private static Geometries.Geom constantGeom(RexNode e) {
-    final RexCall call;
     switch (e.getKind()) {
-    case ST_POINT:
-      call = (RexCall) e;
-      final RexNode op0 = call.operands.get(0);
-      final RexNode op1 = call.operands.get(1);
-      switch (op0.getKind()) {
-      case LITERAL:
-        switch (op1.getKind()) {
-        case LITERAL:
-          final BigDecimal x = (BigDecimal) RexLiteral.value(op0);
-          final BigDecimal y = (BigDecimal) RexLiteral.value(op1);
-          return GeoFunctions.ST_Point(x, y);
-        }
-      }
-      break;
-    case ST_MAKE_LINE:
-      call = (RexCall) e;
-      final List<Geometries.Geom> list = constantGeoms(call.operands);
-      if (list != null) {
-        return Geometries.makeLine(list);
-      }
-      break;
+    case CAST:
+      return constantGeom(((RexCall) e).getOperands().get(0));
+    case LITERAL:
+      return (Geometries.Geom) ((RexLiteral) e).getValue();
+    default:
+      return null;
     }
-    return null;
-  }
-
-  private static List<Geometries.Geom> constantGeoms(List<RexNode> operands) {
-    final List<Geometries.Geom> list = new ArrayList<>();
-    for (RexNode operand : operands) {
-      Geometries.Geom g = constantGeom(operand);
-      if (g == null) {
-        return null; // not all constant
-      }
-      list.add(g);
-    }
-    return list;
   }
 
   /** Rule that converts ST_DWithin in a Filter condition into a predicate on
@@ -159,9 +132,9 @@ public abstract class SpatialRules {
       // where {[h1, h2], [h3, h4]} are the ranges of the Hilbert curve
       // intersecting the rectangle
       //   (r.longitude - d, r.longitude + d, r.latitude - d, r.latitude + d)
-      final int initialSize = conjunctions.size();
       final RelOptPredicateList predicates =
           call.getMetadataQuery().getAllPredicates(filter.getInput());
+      int changeCount = 0;
       for (RexNode predicate : predicates.pulledUpPredicates) {
         final RelBuilder builder = call.builder();
         if (predicate.getKind() == SqlKind.EQUALS) {
@@ -176,43 +149,111 @@ public abstract class SpatialRules {
               // this rule has already fired once.
               continue;
             }
-            for (int i = 0; i < conjunctions.size(); i++) {
-              final RexNode conjunction = conjunctions.get(i);
-              if (conjunction.getKind() == SqlKind.ST_DWITHIN) {
-                final RexCall within = (RexCall) conjunction;
-                final RexNode op0 = within.operands.get(0);
-                final Geometries.Geom g0 = constantGeom(op0);
-                final RexNode op1 = within.operands.get(1);
-                final Geometries.Geom g1 = constantGeom(op1);
-                if (RexUtil.isLiteral(within.operands.get(2), true)) {
-                  if (g0 != null
-                      && op1.getKind() == SqlKind.ST_POINT
-                      && ((RexCall) op1).operands.equals(hilbert.operands)) {
-                    // Add the new predicate before the existing predicate
-                    // because it is cheaper to execute (albeit less selective).
-                    conjunctions.add(i++,
-                        hilbertPredicate(builder.getRexBuilder(), ref, g0,
-                            within.operands.get(2)));
-                  } else if (g1 != null
-                      && op0.getKind() == SqlKind.ST_POINT
-                      && ((RexCall) op0).operands.equals(hilbert.operands)) {
-                    conjunctions.add(i++,
-                        hilbertPredicate(builder.getRexBuilder(), ref, g1,
-                            within.operands.get(2)));
-                  }
-                }
+            for (int i = 0; i < conjunctions.size();) {
+              final List<RexNode> replacements =
+                  replaceSpatial(conjunctions.get(i), builder, ref, hilbert);
+              if (replacements != null) {
+                conjunctions.remove(i);
+                conjunctions.addAll(i, replacements);
+                i += replacements.size();
+                ++changeCount;
+              } else {
+                ++i;
               }
             }
           }
         }
-        if (conjunctions.size() > initialSize) {
+        if (changeCount > 0) {
           call.transformTo(
-              builder
-                  .push(filter.getInput())
+              builder.push(filter.getInput())
                   .filter(conjunctions)
                   .build());
           return; // we found one useful constraint; don't look for more
         }
+      }
+    }
+
+    /** Rewrites a spatial predicate to a predicate on a Hilbert curve.
+     *
+     * <p>Returns null if the predicate cannot be rewritten;
+     * a 1-element list (new) if the predicate can be fully rewritten;
+     * returns a 2-element list (new, original) if the new predicate allows
+     * some false positives.
+     *
+     * @param conjunction Original predicate
+     * @param builder Builder
+     * @param ref Reference to Hilbert column
+     * @param hilbert Function call that populates Hilbert column
+     *
+     * @return List containing rewritten predicate and original, or null
+     */
+    static List<RexNode> replaceSpatial(RexNode conjunction, RelBuilder builder,
+        RexInputRef ref, RexCall hilbert) {
+      final RexNode op0;
+      final RexNode op1;
+      final Geometries.Geom g0;
+      switch (conjunction.getKind()) {
+      case ST_DWITHIN:
+        final RexCall within = (RexCall) conjunction;
+        op0 = within.operands.get(0);
+        g0 = constantGeom(op0);
+        op1 = within.operands.get(1);
+        final Geometries.Geom g1 = constantGeom(op1);
+        if (RexUtil.isLiteral(within.operands.get(2), true)) {
+          final Number distance =
+              (Number) RexLiteral.value(within.operands.get(2));
+          switch (Double.compare(distance.doubleValue(), 0D)) {
+          case -1: // negative distance
+            return ImmutableList.of(builder.getRexBuilder().makeLiteral(false));
+
+          case 0: // zero distance
+            // Change "ST_DWithin(g, p, 0)" to "g = p"
+            conjunction = builder.equals(op0, op1);
+            // fall through
+
+          case 1:
+            if (g0 != null
+                && op1.getKind() == SqlKind.ST_POINT
+                && ((RexCall) op1).operands.equals(hilbert.operands)) {
+              // Add the new predicate before the existing predicate
+              // because it is cheaper to execute (albeit less selective).
+              return ImmutableList.of(
+                  hilbertPredicate(builder.getRexBuilder(), ref, g0, distance),
+                  conjunction);
+            } else if (g1 != null && op0.getKind() == SqlKind.ST_POINT
+                && ((RexCall) op0).operands.equals(hilbert.operands)) {
+              // Add the new predicate before the existing predicate
+              // because it is cheaper to execute (albeit less selective).
+              return ImmutableList.of(
+                  hilbertPredicate(builder.getRexBuilder(), ref, g1, distance),
+                  conjunction);
+            }
+            return null; // cannot rewrite
+
+          default:
+            throw new AssertionError("invalid sign: " + distance);
+          }
+        }
+        return null; // cannot rewrite
+
+      case ST_CONTAINS:
+        final RexCall contains = (RexCall) conjunction;
+        op0 = contains.operands.get(0);
+        g0 = constantGeom(op0);
+        op1 = contains.operands.get(1);
+        if (g0 != null
+            && op1.getKind() == SqlKind.ST_POINT
+            && ((RexCall) op1).operands.equals(hilbert.operands)) {
+          // Add the new predicate before the existing predicate
+          // because it is cheaper to execute (albeit less selective).
+          return ImmutableList.of(
+              hilbertPredicate(builder.getRexBuilder(), ref, g0),
+              conjunction);
+        }
+        return null; // cannot rewrite
+
+      default:
+        return null; // cannot rewrite
       }
     }
 
@@ -227,24 +268,26 @@ public abstract class SpatialRules {
      * would always return FALSE) and returns an {@code =} predicate if distance
      * is 0. But usually returns a list of ranges,
      * {@code ref BETWEEN c1 AND c2 OR ref BETWEEN c3 AND c4}. */
-    private RexNode hilbertPredicate(RexBuilder rexBuilder, RexInputRef ref,
-        Geometries.Geom g, RexNode distance) {
-      final Number dValue = (Number) RexLiteral.value(distance);
-      if (dValue.doubleValue() < 0D) {
-        return rexBuilder.makeLiteral(false);
-      }
-      final HilbertCurve2D hilbert = new HilbertCurve2D(8);
-      if (dValue.doubleValue() == 0D
+    private static RexNode hilbertPredicate(RexBuilder rexBuilder,
+        RexInputRef ref, Geometries.Geom g, Number distance) {
+      if (distance.doubleValue() == 0D
           && Geometries.type(g.g()) == Geometries.Type.POINT) {
         final Point p = (Point) g.g();
+        final HilbertCurve2D hilbert = new HilbertCurve2D(8);
         final long index = hilbert.toIndex(p.getX(), p.getY());
         return rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, ref,
             rexBuilder.makeExactLiteral(BigDecimal.valueOf(index)));
       }
       final Geometries.Geom g2 =
-          GeoFunctions.ST_Buffer(g, dValue.doubleValue());
+          GeoFunctions.ST_Buffer(g, distance.doubleValue());
+      return hilbertPredicate(rexBuilder, ref, g2);
+    }
+
+    private static RexNode hilbertPredicate(RexBuilder rexBuilder,
+        RexInputRef ref, Geometries.Geom g2) {
       final Geometries.Geom g3 = GeoFunctions.ST_Envelope(g2);
       final Envelope env = (Envelope) g3.g();
+      final HilbertCurve2D hilbert = new HilbertCurve2D(8);
       final List<SpaceFillingCurve2D.IndexRange> ranges =
           hilbert.toRanges(env.getXMin(), env.getYMin(), env.getXMax(),
               env.getYMax(), new SpaceFillingCurve2D.RangeComputeHints());
@@ -253,7 +296,8 @@ public abstract class SpatialRules {
         final BigDecimal lowerBd = BigDecimal.valueOf(range.lower());
         final BigDecimal upperBd = BigDecimal.valueOf(range.upper());
         nodes.add(
-            rexBuilder.makeCall(SqlStdOperatorTable.AND,
+            rexBuilder.makeCall(
+                SqlStdOperatorTable.AND,
                 rexBuilder.makeCall(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
                     ref,
                     rexBuilder.makeExactLiteral(lowerBd)),

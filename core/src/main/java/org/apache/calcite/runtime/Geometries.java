@@ -198,7 +198,7 @@ public class Geometries {
 
   /** Geometry. It may or may not have a spatial reference
    * associated with it. */
-  public interface Geom {
+  public interface Geom extends Comparable<Geom> {
     Geometry g();
 
     Type type();
@@ -220,6 +220,10 @@ public class Geometries {
 
     @Override public String toString() {
       return g.toString();
+    }
+
+    public int compareTo(Geom o) {
+      return toString().compareTo(o.toString());
     }
 
     public Geometry g() {
@@ -256,6 +260,10 @@ public class Geometries {
 
     @Override public String toString() {
       return mg.toString();
+    }
+
+    public int compareTo(Geom o) {
+      return toString().compareTo(o.toString());
     }
 
     public Geometry g() {
