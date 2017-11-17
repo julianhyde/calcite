@@ -18,6 +18,7 @@ package org.apache.calcite.util;
 
 import org.apache.calcite.runtime.Utilities;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
@@ -232,6 +233,32 @@ public class ImmutableBitSetTest {
     assertThat(ImmutableBitSet.of(1).union(ImmutableBitSet.of(3, 100))
             .toString(),
         equalTo("{1, 3, 100}"));
+
+    // union a list
+    assertThat(
+        ImmutableBitSet.union(
+            ImmutableList.of(ImmutableBitSet.of(1, 124),
+                ImmutableBitSet.of(2, 50),
+                ImmutableBitSet.of()))
+            .toString(),
+        equalTo("{1, 2, 50, 124}"));
+
+    // union an empty list
+    assertThat(
+        ImmutableBitSet.union(
+            ImmutableList.<ImmutableBitSet>of()).toString(),
+        equalTo("{}"));
+
+    // union a singleton list
+    assertThat(
+        ImmutableBitSet.union(ImmutableList.of(ImmutableBitSet.of(1)))
+            .toString(),
+        equalTo("{1}"));
+    assertThat(
+        ImmutableBitSet.union(ImmutableList.of(ImmutableBitSet.of(1, 124)))
+            .toString(),
+        equalTo("{1, 124}"));
+
     ImmutableBitSet x =
         ImmutableBitSet.of(1)
             .rebuild()

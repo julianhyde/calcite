@@ -156,6 +156,9 @@ public abstract class Aggregate extends SingleRel {
         assert groupSet.contains(set);
       }
     }
+    Preconditions.checkArgument(
+        groupSet.equals(ImmutableBitSet.union(this.groupSets)),
+        "groupSet must be minimal", groupSet, groupSets);
     assert groupSet.length() <= child.getRowType().getFieldCount();
     for (AggregateCall aggCall : aggCalls) {
       assert typeMatchesInferred(aggCall, Litmus.THROW);

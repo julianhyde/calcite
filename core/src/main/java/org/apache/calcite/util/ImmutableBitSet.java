@@ -34,6 +34,7 @@ import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -688,6 +689,14 @@ public class ImmutableBitSet
   /** Returns the union of a number of bit sets. */
   public static ImmutableBitSet union(
       Iterable<? extends ImmutableBitSet> sets) {
+    if (sets instanceof Collection) {
+      switch (((Collection) sets).size()) {
+      case 0:
+        return ImmutableBitSet.of();
+      case 1:
+        return Iterables.getOnlyElement(sets);
+      }
+    }
     final Builder builder = builder();
     for (ImmutableBitSet set : sets) {
       builder.addAll(set);
