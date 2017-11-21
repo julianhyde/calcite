@@ -225,19 +225,20 @@ create schema s;
 
 # Materialized view in explicit schema
 create materialized view s.d10 (x, y) as
-select * from dept where deptno < 15;
+select * from dept where deptno < 25;
 (-1 rows modified)
 
 !update
 
 # Check contents
 select * from s.d10;
-+----+-------+
-| X  | Y     |
-+----+-------+
-| 10 | Sales |
-+----+-------+
-(1 row)
++----+-----------+
+| X  | Y         |
++----+-----------+
+| 10 | Sales     |
+| 20 | Marketing |
++----+-----------+
+(2 rows)
 
 !ok
 
@@ -257,6 +258,15 @@ select * from "metadata".TABLES;
 
 # Check that exact match materialized view is used
 select * from dept where deptno < 15;
+EnumerableTableScan(table=[[D6]])
 !plan
++--------+-------+
+| DEPTNO | NAME  |
++--------+-------+
+|     10 | Sales |
++--------+-------+
+(1 row)
+
+!ok
 
 # End materialized_view.iq

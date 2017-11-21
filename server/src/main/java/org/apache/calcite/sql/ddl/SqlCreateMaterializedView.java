@@ -22,6 +22,7 @@ import org.apache.calcite.materialize.MaterializationKey;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
+import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.ViewTable;
@@ -41,7 +42,6 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableNullableList;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -119,19 +119,38 @@ public class SqlCreateMaterializedView extends SqlCreate
     final RelDataType rowType = x.getRowType(context.getTypeFactory());
 
     // Table does not exist. Create it.
-    pair.left.add(pair.right,
-        new SqlCreateTable.MutableArrayTable(pair.right,
-            RelDataTypeImpl.proto(rowType), RelDataTypeImpl.proto(rowType),
-            NullInitializerExpressionFactory.INSTANCE) {
-          @Override public Schema.TableType getJdbcTableType() {
-            return Schema.TableType.MATERIALIZED_VIEW;
-          }
-        });
+    final MaterializedViewTable table =
+        new MaterializedViewTable(pair.right, RelDataTypeImpl.proto(rowType));
+    pair.left.add(pair.right, table);
     SqlDdlNodes.populate(name, query, context);
-    final MaterializationKey materializationKey =
-        MaterializationService.instance().defineMaterialization(pair.left,
-            null, sql, schemaPath, pair.right, true, true);
-    Util.discard(materializationKey);
+    table.key =
+        MaterializationService.instance().defineMaterialization(pair.left, null,
+            sql, schemaPath, pair.right, true, true);
+  }
+
+  /** A table that implements a materialized view. */
+  private static class MaterializedViewTable
+      extends SqlCreateTable.MutableArrayTable {
+    /** The key with which this was stored in the materialization service,
+     * or null if not (yet) materialized. */
+    MaterializationKey key;
+
+    MaterializedViewTable(String name, RelProtoDataType protoRowType) {
+      super(name, protoRowType, protoRowType,
+          NullInitializerExpressionFactory.INSTANCE);
+    }
+
+    @Override public Schema.TableType getJdbcTableType() {
+      return Schema.TableType.MATERIALIZED_VIEW;
+    }
+
+    @Override public <C> C unwrap(Class<C> aClass) {
+      if (MaterializationKey.class.isAssignableFrom(aClass)
+          && aClass.isInstance(key)) {
+        return aClass.cast(key);
+      }
+      return super.unwrap(aClass);
+    }
   }
 }
 
