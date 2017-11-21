@@ -22,7 +22,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttle;
+import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.sql.SqlKind;
 
 import java.util.List;
 
@@ -31,6 +34,9 @@ import java.util.List;
  * not targeted at any particular engine or calling convention.
  */
 public final class LogicalUnion extends Union {
+  /** Factory. Also works for {@link LogicalIntersect}, {@link LogicalMinus}. */
+  public static final LogicalSetOpFactory FACTORY = new LogicalSetOpFactory();
+
   //~ Constructors -----------------------------------------------------------
 
   /**
@@ -75,6 +81,29 @@ public final class LogicalUnion extends Union {
 
   @Override public RelNode accept(RelShuttle shuttle) {
     return shuttle.visit(this);
+  }
+
+  /**
+   * Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.SetOpFactory}
+   * that returns a vanilla {@link SetOp} for the particular kind of set
+   * operation (UNION, EXCEPT, INTERSECT).
+   */
+  private static class LogicalSetOpFactory
+      extends RelFactories.SetOpFactoryImpl {
+    public RelNode createSetOp(SqlKind kind, List<RelNode> inputs,
+        boolean all) {
+      switch (kind) {
+      case UNION:
+        return LogicalUnion.create(inputs, all);
+      case EXCEPT:
+        return LogicalMinus.create(inputs, all);
+      case INTERSECT:
+        return LogicalIntersect.create(inputs, all);
+      default:
+        throw new AssertionError("not a set op: " + kind);
+      }
+    }
   }
 }
 

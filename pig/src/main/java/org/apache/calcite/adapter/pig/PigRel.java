@@ -18,11 +18,20 @@ package org.apache.calcite.adapter.pig;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.RelFactory;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.util.Pair;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Relational expression that uses the Pig calling convention.
@@ -39,7 +48,32 @@ public interface PigRel extends RelNode {
   // String getFieldName(int index);
 
   /** Calling convention for relational operations that occur in Pig. */
-  Convention CONVENTION = new Convention.Impl("PIG", PigRel.class);
+  Convention CONVENTION = new Convention.Impl("PIG", PigRel.class) {
+    private final Map<Class, Pair<Class, RelFactory>> map =
+        ImmutableMap.<Class, Pair<Class, RelFactory>>builder()
+            .put(Aggregate.class,
+                Pair.<Class, RelFactory>of(PigAggregate.class,
+                    PigRelFactories.PigAggregateFactory.INSTANCE))
+            .put(Filter.class,
+                Pair.<Class, RelFactory>of(PigFilter.class,
+                    PigRelFactories.PigFilterFactory.INSTANCE))
+            .put(Join.class,
+                Pair.<Class, RelFactory>of(PigJoin.class,
+                    PigRelFactories.PigJoinFactory.INSTANCE))
+            .put(Project.class,
+                Pair.<Class, RelFactory>of(PigProject.class,
+                    PigRelFactories.PigProjectFactory.INSTANCE))
+            .put(TableScan.class,
+                Pair.<Class, RelFactory>of(PigTableScan.class,
+                    PigRelFactories.PigTableScanFactory.INSTANCE))
+            .build();
+
+    @Override public <R extends RelNode> Pair<Class<? extends R>, RelFactory<R>>
+        getRelClass(Class<R> clazz) {
+      //noinspection unchecked
+      return (Pair) map.get(clazz);
+    }
+  };
 
   /**
    * Callback for the implementation process that converts a tree of

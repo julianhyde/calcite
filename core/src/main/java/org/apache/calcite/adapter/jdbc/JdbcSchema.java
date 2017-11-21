@@ -30,7 +30,6 @@ import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlDialectFactory;
 import org.apache.calcite.sql.SqlDialectFactoryImpl;
@@ -274,7 +273,7 @@ public class JdbcSchema implements Schema {
     }
   }
 
-  public Table getTable(String name) {
+  public JdbcTable getTable(String name) {
     return getTableMap(false).get(name);
   }
 

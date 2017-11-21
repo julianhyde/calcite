@@ -20,12 +20,21 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import com.google.common.collect.ImmutableList;
@@ -40,6 +49,7 @@ public class PigRelFactories {
   public static final Context ALL_PIG_REL_FACTORIES =
       Contexts.of(PigTableScanFactory.INSTANCE,
           PigFilterFactory.INSTANCE,
+          PigProjectFactory.INSTANCE,
           PigAggregateFactory.INSTANCE,
           PigJoinFactory.INSTANCE);
 
@@ -59,6 +69,10 @@ public class PigRelFactories {
     @Override public RelNode createScan(RelOptCluster cluster, RelOptTable table) {
       return new PigTableScan(cluster, cluster.traitSetOf(PigRel.CONVENTION), table);
     }
+
+    public RelNode copy(TableScan tableScan) {
+      return createScan(tableScan.getCluster(), tableScan.getTable());
+    }
   }
 
   /**
@@ -73,6 +87,36 @@ public class PigRelFactories {
     @Override public RelNode createFilter(RelNode input, RexNode condition) {
       return new PigFilter(input.getCluster(), input.getTraitSet().replace(PigRel.CONVENTION),
           input, condition);
+    }
+
+    public RelNode copy(Filter filter) {
+      return createFilter(filter.getInput(), filter.getCondition());
+    }
+  }
+
+  /**
+   * Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.ProjectFactory} that
+   * returns a {@link PigProject}.
+   */
+  public static class PigProjectFactory implements RelFactories.ProjectFactory {
+    public static final PigProjectFactory INSTANCE = new PigProjectFactory();
+
+    public RelNode createProject(RelNode input,
+        List<? extends RexNode> projects, List<String> fieldNames) {
+      final RelOptCluster cluster = input.getCluster();
+      final RelDataType rowType =
+          RexUtil.createStructType(cluster.getTypeFactory(), projects,
+              fieldNames, SqlValidatorUtil.F_SUGGESTER);
+      final RelTraitSet traitSet =
+          input.getTraitSet().replace(PigRel.CONVENTION);
+      return new PigProject(input.getCluster(), traitSet, input, projects,
+          rowType);
+    }
+
+    public RelNode copy(Project project) {
+      return createProject(project.getInput(), project.getProjects(),
+          project.getRowType().getFieldNames());
     }
   }
 
@@ -90,6 +134,12 @@ public class PigRelFactories {
         List<AggregateCall> aggCalls) {
       return new PigAggregate(input.getCluster(), input.getTraitSet(), input, indicator, groupSet,
           groupSets, aggCalls);
+    }
+
+    public RelNode copy(Aggregate aggregate) {
+      return createAggregate(aggregate.getInput(), aggregate.indicator,
+          aggregate.getGroupSet(), aggregate.groupSets,
+          aggregate.getAggCallList());
     }
   }
 
@@ -111,6 +161,11 @@ public class PigRelFactories {
     @Override public RelNode createJoin(RelNode left, RelNode right, RexNode condition,
         JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone) {
       return new PigJoin(left.getCluster(), left.getTraitSet(), left, right, condition, joinType);
+    }
+
+    public RelNode copy(Join join) {
+      return createJoin(join.getLeft(), join.getRight(), join.getCondition(),
+          join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone());
     }
   }
 }

@@ -241,12 +241,12 @@ public class TraitPropagationTest {
             RelTraitSet outcome = child.getTraitSet().replace(PHYSICAL);
             call.transformTo(
                 new PhysProj(rel.getCluster(), outcome, convert(child, outcome),
-                    rel.getChildExps(), rel.getRowType()));
+                    rel.getProjects(), rel.getRowType()));
           }
         }
       } else {
         call.transformTo(
-            PhysProj.create(input, rel.getChildExps(), rel.getRowType()));
+            PhysProj.create(input, rel.getProjects(), rel.getRowType()));
       }
 
     }

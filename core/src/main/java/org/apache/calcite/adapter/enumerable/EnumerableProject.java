@@ -22,10 +22,13 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Supplier;
@@ -35,6 +38,9 @@ import java.util.List;
 /** Implementation of {@link org.apache.calcite.rel.core.Project} in
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
 public class EnumerableProject extends Project implements EnumerableRel {
+  public static final RelFactories.ProjectFactoryImpl FACTORY =
+      new EnumerableProjectFactory();
+
   /**
    * Creates an EnumerableProject.
    *
@@ -90,6 +96,21 @@ public class EnumerableProject extends Project implements EnumerableRel {
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     // EnumerableCalcRel is always better
     throw new UnsupportedOperationException();
+  }
+
+  /** Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.ProjectFactory}
+   * that returns an {@link EnumerableProject}. */
+  private static class EnumerableProjectFactory
+      extends RelFactories.ProjectFactoryImpl {
+    public RelNode createProject(RelNode input,
+        List<? extends RexNode> projects, List<String> fieldNames) {
+      final RelOptCluster cluster = input.getCluster();
+      final RelDataType rowType =
+          RexUtil.createStructType(cluster.getTypeFactory(), projects,
+              fieldNames, SqlValidatorUtil.F_SUGGESTER);
+      return EnumerableProject.create(input, projects, rowType);
+    }
   }
 }
 

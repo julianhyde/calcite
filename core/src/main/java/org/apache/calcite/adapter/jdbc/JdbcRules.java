@@ -43,8 +43,11 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.RelFactory;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.logical.LogicalAggregate;
@@ -67,14 +70,19 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexMultisetUtil;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import org.slf4j.Logger;
 
@@ -94,19 +102,7 @@ public class JdbcRules {
   protected static final Logger LOGGER = CalciteTrace.getPlannerTracer();
 
   public static List<RelOptRule> rules(JdbcConvention out) {
-    return ImmutableList.<RelOptRule>of(
-        new JdbcToEnumerableConverterRule(out, RelFactories.LOGICAL_BUILDER),
-        new JdbcJoinRule(out),
-        new JdbcCalcRule(out),
-        new JdbcProjectRule(out),
-        new JdbcFilterRule(out),
-        new JdbcAggregateRule(out),
-        new JdbcSortRule(out),
-        new JdbcUnionRule(out),
-        new JdbcIntersectRule(out),
-        new JdbcMinusRule(out),
-        new JdbcTableModificationRule(out),
-        new JdbcValuesRule(out));
+    return new RuleSet(out).list;
   }
 
   /** Abstract base class for rule that converts to JDBC. */
@@ -122,8 +118,11 @@ public class JdbcRules {
 
   /** Rule that converts a join to JDBC. */
   private static class JdbcJoinRule extends JdbcConverterRule {
+    final JdbcJoinFactory factory;
+
     private JdbcJoinRule(JdbcConvention out) {
       super(LogicalJoin.class, Convention.NONE, out, "JdbcJoinRule");
+      factory = new JdbcJoinFactory();
     }
 
     @Override public RelNode convert(RelNode rel) {
@@ -193,6 +192,27 @@ public class JdbcRules {
 
       default:
         return false;
+      }
+    }
+
+    /** Implementation of
+     * {@link org.apache.calcite.rel.core.RelFactories.JoinFactory}
+     * that returns a {@link JdbcJoin}. */
+    private class JdbcJoinFactory extends RelFactories.JoinFactoryImpl {
+      @Override protected RelTraitSet traits(RelNode left, RelNode right) {
+        return super.traits(left, right).replace(out);
+      }
+
+      public RelNode createJoin(RelNode left, RelNode right, RexNode condition,
+          Set<CorrelationId> variablesSet, JoinRelType joinType,
+          boolean semiJoinDone) {
+        try {
+          return new JdbcJoin(left.getCluster(), traits(left, right), left,
+              right, condition, variablesSet, joinType);
+        } catch (InvalidRelException e) {
+          // Semantic error not possible. Must be a bug.
+          throw new AssertionError(e);
+        }
       }
     }
   }
@@ -331,6 +351,8 @@ public class JdbcRules {
    * an {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcProject}.
    */
   private static class JdbcProjectRule extends JdbcConverterRule {
+    final JdbcProjectFactory factory = new JdbcProjectFactory();
+
     private JdbcProjectRule(JdbcConvention out) {
       super(LogicalProject.class, Convention.NONE, out, "JdbcProjectRule");
     }
@@ -346,6 +368,25 @@ public class JdbcRules {
               project.getInput().getTraitSet().replace(out)),
           project.getProjects(),
           project.getRowType());
+    }
+
+    /** Implementation of
+     * {@link org.apache.calcite.rel.core.RelFactories.ProjectFactory}
+     * that returns a {@link JdbcProject}. */
+    private class JdbcProjectFactory extends RelFactories.ProjectFactoryImpl {
+      @Override protected RelTraitSet traits(RelNode input) {
+        return super.traits(input).replace(out);
+      }
+
+      public RelNode createProject(RelNode input,
+          List<? extends RexNode> projects, List<String> fieldNames) {
+        final RelOptCluster cluster = input.getCluster();
+        final RelDataType rowType =
+            RexUtil.createStructType(cluster.getTypeFactory(), projects,
+                fieldNames, SqlValidatorUtil.F_SUGGESTER);
+        return new JdbcProject(cluster, traits(input), input, projects,
+            rowType);
+      }
     }
   }
 
@@ -392,19 +433,34 @@ public class JdbcRules {
    * an {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcFilter}.
    */
   private static class JdbcFilterRule extends JdbcConverterRule {
+    public final RelFactories.FilterFactory factory = new JdbcFilterFactory();
+
     private JdbcFilterRule(JdbcConvention out) {
       super(LogicalFilter.class, Convention.NONE, out, "JdbcFilterRule");
     }
 
     public RelNode convert(RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
+      return factory.createFilter(filter.getInput(), filter.getCondition());
+    }
 
-      return new JdbcFilter(
-          rel.getCluster(),
-          rel.getTraitSet().replace(out),
-          convert(filter.getInput(),
-              filter.getInput().getTraitSet().replace(out)),
-          filter.getCondition());
+    /** Implementation of
+     * {@link org.apache.calcite.rel.core.RelFactories.FilterFactory}
+     * that returns a {@link JdbcFilter}. */
+    private class JdbcFilterFactory extends RelFactories.FilterFactoryImpl {
+      public RelNode createFilter(RelNode input, RexNode condition) {
+        final RelNode input2 = convert(input, out);
+        return new JdbcFilter(input.getCluster(), traits(input2), input2,
+            condition);
+      }
+
+      @Override protected RelTraitSet traits(RelNode input) {
+        return super.traits(input).replace(out);
+      }
+
+      @Override public RelNode copy(Filter filter) {
+        return createFilter(filter.getInput(), filter.getCondition());
+      }
     }
   }
 
@@ -435,6 +491,37 @@ public class JdbcRules {
    * to a {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcAggregate}.
    */
   private static class JdbcAggregateRule extends JdbcConverterRule {
+    final RelFactories.AggregateFactory factory =
+        new RelFactories.AggregateFactory() {
+          public RelNode createAggregate(RelNode input, boolean indicator,
+              ImmutableBitSet groupSet,
+              ImmutableList<ImmutableBitSet> groupSets,
+              List<AggregateCall> aggCalls) {
+            final RelTraitSet traitSet = input.getTraitSet().replace(out);
+            try {
+              return new JdbcAggregate(input.getCluster(), traitSet,
+                  convert(input, out), indicator, groupSet, groupSets,
+                  aggCalls);
+            } catch (InvalidRelException e) {
+              throw new RuntimeException(e);
+            }
+          }
+
+          public RelNode copy(Aggregate aggregate) {
+            final RelTraitSet traitSet =
+                aggregate.getTraitSet().replace(out);
+            try {
+              return new JdbcAggregate(aggregate.getCluster(), traitSet,
+                  convert(aggregate.getInput(), out), aggregate.indicator,
+                  aggregate.getGroupSet(), aggregate.getGroupSets(),
+                  aggregate.getAggCallList());
+            } catch (InvalidRelException e) {
+              LOGGER.debug(e.toString());
+              return null;
+            }
+          }
+        };
+
     private JdbcAggregateRule(JdbcConvention out) {
       super(LogicalAggregate.class, Convention.NONE, out, "JdbcAggregateRule");
     }
@@ -446,16 +533,7 @@ public class JdbcRules {
         // [CALCITE-734] Push GROUPING SETS to underlying SQL via JDBC adapter
         return null;
       }
-      final RelTraitSet traitSet =
-          agg.getTraitSet().replace(out);
-      try {
-        return new JdbcAggregate(rel.getCluster(), traitSet,
-            convert(agg.getInput(), out), agg.indicator, agg.getGroupSet(),
-            agg.getGroupSets(), agg.getAggCallList());
-      } catch (InvalidRelException e) {
-        LOGGER.debug(e.toString());
-        return null;
-      }
+      return factory.copy(agg);
     }
   }
 
@@ -786,6 +864,120 @@ public class JdbcRules {
 
     public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
+    }
+  }
+
+  /** Contains all the rule instances for a particular instance of
+   * {@link JdbcConvention}. */
+  static class RuleSet {
+    private final JdbcToEnumerableConverterRule converterRule;
+    private final JdbcJoinRule joinRule;
+    private final JdbcCalcRule calcRule;
+    private final JdbcProjectRule projectRule;
+    private final JdbcFilterRule filterRule;
+    private final JdbcAggregateRule aggregateRule;
+    private final JdbcSortRule sortRule;
+    private final JdbcUnionRule unionRule;
+    private final JdbcIntersectRule intersectRule;
+    private final JdbcMinusRule minusRule;
+    private final JdbcTableModificationRule tableModificationRule;
+    private final JdbcValuesRule valuesRule;
+    private final ImmutableList<RelOptRule> list;
+    private final ImmutableMap<Class, Pair<Class, RelFactory>> map;
+
+    RuleSet(final JdbcConvention out) {
+      converterRule =
+          new JdbcToEnumerableConverterRule(out, RelFactories.LOGICAL_BUILDER);
+      joinRule = new JdbcJoinRule(out);
+      calcRule = new JdbcCalcRule(out);
+      projectRule = new JdbcProjectRule(out);
+      filterRule = new JdbcFilterRule(out);
+      aggregateRule = new JdbcAggregateRule(out);
+      sortRule = new JdbcSortRule(out);
+      unionRule = new JdbcUnionRule(out);
+      intersectRule = new JdbcIntersectRule(out);
+      minusRule = new JdbcMinusRule(out);
+      tableModificationRule = new JdbcTableModificationRule(out);
+      valuesRule = new JdbcValuesRule(out);
+      this.list =
+          ImmutableList.<RelOptRule>of(converterRule, joinRule, calcRule,
+              projectRule, filterRule, aggregateRule, sortRule, unionRule,
+              intersectRule, minusRule, tableModificationRule, valuesRule);
+      final JdbcTableScanFactory tableScanFactory =
+          new JdbcTableScanFactory(out);
+      final JdbcSetOpFactory setOpFactory = new JdbcSetOpFactory(out);
+      final ImmutableMap.Builder<Class, Pair<Class, RelFactory>> builder =
+          ImmutableMap.builder();
+      x(builder, Aggregate.class, JdbcAggregate.class, aggregateRule.factory);
+      x(builder, Filter.class, JdbcFilter.class, filterRule.factory);
+      x(builder, Join.class, JdbcJoin.class, joinRule.factory);
+      x(builder, Project.class, JdbcProject.class, projectRule.factory);
+      x(builder, TableScan.class, JdbcTableScan.class,
+          tableScanFactory);
+      x(builder, Intersect.class, JdbcIntersect.class, setOpFactory);
+      x(builder, Minus.class, JdbcMinus.class, setOpFactory);
+      x(builder, Union.class, JdbcUnion.class, setOpFactory);
+      x(builder, SetOp.class, JdbcUnion.class, setOpFactory);
+      this.map = builder.build();
+    }
+
+    private <R extends RelNode> void x(
+        ImmutableMap.Builder<Class, Pair<Class, RelFactory>> builder,
+        Class<R> c, Class<? extends R> c2, RelFactory f) {
+      builder.put(c, Pair.<Class, RelFactory>of(c2, f));
+    }
+  }
+
+  /** Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.TableScanFactory}
+   * that returns a {@link JdbcTableScan}. */
+  private static class JdbcTableScanFactory
+      implements RelFactories.TableScanFactory {
+    private final JdbcConvention out;
+
+    JdbcTableScanFactory(JdbcConvention out) {
+      this.out = out;
+    }
+
+    public RelNode createScan(RelOptCluster cluster,
+        RelOptTable table) {
+      final JdbcTable jdbcTable = table.unwrap(JdbcTable.class);
+      return new JdbcTableScan(cluster, table, jdbcTable, out);
+    }
+
+    public RelNode copy(TableScan tableScan) {
+      return createScan(tableScan.getCluster(), tableScan.getTable());
+    }
+  }
+
+  /** Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.SetOpFactory} that returns
+   * a {@link JdbcUnion}, {@link JdbcIntersect} or {@link JdbcMinus}. */
+  private static class JdbcSetOpFactory extends RelFactories.SetOpFactoryImpl {
+    private final JdbcConvention out;
+
+    JdbcSetOpFactory(JdbcConvention out) {
+      this.out = out;
+    }
+
+    public RelNode createSetOp(SqlKind kind, List<RelNode> inputs,
+        boolean all) {
+      final RelOptCluster cluster = inputs.get(0).getCluster();
+      final RelTraitSet traitSet = traits(inputs);
+      switch (kind) {
+      case UNION:
+        return new JdbcUnion(cluster, traitSet, inputs, all);
+      case EXCEPT:
+        return new JdbcMinus(cluster, traitSet, inputs, all);
+      case INTERSECT:
+        return new JdbcIntersect(cluster, traitSet, inputs, all);
+      default:
+        throw new AssertionError("not a set op: " + kind);
+      }
+    }
+
+    @Override protected RelTraitSet traits(List<RelNode> inputs) {
+      return super.traits(inputs).replace(out);
     }
   }
 }

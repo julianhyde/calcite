@@ -19,26 +19,18 @@ package org.apache.calcite.rel.logical;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistribution;
-import org.apache.calcite.rel.RelDistributionTraitDef;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.metadata.RelMdCollation;
-import org.apache.calcite.rel.metadata.RelMdDistribution;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -47,6 +39,9 @@ import java.util.Set;
  */
 public final class LogicalFilter extends Filter {
   private final ImmutableSet<CorrelationId> variablesSet;
+
+  /** Factory. */
+  public static final LogicalFilterFactory FACTORY = new LogicalFilterFactory();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -100,28 +95,13 @@ public final class LogicalFilter extends Filter {
 
   /** Creates a LogicalFilter. */
   public static LogicalFilter create(final RelNode input, RexNode condition) {
-    return create(input, condition, ImmutableSet.<CorrelationId>of());
+    return FACTORY.createFilter(input, condition);
   }
 
-  /** Creates a LogicalFilter. */
+  /** Creates a LogicalFilter with correlation variables. */
   public static LogicalFilter create(final RelNode input, RexNode condition,
       ImmutableSet<CorrelationId> variablesSet) {
-    final RelOptCluster cluster = input.getCluster();
-    final RelMetadataQuery mq = cluster.getMetadataQuery();
-    final RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-        .replaceIfs(RelCollationTraitDef.INSTANCE,
-            new Supplier<List<RelCollation>>() {
-              public List<RelCollation> get() {
-                return RelMdCollation.filter(mq, input);
-              }
-            })
-        .replaceIf(RelDistributionTraitDef.INSTANCE,
-            new Supplier<RelDistribution>() {
-              public RelDistribution get() {
-                return RelMdDistribution.filter(mq, input);
-              }
-            });
-    return new LogicalFilter(cluster, traitSet, input, condition, variablesSet);
+    return FACTORY.createFilter(input, condition, variablesSet);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -144,6 +124,25 @@ public final class LogicalFilter extends Filter {
   @Override public RelWriter explainTerms(RelWriter pw) {
     return super.explainTerms(pw)
         .itemIf("variablesSet", variablesSet, !variablesSet.isEmpty());
+  }
+
+  /**
+   * Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.FilterFactory}
+   * returns a vanilla {@link org.apache.calcite.rel.logical.LogicalFilter}.
+   */
+  private static class LogicalFilterFactory
+      extends RelFactories.FilterFactoryImpl {
+    public LogicalFilter createFilter(RelNode input, RexNode condition) {
+      return createFilter(input, condition,
+          ImmutableSet.<CorrelationId>of());
+    }
+
+    LogicalFilter createFilter(RelNode input, RexNode condition,
+        ImmutableSet<CorrelationId> variablesSet) {
+      return new LogicalFilter(input.getCluster(), traits(input), input,
+          condition, variablesSet);
+    }
   }
 }
 

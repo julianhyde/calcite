@@ -173,7 +173,7 @@ public class ProjectWindowTransposeRule extends RelOptRule {
 
     // Modify the top LogicalProject
     final List<RexNode> topProjExps = new ArrayList<>();
-    for (RexNode rexNode : project.getChildExps()) {
+    for (RexNode rexNode : project.getProjects()) {
       topProjExps.add(rexNode.accept(indexAdjustment));
     }
 
@@ -206,7 +206,7 @@ public class ProjectWindowTransposeRule extends RelOptRule {
     };
 
     // Reference in LogicalProject
-    for (RexNode rexNode : project.getChildExps()) {
+    for (RexNode rexNode : project.getProjects()) {
       rexNode.accept(referenceFinder);
     }
 

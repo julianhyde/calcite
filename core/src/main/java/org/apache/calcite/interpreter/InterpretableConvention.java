@@ -23,6 +23,9 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactory;
+import org.apache.calcite.util.Pair;
 
 /**
  * Calling convention that returns results as an
@@ -49,6 +52,7 @@ public enum InterpretableConvention implements Convention {
     return ConventionTraitDef.INSTANCE;
   }
 
+
   public boolean satisfies(RelTrait trait) {
     return this == trait;
   }
@@ -62,6 +66,11 @@ public enum InterpretableConvention implements Convention {
   public boolean useAbstractConvertersForConversion(RelTraitSet fromTraits,
       RelTraitSet toTraits) {
     return false;
+  }
+
+  public <R extends RelNode> Pair<Class<? extends R>, RelFactory<R>>
+      getRelClass(Class<R> clazz) {
+    return null;
   }
 }
 

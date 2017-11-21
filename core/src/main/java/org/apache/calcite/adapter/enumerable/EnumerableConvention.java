@@ -22,6 +22,9 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactory;
+import org.apache.calcite.util.Pair;
 
 /**
  * Family of calling conventions that return results as an
@@ -64,6 +67,13 @@ public enum EnumerableConvention implements Convention {
       RelTraitSet toTraits) {
     return false;
   }
+
+  public <R extends RelNode> Pair<Class<? extends R>, RelFactory<R>>
+      getRelClass(Class<R> clazz) {
+    //noinspection unchecked
+    return (Pair) EnumerableRel.MAP.get(clazz);
+  }
+
 }
 
 // End EnumerableConvention.java

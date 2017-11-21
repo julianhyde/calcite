@@ -20,9 +20,12 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactory;
 import org.apache.calcite.rel.rules.FilterSetOpTransposeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.util.Pair;
 
 /**
  * Calling convention for relational operations that occur in a JDBC
@@ -68,6 +71,11 @@ public class JdbcConvention extends Convention.Impl {
     }
     planner.addRule(FilterSetOpTransposeRule.INSTANCE);
     planner.addRule(ProjectRemoveRule.INSTANCE);
+  }
+
+  @Override public <R extends RelNode> Pair<Class<? extends R>, RelFactory<R>>
+      getRelClass(Class<R> clazz) {
+    return super.getRelClass(clazz);
   }
 }
 

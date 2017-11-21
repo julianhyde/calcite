@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 
@@ -61,6 +62,9 @@ public final class LogicalJoin extends Join {
   private final boolean semiJoinDone;
 
   private final ImmutableList<RelDataTypeField> systemFieldList;
+
+  public static final RelFactories.JoinFactory FACTORY =
+      new LogicalJoinFactory();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -198,6 +202,24 @@ public final class LogicalJoin extends Join {
 
   public List<RelDataTypeField> getSystemFieldList() {
     return systemFieldList;
+  }
+
+  /**
+   * Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.JoinFactory}
+   * that returns a vanilla
+   * {@link org.apache.calcite.rel.logical.LogicalJoin}.
+   */
+  private static class LogicalJoinFactory extends RelFactories.JoinFactoryImpl {
+    public RelNode createJoin(RelNode left, RelNode right, RexNode condition,
+        Set<CorrelationId> variablesSet, JoinRelType joinType,
+        boolean semiJoinDone) {
+      final RelOptCluster cluster = left.getCluster();
+      return new LogicalJoin(cluster, traits(left, right), left, right,
+          condition, variablesSet, joinType, semiJoinDone,
+          ImmutableList.<RelDataTypeField>of());
+    }
+
   }
 }
 

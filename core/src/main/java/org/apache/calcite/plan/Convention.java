@@ -17,6 +17,8 @@
 package org.apache.calcite.plan;
 
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactory;
+import org.apache.calcite.util.Pair;
 
 /**
  * Calling convention trait.
@@ -63,6 +65,19 @@ public interface Convention extends RelTrait {
       RelTraitSet toTraits);
 
   /**
+   * For a kind of relational operator, returns the particular sub-class
+   * pertinent to this calling convention.
+   *
+   * <p>For example, consider a hypothetical {@code FooConvention} for a "Foo"
+   * engine that supports Filter but Join. Then
+   * {@code getRelClass(Filter.class)} would return {@code FooFilter.class}
+   * and
+   * {@code getRelClass(Join.class)} would return {@code null}.
+   */
+  <R extends RelNode>
+      Pair<Class<? extends R>, RelFactory<R>> getRelClass(Class<R> clazz);
+
+  /**
    * Default implementation.
    */
   class Impl implements Convention {
@@ -94,6 +109,11 @@ public interface Convention extends RelTrait {
 
     public RelTraitDef getTraitDef() {
       return ConventionTraitDef.INSTANCE;
+    }
+
+    public <R extends RelNode>
+        Pair<Class<? extends R>, RelFactory<R>> getRelClass(Class<R> clazz) {
+      return null;
     }
 
     public boolean canConvertConvention(Convention toConvention) {

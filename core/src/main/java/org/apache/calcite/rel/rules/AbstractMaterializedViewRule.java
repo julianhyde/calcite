@@ -452,7 +452,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
                 // in the view output (condition 2).
                 List<RexNode> viewExprs = topViewProject == null
                     ? extractReferences(rexBuilder, view)
-                    : topViewProject.getChildExps();
+                    : topViewProject.getProjects();
                 // For compensationColumnsEquiPred, we use the view equivalence classes,
                 // since we want to enforce the rest
                 if (!compensationColumnsEquiPred.isAlwaysTrue()) {
@@ -737,7 +737,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         EquivalenceClasses queryEC) {
       List<RexNode> exprs = topProject == null
           ? extractReferences(rexBuilder, node)
-          : topProject.getChildExps();
+          : topProject.getProjects();
       List<RexNode> exprsLineage = new ArrayList<>(exprs.size());
       for (RexNode expr : exprs) {
         Set<RexNode> s = mq.getExpressionLineage(node, expr);
@@ -750,7 +750,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       }
       List<RexNode> viewExprs = topViewProject == null
           ? extractReferences(rexBuilder, viewNode)
-          : topViewProject.getChildExps();
+          : topViewProject.getProjects();
       List<RexNode> rewrittenExprs = rewriteExpressions(rexBuilder, mq, viewNode, viewExprs,
           queryToViewTableMapping.inverse(), queryEC, true, exprsLineage);
       if (rewrittenExprs == null) {
@@ -936,7 +936,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       List<String> fieldNames = new ArrayList<>();
       if (topViewProject != null) {
         // Insert existing expressions, then append rest of columns
-        nodes.addAll(topViewProject.getChildExps());
+        nodes.addAll(topViewProject.getProjects());
         fieldNames.addAll(topViewProject.getRowType().getFieldNames());
         for (int i = aggregateViewNode.getRowType().getFieldCount();
                 i < newViewNode.getRowType().getFieldCount(); i++) {
@@ -1094,7 +1094,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         // We have a Project on top, gather only what is needed
         final RelOptUtil.InputFinder inputFinder =
             new RelOptUtil.InputFinder(new LinkedHashSet<RelDataTypeField>());
-        for (RexNode e : topProject.getChildExps()) {
+        for (RexNode e : topProject.getProjects()) {
           e.accept(inputFinder);
         }
         references = inputFinder.inputBitSet.build();
@@ -1209,8 +1209,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
           }
           if (topViewProject != null) {
             boolean added = false;
-            for (int k = 0; k < topViewProject.getChildExps().size(); k++) {
-              RexNode n = topViewProject.getChildExps().get(k);
+            for (int k = 0; k < topViewProject.getProjects().size(); k++) {
+              RexNode n = topViewProject.getProjects().get(k);
               if (!n.isA(SqlKind.INPUT_REF)) {
                 continue;
               }
@@ -1247,8 +1247,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
           AggregateCall queryAggCall = queryAggregate.getAggCallList().get(i);
           if (topViewProject != null) {
             boolean added = false;
-            for (int k = 0; k < topViewProject.getChildExps().size(); k++) {
-              RexNode n = topViewProject.getChildExps().get(k);
+            for (int k = 0; k < topViewProject.getProjects().size(); k++) {
+              RexNode n = topViewProject.getProjects().get(k);
               if (!n.isA(SqlKind.INPUT_REF)) {
                 continue;
               }
@@ -1316,7 +1316,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       // node.
       final List<RexNode> topExprs = new ArrayList<>();
       if (topProject != null && !unionRewriting) {
-        topExprs.addAll(topProject.getChildExps());
+        topExprs.addAll(topProject.getProjects());
       } else {
         // Add all
         for (int pos = 0; pos < queryAggregate.getRowType().getFieldCount(); pos++) {
@@ -1326,8 +1326,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       // Available in view.
       final List<String> viewExprs = new ArrayList<>();
       if (topViewProject != null) {
-        for (int i = 0; i < topViewProject.getChildExps().size(); i++) {
-          viewExprs.add(topViewProject.getChildExps().get(i).toString());
+        for (int i = 0; i < topViewProject.getProjects().size(); i++) {
+          viewExprs.add(topViewProject.getProjects().get(i).toString());
         }
       } else {
         // Add all

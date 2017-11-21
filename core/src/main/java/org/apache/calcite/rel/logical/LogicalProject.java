@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -43,6 +44,9 @@ import java.util.List;
  * targeted at any particular engine or calling convention.
  */
 public final class LogicalProject extends Project {
+  public static final RelFactories.ProjectFactory FACTORY =
+      new LogicalProjectFactory();
+
   //~ Constructors -----------------------------------------------------------
 
   /**
@@ -127,6 +131,20 @@ public final class LogicalProject extends Project {
 
   @Override public RelNode accept(RelShuttle shuttle) {
     return shuttle.visit(this);
+  }
+
+  /**
+   * Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.ProjectFactory}
+   * that returns a vanilla
+   * {@link org.apache.calcite.rel.logical.LogicalProject}.
+   */
+  private static class LogicalProjectFactory
+      extends RelFactories.ProjectFactoryImpl {
+    public RelNode createProject(RelNode input,
+        List<? extends RexNode> childExprs, List<String> fieldNames) {
+      return LogicalProject.create(input, childExprs, fieldNames);
+    }
   }
 }
 

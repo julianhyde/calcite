@@ -18,26 +18,20 @@ package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistribution;
-import org.apache.calcite.rel.RelDistributionTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.metadata.RelMdCollation;
-import org.apache.calcite.rel.metadata.RelMdDistribution;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
-
-import com.google.common.base.Supplier;
-
-import java.util.List;
 
 /** Implementation of {@link org.apache.calcite.rel.core.Filter} in
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
 public class EnumerableFilter
     extends Filter
     implements EnumerableRel {
+  /** Factory. */
+  public static final EnumerableFilterFactory FACTORY =
+      new EnumerableFilterFactory();
+
   /** Creates an EnumerableFilter.
    *
    * <p>Use {@link #create} unless you know what you're doing. */
@@ -53,24 +47,7 @@ public class EnumerableFilter
   /** Creates an EnumerableFilter. */
   public static EnumerableFilter create(final RelNode input,
       RexNode condition) {
-    final RelOptCluster cluster = input.getCluster();
-    final RelMetadataQuery mq = cluster.getMetadataQuery();
-    final RelTraitSet traitSet =
-        cluster.traitSetOf(EnumerableConvention.INSTANCE)
-            .replaceIfs(
-                RelCollationTraitDef.INSTANCE,
-                new Supplier<List<RelCollation>>() {
-                  public List<RelCollation> get() {
-                    return RelMdCollation.filter(mq, input);
-                  }
-                })
-            .replaceIf(RelDistributionTraitDef.INSTANCE,
-                new Supplier<RelDistribution>() {
-                  public RelDistribution get() {
-                    return RelMdDistribution.filter(mq, input);
-                  }
-                });
-    return new EnumerableFilter(cluster, traitSet, input, condition);
+    return FACTORY.createFilter(input, condition);
   }
 
   public EnumerableFilter copy(RelTraitSet traitSet, RelNode input,
@@ -81,6 +58,22 @@ public class EnumerableFilter
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     // EnumerableCalc is always better
     throw new UnsupportedOperationException();
+  }
+
+  /** Implementation of
+   * {@link org.apache.calcite.rel.core.RelFactories.FilterFactory}
+   * that returns an {@link EnumerableFilter}. */
+  private static class EnumerableFilterFactory
+      extends RelFactories.FilterFactoryImpl {
+    @Override protected RelTraitSet traits(RelNode input) {
+      return super.traits(input)
+          .replace(EnumerableConvention.INSTANCE);
+    }
+
+    public EnumerableFilter createFilter(RelNode input, RexNode condition) {
+      return new EnumerableFilter(input.getCluster(), traits(input), input,
+          condition);
+    }
   }
 }
 
