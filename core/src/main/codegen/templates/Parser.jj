@@ -3285,7 +3285,7 @@ SqlCollation CollateClause() :
 }
 
 /**
- * Parses an atomic expression useful for limit/fetch/offset.
+ * Numeric literal or parameter; used in LIMIT, OFFSET and FETCH clauses.
  */
 SqlNode FetchOffsetValueExpression() :
 {

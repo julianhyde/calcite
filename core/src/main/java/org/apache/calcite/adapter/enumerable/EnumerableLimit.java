@@ -114,48 +114,20 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
 
     Expression v = builder.append("child", result.block);
     if (offset != null) {
-      if (offset instanceof RexDynamicParam) {
-        RexDynamicParam expr = (RexDynamicParam) offset;
-        v = builder.append(
+      v = builder.append(
           "offset",
           Expressions.call(
               v,
               BuiltInMethod.SKIP.method,
-              Expressions.convert_(
-              Expressions.call(
-                DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET.method,
-                Expressions.constant("?" + expr.getIndex())), Integer.class)
-              ));
-      } else {
-        v = builder.append(
-            "offset",
-            Expressions.call(
-                v,
-                BuiltInMethod.SKIP.method,
-                Expressions.constant(RexLiteral.intValue(offset))));
-      }
+              getExpression(offset)));
     }
     if (fetch != null) {
-      if (fetch instanceof RexDynamicParam) {
-        RexDynamicParam expr = (RexDynamicParam) fetch;
-        v = builder.append(
+      v = builder.append(
           "fetch",
           Expressions.call(
               v,
               BuiltInMethod.TAKE.method,
-              Expressions.convert_(
-              Expressions.call(
-                DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET.method,
-                Expressions.constant("?" + expr.getIndex())), Integer.class)
-              ));
-      } else {
-        v = builder.append(
-            "fetch",
-            Expressions.call(
-              v,
-              BuiltInMethod.TAKE.method,
-              Expressions.constant(RexLiteral.intValue(fetch))));
-      }
+              getExpression(fetch)));
     }
 
     builder.add(
@@ -163,6 +135,19 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
             null,
             v));
     return implementor.result(physType, builder.toBlock());
+  }
+
+  private static Expression getExpression(RexNode offset) {
+    if (offset instanceof RexDynamicParam) {
+      final RexDynamicParam param = (RexDynamicParam) offset;
+      return Expressions.convert_(
+          Expressions.call(DataContext.ROOT,
+              BuiltInMethod.DATA_CONTEXT_GET.method,
+              Expressions.constant("?" + param.getIndex())),
+          Integer.class);
+    } else {
+      return Expressions.constant(RexLiteral.intValue(offset));
+    }
   }
 }
 

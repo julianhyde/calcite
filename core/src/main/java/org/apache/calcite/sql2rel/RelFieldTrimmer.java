@@ -530,7 +530,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     // leave the Sort unchanged in case we have dynamic limits
     if (sort.offset instanceof RexDynamicParam
-         || sort.fetch instanceof RexDynamicParam) {
+        || sort.fetch instanceof RexDynamicParam) {
       return result(sort, inputMapping);
     }
 

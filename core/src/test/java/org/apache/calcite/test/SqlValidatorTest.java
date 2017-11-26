@@ -7924,8 +7924,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String sql = "select name from dept offset ? rows fetch next ? rows only";
     final String expected = "SELECT `NAME`\n"
         + "FROM `DEPT`\n"
-        + "OFFSET ?ROWS\n"
-        + "FETCH NEXT ?ROWS ONLY";
+        + "OFFSET ? ROWS\n"
+        + "FETCH NEXT ? ROWS ONLY";
     tester.checkRewrite(validator, sql, expected);
   }
 

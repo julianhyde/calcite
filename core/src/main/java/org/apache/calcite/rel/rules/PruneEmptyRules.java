@@ -247,7 +247,8 @@ public abstract class PruneEmptyRules {
           operand(Sort.class, any()), "PruneSortLimit0") {
         @Override public void onMatch(RelOptRuleCall call) {
           Sort sort = call.rel(0);
-          if (sort.fetch != null && !(sort.fetch instanceof RexDynamicParam)
+          if (sort.fetch != null
+              && !(sort.fetch instanceof RexDynamicParam)
               && RexLiteral.intValue(sort.fetch) == 0) {
             call.transformTo(call.builder().push(sort).empty().build());
           }
