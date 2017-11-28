@@ -20,6 +20,7 @@ import org.apache.calcite.test.CalciteAssert;
 
 import com.google.common.base.Function;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.AbstractList;
@@ -230,6 +231,7 @@ public class PartiallyOrderedSetTest {
   }
 
   @Test public void testPosetBitsLarge2() {
+    Assume.assumeTrue("too slow to run every day", CalciteAssert.ENABLE_SLOW);
     final int n = 30000;
     final PartiallyOrderedSet<Integer> poset =
         new PartiallyOrderedSet<>(IS_BIT_SUPERSET,
@@ -259,11 +261,11 @@ public class PartiallyOrderedSetTest {
               return list;
             }
           });
-    checkPosetBitsLarge(poset, n, 2921, 164782);
+    checkPosetBitsLarge(poset, n, 2921, 11961);
   }
 
   void checkPosetBitsLarge(PartiallyOrderedSet<Integer> poset, int n,
-      int expectedSize,  int expectedParentCount) {
+      int expectedSize, int expectedParentCount) {
     final Random random = new Random(1);
     int count = 0;
     int parentCount = 0;

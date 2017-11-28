@@ -60,7 +60,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 /**
- * Basic implementation of {@link Profiler}.
+ * Unit tests for {@link Profiler}.
  */
 public class ProfilerTest {
   @Test public void testProfileZeroRows() throws Exception {
@@ -263,9 +263,8 @@ public class ProfilerTest {
         "{type:distribution,columns:[],cardinality:1.0,expectedCardinality:1.0,surprise:0.0}");
   }
 
-  /** As {@link #testProfileScott3()}, but uses the breadth-first profiler
-   * and deems everything uninteresting. Only first-level combinations (those
-   * consisting of a single column) are computed. */
+  /** As {@link #testProfileScott3()}, but uses the breadth-first profiler. */
+  @Ignore
   @Test public void testProfileScott5() throws Exception {
     scott().factory(Fluid.PROFILER_FACTORY).unordered(
         "{type:distribution,columns:[COMM],values:[0.00,300.00,500.00,1400.00],cardinality:5.0,nullCount:10,expectedCardinality:14.0,surprise:0.47368421052631576}",

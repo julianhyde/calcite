@@ -291,9 +291,11 @@ public class ProfilerImpl implements Profiler {
     }
 
     void pass(int pass, List<Space> spaces, Iterable<List<Comparable>> rows) {
-      System.out.println("pass: " + pass
-          + ", spaces.size: " + spaces.size()
-          + ", distributions.size: " + distributions.size());
+      if (CalcitePrepareImpl.DEBUG) {
+        System.out.println("pass: " + pass
+            + ", spaces.size: " + spaces.size()
+            + ", distributions.size: " + distributions.size());
+      }
 
       for (Space space : spaces) {
         space.collector = Collector.create(space, 1000);
@@ -772,7 +774,9 @@ public class ProfilerImpl implements Profiler {
     }
 
     boolean isValid() {
-      System.out.println(toString());
+      if (CalcitePrepareImpl.DEBUG) {
+        System.out.println(toString());
+      }
       assert deque.size() == priorityQueue.size();
       if (count > size) {
         assert deque.size() == size;
