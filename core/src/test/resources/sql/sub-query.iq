@@ -57,6 +57,52 @@ EnumerableCalc(expr#0..4=[{inputs}], expr#5=[0], expr#6=[=($t1, $t5)], expr#7=[f
             EnumerableValues(tuples=[[{ 0 }]])
 !plan
 
+# [CALCITE-2071] Query with IN operators in WHERE clause returns wrong result
+select "empid"
+from "hr"."emps" t
+    where ("empid" in (select "empid" from "hr"."emps")
+        or "empid" in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                     12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25) )
+      and "empid" in (100, 200, 150);
+ empid
+-------
+   100
+   150
+   200
+(3 rows)
+
+!ok
+
+# Equivalent query to previous, by de Morgan: (x OR y) == NOT (NOT x AND NOT y)
+select "empid"
+from "hr"."emps" t
+    where not("empid" not in (select "empid" from "hr"."emps")
+        and "empid" not in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                     12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25) )
+      and "empid" in (100, 200, 150);
+ empid
+-------
+   100
+   150
+   200
+(3 rows)
+
+!ok
+
+# Similar to above, not affected by [CALCITE-2071]
+select "empid"
+from "hr"."emps" t
+    where "empid" in (select "empid" from "hr"."emps")
+      and "empid" in (100, 200, 150);
+ empid
+-------
+   100
+   150
+   200
+(3 rows)
+
+!ok
+
 # Use of case is to get around issue with directly specifying null in values
 # list. Postgres gives 0 rows.
 with
