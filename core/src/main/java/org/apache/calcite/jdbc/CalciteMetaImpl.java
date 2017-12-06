@@ -37,8 +37,11 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -64,6 +67,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
@@ -600,8 +604,12 @@ public class CalciteMetaImpl extends MetaImpl {
         final CalciteConnectionImpl calciteConnection = getConnection();
         CalciteServerStatement statement =
             calciteConnection.server.getStatement(h);
-        final Context context =
-            statement.createPrepareContext(ImmutableList.<RelTraitDef>of());
+        final List<RelTraitDef> traitDefs =
+            Lists.newArrayList((RelTraitDef) ConventionTraitDef.INSTANCE);
+        if (CalcitePrepareImpl.ENABLE_COLLATION_TRAIT) {
+          traitDefs.add(RelCollationTraitDef.INSTANCE);
+        }
+        final Context context = statement.createPrepareContext(traitDefs);
         final CalcitePrepare.Query<Object> query = toQuery(context, sql);
         signature = calciteConnection.parseQuery(query, context, maxRowCount);
         statement.setSignature(signature);

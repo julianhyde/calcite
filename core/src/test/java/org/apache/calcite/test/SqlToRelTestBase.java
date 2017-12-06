@@ -603,7 +603,8 @@ public abstract class SqlToRelTestBase {
     public RelOptCluster createCluster() {
       final RexBuilder rexBuilder = new RexBuilder(getTypeFactory());
       final Xyz xyz = new Xyz();
-      xyz.setExecutor(new RexExecutorImpl(Schemas.createDataContext(null)));
+      xyz.setExecutor(
+          new RexExecutorImpl(Schemas.createDataContext(null, null)));
       RelOptCluster cluster = RelOptCluster.create(xyz, rexBuilder,
           ImmutableList.<RelTraitDef>of());
       if (clusterFactory != null) {

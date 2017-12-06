@@ -1772,10 +1772,9 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelOptTable deptTable = join.getInput(1).getTable();
     Frameworks.withPlanner(
         new Frameworks.PlannerAction<Void>() {
-          public Void apply(RelOptCluster cluster,
-              RelOptSchema relOptSchema,
+          public Void apply(RelOptPlanner planner, RelOptSchema relOptSchema,
               SchemaPlus rootSchema) {
-            checkAllPredicates(cluster, empTable, deptTable);
+            checkAllPredicates(planner.getCluster(), empTable, deptTable);
             return null;
           }
         });

@@ -176,7 +176,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
    * possible if enabled, but queries should work either way. At some point
    * this will become a preference, or we will run multiple phases: first
    * disabled, then enabled. */
-  private static final boolean ENABLE_COLLATION_TRAIT = true;
+  public static final boolean ENABLE_COLLATION_TRAIT = true;
 
   /** Whether the bindable convention should be the root convention of any
    * plan. If not, enumerable convention is the default. */

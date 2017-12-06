@@ -22,11 +22,16 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
+import org.apache.calcite.plan.AbstractRelOptPlanner;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -304,7 +309,47 @@ public abstract class Prepare {
 
     Hook.TRIMMED.run(root.rel);
 
-    RelOptPlanner planner = null; // TODO:
+    RelOptPlanner planner = new AbstractRelOptPlanner(context.getCluster(),
+        RelOptCostImpl.FACTORY, Contexts.empty()) {
+      @Override public void setRoot(RelNode rel) {
+      }
+
+      @Override public RelNode getRoot() {
+        return null;
+      }
+
+      @Override public List<RelOptRule> getRules() {
+        return null;
+      }
+
+      @Override public boolean addRule(RelOptRule rule) {
+        return false;
+      }
+
+      @Override public boolean removeRule(RelOptRule rule) {
+        return false;
+      }
+
+      @Override public RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
+        return null;
+      }
+
+      @Override public RelNode findBestExp() {
+        return null;
+      }
+
+      @Override public RelNode register(RelNode rel, RelNode equivRel) {
+        return null;
+      }
+
+      @Override public RelNode ensureRegistered(RelNode rel, RelNode equivRel) {
+        return null;
+      }
+
+      @Override public boolean isRegistered(RelNode rel) {
+        return false;
+      }
+    };
 
     // Display physical plan after decorrelation.
     if (sqlExplain != null) {

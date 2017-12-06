@@ -234,7 +234,12 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
     for (RelTrait trait : node.getTraitSet()) {
       if (traits.add(trait)) {
-        trait.register((HepProgramBuilder) (Object) this); // TODO:
+        if (false) {
+          // TODO: figure out which traits are present in a tree of
+          // RelNodes before creating a planner, and modify the
+          // program builder accordingly
+          trait.register((HepProgramBuilder) (Object) this);
+        }
       }
     }
   }

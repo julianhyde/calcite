@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.materialize.Lattice;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.Xyz;
@@ -391,7 +392,7 @@ public final class Schemas {
     return new CalcitePrepare.Context() {
       final RelOptCluster cluster =
           RelOptCluster.create(new Xyz(), new RexBuilder(typeFactory),
-              ImmutableList.<RelTraitDef>of());
+              ImmutableList.<RelTraitDef>of(ConventionTraitDef.INSTANCE));
 
       public RelOptCluster getCluster() {
         return cluster;
