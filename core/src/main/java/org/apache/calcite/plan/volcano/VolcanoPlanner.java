@@ -48,20 +48,11 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.rules.AggregateJoinTransposeRule;
-import org.apache.calcite.rel.rules.AggregateProjectMergeRule;
-import org.apache.calcite.rel.rules.AggregateRemoveRule;
-import org.apache.calcite.rel.rules.CalcRemoveRule;
-import org.apache.calcite.rel.rules.FilterJoinRule;
 import org.apache.calcite.rel.rules.JoinAssociateRule;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
-import org.apache.calcite.rel.rules.ProjectRemoveRule;
-import org.apache.calcite.rel.rules.SemiJoinRule;
-import org.apache.calcite.rel.rules.SortRemoveRule;
-import org.apache.calcite.rel.rules.UnionToDistinctRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.SaffronProperties;
@@ -936,25 +927,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
   }
 
+  @Deprecated // to be removed before 2.0
   public void registerAbstractRelationalRules() {
-    addRule(FilterJoinRule.FILTER_ON_JOIN);
-    addRule(FilterJoinRule.JOIN);
-    addRule(AbstractConverter.ExpandConversionRule.INSTANCE);
-    addRule(JoinCommuteRule.INSTANCE);
-    addRule(SemiJoinRule.PROJECT);
-    addRule(SemiJoinRule.JOIN);
+    for (RelOptRule rule : Programs.ABSTRACT_RULES) {
+      addRule(rule);
+    }
     if (CalcitePrepareImpl.COMMUTE) {
       addRule(JoinAssociateRule.INSTANCE);
     }
-    addRule(AggregateRemoveRule.INSTANCE);
-    addRule(UnionToDistinctRule.INSTANCE);
-    addRule(ProjectRemoveRule.INSTANCE);
-    addRule(AggregateJoinTransposeRule.INSTANCE);
-    addRule(AggregateProjectMergeRule.INSTANCE);
-    addRule(CalcRemoveRule.INSTANCE);
-    addRule(SortRemoveRule.INSTANCE);
-
-    // todo: rule which makes Project({OrdinalRef}) disappear
   }
 
   public void registerSchema(RelOptSchema schema) {

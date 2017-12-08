@@ -19,6 +19,7 @@ package org.apache.calcite.tools;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.interpreter.NoneToBindableConverterRule;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -30,6 +31,8 @@ import org.apache.calcite.plan.hep.HepMatchOrder;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.plan.volcano.AbstractConverter;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Calc;
@@ -38,15 +41,23 @@ import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
+import org.apache.calcite.rel.rules.AggregateJoinTransposeRule;
+import org.apache.calcite.rel.rules.AggregateProjectMergeRule;
+import org.apache.calcite.rel.rules.AggregateProjectPullUpConstantsRule;
 import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
+import org.apache.calcite.rel.rules.AggregateRemoveRule;
 import org.apache.calcite.rel.rules.AggregateStarTableRule;
 import org.apache.calcite.rel.rules.CalcMergeRule;
+import org.apache.calcite.rel.rules.CalcRemoveRule;
+import org.apache.calcite.rel.rules.DateRangeRules;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterCalcMergeRule;
 import org.apache.calcite.rel.rules.FilterJoinRule;
+import org.apache.calcite.rel.rules.FilterMergeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.FilterTableScanRule;
 import org.apache.calcite.rel.rules.FilterToCalcRule;
+import org.apache.calcite.rel.rules.IntersectToDistinctRule;
 import org.apache.calcite.rel.rules.JoinAssociateRule;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
@@ -55,11 +66,18 @@ import org.apache.calcite.rel.rules.LoptOptimizeJoinRule;
 import org.apache.calcite.rel.rules.MultiJoinOptimizeBushyRule;
 import org.apache.calcite.rel.rules.ProjectCalcMergeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
+import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.ProjectToCalcRule;
+import org.apache.calcite.rel.rules.ProjectToWindowRule;
+import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.SemiJoinRule;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
+import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.rel.rules.TableScanRule;
+import org.apache.calcite.rel.rules.UnionMergeRule;
+import org.apache.calcite.rel.rules.UnionPullUpConstantsRule;
+import org.apache.calcite.rel.rules.UnionToDistinctRule;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -69,6 +87,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -82,6 +101,43 @@ public class Programs {
           return of(ruleSet);
         }
       };
+
+  public static final ImmutableSet<RelOptRule> ABSTRACT_RULES =
+      ImmutableSet.of(FilterJoinRule.FILTER_ON_JOIN,
+          FilterJoinRule.JOIN,
+          AbstractConverter.ExpandConversionRule.INSTANCE,
+          JoinCommuteRule.INSTANCE,
+          SemiJoinRule.PROJECT,
+          SemiJoinRule.JOIN,
+          AggregateRemoveRule.INSTANCE,
+          UnionToDistinctRule.INSTANCE,
+          ProjectRemoveRule.INSTANCE,
+          AggregateJoinTransposeRule.INSTANCE,
+          AggregateProjectMergeRule.INSTANCE,
+          CalcRemoveRule.INSTANCE,
+          // todo: rule which makes Project({OrdinalRef}) disappear
+          SortRemoveRule.INSTANCE);
+
+  public static final ImmutableSet<RelOptRule> ABSTRACT_RULES2 =
+      ImmutableSet.of(AggregateProjectPullUpConstantsRule.INSTANCE2,
+          UnionPullUpConstantsRule.INSTANCE,
+          PruneEmptyRules.UNION_INSTANCE,
+          PruneEmptyRules.INTERSECT_INSTANCE,
+          PruneEmptyRules.MINUS_INSTANCE,
+          PruneEmptyRules.PROJECT_INSTANCE,
+          PruneEmptyRules.FILTER_INSTANCE,
+          PruneEmptyRules.SORT_INSTANCE,
+          PruneEmptyRules.AGGREGATE_INSTANCE,
+          PruneEmptyRules.JOIN_LEFT_INSTANCE,
+          PruneEmptyRules.JOIN_RIGHT_INSTANCE,
+          PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE,
+          UnionMergeRule.INSTANCE,
+          UnionMergeRule.INTERSECT_INSTANCE,
+          UnionMergeRule.MINUS_INSTANCE,
+          ProjectToWindowRule.PROJECT,
+          FilterMergeRule.INSTANCE,
+          DateRangeRules.FILTER_INSTANCE,
+          IntersectToDistinctRule.INSTANCE);
 
   public static final ImmutableList<RelOptRule> CALC_RULES =
       ImmutableList.of(
@@ -193,11 +249,11 @@ public class Programs {
   public static Program of(final HepProgram hepProgram, final boolean noDag,
       final RelMetadataProvider metadataProvider) {
     return new Program() {
-      public RelNode run(RelOptPlanner planner, RelNode rel,
+      public RelNode run(Context context, RelNode rel,
           RelTraitSet requiredOutputTraits,
           List<RelOptMaterialization> materializations,
           List<RelOptLattice> lattices) {
-        final HepPlanner hepPlanner = new HepPlanner(planner.getCluster(),
+        final HepPlanner hepPlanner = new HepPlanner(rel.getCluster(),
             hepProgram, null, noDag, null, RelOptCostImpl.FACTORY);
 
         List<RelMetadataProvider> list = Lists.newArrayList();
@@ -224,7 +280,7 @@ public class Programs {
       final Iterable<? extends RelOptRule> rules,
       final boolean bushy, final int minJoinCount) {
     return new Program() {
-      public RelNode run(RelOptPlanner planner, RelNode rel,
+      public RelNode run(Context context, RelNode rel,
           RelTraitSet requiredOutputTraits,
           List<RelOptMaterialization> materializations,
           List<RelOptLattice> lattices) {
@@ -259,8 +315,8 @@ public class Programs {
 
           program = sequence(program1, program2);
         }
-        return program.run(
-            planner, rel, requiredOutputTraits, materializations, lattices);
+        return program.run(context, rel, requiredOutputTraits,
+            materializations, lattices);
       }
     };
   }
@@ -283,7 +339,7 @@ public class Programs {
 
   public static Program getProgram() {
     return new Program() {
-      public RelNode run(RelOptPlanner planner, RelNode rel,
+      public RelNode run(Context context, RelNode rel,
           RelTraitSet requiredOutputTraits,
           List<RelOptMaterialization> materializations,
           List<RelOptLattice> lattices) {
@@ -302,10 +358,12 @@ public class Programs {
 
     final Program program1 =
         new Program() {
-          public RelNode run(RelOptPlanner planner, RelNode rel,
+          public RelNode run(Context context, RelNode rel,
               RelTraitSet requiredOutputTraits,
               List<RelOptMaterialization> materializations,
               List<RelOptLattice> lattices) {
+            final VolcanoPlanner planner =
+                new VolcanoPlanner(rel.getCluster(), null, context);
             planner.setRoot(rel);
 
             for (RelOptMaterialization materialization : materializations) {
@@ -347,10 +405,12 @@ public class Programs {
       this.ruleSet = ruleSet;
     }
 
-    public RelNode run(RelOptPlanner planner, RelNode rel,
+    public RelNode run(Context context, RelNode rel,
         RelTraitSet requiredOutputTraits,
         List<RelOptMaterialization> materializations,
         List<RelOptLattice> lattices) {
+      final VolcanoPlanner planner =
+          new VolcanoPlanner(rel.getCluster(), null, context);
       planner.clear();
       for (RelOptRule rule : ruleSet) {
         planner.addRule(rule);
@@ -379,13 +439,12 @@ public class Programs {
       this.programs = programs;
     }
 
-    public RelNode run(RelOptPlanner planner, RelNode rel,
+    public RelNode run(Context context, RelNode rel,
         RelTraitSet requiredOutputTraits,
         List<RelOptMaterialization> materializations,
         List<RelOptLattice> lattices) {
       for (Program program : programs) {
-        rel = program.run(
-            planner, rel, requiredOutputTraits, materializations, lattices);
+        rel = program.run(context, rel, requiredOutputTraits, materializations, lattices);
       }
       return rel;
     }
@@ -399,14 +458,14 @@ public class Programs {
    * disable field-trimming in {@link SqlToRelConverter}, and run
    * {@link TrimFieldsProgram} after this program. */
   private static class DecorrelateProgram implements Program {
-    public RelNode run(RelOptPlanner planner, RelNode rel,
+    public RelNode run(Context context, RelNode rel,
         RelTraitSet requiredOutputTraits,
         List<RelOptMaterialization> materializations,
         List<RelOptLattice> lattices) {
       final CalciteConnectionConfig config =
-          planner.getContext().unwrap(CalciteConnectionConfig.class);
+          context.unwrap(CalciteConnectionConfig.class);
       if (config != null && config.forceDecorrelate()) {
-        return RelDecorrelator.decorrelateQuery(rel, planner.getContext());
+        return RelDecorrelator.decorrelateQuery(rel, context);
       }
       return rel;
     }
@@ -414,7 +473,7 @@ public class Programs {
 
   /** Program that trims fields. */
   private static class TrimFieldsProgram implements Program {
-    public RelNode run(RelOptPlanner planner, RelNode rel,
+    public RelNode run(Context context, RelNode rel,
         RelTraitSet requiredOutputTraits,
         List<RelOptMaterialization> materializations,
         List<RelOptLattice> lattices) {

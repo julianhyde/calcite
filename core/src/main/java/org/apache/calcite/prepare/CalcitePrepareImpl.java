@@ -133,6 +133,7 @@ import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -467,19 +468,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     return StandardConvertletTable.INSTANCE;
   }
 
-  /** Creates a collection of planner factories.
-   *
-   * <p>The collection must have at least one factory, and each factory must
-   * create a planner. If the collection has more than one planner, Calcite will
-   * try each planner in turn.</p>
-   *
-   * <p>One of the things you can do with this mechanism is to try a simpler,
-   * faster, planner with a smaller rule set first, then fall back to a more
-   * complex planner for complex and costly queries.</p>
-   *
-   * <p>The default implementation returns a factory that calls
-   * {@link #createPlanner(org.apache.calcite.jdbc.CalcitePrepare.Context)}.</p>
-   */
+  @Deprecated // to be removed before 2.0
   protected List<Function1<Context, RelOptPlanner>> createPlannerFactories() {
     return Collections.<Function1<Context, RelOptPlanner>>singletonList(
         new Function1<Context, RelOptPlanner>() {
@@ -489,8 +478,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         });
   }
 
-  /** Creates a query planner and initializes it with a default set of
-   * rules. */
+  @Deprecated // to be removed before 2.0
   protected RelOptPlanner createPlanner(CalcitePrepare.Context prepareContext) {
     return createPlanner(prepareContext, null, null);
   }
@@ -551,6 +539,63 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       for (RelOptRule rule : CONSTANT_REDUCTION_RULES) {
         planner.addRule(rule);
       }
+    }
+
+    final SparkHandler spark = prepareContext.spark();
+    if (spark.enabled()) {
+      spark.registerRules(
+          new SparkHandler.RuleSetBuilder() {
+          public void addRule(RelOptRule rule) {
+            // TODO:
+          }
+
+          public void removeRule(RelOptRule rule) {
+            // TODO:
+          }
+        });
+    }
+
+    Hook.PLANNER.run(planner); // allow test to add or remove rules
+
+    return planner;
+  }
+
+  protected RelOptPlanner createProgram(
+      final CalcitePrepare.Context prepareContext,
+      RelOptCostFactory costFactory) {
+    final List<RelOptRule> rules = new ArrayList<>();
+    if (ENABLE_COLLATION_TRAIT) {
+      rules.addAll(Programs.ABSTRACT_RULES);
+    }
+    rules.addAll(Programs.ABSTRACT_RULES2);
+    rules.addAll(DEFAULT_RULES);
+    if (prepareContext.config().materializationsEnabled()) {
+      rules.add(MaterializedViewFilterScanRule.INSTANCE);
+    }
+    if (enableBindable) {
+      rules.addAll(Bindables.RULES);
+    }
+    rules.add(Bindables.BINDABLE_TABLE_SCAN_RULE);
+    rules.add(ProjectTableScanRule.INSTANCE);
+    rules.add(ProjectTableScanRule.INTERPRETER);
+
+    if (ENABLE_ENUMERABLE) {
+      rules.addAll(ENUMERABLE_RULES);
+      rules.add(EnumerableInterpreterRule.INSTANCE);
+    }
+
+    if (enableBindable && ENABLE_ENUMERABLE) {
+      rules.add(
+          EnumerableBindable.EnumerableToBindableConverterRule.INSTANCE);
+    }
+
+    if (ENABLE_STREAM) {
+      rules.addAll(StreamRules.RULES);
+    }
+
+    // Change the below to enable constant-reduction.
+    if (false) {
+      rules.addAll(CONSTANT_REDUCTION_RULES);
     }
 
     final SparkHandler spark = prepareContext.spark();

@@ -16,9 +16,9 @@
  */
 package org.apache.calcite.tools;
 
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 
@@ -31,10 +31,10 @@ import java.util.List;
  * <p>A planner is a sequence of programs, each of which is sometimes called
  * a "phase".
  * The most typical program is an invocation of the volcano planner with a
- * particular {@link org.apache.calcite.tools.RuleSet}.</p>
+ * particular {@link org.apache.calcite.tools.RuleSet}.
  */
 public interface Program {
-  RelNode run(RelOptPlanner planner, RelNode rel,
+  RelNode run(Context context, RelNode rel,
       RelTraitSet requiredOutputTraits,
       List<RelOptMaterialization> materializations,
       List<RelOptLattice> lattices);

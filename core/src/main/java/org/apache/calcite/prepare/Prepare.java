@@ -22,6 +22,8 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -105,8 +107,7 @@ public abstract class Prepare {
 
   public Prepare(CalcitePrepare.Context context, CatalogReader catalogReader,
       Convention resultConvention) {
-    assert context != null;
-    this.context = context;
+    this.context = Preconditions.checkNotNull(context);
     this.catalogReader = catalogReader;
     this.resultConvention = resultConvention;
   }
@@ -131,7 +132,8 @@ public abstract class Prepare {
       final List<Materialization> materializations,
       final List<CalciteSchema.LatticeEntry> lattices) {
     final DataContext dataContext = context.getDataContext();
-    planner.setExecutor(new RexExecutorImpl(dataContext));
+    final Context plannerContext = Contexts.of(dataContext,
+        new RexExecutorImpl(dataContext));
 
     final List<RelOptMaterialization> materializationList = new ArrayList<>();
     for (Materialization materialization : materializations) {
@@ -154,8 +156,8 @@ public abstract class Prepare {
 
     final RelTraitSet desiredTraits = getDesiredRootTraitSet(root);
     final Program program = getProgram();
-    final RelNode rootRel4 = program.run(
-        planner, root.rel, desiredTraits, materializationList, latticeList);
+    final RelNode rootRel4 = program.run(plannerContext, root.rel,
+        desiredTraits, materializationList, latticeList);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Plan after physical tweaks: {}",
           RelOptUtil.toString(rootRel4, SqlExplainLevel.ALL_ATTRIBUTES));

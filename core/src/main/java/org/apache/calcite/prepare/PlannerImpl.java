@@ -20,6 +20,7 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -316,7 +317,8 @@ public class PlannerImpl implements Planner {
             rel.getCluster().getMetadataProvider(),
             planner));
     Program program = programs.get(ruleSetIndex);
-    return program.run(planner, rel, requiredOutputTraits,
+    final Context context = Contexts.of(config);
+    return program.run(context, rel, requiredOutputTraits,
         ImmutableList.<RelOptMaterialization>of(),
         ImmutableList.<RelOptLattice>of());
   }

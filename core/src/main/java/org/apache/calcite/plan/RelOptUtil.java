@@ -84,6 +84,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.MultisetSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -1688,26 +1689,11 @@ public abstract class RelOptUtil {
     return joinRel;
   }
 
+  @Deprecated // to be removed before 2.0
   public static void registerAbstractRels(RelOptPlanner planner) {
-    planner.addRule(AggregateProjectPullUpConstantsRule.INSTANCE2);
-    planner.addRule(UnionPullUpConstantsRule.INSTANCE);
-    planner.addRule(PruneEmptyRules.UNION_INSTANCE);
-    planner.addRule(PruneEmptyRules.INTERSECT_INSTANCE);
-    planner.addRule(PruneEmptyRules.MINUS_INSTANCE);
-    planner.addRule(PruneEmptyRules.PROJECT_INSTANCE);
-    planner.addRule(PruneEmptyRules.FILTER_INSTANCE);
-    planner.addRule(PruneEmptyRules.SORT_INSTANCE);
-    planner.addRule(PruneEmptyRules.AGGREGATE_INSTANCE);
-    planner.addRule(PruneEmptyRules.JOIN_LEFT_INSTANCE);
-    planner.addRule(PruneEmptyRules.JOIN_RIGHT_INSTANCE);
-    planner.addRule(PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE);
-    planner.addRule(UnionMergeRule.INSTANCE);
-    planner.addRule(UnionMergeRule.INTERSECT_INSTANCE);
-    planner.addRule(UnionMergeRule.MINUS_INSTANCE);
-    planner.addRule(ProjectToWindowRule.PROJECT);
-    planner.addRule(FilterMergeRule.INSTANCE);
-    planner.addRule(DateRangeRules.FILTER_INSTANCE);
-    planner.addRule(IntersectToDistinctRule.INSTANCE);
+    for (RelOptRule rule : Programs.ABSTRACT_RULES2) {
+      planner.addRule(rule);
+    }
   }
 
   /**

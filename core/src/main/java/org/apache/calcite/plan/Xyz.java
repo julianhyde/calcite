@@ -17,7 +17,11 @@
 package org.apache.calcite.plan;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.prepare.CalcitePrepareImpl;
+import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rex.RexExecutor;
 
 import java.util.List;
@@ -51,6 +55,12 @@ import java.util.List;
  * <li>Changed first arg of
  * {@link org.apache.calcite.tools.Frameworks.PrepareAction#apply(RelOptPlanner, RelOptSchema, org.apache.calcite.schema.SchemaPlus, org.apache.calcite.server.CalciteServerStatement)}
  * from {@link RelOptCluster} to {@link RelOptPlanner}
+ *
+ * <li>Removed {@code planner} 2nd arg of
+ * {@link Prepare#optimize(RelRoot, RelOptPlanner, List, List)}
+ *
+ * <li>Deprecated {@link CalcitePrepareImpl#createPlannerFactories()}
+ * and  {@link CalcitePrepareImpl#createPlanner(CalcitePrepare.Context)}
  *
  * <li>Removed
  * {@link org.apache.calcite.prepare.CalcitePrepareImpl}.createCluster(RexBuilder);
