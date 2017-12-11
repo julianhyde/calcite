@@ -2371,6 +2371,19 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).with(getTesterWithDynamicTable()).ok();
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-2080">[CALCITE-2080]
+   * Query with NOT IN operator and literal fails throws AssertionError: 'Cast
+   * for just nullability not allowed'</a>. */
+  @Test public void testNotInWithLiteral() {
+    final String sql = "SELECT *\n"
+        + "FROM SALES.NATION\n"
+        + "WHERE n_name NOT IN\n"
+        + "    (SELECT ''\n"
+        + "     FROM SALES.NATION)";
+    sql(sql).with(getTesterWithDynamicTable()).ok();
+  }
+
   /**
    * Test case for Dynamic Table / Dynamic Star support
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[CALCITE-1150]</a>
