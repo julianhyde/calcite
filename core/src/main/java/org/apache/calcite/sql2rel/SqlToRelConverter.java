@@ -1731,6 +1731,9 @@ public class SqlToRelConverter {
       break;
     }
     if (node instanceof SqlCall) {
+      if (node.getKind() == SqlKind.OR) {
+        logic = RelOptUtil.Logic.TRUE_FALSE_UNKNOWN;
+      }
       for (SqlNode operand : ((SqlCall) node).getOperandList()) {
         if (operand != null) {
           // In the case of an IN expression, locate scalar
