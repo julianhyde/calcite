@@ -1731,11 +1731,17 @@ public class SqlToRelConverter {
       break;
     }
     if (node instanceof SqlCall) {
-//      if (node.getKind() == SqlKind.OR) {
-//        logic = RelOptUtil.Logic.TRUE_FALSE_UNKNOWN;
-//      }
-      if (node.getKind() == SqlKind.OR) {
+      switch (kind) {
+      // Do no change logic for AND, IN and NOT IN expressions;
+      // but do change logic for OR, NOT and others;
+      // EXISTS was handled already.
+      case AND:
+      case IN:
+      case NOT_IN:
+        break;
+      default:
         logic = RelOptUtil.Logic.TRUE_FALSE_UNKNOWN;
+        break;
       }
       for (SqlNode operand : ((SqlCall) node).getOperandList()) {
         if (operand != null) {
