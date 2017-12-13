@@ -44,7 +44,8 @@ import java.util.TimeZone;
 public class CalciteResultSet extends AvaticaResultSet {
 
   /** Creates a CalciteResultSet. */
-  CalciteResultSet(AvaticaStatement statement,
+  @SuppressWarnings("WeakerAccess")
+  protected CalciteResultSet(AvaticaStatement statement,
       CalcitePrepare.CalciteSignature calciteSignature,
       ResultSetMetaData resultSetMetaData, TimeZone timeZone,
       Meta.Frame firstFrame) {

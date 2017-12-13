@@ -126,7 +126,7 @@ public class CalciteJdbc41Factory extends CalciteFactory {
   }
 
   /** Implementation of prepared statement for JDBC 4.1. */
-  private static class CalciteJdbc41PreparedStatement
+  static class CalciteJdbc41PreparedStatement
       extends CalcitePreparedStatement {
     CalciteJdbc41PreparedStatement(CalciteConnectionImpl connection,
         Meta.StatementHandle h, CalcitePrepare.CalciteSignature signature,

@@ -114,6 +114,7 @@ limitations under the License.
     <mongo-java-driver.version>2.12.3</mongo-java-driver.version>
     <mysql-driver.version>5.1.20</mysql-driver.version>
     <natty.version>0.13</natty.version>
+    <olap4j.version>1.2.0</olap4j.version>
     <opencsv.version>2.3</opencsv.version>
     <oracle-jdbc6-driver.version>11.2.0.2.0</oracle-jdbc6-driver.version>
     <owasp-dependency-check.version>2.1.1</owasp-dependency-check.version>
@@ -440,6 +441,21 @@ limitations under the License.
         <groupId>org.mongodb</groupId>
         <artifactId>mongo-java-driver</artifactId>
         <version>${mongo-java-driver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.olap4j</groupId>
+        <artifactId>olap4j</artifactId>
+        <version>${olap4j.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>net.java.openjdk</groupId>
+            <artifactId>ctsym-java7</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>

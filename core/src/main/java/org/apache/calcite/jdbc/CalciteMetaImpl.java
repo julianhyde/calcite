@@ -93,7 +93,9 @@ public class CalciteMetaImpl extends MetaImpl {
     this.connProps.setDirty(false);
   }
 
-  static <T extends Named> Predicate1<T> namedMatcher(final Pat pattern) {
+  @SuppressWarnings("WeakerAccess")
+  protected static <T extends Named> Predicate1<T>
+      namedMatcher(final Pat pattern) {
     if (pattern.s == null || pattern.s.equals("%")) {
       return Functions.truePredicate1();
     }
@@ -105,7 +107,7 @@ public class CalciteMetaImpl extends MetaImpl {
     };
   }
 
-  static Predicate1<String> matcher(final Pat pattern) {
+  protected static Predicate1<String> matcher(final Pat pattern) {
     if (pattern.s == null || pattern.s.equals("%")) {
       return Functions.truePredicate1();
     }
@@ -170,7 +172,8 @@ public class CalciteMetaImpl extends MetaImpl {
     calciteConnection.server.removeStatement(h);
   }
 
-  private <E> MetaResultSet createResultSet(Enumerable<E> enumerable,
+  @SuppressWarnings("WeakerAccess")
+  protected <E> MetaResultSet createResultSet(Enumerable<E> enumerable,
       Class clazz, String... names) {
     final List<ColumnMetaData> columns = new ArrayList<>();
     final List<Field> fields = new ArrayList<>();
@@ -382,7 +385,7 @@ public class CalciteMetaImpl extends MetaImpl {
             new MetaTableType("TABLE"), new MetaTableType("VIEW")));
   }
 
-  Enumerable<MetaSchema> schemas(String catalog) {
+  protected Enumerable<MetaSchema> schemas(String catalog) {
     return Linq4j.asEnumerable(
         getConnection().rootSchema.getSubSchemaMap().values())
         .select(
