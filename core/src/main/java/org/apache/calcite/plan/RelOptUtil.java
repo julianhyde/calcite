@@ -547,6 +547,7 @@ public abstract class RelOptUtil {
     case TRUE_FALSE_UNKNOWN:
     case UNKNOWN_AS_TRUE:
       if (notIn && !containsNullableFields(seekRel)) {
+//      if (/* notIn && */ !containsNullableFields(seekRel)) {
         logic = Logic.TRUE_FALSE;
       }
     }

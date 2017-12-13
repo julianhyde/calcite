@@ -725,8 +725,10 @@ public class JdbcTest {
     assertTrue(connection.isClosed());
   }
 
-  @Test
-  public void testWhereInOr() throws Exception {
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-2071">[CALCITE-2071]
+   * Query with IN and OR in WHERE clause returns wrong result</a>. */
+  @Test public void testWhereInOr() {
     CalciteAssert.hr()
         .query("select \"empid\"\n"
             + "from \"hr\".\"emps\" t\n"
@@ -739,8 +741,9 @@ public class JdbcTest {
             + "empid=150\n");
   }
 
-  @Test
-  public void testWhereInAnd() throws Exception {
+  /** Similar to {@link #testWhereInOr()} but never had a problem because AND rather
+   * than OR. */
+  @Test public void testWhereInAnd() {
     CalciteAssert.hr()
         .query("select \"empid\"\n"
             + "from \"hr\".\"emps\" t\n"
