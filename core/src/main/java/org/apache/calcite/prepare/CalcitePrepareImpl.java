@@ -84,6 +84,7 @@ import org.apache.calcite.rel.rules.JoinAssociateRule;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushExpressionsRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.calcite.rel.rules.MatchRecognizeRule;
 import org.apache.calcite.rel.rules.MaterializedViewFilterScanRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
@@ -214,13 +215,15 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           EnumerableRules.ENUMERABLE_VALUES_RULE,
           EnumerableRules.ENUMERABLE_WINDOW_RULE,
           EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
-          EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE);
+          EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
+          EnumerableRules.ENUMERABLE_MATCH_RECOGNIZE_RULE);
 
   private static final List<RelOptRule> DEFAULT_RULES =
       ImmutableList.of(
           AggregateStarTableRule.INSTANCE,
           AggregateStarTableRule.INSTANCE2,
           TableScanRule.INSTANCE,
+          MatchRecognizeRule.INSTANCE,
           COMMUTE
               ? JoinAssociateRule.INSTANCE
               : ProjectMergeRule.INSTANCE,

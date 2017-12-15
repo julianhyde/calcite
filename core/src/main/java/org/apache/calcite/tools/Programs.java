@@ -52,6 +52,7 @@ import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.rules.LoptOptimizeJoinRule;
+import org.apache.calcite.rel.rules.MatchRecognizeRule;
 import org.apache.calcite.rel.rules.MultiJoinOptimizeBushyRule;
 import org.apache.calcite.rel.rules.ProjectCalcMergeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
@@ -123,6 +124,7 @@ public class Programs {
           SemiJoinRule.PROJECT,
           SemiJoinRule.JOIN,
           TableScanRule.INSTANCE,
+          MatchRecognizeRule.INSTANCE,
           CalcitePrepareImpl.COMMUTE
               ? JoinAssociateRule.INSTANCE
               : ProjectMergeRule.INSTANCE,
