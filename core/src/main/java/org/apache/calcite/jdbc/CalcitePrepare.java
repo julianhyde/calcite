@@ -45,6 +45,7 @@ import org.apache.calcite.sql.validate.CyclicDefinitionException;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.tools.RelRunner;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.TryThreadLocal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -75,6 +76,11 @@ public interface CalcitePrepare {
           return new ArrayDeque<>();
         }
       };
+
+  /** If you set a {@link Query} for the current thread, the
+   * {@link #prepareSql(Context, Query, Type, long)} method will use it
+   * rather than its {@code sql} argument. */
+  TryThreadLocal<Query> THREAD_QUERY = TryThreadLocal.of(null);
 
   ParseResult parse(Context context, String sql);
 
@@ -385,27 +391,42 @@ public interface CalcitePrepare {
     public final String sql;
     public final Queryable<T> queryable;
     public final RelNode rel;
+    public final String mdx;
+    public final Object other;
 
-    private Query(String sql, Queryable<T> queryable, RelNode rel) {
+    private Query(String sql, Queryable<T> queryable, RelNode rel,
+        String mdx, Object other) {
       this.sql = sql;
       this.queryable = queryable;
       this.rel = rel;
+      this.mdx = mdx;
+      this.other = other;
 
       assert (sql == null ? 0 : 1)
           + (queryable == null ? 0 : 1)
-          + (rel == null ? 0 : 1) == 1;
+          + (rel == null ? 0 : 1)
+          + (mdx == null ? 0 : 1)
+          + (other == null ? 0 : 1) == 1;
     }
 
     public static <T> Query<T> of(String sql) {
-      return new Query<>(sql, null, null);
+      return new Query<>(sql, null, null, null, null);
     }
 
     public static <T> Query<T> of(Queryable<T> queryable) {
-      return new Query<>(null, queryable, null);
+      return new Query<>(null, queryable, null, null, null);
     }
 
     public static <T> Query<T> of(RelNode rel) {
-      return new Query<>(null, null, rel);
+      return new Query<>(null, null, rel, null, null);
+    }
+
+    public static <T> Query<T> ofMdx(String mdx) {
+      return new Query<>(null, null, null, mdx, null);
+    }
+
+    public static <T> Query<T> of(Object other) {
+      return new Query<>(null, null, null, null, other);
     }
   }
 }

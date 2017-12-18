@@ -615,6 +615,12 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       Query<T> query,
       Type elementType,
       long maxRowCount) {
+    // A query specified via THREAD_QUERY overrides the "query" argument.
+    final Query query2 = THREAD_QUERY.get();
+    if (query2 != null) {
+      //noinspection unchecked
+      query = query2;
+    }
     if (SIMPLE_SQLS.contains(query.sql)) {
       return simplePrepare(context, query.sql);
     }
