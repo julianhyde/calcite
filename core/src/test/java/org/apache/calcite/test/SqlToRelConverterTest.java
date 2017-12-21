@@ -541,15 +541,19 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test public void testOrder() {
     final String sql = "select empno from emp order by empno";
     sql(sql).ok();
+
+    // duplicate field is dropped, so plan is same
+    final String sql2 = "select empno from emp order by empno, empno asc";
+    sql(sql2).ok();
+
+    // ditto
+    final String sql3 = "select empno from emp order by empno, empno desc";
+    sql(sql3).ok();
   }
 
+  /** Tests that if a column occurs twice in ORDER BY, only the first key is
+   * kept. */
   @Test public void testOrderBasedRepeatFields() {
-    final String sql = "select empno from emp order by empno DESC, empno DESC";
-    sql(sql).ok();
-  }
-
-  @Test(expected = AssertionError.class)
-  public void testOrderBasedIncompatibleFields() {
     final String sql = "select empno from emp order by empno DESC, empno ASC";
     sql(sql).ok();
   }

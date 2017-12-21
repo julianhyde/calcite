@@ -111,7 +111,13 @@ public class RelCollations {
 
   /** Returns the indexes of the field collations in a given collation. */
   public static List<Integer> ordinals(RelCollation collation) {
-    return Lists.transform(collation.getFieldCollations(),
+    return ordinals(collation.getFieldCollations());
+  }
+
+  /** Returns the indexes of the fields in a list of field collations. */
+  public static List<Integer> ordinals(
+      List<RelFieldCollation> fieldCollations) {
+    return Lists.transform(fieldCollations,
         new Function<RelFieldCollation, Integer>() {
           public Integer apply(RelFieldCollation input) {
             return input.getFieldIndex();

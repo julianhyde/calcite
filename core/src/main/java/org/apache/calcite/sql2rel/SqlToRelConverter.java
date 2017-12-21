@@ -2937,15 +2937,12 @@ public class SqlToRelConverter {
       return;
     }
     for (SqlNode orderItem : orderList) {
-      RelFieldCollation fieldCollation = convertOrderItem(
-              select,
-              orderItem,
-              extraOrderExprs,
+      RelFieldCollation fieldCollation =
+          convertOrderItem(select, orderItem, extraOrderExprs,
               RelFieldCollation.Direction.ASCENDING,
               RelFieldCollation.NullDirection.UNSPECIFIED);
-      if (collationList.contains(fieldCollation)) {
-        //ingore
-      } else {
+      if (!RelCollations.ordinals(collationList)
+          .contains(fieldCollation.getFieldIndex())) {
         collationList.add(fieldCollation);
       }
     }

@@ -22,15 +22,14 @@ import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Utilities;
+import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.UnmodifiableIterator;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import javax.annotation.Nonnull;
 
 /**
@@ -52,8 +51,8 @@ public class RelCollationImpl implements RelCollation {
   //~ Constructors -----------------------------------------------------------
 
   protected RelCollationImpl(ImmutableList<RelFieldCollation> fieldCollations) {
-    validate(fieldCollations);
     this.fieldCollations = fieldCollations;
+    assert isValid(Litmus.THROW);
   }
 
   @Deprecated // to be removed before 2.0
@@ -121,21 +120,12 @@ public class RelCollationImpl implements RelCollation {
             ((RelCollationImpl) trait).fieldCollations);
   }
 
-    /**
-     * validate validity of the fieldCollations, in order to avoid the repeated
-     * and incompatible sort keys
-     */
-  private void validate(ImmutableList<RelFieldCollation> fieldCollations) {
-    Set<RelFieldCollation> fieldCollationSet = ImmutableSet.copyOf(fieldCollations);
-    assert fieldCollationSet.size() == fieldCollations.size();
-    for (RelFieldCollation outField : fieldCollationSet) {
-      for (RelFieldCollation inField : fieldCollationSet) {
-        if (outField.getFieldIndex() == inField.getFieldIndex()) {
-           assert outField.direction == inField.direction
-                  && outField.nullDirection == inField.nullDirection;
-        }
-      }
+  private boolean isValid(Litmus litmus) {
+    final List<Integer> ordinals = RelCollations.ordinals(fieldCollations);
+    if (!Util.isDistinct(ordinals)) {
+      return litmus.fail("fields must be distinct", fieldCollations);
     }
+    return litmus.succeed();
   }
 
   /** Returns a string representation of this collation, suitably terse given
