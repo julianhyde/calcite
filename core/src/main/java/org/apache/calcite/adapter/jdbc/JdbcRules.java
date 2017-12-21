@@ -507,12 +507,23 @@ public class JdbcRules {
       super(Sort.class, Convention.NONE, out, "JdbcSortRule");
     }
 
-    public RelNode convert(RelNode rel) {
+    protected RelNode convert(RelNode rel, boolean convertInputTraits) {
       final Sort sort = (Sort) rel;
       final RelTraitSet traitSet = sort.getTraitSet().replace(out);
+
+      RelNode input;
+      if (convertInputTraits) {
+        input = convert(sort.getInput(), traitSet);
+      } else {
+        input = sort.getInput();
+      }
+
       return new JdbcSort(rel.getCluster(), traitSet,
-          convert(sort.getInput(), traitSet), sort.getCollation(), sort.offset,
-          sort.fetch);
+          input, sort.getCollation(), sort.offset, sort.fetch);
+    }
+
+    public RelNode convert(RelNode rel) {
+      return convert(rel, true);
     }
   }
 
