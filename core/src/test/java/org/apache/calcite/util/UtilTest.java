@@ -44,7 +44,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
-import org.hamcrest.core.IsSame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
