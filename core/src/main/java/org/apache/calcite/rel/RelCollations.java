@@ -22,7 +22,6 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import java.util.HashSet;
@@ -64,7 +63,7 @@ public class RelCollations {
   }
 
   public static RelCollation of(List<RelFieldCollation> fieldCollations) {
-    if (!Util.isDistinct(fieldCollations)) {
+    if (!Util.isDistinct(ordinals(fieldCollations))) {
       final ImmutableList.Builder<RelFieldCollation> builder =
           ImmutableList.builder();
       final Set<Integer> set = new HashSet<>();
@@ -150,6 +149,11 @@ public class RelCollations {
    */
   public static boolean contains(RelCollation collation,
       Iterable<Integer> keys) {
+    return contains(collation, Util.distinctList(keys));
+  }
+
+  private static boolean contains(RelCollation collation,
+      List<Integer> keys) {
     final int n = collation.getFieldCollations().size();
     final Iterator<Integer> iterator = keys.iterator();
     for (int i = 0; i < n; i++) {
@@ -169,10 +173,9 @@ public class RelCollations {
    * is sorted on the given list of keys. */
   public static boolean contains(List<RelCollation> collations,
       ImmutableIntList keys) {
-    //keys maybe repeated, so we should duplicate removal firstly.
-    ImmutableSet uniqueKeys = ImmutableSet.copyOf(keys);
+    final List<Integer> distinctKeys = Util.distinctList(keys);
     for (RelCollation collation : collations) {
-      if (contains(collation, uniqueKeys)) {
+      if (contains(collation, distinctKeys)) {
         return true;
       }
     }
