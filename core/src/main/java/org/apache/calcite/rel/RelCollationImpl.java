@@ -22,9 +22,9 @@ import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Utilities;
-import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
 
@@ -52,7 +52,9 @@ public class RelCollationImpl implements RelCollation {
 
   protected RelCollationImpl(ImmutableList<RelFieldCollation> fieldCollations) {
     this.fieldCollations = fieldCollations;
-    assert isValid(Litmus.THROW);
+    Preconditions.checkArgument(
+        Util.isDistinct(RelCollations.ordinals(fieldCollations)),
+        "fields must be distinct");
   }
 
   @Deprecated // to be removed before 2.0
@@ -118,14 +120,6 @@ public class RelCollationImpl implements RelCollation {
         || trait instanceof RelCollationImpl
         && Util.startsWith(fieldCollations,
             ((RelCollationImpl) trait).fieldCollations);
-  }
-
-  private boolean isValid(Litmus litmus) {
-    final List<Integer> ordinals = RelCollations.ordinals(fieldCollations);
-    if (!Util.isDistinct(ordinals)) {
-      return litmus.fail("fields must be distinct", fieldCollations);
-    }
-    return litmus.succeed();
   }
 
   /** Returns a string representation of this collation, suitably terse given

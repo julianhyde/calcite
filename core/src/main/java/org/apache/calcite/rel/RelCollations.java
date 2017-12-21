@@ -18,14 +18,17 @@ package org.apache.calcite.rel;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Utilities concerning {@link org.apache.calcite.rel.RelCollation}
@@ -57,11 +60,24 @@ public class RelCollations {
   private RelCollations() {}
 
   public static RelCollation of(RelFieldCollation... fieldCollations) {
-    return new RelCollationImpl(ImmutableList.copyOf(fieldCollations));
+    return of(ImmutableList.copyOf(fieldCollations));
   }
 
   public static RelCollation of(List<RelFieldCollation> fieldCollations) {
-    return new RelCollationImpl(ImmutableList.copyOf(fieldCollations));
+    if (!Util.isDistinct(fieldCollations)) {
+      final ImmutableList.Builder<RelFieldCollation> builder =
+          ImmutableList.builder();
+      final Set<Integer> set = new HashSet<>();
+      for (RelFieldCollation fieldCollation : fieldCollations) {
+        // Skip a field collation if its field has already been seen
+        if (set.add(fieldCollation.getFieldIndex())) {
+          builder.add(fieldCollation);
+        }
+      }
+      return new RelCollationImpl(builder.build());
+    } else {
+      return new RelCollationImpl(ImmutableList.copyOf(fieldCollations));
+    }
   }
 
   /**
