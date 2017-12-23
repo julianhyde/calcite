@@ -101,7 +101,7 @@ public class EnumerableRules {
       new EnumerableTableFunctionScanRule(RelFactories.LOGICAL_BUILDER);
 
   public static final EnumerableMatchRecognizeRule ENUMERABLE_MATCH_RECOGNIZE_RULE =
-      new EnumerableMatchRecognizeRule();
+      new EnumerableMatchRecognizeRule(RelFactories.LOGICAL_BUILDER);
 }
 
 // End EnumerableRules.java
