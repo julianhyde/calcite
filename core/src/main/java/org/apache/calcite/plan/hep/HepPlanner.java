@@ -453,50 +453,50 @@ public class HepPlanner extends AbstractRelOptPlanner {
     // better optimizer performance.
     collectGarbage();
 
-    if (currentProgram.matchOrder == HepMatchOrder.ARBITRARY
-        || currentProgram.matchOrder == HepMatchOrder.DEPTH_FIRST) {
+    switch (currentProgram.matchOrder) {
+    case ARBITRARY:
+    case DEPTH_FIRST:
       return DepthFirstIterator.of(graph, start).iterator();
-    }
 
-    assert start == root;
+    case TOP_DOWN:
+      assert start == root;
+      // see above
+/*
+        collectGarbage();
+*/
+      return TopologicalOrderIterator.of(graph).iterator();
 
-    // see above
+    case BOTTOM_UP:
+    default:
+      assert start == root;
+
+      // see above
 /*
         collectGarbage();
 */
 
-    Iterable<HepRelVertex> iter =
-        TopologicalOrderIterator.of(graph);
-
-    if (currentProgram.matchOrder == HepMatchOrder.TOP_DOWN) {
-      return iter.iterator();
+      // TODO jvs 4-Apr-2006:  enhance TopologicalOrderIterator
+      // to support reverse walk.
+      final List<HepRelVertex> list = new ArrayList<>();
+      for (HepRelVertex vertex : TopologicalOrderIterator.of(graph)) {
+        list.add(vertex);
+      }
+      Collections.reverse(list);
+      return list.iterator();
     }
-
-    // TODO jvs 4-Apr-2006:  enhance TopologicalOrderIterator
-    // to support reverse walk.
-    assert currentProgram.matchOrder == HepMatchOrder.BOTTOM_UP;
-    final List<HepRelVertex> list = new ArrayList<>();
-    for (HepRelVertex vertex : iter) {
-      list.add(vertex);
-    }
-    Collections.reverse(list);
-    return list.iterator();
   }
 
-  private boolean belongToDAG(HepRelVertex vertex) {
+  /** Returns whether the vertex is valid. */
+  private boolean belongsToDag(HepRelVertex vertex) {
     String digest = vertex.getCurrentRel().getDigest();
-    //The vertex is invalid
-    if (mapDigestToVertex.get(digest) == null) {
-      return false;
-    }
-    return true;
+    return mapDigestToVertex.get(digest) != null;
   }
 
   private HepRelVertex applyRule(
       RelOptRule rule,
       HepRelVertex vertex,
       boolean forceConversions) {
-    if (!belongToDAG(vertex)) {
+    if (!belongsToDag(vertex)) {
       return null;
     }
     RelTrait parentTrait = null;
