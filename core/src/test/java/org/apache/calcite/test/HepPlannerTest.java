@@ -304,9 +304,8 @@ public class HepPlannerTest extends RelOptTestBase {
     final long applyTimes1 = checkRuleApplyCount(HepMatchOrder.ARBITRARY);
     assertThat(applyTimes1, is(5451L));
 
-    //Test HepMatchOrder.ARBITRARY
     final long applyTimes2 = checkRuleApplyCount(HepMatchOrder.DEPTH_FIRST);
-    assertThat(applyTimes2, is(302L));
+    assertThat(applyTimes2, is(403L));
 
     // DEPTH_FIRST has 10x fewer matches than ARBITRARY
     assertThat(applyTimes1 > applyTimes2 * 10, is(true));
