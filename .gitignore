@@ -34,4 +34,6 @@ nb-configuration.xml
 
 core/volcano-viz/*
 
+.mvn/wrapper/maven-wrapper.jar
+
 # End .gitignore
