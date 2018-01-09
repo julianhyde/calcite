@@ -38,9 +38,12 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.ReflectUtil;
 import org.apache.calcite.util.ReflectiveVisitDispatcher;
 import org.apache.calcite.util.ReflectiveVisitor;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -49,6 +52,7 @@ import com.google.common.collect.Maps;
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -261,7 +265,12 @@ public class Interpreter extends AbstractEnumerable<Object[]>
     }
     Sink sink = nodeInfo.sink;
     if (sink instanceof ListSink) {
-      return new ListSource((ListSink) nodeInfo.sink);
+      return new ListSource(((ListSink) nodeInfo.sink).list);
+    }
+    if (sink instanceof DuplicatingSink) {
+      final DuplicatingSink duplicatingSink = (DuplicatingSink) sink;
+      final ArrayDeque<Row> rowArrayDeque =
+          duplicatingSink.lists.get(Pair.of(rel, ordinal));
     }
     throw new IllegalStateException(
       "Got a sink " + sink + " to which there is no match source type!");
@@ -286,11 +295,27 @@ public class Interpreter extends AbstractEnumerable<Object[]>
    * @return Sink
    */
   public Sink sink(RelNode rel) {
+    NodeInfo nodeInfo = nodes.get(rel);
     final ArrayDeque<Row> queue = new ArrayDeque<>(1);
-    final Sink sink = new ListSink(queue);
-    NodeInfo nodeInfo = new NodeInfo(rel, sink, null);
-    nodes.put(rel, nodeInfo);
-    return sink;
+    if (nodeInfo == null) {
+      final Sink sink = new ListSink(queue);
+      nodeInfo = new NodeInfo(rel, sink, null);
+      nodes.put(rel, nodeInfo);
+      return sink;
+    } else {
+      final DuplicatingSink sink;
+      if (nodeInfo.sink instanceof ListSink) {
+        sink = new DuplicatingSink();
+        final ImmutablePair<RelNode, Integer> key = ImmutablePair.of(rel, 0);
+        sink.lists.put(key, ((ListSink) nodeInfo.sink).list);
+        nodeInfo = new NodeInfo(rel, sink, null);
+        nodes.put(rel, nodeInfo);
+      } else {
+        sink = (DuplicatingSink) nodeInfo.sink;
+      }
+      sink.lists.add(queue);
+      return sink;
+    }
   }
 
   /** Tells the interpreter that a given relational expression wishes to
@@ -319,7 +344,8 @@ public class Interpreter extends AbstractEnumerable<Object[]>
   /** Information about a node registered in the data flow graph. */
   private static class NodeInfo {
     final RelNode rel;
-    final Sink sink;
+    final Map<ImmutablePair<RelNode, Integer>, Sink> sinks =
+        new LinkedHashMap<>();
     final Enumerable<Row> rowEnumerable;
     Node node;
 
@@ -389,8 +415,8 @@ public class Interpreter extends AbstractEnumerable<Object[]>
     private final ArrayDeque<Row> list;
     private Iterator<Row> iterator = null;
 
-    ListSource(ListSink sink) {
-      this.list = sink.list;
+    ListSource(ArrayDeque<Row> list) {
+      this.list = list;
     }
 
     public Row receive() {
@@ -407,6 +433,35 @@ public class Interpreter extends AbstractEnumerable<Object[]>
 
     @Override public void close() {
       // noop
+    }
+  }
+
+  /** Implementation of {@link Sink} using a {@link java.util.ArrayDeque}. */
+  private static class DuplicatingSink implements Sink {
+    final Map<ImmutablePair<RelNode, Integer>, ArrayDeque<Row>> lists =
+        new LinkedHashMap<>();
+
+    private DuplicatingSink() {
+    }
+
+    public void send(Row row) throws InterruptedException {
+      for (ArrayDeque<Row> list : lists.values()) {
+        list.add(row);
+      }
+    }
+
+    public void end() throws InterruptedException {
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override public void setSourceEnumerable(Enumerable<Row> enumerable)
+        throws InterruptedException {
+      // just copy over the source into the local list
+      final Enumerator<Row> enumerator = enumerable.enumerator();
+      while (enumerator.moveNext()) {
+        this.send(enumerator.current());
+      }
+      enumerator.close();
     }
   }
 
