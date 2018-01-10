@@ -36,10 +36,10 @@ import com.google.common.collect.ImmutableList;
  */
 public class Nodes {
   /** Extension to
-   * {@link Interpreter.AbstractCompiler}
+   * {@link Interpreter.CompilerImpl}
    * that knows how to handle the core logical
    * {@link org.apache.calcite.rel.RelNode}s. */
-  public static class CoreCompiler extends Interpreter.AbstractCompiler {
+  public static class CoreCompiler extends Interpreter.CompilerImpl {
     CoreCompiler(Interpreter interpreter, RelOptCluster cluster) {
       super(interpreter, cluster);
     }
@@ -61,13 +61,12 @@ public class Nodes {
     }
 
     public void visit(TableScan scan) {
-      node = TableScanNode.create(this, scan,
-          ImmutableList.<RexNode>of(), null);
+      final ImmutableList<RexNode> filters = ImmutableList.of();
+      node = TableScanNode.create(this, scan, filters, null);
     }
 
     public void visit(Bindables.BindableTableScan scan) {
-      node = TableScanNode.create(this, scan, scan.filters,
-          scan.projects);
+      node = TableScanNode.create(this, scan, scan.filters, scan.projects);
     }
 
     public void visit(Sort sort) {

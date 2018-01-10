@@ -64,7 +64,7 @@ public class TableScanNode implements Node {
     compiler.enumerable(rel, enumerable);
   }
 
-  public void run() throws InterruptedException {
+  public void run() {
     // nothing to do
   }
 
@@ -110,19 +110,19 @@ public class TableScanNode implements Node {
         + " to enumerable");
   }
 
-  private static TableScanNode createScannable(Compiler interpreter,
-      TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects,
+  private static TableScanNode createScannable(Compiler compiler, TableScan rel,
+      ImmutableList<RexNode> filters, ImmutableIntList projects,
       ScannableTable scannableTable) {
     final Enumerable<Row> rowEnumerable =
-        Enumerables.toRow(scannableTable.scan(interpreter.getDataContext()));
-    return createEnumerable(interpreter, rel, rowEnumerable, null, filters,
+        Enumerables.toRow(scannableTable.scan(compiler.getDataContext()));
+    return createEnumerable(compiler, rel, rowEnumerable, null, filters,
         projects);
   }
 
-  private static TableScanNode createQueryable(Compiler interpreter,
+  private static TableScanNode createQueryable(Compiler compiler,
       TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects,
       QueryableTable queryableTable) {
-    final DataContext root = interpreter.getDataContext();
+    final DataContext root = compiler.getDataContext();
     final RelOptTable relOptTable = rel.getTable();
     final Type elementType = queryableTable.getElementType();
     SchemaPlus schema = root.getRootSchema();
@@ -163,14 +163,14 @@ public class TableScanNode implements Node {
       rowEnumerable =
           Schemas.queryable(root, Row.class, relOptTable.getQualifiedName());
     }
-    return createEnumerable(interpreter, rel, rowEnumerable, null, filters,
+    return createEnumerable(compiler, rel, rowEnumerable, null, filters,
         projects);
   }
 
-  private static TableScanNode createFilterable(Compiler interpreter,
+  private static TableScanNode createFilterable(Compiler compiler,
       TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects,
       FilterableTable filterableTable) {
-    final DataContext root = interpreter.getDataContext();
+    final DataContext root = compiler.getDataContext();
     final List<RexNode> mutableFilters = Lists.newArrayList(filters);
     final Enumerable<Object[]> enumerable =
         filterableTable.scan(root, mutableFilters);
@@ -180,13 +180,13 @@ public class TableScanNode implements Node {
       }
     }
     final Enumerable<Row> rowEnumerable = Enumerables.toRow(enumerable);
-    return createEnumerable(interpreter, rel, rowEnumerable, null,
+    return createEnumerable(compiler, rel, rowEnumerable, null,
         mutableFilters, projects);
   }
 
-  private static TableScanNode createProjectableFilterable(
-      Compiler compiler, TableScan rel, ImmutableList<RexNode> filters,
-      ImmutableIntList projects, ProjectableFilterableTable pfTable) {
+  private static TableScanNode createProjectableFilterable(Compiler compiler,
+      TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects,
+      ProjectableFilterableTable pfTable) {
     final DataContext root = compiler.getDataContext();
     final ImmutableIntList originalProjects = projects;
     for (;;) {
@@ -240,13 +240,14 @@ public class TableScanNode implements Node {
   }
 
   private static TableScanNode createEnumerable(Compiler compiler,
-      TableScan rel,
-      Enumerable<Row> enumerable, final ImmutableIntList acceptedProjects,
-      List<RexNode> rejectedFilters, final ImmutableIntList rejectedProjects) {
+      TableScan rel, Enumerable<Row> enumerable,
+      final ImmutableIntList acceptedProjects, List<RexNode> rejectedFilters,
+      final ImmutableIntList rejectedProjects) {
     if (!rejectedFilters.isEmpty()) {
       final RexNode filter =
           RexUtil.composeConjunction(rel.getCluster().getRexBuilder(),
               rejectedFilters, false);
+      assert filter != null;
       // Re-map filter for the projects that have been applied already
       final RexNode filter2;
       final RelDataType inputRowType;

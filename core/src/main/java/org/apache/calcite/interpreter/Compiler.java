@@ -29,19 +29,42 @@ import java.util.List;
  * that can be run by an {@link Interpreter}.
  */
 public interface Compiler {
+
+  /** Compiles an expression to an executable form. */
+  Scalar compile(List<RexNode> nodes, RelDataType inputRowType);
+
   RelDataType combinedRowType(List<RelNode> inputs);
+
+  Source source(RelNode rel, int ordinal);
+
+  /**
+   * Creates a Sink for a relational expression to write into.
+   *
+   * <p>This method is generally called from the constructor of a {@link Node}.
+   * But a constructor could instead call
+   * {@link #enumerable(RelNode, Enumerable)}.
+   *
+   * @param rel Relational expression
+   * @return Sink
+   */
+  Sink sink(RelNode rel);
+
+  /** Tells the interpreter that a given relational expression wishes to
+   * give its output as an enumerable.
+   *
+   * <p>This is as opposed to the norm, where a relational expression calls
+   * {@link #sink(RelNode)}, then its {@link Node#run()} method writes into that
+   * sink.
+   *
+   * @param rel Relational expression
+   * @param rowEnumerable Contents of relational expression
+   */
+  void enumerable(RelNode rel, Enumerable<Row> rowEnumerable);
 
   DataContext getDataContext();
 
   Context createContext();
 
-  Source source(RelNode rel, int ordinal);
-
-  Sink sink(RelNode rel);
-
-  void enumerable(RelNode rel, Enumerable<Row> rowEnumerable);
-
-  Scalar compile(List<RexNode> nodes, RelDataType inputRowType);
 }
 
 // End Compiler.java
