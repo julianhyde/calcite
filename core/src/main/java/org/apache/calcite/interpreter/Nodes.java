@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.interpreter;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
@@ -35,54 +36,54 @@ import com.google.common.collect.ImmutableList;
  */
 public class Nodes {
   /** Extension to
-   * {@link org.apache.calcite.interpreter.Interpreter.Compiler}
+   * {@link Interpreter.AbstractCompiler}
    * that knows how to handle the core logical
    * {@link org.apache.calcite.rel.RelNode}s. */
-  public static class CoreCompiler extends Interpreter.Compiler {
-    CoreCompiler(Interpreter interpreter) {
-      super(interpreter);
+  public static class CoreCompiler extends Interpreter.AbstractCompiler {
+    CoreCompiler(Interpreter interpreter, RelOptCluster cluster) {
+      super(interpreter, cluster);
     }
 
     public void visit(Aggregate agg) {
-      node = new AggregateNode(interpreter, agg);
+      node = new AggregateNode(this, agg);
     }
 
     public void visit(Filter filter) {
-      node = new FilterNode(interpreter, filter);
+      node = new FilterNode(this, filter);
     }
 
     public void visit(Project project) {
-      node = new ProjectNode(interpreter, project);
+      node = new ProjectNode(this, project);
     }
 
     public void visit(Values value) {
-      node = new ValuesNode(interpreter, value);
+      node = new ValuesNode(this, value);
     }
 
     public void visit(TableScan scan) {
-      node = TableScanNode.create(interpreter, scan,
+      node = TableScanNode.create(this, scan,
           ImmutableList.<RexNode>of(), null);
     }
 
     public void visit(Bindables.BindableTableScan scan) {
-      node = TableScanNode.create(interpreter, scan, scan.filters,
+      node = TableScanNode.create(this, scan, scan.filters,
           scan.projects);
     }
 
     public void visit(Sort sort) {
-      node = new SortNode(interpreter, sort);
+      node = new SortNode(this, sort);
     }
 
     public void visit(Union union) {
-      node = new UnionNode(interpreter, union);
+      node = new UnionNode(this, union);
     }
 
     public void visit(Join join) {
-      node = new JoinNode(interpreter, join);
+      node = new JoinNode(this, join);
     }
 
     public void visit(Window window) {
-      node = new WindowNode(interpreter, window);
+      node = new WindowNode(this, window);
     }
   }
 }

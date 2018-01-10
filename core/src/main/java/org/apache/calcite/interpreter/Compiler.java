@@ -16,23 +16,32 @@
  */
 package org.apache.calcite.interpreter;
 
-import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.DataContext;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
+
+import java.util.List;
 
 /**
- * An interpreter that takes expects one incoming source relational expression.
- *
- * @param <T> Type of relational expression
+ * Context while converting a tree of {@link RelNode} to a program
+ * that can be run by an {@link Interpreter}.
  */
-abstract class AbstractSingleNode<T extends SingleRel> implements Node {
-  protected final Source source;
-  protected final Sink sink;
-  protected final T rel;
+public interface Compiler {
+  RelDataType combinedRowType(List<RelNode> inputs);
 
-  AbstractSingleNode(Compiler compiler, T rel) {
-    this.rel = rel;
-    this.source = compiler.source(rel, 0);
-    this.sink = compiler.sink(rel);
-  }
+  DataContext getDataContext();
+
+  Context createContext();
+
+  Source source(RelNode rel, int ordinal);
+
+  Sink sink(RelNode rel);
+
+  void enumerable(RelNode rel, Enumerable<Row> rowEnumerable);
+
+  Scalar compile(List<RexNode> nodes, RelDataType inputRowType);
 }
 
-// End AbstractSingleNode.java
+// End Compiler.java

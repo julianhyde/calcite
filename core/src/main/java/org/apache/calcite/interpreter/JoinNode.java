@@ -35,7 +35,7 @@ public class JoinNode implements Node {
   private final Scalar condition;
   private final Context context;
 
-  public JoinNode(Interpreter interpreter, Join rel) {
+  public JoinNode(Compiler interpreter, Join rel) {
     this.leftSource = interpreter.source(rel, 0);
     this.rightSource = interpreter.source(rel, 1);
     this.sink = interpreter.sink(rel);
