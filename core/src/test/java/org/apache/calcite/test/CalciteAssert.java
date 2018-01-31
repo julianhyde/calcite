@@ -773,12 +773,32 @@ public class CalciteAssert {
       ModelHandler.addFunctions(rootSchema, null, ImmutableList.<String>of(),
           GeoFunctions.class.getName(), "*", true);
       final SchemaPlus s = rootSchema.add("GEO", new AbstractSchema());
+
       ModelHandler.addFunctions(s, "countries", ImmutableList.<String>of(),
           CountriesTableFunction.class.getName(), null, false);
       final String sql = "select * from table(\"countries\"(true))";
       final ViewTableMacro viewMacro = ViewTable.viewMacro(rootSchema, sql,
           ImmutableList.of("GEO"), ImmutableList.<String>of(), false);
       s.add("countries", viewMacro);
+
+      ModelHandler.addFunctions(s, "states", ImmutableList.<String>of(),
+          StatesTableFunction.class.getName(), "states", false);
+      final String sql2 = "select \"name\",\n"
+          + " ST_PolyFromText(\"geom\") as \"geom\"\n"
+          + "from table(\"states\"(true))";
+      final ViewTableMacro viewMacro2 = ViewTable.viewMacro(rootSchema, sql2,
+          ImmutableList.of("GEO"), ImmutableList.<String>of(), false);
+      s.add("states", viewMacro2);
+
+      ModelHandler.addFunctions(s, "parks", ImmutableList.<String>of(),
+          StatesTableFunction.class.getName(), "parks", false);
+      final String sql3 = "select \"name\",\n"
+          + " ST_PolyFromText(\"geom\") as \"geom\"\n"
+          + "from table(\"parks\"(true))";
+      final ViewTableMacro viewMacro3 = ViewTable.viewMacro(rootSchema, sql3,
+          ImmutableList.of("GEO"), ImmutableList.<String>of(), false);
+      s.add("parks", viewMacro3);
+
       return s;
     case HR:
       return rootSchema.add("hr",

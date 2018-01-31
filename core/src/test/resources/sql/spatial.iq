@@ -24,6 +24,16 @@ C
 245
 !ok
 
+select count(*) as c from GEO."states";
+C
+11
+!ok
+
+select count(*) as c from GEO."parks";
+C
+3
+!ok
+
 #### Geometry conversion functions (2D)
 
 # ST_AsBinary(geom) Geometry to Well Known Binary
