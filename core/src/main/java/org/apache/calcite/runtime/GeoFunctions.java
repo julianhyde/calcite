@@ -20,6 +20,7 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.function.Strict;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.util.Util;
 
 import com.esri.core.geometry.Envelope;
@@ -179,6 +180,17 @@ public class GeoFunctions {
   }
 
   // Geometry creation functions ==============================================
+
+  /** Calculates a regular grid of polygons based on {@code geom}. */
+  public static Table ST_MakeGrid(Geom geom, double deltaX, double deltaY) {
+    return null;
+  }
+
+  /** Calculates a regular grid of points based on {@code geom}. */
+  public static Table ST_MakeGridPoints(Geom geom, double deltaX,
+      double deltaY) {
+    return null;
+  }
 
   /**  Creates a line-string from the given POINTs (or MULTIPOINTs). */
   public static Geom ST_MakeLine(Geom geom1, Geom geom2) {

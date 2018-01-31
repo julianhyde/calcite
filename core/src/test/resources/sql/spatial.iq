@@ -268,10 +268,17 @@ EXPR$0
 # Not implemented
 
 # ST_MakeGrid(geom, deltaX, deltaY) Calculates a regular grid of polygons based on *geom*
-# Not implemented
+SELECT ST_MakeGrid(ST_Point(13.0,22.0), 10.0, 5.0);
+EXPR$0
+{"paths":[[[1,1],[-1,-1]]]}
+!ok
 
 # ST_MakeGridPoints(geom, deltaX, deltaY) Calculates a regular grid of points based on *geom*
-# Not implemented
+SELECT ST_MakeGridPoints(ST_Point(13.0,22.0), 10.0, 5.0);
+EXPR$0
+{"paths":[[[1,1],[-1,-1]]]}
+!ok
+
 
 # ST_MakeLine(point1 [, point ]*) Creates a line-string from the given points (or multi-points)
 
