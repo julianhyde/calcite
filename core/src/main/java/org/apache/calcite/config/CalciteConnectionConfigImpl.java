@@ -24,6 +24,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.runtime.GeoFunctions;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.OracleSqlOperatorTable;
+import org.apache.calcite.sql.fun.SqlGeoFunctions;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -113,7 +114,8 @@ public class CalciteConnectionConfigImpl extends ConnectionConfigImpl
       return;
     case "spatial":
       tables.add(
-          CalciteCatalogReader.operatorTable(GeoFunctions.class.getName()));
+          CalciteCatalogReader.operatorTable(GeoFunctions.class.getName(),
+              SqlGeoFunctions.class.getName()));
       return;
     default:
       throw new IllegalArgumentException("Unknown operator table: " + s);

@@ -693,7 +693,16 @@ public class RexToLixTranslator {
       }
       InputGetter getter =
           correlates.apply(((RexCorrelVariable) target).getName());
-      return getter.field(list, fieldAccess.getField().getIndex(), storageType);
+      final Expression e =
+          getter.field(list, fieldAccess.getField().getIndex(), storageType);
+      switch (nullAs) {
+      case IS_NULL:
+        return Expressions.equal(e, RexImpTable.NULL_EXPR);
+      case IS_NOT_NULL:
+        return Expressions.notEqual(e, RexImpTable.NULL_EXPR);
+      default:
+        return e;
+      }
     default:
       if (expr instanceof RexCall) {
         return translateCall((RexCall) expr, nullAs);
