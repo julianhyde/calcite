@@ -673,13 +673,7 @@ public class RexToLixTranslator {
       nullAs = RexImpTable.NullAs.NOT_POSSIBLE;
     }
     switch (expr.getKind()) {
-    case INPUT_REF: {
-      final int index = ((RexInputRef) expr).getIndex();
-      Expression x = inputGetter.field(list, index, storageType);
-
-      Expression input = list.append("inp" + index + "_", x); // safe to share
-      return handleNullUnboxingIfNecessary(input, nullAs, storageType);
-    }
+    case INPUT_REF:
     case PATTERN_INPUT_REF: {
       final int index = ((RexInputRef) expr).getIndex();
       Expression x = inputGetter.field(list, index, storageType);
@@ -720,7 +714,8 @@ public class RexToLixTranslator {
         InputGetter getter =
             correlates.apply(((RexCorrelVariable) target).getName());
         Expression y = getter.field(list, fieldIndex, storageType);
-        Expression input = list.append("corInp" + fieldIndex + "_", y); // safe to share
+        Expression z = nullAs(nullAs, y);
+        Expression input = list.append("corInp" + fieldIndex + "_", z); // safe to share
         return handleNullUnboxingIfNecessary(input, nullAs, storageType);
       default:
         RexNode rxIndex = builder.makeLiteral(fieldIndex, typeFactory.createType(int.class), true);
@@ -738,6 +733,17 @@ public class RexToLixTranslator {
       }
       throw new RuntimeException(
           "cannot translate expression " + expr);
+    }
+  }
+
+  private static Expression nullAs(RexImpTable.NullAs nullAs, Expression e) {
+    switch (nullAs) {
+    case IS_NULL:
+      return Expressions.equal(e, RexImpTable.NULL_EXPR);
+    case IS_NOT_NULL:
+      return Expressions.notEqual(e, RexImpTable.NULL_EXPR);
+    default:
+      return e;
     }
   }
 

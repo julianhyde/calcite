@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * ChainedSqlOperatorTable implements the {@link SqlOperatorTable} interface by
@@ -42,13 +43,28 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
   /**
    * Creates a table based on a given list.
    */
+  protected ChainedSqlOperatorTable(ImmutableList<SqlOperatorTable> tableList) {
+    this.tableList = Objects.requireNonNull(tableList);
+  }
+
+  @Deprecated // to be removed before 2.0
   public ChainedSqlOperatorTable(List<SqlOperatorTable> tableList) {
     this.tableList = ImmutableList.copyOf(tableList);
   }
 
-  /** Creates a {@code ChainedSqlOperatorTable}. */
+  /** Creates a composite operator table from an array of tables. */
   public static SqlOperatorTable of(SqlOperatorTable... tables) {
-    return new ChainedSqlOperatorTable(ImmutableList.copyOf(tables));
+    return of(ImmutableList.copyOf(tables));
+  }
+
+  /** Creates a composite operator table. */
+  public static SqlOperatorTable of(Iterable<? extends SqlOperatorTable> tables) {
+    final ImmutableList<SqlOperatorTable> list =
+        ImmutableList.copyOf(tables);
+    if (list.size() == 1) {
+      return list.get(0);
+    }
+    return new ChainedSqlOperatorTable(list);
   }
 
   //~ Methods ----------------------------------------------------------------

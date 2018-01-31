@@ -24,6 +24,16 @@ C
 245
 !ok
 
+select count(*) as c from GEO."states";
+C
+11
+!ok
+
+select count(*) as c from GEO."parks";
+C
+3
+!ok
+
 #### Geometry conversion functions (2D)
 
 # ST_AsBinary(geom) Geometry to Well Known Binary
@@ -258,10 +268,28 @@ EXPR$0
 # Not implemented
 
 # ST_MakeGrid(geom, deltaX, deltaY) Calculates a regular grid of polygons based on *geom*
-# Not implemented
+SELECT * FROM TABLE(ST_MakeGrid(ST_Point(13.0,22.0), 10.0, 5.0));
+THE_GEOM, ID, ID_COL, ID_ROW, ABS_COL, ABS_ROW
+{"rings":[[[10,20],[20,20],[20,25],[10,25],[10,20]]]}, 0, 1, 1, 1, 4
+!ok
 
 # ST_MakeGridPoints(geom, deltaX, deltaY) Calculates a regular grid of points based on *geom*
-# Not implemented
+SELECT * FROM TABLE(ST_MakeGridPoints(ST_Point(13.0,22.0), 10.0, 5.0));
+THE_GEOM, ID, ID_COL, ID_ROW, ABS_COL, ABS_ROW
+{"x":15,"y":22.5}, 0, 1, 1, 1, 4
+!ok
+
+# Call ST_MakeGridPoints for each geometry in a set
+select "name", "latitude", "longitude", p.*
+from GEO."countries" AS c,
+  lateral table(
+    ST_MakeGridPoints(ST_MakePoint("latitude", "longitude"), 10.0, 10.0)) as p
+ORDER BY "latitude" DESC LIMIT 3;
+name, latitude, longitude, THE_GEOM, ID, ID_COL, ID_ROW, ABS_COL, ABS_ROW
+Svalbard and Jan Mayen, 77.553604, 23.670272, {"x":75,"y":25}, 0, 1, 1, 7, 2
+Greenland, 71.706936, -42.604303, {"x":75,"y":-45}, 0, 1, 1, 7, -5
+Iceland, 64.963051, -19.020835, {"x":65,"y":-15}, 0, 1, 1, 6, -2
+!ok
 
 # ST_MakeLine(point1 [, point ]*) Creates a line-string from the given points (or multi-points)
 
