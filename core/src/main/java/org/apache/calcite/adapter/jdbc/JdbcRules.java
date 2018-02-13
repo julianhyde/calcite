@@ -118,11 +118,10 @@ public class JdbcRules {
     }
 
     @Override public RelNode convert(RelNode rel) {
-      return convert(rel, true);
+      return convert((Join) rel, true);
     }
 
-    public RelNode convert(RelNode rel, boolean verifyJoinCondition) {
-      Join join = (Join) rel;
+    private RelNode convert(Join join, boolean verifyJoinCondition) {
       final List<RelNode> newInputs = new ArrayList<>();
       for (RelNode input : join.getInputs()) {
         if (verifyJoinCondition && !(input.getConvention() == getOutTrait())) {
@@ -250,7 +249,7 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.Calc} to an
+   * Rule to convert a {@link org.apache.calcite.rel.core.Calc} to an
    * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcCalc}.
    */
   private static class JdbcCalcRule extends JdbcConverterRule {
@@ -512,8 +511,7 @@ public class JdbcRules {
       super(Sort.class, Convention.NONE, out, "JdbcSortRule");
     }
 
-    protected RelNode convert(RelNode rel, boolean convertInputTraits) {
-      final Sort sort = (Sort) rel;
+    protected RelNode convert(Sort sort, boolean convertInputTraits) {
       final RelTraitSet traitSet = sort.getTraitSet().replace(out);
 
       RelNode input;
@@ -523,12 +521,12 @@ public class JdbcRules {
         input = sort.getInput();
       }
 
-      return new JdbcSort(rel.getCluster(), traitSet,
+      return new JdbcSort(sort.getCluster(), traitSet,
           input, sort.getCollation(), sort.offset, sort.fetch);
     }
 
     public RelNode convert(RelNode rel) {
-      return convert(rel, true);
+      return convert((Sort) rel, true);
     }
   }
 
@@ -688,10 +686,7 @@ public class JdbcRules {
   /** Rule that converts a table-modification to JDBC. */
   public static class JdbcTableModificationRule extends JdbcConverterRule {
     private JdbcTableModificationRule(JdbcConvention out) {
-      super(
-          TableModify.class,
-          Convention.NONE,
-          out,
+      super(TableModify.class, Convention.NONE, out,
           "JdbcTableModificationRule");
     }
 
@@ -700,8 +695,7 @@ public class JdbcRules {
           (TableModify) rel;
       final ModifiableTable modifiableTable =
           modify.getTable().unwrap(ModifiableTable.class);
-      if (modifiableTable == null
-          /* || modifiableTable.getExpression(tableInSchema) == null */) {
+      if (modifiableTable == null) {
         return null;
       }
       final RelTraitSet traitSet =

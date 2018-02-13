@@ -23,6 +23,7 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.dialect.JethroDataSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
@@ -37,13 +38,11 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nonnull;
 
 /**
@@ -93,7 +92,7 @@ public class SqlDialect {
    * @deprecated Replaced by {@link SqlDialectFactory}
    */
   @Deprecated // to be removed before 2.0
-  public static SqlDialect create(DatabaseMetaData databaseMetaData) throws SQLException {
+  public static SqlDialect create(DatabaseMetaData databaseMetaData) {
     return new SqlDialectFactoryImpl().create(databaseMetaData);
   }
 
@@ -159,7 +158,7 @@ public class SqlDialect {
   /** Creates an empty context. Use {@link #EMPTY_CONTEXT} if possible. */
   protected static Context emptyContext() {
     return new ContextImpl(DatabaseProduct.UNKNOWN, null, null, -1, -1, null,
-        NullCollation.HIGH);
+        NullCollation.HIGH, JethroDataSqlDialect.JethroInfo.EMPTY);
   }
 
   /**
@@ -504,8 +503,9 @@ public class SqlDialect {
     return false;
   }
 
+  /** Returns whether this dialect supports a given function or operator. */
   public boolean supportsFunction(SqlOperator operator, RelDataType type,
-                                  List<RelDataType> paramsList) {
+      List<RelDataType> paramTypes) {
     return true;
   }
 
@@ -847,7 +847,7 @@ public class SqlDialect {
      * <p>Since databases have many versions and flavors, this dummy dialect
      * is at best an approximation. If you want exact information, better to
      * use a dialect created from an actual connection's metadata
-     * (see {@link SqlDialect#create(java.sql.DatabaseMetaData)}).
+     * (see {@link SqlDialectFactory#create(java.sql.DatabaseMetaData)}).
      *
      * @return Dialect representing lowest-common-denominator behavior for
      * all versions of this database
@@ -876,6 +876,8 @@ public class SqlDialect {
     Context withIdentifierQuoteString(String identifierQuoteString);
     @Nonnull NullCollation nullCollation();
     Context withNullCollation(@Nonnull NullCollation nullCollation);
+    JethroDataSqlDialect.JethroInfo jethroInfo();
+    Context withJethroInfo(JethroDataSqlDialect.JethroInfo jethroInfo);
   }
 
   /** Implementation of Context. */
@@ -887,11 +889,13 @@ public class SqlDialect {
     private final int databaseMinorVersion;
     private final String identifierQuoteString;
     private final NullCollation nullCollation;
+    private final JethroDataSqlDialect.JethroInfo jethroInfo;
 
     private ContextImpl(DatabaseProduct databaseProduct,
         String databaseProductName, String databaseVersion,
         int databaseMajorVersion, int databaseMinorVersion,
-        String identifierQuoteString, NullCollation nullCollation) {
+        String identifierQuoteString, NullCollation nullCollation,
+        JethroDataSqlDialect.JethroInfo jethroInfo) {
       this.databaseProduct = Preconditions.checkNotNull(databaseProduct);
       this.databaseProductName = databaseProductName;
       this.databaseVersion = databaseVersion;
@@ -899,6 +903,7 @@ public class SqlDialect {
       this.databaseMinorVersion = databaseMinorVersion;
       this.identifierQuoteString = identifierQuoteString;
       this.nullCollation = Preconditions.checkNotNull(nullCollation);
+      this.jethroInfo = Preconditions.checkNotNull(jethroInfo);
     }
 
     @Nonnull public DatabaseProduct databaseProduct() {
@@ -909,7 +914,7 @@ public class SqlDialect {
         @Nonnull DatabaseProduct databaseProduct) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
     }
 
     public String databaseProductName() {
@@ -919,7 +924,7 @@ public class SqlDialect {
     public Context withDatabaseProductName(String databaseProductName) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
     }
 
     public String databaseVersion() {
@@ -929,7 +934,7 @@ public class SqlDialect {
     public Context withDatabaseVersion(String databaseVersion) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
     }
 
     public int databaseMajorVersion() {
@@ -939,7 +944,7 @@ public class SqlDialect {
     public Context withDatabaseMajorVersion(int databaseMajorVersion) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
     }
 
     public int databaseMinorVersion() {
@@ -949,7 +954,7 @@ public class SqlDialect {
     public Context withDatabaseMinorVersion(int databaseMinorVersion) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
     }
 
     public String identifierQuoteString() {
@@ -959,7 +964,7 @@ public class SqlDialect {
     public Context withIdentifierQuoteString(String identifierQuoteString) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
     }
 
     @Nonnull public NullCollation nullCollation() {
@@ -969,7 +974,17 @@ public class SqlDialect {
     public Context withNullCollation(@Nonnull NullCollation nullCollation) {
       return new ContextImpl(databaseProduct, databaseProductName,
           databaseVersion, databaseMajorVersion, databaseMinorVersion,
-          identifierQuoteString, nullCollation);
+          identifierQuoteString, nullCollation, jethroInfo);
+    }
+
+    @Nonnull public JethroDataSqlDialect.JethroInfo jethroInfo() {
+      return jethroInfo;
+    }
+
+    public Context withJethroInfo(JethroDataSqlDialect.JethroInfo jethroInfo) {
+      return new ContextImpl(databaseProduct, databaseProductName,
+          databaseVersion, databaseMajorVersion, databaseMinorVersion,
+          identifierQuoteString, nullCollation, jethroInfo);
     }
   }
 }

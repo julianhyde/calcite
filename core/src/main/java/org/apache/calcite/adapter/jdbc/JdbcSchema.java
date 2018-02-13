@@ -104,7 +104,8 @@ public class JdbcSchema implements Schema {
       DataSource dataSource,
       String catalog,
       String schema) {
-    return create(parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema);
+    return create(parentSchema, name, dataSource,
+        SqlDialectFactoryImpl.INSTANCE, catalog, schema);
   }
 
   public static JdbcSchema create(

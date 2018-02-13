@@ -22,7 +22,7 @@ import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories.FilterFactory;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /**
@@ -39,22 +39,11 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * {@link org.apache.calcite.rel.core.Join}.</p>
  */
 public abstract class AbstractJoinExtractFilterRule extends RelOptRule {
-  //~ Static fields/initializers ---------------------------------------------
-
-  //~ Constructors -----------------------------------------------------------
-
-  /**
-   * Creates a JoinExtractFilterRule.
-   */
-  public AbstractJoinExtractFilterRule(RelOptRuleOperand op,
-      RelBuilderFactory relBuilderFactory, FilterFactory filterFactory) {
-    super(op, relBuilderFactory, null);
-    this.filterFactory = filterFactory;
+  /** Creates an AbstractJoinExtractFilterRule. */
+  protected AbstractJoinExtractFilterRule(RelOptRuleOperand operand,
+      RelBuilderFactory relBuilderFactory, String description) {
+    super(operand, relBuilderFactory, description);
   }
-
-  private final FilterFactory filterFactory;
-
-  //~ Methods ----------------------------------------------------------------
 
   public void onMatch(RelOptRuleCall call) {
     final Join join = call.rel(0);
@@ -72,22 +61,24 @@ public abstract class AbstractJoinExtractFilterRule extends RelOptRule {
       return;
     }
 
+    final RelBuilder builder = call.builder();
+
     // NOTE jvs 14-Mar-2006:  See JoinCommuteRule for why we
     // preserve attribute semiJoinDone here.
 
-    RelNode cartesianJoinRel =
+    final RelNode cartesianJoin =
         join.copy(
             join.getTraitSet(),
-            join.getCluster().getRexBuilder().makeLiteral(true),
+            builder.literal(true),
             join.getLeft(),
             join.getRight(),
             join.getJoinType(),
             join.isSemiJoinDone());
 
-    RelNode filterRel =
-        filterFactory.createFilter(cartesianJoinRel, join.getCondition());
+    builder.push(cartesianJoin)
+        .filter(join.getCondition());
 
-    call.transformTo(filterRel);
+    call.transformTo(builder.build());
   }
 }
 

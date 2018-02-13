@@ -50,7 +50,7 @@ public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
    */
   public JoinExtractFilterRule(Class<? extends Join> clazz,
       RelBuilderFactory relBuilderFactory) {
-    super(operand(clazz, any()), relBuilderFactory, RelFactories.DEFAULT_FILTER_FACTORY);
+    super(operand(clazz, any()), relBuilderFactory, null);
   }
 
   //~ Methods ----------------------------------------------------------------
