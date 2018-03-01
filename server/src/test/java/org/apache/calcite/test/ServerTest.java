@@ -121,7 +121,7 @@ public class ServerTest {
             + "EnumerableTableModify(table=[[T]], operation=[INSERT], flattened=[false])\n"
             + "  EnumerableCalc(expr#0..1=[{inputs}], expr#2=[1], expr#3=[+($t1, $t2)], proj#0..1=[{exprs}], J=[$t3])\n"
             + "    EnumerableValues(tuples=[[{ 3, 4 }]])\n";
-        assertThat(Util.toLinux(r.getString(1)), is(plan));
+        assertThat(r.getString(1), is(plan));
         assertThat(r.next(), is(false));
       }
 
@@ -266,7 +266,7 @@ public class ServerTest {
           + "  EnumerableTableScan(table=[[T]])\n";
       try (ResultSet r = s.executeQuery("explain plan for " + sql)) {
         assertThat(r.next(), is(true));
-        assertThat(r.getString(1), is(plan));
+        assertThat(Util.toLinux(r.getString(1)), is(plan));
       }
     }
   }
