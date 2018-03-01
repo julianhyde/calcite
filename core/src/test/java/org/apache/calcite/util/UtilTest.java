@@ -35,6 +35,7 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.util.SqlBuilder;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.test.DiffTestCase;
+import org.apache.calcite.test.Matchers;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -44,6 +45,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
+import org.hamcrest.StringDescription;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -2074,6 +2076,28 @@ public class UtilTest {
         + "\t</someText>\n"
         + "</root>\n";
     assertThat(Util.toLinux(s), is(expected));
+  }
+
+  /** Unit test for {@link Matchers#compose}. */
+  @Test public void testComposeMatcher() {
+    assertThat("x", is("x"));
+    assertThat(is("x").matches("x"), is(true));
+    assertThat(is("X").matches("x"), is(false));
+    final Function<String, String> toUpper =
+        new Function<String, String>() {
+          public String apply(String input) {
+            return input.toUpperCase(Locale.ROOT);
+          }
+        };
+    assertThat(Matchers.compose(is("A"), toUpper).matches("a"), is(true));
+    assertThat(Matchers.compose(is("A"), toUpper).matches("A"), is(true));
+    assertThat(Matchers.compose(is("a"), toUpper).matches("A"), is(false));
+    final StringDescription d = new StringDescription();
+    Matchers.compose(is("a"), toUpper).describeTo(d);
+    assertThat(d.toString(), is("is \"a\""));
+    final StringDescription d2 = new StringDescription();
+    Matchers.compose(is("a"), toUpper).describeMismatch("A", d2);
+    assertThat(d2.toString(), is("was \"A\""));
   }
 }
 
