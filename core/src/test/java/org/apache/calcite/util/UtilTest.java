@@ -45,6 +45,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
+import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -81,6 +82,7 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import javax.annotation.Nullable;
 
+import static org.apache.calcite.test.Matchers.isLinux;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -2092,12 +2094,40 @@ public class UtilTest {
     assertThat(Matchers.compose(is("A"), toUpper).matches("a"), is(true));
     assertThat(Matchers.compose(is("A"), toUpper).matches("A"), is(true));
     assertThat(Matchers.compose(is("a"), toUpper).matches("A"), is(false));
+    assertThat(describe(Matchers.compose(is("a"), toUpper)), is("is \"a\""));
+    assertThat(mismatchDescription(Matchers.compose(is("a"), toUpper), "A"),
+        is("was \"A\""));
+  }
+
+  /** Unit test for {@link Matchers#isLinux}. */
+  @Test public void testIsLinux() {
+    assertThat("xy", isLinux("xy"));
+    assertThat("x\ny", isLinux("x\ny"));
+    assertThat("x\r\ny", isLinux("x\ny"));
+    assertThat(isLinux("x").matches("x"), is(true));
+    assertThat(isLinux("X").matches("x"), is(false));
+    assertThat(mismatchDescription(isLinux("X"), "x"), is("was \"x\""));
+    assertThat(describe(isLinux("X")), is("is \"X\""));
+    assertThat(isLinux("x\ny").matches("x\ny"), is(true));
+    assertThat(isLinux("x\ny").matches("x\r\ny"), is(true));
+    // \n\r is not a valid windows line ending
+    assertThat(isLinux("x\ny").matches("x\n\ry"), is(false));
+    assertThat(isLinux("x\ny").matches("x\n\ryz"), is(false));
+    // left-hand side must be linux or will never match
+    assertThat(isLinux("x\r\ny").matches("x\r\ny"), is(false));
+    assertThat(isLinux("x\r\ny").matches("x\ny"), is(false));
+  }
+
+  static String mismatchDescription(Matcher m, Object item) {
     final StringDescription d = new StringDescription();
-    Matchers.compose(is("a"), toUpper).describeTo(d);
-    assertThat(d.toString(), is("is \"a\""));
-    final StringDescription d2 = new StringDescription();
-    Matchers.compose(is("a"), toUpper).describeMismatch("A", d2);
-    assertThat(d2.toString(), is("was \"A\""));
+    m.describeMismatch(item, d);
+    return d.toString();
+  }
+
+  static String describe(Matcher m) {
+    final StringDescription d = new StringDescription();
+    m.describeTo(d);
+    return d.toString();
   }
 }
 
