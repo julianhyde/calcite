@@ -146,7 +146,6 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
   //~ Instance fields --------------------------------------------------------
 
-  private final RelBuilderFactory relBuilderFactory;
   private final RelBuilder relBuilder;
 
   // map built during translation
@@ -155,8 +154,6 @@ public class RelDecorrelator implements ReflectiveVisitor {
   private final ReflectUtil.MethodDispatcher<Frame> dispatcher =
       ReflectUtil.createMethodDispatcher(Frame.class, this, "decorrelateRel",
           RelNode.class);
-
-  private final RexBuilder rexBuilder;
 
   // The rel which is being visited
   private RelNode currentRel;
@@ -173,22 +170,21 @@ public class RelDecorrelator implements ReflectiveVisitor {
   //~ Constructors -----------------------------------------------------------
 
   private RelDecorrelator(
-      RelOptCluster cluster,
       CorelMap cm,
       Context context,
-      RelBuilderFactory relBuilderFactory) {
+      RelBuilder relBuilder) {
     this.cm = cm;
-    this.rexBuilder = cluster.getRexBuilder();
     this.context = context;
-    this.relBuilderFactory = relBuilderFactory;
-    this.relBuilder = relBuilderFactory.create(cluster, null);
+    this.relBuilder = relBuilder;
   }
 
   //~ Methods ----------------------------------------------------------------
 
   @Deprecated // to be removed before 2.0
   public static RelNode decorrelateQuery(RelNode rootRel) {
-    return decorrelateQuery(rootRel, RelFactories.LOGICAL_BUILDER);
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(rootRel.getCluster(), null);
+    return decorrelateQuery(rootRel, relBuilder);
   }
 
   /** Decorrelates a query.
@@ -196,13 +192,13 @@ public class RelDecorrelator implements ReflectiveVisitor {
    * <p>This is the main entry point to {@code RelDecorrelator}.
    *
    * @param rootRel           Root node of the query
-   * @param relBuilderFactory Builder for relational expressions
+   * @param relBuilder        Builder for relational expressions
    *
    * @return Equivalent query with all
    * {@link org.apache.calcite.rel.logical.LogicalCorrelate} instances removed
    */
   public static RelNode decorrelateQuery(RelNode rootRel,
-      RelBuilderFactory relBuilderFactory) {
+      RelBuilder relBuilder) {
     final CorelMap corelMap = new CorelMapBuilder().build(rootRel);
     if (!corelMap.hasCorrelation()) {
       return rootRel;
@@ -210,8 +206,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
     final RelOptCluster cluster = rootRel.getCluster();
     final RelDecorrelator decorrelator =
-        new RelDecorrelator(cluster, corelMap,
-            cluster.getPlanner().getContext(), relBuilderFactory);
+        new RelDecorrelator(corelMap,
+            cluster.getPlanner().getContext(), relBuilder);
 
     RelNode newRootRel = decorrelator.removeCorrelationViaRule(rootRel);
 
@@ -235,25 +231,23 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
   }
 
+  private RelBuilderFactory relBuilderFactory() {
+    return RelBuilder.proto(relBuilder);
+  }
+
   private RelNode decorrelate(RelNode root) {
     // first adjust count() expression if any
+    final RelBuilderFactory f = relBuilderFactory();
     HepProgram program = HepProgram.builder()
+        .addRuleInstance(new AdjustProjectForCountAggregateRule(false, f))
+        .addRuleInstance(new AdjustProjectForCountAggregateRule(true, f))
         .addRuleInstance(
-            new AdjustProjectForCountAggregateRule(
-                false, relBuilderFactory))
-        .addRuleInstance(
-            new AdjustProjectForCountAggregateRule(
-                true, relBuilderFactory))
-        .addRuleInstance(
-            new FilterJoinRule.FilterIntoJoinRule(
-                true, relBuilderFactory,
+            new FilterJoinRule.FilterIntoJoinRule(true, f,
                 FilterJoinRule.TRUE_PREDICATE))
         .addRuleInstance(
-            new FilterProjectTransposeRule(Filter.class,
-                Project.class, true, true,
-                relBuilderFactory))
-        .addRuleInstance(
-            new FilterCorrelateRule(relBuilderFactory))
+            new FilterProjectTransposeRule(Filter.class, Project.class, true,
+                true, f))
+        .addRuleInstance(new FilterCorrelateRule(f))
         .build();
 
     HepPlanner planner = createPlanner(program);
@@ -270,11 +264,11 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final HepProgram program2 = HepProgram.builder()
           .addRuleInstance(
               new FilterJoinRule.FilterIntoJoinRule(
-                  true, relBuilderFactory,
+                  true, f,
                   FilterJoinRule.TRUE_PREDICATE))
           .addRuleInstance(
               new FilterJoinRule.JoinConditionPushRule(
-                  relBuilderFactory,
+                  f,
                   FilterJoinRule.TRUE_PREDICATE))
           .build();
 
@@ -323,10 +317,11 @@ public class RelDecorrelator implements ReflectiveVisitor {
   }
 
   public RelNode removeCorrelationViaRule(RelNode root) {
+    final RelBuilderFactory f = relBuilderFactory();
     HepProgram program = HepProgram.builder()
-        .addRuleInstance(new RemoveSingleAggregateRule(relBuilderFactory))
-        .addRuleInstance(new RemoveCorrelationForScalarProjectRule(relBuilderFactory))
-        .addRuleInstance(new RemoveCorrelationForScalarAggregateRule(relBuilderFactory))
+        .addRuleInstance(new RemoveSingleAggregateRule(f))
+        .addRuleInstance(new RemoveCorrelationForScalarProjectRule(f))
+        .addRuleInstance(new RemoveCorrelationForScalarAggregateRule(f))
         .build();
 
     HepPlanner planner = createPlanner(program);
@@ -346,7 +341,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       RexNode exp,
       boolean projectPulledAboveLeftCorrelator) {
     RemoveCorrelationRexShuttle shuttle =
-        new RemoveCorrelationRexShuttle(rexBuilder,
+        new RemoveCorrelationRexShuttle(relBuilder.getRexBuilder(),
             projectPulledAboveLeftCorrelator, null, ImmutableSet.<Integer>of());
     return exp.accept(shuttle);
   }
@@ -356,7 +351,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       boolean projectPulledAboveLeftCorrelator,
       RexInputRef nullIndicator) {
     RemoveCorrelationRexShuttle shuttle =
-        new RemoveCorrelationRexShuttle(rexBuilder,
+        new RemoveCorrelationRexShuttle(relBuilder.getRexBuilder(),
             projectPulledAboveLeftCorrelator, nullIndicator,
             ImmutableSet.<Integer>of());
     return exp.accept(shuttle);
@@ -367,7 +362,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       boolean projectPulledAboveLeftCorrelator,
       Set<Integer> isCount) {
     RemoveCorrelationRexShuttle shuttle =
-        new RemoveCorrelationRexShuttle(rexBuilder,
+        new RemoveCorrelationRexShuttle(relBuilder.getRexBuilder(),
             projectPulledAboveLeftCorrelator, null, isCount);
     return exp.accept(shuttle);
   }
@@ -543,9 +538,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
     // This Project will be what the old input maps to,
     // replacing any previous mapping from old input).
-    RelNode newProject =
-        RelOptUtil.createProject(newInput, Pair.left(projects),
-            Pair.right(projects), false, relBuilder);
+    RelNode newProject = relBuilder.push(newInput)
+        .project2(Pair.left(projects), Pair.right(projects), false)
+        .build();
 
     // update mappings:
     // oldInput ----> newInput
@@ -697,9 +692,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
       newPos++;
     }
 
-    RelNode newProject =
-        RelOptUtil.createProject(frame.r, Pair.left(projects),
-            Pair.right(projects), false, relBuilder);
+    RelNode newProject = relBuilder.push(frame.r)
+        .project2(Pair.left(projects), Pair.right(projects), false)
+        .build();
 
     return register(rel, newProject, mapOldToNewOutputs, corDefOutputs);
   }
@@ -930,7 +925,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         createValueGenerator(corVarList, leftInputOutputCount, corDefOutputs);
 
     RelNode join =
-        LogicalJoin.create(frame.r, valueGen, rexBuilder.makeLiteral(true),
+        LogicalJoin.create(frame.r, valueGen, relBuilder.literal(true),
             ImmutableSet.<CorrelationId>of(), JoinRelType.INNER);
 
     // Join or Filter does not change the old input ordering. All
@@ -1106,7 +1101,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final int newLeftPos = leftFrame.oldToNewOutputs.get(corDef.field);
       final int newRightPos = rightOutput.getValue();
       conditions.add(
-          rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+          relBuilder.call(SqlStdOperatorTable.EQUALS,
               RexInputRef.of(newLeftPos, newLeftOutput),
               new RexInputRef(newLeftFieldCount + newRightPos,
                   newRightOutput.get(newRightPos).getType())));
@@ -1146,7 +1141,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
 
     final RexNode condition =
-        RexUtil.composeConjunction(rexBuilder, conditions, false);
+        RexUtil.composeConjunction(relBuilder.getRexBuilder(), conditions,
+            false);
     RelNode newJoin =
         LogicalJoin.create(leftFrame.r, rightFrame.r, condition,
             ImmutableSet.<CorrelationId>of(), rel.getJoinType().toJoinType());
@@ -1312,8 +1308,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
       newProjExprs.add(Pair.of(newProjExpr, pair.right));
     }
 
-    return RelOptUtil.createProject(join, Pair.left(newProjExprs),
-        Pair.right(newProjExprs), false, relBuilder);
+    return relBuilder.push(join)
+        .project2(Pair.left(newProjExprs), Pair.right(newProjExprs), false)
+        .build();
   }
 
   /**
@@ -1360,8 +1357,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
       newProjects.add(Pair.of(newProjExpr, pair.right));
     }
 
-    return RelOptUtil.createProject(correlate, Pair.left(newProjects),
-        Pair.right(newProjects), false, relBuilder);
+    return relBuilder.push(correlate)
+        .project2(Pair.left(newProjects), Pair.right(newProjects), false)
+        .build();
   }
 
   /**
@@ -1447,13 +1445,14 @@ public class RelDecorrelator implements ReflectiveVisitor {
     for (Ord<RelDataTypeField> field : Ord.zip(fieldList)) {
       projects.add(
           Pair.of(
-              (RexNode) rexBuilder.makeInputRef(
+              (RexNode) relBuilder.getRexBuilder().makeInputRef(
                   field.e.getType(), field.i),
               field.e.getName()));
     }
     projects.addAll(additionalExprs);
-    return RelOptUtil.createProject(input, Pair.left(projects),
-        Pair.right(projects), false, relBuilder);
+    return relBuilder.push(input)
+        .project2(Pair.left(projects), Pair.right(projects), false)
+        .build();
   }
 
   /* Returns an immutable map with the identity [0: 0, .., count-1: count-1]. */
@@ -1788,18 +1787,15 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
       // singleAggRel produces a nullable type, so create the new
       // projection that casts proj expr to a nullable type.
-      final RelOptCluster cluster = project.getCluster();
-      RelNode newProject =
-          RelOptUtil.createProject(aggregate,
-              ImmutableList.of(
-                  rexBuilder.makeCast(
-                      cluster.getTypeFactory().createTypeWithNullability(
-                          projExprs.get(0).getType(),
-                          true),
-                      projExprs.get(0))),
-              null, false,
-              call.builder());
-      call.transformTo(newProject);
+      final RelBuilder relBuilder = call.builder();
+      final RelDataType type =
+          relBuilder.getTypeFactory()
+              .createTypeWithNullability(projExprs.get(0).getType(), true);
+      final RexNode cast =
+          relBuilder.getRexBuilder().makeCast(type, projExprs.get(0));
+      relBuilder.push(aggregate)
+          .project2(ImmutableList.of(cast), null, false);
+      call.transformTo(relBuilder.build());
     }
   }
 
@@ -1838,9 +1834,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
       // corRel.getCondition was here, however Correlate was updated so it
       // never includes a join condition. The code was not modified for brevity.
-      RexNode joinCond = rexBuilder.makeLiteral(true);
+      RexNode joinCond = relBuilder.literal(true);
       if ((joinType != JoinRelType.LEFT)
-          || (joinCond != rexBuilder.makeLiteral(true))) {
+          || (joinCond != relBuilder.literal(true))) {
         return;
       }
 
@@ -1970,8 +1966,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         right =
             createProjectWithAdditionalExprs(right,
                 ImmutableList.of(
-                    Pair.<RexNode, String>of(
-                        rexBuilder.makeLiteral(true), "nullIndicator")));
+                    Pair.of(relBuilder.literal(true), "nullIndicator")));
 
         // make the new aggRel
         right =
@@ -2022,6 +2017,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final LogicalAggregate aggregate = call.rel(3);
       final LogicalProject aggInputProject = call.rel(4);
       RelNode right = call.rel(5);
+      final RelBuilder builder = call.builder();
+      final RexBuilder rexBuilder = builder.getRexBuilder();
       final RelOptCluster cluster = correlate.getCluster();
 
       setCurrent(call.getPlanner().getRoot(), correlate);
@@ -2303,13 +2300,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
       joinOutputProjects.add(
           rexBuilder.makeInputRef(join, nullIndicatorPos));
 
-      RelNode joinOutputProject =
-          RelOptUtil.createProject(
-              join,
-              joinOutputProjects,
-              null,
-              false,
-              call.builder());
+      final RelNode joinOutputProject = builder.push(join)
+          .project2(joinOutputProjects, null, false).build();
 
       // nullIndicator is now at a different location in the output of
       // the join
@@ -2362,15 +2354,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
                   true),
               newAggOutputProjects));
 
-      RelNode newAggOutputProject =
-          RelOptUtil.createProject(
-              newAggregate,
-              newAggOutputProjectList,
-              null,
-              false,
-              call.builder());
-
-      call.transformTo(newAggOutputProject);
+      builder.push(newAggregate)
+          .project2(newAggOutputProjectList, null, false);
+      call.transformTo(builder.build());
 
       removeCorVarFromTree(correlate);
     }
@@ -2421,13 +2407,10 @@ public class RelDecorrelator implements ReflectiveVisitor {
         for (int i = 0; i < fields.size(); i++) {
           projects.add(RexInputRef.of2(projects.size(), fields));
         }
-        aggOutputProject =
-            (LogicalProject) RelOptUtil.createProject(
-                aggregate,
-                Pair.left(projects),
-                Pair.right(projects),
-                false,
-                call.builder());
+        final RelBuilder relBuilder = call.builder();
+        relBuilder.push(aggregate)
+            .project2(Pair.left(projects), Pair.right(projects), false);
+        aggOutputProject = (LogicalProject) relBuilder.build();
       }
       onMatch2(call, correlate, left, aggOutputProject, aggregate);
     }
@@ -2464,9 +2447,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
       JoinRelType joinType = correlate.getJoinType().toJoinType();
       // corRel.getCondition was here, however Correlate was updated so it
       // never includes a join condition. The code was not modified for brevity.
-      RexNode joinCond = rexBuilder.makeLiteral(true);
+      RexNode joinCond = relBuilder.literal(true);
       if ((joinType != JoinRelType.LEFT)
-          || (joinCond != rexBuilder.makeLiteral(true))) {
+          || (joinCond != relBuilder.literal(true))) {
         return;
       }
 

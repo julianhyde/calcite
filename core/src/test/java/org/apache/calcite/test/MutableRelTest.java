@@ -33,6 +33,7 @@ import org.apache.calcite.rel.rules.ProjectToWindowRule;
 import org.apache.calcite.rel.rules.SemiJoinRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql2rel.RelDecorrelator;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Litmus;
 
 import com.google.common.collect.ImmutableList;
@@ -188,8 +189,9 @@ public class MutableRelTest {
     };
     RelNode origRel = test.createTester().convertSqlToRel(sql).rel;
     if (decorrelate) {
-      origRel = RelDecorrelator.decorrelateQuery(origRel,
-          RelFactories.LOGICAL_BUILDER);
+      final RelBuilder relBuilder =
+          RelFactories.LOGICAL_BUILDER.create(origRel.getCluster(), null);
+      origRel = RelDecorrelator.decorrelateQuery(origRel, relBuilder);
     }
     if (rules != null) {
       final HepProgram hepProgram =

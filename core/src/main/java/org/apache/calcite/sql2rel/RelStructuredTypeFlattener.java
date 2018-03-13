@@ -18,7 +18,6 @@ package org.apache.calcite.sql2rel;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
@@ -205,12 +204,9 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
       // REVIEW jvs 23-Mar-2005:  How do we make sure that this
       // implementation stays in Java?  Fennel can't handle
       // structured types.
-      return RelOptUtil.createProject(
-          flattened,
-          structuringExps,
-          root.getRowType().getFieldNames(),
-          false,
-          relBuilder);
+      return relBuilder.push(flattened)
+          .project2(structuringExps, root.getRowType().getFieldNames(), false)
+          .build();
     } else {
       return flattened;
     }
@@ -489,14 +485,10 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         rel.getRowType().getFieldNames(),
         "",
         flattenedExpList);
-    RelNode newRel =
-        RelOptUtil.createProject(
-            getNewForOldRel(rel.getInput()),
-            Pair.left(flattenedExpList),
-            Pair.right(flattenedExpList),
-            false,
-            relBuilder);
-    setNewForOldRel(rel, newRel);
+    relBuilder.push(getNewForOldRel(rel.getInput()))
+        .project2(Pair.left(flattenedExpList), Pair.right(flattenedExpList),
+            false);
+    setNewForOldRel(rel, relBuilder.build());
   }
 
   public void rewriteRel(LogicalCalc rel) {
@@ -678,9 +670,10 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
       flattenInputs(rel.getRowType().getFieldList(),
           rexBuilder.makeRangeReference(newRel),
           flattenedExpList);
-      newRel =
-          RelOptUtil.createProject(newRel, Pair.left(flattenedExpList),
-              Pair.right(flattenedExpList), false, relBuilder);
+      newRel = relBuilder.push(newRel)
+          .project2(Pair.left(flattenedExpList), Pair.right(flattenedExpList),
+              false)
+          .build();
     }
     setNewForOldRel(rel, newRel);
   }

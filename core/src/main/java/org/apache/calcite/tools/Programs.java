@@ -406,8 +406,9 @@ public class Programs {
       final CalciteConnectionConfig config =
           planner.getContext().unwrap(CalciteConnectionConfig.class);
       if (config != null && config.forceDecorrelate()) {
-        return RelDecorrelator.decorrelateQuery(rel,
-            RelFactories.LOGICAL_BUILDER);
+        final RelBuilder relBuilder =
+            RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+        return RelDecorrelator.decorrelateQuery(rel, relBuilder);
       }
       return rel;
     }

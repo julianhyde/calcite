@@ -2089,14 +2089,14 @@ public class SqlToRelConverter {
         exprs.add(bb.convertExpression(node.e));
         fieldNames.add(validator.deriveAlias(node.e, node.i));
       }
-      final RelNode input =
-          RelOptUtil.createProject(
-              (null != bb.root) ? bb.root : LogicalValues.createOneRow(cluster), exprs,
-              fieldNames, true, relBuilder);
+      RelNode child =
+          (null != bb.root) ? bb.root : LogicalValues.createOneRow(cluster);
+      relBuilder.push(child)
+          .project2(exprs, fieldNames, true);
 
       Uncollect uncollect =
           new Uncollect(cluster, cluster.traitSetOf(Convention.NONE),
-              input, operator.withOrdinality);
+              relBuilder.build(), operator.withOrdinality);
       bb.setRoot(uncollect, true);
       return;
 
@@ -2775,12 +2775,9 @@ public class SqlToRelConverter {
 
       // Project the expressions required by agg and having.
       bb.setRoot(
-          RelOptUtil.createProject(
-              inputRel,
-              Pair.left(preExprs),
-              Pair.right(preExprs),
-              true,
-              relBuilder),
+          relBuilder.push(inputRel)
+              .project2(Pair.left(preExprs), Pair.right(preExprs), true)
+              .build(),
           false);
       bb.mapRootRelToFieldProjection.put(bb.root, r.groupExprProjection);
 
@@ -3031,7 +3028,7 @@ public class SqlToRelConverter {
   }
 
   protected RelNode decorrelateQuery(RelNode rootRel) {
-    return RelDecorrelator.decorrelateQuery(rootRel, config.getRelBuilderFactory());
+    return RelDecorrelator.decorrelateQuery(rootRel, relBuilder);
   }
 
   /**
@@ -3194,12 +3191,10 @@ public class SqlToRelConverter {
               field.getName()));
     }
 
-    source = RelOptUtil.createProject(source,
-        Pair.left(projects), Pair.right(projects), true, relBuilder);
-    if (filters.size() > 0) {
-      source = RelOptUtil.createFilter(source, filters);
-    }
-    return source;
+    return relBuilder.push(source)
+        .project2(Pair.left(projects), Pair.right(projects), true)
+        .filter(filters)
+        .build();
   }
 
   private RelOptTable.ToRelContext createToRelContext() {
@@ -3342,8 +3337,9 @@ public class SqlToRelConverter {
       }
     }
 
-    return RelOptUtil.createProject(source,
-        sourceExps, fieldNames, true, relBuilder);
+    return relBuilder.push(source)
+        .project2(sourceExps, fieldNames, true)
+        .build();
   }
 
   /** Creates a blackboard for translating the expressions of generated columns
@@ -3583,12 +3579,12 @@ public class SqlToRelConverter {
           Util.skip(project.getProjects(), nSourceFields));
     }
 
-    RelNode massagedRel =
-        RelOptUtil.createProject(join,
-            projects, null, true, relBuilder);
+    relBuilder.push(join)
+        .project2(projects, null, true);
 
-    return LogicalTableModify.create(targetTable, catalogReader, massagedRel,
-        LogicalTableModify.Operation.MERGE, targetColumnNameList, null, false);
+    return LogicalTableModify.create(targetTable, catalogReader,
+        relBuilder.build(), LogicalTableModify.Operation.MERGE,
+        targetColumnNameList, null, false);
   }
 
   /**
@@ -3784,12 +3780,10 @@ public class SqlToRelConverter {
           fieldNameList.add(SqlUtil.deriveAliasFromOrdinal(j));
         }
 
-        RelNode projRel =
-            RelOptUtil.createProject(
-                LogicalValues.createOneRow(cluster),
-                selectList, fieldNameList, false, relBuilder);
+        relBuilder.push(LogicalValues.createOneRow(cluster))
+            .project2(selectList, fieldNameList, false);
 
-        joinList.set(i, projRel);
+        joinList.set(i, relBuilder.build());
       }
     }
 
@@ -3851,10 +3845,8 @@ public class SqlToRelConverter {
     fieldNames = SqlValidatorUtil.uniquify(fieldNames,
         catalogReader.nameMatcher().isCaseSensitive());
 
-    bb.setRoot(
-        RelOptUtil.createProject(bb.root,
-            exprs, fieldNames, false, relBuilder),
-        false);
+    relBuilder.push(bb.root).project2(exprs, fieldNames, false);
+    bb.setRoot(relBuilder.build(), false);
 
     assert bb.columnMonotonicities.isEmpty();
     bb.columnMonotonicities.addAll(columnMonotonicityList);
@@ -3967,13 +3959,9 @@ public class SqlToRelConverter {
           (null == tmpBb.root)
               ? LogicalValues.createOneRow(cluster)
               : tmpBb.root;
-      unionRels.add(
-          RelOptUtil.createProject(
-              in,
-              Pair.left(exps),
-              Pair.right(exps),
-              true,
-              relBuilder));
+      unionRels.add(relBuilder.push(in)
+          .project2(Pair.left(exps), Pair.right(exps), true)
+          .build());
     }
 
     if (unionRels.size() == 0) {
@@ -4120,12 +4108,9 @@ public class SqlToRelConverter {
         }
 
         RelNode newLeftInput =
-            RelOptUtil.createProject(
-                root,
-                newLeftInputExpr,
-                null,
-                true,
-                relBuilder);
+            relBuilder.push(root)
+                .project2(newLeftInputExpr, null, true)
+                .build();
 
         // maintain the group by mapping in the new LogicalProject
         if (mapRootRelToFieldProjection.containsKey(root)) {

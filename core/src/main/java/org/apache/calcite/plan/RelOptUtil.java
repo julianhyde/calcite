@@ -91,7 +91,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.MultisetSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -494,8 +493,11 @@ public abstract class RelOptUtil {
       // agg does not like no agg functions so just pretend it is
       // doing a min(TRUE)
 
-      ret = createProject(ret, ImmutableList.of(extraExpr), null, false,
-          RelFactories.LOGICAL_BUILDER.create(ret.getCluster(), null));
+      final RelBuilder relBuilder =
+          RelFactories.LOGICAL_BUILDER.create(cluster, null);
+      ret = relBuilder.push(ret)
+          .project2(ImmutableList.of(extraExpr), null, false)
+          .build();
 
       final AggregateCall aggCall =
           AggregateCall.create(SqlStdOperatorTable.MIN,
@@ -522,8 +524,9 @@ public abstract class RelOptUtil {
       SubQueryType subQueryType,
       Logic logic,
       boolean notIn) {
-    return createExistsPlan(seekRel, subQueryType, logic,
-        notIn, RelFactories.LOGICAL_BUILDER.create(seekRel.getCluster(), null));
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(seekRel.getCluster(), null);
+    return createExistsPlan(seekRel, subQueryType, logic, notIn, relBuilder);
   }
 
   /**
@@ -586,8 +589,7 @@ public abstract class RelOptUtil {
     final int projectedKeyCount = exprs.size();
     exprs.add(rexBuilder.makeLiteral(true));
 
-    ret = createProject(ret, exprs,
-        null, false, relBuilder);
+    ret = relBuilder.push(ret).project2(exprs, null, false).build();
 
     final AggregateCall aggCall =
         AggregateCall.create(SqlStdOperatorTable.MIN,
@@ -638,9 +640,11 @@ public abstract class RelOptUtil {
                   inputField.getIndex()),
               outputField.getName()));
     }
-    return createProject(rel, Pair.left(renames),
-        Pair.right(renames), false,
-        RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null));
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+    return relBuilder.push(rel)
+        .project2(Pair.left(renames), Pair.right(renames), false)
+        .build();
   }
 
   @Deprecated // to be removed before 2.0
@@ -1675,22 +1679,21 @@ public abstract class RelOptUtil {
       }
     }
 
-    RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create(leftRel.getCluster(), null);
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(cluster, null);
 
     // added project if need to produce new keys than the original input
     // fields
     if (newLeftKeyCount > 0) {
-      leftRel = createProject(leftRel, newLeftFields,
-          SqlValidatorUtil.uniquify(newLeftFieldNames,
-              typeSystem.isSchemaCaseSensitive()),
-          false, relBuilder);
+      leftRel = relBuilder.push(leftRel)
+          .project2(newLeftFields, newLeftFieldNames, false)
+          .build();
     }
 
     if (newRightKeyCount > 0) {
-      rightRel = createProject(rightRel, newRightFields,
-          SqlValidatorUtil.uniquify(newRightFieldNames,
-              typeSystem.isSchemaCaseSensitive()),
-          false, relBuilder);
+      rightRel = relBuilder.push(rightRel)
+          .project2(newRightFields, newRightFieldNames, false)
+          .build();
     }
 
     inputRels[0] = leftRel;
@@ -1711,7 +1714,9 @@ public abstract class RelOptUtil {
     if ((newProjectOutputSize > 0)
         && (newProjectOutputSize < joinOutputFields.size())) {
       final List<Pair<RexNode, String>> newProjects = new ArrayList<>();
-      RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
+      final RelBuilder relBuilder =
+          RelFactories.LOGICAL_BUILDER.create(joinRel.getCluster(), null);
+      final RexBuilder rexBuilder = relBuilder.getRexBuilder();
       for (int fieldIndex : outputProj) {
         final RelDataTypeField field = joinOutputFields.get(fieldIndex);
         newProjects.add(
@@ -1721,12 +1726,9 @@ public abstract class RelOptUtil {
       }
 
       // Create a project rel on the output of the join.
-      return createProject(
-          joinRel,
-          Pair.left(newProjects),
-          Pair.right(newProjects),
-          false,
-          RelFactories.LOGICAL_BUILDER.create(joinRel.getCluster(), null));
+      return relBuilder.push(joinRel)
+          .project2(Pair.left(newProjects), Pair.right(newProjects), false)
+          .build();
     }
 
     return joinRel;
@@ -2870,8 +2872,11 @@ public abstract class RelOptUtil {
       RelNode child,
       List<? extends RexNode> exprList,
       List<String> fieldNameList) {
-    return createProject(child, exprList, fieldNameList, false,
-        RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null));
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null);
+    return relBuilder.push(child)
+        .project2(exprList, fieldNameList, false)
+        .build();
   }
 
   @Deprecated // to be removed before 2.0
@@ -2879,8 +2884,11 @@ public abstract class RelOptUtil {
       RelNode child,
       List<Pair<RexNode, String>> projectList,
       boolean optimize) {
-    return createProject(child, Pair.left(projectList), Pair.right(projectList),
-        optimize, RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null));
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null);
+    return relBuilder.push(child)
+        .project2(Pair.left(projectList), Pair.right(projectList), optimize)
+        .build();
   }
 
   /**
@@ -2905,8 +2913,11 @@ public abstract class RelOptUtil {
       List<? extends RexNode> exprs,
       List<String> fieldNames,
       boolean optimize) {
-    return createProject(child, exprs, fieldNames, optimize,
-        RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null));
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null);
+    return relBuilder.push(child)
+        .project2(exprs, fieldNames, optimize)
+        .build();
   }
 
   /** @deprecated Use {@link RelBuilder#project2(List, List, boolean)} */
@@ -2917,9 +2928,9 @@ public abstract class RelOptUtil {
       List<String> fieldNames,
       boolean optimize,
       RelBuilder relBuilder) {
-    relBuilder.push(child);
-    relBuilder.project2(exprs, fieldNames, optimize);
-    return relBuilder.build();
+    return relBuilder.push(child)
+        .project2(exprs, fieldNames, optimize)
+        .build();
   }
 
   @Deprecated // to be removed before 2.0
@@ -2938,8 +2949,11 @@ public abstract class RelOptUtil {
             return RexInputRef.of(index, fields);
           }
         };
-    return createProject(rel, refs, fieldNames, true,
-        RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null));
+    final RelBuilder relBuilder =
+        RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+    return relBuilder.push(rel)
+        .project2(refs, fieldNames, true)
+        .build();
   }
 
   /**
@@ -3038,29 +3052,32 @@ public abstract class RelOptUtil {
       final RelNode child, final List<Integer> posList) {
     RelDataType rowType = child.getRowType();
     final List<String> fieldNames = rowType.getFieldNames();
-    final RexBuilder rexBuilder = child.getCluster().getRexBuilder();
-    return createProject(child,
-        new AbstractList<RexNode>() {
-          public int size() {
-            return posList.size();
-          }
+    final RelBuilder relBuilder =
+        RelBuilder.proto(factory).create(child.getCluster(), null);
+    final List<RexNode> exprs = new AbstractList<RexNode>() {
+      public int size() {
+        return posList.size();
+      }
 
-          public RexNode get(int index) {
-            final int pos = posList.get(index);
-            return rexBuilder.makeInputRef(child, pos);
-          }
-        },
-        new AbstractList<String>() {
-          public int size() {
-            return posList.size();
-          }
+      public RexNode get(int index) {
+        final int pos = posList.get(index);
+        return relBuilder.getRexBuilder().makeInputRef(child, pos);
+      }
+    };
+    final List<String> names = new AbstractList<String>() {
+      public int size() {
+        return posList.size();
+      }
 
-          public String get(int index) {
-            final int pos = posList.get(index);
-            return fieldNames.get(pos);
-          }
-        }, true,
-        RelBuilder.proto(factory).create(child.getCluster(), null));
+      public String get(int index) {
+        final int pos = posList.get(index);
+        return fieldNames.get(pos);
+      }
+    };
+    return relBuilder
+        .push(child)
+        .project2(exprs, names, true)
+        .build();
   }
 
   @Deprecated // to be removed before 2.0
