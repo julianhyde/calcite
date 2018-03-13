@@ -1070,6 +1070,40 @@ public class RelBuilder {
     return project(ImmutableList.copyOf(nodes));
   }
 
+  /**
+   * Creates a relational expression that projects an array of expressions,
+   * and optionally optimizes.
+   *
+   * <p>The result may not be a {@link Project}. For instance, if the
+   * projection is trivial, <code>input</code> is returned directly.
+   *
+   * @param exprs          list of expressions for the input columns
+   * @param fieldNames     aliases of the expressions, or null to generate
+   * @param optimize       Whether to return <code>child</code> unchanged if the
+   *                       projections are trivial.
+   */
+  public RelBuilder project2(List<? extends RexNode> exprs,
+      List<String> fieldNames, boolean optimize) {
+    final RelNode input = peek();
+    final RelDataType rowType =
+        RexUtil.createStructType(cluster.getTypeFactory(), exprs,
+            fieldNames, SqlValidatorUtil.F_SUGGESTER);
+    if (optimize
+        && RexUtil.isIdentity(exprs, input.getRowType())) {
+      if (input instanceof Project && fieldNames != null) {
+        // Rename columns of child projection if desired field names are given.
+        final Frame frame = stack.pop();
+        final Project childProject = (Project) frame.rel;
+        final Project newInput = childProject.copy(childProject.getTraitSet(),
+            childProject.getInput(), childProject.getProjects(), rowType);
+        stack.push(new Frame(newInput, frame.fields));
+      }
+    } else {
+      project(exprs, rowType.getFieldNames(), !optimize);
+    }
+    return this;
+  }
+
   /** Ensures that the field names match those given.
    *
    * <p>If all fields have the same name, adds nothing;

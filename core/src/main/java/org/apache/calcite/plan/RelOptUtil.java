@@ -2909,45 +2909,16 @@ public abstract class RelOptUtil {
         RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null));
   }
 
-  /**
-   * Creates a relational expression which projects an array of expressions,
-   * and optionally optimizes.
-   *
-   * <p>The result may not be a
-   * {@link org.apache.calcite.rel.logical.LogicalProject}. If the
-   * projection is trivial, <code>child</code> is returned directly; and future
-   * versions may return other formulations of expressions, such as
-   * {@link org.apache.calcite.rel.logical.LogicalCalc}.
-   *
-   * @param child          input relational expression
-   * @param exprs          list of expressions for the input columns
-   * @param fieldNames     aliases of the expressions, or null to generate
-   * @param optimize       Whether to return <code>child</code> unchanged if the
-   *                       projections are trivial.
-   * @param relBuilder     Factory to create project operators
-   */
+  /** @deprecated Use {@link RelBuilder#project2(List, List, boolean)} */
+  @Deprecated // to be removed before 2.0
   public static RelNode createProject(
       RelNode child,
       List<? extends RexNode> exprs,
       List<String> fieldNames,
       boolean optimize,
       RelBuilder relBuilder) {
-    final RelOptCluster cluster = child.getCluster();
-    final RelDataType rowType =
-        RexUtil.createStructType(cluster.getTypeFactory(), exprs,
-            fieldNames, SqlValidatorUtil.F_SUGGESTER);
-    if (optimize
-        && RexUtil.isIdentity(exprs, child.getRowType())) {
-      if (child instanceof Project && fieldNames != null) {
-        // Rename columns of child projection if desired field names are given.
-        Project childProject = (Project) child;
-        child = childProject.copy(childProject.getTraitSet(),
-            childProject.getInput(), childProject.getProjects(), rowType);
-      }
-      return child;
-    }
     relBuilder.push(child);
-    relBuilder.project(exprs, rowType.getFieldNames(), !optimize);
+    relBuilder.project2(exprs, fieldNames, optimize);
     return relBuilder.build();
   }
 
