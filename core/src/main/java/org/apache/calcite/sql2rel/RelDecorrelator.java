@@ -1794,7 +1794,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final RexNode cast =
           relBuilder.getRexBuilder().makeCast(type, projExprs.get(0));
       relBuilder.push(aggregate)
-          .project2(ImmutableList.of(cast), null, false);
+          .project(cast);
       call.transformTo(relBuilder.build());
     }
   }
@@ -2301,7 +2301,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
           rexBuilder.makeInputRef(join, nullIndicatorPos));
 
       final RelNode joinOutputProject = builder.push(join)
-          .project2(joinOutputProjects, null, false).build();
+          .project(joinOutputProjects)
+          .build();
 
       // nullIndicator is now at a different location in the output of
       // the join
@@ -2355,7 +2356,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
               newAggOutputProjects));
 
       builder.push(newAggregate)
-          .project2(newAggOutputProjectList, null, false);
+          .project(newAggOutputProjectList);
       call.transformTo(builder.build());
 
       removeCorVarFromTree(correlate);

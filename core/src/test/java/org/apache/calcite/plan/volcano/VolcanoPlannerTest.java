@@ -230,13 +230,11 @@ public class VolcanoPlannerTest {
         new PhysLeafRel(
             cluster,
             "a");
-    RexInputRef inputRef = RexInputRef.of(0, leafRel.getRowType());
     final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(leafRel.getCluster(), null);
     RelNode projectRel =
         relBuilder.push(leafRel)
-            .project2(ImmutableList.of(inputRef), ImmutableList.of("this"),
-                false)
+            .project(relBuilder.alias(relBuilder.field(0), "this"))
             .build();
     NoneSingleRel singleRel =
         new NoneSingleRel(

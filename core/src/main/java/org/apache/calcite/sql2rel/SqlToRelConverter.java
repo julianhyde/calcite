@@ -3580,7 +3580,7 @@ public class SqlToRelConverter {
     }
 
     relBuilder.push(join)
-        .project2(projects, null, true);
+        .project(projects);
 
     return LogicalTableModify.create(targetTable, catalogReader,
         relBuilder.build(), LogicalTableModify.Operation.MERGE,
@@ -3960,7 +3960,7 @@ public class SqlToRelConverter {
               ? LogicalValues.createOneRow(cluster)
               : tmpBb.root;
       unionRels.add(relBuilder.push(in)
-          .project2(Pair.left(exps), Pair.right(exps), true)
+          .project(Pair.left(exps), Pair.right(exps))
           .build());
     }
 
@@ -4092,24 +4092,24 @@ public class SqlToRelConverter {
       final RexNode joinCond;
       final int origLeftInputCount = root.getRowType().getFieldCount();
       if (leftKeys != null) {
-        List<RexNode> newLeftInputExpr = Lists.newArrayList();
+        List<RexNode> newLeftInputExprs = Lists.newArrayList();
         for (int i = 0; i < origLeftInputCount; i++) {
-          newLeftInputExpr.add(rexBuilder.makeInputRef(root, i));
+          newLeftInputExprs.add(rexBuilder.makeInputRef(root, i));
         }
 
         final List<Integer> leftJoinKeys = Lists.newArrayList();
         for (RexNode leftKey : leftKeys) {
-          int index = newLeftInputExpr.indexOf(leftKey);
+          int index = newLeftInputExprs.indexOf(leftKey);
           if (index < 0 || joinType == JoinRelType.LEFT) {
-            index = newLeftInputExpr.size();
-            newLeftInputExpr.add(leftKey);
+            index = newLeftInputExprs.size();
+            newLeftInputExprs.add(leftKey);
           }
           leftJoinKeys.add(index);
         }
 
         RelNode newLeftInput =
             relBuilder.push(root)
-                .project2(newLeftInputExpr, null, true)
+                .project(newLeftInputExprs)
                 .build();
 
         // maintain the group by mapping in the new LogicalProject

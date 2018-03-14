@@ -496,7 +496,7 @@ public abstract class RelOptUtil {
       final RelBuilder relBuilder =
           RelFactories.LOGICAL_BUILDER.create(cluster, null);
       ret = relBuilder.push(ret)
-          .project2(ImmutableList.of(extraExpr), null, false)
+          .project(ImmutableList.of(extraExpr))
           .build();
 
       final AggregateCall aggCall =
@@ -589,7 +589,7 @@ public abstract class RelOptUtil {
     final int projectedKeyCount = exprs.size();
     exprs.add(rexBuilder.makeLiteral(true));
 
-    ret = relBuilder.push(ret).project2(exprs, null, false).build();
+    ret = relBuilder.push(ret).project(exprs).build();
 
     final AggregateCall aggCall =
         AggregateCall.create(SqlStdOperatorTable.MIN,
@@ -643,7 +643,7 @@ public abstract class RelOptUtil {
     final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
     return relBuilder.push(rel)
-        .project2(Pair.left(renames), Pair.right(renames), false)
+        .project(Pair.left(renames), Pair.right(renames), true)
         .build();
   }
 
@@ -1686,13 +1686,13 @@ public abstract class RelOptUtil {
     // fields
     if (newLeftKeyCount > 0) {
       leftRel = relBuilder.push(leftRel)
-          .project2(newLeftFields, newLeftFieldNames, false)
+          .project(newLeftFields, newLeftFieldNames, true)
           .build();
     }
 
     if (newRightKeyCount > 0) {
       rightRel = relBuilder.push(rightRel)
-          .project2(newRightFields, newRightFieldNames, false)
+          .project(newRightFields, newRightFieldNames)
           .build();
     }
 
@@ -1727,7 +1727,7 @@ public abstract class RelOptUtil {
 
       // Create a project rel on the output of the join.
       return relBuilder.push(joinRel)
-          .project2(Pair.left(newProjects), Pair.right(newProjects), false)
+          .project(Pair.left(newProjects), Pair.right(newProjects), true)
           .build();
     }
 
@@ -2875,7 +2875,7 @@ public abstract class RelOptUtil {
     final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null);
     return relBuilder.push(child)
-        .project2(exprList, fieldNameList, false)
+        .project(exprList, fieldNameList, true)
         .build();
   }
 

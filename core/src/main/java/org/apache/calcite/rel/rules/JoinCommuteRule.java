@@ -136,7 +136,7 @@ public class JoinCommuteRule extends RelOptRule {
     final List<RexNode> exps =
         RelOptUtil.createSwappedJoinExprs(newJoin, join, true);
     return relBuilder.push(newJoin)
-        .project2(exps, join.getRowType().getFieldNames(), true)
+        .project(exps, join.getRowType().getFieldNames())
         .build();
   }
 
