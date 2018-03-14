@@ -30,10 +30,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.tools.RelBuilder;
-
-import com.google.common.collect.ImmutableList;
 
 import org.junit.Ignore;
 import org.junit.Test;
