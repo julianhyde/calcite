@@ -2091,8 +2091,7 @@ public class SqlToRelConverter {
       }
       RelNode child =
           (null != bb.root) ? bb.root : LogicalValues.createOneRow(cluster);
-      relBuilder.push(child)
-          .project2(exprs, fieldNames, true);
+      relBuilder.push(child).projectNamed(exprs, fieldNames, false);
 
       Uncollect uncollect =
           new Uncollect(cluster, cluster.traitSetOf(Convention.NONE),
@@ -2776,7 +2775,7 @@ public class SqlToRelConverter {
       // Project the expressions required by agg and having.
       bb.setRoot(
           relBuilder.push(inputRel)
-              .project2(Pair.left(preExprs), Pair.right(preExprs), true)
+              .projectNamed(Pair.left(preExprs), Pair.right(preExprs), false)
               .build(),
           false);
       bb.mapRootRelToFieldProjection.put(bb.root, r.groupExprProjection);
@@ -3192,7 +3191,7 @@ public class SqlToRelConverter {
     }
 
     return relBuilder.push(source)
-        .project2(Pair.left(projects), Pair.right(projects), true)
+        .projectNamed(Pair.left(projects), Pair.right(projects), false)
         .filter(filters)
         .build();
   }
@@ -3338,7 +3337,7 @@ public class SqlToRelConverter {
     }
 
     return relBuilder.push(source)
-        .project2(sourceExps, fieldNames, true)
+        .projectNamed(sourceExps, fieldNames, false)
         .build();
   }
 
@@ -3781,7 +3780,7 @@ public class SqlToRelConverter {
         }
 
         relBuilder.push(LogicalValues.createOneRow(cluster))
-            .project2(selectList, fieldNameList, false);
+            .projectNamed(selectList, fieldNameList, true);
 
         joinList.set(i, relBuilder.build());
       }
@@ -3845,7 +3844,8 @@ public class SqlToRelConverter {
     fieldNames = SqlValidatorUtil.uniquify(fieldNames,
         catalogReader.nameMatcher().isCaseSensitive());
 
-    relBuilder.push(bb.root).project2(exprs, fieldNames, false);
+    relBuilder.push(bb.root)
+        .projectNamed(exprs, fieldNames, true);
     bb.setRoot(relBuilder.build(), false);
 
     assert bb.columnMonotonicities.isEmpty();

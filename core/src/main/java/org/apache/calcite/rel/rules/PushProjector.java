@@ -509,7 +509,7 @@ public class PushProjector {
     }
 
     return (Project) relBuilder.push(projChild)
-        .project2(Pair.left(newProjects), Pair.right(newProjects), false)
+        .projectNamed(Pair.left(newProjects), Pair.right(newProjects), true)
         .build();
   }
 

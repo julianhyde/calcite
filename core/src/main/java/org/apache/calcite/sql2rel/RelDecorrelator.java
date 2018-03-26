@@ -539,7 +539,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     // This Project will be what the old input maps to,
     // replacing any previous mapping from old input).
     RelNode newProject = relBuilder.push(newInput)
-        .project2(Pair.left(projects), Pair.right(projects), false)
+        .projectNamed(Pair.left(projects), Pair.right(projects), true)
         .build();
 
     // update mappings:
@@ -693,7 +693,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
 
     RelNode newProject = relBuilder.push(frame.r)
-        .project2(Pair.left(projects), Pair.right(projects), false)
+        .projectNamed(Pair.left(projects), Pair.right(projects), true)
         .build();
 
     return register(rel, newProject, mapOldToNewOutputs, corDefOutputs);
@@ -1309,7 +1309,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
 
     return relBuilder.push(join)
-        .project2(Pair.left(newProjExprs), Pair.right(newProjExprs), false)
+        .projectNamed(Pair.left(newProjExprs), Pair.right(newProjExprs), true)
         .build();
   }
 
@@ -1358,7 +1358,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
 
     return relBuilder.push(correlate)
-        .project2(Pair.left(newProjects), Pair.right(newProjects), false)
+        .projectNamed(Pair.left(newProjects), Pair.right(newProjects), true)
         .build();
   }
 
@@ -1451,7 +1451,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
     projects.addAll(additionalExprs);
     return relBuilder.push(input)
-        .project2(Pair.left(projects), Pair.right(projects), false)
+        .projectNamed(Pair.left(projects), Pair.right(projects), true)
         .build();
   }
 
@@ -2410,7 +2410,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
         final RelBuilder relBuilder = call.builder();
         relBuilder.push(aggregate)
-            .project2(Pair.left(projects), Pair.right(projects), false);
+            .projectNamed(Pair.left(projects), Pair.right(projects), true);
         aggOutputProject = (LogicalProject) relBuilder.build();
       }
       onMatch2(call, correlate, left, aggOutputProject, aggregate);

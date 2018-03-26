@@ -2887,7 +2887,8 @@ public abstract class RelOptUtil {
     final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null);
     return relBuilder.push(child)
-        .project2(Pair.left(projectList), Pair.right(projectList), optimize)
+        .projectNamed(Pair.left(projectList), Pair.right(projectList),
+            !optimize)
         .build();
   }
 
@@ -2916,11 +2917,12 @@ public abstract class RelOptUtil {
     final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(child.getCluster(), null);
     return relBuilder.push(child)
-        .project2(exprs, fieldNames, optimize)
+        .projectNamed(exprs, fieldNames, !optimize)
         .build();
   }
 
-  /** @deprecated Use {@link RelBuilder#project2(List, List, boolean)} */
+  /** @deprecated Use
+   * {@link RelBuilder#projectNamed(Iterable, Iterable, boolean)} */
   @Deprecated // to be removed before 2.0
   public static RelNode createProject(
       RelNode child,
@@ -2929,7 +2931,7 @@ public abstract class RelOptUtil {
       boolean optimize,
       RelBuilder relBuilder) {
     return relBuilder.push(child)
-        .project2(exprs, fieldNames, optimize)
+        .projectNamed(exprs, fieldNames, !optimize)
         .build();
   }
 
@@ -2952,7 +2954,7 @@ public abstract class RelOptUtil {
     final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
     return relBuilder.push(rel)
-        .project2(refs, fieldNames, true)
+        .projectNamed(refs, fieldNames, false)
         .build();
   }
 
@@ -3076,7 +3078,7 @@ public abstract class RelOptUtil {
     };
     return relBuilder
         .push(child)
-        .project2(exprs, names, true)
+        .projectNamed(exprs, names, false)
         .build();
   }
 

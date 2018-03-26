@@ -205,7 +205,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
       // implementation stays in Java?  Fennel can't handle
       // structured types.
       return relBuilder.push(flattened)
-          .project2(structuringExps, root.getRowType().getFieldNames(), false)
+          .projectNamed(structuringExps, root.getRowType().getFieldNames(),
+              true)
           .build();
     } else {
       return flattened;
@@ -486,8 +487,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         "",
         flattenedExpList);
     relBuilder.push(getNewForOldRel(rel.getInput()))
-        .project2(Pair.left(flattenedExpList), Pair.right(flattenedExpList),
-            false);
+        .projectNamed(Pair.left(flattenedExpList), Pair.right(flattenedExpList),
+            true);
     setNewForOldRel(rel, relBuilder.build());
   }
 
@@ -671,8 +672,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
           rexBuilder.makeRangeReference(newRel),
           flattenedExpList);
       newRel = relBuilder.push(newRel)
-          .project2(Pair.left(flattenedExpList), Pair.right(flattenedExpList),
-              false)
+          .projectNamed(Pair.left(flattenedExpList),
+              Pair.right(flattenedExpList), true)
           .build();
     }
     setNewForOldRel(rel, newRel);
