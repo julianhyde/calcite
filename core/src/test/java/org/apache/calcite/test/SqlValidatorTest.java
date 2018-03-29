@@ -5487,7 +5487,14 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test public void testJoinUsing() {
-    check("select * from emp join dept using (deptno)");
+    final String empDeptType = "RecordType(INTEGER NOT NULL DEPTNO,"
+        + " INTEGER NOT NULL EMPNO, VARCHAR(20) NOT NULL ENAME,"
+        + " VARCHAR(10) NOT NULL JOB, INTEGER MGR,"
+        + " TIMESTAMP(0) NOT NULL HIREDATE, INTEGER NOT NULL SAL,"
+        + " INTEGER NOT NULL COMM,  BOOLEAN NOT NULL SLACKER,"
+        + " VARCHAR(10) NOT NULL NAME) NOT NULL";
+    sql("select * from emp join dept using (deptno)").ok()
+        .type(empDeptType);
 
     // fail: comm exists on one side not the other
     // todo: The error message could be improved.
@@ -5510,7 +5517,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "Column 'deptno' not found in any table");
 
     // ok to repeat (ok in Oracle10g too)
-    check("select * from emp join dept using (deptno, deptno)");
+    final String sql = "select * from emp join dept using (deptno, deptno)";
+    sql(sql).ok()
+        .type(empDeptType);
 
     // inherited column, not found in either side of the join, in the
     // USING clause

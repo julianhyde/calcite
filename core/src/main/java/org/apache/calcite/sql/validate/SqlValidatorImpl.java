@@ -106,9 +106,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import org.pentaho.aggdes.util.BitSetPlus;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
@@ -117,6 +119,7 @@ import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -532,6 +535,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           }
         }
       }
+      reorderForUsing(scope.getNode().getFrom(), selectItems, types);
       return true;
 
     default:
@@ -575,6 +579,45 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         throw newValidationError(prefixId, RESOURCE.starRequiresRecordType());
       }
       return true;
+    }
+  }
+
+  private void reorderForUsing(SqlNode from, List<SqlNode> selectItems,
+      List<Map.Entry<String, RelDataType>> types) {
+    switch (from.getKind()) {
+    case JOIN:
+      final SqlJoin join = (SqlJoin) from;
+      switch (join.getConditionType()) {
+      case USING:
+        final SqlNode[] leftRight = {join.getLeft(), join.getRight()};
+        final BitSet skip = new BitSet();
+        final RelDataTypeFactory.Builder b = typeFactory.builder();
+        for (SqlNode node : ((SqlNodeList) join.getCondition()).getList()) {
+          final SqlIdentifier id = (SqlIdentifier) node;
+
+          int offset = 0;
+          for (SqlNode side : leftRight) {
+            final RelDataType type = getValidatedNodeType(side);
+            final RelDataTypeField f = type.getField(id.getSimple(),
+                catalogReader.nameMatcher().isCaseSensitive(), false);
+            if (offset == 0) {
+              b.add(f);
+            }
+            skip.set(f.getIndex() + offset);
+            offset += type.getFieldCount();
+          }
+        }
+        int i = 0;
+        for (SqlNode side : leftRight) {
+          final RelDataType type = getValidatedNodeType(side);
+          for (RelDataTypeField f : type.getFieldList()) {
+            if (!skip.get(i++)) {
+              b.add(f);
+            }
+          }
+        }
+        break;
+      }
     }
   }
 
