@@ -97,6 +97,7 @@ import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
+import org.apache.calcite.util.mapping.IntPair;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -106,11 +107,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import org.pentaho.aggdes.util.BitSetPlus;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
@@ -119,10 +118,10 @@ import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -535,7 +534,30 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           }
         }
       }
-      reorderForUsing(scope.getNode().getFrom(), selectItems, types);
+      final List<IntPair> moveFromTo = new ArrayList<>();
+      reorderForUsing(scope, moveFromTo);
+      Collections.sort(moveFromTo,
+          new Comparator<IntPair>() {
+            public int compare(IntPair o1, IntPair o2) {
+              return -Integer.compare(o1.source, o2.source);
+            }
+          });
+      final Set<Integer> targets = new HashSet<>();
+      int offset = 0;
+      for (IntPair p : moveFromTo) {
+        final int source = p.source + offset;
+        final Map.Entry<String, RelDataType> type = types.remove(source);
+        final SqlNode selectItem = selectItems.remove(source);
+        if (p.target >= 0) {
+          if (targets.add(p.target)) {
+            types.add(p.target, type);
+            selectItems.add(p.target, selectItem);
+            ++offset;
+          } else {
+            types.set(p.target, type);
+          }
+        }
+      }
       return true;
 
     default:
@@ -582,43 +604,80 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  private void reorderForUsing(SqlNode from, List<SqlNode> selectItems,
-      List<Map.Entry<String, RelDataType>> types) {
+  private void reorderForUsing(SelectScope selectScope,
+      List<IntPair> moveFromTo) {
+    final SqlNode from = selectScope.getNode().getFrom();
+    final ImmutableList.Builder<Ord<RelDataType>> types =
+        ImmutableList.builder();
+    int offset = 0;
+    for (ScopeChild child : selectScope.children) {
+      final RelDataType rowType = child.namespace.getRowType();
+      types.add(Ord.of(offset, rowType));
+      offset += rowType.getFieldCount();
+    }
+    reorderForUsing(0, from, types.build(), moveFromTo);
+  }
+
+  private int reorderForUsing(int startOffset, SqlNode from,
+      List<Ord<RelDataType>> types, List<IntPair> moveFromTo) {
     switch (from.getKind()) {
     case JOIN:
       final SqlJoin join = (SqlJoin) from;
-      switch (join.getConditionType()) {
-      case USING:
-        final SqlNode[] leftRight = {join.getLeft(), join.getRight()};
-        final BitSet skip = new BitSet();
-        final RelDataTypeFactory.Builder b = typeFactory.builder();
-        for (SqlNode node : ((SqlNodeList) join.getCondition()).getList()) {
-          final SqlIdentifier id = (SqlIdentifier) node;
-
+      final int rightOffset =
+          reorderForUsing(startOffset, join.getLeft(), types, moveFromTo);
+      final int endOffset =
+          reorderForUsing(rightOffset, join.getRight(), types, moveFromTo);
+      final List<String> names = usingNames(join);
+      if (names != null) {
+        for (Ord<String> name : Ord.zip(names)) {
+          final SqlNode[] inputs = {join.getLeft(), join.getRight()};
           int offset = 0;
-          for (SqlNode side : leftRight) {
-            final RelDataType type = getValidatedNodeType(side);
-            final RelDataTypeField f = type.getField(id.getSimple(),
-                catalogReader.nameMatcher().isCaseSensitive(), false);
-            if (offset == 0) {
-              b.add(f);
-            }
-            skip.set(f.getIndex() + offset);
-            offset += type.getFieldCount();
+          for (SqlNode input : inputs) {
+            RelDataType t = getValidatedNodeTypeIfKnown(input);
+            final RelDataTypeField f =
+                catalogReader.nameMatcher().field(t, name.e);
+            moveFromTo.add(IntPair.of(f.getIndex() + offset, name.i));
+            offset += t.getFieldList().size();
           }
         }
-        int i = 0;
-        for (SqlNode side : leftRight) {
-          final RelDataType type = getValidatedNodeType(side);
-          for (RelDataTypeField f : type.getFieldList()) {
-            if (!skip.get(i++)) {
-              b.add(f);
-            }
+      }
+      return endOffset;
+    default:
+      return startOffset + 1;
+    }
+  }
+
+  /** Returns the set of field names in the join condition specified by USING
+   * or implicitly by NATURAL, de-duplicated and in order. */
+  private List<String> usingNames(SqlJoin join) {
+    final ImmutableList.Builder<String> list = ImmutableList.builder();
+    final Set<String> names =
+        catalogReader.nameMatcher().isCaseSensitive()
+            ? new LinkedHashSet<String>()
+            : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    switch (join.getConditionType()) {
+    case USING:
+      for (SqlNode node : (SqlNodeList) join.getCondition()) {
+        final String name = ((SqlIdentifier) node).getSimple();
+        if (names.add(name)) {
+          list.add(name);
+        }
+      }
+      return list.build();
+    case NONE:
+      if (join.isNatural()) {
+        // Add names in order that they occur in the left input
+        names.addAll(getValidatedNodeType(join.getRight()).getFieldNames());
+        for (String name
+            : getValidatedNodeType(join.getLeft()).getFieldNames()) {
+          if (names.contains(name)) {
+            list.add(name);
           }
         }
-        break;
+        return list.build();
       }
     }
+    return null;
   }
 
   private boolean addOrExpandField(List<SqlNode> selectItems, Set<String> aliases,
@@ -4047,7 +4106,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       validateExpr(selectItem, selectScope);
     }
 
-    assert fieldList.size() >= aliases.size();
     return typeFactory.createStructType(fieldList);
   }
 
