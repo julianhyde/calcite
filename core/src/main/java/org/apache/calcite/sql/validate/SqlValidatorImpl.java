@@ -607,26 +607,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   private void reorderForUsing(SelectScope selectScope,
       List<IntPair> moveFromTo) {
     final SqlNode from = selectScope.getNode().getFrom();
-    final ImmutableList.Builder<Ord<RelDataType>> types =
-        ImmutableList.builder();
-    int offset = 0;
-    for (ScopeChild child : selectScope.children) {
-      final RelDataType rowType = child.namespace.getRowType();
-      types.add(Ord.of(offset, rowType));
-      offset += rowType.getFieldCount();
-    }
-    reorderForUsing(0, from, types.build(), moveFromTo);
+    reorderForUsing(from, moveFromTo);
   }
 
-  private int reorderForUsing(int startOffset, SqlNode from,
-      List<Ord<RelDataType>> types, List<IntPair> moveFromTo) {
+  private void reorderForUsing(SqlNode from, List<IntPair> moveFromTo) {
     switch (from.getKind()) {
     case JOIN:
       final SqlJoin join = (SqlJoin) from;
-      final int rightOffset =
-          reorderForUsing(startOffset, join.getLeft(), types, moveFromTo);
-      final int endOffset =
-          reorderForUsing(rightOffset, join.getRight(), types, moveFromTo);
+      reorderForUsing(join.getLeft(), moveFromTo);
+      reorderForUsing(join.getRight(), moveFromTo);
       final List<String> names = usingNames(join);
       if (names != null) {
         for (Ord<String> name : Ord.zip(names)) {
@@ -641,9 +630,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           }
         }
       }
-      return endOffset;
-    default:
-      return startOffset + 1;
     }
   }
 
