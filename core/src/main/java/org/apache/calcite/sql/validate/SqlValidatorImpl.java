@@ -535,7 +535,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
       }
       final List<IntPair> moveFromTo = new ArrayList<>();
-      reorderForUsing(scope, moveFromTo);
+      final SqlNode from = scope.getNode().getFrom();
+      reorderForUsing(from, moveFromTo);
       Collections.sort(moveFromTo,
           new Comparator<IntPair>() {
             public int compare(IntPair o1, IntPair o2) {
@@ -546,14 +547,25 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       int offset = 0;
       for (IntPair p : moveFromTo) {
         final int source = p.source + offset;
-        final Map.Entry<String, RelDataType> type = types.remove(source);
+        Map.Entry<String, RelDataType> type = types.remove(source);
         final SqlNode selectItem = selectItems.remove(source);
         if (p.target >= 0) {
           if (targets.add(p.target)) {
             types.add(p.target, type);
-            selectItems.add(p.target, selectItem);
+            selectItems.add(p.target, stripAs(selectItem));
             ++offset;
           } else {
+            final Map.Entry<String, RelDataType> t = types.get(p.target);
+            final SqlNode s = selectItems.get(p.target);
+            if (type.getValue().isNullable() && !t.getValue().isNullable()) {
+              // output is nullable only if both inputs are
+              type = Pair.of(type.getKey(), t.getValue());
+            }
+            selectItems.set(p.target,
+                SqlStdOperatorTable.AS.createCall(SqlParserPos.ZERO,
+                    SqlStdOperatorTable.COALESCE.createCall(SqlParserPos.ZERO,
+                        selectItem, s),
+                    new SqlIdentifier(type.getKey(), SqlParserPos.ZERO)));
             types.set(p.target, type);
           }
         }
@@ -602,12 +614,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
       return true;
     }
-  }
-
-  private void reorderForUsing(SelectScope selectScope,
-      List<IntPair> moveFromTo) {
-    final SqlNode from = selectScope.getNode().getFrom();
-    reorderForUsing(from, moveFromTo);
   }
 
   private void reorderForUsing(SqlNode from, List<IntPair> moveFromTo) {
