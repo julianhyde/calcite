@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.IntFunction;
 
 /**
  * Test for {@link Functions}.
@@ -108,22 +109,22 @@ public class FunctionTest {
         Functions.all(empty, Functions.<Integer>truePredicate1()));
   }
 
-  /** Unit test for {@link Functions#generate}. */
+  /** Unit test for {@link Functions#generate2}. */
   @Test public void testGenerate() {
-    final Function1<Integer, String> xx =
-        new Function1<Integer, String>() {
-          public String apply(Integer a0) {
+    final IntFunction<String> xx =
+        new IntFunction<String>() {
+          public String apply(int a0) {
             return a0 == 0 ? "0" : "x" + apply(a0 - 1);
           }
         };
     Assert.assertEquals(
-        "[]", Functions.generate(0, xx).toString());
+        "[]", Functions.generate2(0, xx).toString());
     Assert.assertEquals(
-        "[0]", Functions.generate(1, xx).toString());
+        "[0]", Functions.generate2(1, xx).toString());
     Assert.assertEquals(
-        "[0, x0, xx0]", Functions.generate(3, xx).toString());
+        "[0, x0, xx0]", Functions.generate2(3, xx).toString());
     try {
-      final List<String> generate = Functions.generate(-2, xx);
+      final List<String> generate = Functions.generate2(-2, xx);
       Assert.fail("expected error, got " + generate);
     } catch (IllegalArgumentException e) {
       // ok

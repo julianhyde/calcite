@@ -90,7 +90,6 @@ import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.BitString;
-import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableNullableList;
 import org.apache.calcite.util.Litmus;
@@ -104,6 +103,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -1604,9 +1604,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlNode operand) {
     DeriveTypeVisitor v = new DeriveTypeVisitor(scope);
     final RelDataType type = operand.accept(v);
-    // After Guava 17, use Verify.verifyNotNull for Preconditions.checkNotNull
-    Bug.upgrade("guava-17");
-    return Preconditions.checkNotNull(scope.nullifyType(operand, type));
+    return Verify.verifyNotNull(scope.nullifyType(operand, type));
   }
 
   public RelDataType deriveConstructorType(

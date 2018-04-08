@@ -88,7 +88,6 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -98,7 +97,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.common.collect.SortedSetMultimap;
 
@@ -119,7 +118,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import javax.annotation.Nonnull;
 
 /**
@@ -2670,14 +2668,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         new TreeMap<>();
 
     final SortedSetMultimap<RelNode, CorRef> mapRefRelToCorRef =
-        Multimaps.newSortedSetMultimap(
-            new HashMap<RelNode, Collection<CorRef>>(),
-            new Supplier<TreeSet<CorRef>>() {
-              public TreeSet<CorRef> get() {
-                Bug.upgrade("use MultimapBuilder when we're on Guava-16");
-                return Sets.newTreeSet();
-              }
-            });
+        MultimapBuilder.hashKeys().treeSetValues().build();
 
     final Map<RexFieldAccess, CorRef> mapFieldAccessToCorVar = new HashMap<>();
 
