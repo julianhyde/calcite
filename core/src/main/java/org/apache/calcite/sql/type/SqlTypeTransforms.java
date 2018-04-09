@@ -99,6 +99,23 @@ public abstract class SqlTypeTransforms {
               true);
         }
       };
+  /**
+   * Return type-inference strategy where the result is NOT NULL if any of
+   * the arguments is NOT NULL; otherwise the type is unchanged.
+   */
+  public static final SqlTypeTransform LEAST_NULLABLE =
+      new SqlTypeTransform() {
+        public RelDataType transformType(SqlOperatorBinding opBinding,
+            RelDataType typeToTransform) {
+          for (RelDataType type : opBinding.collectOperandTypes()) {
+            if (!type.isNullable()) {
+              return opBinding.getTypeFactory()
+                  .createTypeWithNullability(typeToTransform, false);
+            }
+          }
+          return typeToTransform;
+        }
+      };
 
   /**
    * Type-inference strategy whereby the result type of a call is VARYING the

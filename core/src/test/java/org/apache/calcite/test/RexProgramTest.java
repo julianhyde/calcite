@@ -1272,7 +1272,7 @@ public class RexProgramTest {
     checkSimplify(gt(hRef, hRef), "false");
     checkSimplify2(gt(iRef, iRef), ">(?0.i, ?0.i)", "false");
     checkSimplify(gt(iRef, hRef), ">(?0.i, ?0.h)");
-    
+
     checkSimplify(coalesce(hRef, iRef), "?0.h"); // first arg not null
     checkSimplify(coalesce(iRef, hRef), "COALESCE(?0.i, ?0.h)"); // a0 nullable
     checkSimplify(coalesce(iRef, iRef), "?0.i"); // repeated arg

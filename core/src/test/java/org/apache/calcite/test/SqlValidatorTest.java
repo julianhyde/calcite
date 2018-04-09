@@ -5570,6 +5570,25 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "Cannot specify NATURAL keyword with ON or USING clause");
   }
 
+  @Test public void testNaturalJoinCaseSensitive() {
+    // With case-insensitive match, more columns are recognized as join columns
+    // and therefore "*" expands to fewer columns.
+    final String sql = "select *\n"
+        + "from (select empno, deptno from emp)\n"
+        + "natural join (select deptno as \"deptno\", name from dept)";
+    final String type0 = "RecordType(INTEGER NOT NULL EMPNO,"
+        + " INTEGER NOT NULL DEPTNO,"
+        + " INTEGER NOT NULL deptno,"
+        + " VARCHAR(10) NOT NULL NAME) NOT NULL";
+    final String type1 = "RecordType(INTEGER NOT NULL DEPTNO,"
+        + " INTEGER NOT NULL EMPNO,"
+        + " VARCHAR(10) NOT NULL NAME) NOT NULL";
+    sql(sql)
+        .type(type0)
+        .tester(tester.withCaseSensitive(false))
+        .type(type1);
+  }
+
   @Test public void testNaturalJoinIncompatibleDatatype() {
     checkFails("select *\n"
             + "from (select ename as name, hiredate as deptno from emp)\n"
@@ -5738,9 +5757,25 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
     final String sql2 = "select *\n"
         + "from emp as e\n"
+        + "join dept as d using (deptno)";
+    final String type2 = "RecordType(INTEGER NOT NULL DEPTNO,"
+        + " INTEGER NOT NULL EMPNO,"
+        + " VARCHAR(20) NOT NULL ENAME,"
+        + " VARCHAR(10) NOT NULL JOB,"
+        + " INTEGER MGR,"
+        + " TIMESTAMP(0) NOT NULL HIREDATE,"
+        + " INTEGER NOT NULL SAL,"
+        + " INTEGER NOT NULL COMM,"
+        + " BOOLEAN NOT NULL SLACKER,"
+        + " VARCHAR(10) NOT NULL NAME) NOT NULL";
+    sql(sql2).type(type2);
+
+    final String sql3 = "select *\n"
+        + "from emp as e\n"
         + "join dept as d using (deptno)\n"
         + "join (values (10, 1000)) as b (empno, bonus) using (empno)";
-    final String type = "RecordType(INTEGER NOT NULL EMPNO,"
+    final String type3 = "RecordType(INTEGER NOT NULL EMPNO,"
+        + " INTEGER NOT NULL DEPTNO,"
         + " VARCHAR(20) NOT NULL ENAME,"
         + " VARCHAR(10) NOT NULL JOB,"
         + " INTEGER MGR,"
@@ -5750,7 +5785,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + " BOOLEAN NOT NULL SLACKER,"
         + " VARCHAR(10) NOT NULL NAME,"
         + " INTEGER NOT NULL BONUS) NOT NULL";
-    sql(sql2).type(type);
+    sql(sql3).type(type3);
   }
 
   @Test public void testWhere() {
