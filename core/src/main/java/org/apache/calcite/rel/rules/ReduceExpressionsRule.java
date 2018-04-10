@@ -66,6 +66,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -73,6 +74,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -380,7 +382,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
       final List<RexNode> expandedExprList = Lists.newArrayList();
       final RexShuttle shuttle =
           new RexShuttle() {
-            public RexNode visitLocalRef(RexLocalRef localRef) {
+            @Override public RexNode visitLocalRef(RexLocalRef localRef) {
               return expandedExprList.get(localRef.getIndex());
             }
           };
@@ -561,6 +563,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
     boolean changed = false;
     // Replace predicates on CASE to CASE on predicates.
     changed |= new CaseShuttle().mutate(expList);
+    changed |= new PushConditionIntoOrShuttle(simplify).mutate(expList);
 
     // Find reducible expressions.
     final List<RexNode> constExps = Lists.newArrayList();
@@ -1062,6 +1065,137 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
         if (call == old) {
           return call;
         }
+      }
+    }
+  }
+
+  /** Pushes a condition into an OR if they reference the same variable.
+   *
+   * <p>Examples:<ul>
+   *   <li>{@code a = 1 AND (a = 1 OR a = 2)} becomes {@code a = 1}
+   *   <li>{@code a = 1 AND (b > 3) AND (a = 1 OR a = 2)}
+   *     becomes {@code a = 1 AND b > 3}
+   * </ul>
+   */
+  protected static class PushConditionIntoOrShuttle extends RexShuttle {
+    private final RexSimplify simplify;
+
+    PushConditionIntoOrShuttle(RexSimplify simplify) {
+      this.simplify = simplify;
+    }
+
+    @Override public RexNode visitCall(RexCall call) {
+      for (;;) {
+        call = (RexCall) super.visitCall(call);
+        final RexCall old = call;
+        call = processCall(call);
+        if (call == old) {
+          return call;
+        }
+      }
+    }
+
+    private RexCall processCall(RexCall call) {
+      if (call.getKind() != SqlKind.AND) {
+        return call;
+      }
+
+      final List<RexNode> others = new ArrayList<>();
+      final List<RexNode> ops = call.getOperands();
+      final Map<ImmutableBitSet, CandidateGroup> candidateMap = new HashMap<>();
+
+      for (RexNode rexNode : ops) {
+        final ImmutableBitSet k = RelOptUtil.InputFinder.bits(rexNode);
+        if (k.cardinality() == 1) {
+          switch (rexNode.getKind()) {
+          case OR:
+          case EQUALS:
+            CandidateGroup c = candidateMap.get(k);
+            if (c == null) {
+              c = new CandidateGroup(simplify);
+            }
+            c.addMember(rexNode);
+            candidateMap.put(k, c);
+            continue;
+          default:
+            break;
+          }
+        }
+        others.add(rexNode);
+      }
+
+      boolean changed = false;
+      for (CandidateGroup group : candidateMap.values()) {
+        changed |= group.pushIn();
+      }
+
+      if (!changed) {
+        return call;
+      }
+
+      for (CandidateGroup group : candidateMap.values()) {
+        group.collectResults(others);
+      }
+
+      return (RexCall) RexUtil.composeConjunction(simplify.rexBuilder, others,
+          false);
+    }
+  }
+
+  /** Helper class to represent compareOps / disjunctive forms that are
+   * connected to the same variable. */
+  static class CandidateGroup {
+    private final RexSimplify simplify;
+    private final List<RexNode> compareOp = new ArrayList<>();
+    private final List<RexNode> dfs = new ArrayList<>();
+    private RexNode result;
+
+    CandidateGroup(RexSimplify simplify) {
+      this.simplify = simplify;
+    }
+
+    void addMember(RexNode rexNode) {
+      if (rexNode.getKind() == SqlKind.OR) {
+        dfs.add(rexNode);
+      } else {
+        compareOp.add(rexNode);
+      }
+    }
+
+    boolean pushIn() {
+      if (dfs.size() != 1 || compareOp.size() != 1) {
+        return false;
+      }
+      // In case this pushIn is not successful; someone might pull out the
+      // "AND-ed operands".
+      boolean reduced = false;
+      final List<RexNode> orOps = ((RexCall) dfs.get(0)).getOperands();
+      final RexCall cmpOp = (RexCall) compareOp.get(0);
+      final List<RexNode> newOps = new ArrayList<>();
+      for (RexNode rexNode : orOps) {
+        RexNode newCall = RexUtil.composeConjunction(simplify.rexBuilder,
+            ImmutableList.of(rexNode, cmpOp), false);
+        newCall = simplify.simplify(newCall);
+        if (newCall.isAlwaysFalse() || newCall.isAlwaysTrue()) {
+          // we have successfully buried an operand
+          reduced = true;
+        }
+        newOps.add(newCall);
+      }
+      result = RexUtil.composeDisjunction(simplify.rexBuilder, newOps);
+      result = simplify.simplify(result);
+      if (result.getKind() != SqlKind.OR) {
+        reduced = true;
+      }
+      return reduced;
+    }
+
+    void collectResults(List<RexNode> results) {
+      if (result != null) {
+        results.add(result);
+      } else {
+        results.addAll(compareOp);
+        results.addAll(dfs);
       }
     }
   }
