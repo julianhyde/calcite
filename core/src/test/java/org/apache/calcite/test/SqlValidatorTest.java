@@ -5597,13 +5597,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "Column 'DEPTNO' matched using NATURAL keyword or USING clause has incompatible types: cannot compare 'TIMESTAMP\\(0\\)' to 'INTEGER'");
 
     // INTEGER and VARCHAR are comparable: VARCHAR implicit converts to INTEGER
-    check("select * from emp natural ^join^\n"
-            + "(select deptno, name as sal from dept)");
+    sql("select * from emp natural ^join^\n"
+        + "(select deptno, name as sal from dept)").ok();
 
     // make sal occur more than once on rhs, it is ignored and therefore
     // there is no error about incompatible types
-    check("select * from emp natural join\n"
-        + " (select deptno, name as sal, 'foo' as sal from dept)");
+    sql("select * from emp natural join\n"
+        + " (select deptno, name as sal, 'foo' as sal from dept)").ok();
   }
 
   @Test public void testJoinUsingIncompatibleDatatype() {
@@ -5613,8 +5613,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "Column 'DEPTNO' matched using NATURAL keyword or USING clause has incompatible types: cannot compare 'TIMESTAMP\\(0\\)' to 'INTEGER'");
 
     // INTEGER and VARCHAR are comparable: VARCHAR implicit converts to INTEGER
-    check("select * from emp\n"
-        + "join (select deptno, name as sal from dept) using (deptno, sal)");
+    final String sql = "select * from emp\n"
+        + "join (select deptno, name as sal from dept) using (deptno, sal)";
+    sql(sql).ok();
   }
 
   @Test public void testJoinUsingInvalidColsFails() {

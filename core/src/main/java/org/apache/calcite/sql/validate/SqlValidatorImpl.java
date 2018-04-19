@@ -3050,8 +3050,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
       // Parser ensures that using clause is not empty.
       Preconditions.checkArgument(list.size() > 0, "Empty USING clause");
-      for (int i = 0; i < list.size(); i++) {
-        SqlIdentifier id = (SqlIdentifier) list.get(i);
+      for (SqlNode node : list) {
+        SqlIdentifier id = (SqlIdentifier) node;
         final RelDataType leftColType = validateUsingCol(id, left);
         final RelDataType rightColType = validateUsingCol(id, right);
         if (!SqlTypeUtil.isComparable(leftColType, rightColType)) {
