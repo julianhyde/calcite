@@ -691,7 +691,10 @@ public class RelToSqlConverterTest {
         + "  join \"product_class\" as pc using (\"product_class_id\")\n"
         + "where c.\"city\" = 'San Francisco'\n"
         + "and pc.\"product_department\" = 'Snacks'\n";
-    final String expected = "SELECT \"sales_fact_1997\".\"product_id\","
+    final String expected = "SELECT"
+        + " \"product\".\"product_class_id\","
+        + " \"sales_fact_1997\".\"product_id\","
+        + " \"sales_fact_1997\".\"customer_id\","
         + " \"sales_fact_1997\".\"time_id\","
         + " \"sales_fact_1997\".\"promotion_id\","
         + " \"sales_fact_1997\".\"store_id\","

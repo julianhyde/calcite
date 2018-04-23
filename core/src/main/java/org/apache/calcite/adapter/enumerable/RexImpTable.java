@@ -2115,6 +2115,7 @@ public class RexImpTable {
       }
     }
   }
+
   /** Implementor for the SQL {@code COALESCE} operator. */
   private static class CoalesceImplementor implements CallImplementor {
     public Expression implement(RexToLixTranslator translator, RexCall call,
