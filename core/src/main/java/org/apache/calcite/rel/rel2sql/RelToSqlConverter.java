@@ -65,7 +65,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.ReflectUtil;
 import org.apache.calcite.util.ReflectiveVisitor;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -415,24 +414,14 @@ public class RelToSqlConverter extends SqlImplementor
   private SqlNodeList exprList(final Context context,
       List<? extends RexNode> exprs) {
     return new SqlNodeList(
-        Lists.transform(exprs,
-            new Function<RexNode, SqlNode>() {
-              public SqlNode apply(RexNode e) {
-                return context.toSql(null, e);
-              }
-            }), POS);
+        Lists.transform(exprs, e -> context.toSql(null, e)), POS);
   }
 
   /** Converts a list of names expressions to a list of single-part
    * {@link SqlIdentifier}s. */
   private SqlNodeList identifierList(List<String> names) {
     return new SqlNodeList(
-        Lists.transform(names,
-            new Function<String, SqlNode>() {
-              public SqlNode apply(String name) {
-                return new SqlIdentifier(name, POS);
-              }
-            }), POS);
+        Lists.transform(names, name -> new SqlIdentifier(name, POS)), POS);
   }
 
   /** @see #dispatch */

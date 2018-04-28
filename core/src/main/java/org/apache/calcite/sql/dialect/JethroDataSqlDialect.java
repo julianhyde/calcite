@@ -40,7 +40,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  * A <code>SqlDialect</code> implementation for the JethroData database.
  */

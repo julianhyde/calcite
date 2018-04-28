@@ -40,7 +40,6 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
-
 /**
  * Filter element of a Druid "groupBy" or "topN" query.
  */

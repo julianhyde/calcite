@@ -569,7 +569,7 @@ public class XmlOutput {
      */
     public void makeImmutable() {
       translationTable =
-          translationVector.toArray(new String[translationVector.size()]);
+          translationVector.toArray(new String[0]);
       translationVector = null;
     }
 

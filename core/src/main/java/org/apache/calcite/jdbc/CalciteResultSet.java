@@ -57,9 +57,7 @@ public class CalciteResultSet extends AvaticaResultSet {
     final boolean autoTemp = connection.config().autoTemp();
     Handler.ResultSink resultSink = null;
     if (autoTemp) {
-      resultSink = new Handler.ResultSink() {
-        public void toBeCompleted() {
-        }
+      resultSink = () -> {
       };
     }
     connection.getDriver().handler.onStatementExecute(statement, resultSink);

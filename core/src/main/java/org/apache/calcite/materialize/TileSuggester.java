@@ -47,11 +47,7 @@ import java.util.List;
  */
 public class TileSuggester {
   private static final Function<Attribute, Lattice.Column> TO_COLUMN =
-      new Function<Attribute, Lattice.Column>() {
-        public Lattice.Column apply(Attribute input) {
-          return ((AttributeImpl) input).column;
-        }
-      };
+      input -> ((AttributeImpl) input).column;
 
   private final Lattice lattice;
 

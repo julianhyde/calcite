@@ -67,7 +67,7 @@ public abstract class ListScope extends DelegatingScope {
    * @return list of child namespaces
    */
   public List<SqlValidatorNamespace> getChildren() {
-    return Lists.transform(children, ScopeChild.NAMESPACE_FN);
+    return Lists.transform(children, scopeChild -> scopeChild.namespace);
   }
 
   /**
@@ -76,7 +76,7 @@ public abstract class ListScope extends DelegatingScope {
    * @return list of child namespaces
    */
   List<String> getChildNames() {
-    return Lists.transform(children, ScopeChild.NAME_FN);
+    return Lists.transform(children, scopeChild -> scopeChild.name);
   }
 
   private ScopeChild findChild(List<String> names,

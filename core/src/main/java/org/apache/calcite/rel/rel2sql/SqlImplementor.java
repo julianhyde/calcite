@@ -730,7 +730,7 @@ public abstract class SqlImplementor {
       }
       return op.createCall(
           aggCall.isDistinct() ? SqlSelectKeyword.DISTINCT.symbol(POS) : null,
-          POS, operands.toArray(new SqlNode[operands.size()]));
+          POS, operands.toArray(new SqlNode[0]));
     }
 
     /** Converts a collation to an ORDER BY item. */

@@ -154,7 +154,7 @@ public class ImmutableBitSetTest {
 
   @Test public void testCompare2() {
     final List<ImmutableBitSet> sorted = getSortedList();
-    Collections.sort(sorted, ImmutableBitSet.COMPARATOR);
+    sorted.sort(ImmutableBitSet.COMPARATOR);
     assertThat(sorted.toString(),
         equalTo("[{0, 1, 3}, {0, 1}, {1, 1000}, {1}, {1}, {2, 3}, {}]"));
   }

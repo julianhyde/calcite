@@ -195,12 +195,7 @@ public abstract class Project extends SingleRel {
     }
     //CHECKSTYLE: IGNORE 1
     if (false && !Util.isDistinct(
-        Lists.transform(exps,
-            new Function<RexNode, Object>() {
-              public Object apply(RexNode a0) {
-                return a0.toString();
-              }
-            }))) {
+        Lists.transform(exps, (Function<RexNode, Object>) RexNode::toString))) {
       // Projecting the same expression twice is usually a bad idea,
       // because it may create expressions downstream which are equivalent
       // but which look different. We can't ban duplicate projects,

@@ -571,11 +571,11 @@ public final class SqlParserUtil {
 
   @Deprecated // to be removed before 2.0
   public static String[] toStringArray(List<String> list) {
-    return list.toArray(new String[list.size()]);
+    return list.toArray(new String[0]);
   }
 
   public static SqlNode[] toNodeArray(List<SqlNode> list) {
-    return list.toArray(new SqlNode[list.size()]);
+    return list.toArray(new SqlNode[0]);
   }
 
   public static SqlNode[] toNodeArray(SqlNodeList list) {
@@ -888,22 +888,18 @@ public final class SqlParserUtil {
                 op.getLeftPrec() < op.getRightPrec());
           } else if (op instanceof SqlSpecialOperator) {
             builder.special(item, op.getLeftPrec(), op.getRightPrec(),
-                new PrecedenceClimbingParser.Special() {
-                  public PrecedenceClimbingParser.Result apply(
-                      PrecedenceClimbingParser parser,
-                      PrecedenceClimbingParser.SpecialOp op) {
-                    final List<PrecedenceClimbingParser.Token> tokens =
-                        parser.all();
-                    final SqlSpecialOperator op1 =
-                        (SqlSpecialOperator) ((ToTreeListItem) op.o).op;
-                    SqlSpecialOperator.ReduceResult r =
-                        op1.reduceExpr(tokens.indexOf(op),
-                            new TokenSequenceImpl(parser));
-                    return new PrecedenceClimbingParser.Result(
-                        tokens.get(r.startOrdinal),
-                        tokens.get(r.endOrdinal - 1),
-                        parser.atom(r.node));
-                  }
+                (parser, op2) -> {
+                  final List<PrecedenceClimbingParser.Token> tokens =
+                      parser.all();
+                  final SqlSpecialOperator op1 =
+                      (SqlSpecialOperator) ((ToTreeListItem) op2.o).op;
+                  SqlSpecialOperator.ReduceResult r =
+                      op1.reduceExpr(tokens.indexOf(op2),
+                          new TokenSequenceImpl(parser));
+                  return new PrecedenceClimbingParser.Result(
+                      tokens.get(r.startOrdinal),
+                      tokens.get(r.endOrdinal - 1),
+                      parser.atom(r.node));
                 });
           } else {
             throw new AssertionError();

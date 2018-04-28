@@ -49,7 +49,6 @@ import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -77,13 +76,6 @@ public class RexBuilder {
    */
   public static final SqlSpecialOperator GET_OPERATOR =
       new SqlSpecialOperator("_get", SqlKind.OTHER_FUNCTION);
-
-  private static final Function<RelDataTypeField, RexInputRef> TO_INPUT_REF =
-      new Function<RelDataTypeField, RexInputRef>() {
-        public RexInputRef apply(RelDataTypeField input) {
-          return new RexInputRef(input.getIndex(), input.getType());
-        }
-      };
 
   //~ Instance fields --------------------------------------------------------
 
@@ -128,7 +120,8 @@ public class RexBuilder {
   /** Creates a list of {@link org.apache.calcite.rex.RexInputRef} expressions,
    * projecting the fields of a given record type. */
   public List<? extends RexNode> identityProjects(final RelDataType rowType) {
-    return Lists.transform(rowType.getFieldList(), TO_INPUT_REF);
+    return Lists.transform(rowType.getFieldList(),
+        input -> new RexInputRef(input.getIndex(), input.getType()));
   }
 
   //~ Methods ----------------------------------------------------------------

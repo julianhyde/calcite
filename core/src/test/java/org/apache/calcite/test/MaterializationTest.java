@@ -54,7 +54,6 @@ import org.apache.calcite.util.Smalls;
 import org.apache.calcite.util.TryThreadLocal;
 import org.apache.calcite.util.mapping.IntPair;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 
@@ -69,6 +68,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -84,11 +84,11 @@ import static org.junit.Assert.assertTrue;
  * and checks that the materialization is used.
  */
 public class MaterializationTest {
-  private static final Function<ResultSet, Void> CONTAINS_M0 =
+  private static final Consumer<ResultSet> CONTAINS_M0 =
       CalciteAssert.checkResultContains(
           "EnumerableTableScan(table=[[hr, m0]])");
 
-  private static final Function<ResultSet, Void> CONTAINS_LOCATIONS =
+  private static final Consumer<ResultSet> CONTAINS_LOCATIONS =
       CalciteAssert.checkResultContains(
           "EnumerableTableScan(table=[[hr, locations]])");
 
@@ -184,7 +184,7 @@ public class MaterializationTest {
    * definition. */
   private void checkMaterialize(String materialize, String query) {
     checkMaterialize(materialize, query, HR_FKUK_MODEL, CONTAINS_M0,
-        RuleSets.ofList(ImmutableList.<RelOptRule>of()));
+        RuleSets.ofList(ImmutableList.of()));
   }
 
   /** Checks that a given query can use a materialized view with a given
@@ -196,14 +196,14 @@ public class MaterializationTest {
   /** Checks that a given query can use a materialized view with a given
    * definition. */
   private void checkMaterialize(String materialize, String query, String model,
-      Function<ResultSet, Void> explainChecker) {
+      Consumer<ResultSet> explainChecker) {
     checkMaterialize(materialize, query, model, explainChecker,
-        RuleSets.ofList(ImmutableList.<RelOptRule>of()));
+        RuleSets.ofList(ImmutableList.of()));
   }
 
 
   private void checkMaterialize(String materialize, String query, String model,
-      Function<ResultSet, Void> explainChecker, final RuleSet rules) {
+      Consumer<ResultSet> explainChecker, final RuleSet rules) {
     checkThatMaterialize(materialize, query, "m0", false, model, explainChecker,
         rules).sameResultWithMaterializationsDisabled();
   }
@@ -212,7 +212,7 @@ public class MaterializationTest {
    * definition. */
   private CalciteAssert.AssertQuery checkThatMaterialize(String materialize,
       String query, String name, boolean existing, String model,
-      Function<ResultSet, Void> explainChecker, final RuleSet rules) {
+      Consumer<ResultSet> explainChecker, final RuleSet rules) {
     try (final TryThreadLocal.Memo ignored = Prepare.THREAD_TRIM.push(true)) {
       MaterializationService.setThreadLocal();
       CalciteAssert.AssertQuery that = CalciteAssert.that()
@@ -222,12 +222,9 @@ public class MaterializationTest {
 
       // Add any additional rules required for the test
       if (rules.iterator().hasNext()) {
-        that.withHook(Hook.PLANNER, new Function<RelOptPlanner, Void>() {
-          public Void apply(RelOptPlanner planner) {
-            for (RelOptRule rule : rules) {
-              planner.addRule(rule);
-            }
-            return null;
+        that.withHook(Hook.PLANNER, (Consumer<RelOptPlanner>) planner -> {
+          for (RelOptRule rule : rules) {
+            planner.addRule(rule);
           }
         });
       }
@@ -1984,13 +1981,8 @@ public class MaterializationTest {
           .withMaterializations(HR_FKUK_MODEL,
               "m0", m)
           .query(q)
-          .withHook(Hook.SUB,
-              new Function<RelNode, Void>() {
-                public Void apply(RelNode input) {
-                  substitutedNames.add(new TableNameVisitor().run(input));
-                  return null;
-                }
-              })
+          .withHook(Hook.SUB, (Consumer<RelNode>) r ->
+              substitutedNames.add(new TableNameVisitor().run(r)))
           .enableMaterializations(true)
           .explainContains("hr, m0");
     } catch (Exception e) {
@@ -2008,17 +2000,14 @@ public class MaterializationTest {
       MaterializationService.setThreadLocal();
       CalciteAssert.that()
           .withMaterializations(
-              HR_FKUK_MODEL,
-              new Function<JsonBuilder, List<Object>>() {
-                public List<Object> apply(JsonBuilder builder) {
-                  final Map<String, Object> map = builder.map();
-                  map.put("table", "locations");
-                  String sql = "select `deptno` as `empid`, '' as `name`\n"
-                      + "from `emps`";
-                  final String sql2 = sql.replaceAll("`", "\"");
-                  map.put("sql", sql2);
-                  return ImmutableList.<Object>of(map);
-                }
+              HR_FKUK_MODEL, builder -> {
+                final Map<String, Object> map = builder.map();
+                map.put("table", "locations");
+                String sql = "select `deptno` as `empid`, '' as `name`\n"
+                    + "from `emps`";
+                final String sql2 = sql.replaceAll("`", "\"");
+                map.put("sql", sql2);
+                return ImmutableList.<Object>of(map);
               })
           .query(q)
           .enableMaterializations(true)
@@ -2228,16 +2217,11 @@ public class MaterializationTest {
               "m0", "select * from \"emps\" where \"empid\" < 300",
               "m1", "select * from \"emps\" where \"empid\" < 600")
           .query(q)
-          .withHook(Hook.SUB,
-              new Function<RelNode, Void>() {
-                public Void apply(RelNode input) {
-                  substitutedNames.add(new TableNameVisitor().run(input));
-                  return null;
-                }
-              })
+          .withHook(Hook.SUB, (Consumer<RelNode>) r ->
+              substitutedNames.add(new TableNameVisitor().run(r)))
           .enableMaterializations(true)
           .sameResultWithMaterializationsDisabled();
-      Collections.sort(substitutedNames, CASE_INSENSITIVE_LIST_LIST_COMPARATOR);
+      substitutedNames.sort(CASE_INSENSITIVE_LIST_LIST_COMPARATOR);
       assertThat(substitutedNames, is(list3(expectedNames)));
     }
   }
@@ -2273,16 +2257,11 @@ public class MaterializationTest {
               "m1", "select * from \"emps\" where \"empid\" < 600",
               "m2", "select * from \"m1\"")
           .query(q)
-          .withHook(Hook.SUB,
-              new Function<RelNode, Void>() {
-                public Void apply(RelNode input) {
-                  substitutedNames.add(new TableNameVisitor().run(input));
-                  return null;
-                }
-              })
+          .withHook(Hook.SUB, (Consumer<RelNode>) r ->
+              substitutedNames.add(new TableNameVisitor().run(r)))
           .enableMaterializations(true)
           .sameResultWithMaterializationsDisabled();
-      Collections.sort(substitutedNames, CASE_INSENSITIVE_LIST_LIST_COMPARATOR);
+      substitutedNames.sort(CASE_INSENSITIVE_LIST_LIST_COMPARATOR);
       assertThat(substitutedNames, is(list3(expectedNames)));
     }
   }

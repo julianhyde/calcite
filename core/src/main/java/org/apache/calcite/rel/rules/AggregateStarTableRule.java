@@ -62,14 +62,14 @@ import java.util.List;
 public class AggregateStarTableRule extends RelOptRule {
   public static final AggregateStarTableRule INSTANCE =
       new AggregateStarTableRule(
-          operand(Aggregate.class, null, Aggregate.IS_SIMPLE,
+          operandJ(Aggregate.class, null, Aggregate::isSimple,
               some(operand(StarTable.StarTableScan.class, none()))),
           RelFactories.LOGICAL_BUILDER,
           "AggregateStarTableRule");
 
   public static final AggregateStarTableRule INSTANCE2 =
       new AggregateStarTableRule(
-          operand(Aggregate.class, null, Aggregate.IS_SIMPLE,
+          operandJ(Aggregate.class, null, Aggregate::isSimple,
               operand(Project.class,
                   operand(StarTable.StarTableScan.class, none()))),
           RelFactories.LOGICAL_BUILDER,

@@ -44,7 +44,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Hook;
@@ -71,7 +70,6 @@ import com.google.common.collect.Maps;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -172,18 +170,15 @@ abstract class CalciteConnectionImpl
 
   @Override public <T> T unwrap(Class<T> iface) throws SQLException {
     if (iface == RelRunner.class) {
-      return iface.cast(
-          new RelRunner() {
-            public PreparedStatement prepare(RelNode rel) {
-              try {
-                return prepareStatement_(CalcitePrepare.Query.of(rel),
-                    ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY,
-                    getHoldability());
-              } catch (SQLException e) {
-                throw new RuntimeException(e);
-              }
-            }
-          });
+      return iface.cast((RelRunner) rel -> {
+        try {
+          return prepareStatement_(CalcitePrepare.Query.of(rel),
+              ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY,
+              getHoldability());
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
+        }
+      });
     }
     return super.unwrap(iface);
   }
@@ -455,7 +450,7 @@ abstract class CalciteConnectionImpl
       }
       final List<String> schemaPath =
           schemaName == null
-              ? ImmutableList.<String>of()
+              ? ImmutableList.of()
               : ImmutableList.of(schemaName);
       final SqlValidatorWithHints validator =
           new SqlAdvisorValidator(SqlStdOperatorTable.instance(),

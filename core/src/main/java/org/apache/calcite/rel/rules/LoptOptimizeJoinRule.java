@@ -298,7 +298,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
     sortedFactors.addAll(simpleFactors.keySet());
     final Map<Integer, Integer> selfJoinPairs = new HashMap<>();
     Integer [] factors =
-        sortedFactors.toArray(new Integer[sortedFactors.size()]);
+        sortedFactors.toArray(new Integer[0]);
     for (int i = 0; i < factors.length; i++) {
       if (repeatedTables.contains(simpleFactors.get(factors[i]))) {
         continue;

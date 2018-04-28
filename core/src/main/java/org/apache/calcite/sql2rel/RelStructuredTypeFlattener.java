@@ -74,7 +74,6 @@ import org.apache.calcite.util.ReflectiveVisitor;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -324,11 +323,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
   private Mappings.TargetMapping getNewForOldInputMapping(RelNode oldRel) {
     final RelNode newRel = getNewForOldRel(oldRel);
     return Mappings.target(
-        new Function<Integer, Integer>() {
-          public Integer apply(Integer oldInput) {
-            return getNewForOldInput(oldInput);
-          }
-        },
+        this::getNewForOldInput,
         oldRel.getRowType().getFieldCount(),
         newRel.getRowType().getFieldCount());
   }

@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.prepare;
 
-import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableBindable;
 import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -36,7 +35,6 @@ import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
@@ -502,11 +500,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
    */
   protected List<Function1<Context, RelOptPlanner>> createPlannerFactories() {
     return Collections.<Function1<Context, RelOptPlanner>>singletonList(
-        new Function1<Context, RelOptPlanner>() {
-          public RelOptPlanner apply(Context context) {
-            return createPlanner(context, null, null);
-          }
-        });
+        context -> createPlanner(context, null, null));
   }
 
   /** Creates a query planner and initializes it with a default set of
@@ -674,12 +668,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         cursorFactory,
         context.getRootSchema(),
         ImmutableList.<RelCollation>of(),
-        -1,
-        new Bindable<T>() {
-          public Enumerable<T> bind(DataContext dataContext) {
-            return Linq4j.asEnumerable(list);
-          }
-        },
+        -1, dataContext -> Linq4j.asEnumerable(list),
         Meta.StatementType.SELECT);
   }
 
@@ -1095,24 +1084,16 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     public PreparedResult prepareQueryable(
         final Queryable queryable,
         RelDataType resultType) {
-      return prepare_(
-          new Supplier<RelNode>() {
-            public RelNode get() {
-              final RelOptCluster cluster =
-                  prepare.createCluster(planner, rexBuilder);
-              return new LixToRelTranslator(cluster, CalcitePreparingStmt.this)
-                  .translate(queryable);
-            }
-          }, resultType);
+      return prepare_(() -> {
+        final RelOptCluster cluster =
+            prepare.createCluster(planner, rexBuilder);
+        return new LixToRelTranslator(cluster, CalcitePreparingStmt.this)
+            .translate(queryable);
+      }, resultType);
     }
 
     public PreparedResult prepareRel(final RelNode rel) {
-      return prepare_(
-          new Supplier<RelNode>() {
-            public RelNode get() {
-              return rel;
-            }
-          }, rel.getRowType());
+      return prepare_(() -> rel, rel.getRowType());
     }
 
     private PreparedResult prepare_(Supplier<RelNode> fn,
@@ -1321,15 +1302,13 @@ public class CalcitePrepareImpl implements CalcitePrepare {
 
     public Bindable getBindable(final Meta.CursorFactory cursorFactory) {
       final String explanation = getCode();
-      return new Bindable() {
-        public Enumerable bind(DataContext dataContext) {
-          switch (cursorFactory.style) {
-          case ARRAY:
-            return Linq4j.singletonEnumerable(new String[] {explanation});
-          case OBJECT:
-          default:
-            return Linq4j.singletonEnumerable(explanation);
-          }
+      return dataContext -> {
+        switch (cursorFactory.style) {
+        case ARRAY:
+          return Linq4j.singletonEnumerable(new String[] {explanation});
+        case OBJECT:
+        default:
+          return Linq4j.singletonEnumerable(explanation);
         }
       };
     }

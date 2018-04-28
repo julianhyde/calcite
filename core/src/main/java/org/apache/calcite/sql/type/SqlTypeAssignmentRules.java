@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.Nonnull;
 
 /**
  * Rules that determine whether a type is assignable from another type.
@@ -400,13 +399,8 @@ public class SqlTypeAssignmentRules {
     Builder() {
       this.map = new HashMap<>();
       this.sets =
-          CacheBuilder.newBuilder().build(
-              new CacheLoader<Set<SqlTypeName>, ImmutableSet<SqlTypeName>>() {
-                public ImmutableSet<SqlTypeName> load(
-                    @Nonnull Set<SqlTypeName> key) {
-                  return Sets.immutableEnumSet(key);
-                }
-              });
+          CacheBuilder.newBuilder()
+              .build(CacheLoader.from(set -> Sets.immutableEnumSet(set)));
     }
 
     /** Creates a Builder as a copy of another Builder. */

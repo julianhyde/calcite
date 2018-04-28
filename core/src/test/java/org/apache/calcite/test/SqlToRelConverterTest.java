@@ -2610,25 +2610,19 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   private Tester getExtendedTester() {
-    return tester.withCatalogReaderFactory(
-      new Function<RelDataTypeFactory, Prepare.CatalogReader>() {
-        public Prepare.CatalogReader apply(RelDataTypeFactory typeFactory) {
-          return new MockCatalogReader(typeFactory, true)
-              .init().init2();
-        }
-      });
+    return tester
+        .withCatalogReaderFactory(typeFactory ->
+            new MockCatalogReader(typeFactory, true).init().init2());
   }
 
   @Test public void testLarge() {
-    SqlValidatorTest.checkLarge(400,
-        new Function<String, Void>() {
-          public Void apply(String input) {
-            final RelRoot root = tester.convertSqlToRel(input);
-            final String s = RelOptUtil.toString(root.project());
-            assertThat(s, notNullValue());
-            return null;
-          }
-        });
+    // Java 8 uses a lot of stack for lambdas
+    final int x = TestUtil.getJavaMajorVersion() <= 8 ? 300 : 400;
+    SqlValidatorTest.checkLarge(x, input -> {
+      final RelRoot root = tester.convertSqlToRel(input);
+      final String s = RelOptUtil.toString(root.project());
+      assertThat(s, notNullValue());
+    });
   }
 
   @Test public void testUnionInFrom() {

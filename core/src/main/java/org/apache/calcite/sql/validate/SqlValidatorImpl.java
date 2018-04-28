@@ -102,7 +102,6 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -3248,12 +3247,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final SelectScope fromScope = (SelectScope) getFromScope(select);
     List<String> names = fromScope.getChildNames();
     if (!catalogReader.nameMatcher().isCaseSensitive()) {
-      names = Lists.transform(names,
-          new Function<String, String>() {
-            public String apply(String s) {
-              return s.toUpperCase(Locale.ROOT);
-            }
-          });
+      names = Lists.transform(names, s -> s.toUpperCase(Locale.ROOT));
     }
     final int duplicateAliasOrdinal = Util.firstDuplicate(names);
     if (duplicateAliasOrdinal >= 0) {

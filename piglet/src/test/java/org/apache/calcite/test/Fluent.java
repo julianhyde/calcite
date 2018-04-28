@@ -59,39 +59,33 @@ class Fluent {
 
   public Fluent returns(final String out)
       throws ParseException {
-    return returns(
-        new Function<String, Void>() {
-          public Void apply(String s) {
-            assertThat(s, is(out));
-            return null;
-          }
-        });
+    return returns(s -> {
+      assertThat(s, is(out));
+      return null;
+    });
   }
 
   public Fluent returnsUnordered(String... lines) throws ParseException {
     final List<String> expectedLines =
         Ordering.natural().immutableSortedCopy(Arrays.asList(lines));
-    return returns(
-        new Function<String, Void>() {
-          public Void apply(String s) {
-            final List<String> actualLines = new ArrayList<>();
-            for (;;) {
-              int i = s.indexOf('\n');
-              if (i < 0) {
-                if (!s.isEmpty()) {
-                  actualLines.add(s);
-                }
-                break;
-              } else {
-                actualLines.add(s.substring(0, i));
-                s = s.substring(i + 1);
-              }
-            }
-            assertThat(Ordering.natural().sortedCopy(actualLines),
-                is(expectedLines));
-            return null;
+    return returns(s -> {
+      final List<String> actualLines = new ArrayList<>();
+      for (;;) {
+        int i = s.indexOf('\n');
+        if (i < 0) {
+          if (!s.isEmpty()) {
+            actualLines.add(s);
           }
-        });
+          break;
+        } else {
+          actualLines.add(s.substring(0, i));
+          s = s.substring(i + 1);
+        }
+      }
+      assertThat(Ordering.natural().sortedCopy(actualLines),
+          is(expectedLines));
+      return null;
+    });
   }
 
   public Fluent returns(Function<String, Void> checker) throws ParseException {

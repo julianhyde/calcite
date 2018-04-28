@@ -90,12 +90,9 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
                         BuiltInMethod.CONTEXT_VALUES.field),
                     PhysTypeImpl.of(javaTypeFactory, inputRowType,
                         JavaRowFormat.ARRAY, false))));
-    final Function1<String, RexToLixTranslator.InputGetter> correlates =
-        new Function1<String, RexToLixTranslator.InputGetter>() {
-          public RexToLixTranslator.InputGetter apply(String a0) {
-            throw new UnsupportedOperationException();
-          }
-        };
+    final Function1<String, RexToLixTranslator.InputGetter> correlates = a0 -> {
+      throw new UnsupportedOperationException();
+    };
     final Expression root =
         Expressions.field(context_, BuiltInMethod.CONTEXT_ROOT.field);
     final List<Expression> list =

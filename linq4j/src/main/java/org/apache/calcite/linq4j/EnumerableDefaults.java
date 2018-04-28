@@ -402,36 +402,31 @@ public abstract class EnumerableDefaults {
       TSource value) {
     try (Enumerator<TSource> os = enumerable.enumerator()) {
       if (os.moveNext()) {
-        return Linq4j.asEnumerable(
-            new Iterable<TSource>() {
-              public Iterator<TSource> iterator() {
-                return new Iterator<TSource>() {
+        return Linq4j.asEnumerable(() -> new Iterator<TSource>() {
 
-                  private boolean nonFirst;
+          private boolean nonFirst;
 
-                  private Iterator<TSource> rest;
+          private Iterator<TSource> rest;
 
-                  public boolean hasNext() {
-                    return !nonFirst || rest.hasNext();
-                  }
+          public boolean hasNext() {
+            return !nonFirst || rest.hasNext();
+          }
 
-                  public TSource next() {
-                    if (nonFirst) {
-                      return rest.next();
-                    } else {
-                      final TSource first = os.current();
-                      nonFirst = true;
-                      rest = Linq4j.enumeratorIterator(os);
-                      return first;
-                    }
-                  }
+          public TSource next() {
+            if (nonFirst) {
+              return rest.next();
+            } else {
+              final TSource first = os.current();
+              nonFirst = true;
+              rest = Linq4j.enumeratorIterator(os);
+              return first;
+            }
+          }
 
-                  public void remove() {
-                    throw new UnsupportedOperationException("remove");
-                  }
-                };
-              }
-            });
+          public void remove() {
+            throw new UnsupportedOperationException("remove");
+          }
+        });
       } else {
         return Linq4j.singletonEnumerable(value);
       }
@@ -683,11 +678,7 @@ public abstract class EnumerableDefaults {
       Enumerable<TSource> enumerable, Function1<TSource, TKey> keySelector,
       final Function2<TKey, Enumerable<TSource>, TResult> resultSelector) {
     return enumerable.toLookup(keySelector)
-        .select(new Function1<Grouping<TKey, TSource>, TResult>() {
-          public TResult apply(Grouping<TKey, TSource> group) {
-            return resultSelector.apply(group.getKey(), group);
-          }
-        });
+        .select(group -> resultSelector.apply(group.getKey(), group));
   }
 
   /**
@@ -701,11 +692,7 @@ public abstract class EnumerableDefaults {
       final Function2<TKey, Enumerable<TSource>, TResult> resultSelector,
       EqualityComparer<TKey> comparer) {
     return enumerable.toLookup(keySelector, comparer)
-        .select(new Function1<Grouping<TKey, TSource>, TResult>() {
-          public TResult apply(Grouping<TKey, TSource> group) {
-            return resultSelector.apply(group.getKey(), group);
-          }
-        });
+        .select(group -> resultSelector.apply(group.getKey(), group));
   }
 
   /**
@@ -719,11 +706,7 @@ public abstract class EnumerableDefaults {
       Function1<TSource, TElement> elementSelector,
       final Function2<TKey, Enumerable<TElement>, TResult> resultSelector) {
     return enumerable.toLookup(keySelector, elementSelector)
-        .select(new Function1<Grouping<TKey, TElement>, TResult>() {
-          public TResult apply(Grouping<TKey, TElement> group) {
-            return resultSelector.apply(group.getKey(), group);
-          }
-        });
+        .select(group -> resultSelector.apply(group.getKey(), group));
   }
 
   /**
@@ -739,11 +722,7 @@ public abstract class EnumerableDefaults {
       final Function2<TKey, Enumerable<TElement>, TResult> resultSelector,
       EqualityComparer<TKey> comparer) {
     return enumerable.toLookup(keySelector, elementSelector, comparer)
-        .select(new Function1<Grouping<TKey, TElement>, TResult>() {
-          public TResult apply(Grouping<TKey, TElement> group) {
-            return resultSelector.apply(group.getKey(), group);
-          }
-        });
+        .select(group -> resultSelector.apply(group.getKey(), group));
   }
 
   /**
@@ -1327,13 +1306,10 @@ public abstract class EnumerableDefaults {
                 ? inner.select(innerKeySelector).distinct()
                 : inner.select(innerKeySelector).distinct(comparer);
 
-        return EnumerableDefaults.where(outer.enumerator(),
-            new Predicate1<TSource>() {
-              public boolean apply(TSource v0) {
-                final TKey key = outerKeySelector.apply(v0);
-                return innerLookup.contains(key);
-              }
-            });
+        return EnumerableDefaults.where(outer.enumerator(), v0 -> {
+          final TKey key = outerKeySelector.apply(v0);
+          return innerLookup.contains(key);
+        });
       }
     };
   }
@@ -1675,13 +1651,13 @@ public abstract class EnumerableDefaults {
   @SuppressWarnings("unchecked")
   private static <TSource extends Comparable<TSource>> Function2<TSource, TSource, TSource>
       minFunction() {
-    return (Function2<TSource, TSource, TSource>) Extensions.COMPARABLE_MIN;
+    return (Function2<TSource, TSource, TSource>) (Function2) Extensions.COMPARABLE_MIN;
   }
 
   @SuppressWarnings("unchecked")
   private static <TSource extends Comparable<TSource>> Function2<TSource, TSource, TSource>
       maxFunction() {
-    return (Function2<TSource, TSource, TSource>) Extensions.COMPARABLE_MAX;
+    return (Function2<TSource, TSource, TSource>) (Function2) Extensions.COMPARABLE_MAX;
   }
 
   /**
@@ -2307,11 +2283,9 @@ public abstract class EnumerableDefaults {
    */
   public static <TSource> Enumerable<TSource> skip(Enumerable<TSource> source,
       final int count) {
-    return skipWhile(source, new Predicate2<TSource, Integer>() {
-      public boolean apply(TSource v1, Integer v2) {
-        // Count is 1-based
-        return v2 < count;
-      }
+    return skipWhile(source, (v1, v2) -> {
+      // Count is 1-based
+      return v2 < count;
     });
   }
 
@@ -2451,11 +2425,9 @@ public abstract class EnumerableDefaults {
   public static <TSource> Enumerable<TSource> take(Enumerable<TSource> source,
       final int count) {
     return takeWhile(
-        source, new Predicate2<TSource, Integer>() {
-          public boolean apply(TSource v1, Integer v2) {
-            // Count is 1-based
-            return v2 < count;
-          }
+        source, (v1, v2) -> {
+          // Count is 1-based
+          return v2 < count;
         });
   }
 
@@ -2466,11 +2438,9 @@ public abstract class EnumerableDefaults {
   public static <TSource> Enumerable<TSource> take(Enumerable<TSource> source,
       final long count) {
     return takeWhileLong(
-        source, new Predicate2<TSource, Long>() {
-          public boolean apply(TSource v1, Long v2) {
-            // Count is 1-based
-            return v2 < count;
-          }
+        source, (v1, v2) -> {
+          // Count is 1-based
+          return v2 < count;
         });
   }
 
@@ -2762,20 +2732,12 @@ public abstract class EnumerableDefaults {
   }
 
   private static <TSource> Function1<Wrapped<TSource>, TSource> unwrapper() {
-    return new Function1<Wrapped<TSource>, TSource>() {
-      public TSource apply(Wrapped<TSource> a0) {
-        return a0.element;
-      }
-    };
+    return a0 -> a0.element;
   }
 
   private static <TSource> Function1<TSource, Wrapped<TSource>> wrapperFor(
       final EqualityComparer<TSource> comparer) {
-    return new Function1<TSource, Wrapped<TSource>>() {
-      public Wrapped<TSource> apply(TSource a0) {
-        return Wrapped.upAs(comparer, a0);
-      }
-    };
+    return a0 -> Wrapped.upAs(comparer, a0);
   }
 
   /**

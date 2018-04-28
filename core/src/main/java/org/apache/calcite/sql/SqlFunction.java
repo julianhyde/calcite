@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql;
 
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -39,13 +38,6 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * function-call syntax.
  */
 public class SqlFunction extends SqlOperator {
-  /** Function that generates "arg{n}" for the {@code n}th argument name. */
-  private static final Function1<Integer, String> ARG_FN =
-      new Function1<Integer, String>() {
-        public String apply(Integer a0) {
-          return "arg" + a0;
-        }
-      };
 
   //~ Instance fields --------------------------------------------------------
 
@@ -161,7 +153,7 @@ public class SqlFunction extends SqlOperator {
    * <p>The default implementation returns {@code [arg0, arg1, ..., argN]}.
    */
   public List<String> getParamNames() {
-    return Functions.generate(paramTypes.size(), ARG_FN);
+    return Functions.generate(paramTypes.size(), i -> "arg" + i);
   }
 
   public void unparse(

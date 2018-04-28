@@ -194,17 +194,15 @@ public class CsvTest {
     final String sql = "select empno * 3 as e3\n"
         + "from long_emps where empno = 100";
 
-    sql("bug", sql).checking(new Function<ResultSet, Void>() {
-      public Void apply(ResultSet resultSet) {
-        try {
-          assertThat(resultSet.next(), is(true));
-          Long o = (Long) resultSet.getObject(1);
-          assertThat(o, is(300L));
-          assertThat(resultSet.next(), is(false));
-          return null;
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
-        }
+    sql("bug", sql).checking(resultSet -> {
+      try {
+        assertThat(resultSet.next(), is(true));
+        Long o = (Long) resultSet.getObject(1);
+        assertThat(o, is(300L));
+        assertThat(resultSet.next(), is(false));
+        return null;
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
       }
     }).ok();
   }
@@ -317,32 +315,28 @@ public class CsvTest {
   }
 
   private Function<ResultSet, Void> output() {
-    return new Function<ResultSet, Void>() {
-      public Void apply(ResultSet resultSet) {
-        try {
-          output(resultSet, System.out);
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
-        }
-        return null;
+    return resultSet -> {
+      try {
+        output(resultSet, System.out);
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
       }
+      return null;
     };
   }
 
   /** Returns a function that checks the contents of a result set against an
    * expected string. */
   private static Function<ResultSet, Void> expect(final String... expected) {
-    return new Function<ResultSet, Void>() {
-      public Void apply(ResultSet resultSet) {
-        try {
-          final List<String> lines = new ArrayList<>();
-          CsvTest.collect(lines, resultSet);
-          Assert.assertEquals(Arrays.asList(expected), lines);
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
-        }
-        return null;
+    return resultSet -> {
+      try {
+        final List<String> lines = new ArrayList<>();
+        CsvTest.collect(lines, resultSet);
+        Assert.assertEquals(Arrays.asList(expected), lines);
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
       }
+      return null;
     };
   }
 
@@ -351,18 +345,16 @@ public class CsvTest {
   private static Function<ResultSet, Void> expectUnordered(String... expected) {
     final List<String> expectedLines =
         Ordering.natural().immutableSortedCopy(Arrays.asList(expected));
-    return new Function<ResultSet, Void>() {
-      public Void apply(ResultSet resultSet) {
-        try {
-          final List<String> lines = new ArrayList<>();
-          CsvTest.collect(lines, resultSet);
-          Collections.sort(lines);
-          Assert.assertEquals(expectedLines, lines);
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
-        }
-        return null;
+    return resultSet -> {
+      try {
+        final List<String> lines = new ArrayList<>();
+        CsvTest.collect(lines, resultSet);
+        Collections.sort(lines);
+        Assert.assertEquals(expectedLines, lines);
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
       }
+      return null;
     };
   }
 
@@ -957,32 +949,26 @@ public class CsvTest {
 
   /** Creates a command that appends a line to the CSV file. */
   private Callable<Void> writeLine(final PrintWriter pw, final String line) {
-    return new Callable<Void>() {
-      @Override public Void call() throws Exception {
-        pw.println(line);
-        pw.flush();
-        return null;
-      }
+    return () -> {
+      pw.println(line);
+      pw.flush();
+      return null;
     };
   }
 
   /** Creates a command that sleeps. */
   private Callable<Void> sleep(final long millis) {
-    return new Callable<Void>() {
-      @Override public Void call() throws Exception {
-        Thread.sleep(millis);
-        return null;
-      }
+    return () -> {
+      Thread.sleep(millis);
+      return null;
     };
   }
 
   /** Creates a command that cancels a statement. */
   private Callable<Void> cancel(final Statement statement) {
-    return new Callable<Void>() {
-      @Override public Void call() throws Exception {
-        statement.cancel();
-        return null;
-      }
+    return () -> {
+      statement.cancel();
+      return null;
     };
   }
 
@@ -1003,12 +989,7 @@ public class CsvTest {
     private Exception e;
 
     /** The poison pill command. */
-    final Callable<E> end =
-        new Callable<E>() {
-          public E call() {
-            return null;
-          }
-        };
+    final Callable<E> end = () -> null;
 
     public void run() {
       try {

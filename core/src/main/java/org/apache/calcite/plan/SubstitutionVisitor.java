@@ -44,7 +44,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.runtime.PredicateImpl;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
@@ -60,9 +59,7 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -1257,12 +1254,8 @@ public class SubstitutionVisitor {
   private static List<AggregateCall> apply(final Mapping mapping,
       List<AggregateCall> aggCallList) {
     return Lists.transform(aggCallList,
-        new Function<AggregateCall, AggregateCall>() {
-          public AggregateCall apply(AggregateCall call) {
-            return call.copy(Mappings.apply2(mapping, call.getArgList()),
-                Mappings.apply(mapping, call.filterArg));
-          }
-        });
+        call -> call.copy(Mappings.apply2(mapping, call.getArgList()),
+            Mappings.apply(mapping, call.filterArg)));
   }
 
   public static MutableRel unifyAggregates(MutableAggregate query,
@@ -1582,13 +1575,6 @@ public class SubstitutionVisitor {
    * trivial filter (on a boolean column).
    */
   public static class FilterOnProjectRule extends RelOptRule {
-    private static final Predicate<LogicalFilter> PREDICATE =
-        new PredicateImpl<LogicalFilter>() {
-          public boolean test(LogicalFilter input) {
-            return input.getCondition() instanceof RexInputRef;
-          }
-        };
-
     public static final FilterOnProjectRule INSTANCE =
         new FilterOnProjectRule(RelFactories.LOGICAL_BUILDER);
 
@@ -1599,7 +1585,8 @@ public class SubstitutionVisitor {
      */
     public FilterOnProjectRule(RelBuilderFactory relBuilderFactory) {
       super(
-          operand(LogicalFilter.class, null, PREDICATE,
+          operandJ(LogicalFilter.class, null,
+              filter -> filter.getCondition() instanceof RexInputRef,
               some(operand(LogicalProject.class, any()))),
           relBuilderFactory, null);
     }

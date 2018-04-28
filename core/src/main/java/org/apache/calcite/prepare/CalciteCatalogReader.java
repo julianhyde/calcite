@@ -39,7 +39,6 @@ import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -258,19 +257,13 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
     if (category == null) {
       predicate = Predicates.alwaysTrue();
     } else if (category.isTableFunction()) {
-      predicate = new PredicateImpl<Function>() {
-        public boolean test(Function function) {
-          return function instanceof TableMacro
+      predicate =
+          function -> function instanceof TableMacro
               || function instanceof TableFunction;
-        }
-      };
     } else {
-      predicate = new PredicateImpl<Function>() {
-        public boolean test(Function function) {
-          return !(function instanceof TableMacro
+      predicate =
+          function -> !(function instanceof TableMacro
               || function instanceof TableFunction);
-        }
-      };
     }
     final Collection<Function> functions =
         Collections2.filter(getFunctionsFrom(opName.names), predicate);
@@ -278,12 +271,7 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
       return;
     }
     operatorList.addAll(
-        Collections2.transform(functions,
-            new com.google.common.base.Function<Function, SqlOperator>() {
-              public SqlOperator apply(Function function) {
-                return toOp(opName, function);
-              }
-            }));
+        Collections2.transform(functions, function -> toOp(opName, function)));
   }
 
   /** Creates an operator table that contains functions in the given class.
@@ -361,40 +349,31 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
   }
 
   private static SqlReturnTypeInference infer(final ScalarFunction function) {
-    return new SqlReturnTypeInference() {
-      public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType type;
-        if (function instanceof ScalarFunctionImpl) {
-          type = ((ScalarFunctionImpl) function).getReturnType(typeFactory,
-              opBinding);
-        } else {
-          type = function.getReturnType(typeFactory);
-        }
-        return toSql(typeFactory, type);
+    return opBinding -> {
+      final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+      final RelDataType type;
+      if (function instanceof ScalarFunctionImpl) {
+        type = ((ScalarFunctionImpl) function).getReturnType(typeFactory,
+            opBinding);
+      } else {
+        type = function.getReturnType(typeFactory);
       }
+      return toSql(typeFactory, type);
     };
   }
 
   private static SqlReturnTypeInference infer(
       final AggregateFunction function) {
-    return new SqlReturnTypeInference() {
-      public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType type = function.getReturnType(typeFactory);
-        return toSql(typeFactory, type);
-      }
+    return opBinding -> {
+      final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+      final RelDataType type = function.getReturnType(typeFactory);
+      return toSql(typeFactory, type);
     };
   }
 
   private static List<RelDataType> toSql(
       final RelDataTypeFactory typeFactory, List<RelDataType> types) {
-    return Lists.transform(types,
-        new com.google.common.base.Function<RelDataType, RelDataType>() {
-          public RelDataType apply(RelDataType type) {
-            return toSql(typeFactory, type);
-          }
-        });
+    return Lists.transform(types, type -> toSql(typeFactory, type));
   }
 
   private static RelDataType toSql(RelDataTypeFactory typeFactory,

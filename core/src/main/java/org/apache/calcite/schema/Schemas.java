@@ -62,27 +62,16 @@ import java.util.Map;
 public final class Schemas {
   private static final com.google.common.base.Function<
       CalciteSchema.LatticeEntry,
-      CalciteSchema.TableEntry> TO_TABLE_ENTRY =
-      new com.google.common.base.Function<CalciteSchema.LatticeEntry,
-          CalciteSchema.TableEntry>() {
-        public CalciteSchema.TableEntry apply(
-            CalciteSchema.LatticeEntry entry) {
-          final CalciteSchema.TableEntry starTable = entry.getStarTable();
-          assert starTable.getTable().getJdbcTableType()
-              == Schema.TableType.STAR;
-          return entry.getStarTable();
-        }
+      CalciteSchema.TableEntry> TO_TABLE_ENTRY = entry -> {
+        final CalciteSchema.TableEntry starTable = entry.getStarTable();
+        assert starTable.getTable().getJdbcTableType()
+            == Schema.TableType.STAR;
+        return entry.getStarTable();
       };
 
   private static final com.google.common.base.Function<
       CalciteSchema.LatticeEntry,
-      Lattice> TO_LATTICE =
-      new com.google.common.base.Function<CalciteSchema.LatticeEntry,
-          Lattice>() {
-        public Lattice apply(CalciteSchema.LatticeEntry entry) {
-          return entry.getLattice();
-        }
-      };
+      Lattice> TO_LATTICE = CalciteSchema.LatticeEntry::getLattice;
 
   private Schemas() {
     throw new AssertionError("no instances!");
@@ -448,22 +437,14 @@ public final class Schemas {
    * {@link RelProtoDataType}
    * that asks a given table for its row type with a given type factory. */
   public static RelProtoDataType proto(final Table table) {
-    return new RelProtoDataType() {
-      public RelDataType apply(RelDataTypeFactory typeFactory) {
-        return table.getRowType(typeFactory);
-      }
-    };
+    return table::getRowType;
   }
 
   /** Returns an implementation of {@link RelProtoDataType}
    * that asks a given scalar function for its return type with a given type
    * factory. */
   public static RelProtoDataType proto(final ScalarFunction function) {
-    return new RelProtoDataType() {
-      public RelDataType apply(RelDataTypeFactory typeFactory) {
-        return function.getReturnType(typeFactory);
-      }
-    };
+    return function::getReturnType;
   }
 
   /** Returns the star tables defined in a schema.

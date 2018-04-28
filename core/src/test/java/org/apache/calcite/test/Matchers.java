@@ -20,10 +20,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.hamcrest.BaseMatcher;
@@ -40,6 +37,8 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 /**
  * Matchers for testing SQL queries.
@@ -119,7 +118,9 @@ public class Matchers {
   }
 
   private static <E> Iterable<String> toStringList(Iterable<E> items) {
-    return Iterables.transform(items, Functions.toStringFunction());
+    return StreamSupport.stream(items.spliterator(), false)
+        .map(Object::toString)
+        .collect(Util.toImmutableList());
   }
 
   /**
@@ -156,12 +157,7 @@ public class Matchers {
    */
   @Factory
   public static Matcher<String> isLinux(final String value) {
-    return compose(Is.is(value),
-        new Function<String, String>() {
-          public String apply(String input) {
-            return input == null ? null : Util.toLinux(input);
-          }
-        });
+    return compose(Is.is(value), input -> input == null ? null : Util.toLinux(input));
   }
 
   /**
@@ -171,13 +167,10 @@ public class Matchers {
    */
   @Factory
   public static Matcher<RelNode> hasTree(final String value) {
-    return compose(Is.is(value),
-        new Function<RelNode, String>() {
-          public String apply(RelNode input) {
-            // Convert RelNode to a string with Linux line-endings
-            return Util.toLinux(RelOptUtil.toString(input));
-          }
-        });
+    return compose(Is.is(value), input -> {
+      // Convert RelNode to a string with Linux line-endings
+      return Util.toLinux(RelOptUtil.toString(input));
+    });
   }
 
   /**
@@ -198,12 +191,7 @@ public class Matchers {
    */
   @Factory
   public static Matcher<String> containsStringLinux(String value) {
-    return compose(CoreMatchers.containsString(value),
-        new Function<String, String>() {
-          public String apply(String input) {
-            return Util.toLinux(input);
-          }
-        });
+    return compose(CoreMatchers.containsString(value), Util::toLinux);
   }
 
   /**

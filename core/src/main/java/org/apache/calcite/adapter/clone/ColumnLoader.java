@@ -54,29 +54,15 @@ class ColumnLoader<T> {
   static final int[] LONG_S = {1, 2, 4, 8, 16, 32};
 
   private static final Function<Timestamp, Long> TIMESTAMP_TO_LONG =
-      new Function<Timestamp, Long>() {
-        public Long apply(Timestamp a0) {
-          return a0 == null ? null : a0.getTime();
-        }
-      };
+      a0 -> a0 == null ? null : a0.getTime();
 
-  private static final Function<Time, Integer> TIME_TO_INT =
-      new Function<Time, Integer>() {
-        public Integer apply(Time a0) {
-          return a0 == null
-              ? null
-              : (int) (a0.getTime() % DateTimeUtils.MILLIS_PER_DAY);
-        }
-      };
+  private static final Function<Time, Integer> TIME_TO_INT = a0 -> a0 == null
+      ? null
+      : (int) (a0.getTime() % DateTimeUtils.MILLIS_PER_DAY);
 
-  private static final Function<Date, Integer> DATE_TO_INT =
-      new Function<Date, Integer>() {
-        public Integer apply(Date a0) {
-          return a0 == null
-              ? null
-              : (int) (a0.getTime() / DateTimeUtils.MILLIS_PER_DAY);
-        }
-      };
+  private static final Function<Date, Integer> DATE_TO_INT = a0 -> a0 == null
+      ? null
+      : (int) (a0.getTime() / DateTimeUtils.MILLIS_PER_DAY);
 
   public final List<T> list = new ArrayList<>();
   public final List<ArrayTable.Column> representationValues = new ArrayList<>();

@@ -41,7 +41,6 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -238,14 +237,9 @@ public class RelMdExpressionLineage
               RelTableRef.of(rightRef.getTable(), shift + rightRef.getEntityNumber()));
         }
         final Set<RexNode> updatedExprs = Sets.newHashSet(
-            Iterables.transform(
-                originalExprs,
-                new Function<RexNode, RexNode>() {
-                  @Override public RexNode apply(RexNode e) {
-                    return RexUtil.swapTableReferences(rexBuilder, e, currentTablesMapping);
-                  }
-                }
-          ));
+            Iterables.transform(originalExprs,
+                e -> RexUtil.swapTableReferences(rexBuilder, e,
+                    currentTablesMapping)));
         mapping.put(RexInputRef.of(idx, rel.getRowType().getFieldList()), updatedExprs);
       }
     }
@@ -293,14 +287,9 @@ public class RelMdExpressionLineage
               RelTableRef.of(tableRef.getTable(), shift + tableRef.getEntityNumber()));
         }
         final Set<RexNode> updatedExprs = Sets.newHashSet(
-            Iterables.transform(
-                originalExprs,
-                new Function<RexNode, RexNode>() {
-                  @Override public RexNode apply(RexNode e) {
-                    return RexUtil.swapTableReferences(rexBuilder, e, currentTablesMapping);
-                  }
-                }
-          ));
+            Iterables.transform(originalExprs,
+                e -> RexUtil.swapTableReferences(rexBuilder, e,
+                    currentTablesMapping)));
         final Set<RexNode> set = mapping.get(ref);
         if (set != null) {
           set.addAll(updatedExprs);

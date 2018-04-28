@@ -33,11 +33,7 @@ import java.util.List;
  */
 public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
   private static final Function<SqlLiteral, BitString> F =
-      new Function<SqlLiteral, BitString>() {
-        public BitString apply(SqlLiteral literal) {
-          return ((SqlBinaryStringLiteral) literal).getBitString();
-        }
-      };
+      literal -> ((SqlBinaryStringLiteral) literal).getBitString();
 
   //~ Constructors -----------------------------------------------------------
 

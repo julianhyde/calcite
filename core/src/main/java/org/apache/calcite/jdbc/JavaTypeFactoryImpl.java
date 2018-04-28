@@ -37,7 +37,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
@@ -245,11 +244,7 @@ public class JavaTypeFactoryImpl
     if (type instanceof RelRecordType) {
       return typeFactory.createStructType(
           Lists.transform(type.getFieldList(),
-              new Function<RelDataTypeField, RelDataType>() {
-                public RelDataType apply(RelDataTypeField a0) {
-                  return toSql(typeFactory, a0.getType());
-                }
-              }),
+              field -> toSql(typeFactory, field.getType())),
           type.getFieldNames());
     }
     if (type instanceof JavaType) {

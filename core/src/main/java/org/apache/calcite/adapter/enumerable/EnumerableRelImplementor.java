@@ -42,7 +42,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.util.BuiltInMethod;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -75,11 +74,7 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
   int windowCount = 0;
 
   protected final Function1<String, RexToLixTranslator.InputGetter> allCorrelateVariables =
-      new Function1<String, RexToLixTranslator.InputGetter>() {
-        public RexToLixTranslator.InputGetter apply(String name) {
-          return getCorrelVariableGetter(name);
-        }
-      };
+      this::getCorrelVariableGetter;
 
   public EnumerableRelImplementor(RexBuilder rexBuilder,
       Map<String, Object> internalParameters) {
@@ -139,16 +134,12 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
     // It is convenient for passing non-literal "compile-time" constants
     final Collection<Statement> stashed =
         Collections2.transform(stashedParameters.values(),
-            new Function<ParameterExpression, Statement>() {
-              public Statement apply(ParameterExpression input) {
-                return Expressions.declare(Modifier.FINAL, input,
-                    Expressions.convert_(
-                        Expressions.call(DataContext.ROOT,
-                            BuiltInMethod.DATA_CONTEXT_GET.method,
-                            Expressions.constant(input.name)),
-                        input.type));
-              }
-            });
+            input -> Expressions.declare(Modifier.FINAL, input,
+                Expressions.convert_(
+                    Expressions.call(DataContext.ROOT,
+                        BuiltInMethod.DATA_CONTEXT_GET.method,
+                        Expressions.constant(input.name)),
+                    input.type)));
 
     final BlockStatement block = Expressions.block(
         Iterables.concat(
@@ -455,12 +446,10 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
   public void registerCorrelVariable(final String name,
       final ParameterExpression pe,
       final BlockBuilder corrBlock, final PhysType physType) {
-    corrVars.put(name, new RexToLixTranslator.InputGetter() {
-      public Expression field(BlockBuilder list, int index, Type storageType) {
-        Expression fieldReference =
-            physType.fieldReference(pe, index, storageType);
-        return corrBlock.append(name + "_" + index, fieldReference);
-      }
+    corrVars.put(name, (list, index, storageType) -> {
+      Expression fieldReference =
+          physType.fieldReference(pe, index, storageType);
+      return corrBlock.append(name + "_" + index, fieldReference);
     });
   }
 

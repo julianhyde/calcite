@@ -32,8 +32,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.HashMap;
@@ -146,13 +144,9 @@ public class RelMetadataQuery {
   protected static <H> H initialHandler(Class<H> handlerClass) {
     return handlerClass.cast(
         Proxy.newProxyInstance(RelMetadataQuery.class.getClassLoader(),
-            new Class[] {handlerClass},
-            new InvocationHandler() {
-              public Object invoke(Object proxy, Method method, Object[] args)
-                  throws Throwable {
-                final RelNode r = (RelNode) args[0];
-                throw new JaninoRelMetadataProvider.NoHandler(r.getClass());
-              }
+            new Class[] {handlerClass}, (proxy, method, args) -> {
+              final RelNode r = (RelNode) args[0];
+              throw new JaninoRelMetadataProvider.NoHandler(r.getClass());
             }));
   }
 

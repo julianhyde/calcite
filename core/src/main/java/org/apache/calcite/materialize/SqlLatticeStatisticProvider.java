@@ -32,20 +32,12 @@ import java.util.List;
  * executing "SELECT COUNT(DISTINCT ...) ..." SQL queries.
  */
 class SqlLatticeStatisticProvider implements LatticeStatisticProvider {
-  static final Factory FACTORY =
-      new LatticeStatisticProvider.Factory() {
-        public LatticeStatisticProvider apply(Lattice lattice) {
-          return new SqlLatticeStatisticProvider(lattice);
-        }
-      };
+  static final Factory FACTORY = SqlLatticeStatisticProvider::new;
 
-  static final Factory CACHED_FACTORY =
-      new LatticeStatisticProvider.Factory() {
-        public LatticeStatisticProvider apply(Lattice lattice) {
-          LatticeStatisticProvider provider = FACTORY.apply(lattice);
-          return new CachingLatticeStatisticProvider(lattice, provider);
-        }
-      };
+  static final Factory CACHED_FACTORY = lattice -> {
+    LatticeStatisticProvider provider = FACTORY.apply(lattice);
+    return new CachingLatticeStatisticProvider(lattice, provider);
+  };
 
   private final Lattice lattice;
 
@@ -66,7 +58,7 @@ class SqlLatticeStatisticProvider implements LatticeStatisticProvider {
     final String sql = lattice.countSql(ImmutableBitSet.of(column.ordinal));
     final Table table =
         new MaterializationService.DefaultTableFactory()
-            .createTable(lattice.rootSchema, sql, ImmutableList.<String>of());
+            .createTable(lattice.rootSchema, sql, ImmutableList.of());
     final Object[] values =
         Iterables.getOnlyElement(((ScannableTable) table).scan(null));
     return ((Number) values[0]).doubleValue();

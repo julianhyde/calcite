@@ -390,15 +390,13 @@ public abstract class Linq4j {
   /** Returns the cartesian product of an iterable of iterables. */
   public static <T> Iterable<List<T>> product(
       final Iterable<? extends Iterable<T>> iterables) {
-    return new Iterable<List<T>>() {
-      public Iterator<List<T>> iterator() {
-        final List<Enumerator<T>> enumerators = Lists.newArrayList();
-        for (Iterable<T> iterable : iterables) {
-          enumerators.add(iterableEnumerator(iterable));
-        }
-        return enumeratorIterator(
-            new CartesianProductListEnumerator<>(enumerators));
+    return () -> {
+      final List<Enumerator<T>> enumerators = Lists.newArrayList();
+      for (Iterable<T> iterable : iterables) {
+        enumerators.add(iterableEnumerator(iterable));
       }
+      return enumeratorIterator(
+          new CartesianProductListEnumerator<>(enumerators));
     };
   }
 

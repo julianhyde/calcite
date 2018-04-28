@@ -49,12 +49,7 @@ import java.util.List;
 public abstract class FilterJoinRule extends RelOptRule {
   /** Predicate that always returns true. With this predicate, every filter
    * will be pushed into the ON clause. */
-  public static final Predicate TRUE_PREDICATE =
-      new Predicate() {
-        public boolean apply(Join join, JoinRelType joinType, RexNode exp) {
-          return true;
-        }
-      };
+  public static final Predicate TRUE_PREDICATE = (join, joinType, exp) -> true;
 
   /** Rule that pushes predicates from a Filter into the Join below them. */
   public static final FilterJoinRule FILTER_ON_JOIN =

@@ -298,11 +298,7 @@ public abstract class RelDataTypeImpl
    */
   public static RelProtoDataType proto(final RelDataType protoType) {
     assert protoType != null;
-    return new RelProtoDataType() {
-      public RelDataType apply(RelDataTypeFactory typeFactory) {
-        return typeFactory.copyType(protoType);
-      }
-    };
+    return typeFactory -> typeFactory.copyType(protoType);
   }
 
   /** Returns a {@link org.apache.calcite.rel.type.RelProtoDataType}
@@ -318,11 +314,9 @@ public abstract class RelDataTypeImpl
   public static RelProtoDataType proto(final SqlTypeName typeName,
       final boolean nullable) {
     assert typeName != null;
-    return new RelProtoDataType() {
-      public RelDataType apply(RelDataTypeFactory typeFactory) {
-        final RelDataType type = typeFactory.createSqlType(typeName);
-        return typeFactory.createTypeWithNullability(type, nullable);
-      }
+    return typeFactory -> {
+      final RelDataType type = typeFactory.createSqlType(typeName);
+      return typeFactory.createTypeWithNullability(type, nullable);
     };
   }
 
@@ -340,11 +334,9 @@ public abstract class RelDataTypeImpl
   public static RelProtoDataType proto(final SqlTypeName typeName,
       final int precision, final boolean nullable) {
     assert typeName != null;
-    return new RelProtoDataType() {
-      public RelDataType apply(RelDataTypeFactory typeFactory) {
-        final RelDataType type = typeFactory.createSqlType(typeName, precision);
-        return typeFactory.createTypeWithNullability(type, nullable);
-      }
+    return typeFactory -> {
+      final RelDataType type = typeFactory.createSqlType(typeName, precision);
+      return typeFactory.createTypeWithNullability(type, nullable);
     };
   }
 
@@ -362,12 +354,10 @@ public abstract class RelDataTypeImpl
    */
   public static RelProtoDataType proto(final SqlTypeName typeName,
       final int precision, final int scale, final boolean nullable) {
-    return new RelProtoDataType() {
-      public RelDataType apply(RelDataTypeFactory typeFactory) {
-        final RelDataType type =
-            typeFactory.createSqlType(typeName, precision, scale);
-        return typeFactory.createTypeWithNullability(type, nullable);
-      }
+    return typeFactory -> {
+      final RelDataType type =
+          typeFactory.createSqlType(typeName, precision, scale);
+      return typeFactory.createTypeWithNullability(type, nullable);
     };
   }
 

@@ -280,7 +280,7 @@ class ArrayTable extends AbstractQueryableTable implements ScannableTable {
     public Object freeze(ColumnLoader.ValueSet valueSet, int[] sources) {
       // We assume the values have been canonized.
       final List<Comparable> list = permuteList(valueSet.values, sources);
-      return list.toArray(new Comparable[list.size()]);
+      return list.toArray(new Comparable[0]);
     }
 
     public Object permute(Object dataSet, int[] sources) {

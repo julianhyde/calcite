@@ -35,11 +35,7 @@ import java.util.List;
  */
 public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
   private static final Function<SqlLiteral, NlsString> F =
-      new Function<SqlLiteral, NlsString>() {
-        public NlsString apply(SqlLiteral literal) {
-          return ((SqlCharStringLiteral) literal).getNlsString();
-        }
-      };
+      literal -> ((SqlCharStringLiteral) literal).getNlsString();
 
   //~ Constructors -----------------------------------------------------------
 

@@ -106,19 +106,13 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
       boolean ignoreFilter) {
     if (call.filterArg >= 0 && !ignoreFilter) {
       final AccumulatorFactory factory = getAccumulator(call, true);
-      return new AccumulatorFactory() {
-        public Accumulator get() {
-          final Accumulator accumulator = factory.get();
-          return new FilterAccumulator(accumulator, call.filterArg);
-        }
+      return () -> {
+        final Accumulator accumulator = factory.get();
+        return new FilterAccumulator(accumulator, call.filterArg);
       };
     }
     if (call.getAggregation() == SqlStdOperatorTable.COUNT) {
-      return new AccumulatorFactory() {
-        public Accumulator get() {
-          return new CountAccumulator(call);
-        }
-      };
+      return () -> new CountAccumulator(call);
     } else if (call.getAggregation() == SqlStdOperatorTable.SUM
         || call.getAggregation() == SqlStdOperatorTable.SUM0) {
       final Class<?> clazz;

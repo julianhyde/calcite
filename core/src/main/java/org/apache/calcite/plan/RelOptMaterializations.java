@@ -106,12 +106,8 @@ public abstract class RelOptMaterializations {
     final Set<List<String>> queryTableNames =
         Sets.newHashSet(Iterables.transform(queryTables, GET_QUALIFIED_NAME));
     // Remember leaf-join form of root so we convert at most once.
-    final Supplier<RelNode> leafJoinRoot = Suppliers.memoize(
-        new Supplier<RelNode>() {
-          public RelNode get() {
-            return RelOptMaterialization.toLeafJoinForm(rel);
-          }
-        });
+    final Supplier<RelNode> leafJoinRoot =
+        Suppliers.memoize(() -> RelOptMaterialization.toLeafJoinForm(rel));
     for (RelOptLattice lattice : lattices) {
       if (queryTableNames.contains(lattice.rootTable().getQualifiedName())) {
         RelNode rel2 = lattice.rewrite(leafJoinRoot.get());
@@ -175,11 +171,7 @@ public abstract class RelOptMaterializations {
   }
 
   private static final Function<RelOptTable, List<String>> GET_QUALIFIED_NAME =
-      new Function<RelOptTable, List<String>>() {
-        public List<String> apply(RelOptTable relOptTable) {
-          return relOptTable.getQualifiedName();
-        }
-      };
+      RelOptTable::getQualifiedName;
 
   private static List<RelNode> substitute(
       RelNode root, RelOptMaterialization materialization) {

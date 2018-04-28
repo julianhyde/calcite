@@ -67,9 +67,7 @@ import org.apache.calcite.util.Util;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1053,11 +1051,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       // this is an index of existing columns coming out aggregate layer. Will use this index to:
       // filter out any project down the road that doesn't change values e.g inputRef/identity cast
       Map<String, String> existingProjects = Maps
-          .uniqueIndex(aggregateStageFieldNames, new Function<String, String>() {
-            @Override public String apply(@Nullable String input) {
-              return DruidExpressions.fromColumn(input);
-            }
-          });
+          .uniqueIndex(aggregateStageFieldNames, DruidExpressions::fromColumn);
       for (Pair<RexNode, String> pair : postProject.getNamedProjects()) {
         final RexNode postProjectRexNode = pair.left;
         String expression = DruidExpressions
@@ -1098,15 +1092,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         // Case we have transformed the group by time to druid timeseries with Granularity.
         // Need to replace the name of the column with druid timestamp field name.
         final List<String> timeseriesFieldNames =
-            Lists.transform(queryOutputFieldNames,
-                new Function<String, String>() {
-                  @Override public String apply(@Nullable String input) {
-                    if (timeExtractColumn.equals(input)) {
-                      return "timestamp";
-                    }
-                    return input;
-                  }
-                });
+            Lists.transform(queryOutputFieldNames, input -> {
+              if (timeExtractColumn.equals(input)) {
+                return "timestamp";
+              }
+              return input;
+            });
         return new QuerySpec(QueryType.TIMESERIES, timeSeriesQueryString, timeseriesFieldNames);
       }
       return new QuerySpec(QueryType.TIMESERIES, timeSeriesQueryString, queryOutputFieldNames);
@@ -1799,11 +1790,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
    * @return index of the timestamp ref or -1 if not present
    */
   protected int getTimestampFieldIndex() {
-    return Iterables.indexOf(this.getRowType().getFieldList(), new Predicate<RelDataTypeField>() {
-      @Override public boolean apply(@Nullable RelDataTypeField input) {
-        return druidTable.timestampFieldName.equals(input.getName());
-      }
-    });
+    return Iterables.indexOf(this.getRowType().getFieldList(),
+        input -> druidTable.timestampFieldName.equals(input.getName()));
   }
 }
 

@@ -118,12 +118,12 @@ public class CassandraTable extends AbstractQueryableTable
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
     final RelDataType rowType = getRowType(typeFactory);
 
-    Function1<String, Void> addField = new Function1<String, Void>() {
-      public Void apply(String fieldName) {
-        SqlTypeName typeName = rowType.getField(fieldName, true, false).getType().getSqlTypeName();
-        fieldInfo.add(fieldName, typeFactory.createSqlType(typeName)).nullable(true);
-        return null;
-      }
+    Function1<String, Void> addField = fieldName -> {
+      SqlTypeName typeName =
+          rowType.getField(fieldName, true, false).getType().getSqlTypeName();
+      fieldInfo.add(fieldName, typeFactory.createSqlType(typeName))
+          .nullable(true);
+      return null;
     };
 
     if (selectFields.isEmpty()) {
@@ -143,26 +143,24 @@ public class CassandraTable extends AbstractQueryableTable
     if (selectFields.isEmpty()) {
       selectString = "*";
     } else {
-      selectString = Util.toString(new Iterable<String>() {
-        public Iterator<String> iterator() {
-          final Iterator<Map.Entry<String, String>> selectIterator =
-              selectFields.iterator();
+      selectString = Util.toString(() -> {
+        final Iterator<Map.Entry<String, String>> selectIterator =
+            selectFields.iterator();
 
-          return new Iterator<String>() {
-            @Override public boolean hasNext() {
-              return selectIterator.hasNext();
-            }
+        return new Iterator<String>() {
+          @Override public boolean hasNext() {
+            return selectIterator.hasNext();
+          }
 
-            @Override public String next() {
-              Map.Entry<String, String> entry = selectIterator.next();
-              return entry.getKey() + " AS " + entry.getValue();
-            }
+          @Override public String next() {
+            Map.Entry<String, String> entry = selectIterator.next();
+            return entry.getKey() + " AS " + entry.getValue();
+          }
 
-            @Override public void remove() {
-              throw new UnsupportedOperationException();
-            }
-          };
-        }
+          @Override public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
       }, "", ", ", "");
     }
 

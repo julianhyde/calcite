@@ -2578,13 +2578,11 @@ public class RelToSqlConverterTest {
 
     Sql optimize(final RuleSet ruleSet, final RelOptPlanner relOptPlanner) {
       return new Sql(schemaSpec, sql, dialect, config,
-          FlatLists.append(transforms, new Function<RelNode, RelNode>() {
-            public RelNode apply(RelNode r) {
-              Program program = Programs.of(ruleSet);
-              return program.run(relOptPlanner, r, r.getTraitSet(),
-                  ImmutableList.<RelOptMaterialization>of(),
-                  ImmutableList.<RelOptLattice>of());
-            }
+          FlatLists.append(transforms, r -> {
+            Program program = Programs.of(ruleSet);
+            return program.run(relOptPlanner, r, r.getTraitSet(),
+                ImmutableList.<RelOptMaterialization>of(),
+                ImmutableList.<RelOptLattice>of());
           }));
     }
 

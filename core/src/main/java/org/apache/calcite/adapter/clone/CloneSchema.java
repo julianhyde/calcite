@@ -34,7 +34,6 @@ import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
@@ -115,21 +114,18 @@ public class CloneSchema extends AbstractSchema {
     return new ArrayTable(
         elementType,
         protoRowType,
-        Suppliers.memoize(
-            new Supplier<ArrayTable.Content>() {
-              public ArrayTable.Content get() {
-                final ColumnLoader loader =
-                    new ColumnLoader<>(typeFactory, source, protoRowType,
-                        repList);
-                final List<RelCollation> collation2 =
-                    collations.isEmpty()
-                        && loader.sortField >= 0
-                        ? RelCollations.createSingleton(loader.sortField)
-                        : collations;
-                return new ArrayTable.Content(loader.representationValues,
-                    loader.size(), collation2);
-              }
-            }));
+        Suppliers.memoize(() -> {
+          final ColumnLoader loader =
+              new ColumnLoader<>(typeFactory, source, protoRowType,
+                  repList);
+          final List<RelCollation> collation2 =
+              collations.isEmpty()
+                  && loader.sortField >= 0
+                  ? RelCollations.createSingleton(loader.sortField)
+                  : collations;
+          return new ArrayTable.Content(loader.representationValues,
+              loader.size(), collation2);
+        }));
   }
 
   /** Schema factory that creates a

@@ -21,11 +21,9 @@ import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.MongoAssertions;
-
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.io.LineProcessor;
 import com.google.common.io.Resources;
@@ -33,15 +31,12 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 import net.hydromatic.foodmart.data.json.FoodmartJson;
-
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.Document;
-
 import org.hamcrest.CoreMatchers;
-
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -52,7 +47,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -60,6 +54,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Testing mongo adapter functionality. By default runs with
@@ -724,18 +719,14 @@ public class MongoAdapterTest implements SchemaFactory {
   @Test public void testCountViaInt() {
     assertModel(MODEL)
         .query("select count(*) from zips")
-        .returns(
-            new Function<ResultSet, Void>() {
-              public Void apply(ResultSet input) {
-                try {
-                  Assert.assertThat(input.next(), CoreMatchers.is(true));
-                  Assert.assertThat(input.getInt(1), CoreMatchers.is(ZIPS_SIZE));
-                  return null;
-                } catch (SQLException e) {
-                  throw new RuntimeException(e);
-                }
-              }
-            });
+        .returns(input -> {
+          try {
+            Assert.assertThat(input.next(), CoreMatchers.is(true));
+            Assert.assertThat(input.getInt(1), CoreMatchers.is(ZIPS_SIZE));
+          } catch (SQLException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
@@ -745,17 +736,14 @@ public class MongoAdapterTest implements SchemaFactory {
    * @param strings Expected expressions
    * @return validation function
    */
-  private static Function<List, Void> mongoChecker(final String... strings) {
-    return new Function<List, Void>() {
-      public Void apply(List actual) {
-        Object[] actualArray =
-            actual == null || actual.isEmpty()
-                ? null
-                : ((List) actual.get(0)).toArray();
-        CalciteAssert.assertArrayEqual("expected MongoDB query not found",
-            strings, actualArray);
-        return null;
-      }
+  private static Consumer<List> mongoChecker(final String... strings) {
+    return actual -> {
+      Object[] actualArray =
+          actual == null || actual.isEmpty()
+              ? null
+              : ((List) actual.get(0)).toArray();
+      CalciteAssert.assertArrayEqual("expected MongoDB query not found",
+          strings, actualArray);
     };
   }
 }

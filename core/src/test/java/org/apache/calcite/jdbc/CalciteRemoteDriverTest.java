@@ -25,14 +25,12 @@ import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.server.AvaticaJsonHandler;
 import org.apache.calcite.avatica.server.HttpServer;
 import org.apache.calcite.avatica.server.Main;
-import org.apache.calcite.avatica.server.Main.HandlerFactory;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.JdbcFrontLinqBackTest;
 import org.apache.calcite.test.JdbcTest;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -74,6 +72,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -100,53 +99,47 @@ public class CalciteRemoteDriverTest {
       };
 
   private static final Function<Connection, ResultSet> GET_SCHEMAS =
-      new Function<Connection, ResultSet>() {
-        public ResultSet apply(Connection input) {
-          try {
-            return input.getMetaData().getSchemas();
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
+      connection -> {
+        try {
+          return connection.getMetaData().getSchemas();
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
         }
       };
+
   private static final Function<Connection, ResultSet> GET_CATALOGS =
-      new Function<Connection, ResultSet>() {
-        public ResultSet apply(Connection input) {
-          try {
-            return input.getMetaData().getCatalogs();
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
+      connection -> {
+        try {
+          return connection.getMetaData().getCatalogs();
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
         }
       };
+
   private static final Function<Connection, ResultSet> GET_COLUMNS =
-      new Function<Connection, ResultSet>() {
-        public ResultSet apply(Connection input) {
-          try {
-            return input.getMetaData().getColumns(null, null, null, null);
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
+      connection -> {
+        try {
+          return connection.getMetaData().getColumns(null, null, null, null);
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
         }
       };
+
   private static final Function<Connection, ResultSet> GET_TYPEINFO =
-      new Function<Connection, ResultSet>() {
-        public ResultSet apply(Connection input) {
-          try {
-            return input.getMetaData().getTypeInfo();
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
+      connection -> {
+        try {
+          return connection.getMetaData().getTypeInfo();
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
         }
       };
+
   private static final Function<Connection, ResultSet> GET_TABLE_TYPES =
-      new Function<Connection, ResultSet>() {
-        public ResultSet apply(Connection input) {
-          try {
-            return input.getMetaData().getTableTypes();
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
+      connection -> {
+        try {
+          return connection.getMetaData().getTableTypes();
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
         }
       };
 
@@ -157,11 +150,8 @@ public class CalciteRemoteDriverTest {
     localConnection = CalciteAssert.hr().connect();
 
     // Make sure we pick an ephemeral port for the server
-    start = Main.start(new String[]{Factory.class.getName()}, 0, new HandlerFactory() {
-      public AvaticaJsonHandler createHandler(Service service) {
-        return new AvaticaJsonHandler(service);
-      }
-    });
+    start = Main.start(new String[]{Factory.class.getName()}, 0,
+        AvaticaJsonHandler::new);
   }
 
   protected static Connection getRemoteConnection() throws SQLException {

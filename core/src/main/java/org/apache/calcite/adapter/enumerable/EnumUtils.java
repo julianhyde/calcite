@@ -50,11 +50,7 @@ import java.util.List;
 public class EnumUtils {
 
   private static final Function<RexNode, Type> REX_TO_INTERNAL_TYPE =
-      new Function<RexNode, Type>() {
-        public Type apply(RexNode node) {
-          return toInternal(node.getType());
-        }
-      };
+      node -> toInternal(node.getType());
 
   private EnumUtils() {}
 

@@ -21,7 +21,6 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -76,7 +75,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
 
   @Override public List<String> getParamNames() {
     return Lists.transform(tableMacro.getParameters(),
-        FunctionParameter.NAME_FN);
+        FunctionParameter::getName);
   }
 
   /** Returns the table in this UDF, or null if there is no table. */
@@ -188,8 +187,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
         RexToLixTranslator.convert(Expressions.constant(o), clazz);
     bb.add(Expressions.return_(null, expr));
     final FunctionExpression convert =
-        Expressions.lambda(bb.toBlock(),
-            Collections.<ParameterExpression>emptyList());
+        Expressions.lambda(bb.toBlock(), Collections.emptyList());
     return convert.compile().dynamicInvoke();
   }
 

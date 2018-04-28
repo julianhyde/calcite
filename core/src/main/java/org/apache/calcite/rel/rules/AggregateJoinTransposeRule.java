@@ -45,7 +45,6 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -80,8 +79,10 @@ public class AggregateJoinTransposeRule extends RelOptRule {
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory,
       boolean allowFunctions) {
     super(
-        operand(aggregateClass, null, Aggregate.IS_SIMPLE,
-            operand(joinClass, any())), relBuilderFactory, null);
+        operandJ(aggregateClass, null,
+            aggregate -> aggregate.getGroupType() == Aggregate.Group.SIMPLE,
+            operand(joinClass, any())),
+        relBuilderFactory, null);
     this.allowFunctions = allowFunctions;
   }
 
@@ -303,11 +304,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
 
     // Update condition
     final Mapping mapping = (Mapping) Mappings.target(
-        new Function<Integer, Integer>() {
-          public Integer apply(Integer a0) {
-            return map.get(a0);
-          }
-        },
+        map::get,
         join.getRowType().getFieldCount(),
         belowOffset);
     final RexNode newCondition =
@@ -425,15 +422,13 @@ public class AggregateJoinTransposeRule extends RelOptRule {
    * that is a view of a list. */
   private static <E> SqlSplittableAggFunction.Registry<E> registry(
       final List<E> list) {
-    return new SqlSplittableAggFunction.Registry<E>() {
-      public int register(E e) {
-        int i = list.indexOf(e);
-        if (i < 0) {
-          i = list.size();
-          list.add(e);
-        }
-        return i;
+    return e -> {
+      int i = list.indexOf(e);
+      if (i < 0) {
+        i = list.size();
+        list.add(e);
       }
+      return i;
     };
   }
 

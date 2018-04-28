@@ -551,7 +551,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
         return traitSet1;
       }
       final RelTraitSet traitSet =
-          new RelTraitSet(this, traits.toArray(new RelTrait[traits.size()]));
+          new RelTraitSet(this, traits.toArray(new RelTrait[0]));
       map.put(traits, traitSet);
       return traitSet;
     }

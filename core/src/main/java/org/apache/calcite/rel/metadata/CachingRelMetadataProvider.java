@@ -66,14 +66,12 @@ public class CachingRelMetadataProvider implements RelMetadataProvider {
 
     // TODO jvs 30-Mar-2006: Use meta-metadata to decide which metadata
     // query results can stay fresh until the next Ice Age.
-    return new UnboundMetadata<M>() {
-      public M bind(RelNode rel, RelMetadataQuery mq) {
-        final Metadata metadata = function.bind(rel, mq);
-        return metadataClass.cast(
-            Proxy.newProxyInstance(metadataClass.getClassLoader(),
-                new Class[]{metadataClass},
-                new CachingInvocationHandler(metadata)));
-      }
+    return (rel, mq) -> {
+      final Metadata metadata = function.bind(rel, mq);
+      return metadataClass.cast(
+          Proxy.newProxyInstance(metadataClass.getClassLoader(),
+              new Class[]{metadataClass},
+              new CachingInvocationHandler(metadata)));
     };
   }
 

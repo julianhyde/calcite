@@ -74,6 +74,93 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
   public static final SubQueryRemoveRule JOIN =
       new SubQueryJoinRemoveRule(RelFactories.LOGICAL_BUILDER);
 
+  /*
+=======
+      new SubQueryRemoveRule(
+          operandJ(Project.class, null,
+              RexUtil.SubQueryFinder::containsSubQuery, any()),
+          RelFactories.LOGICAL_BUILDER, "SubQueryRemoveRule:Project") {
+        public void onMatch(RelOptRuleCall call) {
+          final Project project = call.rel(0);
+          final RelBuilder builder = call.builder();
+          final RexSubQuery e =
+              RexUtil.SubQueryFinder.find(project.getProjects());
+          assert e != null;
+          final RelOptUtil.Logic logic =
+              LogicVisitor.find(RelOptUtil.Logic.TRUE_FALSE_UNKNOWN,
+                  project.getProjects(), e);
+          builder.push(project.getInput());
+          final int fieldCount = builder.peek().getRowType().getFieldCount();
+          final RexNode target = apply(e, ImmutableSet.<CorrelationId>of(),
+              logic, builder, 1, fieldCount);
+          final RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
+          builder.project(shuttle.apply(project.getProjects()),
+              project.getRowType().getFieldNames());
+          call.transformTo(builder.build());
+        }
+      };
+
+  public static final SubQueryRemoveRule FILTER =
+      new SubQueryRemoveRule(
+          operandJ(Filter.class, null,
+              RexUtil.SubQueryFinder::containsSubQuery, any()),
+          RelFactories.LOGICAL_BUILDER, "SubQueryRemoveRule:Filter") {
+        public void onMatch(RelOptRuleCall call) {
+          final Filter filter = call.rel(0);
+          final RelBuilder builder = call.builder();
+          builder.push(filter.getInput());
+          int count = 0;
+          RexNode c = filter.getCondition();
+          for (;;) {
+            final RexSubQuery e = RexUtil.SubQueryFinder.find(c);
+            if (e == null) {
+              assert count > 0;
+              break;
+            }
+            ++count;
+            final RelOptUtil.Logic logic =
+                LogicVisitor.find(RelOptUtil.Logic.TRUE, ImmutableList.of(c),
+                    e);
+            final Set<CorrelationId>  variablesSet =
+                RelOptUtil.getVariablesUsed(e.rel);
+            final RexNode target = apply(e, variablesSet, logic,
+                builder, 1, builder.peek().getRowType().getFieldCount());
+            final RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
+            c = c.accept(shuttle);
+          }
+          builder.filter(c);
+          builder.project(fields(builder, filter.getRowType().getFieldCount()));
+          call.transformTo(builder.build());
+        }
+      };
+
+  public static final SubQueryRemoveRule JOIN =
+      new SubQueryRemoveRule(
+          operandJ(Join.class, null, RexUtil.SubQueryFinder::containsSubQuery,
+              any()),
+          RelFactories.LOGICAL_BUILDER, "SubQueryRemoveRule:Join") {
+        public void onMatch(RelOptRuleCall call) {
+          final Join join = call.rel(0);
+          final RelBuilder builder = call.builder();
+          final RexSubQuery e =
+              RexUtil.SubQueryFinder.find(join.getCondition());
+          assert e != null;
+          final RelOptUtil.Logic logic =
+              LogicVisitor.find(RelOptUtil.Logic.TRUE,
+                  ImmutableList.of(join.getCondition()), e);
+          builder.push(join.getLeft());
+          builder.push(join.getRight());
+          final int fieldCount = join.getRowType().getFieldCount();
+          final RexNode target = apply(e, ImmutableSet.<CorrelationId>of(),
+              logic, builder, 2, fieldCount);
+          final RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
+          builder.join(join.getJoinType(), shuttle.apply(join.getCondition()));
+          builder.project(fields(builder, join.getRowType().getFieldCount()));
+          call.transformTo(builder.build());
+        }
+      };
+*/
+
   /**
    * Creates a SubQueryRemoveRule.
    *
@@ -497,8 +584,9 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
   public static class SubQueryProjectRemoveRule extends SubQueryRemoveRule {
     public SubQueryProjectRemoveRule(RelBuilderFactory relBuilderFactory) {
       super(
-          operand(Project.class, null, RexUtil.SubQueryFinder.PROJECT_PREDICATE,
-              any()), relBuilderFactory, "SubQueryRemoveRule:Project");
+          operandJ(Project.class, null,
+              RexUtil.SubQueryFinder::containsSubQuery, any()),
+          relBuilderFactory, "SubQueryRemoveRule:Project");
     }
 
     public void onMatch(RelOptRuleCall call) {
@@ -526,7 +614,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
   public static class SubQueryFilterRemoveRule extends SubQueryRemoveRule {
     public SubQueryFilterRemoveRule(RelBuilderFactory relBuilderFactory) {
       super(
-          operand(Filter.class, null, RexUtil.SubQueryFinder.FILTER_PREDICATE,
+          operandJ(Filter.class, null, RexUtil.SubQueryFinder::containsSubQuery,
               any()), relBuilderFactory, "SubQueryRemoveRule:Filter");
     }
 
@@ -563,7 +651,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
   public static class SubQueryJoinRemoveRule extends SubQueryRemoveRule {
     public SubQueryJoinRemoveRule(RelBuilderFactory relBuilderFactory) {
       super(
-          operand(Join.class, null, RexUtil.SubQueryFinder.JOIN_PREDICATE,
+          operandJ(Join.class, null, RexUtil.SubQueryFinder::containsSubQuery,
               any()), relBuilderFactory, "SubQueryRemoveRule:Join");
     }
 

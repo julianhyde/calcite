@@ -126,7 +126,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
           new MockRuleCall(
               this,
               rule.getOperand(),
-              bindings.toArray(new RelNode[bindings.size()]));
+              bindings.toArray(new RelNode[0]));
       if (rule.matches(call)) {
         rule.onMatch(call);
       }

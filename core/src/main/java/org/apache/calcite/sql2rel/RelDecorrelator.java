@@ -88,7 +88,6 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -119,7 +118,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import javax.annotation.Nonnull;
 
 /**
@@ -282,26 +280,24 @@ public class RelDecorrelator implements ReflectiveVisitor {
   }
 
   private Function2<RelNode, RelNode, Void> createCopyHook() {
-    return new Function2<RelNode, RelNode, Void>() {
-      public Void apply(RelNode oldNode, RelNode newNode) {
-        if (cm.mapRefRelToCorRef.containsKey(oldNode)) {
-          cm.mapRefRelToCorRef.putAll(newNode,
-              cm.mapRefRelToCorRef.get(oldNode));
-        }
-        if (oldNode instanceof LogicalCorrelate
-            && newNode instanceof LogicalCorrelate) {
-          LogicalCorrelate oldCor = (LogicalCorrelate) oldNode;
-          CorrelationId c = oldCor.getCorrelationId();
-          if (cm.mapCorToCorRel.get(c) == oldNode) {
-            cm.mapCorToCorRel.put(c, newNode);
-          }
-
-          if (generatedCorRels.contains(oldNode)) {
-            generatedCorRels.add((LogicalCorrelate) newNode);
-          }
-        }
-        return null;
+    return (oldNode, newNode) -> {
+      if (cm.mapRefRelToCorRef.containsKey(oldNode)) {
+        cm.mapRefRelToCorRef.putAll(newNode,
+            cm.mapRefRelToCorRef.get(oldNode));
       }
+      if (oldNode instanceof LogicalCorrelate
+          && newNode instanceof LogicalCorrelate) {
+        LogicalCorrelate oldCor = (LogicalCorrelate) oldNode;
+        CorrelationId c = oldCor.getCorrelationId();
+        if (cm.mapCorToCorRel.get(c) == oldNode) {
+          cm.mapCorToCorRel.put(c, newNode);
+        }
+
+        if (generatedCorRels.contains(oldNode)) {
+          generatedCorRels.add((LogicalCorrelate) newNode);
+        }
+      }
+      return null;
     };
   }
 
@@ -2004,7 +2000,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
           operand(LogicalCorrelate.class,
               operand(RelNode.class, any()),
               operand(LogicalProject.class,
-                  operand(LogicalAggregate.class, null, Aggregate.IS_SIMPLE,
+                  operandJ(LogicalAggregate.class, null, Aggregate::isSimple,
                       operand(LogicalProject.class,
                           operand(RelNode.class, any()))))),
           relBuilderFactory, null);
@@ -2670,13 +2666,10 @@ public class RelDecorrelator implements ReflectiveVisitor {
         new TreeMap<>();
 
     final SortedSetMultimap<RelNode, CorRef> mapRefRelToCorRef =
-        Multimaps.newSortedSetMultimap(
-            new HashMap<RelNode, Collection<CorRef>>(),
-            new Supplier<TreeSet<CorRef>>() {
-              public TreeSet<CorRef> get() {
-                Bug.upgrade("use MultimapBuilder when we're on Guava-16");
-                return Sets.newTreeSet();
-              }
+        Multimaps.newSortedSetMultimap(new HashMap<>(),
+            () -> {
+              Bug.upgrade("use MultimapBuilder when we're on Guava-16");
+              return Sets.newTreeSet();
             });
 
     final Map<RexFieldAccess, CorRef> mapFieldAccessToCorVar = new HashMap<>();

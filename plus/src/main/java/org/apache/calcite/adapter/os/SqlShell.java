@@ -286,32 +286,30 @@ public class SqlShell {
             out.println(",");
           }
           json.append(b, 0,
-              Maps.asMap(fields, new Function<String, Object>() {
-                public Object apply(String columnLabel) {
-                  try {
-                    final int i = fieldOrdinals.get(columnLabel);
-                    switch (m.getColumnType(i)) {
-                    case Types.BOOLEAN:
-                      final boolean b = r.getBoolean(i);
-                      return !b && r.wasNull() ? null : b;
-                    case Types.DECIMAL:
-                    case Types.FLOAT:
-                    case Types.REAL:
-                    case Types.DOUBLE:
-                      final double d = r.getDouble(i);
-                      return d == 0D && r.wasNull() ? null : d;
-                    case Types.BIGINT:
-                    case Types.INTEGER:
-                    case Types.SMALLINT:
-                    case Types.TINYINT:
-                      final long v = r.getLong(i);
-                      return v == 0L && r.wasNull() ? null : v;
-                    default:
-                      return r.getString(i);
-                    }
-                  } catch (SQLException e) {
-                    throw new RuntimeException(e);
+              Maps.asMap(fields, (Function<String, Object>) columnLabel -> {
+                try {
+                  final int i1 = fieldOrdinals.get(columnLabel);
+                  switch (m.getColumnType(i1)) {
+                  case Types.BOOLEAN:
+                    final boolean b1 = r.getBoolean(i1);
+                    return !b1 && r.wasNull() ? null : b1;
+                  case Types.DECIMAL:
+                  case Types.FLOAT:
+                  case Types.REAL:
+                  case Types.DOUBLE:
+                    final double d = r.getDouble(i1);
+                    return d == 0D && r.wasNull() ? null : d;
+                  case Types.BIGINT:
+                  case Types.INTEGER:
+                  case Types.SMALLINT:
+                  case Types.TINYINT:
+                    final long v = r.getLong(i1);
+                    return v == 0L && r.wasNull() ? null : v;
+                  default:
+                    return r.getString(i1);
                   }
+                } catch (SQLException e) {
+                  throw new RuntimeException(e);
                 }
               }));
           out.append(b);

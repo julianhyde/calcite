@@ -19,11 +19,11 @@ package org.apache.calcite.plan;
 import org.apache.calcite.rel.RelNode;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * Operand that determines whether a {@link RelOptRule}
@@ -212,7 +212,7 @@ public class RelOptRuleOperand {
     if ((trait != null) && !rel.getTraitSet().contains(trait)) {
       return false;
     }
-    return predicate.apply(rel);
+    return predicate.test(rel);
   }
 }
 

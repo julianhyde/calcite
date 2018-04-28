@@ -17,7 +17,6 @@
 package org.apache.calcite.materialize;
 
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.profile.Profiler;
 import org.apache.calcite.profile.ProfilerImpl;
 import org.apache.calcite.rel.metadata.NullSentinel;
@@ -39,27 +38,7 @@ import java.util.List;
  * {@link org.apache.calcite.profile.Profiler}.
  */
 class ProfilerLatticeStatisticProvider implements LatticeStatisticProvider {
-  static final Factory FACTORY =
-      new Factory() {
-        public LatticeStatisticProvider apply(Lattice lattice) {
-          return new ProfilerLatticeStatisticProvider(lattice);
-        }
-      };
-
-  /** Converts an array of values to a list of {@link Comparable} values,
-   * converting null values to sentinels. */
-  private static final Function1<Object[], List<Comparable>> TO_LIST =
-      new Function1<Object[], List<Comparable>>() {
-        public List<Comparable> apply(Object[] values) {
-          for (int i = 0; i < values.length; i++) {
-            if (values[i] == null) {
-              values[i] = NullSentinel.INSTANCE;
-            }
-          }
-          //noinspection unchecked
-          return (List) Arrays.asList(values);
-        }
-      };
+  static final Factory FACTORY = ProfilerLatticeStatisticProvider::new;
 
   private final Lattice lattice;
   private final Supplier<Profiler.Profile> profile =
@@ -84,7 +63,16 @@ class ProfilerLatticeStatisticProvider implements LatticeStatisticProvider {
           final ImmutableList<ImmutableBitSet> initialGroups =
               ImmutableList.of();
           final Enumerable<List<Comparable>> rows =
-              ((ScannableTable) table).scan(null).select(TO_LIST);
+              ((ScannableTable) table).scan(null)
+                  .select(values -> {
+                    for (int i = 0; i < values.length; i++) {
+                      if (values[i] == null) {
+                        values[i] = NullSentinel.INSTANCE;
+                      }
+                    }
+                    //noinspection unchecked
+                    return (List<Comparable>) (List) Arrays.asList(values);
+                  });
           return profiler.profile(rows, columns, initialGroups);
         }
       });

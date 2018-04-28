@@ -59,7 +59,7 @@ class RelCompositeTrait<T extends RelMultipleTrait> implements RelTrait {
       compositeTrait = new EmptyCompositeTrait<T>(def);
     } else {
       final RelMultipleTrait[] traits =
-          traitList.toArray(new RelMultipleTrait[traitList.size()]);
+          traitList.toArray(new RelMultipleTrait[0]);
       for (int i = 0; i < traits.length; i++) {
         traits[i] = (T) def.canonize(traits[i]);
       }

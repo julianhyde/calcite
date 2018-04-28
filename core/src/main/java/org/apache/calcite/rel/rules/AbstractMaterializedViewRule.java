@@ -1968,7 +1968,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       Multimap<RexTableInputRef, RexTableInputRef> compensationEquiColumns) {
     // Create UK-FK graph with view tables
     final DirectedGraph<RelTableRef, Edge> graph =
-        DefaultDirectedGraph.create(Edge.FACTORY);
+        DefaultDirectedGraph.create(Edge::new);
     final Multimap<List<String>, RelTableRef> tableVNameToTableRefs =
         ArrayListMultimap.create();
     final Set<RelTableRef> extraTableRefs = new HashSet<>();
@@ -2117,8 +2117,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       return null;
     }
 
-    return ImmutableTriple.<RexNode, RexNode, RexNode>of(
-        compensationColumnsEquiPred, compensationRangePred, compensationResidualPred);
+    return ImmutableTriple.of(compensationColumnsEquiPred,
+        compensationRangePred, compensationResidualPred);
   }
 
   /**
@@ -2625,12 +2625,6 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
 
   /** Edge for graph */
   private static class Edge extends DefaultEdge {
-    public static final DirectedGraph.EdgeFactory<RelTableRef, Edge> FACTORY =
-        new DirectedGraph.EdgeFactory<RelTableRef, Edge>() {
-          public Edge createEdge(RelTableRef source, RelTableRef target) {
-            return new Edge(source, target);
-          }
-        };
 
     final Multimap<RexTableInputRef, RexTableInputRef> equiColumns =
         ArrayListMultimap.create();

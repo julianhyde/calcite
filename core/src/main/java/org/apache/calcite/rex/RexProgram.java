@@ -574,7 +574,7 @@ public class RexProgram {
       // to the output.
       outputCollations.add(RelCollations.of(fieldCollations));
     }
-    Collections.sort(outputCollations, Ordering.natural());
+    outputCollations.sort(Ordering.natural());
   }
 
   /**

@@ -26,7 +26,6 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -241,12 +240,7 @@ public interface SqlValidatorScope {
 
     /** Returns a list ["step1", "step2"]. */
     List<String> stepNames() {
-      return Lists.transform(steps(),
-          new Function<Step, String>() {
-            public String apply(Step input) {
-              return input.name;
-            }
-          });
+      return Lists.transform(steps(), input -> input.name);
     }
 
     protected void build(ImmutableList.Builder<Step> paths) {

@@ -82,7 +82,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -283,14 +282,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
   protected VolcanoPlannerPhaseRuleMappingInitializer
       getPhaseRuleMappingInitializer() {
-    return new VolcanoPlannerPhaseRuleMappingInitializer() {
-      public void initialize(
-          Map<VolcanoPlannerPhase, Set<String>> phaseRuleMap) {
-        // Disable all phases except OPTIMIZE by adding one useless rule name.
-        phaseRuleMap.get(VolcanoPlannerPhase.PRE_PROCESS_MDR).add("xxx");
-        phaseRuleMap.get(VolcanoPlannerPhase.PRE_PROCESS).add("xxx");
-        phaseRuleMap.get(VolcanoPlannerPhase.CLEANUP).add("xxx");
-      }
+    return phaseRuleMap -> {
+      // Disable all phases except OPTIMIZE by adding one useless rule name.
+      phaseRuleMap.get(VolcanoPlannerPhase.PRE_PROCESS_MDR).add("xxx");
+      phaseRuleMap.get(VolcanoPlannerPhase.PRE_PROCESS).add("xxx");
+      phaseRuleMap.get(VolcanoPlannerPhase.CLEANUP).add("xxx");
     };
   }
 
@@ -1172,14 +1168,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     pw.println("Original rel:");
     pw.println(originalRootString);
     pw.println("Sets:");
-    Ordering<RelSet> ordering = Ordering.from(
-        new Comparator<RelSet>() {
-          public int compare(
-              RelSet o1,
-              RelSet o2) {
-            return o1.id - o2.id;
-          }
-        });
+    Ordering<RelSet> ordering = Ordering.from((o1, o2) -> o1.id - o2.id);
     for (RelSet set : ordering.immutableSortedCopy(allSets)) {
       pw.println("Set#" + set.id
           + ", type: " + set.subsets.get(0).getRowType());

@@ -45,12 +45,6 @@ import javax.annotation.Nonnull;
  * Basic implementation of {@link Profiler}.
  */
 public class SimpleProfiler implements Profiler {
-  private static final Function<List<Comparable>, Comparable> ONLY =
-      new Function<List<Comparable>, Comparable>() {
-        public Comparable apply(List<Comparable> input) {
-          return Iterables.getOnlyElement(input);
-        }
-      };
 
   public Profile profile(Iterable<List<Comparable>> rows,
       final List<Column> columns, Collection<ImmutableBitSet> initialGroups) {
@@ -97,11 +91,7 @@ public class SimpleProfiler implements Profiler {
     final List<Space> singletonSpaces;
     final List<Statistic> statistics = new ArrayList<>();
     final PartiallyOrderedSet.Ordering<Space> ordering =
-        new PartiallyOrderedSet.Ordering<Space>() {
-          public boolean lessThan(Space e1, Space e2) {
-            return e2.columnOrdinals.contains(e1.columnOrdinals);
-          }
-        };
+        (e1, e2) -> e2.columnOrdinals.contains(e1.columnOrdinals);
     final PartiallyOrderedSet<Space> results =
         new PartiallyOrderedSet<>(ordering);
     final PartiallyOrderedSet<Space> keyResults =
@@ -217,7 +207,7 @@ public class SimpleProfiler implements Profiler {
         if (space.columns.size() == 1) {
           nullCount = space.nullCount;
           valueSet = ImmutableSortedSet.copyOf(
-              Iterables.transform(space.values, ONLY));
+              Iterables.transform(space.values, Iterables::getOnlyElement));
         } else {
           nullCount = -1;
           valueSet = null;

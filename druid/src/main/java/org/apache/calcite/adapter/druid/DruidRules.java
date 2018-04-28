@@ -40,7 +40,6 @@ import org.apache.calcite.rel.rules.PushProjector;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexExecutor;
@@ -61,9 +60,7 @@ import org.apache.calcite.util.trace.CalciteTrace;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.joda.time.Interval;
@@ -74,8 +71,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 /**
  * Rules and relational operators for {@link DruidQuery}.
@@ -176,17 +171,14 @@ public class DruidRules {
       }
 
       // Timestamp
-      int timestampFieldIdx = Iterables
-          .indexOf(query.getRowType().getFieldList(), new Predicate<RelDataTypeField>() {
-            @Override public boolean apply(@Nullable RelDataTypeField input) {
-              return query.druidTable.timestampFieldName.equals(input.getName());
-            }
-          });
+      int timestampFieldIdx =
+          query.getRowType().getFieldNames()
+              .indexOf(query.druidTable.timestampFieldName);
       RelNode newDruidQuery = query;
       final Triple<List<RexNode>, List<RexNode>, List<RexNode>> triple =
           splitFilters(rexBuilder, query, validPreds, nonValidPreds, timestampFieldIdx);
       if (triple.getLeft().isEmpty() && triple.getMiddle().isEmpty()) {
-        //it sucks, nothing to push
+        // it sucks, nothing to push
         return;
       }
       final List<RexNode> residualPreds = new ArrayList<>(triple.getRight());

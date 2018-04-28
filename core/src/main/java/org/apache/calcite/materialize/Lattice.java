@@ -72,20 +72,6 @@ import java.util.Set;
  * recognized and recommended.
  */
 public class Lattice {
-  private static final Function<Column, String> GET_ALIAS =
-      new Function<Column, String>() {
-        public String apply(Column input) {
-          return input.alias;
-        }
-      };
-
-  private static final Function<Column, Integer> GET_ORDINAL =
-      new Function<Column, Integer>() {
-        public Integer apply(Column input) {
-          return input.ordinal;
-        }
-      };
-
   public final CalciteSchema rootSchema;
   public final ImmutableList<Node> nodes;
   public final ImmutableList<Column> columns;
@@ -97,20 +83,6 @@ public class Lattice {
   public final ImmutableList<Tile> tiles;
   public final ImmutableList<String> uniqueColumnNames;
   public final LatticeStatisticProvider statisticProvider;
-
-  private final Function<Integer, Column> toColumnFunction =
-      new Function<Integer, Column>() {
-        public Column apply(Integer input) {
-          return columns.get(input);
-        }
-      };
-  private final Function<AggregateCall, Measure> toMeasureFunction =
-      new Function<AggregateCall, Measure>() {
-        public Measure apply(AggregateCall input) {
-          return new Measure(input.getAggregation(),
-              Lists.transform(input.getArgList(), toColumnFunction));
-        }
-      };
 
   private Lattice(CalciteSchema rootSchema, ImmutableList<Node> nodes,
       boolean auto, boolean algorithm, long algorithmMaxMillis,
@@ -143,7 +115,8 @@ public class Lattice {
     }
     uniqueColumnNames =
         ImmutableList.copyOf(
-            SqlValidatorUtil.uniquify(Lists.transform(columns, GET_ALIAS), true));
+            SqlValidatorUtil.uniquify(
+                Lists.transform(columns, input -> input.alias), true));
     if (rowCountEstimate == null) {
       // We could improve this when we fix
       // [CALCITE-429] Add statistics SPI for lattice optimization algorithm
@@ -385,7 +358,10 @@ public class Lattice {
   }
 
   public List<Measure> toMeasures(List<AggregateCall> aggCallList) {
-    return Lists.transform(aggCallList, toMeasureFunction);
+    return Lists.transform(aggCallList,
+        call -> new Measure(call.getAggregation(),
+        Lists.transform(call.getArgList(),
+            (Function<Integer, Column>) columns::get)));
   }
 
   public Iterable<? extends Tile> computeTiles() {
@@ -469,11 +445,7 @@ public class Lattice {
   /** Edge in the temporary graph. */
   private static class Edge extends DefaultEdge {
     public static final DirectedGraph.EdgeFactory<RelNode, Edge> FACTORY =
-        new DirectedGraph.EdgeFactory<RelNode, Edge>() {
-          public Edge createEdge(RelNode source, RelNode target) {
-            return new Edge(source, target);
-          }
-        };
+        Edge::new;
 
     final List<IntPair> pairs = Lists.newArrayList();
 
@@ -534,7 +506,7 @@ public class Lattice {
 
     /** Returns a list of argument ordinals. */
     public List<Integer> argOrdinals() {
-      return Lists.transform(args, GET_ORDINAL);
+      return Lists.transform(args, input -> input.ordinal);
     }
 
     private static int compare(List<Column> list0, List<Column> list1) {

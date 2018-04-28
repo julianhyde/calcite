@@ -33,7 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 /**
  * Schema mapped onto a Druid instance.
@@ -70,25 +69,25 @@ public class DruidSchema extends AbstractSchema {
       Set<String> tableNames = connection.tableNames();
 
       tableMap = Compatible.INSTANCE.asMap(
-              ImmutableSet.copyOf(tableNames),
-              CacheBuilder.newBuilder()
-                .build(new CacheLoader<String, Table>() {
-                  @Override public Table load(@Nonnull String tableName) throws Exception {
-                    final Map<String, SqlTypeName> fieldMap = new LinkedHashMap<>();
-                    final Set<String> metricNameSet = new LinkedHashSet<>();
-                    final Map<String, List<ComplexMetric>> complexMetrics = new HashMap<>();
-
-                    connection.metadata(tableName, DruidTable.DEFAULT_TIMESTAMP_COLUMN,
-                            null, fieldMap, metricNameSet, complexMetrics);
-
-                    return DruidTable.create(DruidSchema.this, tableName, null,
-                            fieldMap, metricNameSet, DruidTable.DEFAULT_TIMESTAMP_COLUMN,
-                            complexMetrics);
-                  }
-                }));
+          ImmutableSet.copyOf(tableNames),
+          CacheBuilder.newBuilder()
+              .build(CacheLoader.from(name -> table(name, connection))));
     }
 
     return tableMap;
+  }
+
+  private Table table(String tableName, DruidConnectionImpl connection) {
+    final Map<String, SqlTypeName> fieldMap = new LinkedHashMap<>();
+    final Set<String> metricNameSet = new LinkedHashSet<>();
+    final Map<String, List<ComplexMetric>> complexMetrics = new HashMap<>();
+
+    connection.metadata(tableName, DruidTable.DEFAULT_TIMESTAMP_COLUMN,
+        null, fieldMap, metricNameSet, complexMetrics);
+
+    return DruidTable.create(DruidSchema.this, tableName, null,
+        fieldMap, metricNameSet, DruidTable.DEFAULT_TIMESTAMP_COLUMN,
+        complexMetrics);
   }
 }
 

@@ -71,11 +71,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
    * 6 (0110).
    */
   public static final Ordering<ImmutableBitSet> BIT_SET_INCLUSION_ORDERING =
-      new Ordering<ImmutableBitSet>() {
-        public boolean lessThan(ImmutableBitSet e1, ImmutableBitSet e2) {
-          return e1.contains(e2);
-        }
-      };
+      ImmutableBitSet::contains;
 
   private final Map<E, Node<E>> map;
   private final Function<E, Iterable<E>> parentFunction;
@@ -711,12 +707,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
       // Similarly child list and bottom element.
       return ImmutableList.of();
     }
-    return Lists.transform(list,
-      new Function<Node<E>, E>() {
-        public E apply(Node<E> node) {
-          return node.e;
-        }
-      });
+    return Lists.transform(list, node -> node.e);
   }
 
   /** Converts an iterable of nodes into the list of the elements inside.

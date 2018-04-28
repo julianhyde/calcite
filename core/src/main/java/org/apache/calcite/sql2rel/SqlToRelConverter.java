@@ -170,7 +170,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -1426,14 +1425,9 @@ public class SqlToRelConverter {
                 rexBuilder,
                 Iterables.transform(
                     Pair.zip(leftKeys, call.getOperandList()),
-                    new Function<Pair<RexNode, SqlNode>, RexNode>() {
-                      public RexNode apply(Pair<RexNode, SqlNode> pair) {
-                        return rexBuilder.makeCall(comparisonOp,
-                            pair.left,
-                            ensureSqlType(pair.left.getType(),
-                                bb.convertExpression(pair.right)));
-                      }
-                    }),
+                    pair -> rexBuilder.makeCall(comparisonOp, pair.left,
+                        ensureSqlType(pair.left.getType(),
+                            bb.convertExpression(pair.right)))),
                 false);
       }
       comparisons.add(rexComparison);
@@ -3222,12 +3216,10 @@ public class SqlToRelConverter {
             NullInitializerExpressionFactory.INSTANCE);
 
     // Lazily create a blackboard that contains all non-generated columns.
-    final Supplier<Blackboard> bb = new Supplier<Blackboard>() {
-      public Blackboard get() {
-        RexNode sourceRef = rexBuilder.makeRangeReference(scan);
-        return createInsertBlackboard(table, sourceRef,
-            table.getRowType().getFieldNames());
-      }
+    final Supplier<Blackboard> bb = () -> {
+      RexNode sourceRef = rexBuilder.makeRangeReference(scan);
+      return createInsertBlackboard(table, sourceRef,
+          table.getRowType().getFieldNames());
     };
 
     int virtualCount = 0;
@@ -3313,12 +3305,8 @@ public class SqlToRelConverter {
     }
 
     // Lazily create a blackboard that contains all non-generated columns.
-    final Supplier<Blackboard> bb = new Supplier<Blackboard>() {
-      public Blackboard get() {
-        return createInsertBlackboard(targetTable, sourceRef,
-            targetColumnNames);
-      }
-    };
+    final Supplier<Blackboard> bb = () ->
+        createInsertBlackboard(targetTable, sourceRef, targetColumnNames);
 
     // Walk the expression list and get default values for any columns
     // that were not supplied in the statement. Get field names too.

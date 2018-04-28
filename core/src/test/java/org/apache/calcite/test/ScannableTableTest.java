@@ -414,16 +414,13 @@ public class ScannableTableTest {
 
   protected ConnectionPostProcessor newSchema(final String schemaName,
       final String tableName, final Table table) {
-    return new ConnectionPostProcessor() {
-
-      @Override public Connection apply(Connection connection) throws SQLException {
-        CalciteConnection con = connection.unwrap(CalciteConnection.class);
-        SchemaPlus rootSchema = con.getRootSchema();
-        SchemaPlus schema = rootSchema.add(schemaName, new AbstractSchema());
-        schema.add(tableName, table);
-        connection.setSchema(schemaName);
-        return connection;
-      }
+    return connection -> {
+      CalciteConnection con = connection.unwrap(CalciteConnection.class);
+      SchemaPlus rootSchema = con.getRootSchema();
+      SchemaPlus schema = rootSchema.add(schemaName, new AbstractSchema());
+      schema.add(tableName, table);
+      connection.setSchema(schemaName);
+      return connection;
     };
   }
 

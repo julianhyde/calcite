@@ -544,7 +544,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         new HepRuleCall(
             this,
             rule.getOperand(),
-            bindings.toArray(new RelNode[bindings.size()]),
+            bindings.toArray(new RelNode[0]),
             nodeChildren,
             parents);
 
