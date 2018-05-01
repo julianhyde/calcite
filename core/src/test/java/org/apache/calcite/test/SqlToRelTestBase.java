@@ -86,12 +86,10 @@ public abstract class SqlToRelTestBase {
 
   protected static final String NL = System.getProperty("line.separator");
 
-  protected static final SqlConformance DEFAULT_CONFORMANCE = SqlConformanceEnum.DEFAULT;
   //~ Instance fields --------------------------------------------------------
 
-  protected final Tester tester = createTester(SqlConformanceEnum.DEFAULT);
+  protected final Tester tester = createTester();
 
-  protected final Tester lenientTester = createTester(SqlConformanceEnum.LENIENT);
   //~ Methods ----------------------------------------------------------------
 
   public SqlToRelTestBase() {
@@ -100,13 +98,10 @@ public abstract class SqlToRelTestBase {
 
   protected Tester createTester() {
     return new TesterImpl(getDiffRepos(), false, false, true, false,
-        null, null, SqlToRelConverter.Config.DEFAULT, DEFAULT_CONFORMANCE, Contexts.empty());
+        null, null, SqlToRelConverter.Config.DEFAULT,
+        SqlConformanceEnum.DEFAULT, Contexts.empty());
   }
 
-  protected Tester createTester(SqlConformance conformance) {
-    return new TesterImpl(getDiffRepos(), false, false, true, false,
-        null, null, SqlToRelConverter.Config.DEFAULT, conformance, Contexts.empty());
-  }
   /**
    * Returns the default diff repository for this test, or null if there is
    * no repository.
@@ -642,8 +637,9 @@ public abstract class SqlToRelTestBase {
     }
 
     public SqlNode parseQuery(String sql) throws Exception {
-      SqlParser parser = SqlParser.create(sql,
-          SqlParser.configBuilder().setConformance(getConformance()).build());
+      final SqlParser.Config config =
+          SqlParser.configBuilder().setConformance(getConformance()).build();
+      SqlParser parser = SqlParser.create(sql, config);
       return parser.parseQuery();
     }
 

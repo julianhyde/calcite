@@ -27,14 +27,10 @@ import org.apache.calcite.rel.type.DynamicRecordType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
-import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.sql.SqlUnnestOperator;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.type.MapSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
-
-import com.google.common.collect.Lists;
 
 import java.util.List;
 
@@ -131,18 +127,14 @@ public class Uncollect extends SingleRel {
     final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
     final RelDataTypeFactory.Builder builder = typeFactory.builder();
 
-    if (fields.size() == 1 && fields.get(0).getType().getSqlTypeName() == SqlTypeName.ANY) {
-      // Component type is unknown to Uncollect, build dynamic star record type.
-      // Only consider ONE field case for unknown type.
-      List<RelDataTypeField> toAddFields = Lists.newArrayList();
-      RelDataTypeField dynField = new RelDataTypeFieldImpl(
-          DynamicRecordType.DYNAMIC_STAR_PREFIX,
-          0,
-          typeFactory.createTypeWithNullability(
-              typeFactory.createSqlType(SqlTypeName.ANY), true));
-      toAddFields.add(dynField);
-      RelRecordType dynRet = new RelRecordType(toAddFields);
-      return dynRet;
+    if (fields.size() == 1
+        && fields.get(0).getType().getSqlTypeName() == SqlTypeName.ANY) {
+      // Component type is unknown to Uncollect, build dynamic star record
+      // type. Only consider ONE field case for unknown type.
+      return builder
+          .add(DynamicRecordType.DYNAMIC_STAR_PREFIX, SqlTypeName.ANY)
+          .nullable(true)
+          .build();
     }
 
     for (RelDataTypeField field : fields) {

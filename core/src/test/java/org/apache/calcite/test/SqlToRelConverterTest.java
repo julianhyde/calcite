@@ -1106,7 +1106,6 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select d.deptno, e2.empno_avg\n"
         + "from dept_nested as d outer apply\n"
         + " (select avg(e.empno) as empno_avg from UNNEST(d.employees) as e) e2";
-
     sql(sql).conformance(SqlConformanceEnum.LENIENT).ok();
   }
 
@@ -1114,7 +1113,6 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select d.deptno, e2.empno\n"
         + "from dept_nested as d,\n"
         + " UNNEST(d.employees) e2";
-
     sql(sql).with(getExtendedTester()).ok();
   }
 
@@ -1122,7 +1120,6 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select d.deptno, e2.empno\n"
         + "from dept_nested as d,\n"
         + " UNNEST(d.employees) as e2(empno, y, z)";
-
     sql(sql).with(getExtendedTester()).ok();
   }
 
@@ -2484,22 +2481,19 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).with(getTesterWithDynamicTable()).ok();
   }
 
-  @Test
-  public void testDynamicNestedColumn() throws Exception {
-
-    final String sql = "select t3.fake_q1['fake_col2'] as fake2 "
-        + "from (select t2.fake_col as fake_q1 from SALES.CUSTOMER as t2) as t3";
-
+  @Test public void testDynamicNestedColumn() {
+    final String sql = "select t3.fake_q1['fake_col2'] as fake2\n"
+        + "from (\n"
+        + "  select t2.fake_col as fake_q1\n"
+        + "  from SALES.CUSTOMER as t2) as t3";
     sql(sql).with(getTesterWithDynamicTable()).ok();
   }
 
-  @Test
-  public void testDynamicSchemaUnnest() throws Exception {
-
-    final String sql3 = "select t1.c_nationkey, t3.fake_col3 "
-        + "from SALES.CUSTOMER as t1, "
-        + "lateral (select t2.fake_col2 as fake_col3 from unnest(t1.fake_col) as t2) as t3";
-
+  @Test public void testDynamicSchemaUnnest() {
+    final String sql3 = "select t1.c_nationkey, t3.fake_col3\n"
+        + "from SALES.CUSTOMER as t1,\n"
+        + "lateral (select t2.fake_col2 as fake_col3\n"
+        + "         from unnest(t1.fake_col) as t2) as t3";
     sql(sql3).with(getTesterWithDynamicTable()).ok();
   }
 
