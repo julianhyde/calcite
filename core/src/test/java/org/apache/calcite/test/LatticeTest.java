@@ -761,11 +761,18 @@ public class LatticeTest {
     final String sql = "select count(*)\n"
         + "from \"sales_fact_1997\"\n"
         + "join \"time_by_day\" using (\"time_id\")\n";
+    final String explain = "PLAN=JdbcToEnumerableConverter\n"
+        + "  JdbcAggregate(group=[{}], EXPR$0=[COUNT()])\n"
+        + "    JdbcJoin(condition=[=($1, $0)], joinType=[inner])\n"
+        + "      JdbcProject(time_id=[$0])\n"
+        + "        JdbcTableScan(table=[[foodmart, time_by_day]])\n"
+        + "      JdbcProject(time_id=[$1])\n"
+        + "        JdbcTableScan(table=[[foodmart, sales_fact_1997]])\n";
     CalciteAssert.model(model)
         .withDefaultSchema("foodmart")
         .query(sql)
         .returns("EXPR$0=86837\n")
-        .explainContains("xx");
+        .explainContains(explain);
   }
 
   private CalciteAssert.AssertThat foodmartModel(String... extras) {
