@@ -68,12 +68,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Properties;
 import java.util.Random;
+import java.util.RandomAccess;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
@@ -2154,6 +2156,23 @@ public class UtilTest {
     // left-hand side must be linux or will never match
     assertThat(isLinux("x\r\ny").matches("x\r\ny"), is(false));
     assertThat(isLinux("x\r\ny").matches("x\ny"), is(false));
+  }
+
+  /** Tests {@link Util#transform(List, java.util.function.Function)}. */
+  @Test public void testTransform() {
+    final List<String> beatles =
+        Arrays.asList("John", "Paul", "George", "Ringo");
+    final List<String> empty = Collections.emptyList();
+    assertThat(Util.transform(beatles, s -> s.toUpperCase(Locale.ROOT)),
+        is(Arrays.asList("JOHN", "PAUL", "GEORGE", "RINGO")));
+    assertThat(Util.transform(empty, s -> s.toUpperCase(Locale.ROOT)), is(empty));
+    assertThat(Util.transform(beatles, String::length),
+        is(Arrays.asList(4, 4, 6, 5)));
+    assertThat(Util.transform(beatles, String::length),
+        instanceOf(RandomAccess.class));
+    final List<String> beatles2 = new LinkedList<>(beatles);
+    assertThat(Util.transform(beatles2, String::length),
+        not(instanceOf(RandomAccess.class)));
   }
 
   static String mismatchDescription(Matcher m, Object item) {

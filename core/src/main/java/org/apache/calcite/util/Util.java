@@ -90,6 +90,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.RandomAccess;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
@@ -98,6 +99,7 @@ import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
+import javax.annotation.Nonnull;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -2356,6 +2358,16 @@ public class Util {
         ImmutableList.Builder::build);
   }
 
+  /** Transforms a list, applying a function to each element. */
+  public static <F, T> List<T> transform(List<F> list,
+      java.util.function.Function<F, T> function) {
+    if (list instanceof RandomAccess) {
+      return new RandomAccessTransformingList<>(list, function);
+    } else {
+      return new TransformingList<>(list, function);
+    }
+  }
+
   //~ Inner Classes ----------------------------------------------------------
 
   /**
@@ -2389,6 +2401,49 @@ public class Util {
         throw FoundOne.NULL;
       }
       return super.visit(call);
+    }
+  }
+
+  /** List that returns the same number of elements as a backing list,
+   * applying a transformation function to each one.
+   *
+   * @param <F> Element type of backing list
+   * @param <T> Element type of this list
+   */
+  private static class TransformingList<F, T> extends AbstractList<T> {
+    private final java.util.function.Function<F, T> function;
+    private final List<F> list;
+
+    TransformingList(List<F> list,
+        java.util.function.Function<F, T> function) {
+      this.function = function;
+      this.list = list;
+    }
+
+    public T get(int i) {
+      return function.apply(list.get(i));
+    }
+
+    public int size() {
+      return list.size();
+    }
+
+    @Override @Nonnull public Iterator<T> iterator() {
+      return listIterator();
+    }
+  }
+
+  /** Extension to {@link TransformingList} that implements
+   * {@link RandomAccess}.
+   *
+   * @param <F> Element type of backing list
+   * @param <T> Element type of this list
+   */
+  private static class RandomAccessTransformingList<F, T>
+      extends TransformingList<F, T> implements RandomAccess {
+    RandomAccessTransformingList(List<F> list,
+        java.util.function.Function<F, T> function) {
+      super(list, function);
     }
   }
 }
