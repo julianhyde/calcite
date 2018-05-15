@@ -19,10 +19,10 @@ package org.apache.calcite.rel.rules;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Utility class used to store a {@link org.apache.calcite.rel.core.Join} tree
@@ -157,7 +157,7 @@ public class LoptJoinTree {
     private final LoptJoinTree parent;
 
     protected BinaryTree(LoptJoinTree parent) {
-      this.parent = Preconditions.checkNotNull(parent);
+      this.parent = Objects.requireNonNull(parent);
     }
 
     public LoptJoinTree getParent() {
@@ -195,8 +195,8 @@ public class LoptJoinTree {
 
     public Node(BinaryTree left, BinaryTree right, LoptJoinTree parent) {
       super(parent);
-      this.left = Preconditions.checkNotNull(left);
-      this.right = Preconditions.checkNotNull(right);
+      this.left = Objects.requireNonNull(left);
+      this.right = Objects.requireNonNull(right);
     }
 
     public BinaryTree getLeft() {

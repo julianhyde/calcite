@@ -28,7 +28,6 @@ import org.apache.calcite.util.Pair;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -37,6 +36,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -441,7 +441,7 @@ abstract class DruidJsonFilter implements DruidJson {
 
     JsonExpressionFilter(String expression) {
       super(Type.EXPRESSION);
-      this.expression = Preconditions.checkNotNull(expression);
+      this.expression = Objects.requireNonNull(expression);
     }
 
     @Override public void write(JsonGenerator generator) throws IOException {
@@ -608,7 +608,7 @@ abstract class DruidJsonFilter implements DruidJson {
 
   public static DruidJsonFilter getSelectorFilter(String column, String value,
       ExtractionFunction extractionFunction) {
-    Preconditions.checkNotNull(column);
+    Objects.requireNonNull(column);
     return new JsonSelector(column, value, extractionFunction);
   }
 

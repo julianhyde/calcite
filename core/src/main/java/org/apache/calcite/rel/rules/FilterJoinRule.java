@@ -33,7 +33,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -41,6 +40,7 @@ import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Planner rule that pushes filters above and
@@ -85,7 +85,7 @@ public abstract class FilterJoinRule extends RelOptRule {
       boolean smart, RelBuilderFactory relBuilderFactory, Predicate predicate) {
     super(operand, relBuilderFactory, "FilterJoinRule:" + id);
     this.smart = smart;
-    this.predicate = Preconditions.checkNotNull(predicate);
+    this.predicate = Objects.requireNonNull(predicate);
   }
 
   /**

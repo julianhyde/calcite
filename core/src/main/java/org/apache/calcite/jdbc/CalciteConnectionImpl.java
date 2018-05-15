@@ -75,6 +75,7 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,7 +134,7 @@ abstract class CalciteConnectionImpl
       this.typeFactory = new JavaTypeFactoryImpl(typeSystem);
     }
     this.rootSchema =
-        Preconditions.checkNotNull(rootSchema != null
+        Objects.requireNonNull(rootSchema != null
             ? rootSchema
             : CalciteSchema.createRootSchema(true));
     Preconditions.checkArgument(this.rootSchema.isRoot(), "must be root schema");
@@ -480,7 +481,7 @@ abstract class CalciteConnectionImpl
     private final CalciteSchema rootSchema;
 
     ContextImpl(CalciteConnectionImpl connection) {
-      this.connection = Preconditions.checkNotNull(connection);
+      this.connection = Objects.requireNonNull(connection);
       long now = System.currentTimeMillis();
       SchemaVersion schemaVersion = new LongSchemaVersion(now);
       this.mutableRootSchema = connection.rootSchema;
@@ -572,7 +573,7 @@ abstract class CalciteConnectionImpl
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     CalciteServerStatementImpl(CalciteConnectionImpl connection) {
-      this.connection = Preconditions.checkNotNull(connection);
+      this.connection = Objects.requireNonNull(connection);
     }
 
     public Context createPrepareContext() {

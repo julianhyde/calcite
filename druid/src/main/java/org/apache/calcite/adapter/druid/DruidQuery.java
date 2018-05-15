@@ -67,7 +67,6 @@ import org.apache.calcite.util.Util;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -89,6 +88,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -186,8 +186,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     this.druidTable = druidTable;
     this.intervals = ImmutableList.copyOf(intervals);
     this.rels = ImmutableList.copyOf(rels);
-    this.converterOperatorMap = Preconditions.checkNotNull(converterOperatorMap, "Operator map "
-        + "can not be null");
+    this.converterOperatorMap = Objects.requireNonNull(converterOperatorMap,
+        "Operator map can not be null");
     assert isValid(Litmus.THROW, null);
   }
 
@@ -999,9 +999,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       }
       final ScanQuery scanQuery = new ScanQuery(druidTable.dataSource, intervals, jsonFilter,
           virtualColumnList, scanColumnNames, fetch);
-      return new QuerySpec(QueryType.SCAN,
-          Preconditions.checkNotNull(scanQuery.toQuery(), "Can not plan Scan Druid Query"),
-          scanColumnNames);
+      return new QuerySpec(QueryType.SCAN, scanQuery.toQuery(), scanColumnNames);
     }
 
     // At this Stage we have a valid Aggregate thus Query is one of Timeseries, TopN, or GroupBy
@@ -1341,7 +1339,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       this.fetchLimit = fetchLimit;
     }
 
-    public String toQuery() {
+    @Nonnull public String toQuery() {
       final StringWriter sw = new StringWriter();
       try {
         final JsonFactory factory = new JsonFactory();
@@ -1539,8 +1537,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
     QuerySpec(QueryType queryType, String queryString,
         List<String> fieldNames) {
-      this.queryType = Preconditions.checkNotNull(queryType);
-      this.queryString = Preconditions.checkNotNull(queryString);
+      this.queryType = Objects.requireNonNull(queryType);
+      this.queryString = Objects.requireNonNull(queryString);
       this.fieldNames = ImmutableList.copyOf(fieldNames);
     }
 

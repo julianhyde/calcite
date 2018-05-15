@@ -44,6 +44,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
@@ -135,9 +136,9 @@ public class SqlDialect {
    * @param context All the information necessary to create a dialect
    */
   public SqlDialect(Context context) {
-    this.nullCollation = Preconditions.checkNotNull(context.nullCollation());
+    this.nullCollation = Objects.requireNonNull(context.nullCollation());
     this.databaseProduct =
-        Preconditions.checkNotNull(context.databaseProduct());
+        Objects.requireNonNull(context.databaseProduct());
     String identifierQuoteString = context.identifierQuoteString();
     if (identifierQuoteString != null) {
       identifierQuoteString = identifierQuoteString.trim();
@@ -920,9 +921,9 @@ public class SqlDialect {
     DatabaseProduct(String databaseProductName, String quoteString,
         NullCollation nullCollation) {
       this.databaseProductName =
-          Preconditions.checkNotNull(databaseProductName);
+          Objects.requireNonNull(databaseProductName);
       this.quoteString = quoteString;
-      this.nullCollation = Preconditions.checkNotNull(nullCollation);
+      this.nullCollation = Objects.requireNonNull(nullCollation);
     }
 
     /**
@@ -980,14 +981,14 @@ public class SqlDialect {
         int databaseMajorVersion, int databaseMinorVersion,
         String identifierQuoteString, NullCollation nullCollation,
         JethroDataSqlDialect.JethroInfo jethroInfo) {
-      this.databaseProduct = Preconditions.checkNotNull(databaseProduct);
+      this.databaseProduct = Objects.requireNonNull(databaseProduct);
       this.databaseProductName = databaseProductName;
       this.databaseVersion = databaseVersion;
       this.databaseMajorVersion = databaseMajorVersion;
       this.databaseMinorVersion = databaseMinorVersion;
       this.identifierQuoteString = identifierQuoteString;
-      this.nullCollation = Preconditions.checkNotNull(nullCollation);
-      this.jethroInfo = Preconditions.checkNotNull(jethroInfo);
+      this.nullCollation = Objects.requireNonNull(nullCollation);
+      this.jethroInfo = Objects.requireNonNull(jethroInfo);
     }
 
     @Nonnull public DatabaseProduct databaseProduct() {

@@ -29,13 +29,13 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -48,7 +48,7 @@ class TableNamespace extends AbstractNamespace {
   private TableNamespace(SqlValidatorImpl validator, SqlValidatorTable table,
       List<RelDataTypeField> fields) {
     super(validator, null);
-    this.table = Preconditions.checkNotNull(table);
+    this.table = Objects.requireNonNull(table);
     this.extendedFields = ImmutableList.copyOf(fields);
   }
 

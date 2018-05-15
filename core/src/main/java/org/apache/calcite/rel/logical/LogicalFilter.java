@@ -32,9 +32,9 @@ import org.apache.calcite.rel.metadata.RelMdDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -65,7 +65,7 @@ public final class LogicalFilter extends Filter {
       RexNode condition,
       ImmutableSet<CorrelationId> variablesSet) {
     super(cluster, traitSet, child, condition);
-    this.variablesSet = Preconditions.checkNotNull(variablesSet);
+    this.variablesSet = Objects.requireNonNull(variablesSet);
   }
 
   @Deprecated // to be removed before 2.0

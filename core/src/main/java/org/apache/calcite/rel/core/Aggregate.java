@@ -49,6 +49,7 @@ import com.google.common.collect.Sets;
 import com.google.common.math.IntMath;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -142,7 +143,7 @@ public abstract class Aggregate extends SingleRel {
     super(cluster, traits, child);
     this.indicator = indicator; // true is allowed, but discouraged
     this.aggCalls = ImmutableList.copyOf(aggCalls);
-    this.groupSet = Preconditions.checkNotNull(groupSet);
+    this.groupSet = Objects.requireNonNull(groupSet);
     if (groupSets == null) {
       this.groupSets = ImmutableList.of(groupSet);
     } else {

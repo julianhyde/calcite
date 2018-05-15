@@ -25,7 +25,6 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.Glossary;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -103,7 +102,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
   /** Creates a type factory. */
   protected RelDataTypeFactoryImpl(RelDataTypeSystem typeSystem) {
-    this.typeSystem = Preconditions.checkNotNull(typeSystem);
+    this.typeSystem = Objects.requireNonNull(typeSystem);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -311,7 +310,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
   public RelDataType createTypeWithNullability(
       final RelDataType type,
       final boolean nullable) {
-    Preconditions.checkNotNull(type);
+    Objects.requireNonNull(type);
     RelDataType newType;
     if (type.isNullable() == nullable) {
       newType = type;

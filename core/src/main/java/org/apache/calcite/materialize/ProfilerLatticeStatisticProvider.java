@@ -24,7 +24,6 @@ import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.util.ImmutableBitSet;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -32,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation of {@link LatticeStatisticProvider} that uses a
@@ -79,7 +79,7 @@ class ProfilerLatticeStatisticProvider implements LatticeStatisticProvider {
 
   /** Creates a ProfilerLatticeStatisticProvider. */
   private ProfilerLatticeStatisticProvider(Lattice lattice) {
-    this.lattice = Preconditions.checkNotNull(lattice);
+    this.lattice = Objects.requireNonNull(lattice);
   }
 
   public double cardinality(List<Lattice.Column> columns) {

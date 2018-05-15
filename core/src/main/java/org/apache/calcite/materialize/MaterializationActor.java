@@ -75,7 +75,7 @@ class MaterializationActor {
         RelDataType rowType,
         List<String> viewSchemaPath) {
       this.key = key;
-      this.rootSchema = Preconditions.checkNotNull(rootSchema);
+      this.rootSchema = Objects.requireNonNull(rootSchema);
       Preconditions.checkArgument(rootSchema.isRoot(), "must be root schema");
       this.materializedTable = materializedTable; // may be null
       this.sql = sql;

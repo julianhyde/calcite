@@ -20,8 +20,8 @@ import org.apache.calcite.adapter.druid.DruidQuery;
 import org.apache.calcite.adapter.druid.DruidSchema;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -386,7 +386,9 @@ public class DruidAdapterIT {
             while (r.next()) {
               map.put(r.getString("TYPE_NAME"), true);
             }
-            System.out.println(map);
+            if (CalcitePrepareImpl.DEBUG) {
+              System.out.println(map);
+            }
             // 1 timestamp, 2 float measure, 1 int measure, 88 dimensions
             assertThat(map.keySet().size(), is(4));
             assertThat(map.values().size(), is(92));
@@ -397,7 +399,6 @@ public class DruidAdapterIT {
           } catch (SQLException e) {
             throw new RuntimeException(e);
           }
-          return null;
         });
   }
 
@@ -1988,7 +1989,7 @@ public class DruidAdapterIT {
                   b.call(SqlStdOperatorTable.LESS_THAN,
                       b.getRexBuilder().makeCall(intType,
                           SqlStdOperatorTable.CAST,
-                          ImmutableList.<RexNode>of(b.field("product_id"))),
+                          ImmutableList.of(b.field("product_id"))),
                       b.getRexBuilder().makeCall(intType,
                           SqlStdOperatorTable.CAST,
                           ImmutableList.of(b.literal("10")))))

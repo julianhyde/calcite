@@ -55,6 +55,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Utility functions for schemas.
@@ -234,7 +235,7 @@ public final class Schemas {
    * array. */
   public static Enumerable<Object[]> enumerable(final FilterableTable table,
       final DataContext root) {
-    return table.scan(root, ImmutableList.<RexNode>of());
+    return table.scan(root, ImmutableList.of());
   }
 
   /** Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of
@@ -501,7 +502,7 @@ public final class Schemas {
 
   /** Generates a table name that is unique within the given schema. */
   public static String uniqueTableName(CalciteSchema schema, String base) {
-    String t = Preconditions.checkNotNull(base);
+    String t = Objects.requireNonNull(base);
     for (int x = 0; schema.getTable(t, true) != null; x++) {
       t = base + x;
     }

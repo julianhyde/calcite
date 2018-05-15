@@ -18,7 +18,6 @@ package org.apache.calcite.plan;
 
 import org.apache.calcite.rel.RelNode;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -118,10 +117,10 @@ public class RelOptRuleOperand {
       assert children.size() > 0;
     }
     this.childPolicy = childPolicy;
-    this.clazz = Preconditions.checkNotNull(clazz);
+    this.clazz = Objects.requireNonNull(clazz);
     this.trait = trait;
     //noinspection unchecked
-    this.predicate = Preconditions.checkNotNull((Predicate) predicate);
+    this.predicate = Objects.requireNonNull((Predicate) predicate);
     this.children = children;
     for (RelOptRuleOperand child : this.children) {
       assert child.parent == null : "cannot re-use operands";

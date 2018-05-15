@@ -59,7 +59,6 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -75,6 +74,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -860,10 +860,10 @@ public class SubstitutionVisitor {
 
     public UnifyRuleCall(UnifyRule rule, MutableRel query, MutableRel target,
         ImmutableList<MutableRel> slots) {
-      this.rule = Preconditions.checkNotNull(rule);
-      this.query = Preconditions.checkNotNull(query);
-      this.target = Preconditions.checkNotNull(target);
-      this.slots = Preconditions.checkNotNull(slots);
+      this.rule = Objects.requireNonNull(rule);
+      this.query = Objects.requireNonNull(query);
+      this.target = Objects.requireNonNull(target);
+      this.slots = Objects.requireNonNull(slots);
     }
 
     public UnifyResult result(MutableRel result) {

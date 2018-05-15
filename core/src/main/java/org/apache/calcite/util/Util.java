@@ -101,8 +101,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import javax.annotation.Nonnull;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * Miscellaneous utility functions.
  */
@@ -815,7 +813,7 @@ public class Util {
    * but we don't require Guava version 20 yet. */
   public static void throwIfUnchecked(Throwable throwable) {
     Bug.upgrade("Remove when minimum Guava version is 20");
-    checkNotNull(throwable);
+    Objects.requireNonNull(throwable);
     if (throwable instanceof RuntimeException) {
       throw (RuntimeException) throwable;
     }
@@ -864,7 +862,7 @@ public class Util {
   }
 
   /** @deprecated Use {@link Preconditions#checkArgument}
-   * or {@link Preconditions#checkNotNull(Object)} */
+   * or {@link Objects#requireNonNull(Object)} */
   @Deprecated // to be removed before 2.0
   public static void pre(boolean b, String description) {
     if (!b) {
@@ -873,7 +871,7 @@ public class Util {
   }
 
   /** @deprecated Use {@link Preconditions#checkArgument}
-   * or {@link Preconditions#checkNotNull(Object)} */
+   * or {@link Objects#requireNonNull(Object)} */
   @Deprecated // to be removed before 2.0
   public static void post(boolean b, String description) {
     if (!b) {

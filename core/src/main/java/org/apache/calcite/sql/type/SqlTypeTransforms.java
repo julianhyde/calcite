@@ -22,9 +22,8 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
-
 import java.util.List;
+import java.util.Objects;
 
 /**
  * SqlTypeTransforms defines a number of reusable instances of
@@ -47,7 +46,7 @@ public abstract class SqlTypeTransforms {
       (opBinding, typeToTransform) ->
           SqlTypeUtil.makeNullableIfOperandsAre(opBinding.getTypeFactory(),
               opBinding.collectOperandTypes(),
-              Preconditions.checkNotNull(typeToTransform));
+              Objects.requireNonNull(typeToTransform));
 
   /**
    * Parameter type-inference transform strategy where a derived type is
@@ -67,7 +66,7 @@ public abstract class SqlTypeTransforms {
   public static final SqlTypeTransform TO_NOT_NULLABLE =
       (opBinding, typeToTransform) ->
           opBinding.getTypeFactory().createTypeWithNullability(
-              Preconditions.checkNotNull(typeToTransform), false);
+              Objects.requireNonNull(typeToTransform), false);
 
   /**
    * Parameter type-inference transform strategy where a derived type is
@@ -76,7 +75,7 @@ public abstract class SqlTypeTransforms {
   public static final SqlTypeTransform FORCE_NULLABLE =
       (opBinding, typeToTransform) ->
           opBinding.getTypeFactory().createTypeWithNullability(
-              Preconditions.checkNotNull(typeToTransform), true);
+              Objects.requireNonNull(typeToTransform), true);
 
   /**
    * Type-inference strategy whereby the result is NOT NULL if any of

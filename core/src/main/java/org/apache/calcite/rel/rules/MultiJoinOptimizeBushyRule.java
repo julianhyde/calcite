@@ -36,7 +36,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -44,6 +43,7 @@ import java.io.PrintWriter;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Planner rule that finds an approximately optimal ordering for join operators
@@ -372,7 +372,7 @@ public class MultiJoinOptimizeBushyRule extends RelOptRule {
       super(id, factors, cost);
       this.leftFactor = leftFactor;
       this.rightFactor = rightFactor;
-      this.conditions = Preconditions.checkNotNull(conditions);
+      this.conditions = Objects.requireNonNull(conditions);
     }
 
     @Override public String toString() {

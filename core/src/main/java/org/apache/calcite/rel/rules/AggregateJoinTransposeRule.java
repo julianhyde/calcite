@@ -45,7 +45,6 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -54,6 +53,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -238,7 +238,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         for (Ord<AggregateCall> aggCall : Ord.zip(aggregate.getAggCallList())) {
           final SqlAggFunction aggregation = aggCall.e.getAggregation();
           final SqlSplittableAggFunction splitter =
-              Preconditions.checkNotNull(
+              Objects.requireNonNull(
                   aggregation.unwrap(SqlSplittableAggFunction.class));
           if (!aggCall.e.getArgList().isEmpty()
               && fieldSet.contains(ImmutableBitSet.of(aggCall.e.getArgList()))) {
@@ -269,7 +269,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         for (Ord<AggregateCall> aggCall : Ord.zip(aggregate.getAggCallList())) {
           final SqlAggFunction aggregation = aggCall.e.getAggregation();
           final SqlSplittableAggFunction splitter =
-              Preconditions.checkNotNull(
+              Objects.requireNonNull(
                   aggregation.unwrap(SqlSplittableAggFunction.class));
           final AggregateCall call1;
           if (fieldSet.contains(ImmutableBitSet.of(aggCall.e.getArgList()))) {
@@ -326,7 +326,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
     for (Ord<AggregateCall> aggCall : Ord.zip(aggregate.getAggCallList())) {
       final SqlAggFunction aggregation = aggCall.e.getAggregation();
       final SqlSplittableAggFunction splitter =
-          Preconditions.checkNotNull(
+          Objects.requireNonNull(
               aggregation.unwrap(SqlSplittableAggFunction.class));
       final Integer leftSubTotal = sides.get(0).split.get(aggCall.i);
       final Integer rightSubTotal = sides.get(1).split.get(aggCall.i);

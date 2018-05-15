@@ -37,7 +37,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import java.lang.reflect.Field;
@@ -49,6 +48,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Implementation of {@link JavaTypeFactory}.
@@ -362,9 +362,9 @@ public class JavaTypeFactoryImpl
         Type type,
         boolean nullable,
         int modifiers) {
-      this.syntheticType = Preconditions.checkNotNull(syntheticType);
-      this.name = Preconditions.checkNotNull(name);
-      this.type = Preconditions.checkNotNull(type);
+      this.syntheticType = Objects.requireNonNull(syntheticType);
+      this.name = Objects.requireNonNull(name);
+      this.type = Objects.requireNonNull(type);
       this.nullable = nullable;
       this.modifiers = modifiers;
       assert !(nullable && Primitive.is(type))

@@ -40,7 +40,6 @@ import org.apache.calcite.util.BitSets;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -49,6 +48,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -212,7 +212,7 @@ public class PushProjector {
     this.origFilter = origFilter;
     this.childRel = childRel;
     this.preserveExprCondition = preserveExprCondition;
-    this.relBuilder = Preconditions.checkNotNull(relBuilder);
+    this.relBuilder = Objects.requireNonNull(relBuilder);
     if (origProj == null) {
       origProjExprs = ImmutableList.of();
     } else {

@@ -53,7 +53,6 @@ import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import java.sql.SQLException;
@@ -61,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Queryable that gets its data from a table within a JDBC connection.
@@ -88,7 +88,7 @@ public class JdbcTable extends AbstractQueryableTable
     this.jdbcCatalogName = jdbcCatalogName;
     this.jdbcSchemaName = jdbcSchemaName;
     this.jdbcTableName = tableName;
-    this.jdbcTableType = Preconditions.checkNotNull(jdbcTableType);
+    this.jdbcTableType = Objects.requireNonNull(jdbcTableType);
   }
 
   public String toString() {

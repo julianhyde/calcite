@@ -17,7 +17,6 @@
 package org.apache.calcite.util;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ForwardingSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -34,11 +33,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /** Helper methods to provide modern Guava functionality based on Guava 11.
  *
@@ -64,7 +62,7 @@ class CompatibleGuava11 {
     }
 
     @Override public boolean retainAll(Collection<?> c) {
-      return super.retainAll(checkNotNull(c)); // GWT compatibility
+      return super.retainAll(Objects.requireNonNull(c)); // GWT compatibility
     }
   }
 
@@ -80,7 +78,7 @@ class CompatibleGuava11 {
   }
 
   static boolean removeAllImpl(Set<?> set, Collection<?> collection) {
-    checkNotNull(collection); // for GWT
+    Objects.requireNonNull(collection); // for GWT
     if (collection instanceof Multiset) {
       collection = ((Multiset<?>) collection).elementSet();
     }
@@ -239,8 +237,8 @@ class CompatibleGuava11 {
     }
 
     AsMapView(Set<K> set, Function<? super K, V> function) {
-      this.set = checkNotNull(set);
-      this.function = checkNotNull(function);
+      this.set = Objects.requireNonNull(set);
+      this.function = Objects.requireNonNull(function);
     }
 
     @Override public Set<K> keySet() {
@@ -319,7 +317,7 @@ class CompatibleGuava11 {
         Map.Entry<?, ?> entry = (Map.Entry<?, ?>) o;
         Object key = entry.getKey();
         V value = map().get(key);
-        return Objects.equal(value, entry.getValue())
+        return com.google.common.base.Objects.equal(value, entry.getValue())
             && (value != null || map().containsKey(key));
       }
       return false;
@@ -339,7 +337,7 @@ class CompatibleGuava11 {
 
     @Override public boolean removeAll(Collection<?> c) {
       try {
-        return super.removeAll(checkNotNull(c));
+        return super.removeAll(Objects.requireNonNull(c));
       } catch (UnsupportedOperationException e) {
         // if the iterators don't support remove
         boolean changed = true;
@@ -352,7 +350,7 @@ class CompatibleGuava11 {
 
     @Override public boolean retainAll(Collection<?> c) {
       try {
-        return super.retainAll(checkNotNull(c));
+        return super.retainAll(Objects.requireNonNull(c));
       } catch (UnsupportedOperationException e) {
         // if the iterators don't support remove
         Set<Object> keys = Sets.newHashSetWithExpectedSize(c.size());
@@ -403,7 +401,7 @@ class CompatibleGuava11 {
 
     @Override public boolean removeAll(Collection<?> c) {
       try {
-        return super.removeAll(checkNotNull(c));
+        return super.removeAll(Objects.requireNonNull(c));
       } catch (UnsupportedOperationException e) {
         Set<K> toRemove = Sets.newHashSet();
         for (Map.Entry<K, V> entry : map().entrySet()) {
@@ -417,7 +415,7 @@ class CompatibleGuava11 {
 
     @Override public boolean retainAll(Collection<?> c) {
       try {
-        return super.retainAll(checkNotNull(c));
+        return super.retainAll(Objects.requireNonNull(c));
       } catch (UnsupportedOperationException e) {
         Set<K> toRetain = Sets.newHashSet();
         for (Map.Entry<K, V> entry : map().entrySet()) {
@@ -454,7 +452,7 @@ class CompatibleGuava11 {
     final Iterator<? extends F> backingIterator;
 
     TransformedIterator(Iterator<? extends F> backingIterator) {
-      this.backingIterator = checkNotNull(backingIterator);
+      this.backingIterator = Objects.requireNonNull(backingIterator);
     }
 
     abstract T transform(F from);

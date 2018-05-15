@@ -17,7 +17,6 @@
 package org.apache.calcite.util;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -32,6 +31,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -652,7 +652,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
   private void closure(Function<E, Iterable<E>> generator, E e, List<E> list,
       Set<E> set) {
-    for (E p : Preconditions.checkNotNull(generator.apply(e))) {
+    for (E p : Objects.requireNonNull(generator.apply(e))) {
       if (set.add(e)) {
         if (map.containsKey(p)) {
           list.add(p);

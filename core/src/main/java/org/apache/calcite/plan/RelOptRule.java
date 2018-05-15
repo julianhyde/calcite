@@ -22,12 +22,12 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -95,8 +95,8 @@ public abstract class RelOptRule {
    */
   public RelOptRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    this.operand = Preconditions.checkNotNull(operand);
-    this.relBuilderFactory = Preconditions.checkNotNull(relBuilderFactory);
+    this.operand = Objects.requireNonNull(operand);
+    this.relBuilderFactory = Objects.requireNonNull(relBuilderFactory);
     if (description == null) {
       description = guessDescription(getClass().getName());
     }

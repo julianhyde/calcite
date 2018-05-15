@@ -90,13 +90,13 @@ public class Lattice {
       Double rowCountEstimate, ImmutableList<Column> columns,
       ImmutableList<Measure> defaultMeasures, ImmutableList<Tile> tiles) {
     this.rootSchema = rootSchema;
-    this.nodes = Preconditions.checkNotNull(nodes);
-    this.columns = Preconditions.checkNotNull(columns);
+    this.nodes = Objects.requireNonNull(nodes);
+    this.columns = Objects.requireNonNull(columns);
     this.auto = auto;
     this.algorithm = algorithm;
     this.algorithmMaxMillis = algorithmMaxMillis;
-    this.defaultMeasures = Preconditions.checkNotNull(defaultMeasures);
-    this.tiles = Preconditions.checkNotNull(tiles);
+    this.defaultMeasures = Objects.requireNonNull(defaultMeasures);
+    this.tiles = Objects.requireNonNull(tiles);
 
     // Validate that nodes form a tree; each node except the first references
     // a predecessor.
@@ -125,7 +125,7 @@ public class Lattice {
     Preconditions.checkArgument(rowCountEstimate > 0d);
     this.rowCountEstimate = rowCountEstimate;
     this.statisticProvider =
-        Preconditions.checkNotNull(statisticProviderFactory.apply(this));
+        Objects.requireNonNull(statisticProviderFactory.apply(this));
   }
 
   /** Creates a Lattice. */
@@ -430,7 +430,7 @@ public class Lattice {
 
     public Node(TableScan scan, Node parent, List<IntPair> link,
         int startCol, int endCol, String alias) {
-      this.scan = Preconditions.checkNotNull(scan);
+      this.scan = Objects.requireNonNull(scan);
       this.parent = parent;
       this.link = link == null ? null : ImmutableList.copyOf(link);
       assert (parent == null) == (link == null);
@@ -468,7 +468,7 @@ public class Lattice {
     public final ImmutableList<Column> args;
 
     public Measure(SqlAggFunction agg, Iterable<Column> args) {
-      this.agg = Preconditions.checkNotNull(agg);
+      this.agg = Objects.requireNonNull(agg);
       this.args = ImmutableList.copyOf(args);
     }
 
@@ -534,9 +534,9 @@ public class Lattice {
 
     private Column(int ordinal, String table, String column, String alias) {
       this.ordinal = ordinal;
-      this.table = Preconditions.checkNotNull(table);
-      this.column = Preconditions.checkNotNull(column);
-      this.alias = Preconditions.checkNotNull(alias);
+      this.table = Objects.requireNonNull(table);
+      this.column = Objects.requireNonNull(column);
+      this.alias = Objects.requireNonNull(alias);
     }
 
     /** Converts a list of columns to a bit set of their ordinals. */
@@ -588,7 +588,7 @@ public class Lattice {
     private String statisticProvider;
 
     public Builder(CalciteSchema schema, String sql) {
-      this.rootSchema = Preconditions.checkNotNull(schema.root());
+      this.rootSchema = Objects.requireNonNull(schema.root());
       Preconditions.checkArgument(rootSchema.isRoot(), "must be root schema");
       CalcitePrepare.ConvertResult parsed =
           Schemas.convert(MaterializedViewTable.MATERIALIZATION_CONNECTION,
@@ -829,8 +829,8 @@ public class Lattice {
 
     public Tile(ImmutableList<Measure> measures,
         ImmutableList<Column> dimensions) {
-      this.measures = Preconditions.checkNotNull(measures);
-      this.dimensions = Preconditions.checkNotNull(dimensions);
+      this.measures = Objects.requireNonNull(measures);
+      this.dimensions = Objects.requireNonNull(dimensions);
       assert Ordering.natural().isStrictlyOrdered(dimensions);
       assert Ordering.natural().isStrictlyOrdered(measures);
       bitSet = Column.toBitSet(dimensions);

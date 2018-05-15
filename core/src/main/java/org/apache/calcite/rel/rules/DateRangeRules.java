@@ -43,7 +43,6 @@ import org.apache.calcite.util.TimestampWithTimeZoneString;
 import org.apache.calcite.util.Util;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -62,6 +61,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Predicate;
@@ -246,12 +246,12 @@ public abstract class DateRangeRules {
     ExtractShuttle(RexBuilder rexBuilder, TimeUnitRange timeUnit,
         Map<String, RangeSet<Calendar>> operandRanges,
         ImmutableSortedSet<TimeUnitRange> timeUnitRanges, String timeZone) {
-      this.rexBuilder = Preconditions.checkNotNull(rexBuilder);
-      this.timeUnit = Preconditions.checkNotNull(timeUnit);
+      this.rexBuilder = Objects.requireNonNull(rexBuilder);
+      this.timeUnit = Objects.requireNonNull(timeUnit);
       Bug.upgrade("Change type to Map<RexNode, RangeSet<Calendar>> when"
           + " [CALCITE-1367] is fixed");
-      this.operandRanges = Preconditions.checkNotNull(operandRanges);
-      this.timeUnitRanges = Preconditions.checkNotNull(timeUnitRanges);
+      this.operandRanges = Objects.requireNonNull(operandRanges);
+      this.timeUnitRanges = Objects.requireNonNull(timeUnitRanges);
       this.timeZone = timeZone;
     }
 

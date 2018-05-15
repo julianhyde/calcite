@@ -57,7 +57,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -96,7 +95,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
@@ -152,8 +150,7 @@ public class CalciteAssert {
   }
 
   public static final ConnectionFactory EMPTY_CONNECTION_FACTORY =
-      new MapConnectionFactory(ImmutableMap.<String, String>of(),
-          ImmutableList.<ConnectionPostProcessor>of());
+      new MapConnectionFactory(ImmutableMap.of(), ImmutableList.of());
 
   /** Implementation of {@link AssertThat} that does nothing. */
   private static final AssertThat DISABLED =
@@ -828,7 +825,7 @@ public class CalciteAssert {
         new AssertThat(EMPTY_CONNECTION_FACTORY);
 
     private AssertThat(ConnectionFactory connectionFactory) {
-      this.connectionFactory = Preconditions.checkNotNull(connectionFactory);
+      this.connectionFactory = Objects.requireNonNull(connectionFactory);
     }
 
     public AssertThat with(Config config) {
@@ -1166,8 +1163,8 @@ public class CalciteAssert {
 
     private MapConnectionFactory(ImmutableMap<String, String> map,
         ImmutableList<ConnectionPostProcessor> postProcessors) {
-      this.map = Preconditions.checkNotNull(map);
-      this.postProcessors = Preconditions.checkNotNull(postProcessors);
+      this.map = Objects.requireNonNull(map);
+      this.postProcessors = Objects.requireNonNull(postProcessors);
     }
 
     @Override public boolean equals(Object obj) {
@@ -1237,10 +1234,10 @@ public class CalciteAssert {
 
     /** Performs an action using a connection, and closes the connection
      * afterwards. */
-    public final AssertQuery withConnection(Function<Connection, Void> f)
+    public final AssertQuery withConnection(Consumer<Connection> f)
         throws Exception {
       try (Connection c = createConnection()) {
-        f.apply(c);
+        f.accept(c);
       }
       return this;
     }

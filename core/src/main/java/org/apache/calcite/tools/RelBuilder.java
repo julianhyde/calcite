@@ -431,8 +431,8 @@ public class RelBuilder {
    * given alias. Searches for the relation starting at the top of the
    * stack. */
   public RexNode field(int inputCount, String alias, String fieldName) {
-    Preconditions.checkNotNull(alias);
-    Preconditions.checkNotNull(fieldName);
+    Objects.requireNonNull(alias);
+    Objects.requireNonNull(fieldName);
     final List<String> fields = new ArrayList<>();
     for (int inputOrdinal = 0; inputOrdinal < inputCount; ++inputOrdinal) {
       final Frame frame = peek_(inputOrdinal);
@@ -1960,7 +1960,7 @@ public class RelBuilder {
 
     GroupKeyImpl(ImmutableList<RexNode> nodes, boolean indicator,
         ImmutableList<ImmutableList<RexNode>> nodeLists, String alias) {
-      this.nodes = Preconditions.checkNotNull(nodes);
+      this.nodes = Objects.requireNonNull(nodes);
       assert !indicator;
       this.indicator = indicator;
       this.nodeLists = nodeLists;
@@ -2005,7 +2005,7 @@ public class RelBuilder {
     private final AggregateCall aggregateCall;
 
     AggCallImpl2(AggregateCall aggregateCall) {
-      this.aggregateCall = Preconditions.checkNotNull(aggregateCall);
+      this.aggregateCall = Objects.requireNonNull(aggregateCall);
     }
   }
 

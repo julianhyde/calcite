@@ -60,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.StringTokenizer;
 
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -608,7 +609,7 @@ public final class SqlParserUtil {
       int start,
       int end,
       T o) {
-    Preconditions.checkNotNull(list);
+    Objects.requireNonNull(list);
     Preconditions.checkArgument(start < end);
     for (int i = end - 1; i > start; --i) {
       list.remove(i);

@@ -26,7 +26,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.JsonBuilder;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
@@ -45,6 +44,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -465,10 +465,10 @@ public class ProfilerTest {
         Predicate<Profiler.Statistic> predicate,
         Comparator<Profiler.Statistic> comparator, int limit,
         List<String> columns) {
-      this.sql = Preconditions.checkNotNull(sql);
-      this.factory = Preconditions.checkNotNull(factory);
+      this.sql = Objects.requireNonNull(sql);
+      this.factory = Objects.requireNonNull(factory);
       this.columns = ImmutableList.copyOf(columns);
-      this.predicate = Preconditions.checkNotNull(predicate);
+      this.predicate = Objects.requireNonNull(predicate);
       this.comparator = comparator; // null means sort on JSON representation
       this.limit = limit;
       this.config = config;

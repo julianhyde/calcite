@@ -21,7 +21,6 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.util.JsonBuilder;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
@@ -41,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -58,9 +58,9 @@ public class SqlShell {
   SqlShell(InputStreamReader in, PrintWriter out,
       PrintWriter err, String... args) {
     this.args = ImmutableList.copyOf(args);
-    this.in = Preconditions.checkNotNull(in);
-    this.out = Preconditions.checkNotNull(out);
-    this.err = Preconditions.checkNotNull(err);
+    this.in = Objects.requireNonNull(in);
+    this.out = Objects.requireNonNull(out);
+    this.err = Objects.requireNonNull(err);
   }
 
   private static String model() {

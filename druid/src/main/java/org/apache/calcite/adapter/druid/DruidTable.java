@@ -49,6 +49,7 @@ import org.joda.time.chrono.ISOChronology;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -84,9 +85,9 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
       RelProtoDataType protoRowType, Set<String> metricFieldNames,
       String timestampFieldName, List<Interval> intervals,
       Map<String, List<ComplexMetric>> complexMetrics, Map<String, SqlTypeName> allFields) {
-    this.timestampFieldName = Preconditions.checkNotNull(timestampFieldName);
-    this.schema = Preconditions.checkNotNull(schema);
-    this.dataSource = Preconditions.checkNotNull(dataSource);
+    this.timestampFieldName = Objects.requireNonNull(timestampFieldName);
+    this.schema = Objects.requireNonNull(schema);
+    this.dataSource = Objects.requireNonNull(dataSource);
     this.protoRowType = protoRowType;
     this.metricFieldNames = ImmutableSet.copyOf(metricFieldNames);
     this.intervals = intervals != null ? ImmutableList.copyOf(intervals)

@@ -34,9 +34,8 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Preconditions;
-
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -54,7 +53,7 @@ public class SqlCreateSchema extends SqlCreate
   SqlCreateSchema(SqlParserPos pos, boolean replace, boolean ifNotExists,
       SqlIdentifier name) {
     super(OPERATOR, pos, replace, ifNotExists);
-    this.name = Preconditions.checkNotNull(name);
+    this.name = Objects.requireNonNull(name);
   }
 
   @Override public List<SqlNode> getOperandList() {

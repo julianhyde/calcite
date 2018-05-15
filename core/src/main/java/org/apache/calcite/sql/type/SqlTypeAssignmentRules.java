@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql.type;
 
-import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -28,6 +27,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -370,8 +370,8 @@ public class SqlTypeAssignmentRules {
   public boolean canCastFrom(
       SqlTypeName to,
       SqlTypeName from) {
-    Preconditions.checkNotNull(to);
-    Preconditions.checkNotNull(from);
+    Objects.requireNonNull(to);
+    Objects.requireNonNull(from);
 
     if (to == SqlTypeName.NULL) {
       return false;

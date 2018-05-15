@@ -43,11 +43,11 @@ import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Records that a particular query is materialized by a particular table.
@@ -222,7 +222,7 @@ public class RelOptMaterialization {
         Mappings.TargetMapping mapping, TableScan scan) {
       this.condition = condition;
       this.mapping = mapping;
-      this.scan = Preconditions.checkNotNull(scan);
+      this.scan = Objects.requireNonNull(scan);
     }
 
     static ProjectFilterTable of(RelNode node) {

@@ -25,8 +25,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
-import com.google.common.base.Preconditions;
-
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -81,8 +80,8 @@ public abstract class ConverterRule extends RelOptRule {
         description == null
             ? "ConverterRule<in=" + in + ",out=" + out + ">"
             : description);
-    this.inTrait = Preconditions.checkNotNull(in);
-    this.outTrait = Preconditions.checkNotNull(out);
+    this.inTrait = Objects.requireNonNull(in);
+    this.outTrait = Objects.requireNonNull(out);
 
     // Source and target traits must have same type
     assert in.getTraitDef() == out.getTraitDef();
