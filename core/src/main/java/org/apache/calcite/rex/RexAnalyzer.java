@@ -58,8 +58,10 @@ public class RexAnalyzer {
         variables.stream().map(RexAnalyzer::getComparables)
             .collect(Util.toImmutableList());
     //noinspection StaticPseudoFunctionalStyleMethod
-    return Iterables.transform(Linq4j.product(generators),
+    Iterable<List<Comparable>> product = Linq4j.product(generators);
+    Iterable<Map<RexNode, Comparable>> ret = Iterables.transform(product,
         values -> ImmutableMap.copyOf(Pair.zip(variables, values)));
+    return ret;
   }
 
   private static List<Comparable> getComparables(RexNode variable) {

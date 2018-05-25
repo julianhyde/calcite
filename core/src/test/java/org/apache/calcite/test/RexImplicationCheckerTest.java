@@ -50,7 +50,6 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -380,7 +379,6 @@ public class RexImplicationCheckerTest {
   /** Test case for simplifier of ceil and floor. */
   // Disabled: we wrongly simplify FLOOR(CEIL(2010-10-10, YEAR), YEAR)
   // to FLOOR(2010-10-10, YEAR)
-  @Ignore // TODO: fix as part of CALCITE-2314
   @Test public void testSimplifyFloor() {
     final ImmutableList<TimeUnitRange> timeUnitRanges =
         ImmutableList.of(TimeUnitRange.WEEK,
