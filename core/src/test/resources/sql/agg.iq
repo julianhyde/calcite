@@ -1081,6 +1081,12 @@ from (
   select deptno, collect(empno) as empnos
   from "scott".emp
   group by deptno);
+!ok
+
+# FUSION
+select cardinality(fusion(empnos)) as f_empnos_length from (select deptno, collect(empno) as empnos
+from "scott".emp
+group by deptno);
 +-----------------+
 | F_EMPNOS_LENGTH |
 +-----------------+

@@ -2117,8 +2117,7 @@ public class SqlFunctions {
   /** Support the MULTISET INTERSECT DISTINCT function. */
   public static Collection multisetIntersectDistinct(Collection collection1,
       Collection collection2) {
-    Set resultCollection = new HashSet(collection1.size());
-    resultCollection.addAll(collection1);
+    final Set resultCollection = new HashSet(collection1);
     resultCollection.retainAll(collection2);
     return new ArrayList(resultCollection);
   }
@@ -2126,8 +2125,7 @@ public class SqlFunctions {
   /** Support the MULTISET INTERSECT ALL function. */
   public static Collection multisetIntersectAll(Collection collection1,
       Collection collection2) {
-    List resultCollection = new ArrayList(collection1.size());
-    resultCollection.addAll(collection1);
+    final List resultCollection = new ArrayList(collection1);
     resultCollection.retainAll(collection2);
     return resultCollection;
   }
@@ -2135,17 +2133,17 @@ public class SqlFunctions {
   /** Support the MULTISET EXCEPT ALL function. */
   public static Collection multisetExceptAll(Collection collection1,
       Collection collection2) {
-    List resultCollection = new ArrayList(collection1.size());
-    resultCollection.addAll(collection1);
-    resultCollection.removeAll(collection2);
+    final List resultCollection = new LinkedList(collection1);
+    for (Object collection2Element: collection2) {
+      resultCollection.remove(collection2Element);
+    }
     return resultCollection;
   }
 
   /** Support the MULTISET EXCEPT DISTINCT function. */
   public static Collection multisetExceptDistinct(Collection collection1,
       Collection collection2) {
-    Set resultCollection = new HashSet(collection1.size());
-    resultCollection.addAll(collection1);
+    final Set resultCollection = new HashSet(collection1);
     resultCollection.removeAll(collection2);
     return new ArrayList(resultCollection);
   }
