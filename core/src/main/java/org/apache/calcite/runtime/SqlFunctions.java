@@ -2115,37 +2115,42 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET INTERSECT DISTINCT function. */
-  public static Collection multisetIntersectDistinct(Collection collection1,
-      Collection collection2) {
-    final Set resultCollection = new HashSet(collection1);
-    resultCollection.retainAll(collection2);
-    return new ArrayList(resultCollection);
+  public static <E> Collection<E> multisetIntersectDistinct(Collection<E> c1,
+      Collection<E> c2) {
+    final Set<E> result = new HashSet<E>(c1);
+    result.retainAll(c2);
+    return new ArrayList<E>(result);
   }
 
   /** Support the MULTISET INTERSECT ALL function. */
-  public static Collection multisetIntersectAll(Collection collection1,
-      Collection collection2) {
-    final List resultCollection = new ArrayList(collection1);
-    resultCollection.retainAll(collection2);
-    return resultCollection;
+  public static <E> Collection<E> multisetIntersectAll(Collection<E> c1,
+      Collection<E> c2) {
+    final List<E> result = new ArrayList<>(c1.size());
+    final List<E> c2Copy = new ArrayList<>(c2);
+    for (E e : c1) {
+      if (c2Copy.remove(e)) {
+        result.add(e);
+      }
+    }
+    return result;
   }
 
   /** Support the MULTISET EXCEPT ALL function. */
-  public static Collection multisetExceptAll(Collection collection1,
-      Collection collection2) {
-    final List resultCollection = new LinkedList(collection1);
-    for (Object collection2Element: collection2) {
-      resultCollection.remove(collection2Element);
+  public static <E> Collection<E> multisetExceptAll(Collection<E> c1,
+      Collection<E> c2) {
+    final List<E> result = new LinkedList<>(c1);
+    for (E e : c2) {
+      result.remove(e);
     }
-    return resultCollection;
+    return result;
   }
 
   /** Support the MULTISET EXCEPT DISTINCT function. */
-  public static Collection multisetExceptDistinct(Collection collection1,
-      Collection collection2) {
-    final Set resultCollection = new HashSet(collection1);
-    resultCollection.removeAll(collection2);
-    return new ArrayList(resultCollection);
+  public static <E> Collection<E> multisetExceptDistinct(Collection<E> c1,
+      Collection<E> c2) {
+    final Set<E> result = new HashSet<>(c1);
+    result.removeAll(c2);
+    return new ArrayList<>(result);
   }
 
   /** Support the IS A SET function. */
@@ -2156,8 +2161,8 @@ public class SqlFunctions {
     // capacity calculation is in the same way like for new HashSet(Collection)
     // however return immediately in case of duplicates
     Set set = new HashSet(Math.max((int) (collection.size() / .75f) + 1, 16));
-    for (Object element: collection) {
-      if (!set.add(element)) {
+    for (Object e : collection) {
+      if (!set.add(e)) {
         return false;
       }
     }
@@ -2171,8 +2176,8 @@ public class SqlFunctions {
       return false;
     }
     Collection multisetLocal = new LinkedList(multiset);
-    for (Object element : possibleSubMultiset) {
-      if (!multisetLocal.remove(element)) {
+    for (Object e : possibleSubMultiset) {
+      if (!multisetLocal.remove(e)) {
         return false;
       }
     }
