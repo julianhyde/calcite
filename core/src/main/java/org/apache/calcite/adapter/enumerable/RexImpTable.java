@@ -378,11 +378,13 @@ public class RexImpTable {
     final MethodImplementor isEmptyImplementor =
         new MethodImplementor(BuiltInMethod.IS_EMPTY.method);
     defineImplementor(IS_EMPTY, NullPolicy.NONE, isEmptyImplementor, false);
-    defineImplementor(IS_NOT_EMPTY, NullPolicy.NONE, NotImplementor.of(isEmptyImplementor), false);
+    defineImplementor(IS_NOT_EMPTY, NullPolicy.NONE,
+        NotImplementor.of(isEmptyImplementor), false);
     final MethodImplementor isASetImplementor =
         new MethodImplementor(BuiltInMethod.IS_A_SET.method);
     defineImplementor(IS_A_SET, NullPolicy.NONE, isASetImplementor, false);
-    defineImplementor(IS_NOT_A_SET, NullPolicy.NONE, NotImplementor.of(isASetImplementor), false);
+    defineImplementor(IS_NOT_A_SET, NullPolicy.NONE,
+        NotImplementor.of(isASetImplementor), false);
     defineMethod(MULTISET_INTERSECT_DISTINCT,
         BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.NONE);
     defineMethod(MULTISET_INTERSECT,
@@ -1300,7 +1302,7 @@ public class RexImpTable {
   /** Implementor for the {@code FUSION} aggregate function. */
   static class FusionImplementor extends StrictAggImplementor {
     @Override protected void implementNotNullReset(AggContext info,
-                                                   AggResetContext reset) {
+        AggResetContext reset) {
       // acc[0] = new ArrayList();
       reset.currentBlock().add(
           Expressions.statement(
@@ -1309,7 +1311,7 @@ public class RexImpTable {
     }
 
     @Override public void implementNotNullAdd(AggContext info,
-                                              AggAddContext add) {
+        AggAddContext add) {
       // acc[0].add(arg);
       add.currentBlock().add(
           Expressions.statement(

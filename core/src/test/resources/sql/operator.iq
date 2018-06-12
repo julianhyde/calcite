@@ -66,4 +66,34 @@ select * from "scott".emp where not sal > 1300 and not sal < 1200;
 
 !ok
 
+values multiset ['a', 'c', 'a'] multiset except multiset ['a'];
++--------+
+| EXPR$0 |
++--------+
+| [c, a] |
++--------+
+(1 row)
+
+!ok
+
+values multiset ['a', 'c', 'a'] multiset except distinct multiset ['a'];
++--------+
+| EXPR$0 |
++--------+
+| [c]    |
++--------+
+(1 row)
+
+!ok
+
+values multiset ['a', 'c', 'a'] multiset union multiset ['a'];
++--------------+
+| EXPR$0       |
++--------------+
+| [a, c, a, a] |
++--------------+
+(1 row)
+
+!ok
+
 # End operator.iq

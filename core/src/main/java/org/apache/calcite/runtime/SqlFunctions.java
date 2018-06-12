@@ -2115,8 +2115,8 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET INTERSECT DISTINCT function. */
-  public static Collection multisetIntersectDistinct(
-      Collection collection1, Collection collection2) {
+  public static Collection multisetIntersectDistinct(Collection collection1,
+      Collection collection2) {
     Set resultCollection = new HashSet(collection1.size());
     resultCollection.addAll(collection1);
     resultCollection.retainAll(collection2);
@@ -2124,7 +2124,8 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET INTERSECT ALL function. */
-  public static Collection multisetIntersectAll(Collection collection1, Collection collection2) {
+  public static Collection multisetIntersectAll(Collection collection1,
+      Collection collection2) {
     List resultCollection = new ArrayList(collection1.size());
     resultCollection.addAll(collection1);
     resultCollection.retainAll(collection2);
@@ -2132,7 +2133,8 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET EXCEPT ALL function. */
-  public static Collection multisetExceptAll(Collection collection1, Collection collection2) {
+  public static Collection multisetExceptAll(Collection collection1,
+      Collection collection2) {
     List resultCollection = new ArrayList(collection1.size());
     resultCollection.addAll(collection1);
     resultCollection.removeAll(collection2);
@@ -2140,7 +2142,8 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET EXCEPT DISTINCT function. */
-  public static Collection multisetExceptDistinct(Collection collection1, Collection collection2) {
+  public static Collection multisetExceptDistinct(Collection collection1,
+      Collection collection2) {
     Set resultCollection = new HashSet(collection1.size());
     resultCollection.addAll(collection1);
     resultCollection.removeAll(collection2);
@@ -2164,12 +2167,13 @@ public class SqlFunctions {
   }
 
   /** Support the SUBMULTISET OF function. */
-  public static boolean subMultisetOf(Collection possibleSubMultiset, Collection multiset) {
+  public static boolean submultisetOf(Collection possibleSubMultiset,
+      Collection multiset) {
     if (possibleSubMultiset.size() > multiset.size()) {
       return false;
     }
     Collection multisetLocal = new LinkedList(multiset);
-    for (Object element: possibleSubMultiset) {
+    for (Object element : possibleSubMultiset) {
       if (!multisetLocal.remove(element)) {
         return false;
       }
@@ -2178,7 +2182,8 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET UNION function. */
-  public static Collection multisetUnionDistinct(Collection collection1, Collection collection2) {
+  public static Collection multisetUnionDistinct(Collection collection1,
+      Collection collection2) {
     // capacity calculation is in the same way like for new HashSet(Collection)
     Set resultCollection =
         new HashSet(Math.max((int) ((collection1.size() + collection2.size()) / .75f) + 1, 16));
@@ -2188,7 +2193,8 @@ public class SqlFunctions {
   }
 
   /** Support the MULTISET UNION ALL function. */
-  public static Collection multisetUnionAll(Collection collection1, Collection collection2) {
+  public static Collection multisetUnionAll(Collection collection1,
+      Collection collection2) {
     List resultCollection = new ArrayList(collection1.size() + collection2.size());
     resultCollection.addAll(collection1);
     resultCollection.addAll(collection2);

@@ -102,37 +102,37 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlSetOperator("INTERSECT ALL", SqlKind.INTERSECT, 18, true);
 
   /**
-   * The "MULTISET UNION DISTINCT" operator.
+   * The {@code MULTISET UNION DISTINCT} operator.
    */
   public static final SqlMultisetSetOperator MULTISET_UNION_DISTINCT =
       new SqlMultisetSetOperator("MULTISET UNION DISTINCT", 14, false);
 
   /**
-   * The "MULTISET UNION [ALL]" operator.
+   * The {@code MULTISET UNION [ALL]} operator.
    */
   public static final SqlMultisetSetOperator MULTISET_UNION =
       new SqlMultisetSetOperator("MULTISET UNION ALL", 14, true);
 
   /**
-   * The "MULTISET EXCEPT DISTINCT" operator.
+   * The {@code MULTISET EXCEPT DISTINCT} operator.
    */
   public static final SqlMultisetSetOperator MULTISET_EXCEPT_DISTINCT =
       new SqlMultisetSetOperator("MULTISET EXCEPT DISTINCT", 14, false);
 
   /**
-   * The "MULTISET EXCEPT [ALL]" operator.
+   * The {@code MULTISET EXCEPT [ALL]} operator.
    */
   public static final SqlMultisetSetOperator MULTISET_EXCEPT =
       new SqlMultisetSetOperator("MULTISET EXCEPT ALL", 14, true);
 
   /**
-   * The "MULTISET INTERSECT DISTINCT" operator.
+   * The {@code MULTISET INTERSECT DISTINCT} operator.
    */
   public static final SqlMultisetSetOperator MULTISET_INTERSECT_DISTINCT =
       new SqlMultisetSetOperator("MULTISET INTERSECT DISTINCT", 18, false);
 
   /**
-   * The "MULTISET INTERSECT [ALL]" operator.
+   * The {@code MULTISET INTERSECT [ALL]} operator.
    */
   public static final SqlMultisetSetOperator MULTISET_INTERSECT =
       new SqlMultisetSetOperator("MULTISET INTERSECT ALL", 18, true);

@@ -33,7 +33,6 @@ package ${parser.package};
 import ${importStr};
 </#list>
 
-
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -5326,31 +5325,32 @@ SqlBinaryOperator BinaryQueryOperator() :
  */
 SqlBinaryOperator BinaryMultisetOperator() :
 {
-    SqlBinaryOperator op;
 }
 {
     // If both the ALL or DISTINCT keywords are missing, DISTINCT is implicit
     <MULTISET>
     (
-        <UNION> { op = SqlStdOperatorTable.MULTISET_UNION; }
+        <UNION>
         [
-            <ALL> { op = SqlStdOperatorTable.MULTISET_UNION; }
-        |   <DISTINCT> { op = SqlStdOperatorTable.MULTISET_UNION_DISTINCT; }
+            <ALL>
+        |   <DISTINCT> { return SqlStdOperatorTable.MULTISET_UNION_DISTINCT; }
         ]
+        { return SqlStdOperatorTable.MULTISET_UNION; }
     |
-        <INTERSECT> { op = SqlStdOperatorTable.MULTISET_INTERSECT; }
+        <INTERSECT>
         [
-            <ALL> { op = SqlStdOperatorTable.MULTISET_INTERSECT; }
-        |   <DISTINCT> { op = SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT; }
+            <ALL>
+        |   <DISTINCT> { return SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT; }
         ]
+        { return SqlStdOperatorTable.MULTISET_INTERSECT; }
     |
-        <EXCEPT> { op = SqlStdOperatorTable.MULTISET_EXCEPT; }
+        <EXCEPT>
         [
-            <ALL> { op = SqlStdOperatorTable.MULTISET_EXCEPT; }
-        |   <DISTINCT> { op = SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT; }
+            <ALL>
+        |   <DISTINCT> { return SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT; }
         ]
+        { return SqlStdOperatorTable.MULTISET_EXCEPT; }
     )
-    { return op; }
 }
 
 /**
