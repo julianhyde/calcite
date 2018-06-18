@@ -22,6 +22,7 @@ import org.apache.calcite.schema.TableFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -35,7 +36,8 @@ import java.util.List;
  * <p>Created by the validator, after resolving a function call to a function
  * defined in a Calcite schema.
 */
-public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction {
+public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction
+    implements SqlTableFunction {
   public SqlUserDefinedTableFunction(SqlIdentifier opName,
       SqlReturnTypeInference returnTypeInference,
       SqlOperandTypeInference operandTypeInference,
@@ -54,16 +56,6 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction {
     return (TableFunction) super.getFunction();
   }
 
-  /**
-   * Returns the record type of the table yielded by this function when
-   * applied to given arguments. Only literal arguments are passed,
-   * non-literal are replaced with default values (null, 0, false, etc).
-   *
-   * @param typeFactory Type factory
-   * @param operandList arguments of a function call (only literal arguments
-   *                    are passed, nulls for non-literal ones)
-   * @return row type of the table
-   */
   public RelDataType getRowType(RelDataTypeFactory typeFactory,
       List<SqlNode> operandList) {
     List<Object> arguments =
