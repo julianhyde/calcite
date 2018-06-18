@@ -35,6 +35,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
@@ -58,7 +59,8 @@ import java.util.Objects;
  * <p>Created by the validator, after resolving a function call to a function
  * defined in a Calcite schema.
 */
-public class SqlUserDefinedTableMacro extends SqlFunction {
+public class SqlUserDefinedTableMacro extends SqlFunction
+    implements SqlTableFunction {
   private final TableMacro tableMacro;
 
   public SqlUserDefinedTableMacro(SqlIdentifier opName,
@@ -189,6 +191,12 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     final FunctionExpression convert =
         Expressions.lambda(bb.toBlock(), Collections.emptyList());
     return convert.compile().dynamicInvoke();
+  }
+
+  public RelDataType getRowType(RelDataTypeFactory typeFactory,
+      List<SqlNode> operandList) {
+    final TranslatableTable table = getTable(typeFactory, operandList);
+    return table.getRowType(typeFactory);
   }
 
   /** Thrown when a non-literal occurs in an argument to a user-defined

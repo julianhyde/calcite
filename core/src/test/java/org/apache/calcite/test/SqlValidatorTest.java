@@ -7823,9 +7823,46 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkFails("select * from table(^ramp('3')^)",
         "Cannot apply 'RAMP' to arguments of type 'RAMP\\(<CHAR\\(1\\)>\\)'\\. Supported form\\(s\\): 'RAMP\\(<NUMERIC>\\)'");
 
+    sql("select * from table(abs(-1))")
+        .fails("(?s)Encountered \"abs\" at .*");
+
+    sql("select * from table(1 + 2)")
+        .fails("(?s)Encountered \"1\" at .*");
+
     checkFails(
         "select * from table(^nonExistentRamp('3')^)",
         "No match found for function signature NONEXISTENTRAMP\\(<CHARACTER>\\)");
+
+    sql("select * from table(^bad_ramp(3)^)")
+        .fails("Argument must be a table function: BAD_RAMP");
+
+    sql("select * from table(^bad_table_function(3)^)")
+        .fails("Table function should have CURSOR type, not"
+            + " RecordType\\(INTEGER I\\)");
+  }
+
+  /** Tests that Calcite gives an error if a table function is used anywhere
+   * that a scalar expression is expected. */
+  @Test public void testTableFunctionAsExpression() {
+    sql("select ^ramp(3)^ from (values (1))")
+        .fails("Cannot call table function here: 'RAMP'");
+    sql("select * from (values (1)) where ^ramp(3)^")
+        .fails("WHERE clause must be a condition");
+    sql("select * from (values (1)) where ^ramp(3) and 1 = 1^")
+        .fails("Cannot apply 'AND' to arguments of type '<CURSOR> AND "
+            + "<BOOLEAN>'\\. Supported form\\(s\\): '<BOOLEAN> AND <BOOLEAN>'");
+    sql("select * from (values (1)) where ^ramp(3) is not null^")
+        .fails("Cannot apply 'IS NOT NULL' to arguments of type '<CURSOR> IS"
+            + " NOT NULL'\\. Supported form\\(s\\): '<ANY> IS NOT NULL'");
+    sql("select ^sum(ramp(3))^ from (values (1))")
+        .fails("Cannot apply 'SUM' to arguments of type 'SUM\\(<CURSOR>\\)'\\. "
+            + "Supported form\\(s\\): 'SUM\\(<NUMERIC>\\)'");
+    sql("select * from (values (1)) group by ^ramp(3)^")
+        .fails("Cannot call table function here: 'RAMP'");
+    sql("select count(*) from (values (1)) having ^ramp(3)^")
+        .fails("HAVING clause must be a condition");
+    sql("select * from (values (1)) order by ^ramp(3)^ asc, 1 desc")
+        .fails("Cannot call table function here: 'RAMP'");
   }
 
   /** Test case for
