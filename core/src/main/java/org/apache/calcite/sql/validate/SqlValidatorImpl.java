@@ -72,6 +72,7 @@ import org.apache.calcite.sql.SqlSampleSpec;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlSyntax;
+import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.SqlUnresolvedFunction;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
@@ -3832,7 +3833,24 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    */
   private void validateGroupByItem(SqlSelect select, SqlNode groupByItem) {
     final SqlValidatorScope groupByScope = getGroupScope(select);
+    validateGroupByExpr(groupByItem, groupByScope);
     groupByScope.validateExpr(groupByItem);
+  }
+
+  private void validateGroupByExpr(SqlNode groupByItem,
+      SqlValidatorScope groupByScope) {
+    switch (groupByItem.getKind()) {
+    case GROUPING_SETS:
+    case ROLLUP:
+    case CUBE:
+      final SqlCall call = (SqlCall) groupByItem;
+      for (SqlNode operand : call.getOperandList()) {
+        validateExpr(operand, groupByScope);
+      }
+      break;
+    default:
+      validateExpr(groupByItem, groupByScope);
+    }
   }
 
   /**
@@ -4087,6 +4105,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       if (op.isAggregator() && op.requiresOver()) {
         throw newValidationError(expr,
             RESOURCE.absentOverClause());
+      }
+      if (op instanceof SqlTableFunction) {
+        throw RESOURCE.cannotCallTableFunctionHere(op.getName()).ex();
       }
     }
 
