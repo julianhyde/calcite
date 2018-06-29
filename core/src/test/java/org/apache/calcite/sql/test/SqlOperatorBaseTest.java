@@ -9219,6 +9219,23 @@ public abstract class SqlOperatorBaseTest {
         result, 0d);
   }
 
+  @Test void testCorrFunc() {
+    tester.setFor(SqlStdOperatorTable.CORR, VM_EXPAND);
+    tester.checkFails("corr(^*^)", "Unknown identifier '\\*'", false);
+    tester.checkFails(
+        "^corr(cast(null as varchar(2)),cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'CORR' to arguments of type 'CORR\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'CORR\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("corr(CAST(NULL AS INTEGER),CAST(NULL AS INTEGER))",
+            "INTEGER");
+    checkAggType(tester, "corr(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("corr(x)", new String[]{}, null, 0d);
+  }
+
   @Test void testCovarPopFunc() {
     tester.setFor(SqlStdOperatorTable.COVAR_POP, VM_EXPAND);
     tester.checkFails("covar_pop(^*^)", "Unknown identifier '\\*'", false);
@@ -9258,6 +9275,30 @@ public abstract class SqlOperatorBaseTest {
     }
     // with zero values
     tester.checkAgg("covar_samp(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrCountFunc() {
+    tester.setFor(SqlStdOperatorTable.REGR_COUNT, VM_EXPAND);
+    tester.checkType("regr_count(1, 2)", "BIGINT NOT NULL");
+    tester.checkFails(
+        "^REGR_COUNT()^",
+        "Invalid number of arguments to function 'REGR_COUNT'. Was expecting 2 arguments",
+        false);
+    tester.checkFails(
+        "^REGR_COUNT(1)^",
+        "Invalid number of arguments to function 'REGR_COUNT'. Was expecting 2 arguments",
+        false);
+    tester.checkFails(
+        "^REGR_COUNT(1, 2, 3)^",
+        "Invalid number of arguments to function 'REGR_COUNT'. Was expecting 2 arguments",
+        false);
+    tester.checkFails("^regr_count('1', '2')^",
+        "(?s)Cannot apply 'REGR_COUNT' to arguments of type 'REGR_COUNT\\(<CHAR\\(1\\)>, <CHAR\\(1\\)>\\)'. Supported form\\(s\\): 'REGR_COUNT\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkFails(
+        "REGR_COUNT(^*^)",
+        "Unknown identifier '\\*'",
+        false);
   }
 
   @Test void testRegrSxxFunc() {
@@ -9302,6 +9343,126 @@ public abstract class SqlOperatorBaseTest {
     }
     // with zero values
     tester.checkAgg("regr_syy(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrSxyFunc() {
+    tester.setFor(SqlStdOperatorTable.REGR_SXY, VM_EXPAND);
+    tester.checkFails(
+        "regr_sxy(^*^)",
+        "Unknown identifier '\\*'",
+        false);
+    tester.checkFails(
+        "^regr_sxy(cast(null as varchar(2)), cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'REGR_SXY' to arguments of type 'REGR_SXY\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_SXY\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("regr_sxy(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        "INTEGER");
+    checkAggType(tester, "regr_sxy(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("regr_sxy(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrAvgxFunc() {
+    tester.setFor(SqlStdOperatorTable.REGR_AVGX, VM_EXPAND);
+    tester.checkFails(
+        "regr_avgx(^*^)",
+        "Unknown identifier '\\*'",
+        false);
+    tester.checkFails(
+        "^regr_avgx(cast(null as varchar(2)), cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'REGR_AVGX' to arguments of type 'REGR_AVGX\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_AVGX\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("regr_avgx(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        "INTEGER");
+    checkAggType(tester, "regr_avgx(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("regr_avgx(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrAvgyFunc() {
+    tester.setFor(SqlStdOperatorTable.REGR_AVGY, VM_EXPAND);
+    tester.checkFails(
+        "regr_avgy(^*^)",
+        "Unknown identifier '\\*'",
+        false);
+    tester.checkFails(
+        "^regr_avgy(cast(null as varchar(2)), cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'REGR_AVGY' to arguments of type 'REGR_AVGY\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_AVGY\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("regr_avgy(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        "INTEGER");
+    checkAggType(tester, "regr_avgy(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("regr_avgy(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrSlopeFunc() {
+    tester.setFor(SqlStdOperatorTable.REGR_SLOPE, VM_EXPAND);
+    tester.checkFails(
+        "regr_slope(^*^)",
+        "Unknown identifier '\\*'",
+        false);
+    tester.checkFails(
+        "^regr_slope(cast(null as varchar(2)), cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'REGR_SLOPE' to arguments of type 'REGR_SLOPE\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_SLOPE\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("regr_slope(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        "INTEGER");
+    checkAggType(tester, "regr_slope(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("regr_slope(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrR2Func() {
+    tester.setFor(SqlStdOperatorTable.REGR_R2, VM_EXPAND);
+    tester.checkFails(
+        "regr_r2(^*^)",
+        "Unknown identifier '\\*'",
+        false);
+    tester.checkFails(
+        "^regr_r2(cast(null as varchar(2)), cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'REGR_R2' to arguments of type 'REGR_R2\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_R2\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("regr_r2(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        "INTEGER");
+    checkAggType(tester, "regr_r2(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("regr_r2(x)", new String[]{}, null, 0d);
+  }
+
+  @Test void testRegrInterceptFunc() {
+    tester.setFor(SqlStdOperatorTable.REGR_INTERCEPT, VM_EXPAND);
+    tester.checkFails(
+        "regr_intercept(^*^)",
+        "Unknown identifier '\\*'",
+        false);
+    tester.checkFails(
+        "^regr_intercept(cast(null as varchar(2)), cast(null as varchar(2)))^",
+        "(?s)Cannot apply 'REGR_INTERCEPT' to arguments of type 'REGR_INTERCEPT\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_INTERCEPT\\(<NUMERIC>, <NUMERIC>\\)'.*",
+        false);
+    tester.checkType("regr_intercept(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        "INTEGER");
+    checkAggType(tester, "regr_intercept(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
+    if (!enable) {
+      return;
+    }
+    // with zero values
+    tester.checkAgg("regr_intercept(x)", new String[]{}, null, 0d);
   }
 
   @Test void testStddevPopFunc() {
