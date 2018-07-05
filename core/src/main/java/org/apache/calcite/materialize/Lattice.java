@@ -52,7 +52,6 @@ import org.apache.calcite.util.graph.DirectedGraph;
 import org.apache.calcite.util.graph.TopologicalOrderIterator;
 import org.apache.calcite.util.mapping.IntPair;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -360,8 +359,7 @@ public class Lattice {
   public List<Measure> toMeasures(List<AggregateCall> aggCallList) {
     return Lists.transform(aggCallList,
         call -> new Measure(call.getAggregation(),
-        Lists.transform(call.getArgList(),
-            (Function<Integer, Column>) columns::get)));
+        Lists.transform(call.getArgList(), columns::get)));
   }
 
   public Iterable<? extends Tile> computeTiles() {

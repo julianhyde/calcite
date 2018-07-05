@@ -24,7 +24,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.PartiallyOrderedSet;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 
@@ -98,12 +97,6 @@ public class SimpleProfiler implements Profiler {
         new PartiallyOrderedSet<>(ordering);
     private final List<ImmutableBitSet> keyOrdinalLists =
         new ArrayList<>();
-    final Function<Integer, Column> get =
-        new Function<Integer, Column>() {
-          public Column apply(Integer input) {
-            return columns.get(input);
-          }
-        };
 
     Run(final List<Column> columns) {
       for (Ord<Column> column : Ord.zip(columns)) {
@@ -113,7 +106,7 @@ public class SimpleProfiler implements Profiler {
       }
       this.columns = columns;
       this.singletonSpaces =
-          new ArrayList<>(Collections.nCopies(columns.size(), (Space) null));
+          new ArrayList<>(Collections.nCopies(columns.size(), null));
       for (ImmutableBitSet ordinals
           : ImmutableBitSet.range(columns.size()).powerSet()) {
         final Space space = new Space(ordinals, toColumns(ordinals));
@@ -285,7 +278,8 @@ public class SimpleProfiler implements Profiler {
     }
 
     private ImmutableSortedSet<Column> toColumns(Iterable<Integer> ordinals) {
-      return ImmutableSortedSet.copyOf(Iterables.transform(ordinals, get));
+      return ImmutableSortedSet.copyOf(
+          Iterables.transform(ordinals, columns::get));
     }
   }
 

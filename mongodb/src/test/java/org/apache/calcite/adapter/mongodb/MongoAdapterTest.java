@@ -24,7 +24,6 @@ import org.apache.calcite.test.MongoAssertions;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.io.LineProcessor;
 import com.google.common.io.Resources;
 import com.mongodb.client.MongoCollection;
@@ -55,6 +54,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -105,7 +105,7 @@ public class MongoAdapterTest implements SchemaFactory {
 
   private static void populate(MongoCollection<Document> collection, URL resource)
       throws IOException {
-    Preconditions.checkNotNull(collection, "collection");
+    Objects.requireNonNull(collection, "collection");
 
     if (collection.count() > 0) {
       // delete any existing documents (run from a clean set)
@@ -142,7 +142,7 @@ public class MongoAdapterTest implements SchemaFactory {
   }
 
   private CalciteAssert.AssertThat assertModel(URL url) {
-    Preconditions.checkNotNull(url, "url");
+    Objects.requireNonNull(url, "url");
     try {
       return assertModel(Resources.toString(url, StandardCharsets.UTF_8));
     } catch (IOException e) {

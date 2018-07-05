@@ -31,7 +31,6 @@ import org.apache.calcite.util.graph.DirectedGraph;
 import org.apache.calcite.util.graph.Graphs;
 import org.apache.calcite.util.graph.TopologicalOrderIterator;
 
-import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -66,9 +65,7 @@ public abstract class RelOptMaterializations {
         getApplicableMaterializations(rel, materializations);
     final List<Pair<RelNode, List<RelOptMaterialization>>> applied =
         new ArrayList<>();
-    applied.add(
-        Pair.<RelNode, List<RelOptMaterialization>>of(
-            rel, ImmutableList.<RelOptMaterialization>of()));
+    applied.add(Pair.of(rel, ImmutableList.of()));
     for (RelOptMaterialization m : applicableMaterializations) {
       int count = applied.size();
       for (int i = 0; i < count; i++) {
@@ -104,7 +101,8 @@ public abstract class RelOptMaterializations {
     // lattice.
     final List<Pair<RelNode, RelOptLattice>> latticeUses = Lists.newArrayList();
     final Set<List<String>> queryTableNames =
-        Sets.newHashSet(Iterables.transform(queryTables, GET_QUALIFIED_NAME));
+        Sets.newHashSet(
+            Iterables.transform(queryTables, RelOptTable::getQualifiedName));
     // Remember leaf-join form of root so we convert at most once.
     final Supplier<RelNode> leafJoinRoot =
         Suppliers.memoize(() -> RelOptMaterialization.toLeafJoinForm(rel));
@@ -169,9 +167,6 @@ public abstract class RelOptMaterializations {
     }
     return applicableMaterializations;
   }
-
-  private static final Function<RelOptTable, List<String>> GET_QUALIFIED_NAME =
-      RelOptTable::getQualifiedName;
 
   private static List<RelNode> substitute(
       RelNode root, RelOptMaterialization materialization) {

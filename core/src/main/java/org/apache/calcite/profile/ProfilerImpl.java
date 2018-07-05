@@ -27,7 +27,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.PartiallyOrderedSet;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
@@ -142,12 +141,6 @@ public class ProfilerImpl implements Profiler {
             e2.columnOrdinals.contains(e1.columnOrdinals));
     private final List<ImmutableBitSet> keyOrdinalLists =
         new ArrayList<>();
-    final Function<Integer, Column> get =
-        new Function<Integer, Column>() {
-          public Column apply(Integer input) {
-            return columns.get(input);
-          }
-        };
     private int rowCount;
 
     /**
@@ -439,7 +432,8 @@ public class ProfilerImpl implements Profiler {
 
 
     private ImmutableSortedSet<Column> toColumns(Iterable<Integer> ordinals) {
-      return ImmutableSortedSet.copyOf(Iterables.transform(ordinals, get));
+      return ImmutableSortedSet.copyOf(
+          Iterables.transform(ordinals, columns::get));
     }
   }
 
