@@ -26,7 +26,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.runtime.PredicateImpl;
 import org.apache.calcite.schema.AggregateFunction;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.FunctionParameter;
@@ -63,9 +62,6 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -77,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * Implementation of {@link org.apache.calcite.prepare.Prepare.CatalogReader}
@@ -140,7 +137,7 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
   }
 
   private Collection<Function> getFunctionsFrom(List<String> names) {
-    final List<Function> functions2 = Lists.newArrayList();
+    final List<Function> functions2 = new ArrayList<>();
     final List<List<String>> schemaNameList = new ArrayList<>();
     if (names.size() > 1) {
       // Name qualified: ignore path. But we do look in "/catalog" and "/",
@@ -255,23 +252,21 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
 
     final Predicate<Function> predicate;
     if (category == null) {
-      predicate = Predicates.alwaysTrue();
+      predicate = function -> true;
     } else if (category.isTableFunction()) {
-      predicate =
-          function -> function instanceof TableMacro
+      predicate = function ->
+          function instanceof TableMacro
               || function instanceof TableFunction;
     } else {
-      predicate =
-          function -> !(function instanceof TableMacro
+      predicate = function ->
+          !(function instanceof TableMacro
               || function instanceof TableFunction);
     }
-    final Collection<Function> functions =
-        Collections2.filter(getFunctionsFrom(opName.names), predicate);
-    if (functions.isEmpty()) {
-      return;
-    }
-    operatorList.addAll(
-        Collections2.transform(functions, function -> toOp(opName, function)));
+    getFunctionsFrom(opName.names)
+        .stream()
+        .filter(predicate)
+        .map(function -> toOp(opName, function))
+        .forEachOrdered(operatorList::add);
   }
 
   /** Creates an operator table that contains functions in the given class.
@@ -281,7 +276,7 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
     // Dummy schema to collect the functions
     final CalciteSchema schema =
         CalciteSchema.createRootSchema(false, false);
-    ModelHandler.addFunctions(schema.plus(), null, ImmutableList.<String>of(),
+    ModelHandler.addFunctions(schema.plus(), null, ImmutableList.of(),
         className, "*", true);
 
     // The following is technical debt; see [CALCITE-2082] Remove
@@ -319,14 +314,9 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
       typeFamilies.add(
           Util.first(type.getSqlTypeName().getFamily(), SqlTypeFamily.ANY));
     }
-    final Predicate<Integer> optional =
-        new PredicateImpl<Integer>() {
-          public boolean test(Integer input) {
-            return function.getParameters().get(input).isOptional();
-          }
-        };
     final FamilyOperandTypeChecker typeChecker =
-        OperandTypes.family(typeFamilies, optional);
+        OperandTypes.family(typeFamilies, i ->
+            function.getParameters().get(i).isOptional());
     final List<RelDataType> paramTypes = toSql(typeFactory, argTypes);
     if (function instanceof ScalarFunction) {
       return new SqlUserDefinedFunction(name, infer((ScalarFunction) function),

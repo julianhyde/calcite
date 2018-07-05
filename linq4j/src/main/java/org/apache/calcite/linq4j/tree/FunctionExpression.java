@@ -19,6 +19,7 @@ package org.apache.calcite.linq4j.tree;
 import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.function.Functions;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import java.lang.reflect.Method;
@@ -26,7 +27,6 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -60,8 +60,7 @@ public final class FunctionExpression<F extends Function<?>>
   }
 
   public FunctionExpression(F function) {
-    this((Class) function.getClass(), function, null,
-        Collections.<ParameterExpression>emptyList());
+    this((Class) function.getClass(), function, null, ImmutableList.of());
   }
 
   public FunctionExpression(Class<F> type, BlockStatement body,

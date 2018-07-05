@@ -35,7 +35,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistributionTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
@@ -378,7 +377,7 @@ public class FrameworksTest {
     public Statistic getStatistic() {
       return Statistics.of(15D,
           ImmutableList.of(ImmutableBitSet.of(0)),
-          ImmutableList.<RelCollation>of());
+          ImmutableList.of());
     }
 
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters,

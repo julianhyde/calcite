@@ -48,8 +48,8 @@ import org.apache.calcite.util.graph.DirectedGraph;
 import org.apache.calcite.util.graph.TopologicalOrderIterator;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -297,7 +297,7 @@ public abstract class ProjectToWindowRule extends RelOptRule {
 
           // This RexOver cannot be added into any existing cohort
           if (!isFound) {
-            final Set<Integer> newSet = Sets.newHashSet(i);
+            final Set<Integer> newSet = new HashSet<>(ImmutableList.of(i));
             windowToIndices.add(Pair.of(over.getWindow(), newSet));
           }
         }

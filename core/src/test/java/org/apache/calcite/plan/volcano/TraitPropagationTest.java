@@ -139,7 +139,7 @@ public class TraitPropagationTest {
         }
 
         @Override public Statistic getStatistic() {
-          return Statistics.of(100d, ImmutableList.<ImmutableBitSet>of(),
+          return Statistics.of(100d, ImmutableList.of(),
               ImmutableList.of(COLLATION));
         }
       };

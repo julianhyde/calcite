@@ -58,7 +58,6 @@ import org.apache.calcite.util.TimestampString;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -7668,8 +7667,8 @@ public abstract class SqlOperatorBaseTest {
   /** Builds lists of types and sample values. */
   static class Builder {
     final RelDataTypeFactory typeFactory;
-    final List<RelDataType> types = Lists.newArrayList();
-    final List<ValueType> values = Lists.newArrayList();
+    final List<RelDataType> types = new ArrayList<>();
+    final List<ValueType> values = new ArrayList<>();
 
     Builder(RelDataTypeFactory typeFactory) {
       this.typeFactory = typeFactory;

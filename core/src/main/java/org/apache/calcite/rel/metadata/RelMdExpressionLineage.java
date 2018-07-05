@@ -42,10 +42,10 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +56,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Default implementation of
@@ -126,9 +127,8 @@ public class RelMdExpressionLineage
       final RexNode inputRef = RexTableInputRef.of(
           RelTableRef.of(rel.getTable(), 0),
           RexInputRef.of(idx, rel.getRowType().getFieldList()));
-      final Set<RexNode> originalExprs = Sets.newHashSet(inputRef);
       final RexInputRef ref = RexInputRef.of(idx, rel.getRowType().getFieldList());
-      mapping.put(ref, originalExprs);
+      mapping.put(ref, ImmutableSet.of(inputRef));
     }
 
     // Return result
@@ -236,9 +236,9 @@ public class RelMdExpressionLineage
           currentTablesMapping.put(rightRef,
               RelTableRef.of(rightRef.getTable(), shift + rightRef.getEntityNumber()));
         }
-        final Set<RexNode> updatedExprs = Sets.newHashSet(
-            Iterables.transform(originalExprs,
-                e -> RexUtil.swapTableReferences(rexBuilder, e,
+        final Set<RexNode> updatedExprs = ImmutableSet.copyOf(
+            Iterables.transform(originalExprs, e ->
+                RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping)));
         mapping.put(RexInputRef.of(idx, rel.getRowType().getFieldList()), updatedExprs);
       }
@@ -286,10 +286,12 @@ public class RelMdExpressionLineage
           currentTablesMapping.put(tableRef,
               RelTableRef.of(tableRef.getTable(), shift + tableRef.getEntityNumber()));
         }
-        final Set<RexNode> updatedExprs = Sets.newHashSet(
-            Iterables.transform(originalExprs,
-                e -> RexUtil.swapTableReferences(rexBuilder, e,
-                    currentTablesMapping)));
+        final Set<RexNode> updatedExprs =
+            originalExprs.stream()
+                .map(e ->
+                    RexUtil.swapTableReferences(rexBuilder, e,
+                        currentTablesMapping))
+                .collect(Collectors.toSet());
         final Set<RexNode> set = mapping.get(ref);
         if (set != null) {
           set.addAll(updatedExprs);
@@ -382,7 +384,7 @@ public class RelMdExpressionLineage
 
     if (predFieldsUsed.isEmpty()) {
       // The unique expression is the input expression
-      return Sets.newHashSet(expr);
+      return ImmutableSet.of(expr);
     }
 
     return createAllPossibleExpressions(rexBuilder, expr, predFieldsUsed, mapping,

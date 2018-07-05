@@ -19,7 +19,6 @@ package org.apache.calcite.jdbc;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -37,7 +36,6 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -181,7 +179,7 @@ public class CalciteMetaImpl extends MetaImpl {
     }
     //noinspection unchecked
     final Iterable<Object> iterable = (Iterable<Object>) (Iterable) enumerable;
-    return createResultSet(Collections.<String, Object>emptyMap(),
+    return createResultSet(Collections.emptyMap(),
         columns, CursorFactory.record(clazz, fields, fieldNames),
         new Frame(0, true, iterable));
   }
@@ -190,7 +188,7 @@ public class CalciteMetaImpl extends MetaImpl {
   createEmptyResultSet(final Class<E> clazz) {
     final List<ColumnMetaData> columns = fieldMetaData(clazz).columns;
     final CursorFactory cursorFactory = CursorFactory.deduce(columns, clazz);
-    return createResultSet(Collections.<String, Object>emptyMap(), columns,
+    return createResultSet(Collections.emptyMap(), columns,
         cursorFactory, Frame.EMPTY);
   }
 
@@ -202,8 +200,8 @@ public class CalciteMetaImpl extends MetaImpl {
       final AvaticaStatement statement = connection.createStatement();
       final CalcitePrepare.CalciteSignature<Object> signature =
           new CalcitePrepare.CalciteSignature<Object>("",
-              ImmutableList.<AvaticaParameter>of(), internalParameters, null,
-              columns, cursorFactory, null, ImmutableList.<RelCollation>of(), -1,
+              ImmutableList.of(), internalParameters, null,
+              columns, cursorFactory, null, ImmutableList.of(), -1,
               null, Meta.StatementType.SELECT) {
             @Override public Enumerable<Object> enumerable(
                 DataContext dataContext) {
@@ -688,7 +686,7 @@ public class CalciteMetaImpl extends MetaImpl {
           public void execute() throws SQLException {
             if (signature.statementType.canUpdate()) {
               final Iterable<Object> iterable =
-                  _createIterable(h, signature, ImmutableList.<TypedValue>of(),
+                  _createIterable(h, signature, ImmutableList.of(),
                       null);
               final Iterator<Object> iterator = iterable.iterator();
               updateCount = ((Number) iterator.next()).longValue();
@@ -706,7 +704,7 @@ public class CalciteMetaImpl extends MetaImpl {
   @VisibleForTesting
   public static DataContext createDataContext(CalciteConnection connection) {
     return ((CalciteConnectionImpl) connection)
-        .createDataContext(ImmutableMap.<String, Object>of(),
+        .createDataContext(ImmutableMap.of(),
             CalciteSchema.from(connection.getRootSchema()));
   }
 

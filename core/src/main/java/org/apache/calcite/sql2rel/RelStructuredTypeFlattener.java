@@ -76,10 +76,11 @@ import org.apache.calcite.util.mapping.Mappings;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.SortedSetMultimap;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -130,7 +131,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
   private final RexBuilder rexBuilder;
   private final boolean restructure;
 
-  private final Map<RelNode, RelNode> oldToNewRelMap = Maps.newHashMap();
+  private final Map<RelNode, RelNode> oldToNewRelMap = new HashMap<>();
   private RelNode currentRel;
   private int iRestructureInput;
   private RelDataType flattenedRootType;
@@ -214,7 +215,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
   }
 
   private List<RexNode> restructureFields(RelDataType structuredType) {
-    final List<RexNode> structuringExps = Lists.newArrayList();
+    final List<RexNode> structuringExps = new ArrayList<>();
     for (RelDataTypeField field : structuredType.getFieldList()) {
       // TODO:  row
       if (field.getType().getSqlTypeName() == SqlTypeName.STRUCTURED) {
@@ -476,7 +477,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
   }
 
   public void rewriteRel(LogicalProject rel) {
-    final List<Pair<RexNode, String>> flattenedExpList = Lists.newArrayList();
+    final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
     flattenProjections(new RewriteRexShuttle(),
         rel.getProjects(),
         rel.getRowType().getFieldNames(),
@@ -506,7 +507,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
     // Convert the projections.
-    final List<Pair<RexNode, String>> flattenedExpList = Lists.newArrayList();
+    final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
     List<String> fieldNames = rel.getRowType().getFieldNames();
     flattenProjections(new RewriteRexShuttle(),
         program.getProjectList(),
@@ -588,7 +589,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         for (int j = 0; j < n; ++j) {
           RelDataTypeField field = fieldList.get(j);
           flattenedExps.add(
-              Pair.<RexNode, String>of(
+              Pair.of(
                   new RexInputRef(newOffset + j, field.getType()),
                   fieldName));
         }
@@ -600,7 +601,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
           // For object constructors, prepend a FALSE null
           // indicator.
           flattenedExps.add(
-              Pair.<RexNode, String>of(rexBuilder.makeLiteral(false),
+              Pair.of(rexBuilder.makeLiteral(false),
                   fieldName));
         } else if (exp.isA(SqlKind.CAST)) {
           if (RexLiteral.isNullLiteral(
@@ -615,7 +616,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         }
         flattenProjections(new RewriteRexShuttle(),
             call.getOperands(),
-            Collections.<String>nCopies(call.getOperands().size(), null),
+            Collections.nCopies(call.getOperands().size(), null),
             fieldName,
             flattenedExps);
       } else if (exp instanceof RexCall) {
@@ -672,7 +673,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
   public void rewriteRel(TableScan rel) {
     RelNode newRel = rel.getTable().toRel(toRelContext);
     if (!SqlTypeUtil.isFlat(rel.getRowType())) {
-      final List<Pair<RexNode, String>> flattenedExpList = Lists.newArrayList();
+      final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
       flattenInputs(rel.getRowType().getFieldList(),
           rexBuilder.makeRangeReference(newRel),
           flattenedExpList);
@@ -856,7 +857,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         RexBuilder rexBuilder,
         SqlOperator op,
         List<RexNode> exprs) {
-      final List<Pair<RexNode, String>> flattenedExps = Lists.newArrayList();
+      final List<Pair<RexNode, String>> flattenedExps = new ArrayList<>();
       flattenProjections(this, exprs, null, "", flattenedExps);
       int n = flattenedExps.size() / 2;
       boolean negate = false;

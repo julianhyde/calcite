@@ -240,7 +240,7 @@ public class UdfTest {
         + "  POST.MY_INCREMENT(\"empid\", 10) as INCREMENTED_SALARY\n"
         + "from \"hr\".\"emps\"";
     post.add("V_EMP",
-        ViewTable.viewMacro(post, viewSql, ImmutableList.<String>of(),
+        ViewTable.viewMacro(post, viewSql, ImmutableList.of(),
             ImmutableList.of("POST", "V_EMP"), null));
 
     final String result = ""

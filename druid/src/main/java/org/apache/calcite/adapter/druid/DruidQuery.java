@@ -796,7 +796,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
       }
     }
-    return Pair.<List<String>, List<VirtualColumn>>of(projectedColumnsBuilder.build(),
+    return Pair.of(projectedColumnsBuilder.build(),
         virtualColumnsBuilder.build());
   }
 

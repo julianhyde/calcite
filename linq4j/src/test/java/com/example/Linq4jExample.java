@@ -61,7 +61,7 @@ public class Linq4jExample {
             (Function0<String>) () -> null,
             (v1, e0) -> v1 == null ? e0.name : (v1 + "+" + e0.name),
             (v1, v2) -> v1 + ": " + v2)
-        .orderBy(Functions.<String>identitySelector())
+        .orderBy(Functions.identitySelector())
         .toList()
         .toString();
     assert s.equals("[10: Fred+Eric+Janet, 30: Bill]");

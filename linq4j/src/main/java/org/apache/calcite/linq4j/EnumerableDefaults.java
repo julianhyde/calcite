@@ -35,7 +35,6 @@ import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.function.Predicate2;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.math.BigDecimal;
@@ -370,7 +369,7 @@ public abstract class EnumerableDefaults {
    * sequence.
    */
   public static <TSource> int count(Enumerable<TSource> enumerable) {
-    return (int) longCount(enumerable, Functions.<TSource>truePredicate1());
+    return (int) longCount(enumerable, Functions.truePredicate1());
   }
 
   /**
@@ -886,7 +885,7 @@ public abstract class EnumerableDefaults {
             final Map.Entry<TKey, TSource> entry = entries.current();
             final Enumerable<TInner> inners = innerLookup.get(entry.getKey());
             return resultSelector.apply(entry.getValue(),
-                inners == null ? Linq4j.<TInner>emptyEnumerable() : inners);
+                inners == null ? Linq4j.emptyEnumerable() : inners);
           }
 
           public boolean moveNext() {
@@ -927,7 +926,7 @@ public abstract class EnumerableDefaults {
             final Map.Entry<TKey, TSource> entry = entries.current();
             final Enumerable<TInner> inners = innerLookup.get(entry.getKey());
             return resultSelector.apply(entry.getValue(),
-                inners == null ? Linq4j.<TInner>emptyEnumerable() : inners);
+                inners == null ? Linq4j.emptyEnumerable() : inners);
           }
 
           public boolean moveNext() {
@@ -1324,7 +1323,7 @@ public abstract class EnumerableDefaults {
       final boolean generateNullsOnLeft,
       final boolean generateNullsOnRight) {
     // Building the result as a list is easy but hogs memory. We should iterate.
-    final List<TResult> result = Lists.newArrayList();
+    final List<TResult> result = new ArrayList<>();
     final Enumerator<TSource> lefts = outer.enumerator();
     final List<TInner> rightList = inner.toList();
     final Set<TInner> rightUnmatched;
@@ -1492,7 +1491,7 @@ public abstract class EnumerableDefaults {
    * of elements in a sequence.
    */
   public static <TSource> long longCount(Enumerable<TSource> source) {
-    return longCount(source, Functions.<TSource>truePredicate1());
+    return longCount(source, Functions.truePredicate1());
   }
 
   /**
@@ -1786,7 +1785,7 @@ public abstract class EnumerableDefaults {
       Enumerable<TSource> enumerable, Class<TResult> clazz) {
     //noinspection unchecked
     return (Enumerable) where(enumerable,
-        Functions.<TSource, TResult>ofTypePredicate(clazz));
+        Functions.ofTypePredicate(clazz));
   }
 
   /**
@@ -1810,7 +1809,7 @@ public abstract class EnumerableDefaults {
     // Otherwise there will be a ClassCastException while retrieving.
     final Map<TKey, List<TSource>> map = new TreeMap<>(comparator);
     LookupImpl<TKey, TSource> lookup = toLookup_(map, source, keySelector,
-        Functions.<TSource>identitySelector());
+        Functions.identitySelector());
     return lookup.valuesEnumerable();
   }
 
@@ -1820,7 +1819,7 @@ public abstract class EnumerableDefaults {
    */
   public static <TSource, TKey extends Comparable> Enumerable<TSource> orderByDescending(
       Enumerable<TSource> source, Function1<TSource, TKey> keySelector) {
-    return orderBy(source, keySelector, Collections.<TKey>reverseOrder());
+    return orderBy(source, keySelector, Collections.reverseOrder());
   }
 
   /**
@@ -2297,7 +2296,7 @@ public abstract class EnumerableDefaults {
   public static <TSource> Enumerable<TSource> skipWhile(
       Enumerable<TSource> source, Predicate1<TSource> predicate) {
     return skipWhile(source,
-        Functions.<TSource, Integer>toPredicate2(predicate));
+        Functions.toPredicate2(predicate));
   }
 
   /**
@@ -2451,7 +2450,7 @@ public abstract class EnumerableDefaults {
   public static <TSource> Enumerable<TSource> takeWhile(
       Enumerable<TSource> source, final Predicate1<TSource> predicate) {
     return takeWhile(source,
-        Functions.<TSource, Integer>toPredicate2(predicate));
+        Functions.toPredicate2(predicate));
   }
 
   /**
@@ -2501,7 +2500,7 @@ public abstract class EnumerableDefaults {
   public static <TSource, TKey extends Comparable<TKey>> OrderedEnumerable<TSource> thenBy(
       OrderedEnumerable<TSource> source, Function1<TSource, TKey> keySelector) {
     return createOrderedEnumerable(source, keySelector,
-        Extensions.<TKey>comparableComparator(), false);
+        Extensions.comparableComparator(), false);
   }
 
   /**
@@ -2522,7 +2521,7 @@ public abstract class EnumerableDefaults {
       OrderedEnumerable<TSource> thenByDescending(
       OrderedEnumerable<TSource> source, Function1<TSource, TKey> keySelector) {
     return createOrderedEnumerable(source, keySelector,
-        Extensions.<TKey>comparableComparator(), true);
+        Extensions.comparableComparator(), true);
   }
 
   /**
@@ -2544,7 +2543,7 @@ public abstract class EnumerableDefaults {
    */
   public static <TSource, TKey> Map<TKey, TSource> toMap(
       Enumerable<TSource> source, Function1<TSource, TKey> keySelector) {
-    return toMap(source, keySelector, Functions.<TSource>identitySelector());
+    return toMap(source, keySelector, Functions.identitySelector());
   }
 
   /**
@@ -2555,7 +2554,7 @@ public abstract class EnumerableDefaults {
   public static <TSource, TKey> Map<TKey, TSource> toMap(
       Enumerable<TSource> source, Function1<TSource, TKey> keySelector,
       EqualityComparer<TKey> comparer) {
-    return toMap(source, keySelector, Functions.<TSource>identitySelector(), comparer);
+    return toMap(source, keySelector, Functions.identitySelector(), comparer);
   }
 
   /**
@@ -2626,7 +2625,7 @@ public abstract class EnumerableDefaults {
    */
   public static <TSource, TKey> Lookup<TKey, TSource> toLookup(
       Enumerable<TSource> source, Function1<TSource, TKey> keySelector) {
-    return toLookup(source, keySelector, Functions.<TSource>identitySelector());
+    return toLookup(source, keySelector, Functions.identitySelector());
   }
 
   /**
@@ -2638,7 +2637,7 @@ public abstract class EnumerableDefaults {
       Enumerable<TSource> source, Function1<TSource, TKey> keySelector,
       EqualityComparer<TKey> comparer) {
     return toLookup(
-        source, keySelector, Functions.<TSource>identitySelector(), comparer);
+        source, keySelector, Functions.identitySelector(), comparer);
   }
 
   /**
@@ -3286,8 +3285,8 @@ public abstract class EnumerableDefaults {
         rights.add(right);
       }
       cartesians = Linq4j.product(
-          ImmutableList.of(Linq4j.<Object>enumerator(lefts),
-              Linq4j.<Object>enumerator(rights)));
+          ImmutableList.of(Linq4j.enumerator(lefts),
+              Linq4j.enumerator(rights)));
       return true;
     }
 

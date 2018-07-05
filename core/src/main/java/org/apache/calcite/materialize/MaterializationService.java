@@ -40,7 +40,6 @@ import org.apache.calcite.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -50,6 +49,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * Manages the collection of materialized tables known to the system,
@@ -198,7 +198,7 @@ public class MaterializationService {
     // Step 2. Look for a match of the tile with the same dimensionality and an
     // acceptable list of measures.
     final TileKey tileKey0 =
-        new TileKey(lattice, groupSet, ImmutableList.<Lattice.Measure>of());
+        new TileKey(lattice, groupSet, ImmutableList.of());
     for (TileKey tileKey1 : actor.tilesByDimensionality.get(tileKey0)) {
       assert tileKey1.dimensions.equals(groupSet);
       if (allSatisfiable(measureList, tileKey1)) {
@@ -258,8 +258,8 @@ public class MaterializationService {
     // whether they were current, create a wider tile that contains their
     // measures plus the currently requested measures. Then we can obsolete all
     // other tiles.
-    final List<TileKey> obsolete = Lists.newArrayList();
-    final LinkedHashSet<Lattice.Measure> measureSet = Sets.newLinkedHashSet();
+    final List<TileKey> obsolete = new ArrayList<>();
+    final Set<Lattice.Measure> measureSet = new LinkedHashSet<>();
     for (TileKey tileKey1 : actor.tilesByDimensionality.get(tileKey0)) {
       measureSet.addAll(tileKey1.measures);
       obsolete.add(tileKey1);

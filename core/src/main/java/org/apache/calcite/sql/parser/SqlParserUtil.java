@@ -20,7 +20,6 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.CalciteContextException;
-import org.apache.calcite.runtime.PredicateImpl;
 import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlDateLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
@@ -47,7 +46,6 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 
 import org.slf4j.Logger;
 
@@ -62,6 +60,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -652,21 +651,18 @@ public final class SqlParserUtil {
    */
   public static SqlNode toTreeEx(SqlSpecialOperator.TokenSequence list,
       int start, final int minPrec, final SqlKind stopperKind) {
-    final Predicate<PrecedenceClimbingParser.Token> predicate =
-        new PredicateImpl<PrecedenceClimbingParser.Token>() {
-          public boolean test(PrecedenceClimbingParser.Token t) {
-            if (t instanceof PrecedenceClimbingParser.Op) {
-              final SqlOperator op = ((ToTreeListItem) t.o).op;
-              return stopperKind != SqlKind.OTHER
-                  && op.kind == stopperKind
-                  || minPrec > 0
-                  && op.getLeftPrec() < minPrec;
-            } else {
-              return false;
-            }
+    PrecedenceClimbingParser parser = list.parser(start,
+        token -> {
+          if (token instanceof PrecedenceClimbingParser.Op) {
+            final SqlOperator op = ((ToTreeListItem) token.o).op;
+            return stopperKind != SqlKind.OTHER
+                && op.kind == stopperKind
+                || minPrec > 0
+                && op.getLeftPrec() < minPrec;
+          } else {
+            return false;
           }
-        };
-    PrecedenceClimbingParser parser = list.parser(start, predicate);
+        });
     final int beforeSize = parser.all().size();
     parser.partialParse();
     final int afterSize = parser.all().size();
@@ -815,8 +811,8 @@ public final class SqlParserUtil {
       this.list = parser.all();
     }
 
-    public PrecedenceClimbingParser parser(int start, Predicate
-        <PrecedenceClimbingParser.Token> predicate) {
+    public PrecedenceClimbingParser parser(int start,
+        Predicate<PrecedenceClimbingParser.Token> predicate) {
       return parser.copy(start, predicate);
     }
 

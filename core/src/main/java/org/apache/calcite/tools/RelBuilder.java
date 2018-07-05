@@ -82,7 +82,6 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -654,7 +653,7 @@ public class RelBuilder {
 
   /** Creates an empty group key. */
   public GroupKey groupKey() {
-    return groupKey(ImmutableList.<RexNode>of());
+    return groupKey(ImmutableList.of());
   }
 
   /** Creates a group key. */
@@ -891,7 +890,7 @@ public class RelBuilder {
     final List<String> names = ImmutableList.copyOf(tableNames);
     final RelOptTable relOptTable = relOptSchema.getTableForMember(names);
     if (relOptTable == null) {
-      throw RESOURCE.tableNotFound(Joiner.on(".").join(names)).ex();
+      throw RESOURCE.tableNotFound(String.join(".", names)).ex();
     }
     final RelNode scan = scanFactory.createScan(cluster, relOptTable);
     push(scan);
@@ -951,7 +950,7 @@ public class RelBuilder {
    * @param nodes Expressions
    */
   public RelBuilder project(Iterable<? extends RexNode> nodes) {
-    return project(nodes, ImmutableList.<String>of());
+    return project(nodes, ImmutableList.of());
   }
 
   /** Creates a {@link Project} of the given list
@@ -1033,7 +1032,7 @@ public class RelBuilder {
         field = new Field(frame.fields.get(index).left, fieldType);
         break;
       default:
-        field = new Field(ImmutableSet.<String>of(), fieldType);
+        field = new Field(ImmutableSet.of(), fieldType);
         break;
       }
       uniqueNameList.add(name);
@@ -1320,7 +1319,7 @@ public class RelBuilder {
         String name = aggregateFields.get(i).getName();
         RelDataTypeField fieldType =
             new RelDataTypeFieldImpl(name, i, node.getType());
-        fields.add(new Field(ImmutableSet.<String>of(), fieldType));
+        fields.add(new Field(ImmutableSet.of(), fieldType));
         break;
       }
       i++;
@@ -1331,7 +1330,7 @@ public class RelBuilder {
         final RelDataTypeField field = aggregateFields.get(i);
         final RelDataTypeField fieldType =
             new RelDataTypeFieldImpl(field.getName(), i, field.getType());
-        fields.add(new Field(ImmutableSet.<String>of(), fieldType));
+        fields.add(new Field(ImmutableSet.of(), fieldType));
         i++;
       }
     }
@@ -1341,7 +1340,7 @@ public class RelBuilder {
       final RelDataTypeField fieldType =
           new RelDataTypeFieldImpl(aggregateFields.get(i + j).getName(), i + j,
               call.getType());
-      fields.add(new Field(ImmutableSet.<String>of(), fieldType));
+      fields.add(new Field(ImmutableSet.of(), fieldType));
     }
     stack.push(new Frame(aggregate, fields.build()));
     return this;
@@ -1439,11 +1438,11 @@ public class RelBuilder {
   public RelBuilder join(JoinRelType joinType,
       Iterable<? extends RexNode> conditions) {
     return join(joinType, and(conditions),
-        ImmutableSet.<CorrelationId>of());
+        ImmutableSet.of());
   }
 
   public RelBuilder join(JoinRelType joinType, RexNode condition) {
-    return join(joinType, condition, ImmutableSet.<CorrelationId>of());
+    return join(joinType, condition, ImmutableSet.of());
   }
 
   /** Creates a {@link Join} with correlating
@@ -1698,7 +1697,7 @@ public class RelBuilder {
 
   /** Creates a limit without a sort. */
   public RelBuilder limit(int offset, int fetch) {
-    return sortLimit(offset, fetch, ImmutableList.<RexNode>of());
+    return sortLimit(offset, fetch, ImmutableList.of());
   }
 
   /** Creates a {@link Sort} by field ordinals.
@@ -1850,7 +1849,7 @@ public class RelBuilder {
     if (mapping.isIdentity()) {
       return this;
     }
-    final List<RexNode> exprList = Lists.newArrayList();
+    final List<RexNode> exprList = new ArrayList<>();
     for (int i = 0; i < mapping.getTargetCount(); i++) {
       exprList.add(field(mapping.getSource(i)));
     }
@@ -2061,7 +2060,7 @@ public class RelBuilder {
       String tableAlias = deriveAlias(rel);
       ImmutableList.Builder<Field> builder = ImmutableList.builder();
       ImmutableSet<String> aliases = tableAlias == null
-          ? ImmutableSet.<String>of()
+          ? ImmutableSet.of()
           : ImmutableSet.of(tableAlias);
       for (RelDataTypeField field : rel.getRowType().getFieldList()) {
         builder.add(new Field(aliases, field));

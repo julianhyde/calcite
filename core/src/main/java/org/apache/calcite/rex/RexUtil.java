@@ -49,8 +49,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -554,7 +552,7 @@ public class RexUtil {
   }
 
   public static List<RexNode> retainDeterministic(List<RexNode> list) {
-    List<RexNode> conjuctions = Lists.newArrayList();
+    List<RexNode> conjuctions = new ArrayList<>();
     for (RexNode x : list) {
       if (isDeterministic(x)) {
         conjuctions.add(x);
@@ -1044,7 +1042,7 @@ public class RexUtil {
       return ImmutableList.of();
     }
     final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
-    final Set<String> digests = Sets.newHashSet(); // to eliminate duplicates
+    final Set<String> digests = new HashSet<>(); // to eliminate duplicates
     for (RexNode node : nodes) {
       if (node != null) {
         addAnd(builder, digests, node);
@@ -1108,7 +1106,7 @@ public class RexUtil {
       return ImmutableList.of();
     }
     final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
-    final Set<String> digests = Sets.newHashSet(); // to eliminate duplicates
+    final Set<String> digests = new HashSet<>(); // to eliminate duplicates
     for (RexNode node : nodes) {
       addOr(builder, digests, node);
     }
@@ -2209,7 +2207,7 @@ public class RexUtil {
       case AND:
         incrementAndCheck();
         operands = flattenAnd(((RexCall) rex).getOperands());
-        final List<RexNode> cnfOperands = Lists.newArrayList();
+        final List<RexNode> cnfOperands = new ArrayList<>();
         for (RexNode node : operands) {
           RexNode cnf = toCnf2(node);
           switch (cnf.getKind()) {
@@ -2232,7 +2230,7 @@ public class RexUtil {
         final RexNode tail = or(Util.skip(operands));
         final RexNode tailCnf = toCnf2(tail);
         final List<RexNode> tailCnfs = RelOptUtil.conjunctions(tailCnf);
-        final List<RexNode> list = Lists.newArrayList();
+        final List<RexNode> list = new ArrayList<>();
         for (RexNode h : headCnfs) {
           for (RexNode t : tailCnfs) {
             list.add(or(ImmutableList.of(h, t)));
@@ -2289,7 +2287,7 @@ public class RexUtil {
         if (factors.isEmpty()) {
           return or(operands);
         }
-        final List<RexNode> list = Lists.newArrayList();
+        final List<RexNode> list = new ArrayList<>();
         for (RexNode operand : operands) {
           list.add(removeFactor(factors, operand));
         }
@@ -2300,7 +2298,7 @@ public class RexUtil {
     }
 
     private List<RexNode> pullList(List<RexNode> nodes) {
-      final List<RexNode> list = Lists.newArrayList();
+      final List<RexNode> list = new ArrayList<>();
       for (RexNode node : nodes) {
         RexNode pulled = pull(node);
         switch (pulled.getKind()) {
@@ -2315,7 +2313,7 @@ public class RexUtil {
     }
 
     private Map<String, RexNode> commonFactors(List<RexNode> nodes) {
-      final Map<String, RexNode> map = Maps.newHashMap();
+      final Map<String, RexNode> map = new HashMap<>();
       int i = 0;
       for (RexNode node : nodes) {
         if (i++ == 0) {
@@ -2330,7 +2328,7 @@ public class RexUtil {
     }
 
     private RexNode removeFactor(Map<String, RexNode> factors, RexNode node) {
-      List<RexNode> list = Lists.newArrayList();
+      List<RexNode> list = new ArrayList<>();
       for (RexNode operand : RelOptUtil.conjunctions(node)) {
         if (!factors.containsKey(operand.toString())) {
           list.add(operand);
@@ -2372,7 +2370,7 @@ public class RexUtil {
         final RexNode tail = and(Util.skip(operands));
         final RexNode tailDnf = toDnf(tail);
         final List<RexNode> tailDnfs = RelOptUtil.disjunctions(tailDnf);
-        final List<RexNode> list = Lists.newArrayList();
+        final List<RexNode> list = new ArrayList<>();
         for (RexNode h : headDnfs) {
           for (RexNode t : tailDnfs) {
             list.add(and(ImmutableList.of(h, t)));
@@ -2404,7 +2402,7 @@ public class RexUtil {
     }
 
     private List<RexNode> toDnfs(List<RexNode> nodes) {
-      final List<RexNode> list = Lists.newArrayList();
+      final List<RexNode> list = new ArrayList<>();
       for (RexNode node : nodes) {
         RexNode dnf = toDnf(node);
         switch (dnf.getKind()) {

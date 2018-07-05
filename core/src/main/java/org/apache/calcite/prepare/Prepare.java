@@ -532,7 +532,7 @@ public abstract class Prepare {
 
     public List<List<String>> getFieldOrigins() {
       return Collections.singletonList(
-          Collections.<String>nCopies(4, null));
+          Collections.nCopies(4, null));
     }
   }
 

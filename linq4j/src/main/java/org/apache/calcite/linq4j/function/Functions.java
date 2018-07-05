@@ -37,7 +37,7 @@ public abstract class Functions {
   private Functions() {}
 
   public static final Map<Class<? extends Function>, Class> FUNCTION_RESULT_TYPES =
-      Collections.<Class<? extends Function>, Class>unmodifiableMap(
+      Collections.unmodifiableMap(
           map(Function0.class, Object.class,
               Function1.class, Object.class,
               Function2.class, Object.class,

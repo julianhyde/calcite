@@ -20,8 +20,8 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.sql.SqlNode;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -49,10 +49,10 @@ class CatalogScope extends DelegatingScope {
     this.schemaNames =
         Linq4j.asEnumerable(
             validator.getCatalogReader()
-                .getAllSchemaObjectNames(ImmutableList.<String>of()))
+                .getAllSchemaObjectNames(ImmutableList.of()))
             .where(input -> input.getType() == SqlMonikerType.SCHEMA)
             .select(SqlMoniker::getFullyQualifiedNames)
-            .into(Sets.<List<String>>newHashSet());
+            .into(new HashSet<>());
   }
 
   //~ Methods ----------------------------------------------------------------

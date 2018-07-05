@@ -34,6 +34,7 @@ import org.hamcrest.core.Is;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -73,7 +74,7 @@ public class Matchers {
       }
 
       protected boolean matchesSafely(ResultSet resultSet) {
-        final List<String> actualList = Lists.newArrayList();
+        final List<String> actualList = new ArrayList<>();
         try {
           CalciteAssert.toStringList(resultSet, actualList);
           resultSet.close();

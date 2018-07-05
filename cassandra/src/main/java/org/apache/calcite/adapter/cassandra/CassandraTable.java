@@ -42,8 +42,8 @@ import org.apache.calcite.util.Util;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -97,9 +97,8 @@ public class CassandraTable extends AbstractQueryableTable
   }
 
   public Enumerable<Object> query(final Session session) {
-    return query(session, Collections.<Map.Entry<String, Class>>emptyList(),
-        Collections.<Map.Entry<String, String>>emptyList(),
-        Collections.<String>emptyList(), Collections.<String>emptyList(), 0, -1);
+    return query(session, ImmutableList.of(), ImmutableList.of(),
+        ImmutableList.of(), ImmutableList.of(), 0, -1);
   }
 
   /** Executes a CQL query on the underlying table.

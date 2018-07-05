@@ -22,8 +22,6 @@ import org.apache.calcite.runtime.Utilities;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import java.io.Serializable;
@@ -260,7 +258,7 @@ public class ImmutableBitSet
 
   /** Computes the power set (set of all sets) of this bit set. */
   public Iterable<ImmutableBitSet> powerSet() {
-    List<List<ImmutableBitSet>> singletons = Lists.newArrayList();
+    List<List<ImmutableBitSet>> singletons = new ArrayList<>();
     for (int bit : this) {
       singletons.add(
           ImmutableList.of(ImmutableBitSet.of(), ImmutableBitSet.of(bit)));
@@ -915,7 +913,7 @@ public class ImmutableBitSet
   private static class Closure {
     private SortedMap<Integer, ImmutableBitSet> equivalence;
     private final SortedMap<Integer, ImmutableBitSet> closure =
-        Maps.newTreeMap();
+        new TreeMap<>();
 
     Closure(SortedMap<Integer, ImmutableBitSet> equivalence) {
       this.equivalence = equivalence;

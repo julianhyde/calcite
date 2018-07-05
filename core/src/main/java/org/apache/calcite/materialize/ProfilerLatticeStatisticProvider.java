@@ -24,7 +24,6 @@ import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.util.ImmutableBitSet;
 
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
@@ -32,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Implementation of {@link LatticeStatisticProvider} that uses a
@@ -40,46 +40,42 @@ import java.util.Objects;
 class ProfilerLatticeStatisticProvider implements LatticeStatisticProvider {
   static final Factory FACTORY = ProfilerLatticeStatisticProvider::new;
 
-  private final Lattice lattice;
-  private final Supplier<Profiler.Profile> profile =
-      Suppliers.memoize(new Supplier<Profiler.Profile>() {
-        public Profiler.Profile get() {
-          final ProfilerImpl profiler =
-              ProfilerImpl.builder()
-                  .withPassSize(200)
-                  .withMinimumSurprise(0.3D)
-                  .build();
-          final List<Profiler.Column> columns = new ArrayList<>();
-          for (Lattice.Column column : lattice.columns) {
-            columns.add(new Profiler.Column(column.ordinal, column.alias));
-          }
-          final String sql =
-              lattice.sql(ImmutableBitSet.range(lattice.columns.size()),
-                  false, ImmutableList.<Lattice.Measure>of());
-          final Table table =
-              new MaterializationService.DefaultTableFactory()
-                  .createTable(lattice.rootSchema, sql,
-                      ImmutableList.<String>of());
-          final ImmutableList<ImmutableBitSet> initialGroups =
-              ImmutableList.of();
-          final Enumerable<List<Comparable>> rows =
-              ((ScannableTable) table).scan(null)
-                  .select(values -> {
-                    for (int i = 0; i < values.length; i++) {
-                      if (values[i] == null) {
-                        values[i] = NullSentinel.INSTANCE;
-                      }
-                    }
-                    //noinspection unchecked
-                    return (List<Comparable>) (List) Arrays.asList(values);
-                  });
-          return profiler.profile(rows, columns, initialGroups);
-        }
-      });
+  private final Supplier<Profiler.Profile> profile;
 
   /** Creates a ProfilerLatticeStatisticProvider. */
   private ProfilerLatticeStatisticProvider(Lattice lattice) {
-    this.lattice = Objects.requireNonNull(lattice);
+    Objects.requireNonNull(lattice);
+    this.profile = Suppliers.memoize(() -> {
+      final ProfilerImpl profiler =
+          ProfilerImpl.builder()
+              .withPassSize(200)
+              .withMinimumSurprise(0.3D)
+              .build();
+      final List<Profiler.Column> columns = new ArrayList<>();
+      for (Lattice.Column column : lattice.columns) {
+        columns.add(new Profiler.Column(column.ordinal, column.alias));
+      }
+      final String sql =
+          lattice.sql(ImmutableBitSet.range(lattice.columns.size()),
+              false, ImmutableList.of());
+      final Table table =
+          new MaterializationService.DefaultTableFactory()
+              .createTable(lattice.rootSchema, sql, ImmutableList.of());
+      final ImmutableList<ImmutableBitSet> initialGroups =
+          ImmutableList.of();
+      final Enumerable<List<Comparable>> rows =
+          ((ScannableTable) table).scan(null)
+              .select(values -> {
+                for (int i = 0; i < values.length; i++) {
+                  if (values[i] == null) {
+                    values[i] = NullSentinel.INSTANCE;
+                  }
+                }
+                //noinspection unchecked
+                return (List<Comparable>) (List) Arrays.asList(values);
+              });
+      return profiler.profile(rows, columns, initialGroups);
+    })::get;
   }
 
   public double cardinality(List<Lattice.Column> columns) {

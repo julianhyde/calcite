@@ -1067,7 +1067,7 @@ public abstract class SqlImplementor {
         return this;
       } else {
         return new Result(node, clauses, neededAlias, neededType,
-            ImmutableMap.<String, RelDataType>of(neededAlias, neededType));
+            ImmutableMap.of(neededAlias, neededType));
       }
     }
   }

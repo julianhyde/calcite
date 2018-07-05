@@ -60,7 +60,6 @@ import org.apache.calcite.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -74,6 +73,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Utility to infer Predicates that are applicable above a RelNode.
@@ -510,7 +510,7 @@ public class RelMdPredicates
       allFieldsBitSet = ImmutableBitSet.range(0,
           nSysFields + nFieldsLeft + nFieldsRight);
 
-      exprFields = Maps.newHashMap();
+      exprFields = new HashMap<>();
       allExprDigests = new HashSet<>();
 
       if (lPreds == null) {
@@ -543,7 +543,7 @@ public class RelMdPredicates
         }
       }
 
-      equivalence = Maps.newTreeMap();
+      equivalence = new TreeMap<>();
       equalityPredicates = new HashSet<>();
       for (int i = 0; i < nSysFields + nFieldsLeft + nFieldsRight; i++) {
         equivalence.put(i, BitSets.of(i));

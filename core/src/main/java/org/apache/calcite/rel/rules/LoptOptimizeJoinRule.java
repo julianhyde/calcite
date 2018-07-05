@@ -47,8 +47,6 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.IntPair;
 
-import com.google.common.collect.Lists;
-
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -493,7 +491,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
       LoptMultiJoin multiJoin,
       LoptJoinTree joinTree,
       List<String> fieldNames) {
-    List<RexNode> newProjExprs = Lists.newArrayList();
+    List<RexNode> newProjExprs = new ArrayList<>();
     RexBuilder rexBuilder =
         multiJoin.getMultiJoinRel().getCluster().getRexBuilder();
 
@@ -1633,7 +1631,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
     List<RelDataTypeField> newFields =
         multiJoin.getJoinFactor(factorToAdd).getRowType().getFieldList();
     final int nNewFields = newFields.size();
-    List<Pair<RexNode, String>> projects = Lists.newArrayList();
+    List<Pair<RexNode, String>> projects = new ArrayList<>();
     RexBuilder rexBuilder = currJoinRel.getCluster().getRexBuilder();
     RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 

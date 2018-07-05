@@ -132,7 +132,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
   private static Object getValue(SqlNode right) throws NonLiteralException {
     switch (right.getKind()) {
     case ARRAY_VALUE_CONSTRUCTOR:
-      final List<Object> list = Lists.newArrayList();
+      final List<Object> list = new ArrayList<>();
       for (SqlNode o : ((SqlCall) right).getOperandList()) {
         list.add(getValue(o));
       }

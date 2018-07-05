@@ -20,7 +20,7 @@ import org.apache.calcite.interpreter.Row;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
 
-import com.google.common.base.Supplier;
+import java.util.function.Supplier;
 
 /**
  * Utilities for processing {@link org.apache.calcite.linq4j.Enumerable}
@@ -50,6 +50,13 @@ public class Enumerables {
    * supplier of an {@link Enumerable} over {@link Row} objects. */
   public static Supplier<Enumerable<Row>> toRow(
       final Supplier<Enumerable<Object[]>> supplier) {
+    return () -> toRow(supplier.get());
+  }
+
+  @SuppressWarnings("Guava")
+  @Deprecated // to be removed before 2.0
+  public static com.google.common.base.Supplier<Enumerable<Row>> toRow(
+      final com.google.common.base.Supplier<Enumerable<Object[]>> supplier) {
     return () -> toRow(supplier.get());
   }
 

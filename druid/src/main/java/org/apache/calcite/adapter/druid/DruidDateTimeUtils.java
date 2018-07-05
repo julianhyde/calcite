@@ -125,7 +125,7 @@ public class DruidDateTimeUtils {
 
     case OR: {
       RexCall call = (RexCall) node;
-      List<Range<Long>> intervals = Lists.newArrayList();
+      List<Range<Long>> intervals = new ArrayList<>();
       for (RexNode child : call.getOperands()) {
         List<Range<Long>> extracted =
             extractRanges(child, withNot);

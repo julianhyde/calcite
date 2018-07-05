@@ -36,7 +36,6 @@ import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectSortTransposeRule;
-import org.apache.calcite.rel.rules.PushProjector;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -807,7 +806,7 @@ public class DruidRules {
           operand(Project.class,
               operand(Filter.class,
                   operand(DruidQuery.class, none()))),
-          PushProjector.ExprCondition.FALSE,
+              expr -> false,
           relBuilderFactory);
     }
   }

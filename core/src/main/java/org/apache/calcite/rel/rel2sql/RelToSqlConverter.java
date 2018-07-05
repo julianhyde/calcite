@@ -380,7 +380,7 @@ public class RelToSqlConverter extends SqlImplementor
           new SqlInsert(POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource,
               identifierList(modify.getInput().getRowType().getFieldNames()));
 
-      return result(sqlInsert, ImmutableList.<Clause>of(), modify, null);
+      return result(sqlInsert, ImmutableList.of(), modify, null);
     }
     case UPDATE: {
       final Result input = visitChild(0, modify.getInput());
@@ -489,7 +489,7 @@ public class RelToSqlConverter extends SqlImplementor
     final SqlNodeList subsetList = new SqlNodeList(POS);
     for (Map.Entry<String, SortedSet<String>> entry : e.getSubsets().entrySet()) {
       SqlNode left = new SqlIdentifier(entry.getKey(), POS);
-      List<SqlNode> rhl = Lists.newArrayList();
+      List<SqlNode> rhl = new ArrayList<>();
       for (String right : entry.getValue()) {
         rhl.add(new SqlIdentifier(right, POS));
       }

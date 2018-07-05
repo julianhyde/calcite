@@ -18,11 +18,11 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.util.Util;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -54,7 +54,7 @@ public class MongoAssertions {
         final List<String> expectedList =
             Ordering.natural().immutableSortedCopy(Arrays.asList(lines));
 
-        final List<String> actualList = Lists.newArrayList();
+        final List<String> actualList = new ArrayList<>();
         CalciteAssert.toStringList(resultSet, actualList);
         for (int i = 0; i < actualList.size(); i++) {
           String s = actualList.get(i);

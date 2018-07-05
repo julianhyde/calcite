@@ -28,7 +28,6 @@ import org.apache.calcite.util.TestUtil;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import org.junit.Assume;
 import org.junit.Ignore;
@@ -39,6 +38,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -176,13 +176,13 @@ public class LatticeTest {
               + "GROUP BY \"days\".\"day\"";
           assertThat(
               lattice.sql(ImmutableBitSet.of(0),
-                  ImmutableList.<Lattice.Measure>of()), is(sql));
+                  ImmutableList.of()), is(sql));
           final String sql2 = "SELECT"
               + " \"days\".\"day\", \"days\".\"week_day\"\n"
               + "FROM \"foodmart\".\"days\" AS \"days\"";
           assertThat(
               lattice.sql(ImmutableBitSet.of(0, 1), false,
-                  ImmutableList.<Lattice.Measure>of()),
+                  ImmutableList.of()),
               is(sql2));
         });
   }
@@ -534,7 +534,7 @@ public class LatticeTest {
   /** Tests that two queries of the same dimensionality that use different
    * measures can use the same materialization. */
   @Test public void testGroupByEmpty3() {
-    final List<String> mats = Lists.newArrayList();
+    final List<String> mats = new ArrayList<>();
     final CalciteAssert.AssertThat that = foodmartModel().pooled();
     that.query("select sum(\"unit_sales\") as s, count(*) as c\n"
             + "from \"foodmart\".\"sales_fact_1997\"")

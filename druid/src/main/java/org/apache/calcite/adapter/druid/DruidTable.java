@@ -92,9 +92,9 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     this.metricFieldNames = ImmutableSet.copyOf(metricFieldNames);
     this.intervals = intervals != null ? ImmutableList.copyOf(intervals)
         : ImmutableList.of(DEFAULT_INTERVAL);
-    this.complexMetrics = complexMetrics == null ? ImmutableMap.<String, List<ComplexMetric>>of()
+    this.complexMetrics = complexMetrics == null ? ImmutableMap.of()
             : ImmutableMap.copyOf(complexMetrics);
-    this.allFields = allFields == null ? ImmutableMap.<String, SqlTypeName>of()
+    this.allFields = allFields == null ? ImmutableMap.of()
             : ImmutableMap.copyOf(allFields);
   }
 
@@ -245,7 +245,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     final TableScan scan = LogicalTableScan.create(cluster, relOptTable);
     return DruidQuery.create(cluster,
         cluster.traitSetOf(BindableConvention.INSTANCE), relOptTable, this,
-        ImmutableList.<RelNode>of(scan));
+        ImmutableList.of(scan));
   }
 
   public boolean isMetric(String name) {

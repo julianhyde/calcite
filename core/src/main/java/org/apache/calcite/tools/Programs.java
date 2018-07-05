@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -188,7 +189,7 @@ public class Programs {
       final HepPlanner hepPlanner = new HepPlanner(hepProgram,
           null, noDag, null, RelOptCostImpl.FACTORY);
 
-      List<RelMetadataProvider> list = Lists.newArrayList();
+      List<RelMetadataProvider> list = new ArrayList<>();
       if (metadataProvider != null) {
         list.add(metadataProvider);
       }

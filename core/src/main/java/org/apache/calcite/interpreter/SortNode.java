@@ -21,9 +21,9 @@ import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexLiteral;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class SortNode extends AbstractSingleNode<Sort> {
       }
     } else {
       // Build a sorted collection.
-      final List<Row> list = Lists.newArrayList();
+      final List<Row> list = new ArrayList<>();
       while ((row = source.receive()) != null) {
         list.add(row);
       }

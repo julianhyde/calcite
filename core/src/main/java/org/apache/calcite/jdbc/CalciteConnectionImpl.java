@@ -66,13 +66,14 @@ import org.apache.calcite.util.Holder;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -284,7 +285,7 @@ abstract class CalciteConnectionImpl
 
   public <T> Enumerable<T> enumerable(Meta.StatementHandle handle,
       CalcitePrepare.CalciteSignature<T> signature) throws SQLException {
-    Map<String, Object> map = Maps.newLinkedHashMap();
+    Map<String, Object> map = new LinkedHashMap<>();
     AvaticaStatement statement = lookupStatement(handle);
     final List<TypedValue> parameterValues =
         TROJAN.getParameterValues(statement);
@@ -342,7 +343,7 @@ abstract class CalciteConnectionImpl
 
   /** Implementation of Server. */
   private static class CalciteServerImpl implements CalciteServer {
-    final Map<Integer, CalciteServerStatement> statementMap = Maps.newHashMap();
+    final Map<Integer, CalciteServerStatement> statementMap = new HashMap<>();
 
     public void removeStatement(Meta.StatementHandle h) {
       statementMap.remove(h.id);
@@ -508,7 +509,7 @@ abstract class CalciteConnectionImpl
         throw new RuntimeException(e);
       }
       return schemaName == null
-          ? ImmutableList.<String>of()
+          ? ImmutableList.of()
           : ImmutableList.of(schemaName);
     }
 
@@ -521,7 +522,7 @@ abstract class CalciteConnectionImpl
     }
 
     public DataContext getDataContext() {
-      return connection.createDataContext(ImmutableMap.<String, Object>of(),
+      return connection.createDataContext(ImmutableMap.of(),
           rootSchema);
     }
 

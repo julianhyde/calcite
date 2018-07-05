@@ -32,7 +32,6 @@ import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
@@ -898,32 +898,24 @@ public class SqlDialect {
      */
     UNKNOWN("Unknown", "`", NullCollation.HIGH);
 
-    private final Supplier<SqlDialect> dialect =
-        Suppliers.memoize(new Supplier<SqlDialect>() {
-          public SqlDialect get() {
-            final SqlDialect dialect =
-                SqlDialectFactoryImpl.simple(DatabaseProduct.this);
-            if (dialect != null) {
-              return dialect;
-            }
-            return new SqlDialect(SqlDialect.EMPTY_CONTEXT
-                .withDatabaseProduct(DatabaseProduct.this)
-                .withDatabaseProductName(databaseProductName)
-                .withIdentifierQuoteString(quoteString)
-                .withNullCollation(nullCollation));
-          }
-        });
-
-    private String databaseProductName;
-    private String quoteString;
-    private final NullCollation nullCollation;
+    private final Supplier<SqlDialect> dialect;
 
     DatabaseProduct(String databaseProductName, String quoteString,
         NullCollation nullCollation) {
-      this.databaseProductName =
-          Objects.requireNonNull(databaseProductName);
-      this.quoteString = quoteString;
-      this.nullCollation = Objects.requireNonNull(nullCollation);
+      Objects.requireNonNull(databaseProductName);
+      Objects.requireNonNull(nullCollation);
+      dialect = Suppliers.memoize(() -> {
+        final SqlDialect dialect =
+            SqlDialectFactoryImpl.simple(DatabaseProduct.this);
+        if (dialect != null) {
+          return dialect;
+        }
+        return new SqlDialect(SqlDialect.EMPTY_CONTEXT
+            .withDatabaseProduct(DatabaseProduct.this)
+            .withDatabaseProductName(databaseProductName)
+            .withIdentifierQuoteString(quoteString)
+            .withNullCollation(nullCollation));
+      })::get;
     }
 
     /**

@@ -140,7 +140,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -149,6 +148,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -499,7 +499,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
    * {@link #createPlanner(org.apache.calcite.jdbc.CalcitePrepare.Context)}.</p>
    */
   protected List<Function1<Context, RelOptPlanner>> createPlannerFactories() {
-    return Collections.<Function1<Context, RelOptPlanner>>singletonList(
+    return Collections.singletonList(
         context -> createPlanner(context, null, null));
   }
 
@@ -661,13 +661,13 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         Meta.CursorFactory.deduce(columns, null);
     return new CalciteSignature<>(
         sql,
-        ImmutableList.<AvaticaParameter>of(),
-        ImmutableMap.<String, Object>of(),
+        ImmutableList.of(),
+        ImmutableMap.of(),
         x,
         columns,
         cursorFactory,
         context.getRootSchema(),
-        ImmutableList.<RelCollation>of(),
+        ImmutableList.of(),
         -1, dataContext -> Linq4j.asEnumerable(list),
         Meta.StatementType.SELECT);
   }
@@ -757,10 +757,10 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         executeDdl(context, sqlNode);
 
         return new CalciteSignature<>(query.sql,
-            ImmutableList.<AvaticaParameter>of(),
-            ImmutableMap.<String, Object>of(), null,
-            ImmutableList.<ColumnMetaData>of(), Meta.CursorFactory.OBJECT,
-            null, ImmutableList.<RelCollation>of(), -1, null,
+            ImmutableList.of(),
+            ImmutableMap.of(), null,
+            ImmutableList.of(), Meta.CursorFactory.OBJECT,
+            null, ImmutableList.of(), -1, null,
             Meta.StatementType.OTHER_DDL);
       }
 
@@ -833,7 +833,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         context.getRootSchema(),
         preparedResult instanceof Prepare.PreparedResultImpl
             ? ((Prepare.PreparedResultImpl) preparedResult).collations
-            : ImmutableList.<RelCollation>of(),
+            : ImmutableList.of(),
         maxRowCount,
         bindable,
         statementType);
@@ -1055,7 +1055,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     protected final SqlRexConvertletTable convertletTable;
     private final EnumerableRel.Prefer prefer;
     private final Map<String, Object> internalParameters =
-        Maps.newLinkedHashMap();
+        new LinkedHashMap<>();
     private int expansionDepth;
     private SqlValidator sqlValidator;
 
@@ -1254,7 +1254,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           parameterRowType,
           fieldOrigins,
           root.collation.getFieldCollations().isEmpty()
-              ? ImmutableList.<RelCollation>of()
+              ? ImmutableList.of()
               : ImmutableList.of(root.collation),
           root.rel,
           mapTableModOp(isDml, root.kind),
@@ -1277,7 +1277,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       final List<Prepare.Materialization> materializations =
           context.config().materializationsEnabled()
               ? MaterializationService.instance().query(schema)
-              : ImmutableList.<Prepare.Materialization>of();
+              : ImmutableList.of();
       for (Prepare.Materialization materialization : materializations) {
         prepare.populateMaterializations(context, planner, materialization);
       }

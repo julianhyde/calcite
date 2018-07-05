@@ -74,7 +74,7 @@ public final class LogicalFilter extends Filter {
       RelTraitSet traitSet,
       RelNode child,
       RexNode condition) {
-    this(cluster, traitSet, child, condition, ImmutableSet.<CorrelationId>of());
+    this(cluster, traitSet, child, condition, ImmutableSet.of());
   }
 
   @Deprecated // to be removed before 2.0
@@ -83,7 +83,7 @@ public final class LogicalFilter extends Filter {
       RelNode child,
       RexNode condition) {
     this(cluster, cluster.traitSetOf(Convention.NONE), child, condition,
-        ImmutableSet.<CorrelationId>of());
+        ImmutableSet.of());
   }
 
   /**
@@ -96,7 +96,7 @@ public final class LogicalFilter extends Filter {
 
   /** Creates a LogicalFilter. */
   public static LogicalFilter create(final RelNode input, RexNode condition) {
-    return create(input, condition, ImmutableSet.<CorrelationId>of());
+    return create(input, condition, ImmutableSet.of());
   }
 
   /** Creates a LogicalFilter. */

@@ -681,7 +681,7 @@ public class CsvTest {
       final Schema schema =
           CsvSchemaFactory.INSTANCE
               .create(calciteConnection.getRootSchema(), null,
-                  ImmutableMap.<String, Object>of("directory",
+                  ImmutableMap.of("directory",
                       resourcePath("sales"), "flavor", "scannable"));
       calciteConnection.getRootSchema().add("TEST", schema);
       final String sql = "select * from \"TEST\".\"DEPTS\" where \"NAME\" = ?";

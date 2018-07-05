@@ -46,7 +46,6 @@ import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -168,9 +167,9 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         aggregateColumns.union(joinColumns);
 
     // Split join condition
-    final List<Integer> leftKeys = Lists.newArrayList();
-    final List<Integer> rightKeys = Lists.newArrayList();
-    final List<Boolean> filterNulls = Lists.newArrayList();
+    final List<Integer> leftKeys = new ArrayList<>();
+    final List<Integer> rightKeys = new ArrayList<>();
+    final List<Boolean> filterNulls = new ArrayList<>();
     RexNode nonEquiConj =
         RelOptUtil.splitJoinCondition(join.getLeft(), join.getRight(),
             join.getCondition(), leftKeys, rightKeys, filterNulls);

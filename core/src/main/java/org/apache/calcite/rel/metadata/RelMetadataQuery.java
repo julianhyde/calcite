@@ -646,7 +646,7 @@ public class RelMetadataQuery {
   public List<Double> getAverageColumnSizesNotNull(RelNode rel) {
     final List<Double> averageColumnSizes = getAverageColumnSizes(rel);
     return averageColumnSizes == null
-        ? Collections.<Double>nCopies(rel.getRowType().getFieldCount(), null)
+        ? Collections.nCopies(rel.getRowType().getFieldCount(), null)
         : averageColumnSizes;
   }
 

@@ -68,7 +68,7 @@ public class RelOptPredicateList {
   private static final ImmutableList<RexNode> EMPTY_LIST = ImmutableList.of();
   public static final RelOptPredicateList EMPTY =
       new RelOptPredicateList(EMPTY_LIST, EMPTY_LIST, EMPTY_LIST,
-          ImmutableMap.<RexNode, RexNode>of());
+          ImmutableMap.of());
 
   /** Predicates that can be pulled up from the relational expression and its
    * inputs. */

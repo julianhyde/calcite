@@ -57,9 +57,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -74,6 +72,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
 import static org.apache.calcite.linq4j.tree.ExpressionType.AndAlso;
@@ -231,9 +230,9 @@ public class RexImpTable {
 
   private final Map<SqlOperator, CallImplementor> map = new HashMap<>();
   private final Map<SqlAggFunction, Supplier<? extends AggImplementor>> aggMap =
-      Maps.newHashMap();
+      new HashMap<>();
   private final Map<SqlAggFunction, Supplier<? extends WinAggImplementor>> winAggMap =
-      Maps.newHashMap();
+      new HashMap<>();
 
   RexImpTable() {
     defineMethod(ROW, BuiltInMethod.ARRAY.method, NullPolicy.ANY);
@@ -1356,9 +1355,9 @@ public class RexImpTable {
 
     @Override public List<Type> getNotNullState(AggContext info) {
       if (afi.isStatic) {
-        return Collections.<Type>singletonList(afi.accumulatorType);
+        return Collections.singletonList(afi.accumulatorType);
       }
-      return Arrays.<Type>asList(afi.accumulatorType, afi.declaringClass);
+      return Arrays.asList(afi.accumulatorType, afi.declaringClass);
     }
 
     @Override protected void implementNotNullReset(AggContext info,

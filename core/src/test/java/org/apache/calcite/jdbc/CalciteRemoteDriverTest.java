@@ -32,11 +32,8 @@ import org.apache.calcite.test.JdbcTest;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import org.hamcrest.CoreMatchers;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,6 +66,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -301,7 +299,7 @@ public class CalciteRemoteDriverTest {
    * variables. */
   @Test public void testParameterConvert() throws Exception {
     final StringBuilder sql = new StringBuilder("select 1");
-    final Map<SqlType, Integer> map = Maps.newHashMap();
+    final Map<SqlType, Integer> map = new HashMap<>();
     for (Map.Entry<Class, SqlType> entry : SqlType.getSetConversions()) {
       final SqlType sqlType = entry.getValue();
       switch (sqlType) {
@@ -619,7 +617,7 @@ public class CalciteRemoteDriverTest {
 
   /** A bunch of sample values of various types. */
   private static final List<Object> SAMPLE_VALUES =
-      ImmutableList.<Object>of(false, true,
+      ImmutableList.of(false, true,
           // byte
           (byte) 0, (byte) 1, Byte.MIN_VALUE, Byte.MAX_VALUE,
           // short
@@ -654,7 +652,7 @@ public class CalciteRemoteDriverTest {
           new byte[0], "hello".getBytes(StandardCharsets.UTF_8));
 
   private static List<Object> values(Class clazz) {
-    final List<Object> list = Lists.newArrayList();
+    final List<Object> list = new ArrayList<>();
     for (Object sampleValue : SAMPLE_VALUES) {
       if (sampleValue.getClass() == clazz) {
         list.add(sampleValue);

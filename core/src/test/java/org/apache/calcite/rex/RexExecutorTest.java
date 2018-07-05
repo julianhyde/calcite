@@ -123,7 +123,7 @@ public class RexExecutorTest {
     check((rexBuilder, executor) -> {
       final List<RexNode> reducedValues = new ArrayList<>();
       final RexLiteral ten = rexBuilder.makeExactLiteral(BigDecimal.TEN);
-      executor.reduce(rexBuilder, ImmutableList.<RexNode>of(ten),
+      executor.reduce(rexBuilder, ImmutableList.of(ten),
           reducedValues);
       assertThat(reducedValues.size(), equalTo(1));
       assertThat(reducedValues.get(0), instanceOf(RexLiteral.class));

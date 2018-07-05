@@ -62,7 +62,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -119,7 +118,7 @@ public class SubstitutionVisitor {
   private static final Logger LOGGER = CalciteTrace.getPlannerTracer();
 
   protected static final ImmutableList<UnifyRule> DEFAULT_RULES =
-      ImmutableList.<UnifyRule>of(
+      ImmutableList.of(
           TrivialRule.INSTANCE,
           ScanToProjectUnifyRule.INSTANCE,
           ProjectToProjectUnifyRule.INSTANCE,
@@ -469,7 +468,7 @@ public class SubstitutionVisitor {
     if (matches.isEmpty()) {
       return ImmutableList.of();
     }
-    List<RelNode> sub = Lists.newArrayList();
+    List<RelNode> sub = new ArrayList<>();
     sub.add(MutableRels.fromMutable(query.getInput(), relBuilder));
     reverseSubstitute(relBuilder, query, matches, sub, 0, matches.size());
     return sub;
@@ -490,7 +489,7 @@ public class SubstitutionVisitor {
 
     // Populate "equivalents" with (q, t) for each query descendant q and
     // target descendant t that are equal.
-    final Map<MutableRel, MutableRel> map = Maps.newHashMap();
+    final Map<MutableRel, MutableRel> map = new HashMap<>();
     for (MutableRel queryDescendant : queryDescendants) {
       map.put(queryDescendant, queryDescendant);
     }
@@ -503,8 +502,8 @@ public class SubstitutionVisitor {
     }
     map.clear();
 
-    final List<Replacement> attempted = Lists.newArrayList();
-    List<List<Replacement>> substitutions = Lists.newArrayList();
+    final List<Replacement> attempted = new ArrayList<>();
+    List<List<Replacement>> substitutions = new ArrayList<>();
 
     for (;;) {
       int count = 0;
@@ -1267,7 +1266,7 @@ public class SubstitutionVisitor {
     MutableRel result;
     if (query.groupSet.equals(target.groupSet)) {
       // Same level of aggregation. Generate a project.
-      final List<Integer> projects = Lists.newArrayList();
+      final List<Integer> projects = new ArrayList<>();
       final int groupCount = query.groupSet.cardinality();
       for (int i = 0; i < groupCount; i++) {
         projects.add(i);
@@ -1291,7 +1290,7 @@ public class SubstitutionVisitor {
         }
         groupSet.set(c2);
       }
-      final List<AggregateCall> aggregateCalls = Lists.newArrayList();
+      final List<AggregateCall> aggregateCalls = new ArrayList<>();
       for (AggregateCall aggregateCall : query.aggCalls) {
         if (aggregateCall.isDistinct()) {
           return null;

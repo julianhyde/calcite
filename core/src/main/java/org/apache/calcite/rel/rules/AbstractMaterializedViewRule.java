@@ -214,7 +214,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
     final List<RelOptMaterialization> materializations =
         (planner instanceof VolcanoPlanner)
             ? ((VolcanoPlanner) planner).getMaterializations()
-            : ImmutableList.<RelOptMaterialization>of();
+            : ImmutableList.of();
 
     if (!materializations.isEmpty()) {
       // 1. Explore query plan to recognize whether preconditions to
@@ -1365,7 +1365,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       // if not present
       if (topViewProject == null) {
         topViewProject = (Project) relBuilder.push(viewNode)
-            .project(relBuilder.fields(), ImmutableList.<String>of(), true).build();
+            .project(relBuilder.fields(), ImmutableList.of(), true).build();
       }
 
       // Generate result rewriting
@@ -1836,8 +1836,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       return ImmutableList.of();
     }
     List<BiMap<RelTableRef, RelTableRef>> result =
-        ImmutableList.<BiMap<RelTableRef, RelTableRef>>of(
-            HashBiMap.<RelTableRef, RelTableRef>create());
+        ImmutableList.of(
+            HashBiMap.create());
     for (Entry<RelTableRef, Collection<RelTableRef>> e : multiMapTables.asMap().entrySet()) {
       if (e.getValue().size() == 1) {
         // Only one reference, we can just add it to every map
@@ -1854,7 +1854,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         for (BiMap<RelTableRef, RelTableRef> m : result) {
           if (!m.containsValue(target)) {
             final BiMap<RelTableRef, RelTableRef> newM =
-                HashBiMap.<RelTableRef, RelTableRef>create(m);
+                HashBiMap.create(m);
             newM.put(e.getKey(), target);
             newResult.add(newM);
           }
@@ -1937,7 +1937,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         residualPreds.add(e);
       }
     }
-    return ImmutableTriple.<RexNode, RexNode, RexNode>of(
+    return ImmutableTriple.of(
         RexUtil.composeConjunction(rexBuilder, equiColumnsPreds, false),
         RexUtil.composeConjunction(rexBuilder, rangePreds, false),
         RexUtil.composeConjunction(rexBuilder, residualPreds, false));

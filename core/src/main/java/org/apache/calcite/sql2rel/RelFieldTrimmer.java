@@ -612,7 +612,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       // on-demand fields.
       Set<RelDataTypeField> inputExtraFields =
           RelDataTypeImpl.extra(inputRowType) == null
-              ? Collections.<RelDataTypeField>emptySet()
+              ? Collections.emptySet()
               : combinedInputExtraFields;
       inputExtraFieldCounts.add(inputExtraFields.size());
       TrimResult trimResult =

@@ -27,8 +27,11 @@ import com.google.common.collect.Lists;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -124,18 +127,18 @@ public class EnumerablesTest {
         equalTo("[]"));
     // Left empty
     assertThat(
-        intersect(Lists.<Integer>newArrayList(),
-            Lists.newArrayList(1, 3, 4, 6)).toList().toString(),
+        intersect(new ArrayList<>(),
+            newArrayList(1, 3, 4, 6)).toList().toString(),
         equalTo("[]"));
     // Right empty
     assertThat(
-        intersect(Lists.newArrayList(3, 7),
-            Lists.<Integer>newArrayList()).toList().toString(),
+        intersect(newArrayList(3, 7),
+            new ArrayList<>()).toList().toString(),
         equalTo("[]"));
     // Both empty
     assertThat(
-        intersect(Lists.<Integer>newArrayList(),
-            Lists.<Integer>newArrayList()).toList().toString(),
+        intersect(new ArrayList<Integer>(),
+            new ArrayList<>()).toList().toString(),
         equalTo("[]"));
   }
 
@@ -144,8 +147,8 @@ public class EnumerablesTest {
     return EnumerableDefaults.mergeJoin(
         Linq4j.asEnumerable(list0),
         Linq4j.asEnumerable(list1),
-        Functions.<T>identitySelector(),
-        Functions.<T>identitySelector(), (v0, v1) -> v0, false, false);
+        Functions.identitySelector(),
+        Functions.identitySelector(), (v0, v1) -> v0, false, false);
   }
 
   @Test public void testThetaJoin() {
@@ -184,7 +187,7 @@ public class EnumerablesTest {
     assertThat(
         EnumerableDefaults.thetaJoin(EMPS.take(0), DEPTS, EQUAL_DEPTNO,
             EMP_DEPT_TO_STRING, true, true)
-            .orderBy(Functions.<String>identitySelector()).toList().toString(),
+            .orderBy(Functions.identitySelector()).toList().toString(),
         equalTo("[{null, null, 15, Marketing}, {null, null, 20, Sales}]"));
   }
 

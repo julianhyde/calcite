@@ -56,11 +56,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -108,7 +108,7 @@ public class Lattice {
       }
     }
 
-    List<String> nameList = Lists.newArrayList();
+    List<String> nameList = new ArrayList<>();
     for (Column column : columns) {
       nameList.add(column.alias);
     }
@@ -246,7 +246,7 @@ public class Lattice {
     final StringBuilder buf = new StringBuilder("SELECT ");
     final StringBuilder groupBuf = new StringBuilder("\nGROUP BY ");
     int k = 0;
-    final Set<String> columnNames = Sets.newHashSet();
+    final Set<String> columnNames = new HashSet<>();
     if (groupSet != null) {
       for (int i : groupSet) {
         if (k++ > 0) {
@@ -331,7 +331,7 @@ public class Lattice {
    * attributes given in {@code groupSet}. */
   public String countSql(ImmutableBitSet groupSet) {
     return "select count(*) as c from ("
-        + sql(groupSet, ImmutableList.<Measure>of())
+        + sql(groupSet, ImmutableList.of())
         + ")";
   }
 
@@ -345,7 +345,7 @@ public class Lattice {
   }
 
   public StarTable createStarTable() {
-    final List<Table> tables = Lists.newArrayList();
+    final List<Table> tables = new ArrayList<>();
     for (Node node : nodes) {
       tables.add(node.scan.getTable().unwrap(Table.class));
     }
@@ -445,7 +445,7 @@ public class Lattice {
     public static final DirectedGraph.EdgeFactory<RelNode, Edge> FACTORY =
         Edge::new;
 
-    final List<IntPair> pairs = Lists.newArrayList();
+    final List<IntPair> pairs = new ArrayList<>();
 
     Edge(RelNode source, RelNode target) {
       super(source, target);
@@ -571,7 +571,7 @@ public class Lattice {
 
   /** Lattice builder. */
   public static class Builder {
-    private final List<Node> nodes = Lists.newArrayList();
+    private final List<Node> nodes = new ArrayList<>();
     private final ImmutableList<Column> columns;
     private final ImmutableListMultimap<String, Column> columnsByAlias;
     private final ImmutableList.Builder<Measure> defaultMeasureListBuilder =
@@ -593,12 +593,12 @@ public class Lattice {
               schema, schema.path(null), sql);
 
       // Walk the join tree.
-      List<RelNode> relNodes = Lists.newArrayList();
-      List<int[][]> tempLinks = Lists.newArrayList();
+      List<RelNode> relNodes = new ArrayList<>();
+      List<int[][]> tempLinks = new ArrayList<>();
       populate(relNodes, tempLinks, parsed.root.rel);
 
       // Get aliases.
-      List<String> aliases = Lists.newArrayList();
+      List<String> aliases = new ArrayList<>();
       populateAliases(((SqlSelect) parsed.sqlNode).getFrom(), aliases, null);
 
       // Build a graph.
@@ -620,7 +620,7 @@ public class Lattice {
       // Convert the graph into a tree of nodes, each connected to a parent and
       // with a join condition to that parent.
       Node previous = null;
-      final Map<RelNode, Node> map = Maps.newIdentityHashMap();
+      final Map<RelNode, Node> map = new IdentityHashMap<>();
       int previousColumn = 0;
       for (RelNode relNode : TopologicalOrderIterator.of(graph)) {
         final List<Edge> edges = graph.getInwardEdges(relNode);
@@ -845,8 +845,8 @@ public class Lattice {
 
   /** Tile builder. */
   public static class TileBuilder {
-    private final List<Measure> measureBuilder = Lists.newArrayList();
-    private final List<Column> dimensionListBuilder = Lists.newArrayList();
+    private final List<Measure> measureBuilder = new ArrayList<>();
+    private final List<Column> dimensionListBuilder = new ArrayList<>();
 
     public Tile build() {
       return new Tile(

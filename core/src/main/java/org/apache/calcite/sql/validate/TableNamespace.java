@@ -20,7 +20,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.runtime.PredicateImpl;
 import org.apache.calcite.schema.ExtensibleTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.ModifiableViewTable;
@@ -29,7 +28,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -53,7 +51,7 @@ class TableNamespace extends AbstractNamespace {
   }
 
   TableNamespace(SqlValidatorImpl validator, SqlValidatorTable table) {
-    this(validator, table, ImmutableList.<RelDataTypeField>of());
+    this(validator, table, ImmutableList.of());
   }
 
   protected RelDataType validateImpl(RelDataType targetRowType) {
@@ -108,8 +106,7 @@ class TableNamespace extends AbstractNamespace {
           ((RelOptTable) table).extend(extendedFields);
       final SqlValidatorTable validatorTable =
           relOptTable.unwrap(SqlValidatorTable.class);
-      return new TableNamespace(
-          validator, validatorTable, ImmutableList.<RelDataTypeField>of());
+      return new TableNamespace(validator, validatorTable, ImmutableList.of());
     }
     return new TableNamespace(validator, table, extendedFields);
   }
@@ -151,17 +148,11 @@ class TableNamespace extends AbstractNamespace {
 
         if (!extType.equals(baseType)) {
           // Get the extended column node that failed validation.
-          final Predicate<SqlNode> nameMatches = new PredicateImpl<SqlNode>() {
-            @Override public boolean test(SqlNode sqlNode) {
-              if (sqlNode instanceof SqlIdentifier) {
-                final SqlIdentifier identifier = (SqlIdentifier) sqlNode;
-                return Util.last(identifier.names).equals(extendedField.getName());
-              }
-              return false;
-            }
-          };
           final SqlNode extColNode =
-              Iterables.find(extendList.getList(), nameMatches);
+              Iterables.find(extendList.getList(),
+                  sqlNode -> sqlNode instanceof SqlIdentifier
+                      && Util.last(((SqlIdentifier) sqlNode).names).equals(
+                          extendedField.getName()));
 
           throw validator.getValidationErrorFunction().apply(extColNode,
               RESOURCE.typeNotAssignable(

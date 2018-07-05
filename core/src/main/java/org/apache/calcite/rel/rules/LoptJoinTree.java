@@ -19,8 +19,7 @@ package org.apache.calcite.rel.rules;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 
-import com.google.common.collect.Lists;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -134,7 +133,7 @@ public class LoptJoinTree {
   }
 
   public List<Integer> getTreeOrder() {
-    List<Integer> treeOrder = Lists.newArrayList();
+    List<Integer> treeOrder = new ArrayList<>();
     getTreeOrder(treeOrder);
     return treeOrder;
   }

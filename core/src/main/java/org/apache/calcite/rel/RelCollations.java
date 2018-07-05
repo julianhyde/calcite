@@ -39,7 +39,7 @@ public class RelCollations {
    */
   public static final RelCollation EMPTY =
       RelCollationTraitDef.INSTANCE.canonize(
-          new RelCollationImpl(ImmutableList.<RelFieldCollation>of()));
+          new RelCollationImpl(ImmutableList.of()));
 
   /**
    * A collation that cannot be replicated by applying a sort. The only

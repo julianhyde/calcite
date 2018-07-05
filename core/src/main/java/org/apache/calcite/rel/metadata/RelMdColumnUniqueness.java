@@ -45,7 +45,6 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
@@ -62,10 +61,6 @@ public class RelMdColumnUniqueness
   public static final RelMetadataProvider SOURCE =
       ReflectiveRelMetadataProvider.reflectiveSource(
           BuiltInMethod.COLUMN_UNIQUENESS.method, new RelMdColumnUniqueness());
-
-  /** Aggregate and Calc are "safe" children of a RelSubset to delve into. */
-  private static final Predicate<RelNode> SAFE_REL =
-      r -> r instanceof Aggregate || r instanceof Project;
 
   //~ Constructors -----------------------------------------------------------
 

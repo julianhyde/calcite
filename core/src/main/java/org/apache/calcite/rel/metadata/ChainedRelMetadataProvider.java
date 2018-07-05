@@ -21,7 +21,6 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import java.lang.reflect.InvocationHandler;
@@ -87,7 +86,7 @@ public class ChainedRelMetadataProvider implements RelMetadataProvider {
       return functions.get(0);
     default:
       return (rel, mq) -> {
-        final List<Metadata> metadataList = Lists.newArrayList();
+        final List<Metadata> metadataList = new ArrayList<>();
         for (UnboundMetadata<M> function : functions) {
           final Metadata metadata = function.bind(rel, mq);
           if (metadata != null) {

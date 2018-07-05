@@ -220,7 +220,7 @@ public class JethroDataSqlDialect extends SqlDialect {
   /** Information about the capabilities of a Jethro database. */
   public static class JethroInfo {
     public static final JethroInfo EMPTY = new JethroInfo(
-        ImmutableSetMultimap.<String, JethroSupportedFunction>of());
+        ImmutableSetMultimap.of());
 
     private final ImmutableSetMultimap<String, JethroSupportedFunction> supportedFunctions;
 

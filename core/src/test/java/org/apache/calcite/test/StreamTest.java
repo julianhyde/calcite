@@ -37,7 +37,6 @@ import org.apache.calcite.schema.TableFactory;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.ImmutableBitSet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -540,7 +539,7 @@ public class StreamTest {
     }
 
     public Statistic getStatistic() {
-      return Statistics.of(200d, ImmutableList.<ImmutableBitSet>of());
+      return Statistics.of(200d, ImmutableList.of());
     }
 
     public Schema.TableType getJdbcTableType() {

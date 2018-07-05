@@ -1152,7 +1152,7 @@ public class RexSimplify {
         break;
       }
       final List<RexNode> reducedValues = new ArrayList<>();
-      executor.reduce(rexBuilder, ImmutableList.<RexNode>of(e), reducedValues);
+      executor.reduce(rexBuilder, ImmutableList.of(e), reducedValues);
       return Objects.requireNonNull(
           Iterables.getOnlyElement(reducedValues));
     default:

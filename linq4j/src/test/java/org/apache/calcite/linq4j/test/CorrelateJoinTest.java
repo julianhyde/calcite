@@ -23,10 +23,10 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function2;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -99,7 +99,7 @@ public class CorrelateJoinTest {
   }
 
   private void checkResults(Enumerator<Integer[]> e, Integer[][] expected) {
-    List<Integer[]> res = Lists.newArrayList();
+    List<Integer[]> res = new ArrayList<>();
     while (e.moveNext()) {
       res.add(e.current());
     }

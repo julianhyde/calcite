@@ -97,7 +97,7 @@ public class LogicalValues extends Values {
   public static LogicalValues createEmpty(RelOptCluster cluster,
       RelDataType rowType) {
     return create(cluster, rowType,
-        ImmutableList.<ImmutableList<RexLiteral>>of());
+        ImmutableList.of());
   }
 
   /** Creates a LogicalValues that outputs one row and one column. */

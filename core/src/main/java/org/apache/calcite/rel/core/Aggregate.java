@@ -45,9 +45,9 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import com.google.common.math.IntMath;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -357,7 +357,7 @@ public abstract class Aggregate extends SingleRel {
     assert groupList.size() == groupSet.cardinality();
     final RelDataTypeFactory.Builder builder = typeFactory.builder();
     final List<RelDataTypeField> fieldList = inputRowType.getFieldList();
-    final Set<String> containedNames = Sets.newHashSet();
+    final Set<String> containedNames = new HashSet<>();
     for (int groupKey : groupList) {
       final RelDataTypeField field = fieldList.get(groupKey);
       containedNames.add(field.getName());

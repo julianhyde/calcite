@@ -18,8 +18,6 @@ package org.apache.calcite.linq4j;
 
 import org.apache.calcite.linq4j.function.Function1;
 
-import com.google.common.collect.Lists;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -391,7 +389,7 @@ public abstract class Linq4j {
   public static <T> Iterable<List<T>> product(
       final Iterable<? extends Iterable<T>> iterables) {
     return () -> {
-      final List<Enumerator<T>> enumerators = Lists.newArrayList();
+      final List<Enumerator<T>> enumerators = new ArrayList<>();
       for (Iterable<T> iterable : iterables) {
         enumerators.add(iterableEnumerator(iterable));
       }

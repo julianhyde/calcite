@@ -142,7 +142,7 @@ public class RelWriterTest {
                           true, false, ImmutableList.of(1), -1,
                           bigIntType, "c"),
                       AggregateCall.create(SqlStdOperatorTable.COUNT,
-                          false, false, ImmutableList.<Integer>of(), -1,
+                          false, false, ImmutableList.of(), -1,
                           bigIntType, "d")));
           aggregate.explain(writer);
           return writer.asString();

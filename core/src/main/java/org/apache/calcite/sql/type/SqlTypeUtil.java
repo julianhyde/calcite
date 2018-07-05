@@ -37,7 +37,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.nio.charset.Charset;
@@ -66,7 +65,7 @@ public abstract class SqlTypeUtil {
     assert argTypes.size() >= 2;
 
     // Filter out ANY elements.
-    List<RelDataType> argTypes2 = Lists.newArrayList();
+    List<RelDataType> argTypes2 = new ArrayList<>();
     for (RelDataType t : argTypes) {
       if (!isAny(t)) {
         argTypes2.add(t);
@@ -1183,8 +1182,8 @@ public abstract class SqlTypeUtil {
   public static RelDataType createEmptyStructType(
       RelDataTypeFactory typeFactory) {
     return typeFactory.createStructType(
-        ImmutableList.<RelDataType>of(),
-        ImmutableList.<String>of());
+        ImmutableList.of(),
+        ImmutableList.of());
   }
 
   /** Returns whether a type is flat. It is not flat if it is a record type that

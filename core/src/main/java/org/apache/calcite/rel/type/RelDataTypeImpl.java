@@ -27,10 +27,10 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -85,7 +85,7 @@ public abstract class RelDataTypeImpl
       }
     }
     if (elideRecord) {
-      final List<Slot> slots = Lists.newArrayList();
+      final List<Slot> slots = new ArrayList<>();
       getFieldRecurse(slots, this, 0, fieldName, caseSensitive);
     loop:
       for (Slot slot : slots) {

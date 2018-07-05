@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -103,14 +102,14 @@ public class ReflectiveSchemaTest {
                 "asQueryable"),
             Employee.class)
             .where(
-                Expressions.<Predicate1<Employee>>lambda(
+                Expressions.lambda(
                     Expressions.lessThan(
                         Expressions.field(
                             e, "empid"),
                         Expressions.constant(160)),
                     e))
             .where(
-                Expressions.<Predicate1<Employee>>lambda(
+                Expressions.lambda(
                     Expressions.greaterThan(
                         Expressions.field(
                             e, "empid"),

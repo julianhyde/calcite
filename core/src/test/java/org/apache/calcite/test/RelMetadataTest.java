@@ -34,7 +34,6 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Correlate;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -94,7 +93,6 @@ import org.apache.calcite.util.SaffronProperties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -896,7 +894,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelMetadataQuery mq = RelMetadataQuery.instance();
     Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
     assertThat(result,
-        CoreMatchers.<Set<ImmutableBitSet>>equalTo(
+        CoreMatchers.equalTo(
             ImmutableSet.of(ImmutableBitSet.of())));
     assertUniqueConsistent(rel);
   }
@@ -906,7 +904,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelMetadataQuery mq = RelMetadataQuery.instance();
     final Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
     assertThat(result,
-        CoreMatchers.<Set<ImmutableBitSet>>equalTo(
+        CoreMatchers.equalTo(
             ImmutableSet.of(ImmutableBitSet.of())));
     assertUniqueConsistent(rel);
   }
@@ -917,7 +915,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelMetadataQuery mq = RelMetadataQuery.instance();
     final Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
     assertThat(result,
-        CoreMatchers.<Set<ImmutableBitSet>>equalTo(
+        CoreMatchers.equalTo(
             ImmutableSet.of(ImmutableBitSet.of(0))));
     assertUniqueConsistent(rel);
   }
@@ -929,13 +927,13 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final RelMetadataQuery mq = RelMetadataQuery.instance();
     final Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
     assertThat(result,
-        CoreMatchers.<Set<ImmutableBitSet>>equalTo(
+        CoreMatchers.equalTo(
             ImmutableSet.of(ImmutableBitSet.of(0))));
     assertUniqueConsistent(rel);
   }
 
   @Test public void testBrokenCustomProvider() {
-    final List<String> buf = Lists.newArrayList();
+    final List<String> buf = new ArrayList<>();
     ColTypeImpl.THREAD_LIST.set(buf);
 
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
@@ -975,7 +973,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test public void testCustomProvider() {
-    final List<String> buf = Lists.newArrayList();
+    final List<String> buf = new ArrayList<>();
     ColTypeImpl.THREAD_LIST.set(buf);
 
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
@@ -1116,7 +1114,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     // Values (empty)
     collations = RelMdCollation.values(mq, empTable.getRowType(),
-        ImmutableList.<ImmutableList<RexLiteral>>of());
+        ImmutableList.of());
     assertThat(collations.toString(),
         equalTo("[[0, 1, 2, 3, 4, 5, 6, 7, 8], "
             + "[1, 2, 3, 4, 5, 6, 7, 8], "
@@ -1289,7 +1287,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     // Union
     final LogicalUnion union =
-        LogicalUnion.create(ImmutableList.<RelNode>of(empScan, emptyValues),
+        LogicalUnion.create(ImmutableList.of(empScan, emptyValues),
             true);
     rowSize = mq.getAverageRowSize(union);
     columnSizes = mq.getAverageColumnSizes(union);
@@ -1333,7 +1331,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     // Join
     final LogicalJoin join =
         LogicalJoin.create(empScan, deptProject, rexBuilder.makeLiteral(true),
-            ImmutableSet.<CorrelationId>of(), JoinRelType.INNER);
+            ImmutableSet.of(), JoinRelType.INNER);
     rowSize = mq.getAverageRowSize(join);
     columnSizes = mq.getAverageColumnSizes(join);
     assertThat(columnSizes.size(), equalTo(13));
@@ -1346,7 +1344,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     // Aggregate
     final LogicalAggregate aggregate =
         LogicalAggregate.create(join, ImmutableBitSet.of(2, 0),
-            ImmutableList.<ImmutableBitSet>of(),
+            ImmutableList.of(),
             ImmutableList.of(
                 AggregateCall.create(SqlStdOperatorTable.COUNT,
                     false, false, ImmutableIntList.of(),

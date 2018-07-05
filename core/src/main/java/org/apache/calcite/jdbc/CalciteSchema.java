@@ -173,7 +173,7 @@ public abstract class CalciteSchema {
 
   /** Creates a TableEntryImpl with no SQLs. */
   protected TableEntryImpl tableEntry(String name, Table table) {
-    return new TableEntryImpl(this, name, table, ImmutableList.<String>of());
+    return new TableEntryImpl(this, name, table, ImmutableList.of());
   }
 
   /** Creates a TableEntryImpl with no SQLs. */
@@ -183,7 +183,7 @@ public abstract class CalciteSchema {
 
   /** Defines a table within this schema. */
   public TableEntry add(String tableName, Table table) {
-    return add(tableName, table, ImmutableList.<String>of());
+    return add(tableName, table, ImmutableList.of());
   }
 
   /** Defines a table within this schema. */

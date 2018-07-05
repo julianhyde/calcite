@@ -40,25 +40,24 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * Interpreter node that implements an
  * {@link org.apache.calcite.rel.core.Aggregate}.
  */
 public class AggregateNode extends AbstractSingleNode<Aggregate> {
-  private final List<Grouping> groups = Lists.newArrayList();
+  private final List<Grouping> groups = new ArrayList<>();
   private final ImmutableBitSet unionGroups;
   private final int outputRowLength;
   private final ImmutableList<AccumulatorFactory> accumulatorFactories;
@@ -334,7 +333,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
    */
   private class Grouping {
     private final ImmutableBitSet grouping;
-    private final Map<Row, AccumulatorList> accumulators = Maps.newHashMap();
+    private final Map<Row, AccumulatorList> accumulators = new HashMap<>();
 
     private Grouping(ImmutableBitSet grouping) {
       this.grouping = grouping;

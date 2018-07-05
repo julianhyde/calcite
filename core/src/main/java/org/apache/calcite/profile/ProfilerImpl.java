@@ -742,7 +742,7 @@ public class ProfilerImpl implements Profiler {
     int count = 0;
     final Deque<Double> deque = new ArrayDeque<>();
     final PriorityQueue<Double> priorityQueue =
-        new PriorityQueue<>(11, Ordering.<Double>natural());
+        new PriorityQueue<>(11, Ordering.natural());
 
     SurpriseQueue(int warmUpCount, int size) {
       this.warmUpCount = warmUpCount;

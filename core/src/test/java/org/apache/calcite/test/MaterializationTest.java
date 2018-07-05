@@ -1952,7 +1952,7 @@ public class MaterializationTest {
         HR_FKUK_MODEL,
         CalciteAssert.checkResultContains(
             "EnumerableValues(tuples=[[{ 'noname' }]])"),
-        RuleSets.ofList(ImmutableList.<RelOptRule>of()))
+        RuleSets.ofList(ImmutableList.of()))
         .returnsValue("noname");
   }
 
@@ -2007,7 +2007,7 @@ public class MaterializationTest {
                     + "from `emps`";
                 final String sql2 = sql.replaceAll("`", "\"");
                 map.put("sql", sql2);
-                return ImmutableList.<Object>of(map);
+                return ImmutableList.of(map);
               })
           .query(q)
           .enableMaterializations(true)
@@ -2321,7 +2321,7 @@ public class MaterializationTest {
     public final Department[] depts = {
         new Department(10, "Sales", Arrays.asList(emps[0], emps[2], emps[3]),
             new Location(-122, 38)),
-        new Department(30, "Marketing", Collections.<Employee>emptyList(),
+        new Department(30, "Marketing", ImmutableList.of(),
             new Location(0, 52)),
         new Department(20, "HR", Collections.singletonList(emps[1]), null),
     };

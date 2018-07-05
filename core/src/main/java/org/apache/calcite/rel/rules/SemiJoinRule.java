@@ -33,8 +33,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 
-import com.google.common.collect.Lists;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -116,7 +115,7 @@ public abstract class SemiJoinRule extends RelOptRule {
     relBuilder.push(left);
     switch (join.getJoinType()) {
     case INNER:
-      final List<Integer> newRightKeyBuilder = Lists.newArrayList();
+      final List<Integer> newRightKeyBuilder = new ArrayList<>();
       final List<Integer> aggregateKeys = aggregate.getGroupSet().asList();
       for (int key : joinInfo.rightKeys) {
         newRightKeyBuilder.add(aggregateKeys.get(key));

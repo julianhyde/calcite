@@ -339,7 +339,7 @@ public class Smalls {
     return new ViewTable(Object.class, typeFactory ->
         typeFactory.builder().add("c", SqlTypeName.VARCHAR, 100).build(),
         "values (" + CalciteSqlDialect.DEFAULT.quoteStringLiteral(s) + ")",
-        ImmutableList.<String>of(), Arrays.asList("view"));
+        ImmutableList.of(), Arrays.asList("view"));
   }
 
   public static TranslatableTable str(Object o, Object p) {
@@ -349,7 +349,7 @@ public class Smalls {
         typeFactory.builder().add("c", SqlTypeName.VARCHAR, 100).build(),
         "values " + CalciteSqlDialect.DEFAULT.quoteStringLiteral(o.toString())
             + ", " + CalciteSqlDialect.DEFAULT.quoteStringLiteral(p.toString()),
-        ImmutableList.<String>of(), Arrays.asList("view"));
+        ImmutableList.of(), Arrays.asList("view"));
   }
 
   /** Class with int and String fields. */

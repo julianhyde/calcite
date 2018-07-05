@@ -196,8 +196,8 @@ public class RexImplicationChecker {
     final InputUsageFinder firstUsageFinder = new InputUsageFinder();
     final InputUsageFinder secondUsageFinder = new InputUsageFinder();
 
-    RexUtil.apply(firstUsageFinder, ImmutableList.<RexNode>of(), first);
-    RexUtil.apply(secondUsageFinder, ImmutableList.<RexNode>of(), second);
+    RexUtil.apply(firstUsageFinder, ImmutableList.of(), first);
+    RexUtil.apply(secondUsageFinder, ImmutableList.of(), second);
 
     // Check Support
     if (!checkSupport(firstUsageFinder, secondUsageFinder)) {

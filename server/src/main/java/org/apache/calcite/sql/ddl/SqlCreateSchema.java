@@ -57,7 +57,7 @@ public class SqlCreateSchema extends SqlCreate
   }
 
   @Override public List<SqlNode> getOperandList() {
-    return ImmutableNullableList.<SqlNode>of(name);
+    return ImmutableNullableList.of(name);
   }
 
   @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {

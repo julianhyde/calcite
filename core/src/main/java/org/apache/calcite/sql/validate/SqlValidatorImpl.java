@@ -101,9 +101,7 @@ import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -130,6 +128,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -3569,7 +3568,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         if (supportsModalityCount == 0) {
           if (fail) {
-            String inputs = Joiner.on(", ").join(scope.getChildNames());
+            String inputs = String.join(", ", scope.getChildNames());
             throw newValidationError(select,
                 Static.RESOURCE.cannotStreamResultsForNonStreamingInputs(inputs));
           } else {
@@ -3997,7 +3996,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // Validate SELECT list. Expand terms of the form "*" or "TABLE.*".
     final SqlValidatorScope selectScope = getSelectScope(select);
     final List<SqlNode> expandedSelectItems = new ArrayList<>();
-    final Set<String> aliases = Sets.newHashSet();
+    final Set<String> aliases = new HashSet<>();
     final List<Map.Entry<String, RelDataType>> fieldList = new ArrayList<>();
 
     for (int i = 0; i < selectItems.size(); i++) {
@@ -5161,7 +5160,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       // "LOCALTIME", which would have been handled as a
       // SqlIdentifier.)
       throw handleUnresolvedFunction(call, (SqlFunction) operator,
-          ImmutableList.<RelDataType>of(), null);
+          ImmutableList.of(), null);
     }
 
     SqlValidatorScope operandScope = scope.getOperandScope(call);

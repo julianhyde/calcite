@@ -84,7 +84,7 @@ public class CloneSchema extends AbstractSchema {
     final JavaTypeFactory typeFactory =
         ((CalciteConnection) queryProvider).getTypeFactory();
     return createCloneTable(typeFactory, Schemas.proto(sourceTable),
-        ImmutableList.<RelCollation>of(), null, queryable);
+        ImmutableList.of(), null, queryable);
   }
 
   @Deprecated // to be removed before 2.0
@@ -92,8 +92,8 @@ public class CloneSchema extends AbstractSchema {
       final RelProtoDataType protoRowType,
       final List<ColumnMetaData.Rep> repList,
       final Enumerable<T> source) {
-    return createCloneTable(typeFactory, protoRowType,
-        ImmutableList.<RelCollation>of(), repList, source);
+    return createCloneTable(typeFactory, protoRowType, ImmutableList.of(),
+        repList, source);
   }
 
   public static <T> Table createCloneTable(final JavaTypeFactory typeFactory,

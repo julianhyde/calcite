@@ -56,7 +56,6 @@ import org.apache.commons.dbcp2.PoolingDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -83,6 +82,7 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -95,6 +95,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
@@ -402,7 +403,7 @@ public class CalciteAssert {
         if (sort) {
           Collections.sort(expectedList);
         }
-        final List<String> actualList = Lists.newArrayList();
+        final List<String> actualList = new ArrayList<>();
         CalciteAssert.toStringList(resultSet, actualList);
         if (sort) {
           Collections.sort(actualList);
@@ -721,14 +722,14 @@ public class CalciteAssert {
       }
       return rootSchema.add("foodmart2", new CloneSchema(foodmart));
     case GEO:
-      ModelHandler.addFunctions(rootSchema, null, ImmutableList.<String>of(),
+      ModelHandler.addFunctions(rootSchema, null, ImmutableList.of(),
           GeoFunctions.class.getName(), "*", true);
       final SchemaPlus s = rootSchema.add("GEO", new AbstractSchema());
-      ModelHandler.addFunctions(s, "countries", ImmutableList.<String>of(),
+      ModelHandler.addFunctions(s, "countries", ImmutableList.of(),
           CountriesTableFunction.class.getName(), null, false);
       final String sql = "select * from table(\"countries\"(true))";
       final ViewTableMacro viewMacro = ViewTable.viewMacro(rootSchema, sql,
-          ImmutableList.of("GEO"), ImmutableList.<String>of(), false);
+          ImmutableList.of("GEO"), ImmutableList.of(), false);
       s.add("countries", viewMacro);
       return s;
     case HR:
@@ -760,7 +761,7 @@ public class CalciteAssert {
                   + "    ('Grace', 60, 'F'),\n"
                   + "    ('Wilma', cast(null as integer), 'F'))\n"
                   + "  as t(ename, deptno, gender)",
-              ImmutableList.<String>of(), ImmutableList.of("POST", "EMP"),
+              ImmutableList.of(), ImmutableList.of("POST", "EMP"),
               null));
       post.add("DEPT",
           ViewTable.viewMacro(post,
@@ -769,7 +770,7 @@ public class CalciteAssert {
                   + "    (20, 'Marketing'),\n"
                   + "    (30, 'Engineering'),\n"
                   + "    (40, 'Empty')) as t(deptno, dname)",
-              ImmutableList.<String>of(), ImmutableList.of("POST", "DEPT"),
+              ImmutableList.of(), ImmutableList.of("POST", "DEPT"),
               null));
       post.add("EMPS",
           ViewTable.viewMacro(post,
@@ -780,7 +781,7 @@ public class CalciteAssert {
                   + "    (120, 'Wilma', 20, 'F',                   CAST(NULL AS VARCHAR(20)), 1,                 5, UNKNOWN, TRUE,  DATE '2005-09-07'),\n"
                   + "    (130, 'Alice', 40, 'F',                   'Vancouver',               2, CAST(NULL AS INT), FALSE,   TRUE,  DATE '2007-01-01'))\n"
                   + " as t(empno, name, deptno, gender, city, empid, age, slacker, manager, joinedat)",
-              ImmutableList.<String>of(), ImmutableList.of("POST", "EMPS"),
+              ImmutableList.of(), ImmutableList.of("POST", "EMPS"),
               null));
       return post;
     default:
@@ -804,10 +805,14 @@ public class CalciteAssert {
    */
   public static void assertArrayEqual(
       String message, Object[] expected, Object[] actual) {
-    Joiner joiner = Joiner.on('\n');
-    String strExpected = expected == null ? null : joiner.join(expected);
-    String strActual = actual == null ? null : joiner.join(actual);
-    assertEquals(message, strExpected, strActual);
+    assertEquals(message, str(expected), str(actual));
+  }
+
+  private static String str(Object[] objects) {
+    return objects == null
+          ? null
+          : Arrays.stream(objects).map(Object::toString)
+              .collect(Collectors.joining("\n"));
   }
 
   /** Returns a {@link PropBuilder}. */

@@ -19,7 +19,6 @@ package org.apache.calcite.sql2rel;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFamily;
@@ -648,7 +647,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     RelDataType returnType =
         cx.getValidator().getValidatedNodeType(call);
     return cx.getRexBuilder().makeCall(returnType, fun,
-        ImmutableList.<RexNode>of(cx.getRexBuilder().makeLiteral(key)));
+        ImmutableList.of(cx.getRexBuilder().makeLiteral(key)));
   }
 
   public RexNode convertAggregateFunction(
@@ -668,7 +667,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     final int groupCount = cx.getGroupCount();
     if (returnType == null) {
       RexCallBinding binding =
-          new RexCallBinding(cx.getTypeFactory(), fun, exprs, ImmutableList.<RelCollation>of()) {
+          new RexCallBinding(cx.getTypeFactory(), fun, exprs,
+              ImmutableList.of()) {
             @Override public int getGroupCount() {
               return groupCount;
             }
@@ -763,7 +763,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
   private static List<RexNode> convertExpressionList(SqlRexContext cx,
       List<SqlNode> nodes, SqlOperandTypeChecker.Consistency consistency) {
-    final List<RexNode> exprs = Lists.newArrayList();
+    final List<RexNode> exprs = new ArrayList<>();
     for (SqlNode node : nodes) {
       exprs.add(cx.convertExpression(node));
     }
@@ -789,7 +789,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         // All arguments are of same family. No need for explicit casts.
         return null;
       }
-      final List<RelDataType> nonCharacterTypes = Lists.newArrayList();
+      final List<RelDataType> nonCharacterTypes = new ArrayList<>();
       for (RelDataType type : types) {
         if (type.getFamily() != SqlTypeFamily.CHARACTER) {
           nonCharacterTypes.add(type);

@@ -115,7 +115,7 @@ public final class LogicalJoin extends Join {
       RexNode condition, JoinRelType joinType, Set<String> variablesStopped) {
     this(cluster, cluster.traitSetOf(Convention.NONE), left, right, condition,
         CorrelationId.setOf(variablesStopped), joinType, false,
-        ImmutableList.<RelDataTypeField>of());
+        ImmutableList.of());
   }
 
   @Deprecated // to be removed before 2.0
@@ -133,9 +133,9 @@ public final class LogicalJoin extends Join {
   public LogicalJoin(RelInput input) {
     this(input.getCluster(), input.getCluster().traitSetOf(Convention.NONE),
         input.getInputs().get(0), input.getInputs().get(1),
-        input.getExpression("condition"), ImmutableSet.<CorrelationId>of(),
+        input.getExpression("condition"), ImmutableSet.of(),
         input.getEnum("joinType", JoinRelType.class), false,
-        ImmutableList.<RelDataTypeField>of());
+        ImmutableList.of());
   }
 
   /** Creates a LogicalJoin, flagged with whether it has been translated to a
@@ -161,14 +161,14 @@ public final class LogicalJoin extends Join {
   public static LogicalJoin create(RelNode left, RelNode right,
       RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
     return create(left, right, condition, variablesSet, joinType, false,
-        ImmutableList.<RelDataTypeField>of());
+        ImmutableList.of());
   }
 
   @Deprecated // to be removed before 2.0
   public static LogicalJoin create(RelNode left, RelNode right,
       RexNode condition, JoinRelType joinType, Set<String> variablesStopped) {
     return create(left, right, condition, CorrelationId.setOf(variablesStopped),
-        joinType, false, ImmutableList.<RelDataTypeField>of());
+        joinType, false, ImmutableList.of());
   }
 
   //~ Methods ----------------------------------------------------------------

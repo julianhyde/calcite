@@ -38,8 +38,8 @@ import org.apache.calcite.util.Closer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -179,7 +179,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
 
     assertTrue(relInitial != null);
 
-    List<RelMetadataProvider> list = Lists.newArrayList();
+    List<RelMetadataProvider> list = new ArrayList<>();
     list.add(DefaultRelMetadataProvider.INSTANCE);
     planner.registerMetadataProviders(list);
     RelMetadataProvider plannerChain =

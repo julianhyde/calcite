@@ -69,12 +69,9 @@ import org.apache.calcite.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -87,6 +84,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -229,11 +227,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   private boolean locked;
 
   private final List<RelOptMaterialization> materializations =
-      Lists.newArrayList();
+      new ArrayList<>();
 
-  /** Map of lattices by the qualified name of their star table. */
+  /**
+   * Map of lattices by the qualified name of their star table.
+   */
   private final Map<List<String>, RelOptLattice> latticeByName =
-      Maps.newLinkedHashMap();
+      new LinkedHashMap<>();
 
   final Map<RelNode, Provenance> provenanceMap = new HashMap<>();
 
@@ -685,7 +685,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * will be asking for the result in a particular convention, but the root has
    * no consumers. */
   void ensureRootConverters() {
-    final Set<RelSubset> subsets = Sets.newHashSet();
+    final Set<RelSubset> subsets = new HashSet<>();
     for (RelNode rel : root.getRels()) {
       if (rel instanceof AbstractConverter) {
         subsets.add((RelSubset) ((AbstractConverter) rel).getInput());

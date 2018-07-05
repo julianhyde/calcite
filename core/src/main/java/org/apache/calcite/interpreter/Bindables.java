@@ -182,7 +182,7 @@ public class Bindables {
     /** Creates a BindableTableScan. */
     public static BindableTableScan create(RelOptCluster cluster,
         RelOptTable relOptTable) {
-      return create(cluster, relOptTable, ImmutableList.<RexNode>of(),
+      return create(cluster, relOptTable, ImmutableList.of(),
           identity(relOptTable));
     }
 

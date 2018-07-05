@@ -133,7 +133,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     super(costFactory, context);
     this.mainProgram = program;
     this.onCopyHook =
-        Util.first(onCopyHook, Functions.<RelNode, RelNode, Void>ignore2());
+        Util.first(onCopyHook, Functions.ignore2());
     mapDigestToVertex = new HashMap<>();
     graph = DefaultDirectedGraph.create();
 

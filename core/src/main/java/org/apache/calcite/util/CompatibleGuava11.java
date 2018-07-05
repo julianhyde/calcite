@@ -29,6 +29,7 @@ import java.util.AbstractCollection;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -403,7 +404,7 @@ class CompatibleGuava11 {
       try {
         return super.removeAll(Objects.requireNonNull(c));
       } catch (UnsupportedOperationException e) {
-        Set<K> toRemove = Sets.newHashSet();
+        Set<K> toRemove = new HashSet<>();
         for (Map.Entry<K, V> entry : map().entrySet()) {
           if (c.contains(entry.getValue())) {
             toRemove.add(entry.getKey());
@@ -417,7 +418,7 @@ class CompatibleGuava11 {
       try {
         return super.retainAll(Objects.requireNonNull(c));
       } catch (UnsupportedOperationException e) {
-        Set<K> toRetain = Sets.newHashSet();
+        Set<K> toRetain = new HashSet<>();
         for (Map.Entry<K, V> entry : map().entrySet()) {
           if (c.contains(entry.getValue())) {
             toRetain.add(entry.getKey());

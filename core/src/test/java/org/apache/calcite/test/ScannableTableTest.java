@@ -358,7 +358,7 @@ public class ScannableTableTest {
       final Schema schema =
           new AbstractSchema() {
             @Override protected Map<String, Table> getTableMap() {
-              return ImmutableMap.<String, Table>of("TENS",
+              return ImmutableMap.of("TENS",
                   new SimpleTable() {
                     private Enumerable<Object[]> superScan(DataContext root) {
                       return super.scan(root);

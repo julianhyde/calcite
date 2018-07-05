@@ -558,7 +558,7 @@ public class XmlOutput {
       if (i >= translationVector.size()) {
         // Extend list by adding the requisite number of nulls.
         final int count = i + 1 - translationVector.size();
-        translationVector.addAll(Collections.<String>nCopies(count, null));
+        translationVector.addAll(Collections.nCopies(count, null));
       }
       translationVector.set(i, to);
     }

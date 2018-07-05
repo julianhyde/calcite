@@ -2242,7 +2242,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       for (final SqlGroupedWindowFunction f
           : ((SqlGroupedWindowFunction) op).getAuxiliaryFunctions()) {
         builder.add(
-            Pair.<SqlNode, AuxiliaryConverter>of(copy(call, f),
+            Pair.of(copy(call, f),
                 new AuxiliaryConverter.Impl(f)));
       }
       return builder.build();

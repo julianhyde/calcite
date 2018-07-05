@@ -20,7 +20,6 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -267,7 +266,7 @@ public class RexBuilder {
       List<? extends RexNode> exprs) {
     return op.inferReturnType(
         new RexCallBinding(typeFactory, op, exprs,
-            ImmutableList.<RelCollation>of()));
+            ImmutableList.of()));
   }
 
   /**
@@ -385,7 +384,7 @@ public class RexBuilder {
                   new RexOver(
                       bigintType,
                       SqlStdOperatorTable.COUNT,
-                      ImmutableList.<RexNode>of(),
+                      ImmutableList.of(),
                       window,
                       distinct),
                   makeLiteral(

@@ -455,7 +455,7 @@ public class UtilTest {
       // ok
     }
 
-    final List<String> a = ConsList.of("a", ImmutableList.<String>of());
+    final List<String> a = ConsList.of("a", ImmutableList.of());
     assertThat(a.size(), is(1));
     assertThat(a, is(Collections.singletonList("a")));
   }
@@ -1419,11 +1419,11 @@ public class UtilTest {
     checkCompositeMap(beatles, map);
 
     map = CompositeMap.of(
-        beatleMap, Collections.<String, Integer>emptyMap());
+        beatleMap, Collections.emptyMap());
     checkCompositeMap(beatles, map);
 
     map = CompositeMap.of(
-        Collections.<String, Integer>emptyMap(), beatleMap);
+        Collections.emptyMap(), beatleMap);
     checkCompositeMap(beatles, map);
 
     map = CompositeMap.of(beatleMap, beatleMap);
@@ -1471,7 +1471,7 @@ public class UtilTest {
     } catch (NullPointerException e) {
       // ok
     }
-    assertThat(Util.commaList(ImmutableList.<Object>of()), equalTo(""));
+    assertThat(Util.commaList(ImmutableList.of()), equalTo(""));
     assertThat(Util.commaList(ImmutableList.of(1)), equalTo("1"));
     assertThat(Util.commaList(ImmutableList.of(2, 3)), equalTo("2, 3"));
     assertThat(Util.commaList(Arrays.asList(2, null, 3)),

@@ -119,11 +119,11 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -179,19 +179,9 @@ import static org.junit.Assert.assertThat;
 public class RelOptRulesTest extends RelOptTestBase {
   //~ Methods ----------------------------------------------------------------
 
-  private final PushProjector.ExprCondition skipItem = new PushProjector.ExprCondition() {
-
-    @Override public boolean apply(RexNode rexNode) {
-      return false;
-    }
-    @Override public boolean test(RexNode expr) {
-      if (expr instanceof RexCall) {
-        RexCall call = (RexCall) expr;
-        return "item".equalsIgnoreCase(call.getOperator().getName());
-      }
-      return false;
-    }
-  };
+  private final PushProjector.ExprCondition skipItem = expr ->
+      expr instanceof RexCall
+          && "item".equalsIgnoreCase(((RexCall) expr).getOperator().getName());
 
   protected DiffRepository getDiffRepos() {
     return DiffRepository.lookup(RelOptRulesTest.class);
@@ -1189,7 +1179,7 @@ public class RelOptRulesTest extends RelOptTestBase {
 
   @Test public void testProjectCorrelateTranspose() {
     ProjectCorrelateTransposeRule customPCTrans =
-        new ProjectCorrelateTransposeRule(PushProjector.ExprCondition.TRUE,
+        new ProjectCorrelateTransposeRule(expr -> true,
             RelFactories.LOGICAL_BUILDER);
 
     checkPlanning(customPCTrans,
@@ -2855,7 +2845,7 @@ public class RelOptRulesTest extends RelOptTestBase {
 
     assertThat(relInitial, notNullValue());
 
-    List<RelMetadataProvider> list = Lists.newArrayList();
+    List<RelMetadataProvider> list = new ArrayList<>();
     list.add(DefaultRelMetadataProvider.INSTANCE);
     planner.registerMetadataProviders(list);
     RelMetadataProvider plannerChain = ChainedRelMetadataProvider.of(list);
@@ -3489,7 +3479,7 @@ public class RelOptRulesTest extends RelOptTestBase {
       @Override public RelOptPlanner createPlanner() {
         return new MockRelOptPlanner(Contexts.empty()) {
           @Override public List<RelTraitDef> getRelTraitDefs() {
-            return ImmutableList.<RelTraitDef>of(RelCollationTraitDef.INSTANCE);
+            return ImmutableList.of(RelCollationTraitDef.INSTANCE);
           }
           @Override public RelTraitSet emptyTraitSet() {
             return RelTraitSet.createEmpty().plus(

@@ -19,7 +19,6 @@ package org.apache.calcite.plan;
 import org.apache.calcite.config.CalciteConnectionConfig;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +81,7 @@ public class Contexts {
 
   private static Context chain(Iterable<? extends Context> contexts) {
     // Flatten any chain contexts in the list, and remove duplicates
-    final List<Context> list = Lists.newArrayList();
+    final List<Context> list = new ArrayList<>();
     for (Context context : contexts) {
       build(list, context);
     }

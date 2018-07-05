@@ -1884,7 +1884,7 @@ public class Util {
   }
 
   public static <T> Iterable<T> orEmpty(Iterable<T> v0) {
-    return v0 != null ? v0 : ImmutableList.<T>of();
+    return v0 != null ? v0 : ImmutableList.of();
   }
 
   /** Returns the last element of a list.
@@ -2340,6 +2340,9 @@ public class Util {
   /**
    * Returns a {@code Collector} that accumulates the input elements into a
    * Guava {@link ImmutableList} via a {@link ImmutableList.Builder}.
+   *
+   * <p>It will be obsolete when we move to {@link Bug#upgrade Guava 21.0},
+   * which has {@code ImmutableList.toImmutableList()}.
    *
    * @param <T> Type of the input elements
    *

@@ -30,14 +30,13 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 /**
@@ -385,7 +384,7 @@ abstract class DruidJsonFilter implements DruidJson {
     case OR:
     case NOT:
       final RexCall call = (RexCall) rexNode;
-      final List<DruidJsonFilter> jsonFilters = Lists.newArrayList();
+      final List<DruidJsonFilter> jsonFilters = new ArrayList<>();
       for (final RexNode e : call.getOperands()) {
         final DruidJsonFilter druidFilter = toDruidFilters(e, rowType, druidQuery);
         if (druidFilter == null) {

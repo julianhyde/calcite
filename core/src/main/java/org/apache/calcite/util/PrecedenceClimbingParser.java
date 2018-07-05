@@ -18,13 +18,13 @@ package org.apache.calcite.util;
 
 import org.apache.calcite.linq4j.Ord;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * Parser that takes a collection of tokens (atoms and operators)
@@ -188,7 +188,7 @@ public class PrecedenceClimbingParser {
   public PrecedenceClimbingParser copy(int start, Predicate<Token> predicate) {
     final List<Token> tokens = new ArrayList<>();
     for (Token token : Util.skip(all(), start)) {
-      if (predicate.apply(token)) {
+      if (predicate.test(token)) {
         break;
       }
       tokens.add(token.copy());
@@ -352,7 +352,7 @@ public class PrecedenceClimbingParser {
   public static class Builder {
     final List<Token> tokens = new ArrayList<>();
     private final PrecedenceClimbingParser dummy =
-        new PrecedenceClimbingParser(ImmutableList.<Token>of());
+        new PrecedenceClimbingParser(ImmutableList.of());
 
     private Builder add(Token t) {
       tokens.add(t);
