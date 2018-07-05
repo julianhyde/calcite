@@ -118,9 +118,6 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
-import static org.apache.calcite.plan.RelOptRule.none;
-
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -132,6 +129,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Predicate;
 
+import static org.apache.calcite.plan.RelOptRule.none;
 import static org.apache.calcite.plan.RelOptRule.operand;
 import static org.apache.calcite.plan.RelOptRule.operandJ;
 
@@ -1989,30 +1987,26 @@ public class RelOptRulesTest extends RelOptTestBase {
 
   private void checkPlanning(String query) throws Exception {
     final Tester tester1 = tester.withCatalogReaderFactory(
-        new Function<RelDataTypeFactory, Prepare.CatalogReader>() {
-          public Prepare.CatalogReader apply(RelDataTypeFactory typeFactory) {
-            return new MockCatalogReader(typeFactory, true) {
-              @Override public MockCatalogReader init() {
-                // CREATE SCHEMA abc;
-                // CREATE TABLE a(a INT);
-                // ...
-                // CREATE TABLE j(j INT);
-                MockSchema schema = new MockSchema("SALES");
-                registerSchema(schema);
-                final RelDataType intType =
-                    typeFactory.createSqlType(SqlTypeName.INTEGER);
-                for (int i = 0; i < 10; i++) {
-                  String t = String.valueOf((char) ('A' + i));
-                  MockTable table = MockTable.create(this, schema, t, false, 100);
-                  table.addColumn(t, intType);
-                  registerTable(table);
-                }
-                return this;
-              }
-              // CHECKSTYLE: IGNORE 1
-            }.init();
+        typeFactory -> new MockCatalogReader(typeFactory, true) {
+          @Override public MockCatalogReader init() {
+            // CREATE SCHEMA abc;
+            // CREATE TABLE a(a INT);
+            // ...
+            // CREATE TABLE j(j INT);
+            MockSchema schema = new MockSchema("SALES");
+            registerSchema(schema);
+            final RelDataType intType =
+                typeFactory.createSqlType(SqlTypeName.INTEGER);
+            for (int i = 0; i < 10; i++) {
+              String t = String.valueOf((char) ('A' + i));
+              MockTable table = MockTable.create(this, schema, t, false, 100);
+              table.addColumn(t, intType);
+              registerTable(table);
+            }
+            return this;
           }
-        });
+          // CHECKSTYLE: IGNORE 1
+        }.init());
     HepProgram program = new HepProgramBuilder()
         .addMatchOrder(HepMatchOrder.BOTTOM_UP)
         .addRuleInstance(ProjectRemoveRule.INSTANCE)

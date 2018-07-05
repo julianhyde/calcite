@@ -65,11 +65,7 @@ import java.util.Map;
 public interface CalcitePrepare {
   Function0<CalcitePrepare> DEFAULT_FACTORY = CalcitePrepareImpl::new;
   ThreadLocal<Deque<Context>> THREAD_CONTEXT_STACK =
-      new ThreadLocal<Deque<Context>>() {
-        @Override protected Deque<Context> initialValue() {
-          return new ArrayDeque<>();
-        }
-      };
+      ThreadLocal.withInitial(ArrayDeque::new);
 
   ParseResult parse(Context context, String sql);
 

@@ -19,7 +19,6 @@ package org.apache.calcite.util;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.runtime.Utilities;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
@@ -80,9 +79,11 @@ public class ImmutableBitSet
   private static final ImmutableBitSet EMPTY =
       new ImmutableBitSet(EMPTY_LONGS);
 
+  @SuppressWarnings("Guava")
   @Deprecated // to be removed before 2.0
-  public static final Function<? super BitSet, ImmutableBitSet> FROM_BIT_SET =
-      ImmutableBitSet::fromBitSet;
+  public static final
+      com.google.common.base.Function<? super BitSet, ImmutableBitSet>
+      FROM_BIT_SET = ImmutableBitSet::fromBitSet;
 
   private final long[] words;
 

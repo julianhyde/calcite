@@ -944,11 +944,7 @@ public final class SqlParserUtil {
    * thread, because {@code DateFormat} is not thread-safe. */
   private static class Format {
     private static final ThreadLocal<Format> PER_THREAD =
-        new ThreadLocal<Format>() {
-          @Override protected Format initialValue() {
-            return new Format();
-          }
-        };
+        ThreadLocal.withInitial(Format::new);
     final DateFormat timestamp =
         new SimpleDateFormat(DateTimeUtils.TIMESTAMP_FORMAT_STRING,
             Locale.ROOT);

@@ -217,9 +217,8 @@ public class SqlValidatorUtil {
       RelDataType sourceRowType,
       Map<Integer, RelDataTypeField> indexToField) {
     ImmutableBitSet source = ImmutableBitSet.of(
-        Lists.transform(
-            sourceRowType.getFieldList(),
-            new RelDataTypeField.ToFieldIndex()));
+        Lists.transform(sourceRowType.getFieldList(),
+            RelDataTypeField::getIndex));
     ImmutableBitSet target =
         ImmutableBitSet.of(indexToField.keySet());
     return source.intersect(target);

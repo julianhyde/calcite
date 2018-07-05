@@ -61,18 +61,6 @@ import java.util.Objects;
  * Utility functions for schemas.
  */
 public final class Schemas {
-  private static final com.google.common.base.Function<
-      CalciteSchema.LatticeEntry,
-      CalciteSchema.TableEntry> TO_TABLE_ENTRY = entry -> {
-        final CalciteSchema.TableEntry starTable = entry.getStarTable();
-        assert starTable.getTable().getJdbcTableType()
-            == Schema.TableType.STAR;
-        return entry.getStarTable();
-      };
-
-  private static final com.google.common.base.Function<
-      CalciteSchema.LatticeEntry,
-      Lattice> TO_LATTICE = CalciteSchema.LatticeEntry::getLattice;
 
   private Schemas() {
     throw new AssertionError("no instances!");
@@ -454,7 +442,13 @@ public final class Schemas {
   public static List<CalciteSchema.TableEntry> getStarTables(
       CalciteSchema schema) {
     final List<CalciteSchema.LatticeEntry> list = getLatticeEntries(schema);
-    return Lists.transform(list, TO_TABLE_ENTRY);
+    return Lists.transform(list, entry -> {
+      final CalciteSchema.TableEntry starTable =
+          Objects.requireNonNull(entry).getStarTable();
+      assert starTable.getTable().getJdbcTableType()
+          == Schema.TableType.STAR;
+      return entry.getStarTable();
+    });
   }
 
   /** Returns the lattices defined in a schema.
@@ -462,7 +456,7 @@ public final class Schemas {
    * @param schema Schema */
   public static List<Lattice> getLattices(CalciteSchema schema) {
     final List<CalciteSchema.LatticeEntry> list = getLatticeEntries(schema);
-    return Lists.transform(list, TO_LATTICE);
+    return Lists.transform(list, CalciteSchema.LatticeEntry::getLattice);
   }
 
   /** Returns the lattices defined in a schema.

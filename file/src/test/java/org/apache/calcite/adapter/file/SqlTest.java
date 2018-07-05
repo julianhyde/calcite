@@ -18,7 +18,6 @@ package org.apache.calcite.adapter.file;
 
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
 
 import org.junit.Assert;
@@ -37,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ public class SqlTest {
     });
   }
 
-  private Function<ResultSet, Void> expect(String... expectedLines) {
+  private static Function<ResultSet, Void> expect(String... expectedLines) {
     final StringBuilder b = new StringBuilder();
     for (String s : expectedLines) {
       b.append(s).append('\n');

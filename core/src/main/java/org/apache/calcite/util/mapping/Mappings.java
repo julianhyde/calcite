@@ -21,7 +21,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Permutation;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
@@ -33,6 +32,7 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 /**
  * Utility functions related to mappings.
@@ -341,7 +341,7 @@ public abstract class Mappings {
   }
 
   public static TargetMapping target(
-      Function<Integer, Integer> function,
+      IntFunction<Integer> function,
       int sourceCount,
       int targetCount) {
     final PartialFunctionImpl mapping =
@@ -601,7 +601,7 @@ public abstract class Mappings {
       throw new IllegalArgumentException("new source count too low");
     }
     return target(
-        source -> {
+        (IntFunction<Integer>) source -> {
           int source2 = source - offset;
           return source2 < 0 || source2 >= mapping.getSourceCount()
               ? null
@@ -644,10 +644,12 @@ public abstract class Mappings {
     if (targetCount < mapping.getTargetCount() + offset) {
       throw new IllegalArgumentException("new target count too low");
     }
-    return target(source -> {
-      int target = mapping.getTargetOpt(source);
-      return target < 0 ? null : target + offset;
-    }, mapping.getSourceCount(), targetCount);
+    return target(
+        (IntFunction<Integer>) source -> {
+          int target = mapping.getTargetOpt(source);
+          return target < 0 ? null : target + offset;
+        },
+        mapping.getSourceCount(), targetCount);
   }
 
   /**
@@ -671,7 +673,7 @@ public abstract class Mappings {
       throw new IllegalArgumentException("new source count too low");
     }
     return target(
-        source -> {
+        (IntFunction<Integer>) source -> {
           final int source2 = source - offset;
           if (source2 < 0 || source2 >= mapping.getSourceCount()) {
             return null;

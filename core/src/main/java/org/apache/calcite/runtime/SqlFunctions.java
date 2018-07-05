@@ -102,11 +102,7 @@ public class SqlFunctions {
    * that sequences can be parsed, validated and planned. A real application
    * will want persistent values for sequences, shared among threads. */
   private static final ThreadLocal<Map<String, AtomicLong>> THREAD_SEQUENCES =
-      new ThreadLocal<Map<String, AtomicLong>>() {
-        @Override protected Map<String, AtomicLong> initialValue() {
-          return new HashMap<String, AtomicLong>();
-        }
-      };
+      ThreadLocal.withInitial(HashMap::new);
 
   private SqlFunctions() {
   }

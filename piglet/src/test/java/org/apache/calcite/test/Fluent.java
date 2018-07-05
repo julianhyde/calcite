@@ -24,7 +24,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.tools.PigRelBuilder;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
 
 import java.io.StringReader;
@@ -32,6 +31,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

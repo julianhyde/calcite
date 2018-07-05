@@ -1712,11 +1712,7 @@ public class MockCatalogReader extends CalciteCatalogReader {
    * value. */
   public static class CountingFactory extends NullInitializerExpressionFactory {
     static final ThreadLocal<AtomicInteger> THREAD_CALL_COUNT =
-        new ThreadLocal<AtomicInteger>() {
-          protected AtomicInteger initialValue() {
-            return new AtomicInteger();
-          }
-        };
+        ThreadLocal.withInitial(AtomicInteger::new);
 
     private final List<String> defaultColumns;
 

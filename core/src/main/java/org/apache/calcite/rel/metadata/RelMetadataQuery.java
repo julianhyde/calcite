@@ -107,11 +107,7 @@ public class RelMetadataQuery {
   private BuiltInMetadata.UniqueKeys.Handler uniqueKeysHandler;
 
   public static final ThreadLocal<JaninoRelMetadataProvider> THREAD_PROVIDERS =
-      new ThreadLocal<JaninoRelMetadataProvider>() {
-        protected JaninoRelMetadataProvider initialValue() {
-          return JaninoRelMetadataProvider.DEFAULT;
-        }
-      };
+      ThreadLocal.withInitial(() -> JaninoRelMetadataProvider.DEFAULT);
 
   protected RelMetadataQuery(JaninoRelMetadataProvider metadataProvider,
       RelMetadataQuery prototype) {

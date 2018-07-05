@@ -45,7 +45,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -1241,8 +1240,7 @@ public class RexUtil {
   public static Iterable<RexNode> apply(Mappings.TargetMapping mapping,
       Iterable<? extends RexNode> nodes) {
     final RexPermuteInputsShuttle shuttle = RexPermuteInputsShuttle.of(mapping);
-    return Iterables.transform(
-        nodes, (Function<RexNode, RexNode>) input -> input.accept(shuttle));
+    return Iterables.transform(nodes, e -> e.accept(shuttle));
   }
 
   /**
@@ -1876,7 +1874,7 @@ public class RexUtil {
     }
     return composeConjunction(rexBuilder,
         Iterables.concat(ImmutableList.of(e),
-            Iterables.transform(notTerms, notFn(rexBuilder))),
+            Iterables.transform(notTerms, e2 -> not(rexBuilder, e2))),
         false);
   }
 
@@ -1894,9 +1892,19 @@ public class RexUtil {
         && (call.operands.size() - i) % 2 == 1;
   }
 
-  /** Returns a function that applies NOT to its argument. */
-  public static Function<RexNode, RexNode> notFn(final RexBuilder rexBuilder) {
-    return input -> input.isAlwaysTrue()
+  /** Returns a function that applies NOT to its argument.
+   *
+   * @deprecated Use {@link #not} */
+  @SuppressWarnings("Guava")
+  @Deprecated // to be removed in 2.0
+  public static com.google.common.base.Function<RexNode, RexNode> notFn(
+      final RexBuilder rexBuilder) {
+    return e -> not(rexBuilder, e);
+  }
+
+  /** Applies NOT to an expression. */
+  static RexNode not(final RexBuilder rexBuilder, RexNode input) {
+    return input.isAlwaysTrue()
         ? rexBuilder.makeLiteral(false)
         : input.isAlwaysFalse()
         ? rexBuilder.makeLiteral(true)

@@ -61,11 +61,7 @@ public class MaterializationService {
 
   /** For testing. */
   private static final ThreadLocal<MaterializationService> THREAD_INSTANCE =
-      new ThreadLocal<MaterializationService>() {
-        @Override protected MaterializationService initialValue() {
-          return new MaterializationService();
-        }
-      };
+      ThreadLocal.withInitial(MaterializationService::new);
 
   private static final Comparator<Pair<CalciteSchema.TableEntry, TileKey>> C =
       (o0, o1) -> {

@@ -317,7 +317,7 @@ class CompatibleGuava11 {
         Map.Entry<?, ?> entry = (Map.Entry<?, ?>) o;
         Object key = entry.getKey();
         V value = map().get(key);
-        return com.google.common.base.Objects.equal(value, entry.getValue())
+        return Objects.equals(value, entry.getValue())
             && (value != null || map().containsKey(key));
       }
       return false;
@@ -390,7 +390,7 @@ class CompatibleGuava11 {
         return super.remove(o);
       } catch (UnsupportedOperationException e) {
         for (Map.Entry<K, V> entry : map().entrySet()) {
-          if (com.google.common.base.Objects.equal(o, entry.getValue())) {
+          if (Objects.equals(o, entry.getValue())) {
             map().remove(entry.getKey());
             return true;
           }

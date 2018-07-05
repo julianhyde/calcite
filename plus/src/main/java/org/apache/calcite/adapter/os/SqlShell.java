@@ -20,7 +20,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.util.JsonBuilder;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
@@ -286,7 +285,7 @@ public class SqlShell {
             out.println(",");
           }
           json.append(b, 0,
-              Maps.asMap(fields, (Function<String, Object>) columnLabel -> {
+              Maps.asMap(fields, columnLabel -> {
                 try {
                   final int i1 = fieldOrdinals.get(columnLabel);
                   switch (m.getColumnType(i1)) {
