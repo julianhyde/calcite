@@ -2613,8 +2613,9 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test public void testLarge() {
-    // Java 8 uses a lot of stack for lambdas
-    final int x = TestUtil.getJavaMajorVersion() <= 8 ? 300 : 400;
+    // Java 8 uses a lot of stack for lambdas; so does 11 beta
+    final int x = TestUtil.getJavaMajorVersion() <= 8
+        || TestUtil.getJavaMajorVersion() == 11 ? 300 : 400;
     SqlValidatorTest.checkLarge(x, input -> {
       final RelRoot root = tester.convertSqlToRel(input);
       final String s = RelOptUtil.toString(root.project());
