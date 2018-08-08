@@ -540,7 +540,12 @@ public class RexSimplify {
     case 0:
       return rexBuilder.makeNullLiteral(call.type);
     case 1:
-      return operands.get(0);
+      final RexNode operand = operands.get(0);
+      if (!call.getType().equals(operand.getType())) {
+        // ensure type consistency, especially nullability
+        return rexBuilder.makeAbstractCast(call.getType(), operand);
+      }
+      return operand;
     default:
       if (operands.equals(call.operands)) {
         return call;
