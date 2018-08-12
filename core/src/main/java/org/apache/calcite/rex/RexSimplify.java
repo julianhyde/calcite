@@ -586,11 +586,7 @@ public class RexSimplify {
     }
     assert newOperands.size() % 2 == 1;
     if (newOperands.size() == 1 || values.size() == 1) {
-      final RexNode last = Util.last(newOperands);
-      if (!call.getType().equals(last.getType())) {
-        return rexBuilder.makeAbstractCast(call.getType(), last);
-      }
-      return last;
+      return Util.last(newOperands);
     }
   trueFalse:
     if (call.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
