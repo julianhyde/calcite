@@ -48,6 +48,7 @@ import org.apache.calcite.tools.RelRunner;
 import org.apache.calcite.tools.RelRunners;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
 
 import com.google.common.collect.ImmutableList;
@@ -808,9 +809,8 @@ public class RelBuilderTest {
             .build();
     final String expected = ""
         + "LogicalAggregate(group=[{0}])\n"
-        + "  LogicalProject(departmentNo=[$0])\n"
-        + "    LogicalProject(DEPTNO=[$7])\n"
-        + "      LogicalTableScan(table=[[scott, EMP]])\n";
+        + "  LogicalProject(departmentNo=[$7])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(root, hasTree(expected));
   }
 
@@ -828,10 +828,8 @@ public class RelBuilderTest {
             .build();
     final String expected = ""
         + "LogicalAggregate(group=[{1}])\n"
-        + "  LogicalProject(DEPTNO=[$0], d3=[$1])\n"
-        + "    LogicalProject(DEPTNO=[$0], $f1=[+($0, 3)])\n"
-        + "      LogicalProject(DEPTNO=[$7])\n"
-        + "        LogicalTableScan(table=[[scott, EMP]])\n";
+        + "  LogicalProject(DEPTNO=[$7], d3=[+($7, 3)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(root, hasTree(expected));
   }
 
@@ -1397,9 +1395,8 @@ public class RelBuilderTest {
             .project(builder.field("EMP_alias", "DEPTNO"))
             .build();
     final String expected = ""
-        + "LogicalProject(DEPTNO=[$0])\n"
-        + "  LogicalProject(DEPTNO=[$7], $f1=[20])\n"
-        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+        + "LogicalProject(DEPTNO=[$7])\n"
+        + "  LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(root, hasTree(expected));
   }
 
@@ -1446,6 +1443,27 @@ public class RelBuilderTest {
         + "  LogicalJoin(condition=[true], joinType=[inner])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n"
         + "    LogicalTableScan(table=[[scott, DEPT]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
+  /** Tests that a projection after a projection. */
+  @Test public void testProjectProject() {
+    final RelBuilder builder = RelBuilder.create(config().build());
+    RelNode root =
+        builder.scan("EMP")
+            .as("e")
+            .projectPlus(
+                builder.alias(
+                    builder.call(SqlStdOperatorTable.PLUS, builder.field(0),
+                        builder.field(3)), "x"))
+            .project(builder.field("e", "DEPTNO"),
+                builder.field(0),
+                builder.field("e", "MGR"),
+                Util.last(builder.fields()))
+            .build();
+    final String expected = ""
+        + "LogicalProject(DEPTNO=[$7], EMPNO=[$0], MGR=[$3], x=[+($0, $3)])\n"
+        + "  LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(root, hasTree(expected));
   }
 

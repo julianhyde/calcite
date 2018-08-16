@@ -991,6 +991,36 @@ public class RelBuilder {
       Iterable<? extends RexNode> nodes,
       Iterable<String> fieldNames,
       boolean force) {
+    final Frame frame = stack.peek();
+    if (frame != null && frame.rel instanceof Project) {
+      final Project project = (Project) frame.rel;
+      final ImmutableList<? extends RexNode> nodeList =
+          ImmutableList.copyOf(nodes);
+      // Populate field names. If the upper expression is an input ref and does
+      // not have a recommended name, use the name of the underlying field.
+      final List<String> newFieldNames = new ArrayList<>();
+      for (String fieldName : fieldNames) {
+        newFieldNames.add(fieldName);
+      }
+      while (newFieldNames.size() < nodeList.size()) {
+        newFieldNames.add(null);
+      }
+      for (int i = 0; i < newFieldNames.size(); i++) {
+        if (newFieldNames.get(i) == null) {
+          final RexNode node = nodeList.get(i);
+          if (node instanceof RexInputRef) {
+            final RexInputRef ref = (RexInputRef) node;
+            newFieldNames.set(i,
+                project.getRowType().getFieldNames().get(ref.getIndex()));
+          }
+        }
+      }
+      final List<RexNode> newNodes =
+          RelOptUtil.pushPastProject(nodeList, project);
+      stack.pop();
+      stack.push(new Frame(project.getInput()));
+      return project(newNodes, newFieldNames, force);
+    }
     final List<String> names = new ArrayList<>();
     final List<RexNode> exprList = new ArrayList<>();
     final Iterator<String> nameIterator = fieldNames.iterator();
@@ -1002,7 +1032,6 @@ public class RelBuilder {
       String name = nameIterator.hasNext() ? nameIterator.next() : null;
       names.add(name != null ? name : inferAlias(exprList, node));
     }
-    final Frame frame = stack.peek();
     final ImmutableList.Builder<Field> fields = ImmutableList.builder();
     final Set<String> uniqueNameList =
         getTypeFactory().getTypeSystem().isSchemaCaseSensitive()
@@ -1062,6 +1091,19 @@ public class RelBuilder {
    * expressions. */
   public RelBuilder project(RexNode... nodes) {
     return project(ImmutableList.copyOf(nodes));
+  }
+
+  /** Creates a {@link Project} of all original fields, plus the given
+   * expressions. */
+  public RelBuilder projectPlus(Iterable<RexNode> nodes) {
+    final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
+    return project(builder.addAll(fields()).addAll(nodes).build());
+  }
+
+  /** Creates a {@link Project} of all original fields, plus the given
+   * expressions. */
+  public RelBuilder projectPlus(RexNode... nodes) {
+    return projectPlus(ImmutableList.copyOf(nodes));
   }
 
   /** Creates a {@link Project} of the given
