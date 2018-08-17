@@ -1400,6 +1400,52 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
+  /** Tests that table aliases are propagated even when there is a project on
+   * top of a project. (Aliases tend to get lost when projects are merged). */
+  @Test public void testAliasProjectProject() {
+    final RelBuilder builder = RelBuilder.create(config().build());
+    RelNode root =
+        builder.scan("EMP")
+            .as("EMP_alias")
+            .project(builder.field("DEPTNO"),
+                builder.literal(20))
+            .project(builder.field(1),
+                builder.literal(10),
+                builder.field(0))
+            .project(builder.alias(builder.field(1), "sum"),
+                builder.field("EMP_alias", "DEPTNO"))
+            .build();
+    final String expected = ""
+        + "LogicalProject(sum=[10], DEPTNO=[$7])\n"
+        + "  LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
+  /** Tests that table aliases are propagated and are available to a filter,
+   * even when there is a project on top of a project. (Aliases tend to get lost
+   * when projects are merged). */
+  @Test public void testAliasFilter() {
+    final RelBuilder builder = RelBuilder.create(config().build());
+    RelNode root =
+        builder.scan("EMP")
+            .as("EMP_alias")
+            .project(builder.field("DEPTNO"),
+                builder.literal(20))
+            .project(builder.field(1), // literal 20
+                builder.literal(10),
+                builder.field(0)) // DEPTNO
+            .filter(
+                builder.call(SqlStdOperatorTable.GREATER_THAN,
+                    builder.field(1),
+                    builder.field("EMP_alias", "DEPTNO")))
+            .build();
+    final String expected = ""
+        + "LogicalFilter(condition=[>($1, $2)])\n"
+        + "  LogicalProject($f1=[20], $f12=[10], DEPTNO=[$7])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
   @Test public void testAliasAggregate() {
     final RelBuilder builder = RelBuilder.create(config().build());
     RelNode root =
