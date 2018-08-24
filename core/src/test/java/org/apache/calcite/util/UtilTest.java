@@ -74,6 +74,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Properties;
@@ -2024,6 +2025,141 @@ public class UtilTest {
     assertThat(names.contains("WOMBAT", false), is(true));
     assertThat(names.contains("zyMurgy", true), is(false));
     assertThat(names.contains("zyMurgy", false), is(true));
+
+    // [CALCITE-2481] NameSet assumes lowercase characters have greater codes
+    // which does not hold for certain characters
+    checkCase0("a");
+    checkCase0("µ");
+  }
+
+  private void checkCase0(String s) {
+    checkCase1(s);
+    checkCase1(s.toUpperCase(Locale.ROOT));
+    checkCase1(s.toLowerCase(Locale.ROOT));
+    checkCase1("a" + s + "z");
+  }
+
+  private void checkCase1(String s) {
+    final NameSet set = new NameSet();
+    set.add(s);
+    checkNameSet(s, set);
+
+    set.add("");
+    checkNameSet(s, set);
+
+    set.add("zzz");
+    checkNameSet(s, set);
+
+    final NameMap<Integer> map = new NameMap<>();
+    map.put(s, 1);
+    checkNameMap(s, map);
+
+    map.put("", 11);
+    checkNameMap(s, map);
+
+    map.put("zzz", 21);
+    checkNameMap(s, map);
+
+    final NameMultimap<Integer> multimap = new NameMultimap<>();
+    multimap.put(s, 1);
+    checkNameMultimap(s, multimap);
+
+    multimap.put("", 11);
+    checkNameMultimap(s, multimap);
+
+    multimap.put("zzz", 21);
+    checkNameMultimap(s, multimap);
+  }
+
+  private void checkNameSet(String s, NameSet set) {
+    final String upper = s.toUpperCase(Locale.ROOT);
+    final String lower = s.toLowerCase(Locale.ROOT);
+    final boolean isUpper = upper.equals(s);
+    final boolean isLower = lower.equals(s);
+    assertThat(set.contains(s, true), is(true));
+    assertThat(set.contains(s, false), is(true));
+    assertThat(set.contains(upper, false), is(true));
+    assertThat(set.contains(upper, true), is(isUpper));
+    assertThat(set.contains(lower, false), is(true));
+    assertThat(set.contains(lower, true), is(isLower));
+
+    // Create a copy of NameSet, to avoid polluting further tests
+    final NameSet set2 = new NameSet();
+    for (String name : set.iterable()) {
+      set2.add(name);
+    }
+    set2.add(upper);
+    set2.add(lower);
+    final Collection<String> rangeInsensitive = set2.range(s, false);
+    assertThat(rangeInsensitive.contains(s), is(true));
+    assertThat(rangeInsensitive.contains(upper), is(true));
+    assertThat(rangeInsensitive.contains(lower), is(true));
+    final Collection<String> rangeSensitive = set2.range(s, true);
+    assertThat(rangeSensitive.contains(s), is(true));
+    assertThat(rangeSensitive.contains(upper), is(isUpper));
+    assertThat(rangeSensitive.contains(lower), is(isLower));
+  }
+
+  private void checkNameMap(String s, NameMap<Integer> map) {
+    final String upper = s.toUpperCase(Locale.ROOT);
+    final String lower = s.toLowerCase(Locale.ROOT);
+    boolean isUpper = upper.equals(s);
+    boolean isLower = lower.equals(s);
+    assertThat(map.containsKey(s, true), is(true));
+    assertThat(map.containsKey(s, false), is(true));
+    assertThat(map.containsKey(upper, false), is(true));
+    assertThat(map.containsKey(upper, true), is(isUpper));
+    assertThat(map.containsKey(lower, false), is(true));
+    assertThat(map.containsKey(lower, true), is(isLower));
+
+    // Create a copy of NameMap, to avoid polluting further tests
+    final NameMap<Integer> map2 = new NameMap<>();
+    for (Map.Entry<String, Integer> entry : map.map().entrySet()) {
+      map2.put(entry.getKey(), entry.getValue());
+    }
+    map2.put(upper, 2);
+    map2.put(lower, 3);
+    final NavigableMap<String, Integer> rangeInsensitive =
+        map2.range(s, false);
+    assertThat(rangeInsensitive.containsKey(s), is(true));
+    assertThat(rangeInsensitive.containsKey(upper), is(true));
+    assertThat(rangeInsensitive.containsKey(lower), is(true));
+    final NavigableMap<String, Integer> rangeSensitive = map2.range(s, true);
+    assertThat(rangeSensitive.containsKey(s), is(true));
+    assertThat(rangeSensitive.containsKey(upper), is(isUpper));
+    assertThat(rangeSensitive.containsKey(lower), is(isLower));
+  }
+
+  private void checkNameMultimap(String s, NameMultimap<Integer> map) {
+    final String upper = s.toUpperCase(Locale.ROOT);
+    final String lower = s.toLowerCase(Locale.ROOT);
+    boolean isUpper = upper.equals(s);
+    boolean isLower = lower.equals(s);
+    assertThat(map.containsKey(s, true), is(true));
+    assertThat(map.containsKey(s, false), is(true));
+    assertThat(map.containsKey(upper, false), is(true));
+    assertThat(map.containsKey(upper, true), is(isUpper));
+    assertThat(map.containsKey(lower, false), is(true));
+    assertThat(map.containsKey(lower, true), is(isLower));
+
+    // Create a copy of NameMultimap, to avoid polluting further tests
+    final NameMap<Integer> map2 = new NameMap<>();
+    for (Map.Entry<String, List<Integer>> entry : map.map().entrySet()) {
+      for (Integer integer : entry.getValue()) {
+        map2.put(entry.getKey(), integer);
+      }
+    }
+    map2.put(upper, 2);
+    map2.put(lower, 3);
+    final NavigableMap<String, Integer> rangeInsensitive =
+        map2.range(s, false);
+    assertThat(rangeInsensitive.containsKey(s), is(true));
+    assertThat(rangeInsensitive.containsKey(upper), is(true));
+    assertThat(rangeInsensitive.containsKey(lower), is(true));
+    final NavigableMap<String, Integer> rangeSensitive = map2.range(s, true);
+    assertThat(rangeSensitive.containsKey(s), is(true));
+    assertThat(rangeSensitive.containsKey(upper), is(isUpper));
+    assertThat(rangeSensitive.containsKey(lower), is(isLower));
   }
 
   /** Unit test for {@link org.apache.calcite.util.NameMap}. */
