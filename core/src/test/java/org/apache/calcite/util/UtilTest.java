@@ -81,13 +81,13 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.RandomAccess;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.function.Function;
 
 import static org.apache.calcite.test.Matchers.isLinux;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -2029,7 +2029,7 @@ public class UtilTest {
     // [CALCITE-2481] NameSet assumes lowercase characters have greater codes
     // which does not hold for certain characters
     checkCase0("a");
-    checkCase0("µ");
+    checkCase0("\u00b5"); // "µ"
   }
 
   private void checkCase0(String s) {
@@ -2385,6 +2385,44 @@ public class UtilTest {
         isIterable(Collections.singletonList(null)));
     assertThat(Util.filter(nullBeatles, Objects::nonNull),
         isIterable(Arrays.asList("John", "Paul", "Ringo")));
+  }
+
+  @Test public void testEquivalenceSet() {
+    final EquivalenceSet<String> c = new EquivalenceSet<>();
+    assertThat(c.size(), is(0));
+    assertThat(c.classCount(), is(0));
+    c.add("abc");
+    assertThat(c.size(), is(1));
+    assertThat(c.classCount(), is(1));
+    c.add("Abc");
+    assertThat(c.size(), is(2));
+    assertThat(c.classCount(), is(2));
+    assertThat(c.areEquivalent("abc", "Abc"), is(false));
+    assertThat(c.areEquivalent("abc", "abc"), is(true));
+    assertThat(c.areEquivalent("abc", "ABC"), is(false));
+    c.equiv("abc", "ABC");
+    assertThat(c.size(), is(3));
+    assertThat(c.classCount(), is(2));
+    assertThat(c.areEquivalent("abc", "ABC"), is(true));
+    assertThat(c.areEquivalent("ABC", "abc"), is(true));
+    assertThat(c.areEquivalent("abc", "abc"), is(true));
+    assertThat(c.areEquivalent("abc", "Abc"), is(false));
+    c.equiv("Abc", "ABC");
+    assertThat(c.size(), is(3));
+    assertThat(c.classCount(), is(1));
+    assertThat(c.areEquivalent("abc", "Abc"), is(true));
+
+    c.add("de");
+    c.equiv("fg", "fG");
+    assertThat(c.size(), is(6));
+    assertThat(c.classCount(), is(3));
+    final SortedMap<String, SortedSet<String>> map = c.map();
+    assertThat(map.toString(),
+        is("{ABC=[ABC, Abc, abc], de=[de], fG=[fG, fg]}"));
+
+    c.clear();
+    assertThat(c.size(), is(0));
+    assertThat(c.classCount(), is(0));
   }
 
   private static <E> Matcher<Iterable<E>> isIterable(final Iterable<E> iterable) {

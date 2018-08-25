@@ -17,13 +17,17 @@
 package org.apache.calcite.util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Ordering;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -34,6 +38,11 @@ import static org.apache.calcite.util.NameSet.COMPARATOR;
  *
  * <p>Not thread-safe. */
 class NameHelper {
+  /** Characters whose floor/ceiling are not the same as their upper/lower
+   * case. Out of 64k unicode characters, there are 289 weird characters. */
+  private static final ImmutableMap<Character, Pair<Character, Character>>
+      WEIRD_CHARACTERS = weirdCharacters();
+
   private final StringBuilder floor = new StringBuilder();
   private final StringBuilder ceil = new StringBuilder();
 
@@ -53,24 +62,27 @@ class NameHelper {
    * <p>This method is not thread-safe.
    */
   private <R> R foo(String name, BiFunction<String, String, R> f) {
-    for (int i = 0; i < name.length(); i++) {
-      final int c = name.charAt(i);
-      final int up = Character.toUpperCase(c);
-      final int low = Character.toLowerCase(c);
-      if (up < low) {
-        floor.appendCodePoint(up);
-        ceil.appendCodePoint(low);
-      } else {
-        floor.appendCodePoint(low);
-        ceil.appendCodePoint(up);
-      }
+    name.chars()
+        .forEachOrdered(c -> append((char) c, floor, ceil));
+    final String floorString = bufValue(floor, name);
+    final String ceilString = bufValue(ceil, name);
+    if (floorString.compareTo(ceilString) > 0) {
+      throw new AssertionError();
     }
-    final String floorString = floor.toString();
-    floor.setLength(0);
-    final String ceilString = ceil.toString();
-    ceil.setLength(0);
-    assert floorString.compareTo(ceilString) <= 0;
     return f.apply(floorString, ceilString);
+  }
+
+  /** Returns the value of a {@link StringBuilder} as a string,
+   * and clears the builder.
+   *
+   * <p>If the value is the same the given string, returns that string,
+   * thereby saving the effort of building a new string. */
+  private static String bufValue(StringBuilder b, String s) {
+    if (b.length() != s.length() || b.indexOf(s) != 0) {
+      s = b.toString();
+    }
+    b.setLength(0);
+    return s;
   }
 
   /** Used by {@link NameSet#range(String, boolean)}. */
@@ -88,7 +100,7 @@ class NameHelper {
 
   /** Used by {@link NameMap#range(String, boolean)}. */
   <V> ImmutableSortedMap<String, V> map(NavigableMap<String, V> map,
-      String name) {
+                                        String name) {
     return foo(name,
         (floor, ceil) -> {
           final ImmutableSortedMap.Builder<String, V> builder =
@@ -122,6 +134,62 @@ class NameHelper {
           }
           return builder.build();
         });
+  }
+
+  /** Returns whether an equivalence class of characters is simple.
+   *
+   * <p>It is simple if
+   * the floor of the class is the upper-case value of every character, and
+   * the ceiling of the class is the lower-case value of every character. */
+  private static boolean isSimple(Collection<Character> characters,
+      Character floor, Character ceiling) {
+    for (Character character : characters) {
+      if (!floor.equals(Character.toUpperCase(character))) {
+        return false;
+      }
+      if (!ceiling.equals(Character.toLowerCase(character))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void append(char c, StringBuilder floor, StringBuilder ceil) {
+    final Pair<Character, Character> pair = WEIRD_CHARACTERS.get(c);
+    if (pair == null) {
+      floor.append(Character.toUpperCase(c));
+      ceil.append(Character.toLowerCase(c));
+    } else {
+      floor.append(pair.left);
+      ceil.append(pair.right);
+    }
+  }
+
+  private static ImmutableMap<Character, Pair<Character, Character>>
+      weirdCharacters() {
+    final EquivalenceSet<Character> strange = new EquivalenceSet<>();
+    for (int i = 0; i < 0xffff; i++) {
+      char c = (char) i;
+      strange.add(c);
+      strange.equiv(c, Character.toLowerCase(c));
+      strange.equiv(c, Character.toUpperCase(c));
+    }
+    final SortedMap<Character, SortedSet<Character>> map = strange.map();
+    final ImmutableMap.Builder<Character, Pair<Character, Character>> builder =
+        ImmutableMap.builder();
+    for (Map.Entry<Character, SortedSet<Character>> entry : map.entrySet()) {
+      final Collection<Character> characters = entry.getValue();
+      final Character floor = Ordering.natural().min(characters);
+      final Character ceiling = Ordering.natural().max(characters);
+      if (isSimple(characters, floor, ceiling)) {
+        continue;
+      }
+      final Pair<Character, Character> pair = Pair.of(floor, ceiling);
+      for (Character character : characters) {
+        builder.put(character, pair);
+      }
+    }
+    return builder.build();
   }
 }
 
