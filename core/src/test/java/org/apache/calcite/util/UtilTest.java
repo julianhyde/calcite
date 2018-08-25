@@ -88,6 +88,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 
 import static org.apache.calcite.test.Matchers.isLinux;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
