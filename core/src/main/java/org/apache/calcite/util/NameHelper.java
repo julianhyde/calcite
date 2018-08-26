@@ -43,8 +43,11 @@ class NameHelper {
   private static final ImmutableMap<Character, Pair<Character, Character>>
       WEIRD_CHARACTERS = weirdCharacters();
 
-  private final StringBuilder floor = new StringBuilder();
-  private final StringBuilder ceil = new StringBuilder();
+  /** Workspace for computing the floor key. */
+  private final StringBuilder floorBuilder = new StringBuilder();
+
+  /** Workspace for computing the ceiling key. */
+  private final StringBuilder ceilingBuilder = new StringBuilder();
 
   /** Given a string, computes the smallest and largest strings that are
    * case-insensitive equal to that string,
@@ -54,22 +57,31 @@ class NameHelper {
    * <p>For latin strings such as "bAz" computing the smallest and largest
    * strings is straightforward:
    * the floor is the upper-case string ("BAZ"), and
-   * the ceil is the lower-case string ("baz").
+   * the ceiling is the lower-case string ("baz").
    *
    * <p>It's more complicated for non-Latin strings that have characters
    * whose lower-case value is less than their upper-case value.
    *
    * <p>This method is not thread-safe.
    */
-  private <R> R foo(String name, BiFunction<String, String, R> f) {
+  private <R> R applyFloorCeiling(String name,
+      BiFunction<String, String, R> f) {
     name.chars()
-        .forEachOrdered(c -> append((char) c, floor, ceil));
-    final String floorString = bufValue(floor, name);
-    final String ceilString = bufValue(ceil, name);
-    if (floorString.compareTo(ceilString) > 0) {
-      throw new AssertionError();
-    }
-    return f.apply(floorString, ceilString);
+        .forEachOrdered(i -> {
+          final char c = (char) i;
+          final Pair<Character, Character> pair = WEIRD_CHARACTERS.get(c);
+          if (pair == null) {
+            floorBuilder.append(Character.toUpperCase(c));
+            ceilingBuilder.append(Character.toLowerCase(c));
+          } else {
+            floorBuilder.append(pair.left);
+            ceilingBuilder.append(pair.right);
+          }
+        });
+    final String floor = bufValue(floorBuilder, name);
+    final String ceiling = bufValue(ceilingBuilder, name);
+    assert floor.compareTo(ceiling) <= 0;
+    return f.apply(floor, ceiling);
   }
 
   /** Returns the value of a {@link StringBuilder} as a string,
@@ -87,10 +99,10 @@ class NameHelper {
 
   /** Used by {@link NameSet#range(String, boolean)}. */
   Collection<String> set(NavigableSet<String> names, String name) {
-    return foo(name,
-        (floor, ceil) -> {
+    return applyFloorCeiling(name,
+        (floor, ceiling) -> {
           final NavigableSet<String> subSet =
-              names.subSet(floor, true, ceil, true);
+              names.subSet(floor, true, ceiling, true);
           return subSet
               .stream()
               .filter(s -> s.equalsIgnoreCase(name))
@@ -100,13 +112,13 @@ class NameHelper {
 
   /** Used by {@link NameMap#range(String, boolean)}. */
   <V> ImmutableSortedMap<String, V> map(NavigableMap<String, V> map,
-                                        String name) {
-    return foo(name,
-        (floor, ceil) -> {
+      String name) {
+    return applyFloorCeiling(name,
+        (floor, ceiling) -> {
           final ImmutableSortedMap.Builder<String, V> builder =
               new ImmutableSortedMap.Builder<>(COMPARATOR);
           final NavigableMap<String, V> subMap =
-              map.subMap(floor, true, ceil, true);
+              map.subMap(floor, true, ceiling, true);
           for (Map.Entry<String, V> e : subMap.entrySet()) {
             if (e.getKey().equalsIgnoreCase(name)) {
               builder.put(e.getKey(), e.getValue());
@@ -119,10 +131,10 @@ class NameHelper {
   /** Used by {@link NameMultimap#range(String, boolean)}. */
   <V> Collection<Map.Entry<String, V>> multimap(
       NavigableMap<String, List<V>> map, String name) {
-    return foo(name,
-        (floor, ceil) -> {
+    return applyFloorCeiling(name,
+        (floor, ceiling) -> {
           final NavigableMap<String, List<V>> subMap =
-              map.subMap(floor, true, ceil, true);
+              map.subMap(floor, true, ceiling, true);
           final ImmutableList.Builder<Map.Entry<String, V>> builder =
               ImmutableList.builder();
           for (Map.Entry<String, List<V>> e : subMap.entrySet()) {
@@ -152,17 +164,6 @@ class NameHelper {
       }
     }
     return true;
-  }
-
-  private void append(char c, StringBuilder floor, StringBuilder ceil) {
-    final Pair<Character, Character> pair = WEIRD_CHARACTERS.get(c);
-    if (pair == null) {
-      floor.append(Character.toUpperCase(c));
-      ceil.append(Character.toLowerCase(c));
-    } else {
-      floor.append(pair.left);
-      ceil.append(pair.right);
-    }
   }
 
   private static ImmutableMap<Character, Pair<Character, Character>>
