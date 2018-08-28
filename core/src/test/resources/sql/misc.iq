@@ -2203,4 +2203,11 @@ EXPR$0
 false
 !ok
 
+# Sub-query returns a MAP, column is renamed, and enclosing query references the map.
+select mycol['b'] as x
+from (select map['a', false, 'b', true] from (values (2))) as t(mycol);
+X
+true
+!ok
+
 # End misc.iq
