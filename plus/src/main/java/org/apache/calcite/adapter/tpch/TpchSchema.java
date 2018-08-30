@@ -112,15 +112,17 @@ public class TpchSchema extends AbstractSchema {
             }
 
             private Object value(TpchColumn<E> tpchColumn, E current) {
-              final Class<?> type = realType(tpchColumn);
-              if (type == String.class) {
-                return tpchColumn.getString(current);
-              } else if (type == Double.class) {
-                return tpchColumn.getDouble(current);
-              } else if (type == Date.class) {
+              switch (tpchColumn.getType().getBase()) {
+              case DATE:
                 return Date.valueOf(tpchColumn.getString(current));
-              } else {
-                return tpchColumn.getLong(current);
+              case DOUBLE:
+                return tpchColumn.getDouble(current);
+              case IDENTIFIER:
+                return tpchColumn.getIdentifier(current);
+              case VARCHAR:
+                return tpchColumn.getString(current);
+              default:
+                return tpchColumn.getInteger(current);
               }
             }
 
@@ -148,8 +150,7 @@ public class TpchSchema extends AbstractSchema {
         assert prefix != null : t;
       }
       for (TpchColumn<E> column : tpchTable.getColumns()) {
-        final String c = (prefix + column.getColumnName())
-            .toUpperCase(Locale.ROOT);
+        final String c = column.getColumnName().toUpperCase(Locale.ROOT);
         builder.add(c, typeFactory.createJavaType(realType(column)));
       }
       return builder.build();
@@ -159,7 +160,18 @@ public class TpchSchema extends AbstractSchema {
       if (column.getColumnName().endsWith("date")) {
         return java.sql.Date.class;
       }
-      return column.getType();
+      switch (column.getType().getBase()) {
+      case DOUBLE:
+        return Double.class;
+      case IDENTIFIER:
+        return Long.class;
+      case INTEGER:
+        return Integer.class;
+      case VARCHAR:
+        return String.class;
+      default:
+        throw new AssertionError(column +": " + column.getType().getBase());
+      }
     }
   }
 }
