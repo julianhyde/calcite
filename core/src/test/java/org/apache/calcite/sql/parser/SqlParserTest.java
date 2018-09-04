@@ -61,9 +61,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -644,7 +642,7 @@ public class SqlParserTest {
     return keywords("c");
   }
 
-  private static SortedSet<String> keywords(String dialect) {
+  protected static SortedSet<String> keywords(String dialect) {
     final ImmutableSortedSet.Builder<String> builder =
         ImmutableSortedSet.naturalOrder();
     String r = null;
@@ -7076,39 +7074,39 @@ public class SqlParserTest {
 
   @Test public void testMetadata() {
     SqlAbstractParserImpl.Metadata metadata = getSqlParser("").getMetadata();
-    assertTrue(metadata.isReservedFunctionName("ABS"));
-    assertFalse(metadata.isReservedFunctionName("FOO"));
+    assertThat(metadata.isReservedFunctionName("ABS"), is(true));
+    assertThat(metadata.isReservedFunctionName("FOO"), is(false));
 
-    assertTrue(metadata.isContextVariableName("CURRENT_USER"));
-    assertTrue(metadata.isContextVariableName("CURRENT_CATALOG"));
-    assertTrue(metadata.isContextVariableName("CURRENT_SCHEMA"));
-    assertFalse(metadata.isContextVariableName("ABS"));
-    assertFalse(metadata.isContextVariableName("FOO"));
+    assertThat(metadata.isContextVariableName("CURRENT_USER"), is(true));
+    assertThat(metadata.isContextVariableName("CURRENT_CATALOG"), is(true));
+    assertThat(metadata.isContextVariableName("CURRENT_SCHEMA"), is(true));
+    assertThat(metadata.isContextVariableName("ABS"), is(false));
+    assertThat(metadata.isContextVariableName("FOO"), is(false));
 
-    assertTrue(metadata.isNonReservedKeyword("A"));
-    assertTrue(metadata.isNonReservedKeyword("KEY"));
-    assertFalse(metadata.isNonReservedKeyword("SELECT"));
-    assertFalse(metadata.isNonReservedKeyword("FOO"));
-    assertFalse(metadata.isNonReservedKeyword("ABS"));
+    assertThat(metadata.isNonReservedKeyword("A"), is(true));
+    assertThat(metadata.isNonReservedKeyword("KEY"), is(true));
+    assertThat(metadata.isNonReservedKeyword("SELECT"), is(false));
+    assertThat(metadata.isNonReservedKeyword("FOO"), is(false));
+    assertThat(metadata.isNonReservedKeyword("ABS"), is(false));
 
-    assertTrue(metadata.isKeyword("ABS"));
-    assertTrue(metadata.isKeyword("CURRENT_USER"));
-    assertTrue(metadata.isKeyword("CURRENT_CATALOG"));
-    assertTrue(metadata.isKeyword("CURRENT_SCHEMA"));
-    assertTrue(metadata.isKeyword("KEY"));
-    assertTrue(metadata.isKeyword("SELECT"));
-    assertTrue(metadata.isKeyword("HAVING"));
-    assertTrue(metadata.isKeyword("A"));
-    assertFalse(metadata.isKeyword("BAR"));
+    assertThat(metadata.isKeyword("ABS"), is(true));
+    assertThat(metadata.isKeyword("CURRENT_USER"), is(true));
+    assertThat(metadata.isKeyword("CURRENT_CATALOG"), is(true));
+    assertThat(metadata.isKeyword("CURRENT_SCHEMA"), is(true));
+    assertThat(metadata.isKeyword("KEY"), is(true));
+    assertThat(metadata.isKeyword("SELECT"), is(true));
+    assertThat(metadata.isKeyword("HAVING"), is(true));
+    assertThat(metadata.isKeyword("A"), is(true));
+    assertThat(metadata.isKeyword("BAR"), is(false));
 
-    assertTrue(metadata.isReservedWord("SELECT"));
-    assertTrue(metadata.isReservedWord("CURRENT_CATALOG"));
-    assertTrue(metadata.isReservedWord("CURRENT_SCHEMA"));
-    assertFalse(metadata.isReservedWord("KEY"));
+    assertThat(metadata.isReservedWord("SELECT"), is(true));
+    assertThat(metadata.isReservedWord("CURRENT_CATALOG"), is(true));
+    assertThat(metadata.isReservedWord("CURRENT_SCHEMA"), is(true));
+    assertThat(metadata.isReservedWord("KEY"), is(false));
 
     String jdbcKeywords = metadata.getJdbcKeywords();
-    assertTrue(jdbcKeywords.contains(",COLLECT,"));
-    assertTrue(!jdbcKeywords.contains(",SELECT,"));
+    assertThat(jdbcKeywords.contains(",COLLECT,"), is(true));
+    assertThat(!jdbcKeywords.contains(",SELECT,"), is(true));
   }
 
   /**
