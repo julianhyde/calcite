@@ -16,9 +16,20 @@
  */
 package org.apache.calcite.test.catalog;
 
+import org.apache.calcite.plan.RelOptPredicateList;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.MetadataDef;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 
 import com.google.common.collect.ImmutableList;
 
@@ -118,11 +129,44 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     final MockTable restaurantTable =
         MockTable.create(this, geoSchema, "RESTAURANTS", false, 100);
     restaurantTable.addColumn("NAME", f.varchar20Type, true);
-    restaurantTable.addColumn("LATITUDE", f.intType);
     restaurantTable.addColumn("LONGITUDE", f.intType);
-    restaurantTable.addColumn("TYPE", f.varchar10Type);
+    restaurantTable.addColumn("LATITUDE", f.intType);
+    restaurantTable.addColumn("CUISINE", f.varchar10Type);
     restaurantTable.addColumn("HILBERT", f.bigintType);
     restaurantTable.addMonotonic("HILBERT");
+    restaurantTable.addWrap(
+        new BuiltInMetadata.AllPredicates.Handler() {
+          public RelOptPredicateList getAllPredicates(RelNode r,
+              RelMetadataQuery mq) {
+            // Return the predicate:
+            //  r.hilbert = hilbert(r.longitude, r.latitude)
+            final RexBuilder rexBuilder = r.getCluster().getRexBuilder();
+            final RexInputRef refLongitude = rexBuilder.makeInputRef(r, 1);
+            final RexInputRef refLatitude = rexBuilder.makeInputRef(r, 2);
+            final RexInputRef refHilbert = rexBuilder.makeInputRef(r, 4);
+            return RelOptPredicateList.of(rexBuilder,
+                ImmutableList.of(
+                    rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+                        refHilbert,
+                        rexBuilder.makeCall(hilbertOp(),
+                            refLongitude, refLatitude))));
+          }
+
+          SqlOperator hilbertOp() {
+            for (SqlOperator op
+                : SqlStdOperatorTables.spatialInstance().getOperatorList()) {
+              if (op.getKind() == SqlKind.HILBERT
+                  && op.getOperandCountRange().isValidCount(2)) {
+                return op;
+              }
+            }
+            throw new AssertionError();
+          }
+
+          public MetadataDef<BuiltInMetadata.AllPredicates> getDef() {
+            return BuiltInMetadata.AllPredicates.DEF;
+          }
+        });
     registerTable(restaurantTable);
 
     return this;
