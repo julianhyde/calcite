@@ -462,6 +462,11 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
                 : new ModifiableTableWithCustomColumnResolving(Util.last(names));
         return clazz.cast(table);
       }
+      for (Object handler : wraps) {
+        if (clazz.isInstance(handler)) {
+          return clazz.cast(handler);
+        }
+      }
       return null;
     }
 
