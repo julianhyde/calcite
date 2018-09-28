@@ -1010,6 +1010,14 @@ public class RexUtil {
         && containIdentity(exps, inputRowType, Litmus.IGNORE);
   }
 
+  /** As {@link #composeConjunction(RexBuilder, Iterable, boolean)} but never
+   * returns null. */
+  public static @Nonnull RexNode composeConjunction(RexBuilder rexBuilder,
+      Iterable<? extends RexNode> nodes) {
+    final RexNode e = composeConjunction(rexBuilder, nodes, false);
+    return Objects.requireNonNull(e);
+  }
+
   /**
    * Converts a collection of expressions into an AND.
    * If there are zero expressions, returns TRUE.
@@ -1019,18 +1027,12 @@ public class RexUtil {
    */
   public static RexNode composeConjunction(RexBuilder rexBuilder,
       Iterable<? extends RexNode> nodes, boolean nullOnEmpty) {
-    final RexNode e = composeConjunction(rexBuilder, nodes);
-    return nullOnEmpty && e.isAlwaysTrue() ? null : e;
-  }
-
-  /** As {@link #composeConjunction(RexBuilder, Iterable, boolean)},
-   * but never returns null. */
-  public static @Nonnull RexNode composeConjunction(RexBuilder rexBuilder,
-      Iterable<? extends RexNode> nodes) {
     ImmutableList<RexNode> list = flattenAnd(nodes);
     switch (list.size()) {
     case 0:
-      return rexBuilder.makeLiteral(true);
+      return nullOnEmpty
+          ? null
+          : rexBuilder.makeLiteral(true);
     case 1:
       return list.get(0);
     default:
