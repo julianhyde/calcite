@@ -47,6 +47,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -159,7 +160,7 @@ public class DruidRules {
       final RexSimplify simplify =
           new RexSimplify(rexBuilder, predicates, executor);
       final RexNode cond =
-          simplify.simplify(filter.getCondition(), RexSimplify.UnknownAs.FALSE);
+          simplify.simplify(filter.getCondition(), RexUnknownAs.FALSE);
       for (RexNode e : RelOptUtil.conjunctions(cond)) {
         DruidJsonFilter druidJsonFilter = DruidJsonFilter
             .toDruidFilters(e, filter.getInput().getRowType(), query);
@@ -614,7 +615,7 @@ public class DruidRules {
 
       // Simplify the filter as much as possible
       RexNode tempFilterNode = filterNode;
-      filterNode = simplify.simplify(filterNode, RexSimplify.UnknownAs.FALSE);
+      filterNode = simplify.simplify(filterNode, RexUnknownAs.FALSE);
 
       // It's possible that after simplification that the expression is now always false.
       // Druid cannot handle such a filter.

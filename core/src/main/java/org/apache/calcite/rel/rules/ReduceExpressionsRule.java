@@ -52,6 +52,7 @@ import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexSubQuery;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexUtil.ExprSimplifier;
 import org.apache.calcite.rex.RexVisitorImpl;
@@ -537,8 +538,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
         new RexSimplify(rexBuilder, predicates, executor);
 
     // Simplify predicates in place
-    final RexSimplify.UnknownAs unknownAs =
-        RexSimplify.UnknownAs.falseIf(unknownAsFalse);
+    final RexUnknownAs unknownAs = RexUnknownAs.falseIf(unknownAsFalse);
     boolean reduced = reduceExpressionsInternal(rel, simplify, unknownAs,
         expList, predicates);
 
@@ -557,8 +557,8 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
   }
 
   protected static boolean reduceExpressionsInternal(RelNode rel,
-      RexSimplify simplify, RexSimplify.UnknownAs unknownAs,
-      List<RexNode> expList, RelOptPredicateList predicates) {
+      RexSimplify simplify, RexUnknownAs unknownAs, List<RexNode> expList,
+      RelOptPredicateList predicates) {
     boolean changed = false;
     // Replace predicates on CASE to CASE on predicates.
     changed |= new CaseShuttle().mutate(expList);
@@ -758,14 +758,14 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
    */
   protected static class RexReplacer extends RexShuttle {
     private final RexSimplify simplify;
-    private RexSimplify.UnknownAs unknownAs;
+    private final RexUnknownAs unknownAs;
     private final List<RexNode> reducibleExps;
     private final List<RexNode> reducedValues;
     private final List<Boolean> addCasts;
 
     RexReplacer(
         RexSimplify simplify,
-        RexSimplify.UnknownAs unknownAs,
+        RexUnknownAs unknownAs,
         List<RexNode> reducibleExps,
         List<RexNode> reducedValues,
         List<Boolean> addCasts) {

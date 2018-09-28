@@ -18,7 +18,7 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.test.RexImplicationCheckerTest.Fixture;
 import org.apache.calcite.util.DateString;
@@ -702,7 +702,7 @@ public class DateRangeRulesTest {
       Matcher<String> matcher, Matcher<String> simplifyMatcher) {
     e = DateRangeRules.replaceTimeUnits(f.rexBuilder, e, timeZone);
     assertThat(e.toString(), matcher);
-    final RexNode e2 = f.simplify.simplify(e, RexSimplify.UnknownAs.UNKNOWN);
+    final RexNode e2 = f.simplify.simplify(e, RexUnknownAs.UNKNOWN);
     assertThat(e2.toString(), simplifyMatcher);
   }
 

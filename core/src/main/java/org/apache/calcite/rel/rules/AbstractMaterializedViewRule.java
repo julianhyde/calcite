@@ -53,6 +53,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexTableInputRef.RelTableRef;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunction;
@@ -248,7 +249,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         final RexNode pred = simplify.simplify(
             RexUtil.composeConjunction(rexBuilder,
                 queryPredicateList.pulledUpPredicates),
-            RexSimplify.UnknownAs.FALSE);
+            RexUnknownAs.FALSE);
         final Triple<RexNode, RexNode, RexNode> queryPreds =
             splitPredicates(rexBuilder, pred);
 
@@ -295,7 +296,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
           final RexNode viewPred = simplify.simplify(
               RexUtil.composeConjunction(rexBuilder,
                   viewPredicateList.pulledUpPredicates),
-              RexSimplify.UnknownAs.FALSE);
+              RexUnknownAs.FALSE);
           final Triple<RexNode, RexNode, RexNode> viewPreds =
               splitPredicates(rexBuilder, viewPred);
 
@@ -513,7 +514,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
               RelNode viewWithFilter;
               if (!viewCompensationPred.isAlwaysTrue()) {
                 RexNode newPred = simplify.simplify(viewCompensationPred,
-                    RexSimplify.UnknownAs.FALSE);
+                    RexUnknownAs.FALSE);
                 viewWithFilter = builder.push(view).filter(newPred).build();
                 // We add (and push) the filter to the view plan before triggering the rewriting.
                 // This is useful in case some of the columns can be folded to same value after
@@ -760,8 +761,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       RelNode rewrittenPlan = relBuilder
           .push(target)
           .filter(
-              simplify.simplify(queryCompensationPred,
-                  RexSimplify.UnknownAs.FALSE))
+              simplify.simplify(queryCompensationPred, RexUnknownAs.FALSE))
           .build();
       if (unionRewritingPullProgram != null) {
         rewrittenPlan = newNode.copy(
@@ -1152,8 +1152,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
       RelNode rewrittenPlan = relBuilder
           .push(target)
           .filter(
-              simplify.simplify(queryCompensationPred,
-                  RexSimplify.UnknownAs.FALSE))
+              simplify.simplify(queryCompensationPred, RexUnknownAs.FALSE))
           .build();
       if (unionRewritingPullProgram != null) {
         return aggregate.copy(aggregate.getTraitSet(),
@@ -1600,7 +1599,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         final RexNode e = Iterables.getOnlyElement(s);
         // Rewrite expr to be expressed on query tables
         final RexNode simplified =
-            simplify.simplify(e, RexSimplify.UnknownAs.FALSE);
+            simplify.simplify(e, RexUnknownAs.FALSE);
         RexNode expr = RexUtil.swapTableColumnReferences(rexBuilder,
             simplified,
             tableMapping.inverse(),
@@ -1633,7 +1632,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
             // Then we simplify the expression and we add it to the expressions lineage so we
             // can try to find a match
             final RexNode simplified =
-                simplify.simplify(ceilExpr, RexSimplify.UnknownAs.FALSE);
+                simplify.simplify(ceilExpr, RexUnknownAs.FALSE);
             exprsLineage.put(simplified.toString(),
                 target.getRowType().getFieldCount() + additionalExprs.size() - 1);
           }
@@ -1651,7 +1650,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
             // Then we simplify the expression and we add it to the expressions lineage so we
             // can try to find a match
             final RexNode simplified =
-                simplify.simplify(floorExpr, RexSimplify.UnknownAs.FALSE);
+                simplify.simplify(floorExpr, RexUnknownAs.FALSE);
             exprsLineage.put(simplified.toString(),
                 target.getRowType().getFieldCount() + additionalExprs.size() - 1);
           }
@@ -1669,7 +1668,7 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         final RexNode e = Iterables.getOnlyElement(s);
         // Rewrite expr to be expressed on query tables
         final RexNode simplified =
-            simplify.simplify(e, RexSimplify.UnknownAs.FALSE);
+            simplify.simplify(e, RexUnknownAs.FALSE);
         RexNode targetExpr = RexUtil.swapColumnReferences(rexBuilder,
             simplified, equivalenceClassesMap);
         Collection<Integer> c = exprsLineage.get(targetExpr.toString());

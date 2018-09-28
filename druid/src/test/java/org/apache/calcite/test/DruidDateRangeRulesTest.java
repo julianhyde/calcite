@@ -20,7 +20,7 @@ import org.apache.calcite.adapter.druid.DruidDateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rel.rules.DateRangeRules;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.test.RexImplicationCheckerTest.Fixture;
 import org.apache.calcite.util.TimestampString;
@@ -151,7 +151,7 @@ public class DruidDateRangeRulesTest {
 
   private void checkDateRange(Fixture f, RexNode e, Matcher<String> intervalMatcher) {
     e = DateRangeRules.replaceTimeUnits(f.rexBuilder, e, "UTC");
-    final RexNode e2 = f.simplify.simplify(e, RexSimplify.UnknownAs.UNKNOWN);
+    final RexNode e2 = f.simplify.simplify(e, RexUnknownAs.UNKNOWN);
     List<Interval> intervals =
         DruidDateTimeUtils.createInterval(e2);
     if (intervals == null) {

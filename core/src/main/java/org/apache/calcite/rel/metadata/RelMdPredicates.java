@@ -43,6 +43,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexPermuteInputsShuttle;
 import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
@@ -61,7 +62,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -75,6 +75,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import javax.annotation.Nonnull;
 
 /**
  * Utility to infer Predicates that are applicable above a RelNode.
@@ -405,7 +406,7 @@ public class RelMdPredicates
         Util.first(cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR);
     final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
     RexNode disjPred = new RexSimplify(rexBuilder, predicates, executor)
-        .simplifyOrs(finalResidualPreds, RexSimplify.UnknownAs.FALSE);
+        .simplifyOrs(finalResidualPreds, RexUnknownAs.FALSE);
     if (!disjPred.isAlwaysTrue()) {
       preds.add(disjPred);
     }
@@ -676,7 +677,7 @@ public class RelMdPredicates
           // some duplicates in in result pulledUpPredicates
           RexNode simplifiedTarget =
               simplify.simplifyFilterPredicates(RelOptUtil.conjunctions(tr),
-                  RexSimplify.UnknownAs.FALSE);
+                  RexUnknownAs.FALSE);
           if (checkTarget(inferringFields, allExprsDigests, tr)
               && checkTarget(inferringFields, allExprsDigests, simplifiedTarget)) {
             inferredPredicates.add(simplifiedTarget);
