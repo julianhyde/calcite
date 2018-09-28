@@ -370,7 +370,7 @@ public class RexSimplify {
       if (Predicate.of(t) == null) {
         continue;
       }
-      terms.set(i, simplify.simplify(t, UNKNOWN));
+      terms.set(i, simplify.simplify_(t, UNKNOWN));
       RelOptPredicateList newPredicates = simplify.predicates.union(rexBuilder,
           RelOptPredicateList.of(rexBuilder, terms.subList(i, i + 1)));
       simplify = simplify.withPredicates(newPredicates);
@@ -380,7 +380,7 @@ public class RexSimplify {
       if (Predicate.of(t) != null) {
         continue;
       }
-      terms.set(i, simplify.simplify(t, UNKNOWN));
+      terms.set(i, simplify.simplify_(t, UNKNOWN));
     }
   }
 
@@ -395,10 +395,10 @@ public class RexSimplify {
       if (Predicate.of(t) == null) {
         continue;
       }
-      final RexNode t2 = simplify.simplify(t, RexUnknownAs.UNKNOWN);
+      final RexNode t2 = simplify.simplify_(t, RexUnknownAs.UNKNOWN);
       terms.set(i, t2);
       final RexNode inverse =
-          simplify.simplify(rexBuilder.makeCall(SqlStdOperatorTable.NOT, t2),
+          simplify.simplify_(rexBuilder.makeCall(SqlStdOperatorTable.NOT, t2),
               RexUnknownAs.UNKNOWN);
       final RelOptPredicateList newPredicates = simplify.predicates.union(rexBuilder,
           RelOptPredicateList.of(rexBuilder, ImmutableList.of(inverse)));
@@ -409,7 +409,7 @@ public class RexSimplify {
       if (Predicate.of(t) != null) {
         continue;
       }
-      terms.set(i, simplify.simplify(t, RexUnknownAs.UNKNOWN));
+      terms.set(i, simplify.simplify_(t, RexUnknownAs.UNKNOWN));
     }
   }
 
@@ -1112,7 +1112,7 @@ public class RexSimplify {
     } else if (range2.equals(Range.all())) {
       // Range is always satisfied given these predicates; but nullability might
       // be problematic
-      return simplify(
+      return simplify_(
           rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, comparison.ref),
           RexUnknownAs.UNKNOWN);
     } else if (range2.lowerEndpoint().equals(range2.upperEndpoint())) {

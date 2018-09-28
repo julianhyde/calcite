@@ -2240,6 +2240,16 @@ public class RexProgramTest extends RexProgramBuilderBase {
         "AND(NOT(?0.bool0), NOT(?0.bool1))");
   }
 
+  @Test public void testSimplifyAndNot() {
+    // "x > 1 AND NOT (y > 2)"
+    checkSimplify(and(gt(vInt(1), literal(1)), not(gt(vInt(2), literal(2)))),
+        "AND(>(?0.int1, 1), <=(?0.int2, 2))");
+    // "x = 1 AND NOT (y >= y)"
+    checkSimplify2(and(eq(vInt(1), vInt(1)), not(ge(vInt(2), vInt(2)))),
+        "AND(=(?0.int1, ?0.int1), <(?0.int2, ?0.int2))",
+        "=(?0.int1, ?0.int1)");
+  }
+
   private RexNode simplify(RexNode e) {
     final RexSimplify simplify =
         new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR)
