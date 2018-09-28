@@ -125,7 +125,8 @@ public class RexProgramBuilder {
         : Pair.zip(projectList, fieldList)) {
       final RexNode project;
       if (simplify != null) {
-        project = simplify.simplify(pair.left.accept(expander));
+        project = simplify.simplify(pair.left.accept(expander),
+            RexSimplify.UnknownAs.UNKNOWN);
       } else {
         project = pair.left;
       }
@@ -139,7 +140,8 @@ public class RexProgramBuilder {
       if (simplify != null) {
         condition = simplify.simplify(
             rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE,
-                condition.accept(expander)));
+                condition.accept(expander)),
+            RexSimplify.UnknownAs.UNKNOWN);
         if (condition.isAlwaysTrue()) {
           condition = null;
         }
@@ -325,9 +327,8 @@ public class RexProgramBuilder {
    */
   private RexLocalRef registerInternal(RexNode expr, boolean force) {
     final RexSimplify simplify =
-        new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, false,
-            RexUtil.EXECUTOR);
-    expr = simplify.simplify(expr);
+        new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR);
+    expr = simplify.simplify(expr, RexSimplify.UnknownAs.UNKNOWN);
 
     RexLocalRef ref;
     final Pair<String, String> key;
@@ -550,7 +551,7 @@ public class RexProgramBuilder {
       boolean simplify_) {
     RexSimplify simplify = null;
     if (simplify_) {
-      simplify = new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, false,
+      simplify = new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY,
           RexUtil.EXECUTOR);
     }
     return new RexProgramBuilder(rexBuilder, inputRowType, exprList,

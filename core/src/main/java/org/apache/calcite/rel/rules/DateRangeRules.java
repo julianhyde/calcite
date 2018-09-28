@@ -506,7 +506,7 @@ public abstract class DateRangeRules {
             rexBuilder.makeCall(op, operand,
                 dateTimeLiteral(rexBuilder, r.upperEndpoint(), operand)));
       }
-      return RexUtil.composeConjunction(rexBuilder, nodes, false);
+      return RexUtil.composeConjunction(rexBuilder, nodes);
     }
 
     private RexLiteral dateTimeLiteral(RexBuilder rexBuilder, Calendar calendar,

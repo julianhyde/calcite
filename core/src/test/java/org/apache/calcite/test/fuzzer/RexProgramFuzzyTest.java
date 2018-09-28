@@ -19,6 +19,7 @@ package org.apache.calcite.test.fuzzer;
 import org.apache.calcite.plan.Strong;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -168,7 +169,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
     String uaf = unknownAsFalse ? "unknownAsFalse " : "";
     try {
       long start = System.nanoTime();
-      opt = this.simplify.withUnknownAsFalse(unknownAsFalse).simplify(node);
+      opt = simplify.simplify(node, RexSimplify.UnknownAs.falseIf(unknownAsFalse));
       long end = System.nanoTime();
       if (end - start > 1000 && slowestTasks != null) {
         slowestTasks.add(new SimplifyTask(node, currentSeed, opt, end - start));

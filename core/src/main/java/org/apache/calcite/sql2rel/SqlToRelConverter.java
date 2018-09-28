@@ -1443,8 +1443,7 @@ public class SqlToRelConverter {
                     Pair.zip(leftKeys, call.getOperandList()),
                     pair -> rexBuilder.makeCall(comparisonOp, pair.left,
                         ensureSqlType(pair.left.getType(),
-                            bb.convertExpression(pair.right)))),
-                false);
+                            bb.convertExpression(pair.right)))));
       }
       comparisons.add(rexComparison);
     }
@@ -2653,7 +2652,7 @@ public class SqlToRelConverter {
       }
       list.add(rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, operands));
     }
-    return RexUtil.composeConjunction(rexBuilder, list, false);
+    return RexUtil.composeConjunction(rexBuilder, list);
   }
 
   private static JoinRelType convertJoinType(JoinType joinType) {

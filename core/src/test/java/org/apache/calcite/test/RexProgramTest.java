@@ -146,24 +146,28 @@ public class RexProgramTest extends RexProgramBuilderBase {
    */
   private void checkSimplify2(RexNode node, String expected,
       String expectedFalse) {
-    assertThat(simplify.simplify(node).toString(),
-        equalTo(expected));
+    final RexNode simplified =
+        simplify.simplify(node, RexSimplify.UnknownAs.UNKNOWN);
+    assertThat(simplified.toString(), equalTo(expected));
     if (node.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
-      assertThat(simplify.withUnknownAsFalse(true).simplify(node).toString(),
-          equalTo(expectedFalse));
+      final RexNode simplified2 =
+          simplify.simplify(node, RexSimplify.UnknownAs.FALSE);
+      assertThat(simplified2.toString(), equalTo(expectedFalse));
     }
   }
 
   private void checkSimplifyFilter(RexNode node, String expected) {
-    assertThat(simplify.withUnknownAsFalse(true).simplify(node).toString(),
-        equalTo(expected));
+    final RexNode simplified =
+        this.simplify.simplify(node, RexSimplify.UnknownAs.FALSE);
+    assertThat(simplified.toString(), equalTo(expected));
   }
 
   private void checkSimplifyFilter(RexNode node, RelOptPredicateList predicates,
       String expected) {
-    assertThat(simplify.withUnknownAsFalse(true).withPredicates(predicates)
-            .simplify(node).toString(),
-        equalTo(expected));
+    final RexNode simplified =
+        simplify.withPredicates(predicates)
+            .simplify(node, RexSimplify.UnknownAs.FALSE);
+    assertThat(simplified.toString(), equalTo(expected));
   }
 
   /** Returns the number of nodes (including leaves) in a Rex tree. */
@@ -1290,8 +1294,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         "AND(=(?0.a, 1), =(?0.b, 1))");
 
     // as previous, using simplifyFilterPredicates
-    assertThat(simplify.withUnknownAsFalse(true)
-            .simplifyFilterPredicates(args)
+    assertThat(simplify
+            .simplifyFilterPredicates(args, RexSimplify.UnknownAs.FALSE)
             .toString(),
         equalTo("AND(=(?0.a, 1), =(?0.b, 1))"));
 
@@ -1300,8 +1304,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         ImmutableList.of(eq(aRef, literal1), eq(aRef, literal10));
     checkSimplifyFilter(and(args2), "false");
 
-    assertThat(simplify.withUnknownAsFalse(true)
-            .simplifyFilterPredicates(args2),
+    assertThat(simplify
+            .simplifyFilterPredicates(args2, RexSimplify.UnknownAs.FALSE),
         nullValue());
 
     // equality on constants, can remove the equality on the variables
@@ -1547,7 +1551,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
     // We cannot simplify "b != 1 or b = 1" to "true" because if b is null, the
     // result is unknown.
     // TODO: "b is not unknown" would be the best simplification.
-    assertThat(simplify.withUnknownAsFalse(false).simplify(neOrEq).toString(),
+    final RexNode simplified =
+        this.simplify.simplify(neOrEq, RexSimplify.UnknownAs.UNKNOWN);
+    assertThat(simplified.toString(),
         equalTo("OR(<>(?0.b, 1), IS NOT NULL(?0.b))"));
 
     // "a is null or a is not null" ==> "true"
@@ -1689,7 +1695,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         rexBuilder.makeLiteral("S"));
     RexCall caseNode = (RexCall) case_(condition, trueLiteral, falseLiteral);
 
-    RexCall result = (RexCall) simplify.simplify(caseNode);
+    final RexCall result =
+        (RexCall) simplify.simplify(caseNode, RexSimplify.UnknownAs.UNKNOWN);
     assertThat(result.getType().isNullable(), is(false));
     assertThat(result.getType().getSqlTypeName(), is(SqlTypeName.BOOLEAN));
     assertThat(result.getOperator(), is((SqlOperator) SqlStdOperatorTable.CASE));
@@ -1703,7 +1710,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
     RexNode condition = eq(input(tVarchar(), 0), literal("S"));
     RexNode caseNode = case_(condition, trueLiteral, falseLiteral);
 
-    RexCall result = (RexCall) simplify.simplify(caseNode);
+    RexCall result =
+        (RexCall) simplify.simplify(caseNode, RexSimplify.UnknownAs.UNKNOWN);
     assertThat(result.getType().isNullable(), is(false));
     assertThat(result.getType().getSqlTypeName(), is(SqlTypeName.BOOLEAN));
     assertThat(result, is(condition));
@@ -1713,7 +1721,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
     RexNode condition = eq(input(tVarchar(), 0), literal("S"));
     RexNode caseNode = case_(condition, literal("A"), literal("B"));
 
-    RexCall result = (RexCall) simplify.simplify(caseNode);
+    RexCall result =
+        (RexCall) simplify.simplify(caseNode, RexSimplify.UnknownAs.UNKNOWN);
     assertThat(result.getType().isNullable(), is(false));
     assertThat(result.getType().getSqlTypeName(), is(SqlTypeName.CHAR));
     assertThat(result, is(caseNode));
@@ -1730,7 +1739,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         and(rexBuilder.makeInputRef(booleanNotNullableType, 0),
             rexBuilder.makeInputRef(booleanNullableType, 1),
             rexBuilder.makeInputRef(booleanNotNullableType, 2));
-    RexNode result = simplify.simplify(andCondition);
+    RexNode result =
+        simplify.simplify(andCondition, RexSimplify.UnknownAs.UNKNOWN);
     assertThat(result.getType().isNullable(), is(true));
     assertThat(result.getType().getSqlTypeName(), is(SqlTypeName.BOOLEAN));
   }
@@ -1843,7 +1853,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
               assertThat(cast.getType(), is(toType));
               continue; // makeCast already simplified
             }
-            final RexNode simplified = simplify.simplify(cast);
+            final RexNode simplified =
+                simplify.simplify(cast, RexSimplify.UnknownAs.UNKNOWN);
             boolean expectedSimplify =
                 literal.getTypeName() != toType.getSqlTypeName()
                 || (literal.getTypeName() == SqlTypeName.CHAR
@@ -2232,9 +2243,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
   private RexNode simplify(RexNode e) {
     final RexSimplify simplify =
-        new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, false,
-            RexUtil.EXECUTOR).withParanoid(true);
-    return simplify.simplify(e);
+        new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR)
+            .withParanoid(true);
+    return simplify.simplify(e, RexSimplify.UnknownAs.UNKNOWN);
   }
 
   @Test public void testInterpreter() {

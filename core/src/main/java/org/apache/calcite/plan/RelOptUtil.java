@@ -877,7 +877,7 @@ public abstract class RelOptUtil {
         nonEquiList);
 
     return RexUtil.composeConjunction(
-        left.getCluster().getRexBuilder(), nonEquiList, false);
+        left.getCluster().getRexBuilder(), nonEquiList);
   }
 
   @Deprecated // to be removed before 2.0
@@ -983,7 +983,7 @@ public abstract class RelOptUtil {
 
     // Convert the remainders into a list that are AND'ed together.
     return RexUtil.composeConjunction(
-        inputs.get(0).getCluster().getRexBuilder(), nonEquiList, false);
+        inputs.get(0).getCluster().getRexBuilder(), nonEquiList);
   }
 
   @Deprecated // to be removed before 2.0
@@ -1272,8 +1272,7 @@ public abstract class RelOptUtil {
           @Override public int size() {
             return leftKeys.size();
           }
-        },
-        false);
+        });
   }
 
   public static SqlOperator op(SqlKind kind, SqlOperator operator) {
@@ -3425,10 +3424,8 @@ public abstract class RelOptUtil {
         new RexImplicationChecker(rexBuilder, (RexExecutorImpl) executor,
             rowType);
     final RexNode first =
-        RexUtil.composeConjunction(rexBuilder, predicates.pulledUpPredicates,
-            false);
-    final RexNode second =
-        RexUtil.composeConjunction(rexBuilder, list, false);
+        RexUtil.composeConjunction(rexBuilder, predicates.pulledUpPredicates);
+    final RexNode second = RexUtil.composeConjunction(rexBuilder, list);
     // Suppose we have EMP(empno INT NOT NULL, mgr INT),
     // and predicates [empno > 0, mgr > 0].
     // We make first: "empno > 0 AND mgr > 0"
