@@ -61,6 +61,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -710,7 +711,7 @@ public class RelMdPredicates
       b.set(p1);
     }
 
-    RexNode compose(RexBuilder rexBuilder, Iterable<RexNode> exprs) {
+    @Nonnull RexNode compose(RexBuilder rexBuilder, Iterable<RexNode> exprs) {
       exprs = Linq4j.asEnumerable(exprs).where(Objects::nonNull);
       return RexUtil.composeConjunction(rexBuilder, exprs);
     }

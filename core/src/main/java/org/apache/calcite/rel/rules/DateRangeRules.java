@@ -65,6 +65,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 
 /**
  * Collection of planner rules that convert
@@ -488,7 +489,7 @@ public abstract class DateRangeRules {
       }
     }
 
-    private RexNode toRex(RexNode operand, Range<Calendar> r) {
+    private @Nonnull RexNode toRex(RexNode operand, Range<Calendar> r) {
       final List<RexNode> nodes = new ArrayList<>();
       if (r.hasLowerBound()) {
         final SqlBinaryOperator op = r.lowerBoundType() == BoundType.CLOSED

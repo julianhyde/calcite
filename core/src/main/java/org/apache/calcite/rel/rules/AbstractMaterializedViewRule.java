@@ -426,11 +426,10 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
                 continue;
               }
               RexNode compensationColumnsEquiPred = compensationPreds.getLeft();
-              RexNode otherCompensationPred = RexUtil.composeConjunction(
-                  rexBuilder,
-                  ImmutableList.of(
-                      compensationPreds.getMiddle(),
-                      compensationPreds.getRight()));
+              RexNode otherCompensationPred =
+                  RexUtil.composeConjunction(rexBuilder,
+                      ImmutableList.of(compensationPreds.getMiddle(),
+                          compensationPreds.getRight()));
               assert !compensationColumnsEquiPred.isAlwaysTrue()
                   || !otherCompensationPred.isAlwaysTrue();
 
@@ -465,11 +464,10 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
               call.transformTo(result);
             } else if (compensationPreds != null) {
               RexNode compensationColumnsEquiPred = compensationPreds.getLeft();
-              RexNode otherCompensationPred = RexUtil.composeConjunction(
-                  rexBuilder,
-                  ImmutableList.of(
-                      compensationPreds.getMiddle(),
-                      compensationPreds.getRight()));
+              RexNode otherCompensationPred =
+                  RexUtil.composeConjunction(rexBuilder,
+                      ImmutableList.of(compensationPreds.getMiddle(),
+                          compensationPreds.getRight()));
 
               // a. Compute final compensation predicate.
               if (!compensationColumnsEquiPred.isAlwaysTrue()
@@ -754,10 +752,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         }
       }
       final RexNode queryCompensationPred = RexUtil.not(
-          RexUtil.composeConjunction(
-              rexBuilder,
-              ImmutableList.of(
-                  compensationColumnsEquiPred,
+          RexUtil.composeConjunction(rexBuilder,
+              ImmutableList.of(compensationColumnsEquiPred,
                   otherCompensationPred)));
 
       // Generate query rewriting.
@@ -1148,10 +1144,8 @@ public abstract class AbstractMaterializedViewRule extends RelOptRule {
         }
       }
       final RexNode queryCompensationPred = RexUtil.not(
-          RexUtil.composeConjunction(
-              rexBuilder,
-              ImmutableList.of(
-                  compensationColumnsEquiPred,
+          RexUtil.composeConjunction(rexBuilder,
+              ImmutableList.of(compensationColumnsEquiPred,
                   otherCompensationPred)));
 
       // Generate query rewriting.
