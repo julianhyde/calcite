@@ -28,6 +28,17 @@ public enum RexUnknownAs {
   public static RexUnknownAs falseIf(boolean unknownAsFalse) {
     return unknownAsFalse ? FALSE : UNKNOWN;
   }
+
+  public boolean toBoolean() {
+    switch (this) {
+    case FALSE:
+      return false;
+    case TRUE:
+      return true;
+    default:
+      throw new IllegalArgumentException("unknown");
+    }
+  }
 }
 
 // End RexUnknownAs.java

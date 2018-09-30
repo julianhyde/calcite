@@ -213,9 +213,12 @@ public class RexSimplify {
     if (strong.isNull(e)) {
       // Only boolean NULL (aka UNKNOWN) can be converted to FALSE. Even in
       // unknownAs=FALSE mode, we must not convert a NULL integer (say) to FALSE
-      if (unknownAs == FALSE
-          && e.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
-        return rexBuilder.makeLiteral(false);
+      if (e.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
+        switch (unknownAs) {
+        case FALSE:
+        case TRUE:
+          return rexBuilder.makeLiteral(unknownAs.toBoolean());
+        }
       }
       return rexBuilder.makeNullLiteral(e.getType());
     }
@@ -792,8 +795,9 @@ public class RexSimplify {
 
     simplifyList(notTerms, UNKNOWN); // TODO could be unknownAs.negate()?
 
-    if (unknownAs == FALSE) {
-      return simplifyAnd2ForUnknownAsFalse(terms, notTerms);
+    switch (unknownAs) {
+    case FALSE:
+      return simplifyAnd2ForUnknownAsFalse(terms, notTerms, Comparable.class);
     }
     return simplifyAnd2(terms, notTerms);
   }
@@ -1262,13 +1266,16 @@ public class RexSimplify {
       if (v1 == null) {
         throw new AssertionError("interpreter returned null for " + foo1.e);
       }
-      if (unknownAs == FALSE
-          && before.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
-        if (v0 == NullSentinel.INSTANCE) {
-          v0 = false;
-        }
-        if (v1 == NullSentinel.INSTANCE) {
-          v1 = false;
+      if (before.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
+        switch (unknownAs) {
+        case FALSE:
+        case TRUE:
+          if (v0 == NullSentinel.INSTANCE) {
+            v0 = unknownAs.toBoolean();
+          }
+          if (v1 == NullSentinel.INSTANCE) {
+            v1 = unknownAs.toBoolean();
+          }
         }
       }
       if (!v0.equals(v1)) {

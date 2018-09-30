@@ -1022,6 +1022,7 @@ public class RexUtil {
    * Converts a collection of expressions into an AND.
    * If there are zero expressions, returns TRUE.
    * If there is one expression, returns just that expression.
+   * If any of the expressions are FALSE, returns FALSE.
    * Removes expressions that always evaluate to TRUE.
    * Returns null only if {@code nullOnEmpty} and expression is TRUE.
    */
@@ -1036,6 +1037,9 @@ public class RexUtil {
     case 1:
       return list.get(0);
     default:
+      if (containsFalse(list)) {
+        return rexBuilder.makeLiteral(false);
+      }
       return rexBuilder.makeCall(SqlStdOperatorTable.AND, list);
     }
   }
@@ -1078,6 +1082,7 @@ public class RexUtil {
    * Converts a collection of expressions into an OR.
    * If there are zero expressions, returns FALSE.
    * If there is one expression, returns just that expression.
+   * If any of the expressions are TRUE, returns TRUE.
    * Removes expressions that always evaluate to FALSE.
    * Flattens expressions that are ORs.
    */
@@ -1102,6 +1107,9 @@ public class RexUtil {
     case 1:
       return list.get(0);
     default:
+      if (containsTrue(list)) {
+        return rexBuilder.makeLiteral(true);
+      }
       return rexBuilder.makeCall(SqlStdOperatorTable.OR, list);
     }
   }
@@ -1800,7 +1808,6 @@ public class RexUtil {
   @Deprecated // to be removed before 2.0
   public static RexNode simplifyAnd2ForUnknownAsFalse(RexBuilder rexBuilder,
       List<RexNode> terms, List<RexNode> notTerms) {
-    final Class<Comparable> clazz = Comparable.class;
     return new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, EXECUTOR)
         .simplifyAnd2ForUnknownAsFalse(terms, notTerms);
   }
@@ -1907,6 +1914,24 @@ public class RexUtil {
     assert call.getKind() == SqlKind.CASE;
     return i < call.operands.size() - 1
         && (call.operands.size() - i) % 2 == 1;
+  }
+
+  private static boolean containsFalse(Iterable<RexNode> nodes) {
+    for (RexNode node : nodes) {
+      if (node.isAlwaysFalse()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean containsTrue(Iterable<RexNode> nodes) {
+    for (RexNode node : nodes) {
+      if (node.isAlwaysTrue()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Returns a function that applies NOT to its argument.
