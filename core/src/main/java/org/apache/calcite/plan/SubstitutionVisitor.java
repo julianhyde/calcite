@@ -43,7 +43,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
-import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -294,7 +293,7 @@ public class SubstitutionVisitor {
       RexNode x2 = RexUtil.composeConjunction(rexBuilder,
           ImmutableList.of(condition2, target2));
       RexNode r = canonizeNode(rexBuilder,
-          simplify.simplify(x2, RexUnknownAs.FALSE));
+          simplify.simplifyUnknownAsFalse(x2));
       if (!r.isAlwaysFalse() && isEquivalent(rexBuilder, condition2, r)) {
         List<RexNode> conjs = RelOptUtil.conjunctions(r);
         for (RexNode e : RelOptUtil.conjunctions(target2)) {

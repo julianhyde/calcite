@@ -1666,7 +1666,7 @@ public class RexUtil {
   public static RexNode simplifyPreservingType(RexBuilder rexBuilder,
       RexNode e) {
     return new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, EXECUTOR)
-        .simplifyPreservingType(e, RexUnknownAs.UNKNOWN);
+        .simplifyPreservingType(e);
   }
 
   /**
@@ -1679,7 +1679,7 @@ public class RexUtil {
   @Deprecated // to be removed before 2.0
   public static RexNode simplify(RexBuilder rexBuilder, RexNode e) {
     return new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, EXECUTOR)
-        .simplify(e, RexUnknownAs.UNKNOWN);
+        .simplify(e);
   }
 
   /**
@@ -1710,7 +1710,7 @@ public class RexUtil {
   public static RexNode simplify(RexBuilder rexBuilder, RexNode e,
       boolean unknownAsFalse) {
     return new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, EXECUTOR)
-        .simplify(e, RexUnknownAs.falseIf(unknownAsFalse));
+        .simplifyUnknownAs(e, RexUnknownAs.falseIf(unknownAsFalse));
   }
 
   /**
@@ -1843,14 +1843,14 @@ public class RexUtil {
   @Deprecated // to be removed before 2.0
   public static RexNode simplifyOr(RexBuilder rexBuilder, RexCall call) {
     return new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, EXECUTOR)
-        .simplifyOr(call, RexUnknownAs.UNKNOWN);
+        .simplifyOr(call);
   }
 
   @Deprecated // to be removed before 2.0
   public static RexNode simplifyOrs(RexBuilder rexBuilder,
       List<RexNode> terms) {
     return new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, EXECUTOR)
-        .simplifyOrs(terms, RexUnknownAs.UNKNOWN);
+        .simplifyOrs(terms);
   }
 
   /**

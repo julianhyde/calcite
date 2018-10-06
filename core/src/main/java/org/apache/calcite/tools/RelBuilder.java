@@ -61,7 +61,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
-import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
@@ -562,7 +561,7 @@ public class RelBuilder {
    * {@code e AND TRUE} becomes {@code e};
    * {@code e AND e2 AND NOT e} becomes {@code e2}. */
   public RexNode and(Iterable<? extends RexNode> operands) {
-    return simplifier.simplifyAnds(operands, RexUnknownAs.UNKNOWN);
+    return simplifier.simplifyAnds(operands);
   }
 
   /** Creates an OR. */
@@ -926,8 +925,7 @@ public class RelBuilder {
    * If the result is TRUE no filter is created. */
   public RelBuilder filter(Iterable<? extends RexNode> predicates) {
     final RexNode simplifiedPredicates =
-        simplifier.simplifyFilterPredicates(predicates,
-            RexUnknownAs.FALSE);
+        simplifier.simplifyFilterPredicates(predicates);
     if (simplifiedPredicates == null) {
       return empty();
     }
@@ -1069,9 +1067,7 @@ public class RelBuilder {
     // Simplify expressions.
     if (simplify) {
       for (int i = 0; i < nodeList.size(); i++) {
-        nodeList.set(i,
-            simplifier.simplifyPreservingType(nodeList.get(i),
-                RexUnknownAs.UNKNOWN));
+        nodeList.set(i, simplifier.simplifyPreservingType(nodeList.get(i)));
       }
     }
 

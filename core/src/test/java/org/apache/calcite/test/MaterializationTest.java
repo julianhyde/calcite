@@ -757,13 +757,13 @@ public class MaterializationTest {
 
   private void checkNotSatisfiable(RexNode e) {
     assertFalse(SubstitutionVisitor.mayBeSatisfiable(e));
-    final RexNode simple = simplify.simplify(e, RexUnknownAs.UNKNOWN);
+    final RexNode simple = simplify.simplifyUnknownAs(e, RexUnknownAs.UNKNOWN);
     assertFalse(RexLiteral.booleanValue(simple));
   }
 
   private void checkSatisfiable(RexNode e, String s) {
     assertTrue(SubstitutionVisitor.mayBeSatisfiable(e));
-    final RexNode simple = simplify.simplify(e, RexUnknownAs.UNKNOWN);
+    final RexNode simple = simplify.simplifyUnknownAs(e, RexUnknownAs.UNKNOWN);
     assertEquals(s, simple.toString());
   }
 
