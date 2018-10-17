@@ -373,7 +373,10 @@ public class RelToSqlConverterTest {
 
 
   private String unparseRelTree(RelNode root) {
-    SqlDialect dialect = SqlDialect.DatabaseProduct.CALCITE.getDialect();
+    return unparseRelTree(root, SqlDialect.DatabaseProduct.CALCITE.getDialect());
+  }
+
+  private static String unparseRelTree(RelNode root, SqlDialect dialect) {
     final RelToSqlConverter converter = new RelToSqlConverter(dialect);
     final SqlNode sqlNode = converter.visitChild(0, root).asStatement();
     return sqlNode.toSqlString(dialect).getSql();
@@ -2638,6 +2641,34 @@ public class RelToSqlConverterTest {
         callsUnparseCallOnSqlSelect[0], is(true));
   }
 
+  /** Tests aggregate queries on MySQL. MySQL does not support nested
+   * aggregates, so the {@link RelToSqlConverter} performs some extra
+   * checks, looking for aggregates in the input sub-query. */
+  @Test public void testNestedAggregatesMySqlTable() {
+    final RelNode root = empScan
+        .aggregate(builder.groupKey(), builder.count(false, "c", builder.field(3)))
+        .build();
+    final SqlDialect dialect = SqlDialect.DatabaseProduct.MYSQL.getDialect();
+    final String expectedSql = "SELECT COUNT(`MGR`) AS `c`\n"
+        + "FROM `scott`.`EMP`";
+    assertThat(unparseRelTree(root, dialect), isLinux(expectedSql));
+  }
+
+  /** As {@link #testNestedAggregatesMySqlTable()}, but input is a sub-query,
+   * not a table. */
+  @Test public void testNestedAggregatesMySqlStar() {
+    final RelNode root = empScan
+        .filter(builder.equals(builder.field("DEPTNO"), builder.literal(10)))
+        .aggregate(builder.groupKey(),
+            builder.count(false, "c", builder.field(3)))
+        .build();
+    final SqlDialect dialect = SqlDialect.DatabaseProduct.MYSQL.getDialect();
+    final String expectedSql = "SELECT COUNT(`MGR`) AS `c`\n"
+        + "FROM `scott`.`EMP`\n"
+        + "WHERE `DEPTNO` = 10";
+    assertThat(unparseRelTree(root, dialect), isLinux(expectedSql));
+  }
+
   /** Fluid interface to run tests. */
   static class Sql {
     private final SchemaPlus schema;
@@ -2742,10 +2773,7 @@ public class RelToSqlConverterTest {
         for (Function<RelNode, RelNode> transform : transforms) {
           rel = transform.apply(rel);
         }
-        final RelToSqlConverter converter =
-            new RelToSqlConverter(dialect);
-        final SqlNode sqlNode = converter.visitChild(0, rel).asStatement();
-        return sqlNode.toSqlString(dialect).getSql();
+        return unparseRelTree(rel, dialect);
       } catch (RuntimeException e) {
         throw e;
       } catch (Exception e) {
