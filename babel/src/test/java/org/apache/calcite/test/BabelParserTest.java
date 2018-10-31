@@ -42,6 +42,10 @@ public class BabelParserTest extends SqlParserTest {
     // by design, method only works in base class; no-ops in this sub-class
   }
 
+  @Test public void testReservedWords() {
+    assertThat(isReserved("escape"), is(false));
+  }
+
   /** {@inheritDoc}
    *
    * <p>Copy-pasted from base method, but with some key differences.

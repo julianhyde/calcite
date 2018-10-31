@@ -642,6 +642,14 @@ public class SqlParserTest {
     return keywords("c");
   }
 
+  /** Returns whether a word is reserved in this parser. This method can be
+   * used to disable tests that behave differently with different collections
+   * of reserved words. */
+  protected boolean isReserved(String word) {
+    SqlAbstractParserImpl.Metadata metadata = getSqlParser("").getMetadata();
+    return metadata.isReservedWord(word.toUpperCase(Locale.ROOT));
+  }
+
   protected static SortedSet<String> keywords(String dialect) {
     final ImmutableSortedSet.Builder<String> builder =
         ImmutableSortedSet.naturalOrder();
@@ -1328,10 +1336,12 @@ public class SqlParserTest {
         "values a similar to b like c similar to d escape e escape f",
         "VALUES (ROW((`A` SIMILAR TO (`B` LIKE (`C` SIMILAR TO `D` ESCAPE `E`) ESCAPE `F`))))");
 
-    // FIXME should fail at "escape"
-    checkFails(
-        "select * from t ^where^ escape 'e'",
-        "(?s).*Encountered \"where escape\" at .*");
+    if (isReserved("escape")) {
+      // FIXME should fail at "escape"
+      checkFails(
+          "select * from t ^where^ escape 'e'",
+          "(?s).*Encountered \"where escape\" at .*");
+    }
 
     // LIKE with +
     check(
@@ -1344,10 +1354,12 @@ public class SqlParserTest {
         "VALUES (ROW((`A` LIKE (`B` || `C`) ESCAPE `D`)))");
 
     // ESCAPE with no expression
-    // FIXME should fail at "escape"
-    checkFails(
-        "values a ^like^ escape d",
-        "(?s).*Encountered \"like escape\" at .*");
+    if (isReserved("escape")) {
+      // FIXME should fail at "escape"
+      checkFails(
+          "values a ^like^ escape d",
+          "(?s).*Encountered \"like escape\" at .*");
+    }
 
     // ESCAPE with no expression
     checkFails(
