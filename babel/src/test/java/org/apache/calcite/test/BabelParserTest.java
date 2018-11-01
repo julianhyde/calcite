@@ -129,6 +129,17 @@ public class BabelParserTest extends SqlParserTest {
         + "FROM `T`";
     sql("select as from t").ok(expected);
   }
+
+  /** In Babel, DESC is not reserved. */
+  @Test public void testDesc() {
+    final String sql = "select desc\n"
+        + "from t\n"
+        + "order by desc asc, desc desc";
+    final String expected = "SELECT `DESC`\n"
+        + "FROM `T`\n"
+        + "ORDER BY `DESC`, `DESC` DESC";
+    sql(sql).ok(expected);
+  }
 }
 
 // End BabelParserTest.java

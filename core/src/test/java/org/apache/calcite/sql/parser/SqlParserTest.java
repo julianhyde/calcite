@@ -1336,7 +1336,7 @@ public class SqlParserTest {
         "values a similar to b like c similar to d escape e escape f",
         "VALUES (ROW((`A` SIMILAR TO (`B` LIKE (`C` SIMILAR TO `D` ESCAPE `E`) ESCAPE `F`))))");
 
-    if (isReserved("escape")) {
+    if (isReserved("ESCAPE")) {
       // FIXME should fail at "escape"
       checkFails(
           "select * from t ^where^ escape 'e'",
@@ -1354,7 +1354,7 @@ public class SqlParserTest {
         "VALUES (ROW((`A` LIKE (`B` || `C`) ESCAPE `D`)))");
 
     // ESCAPE with no expression
-    if (isReserved("escape")) {
+    if (isReserved("ESCAPE")) {
       // FIXME should fail at "escape"
       checkFails(
           "values a ^like^ escape d",
@@ -1362,9 +1362,11 @@ public class SqlParserTest {
     }
 
     // ESCAPE with no expression
-    checkFails(
-        "values a like b || c ^escape^ and false",
-        "(?s).*Encountered \"escape and\" at line 1, column 22.*");
+    if (isReserved("ESCAPE")) {
+      checkFails(
+          "values a like b || c ^escape^ and false",
+          "(?s).*Encountered \"escape and\" at line 1, column 22.*");
+    }
 
     // basic SIMILAR TO
     check(
@@ -3529,23 +3531,33 @@ public class SqlParserTest {
   @Test public void testUpsertValues() {
     final String expected = "UPSERT INTO `EMPS`\n"
         + "VALUES (ROW(1, 'Fredkin'))";
-    sql("upsert into emps values (1,'Fredkin')")
-        .ok(expected)
-        .node(not(isDdl()));
+    final String sql = "upsert into emps values (1,'Fredkin')";
+    if (isReserved("UPSERT")) {
+      sql(sql)
+          .ok(expected)
+          .node(not(isDdl()));
+    }
   }
 
   @Test public void testUpsertSelect() {
-    sql("upsert into emps select * from emp as e")
-        .ok("UPSERT INTO `EMPS`\n"
-                + "(SELECT *\n"
-                + "FROM `EMP` AS `E`)");
+    final String sql = "upsert into emps select * from emp as e";
+    final String expected = "UPSERT INTO `EMPS`\n"
+        + "(SELECT *\n"
+        + "FROM `EMP` AS `E`)";
+    if (isReserved("UPSERT")) {
+      sql(sql).ok(expected);
+    }
   }
 
   @Test public void testExplainUpsert() {
-    sql("explain plan for upsert into emps1 values (1, 2)")
-        .ok("EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-            + "UPSERT INTO `EMPS1`\n"
-            + "VALUES (ROW(1, 2))");
+    final String sql = "explain plan for upsert into emps1 values (1, 2)";
+    final String expected = "EXPLAIN PLAN INCLUDING ATTRIBUTES"
+        + " WITH IMPLEMENTATION FOR\n"
+        + "UPSERT INTO `EMPS1`\n"
+        + "VALUES (ROW(1, 2))";
+    if (isReserved("UPSERT")) {
+      sql(sql).ok(expected);
+    }
   }
 
   @Test public void testDelete() {
@@ -3851,6 +3863,24 @@ public class SqlParserTest {
 
   @Test public void testReplace() {
     checkExp("replace('x', 'y', 'z')", "REPLACE('x', 'y', 'z')");
+  }
+
+  @Test public void testDateLiteral() {
+    final String expected = "SELECT DATE '1980-01-01'\n"
+        + "FROM `T`";
+    sql("select date '1980-01-01' from t").ok(expected);
+    final String expected1 = "SELECT TIME '00:00:00'\n"
+        + "FROM `T`";
+    sql("select time '00:00:00' from t").ok(expected1);
+    final String expected2 = "SELECT TIMESTAMP '1980-01-01 00:00:00'\n"
+        + "FROM `T`";
+    sql("select timestamp '1980-01-01 00:00:00' from t").ok(expected2);
+    final String expected3 = "SELECT INTERVAL '3' DAY\n"
+        + "FROM `T`";
+    sql("select interval '3' day from t").ok(expected3);
+    final String expected4 = "SELECT INTERVAL '5:6' HOUR TO MINUTE\n"
+        + "FROM `T`";
+    sql("select interval '5:6' hour to minute from t").ok(expected4);
   }
 
   // check date/time functions.
