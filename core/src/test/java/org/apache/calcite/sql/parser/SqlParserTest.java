@@ -3791,9 +3791,11 @@ public class SqlParserTest {
     checkExp(
         "nullif(v1,v2)",
         "(NULLIF(`V1`, `V2`))");
-    checkExpFails(
-        "1 + ^nullif^ + 3",
-        "(?s)Encountered \"nullif \\+\" at line 1, column 5.*");
+    if (isReserved("NULLIF")) {
+      checkExpFails(
+          "1 + ^nullif^ + 3",
+          "(?s)Encountered \"nullif \\+\" at line 1, column 5.*");
+    }
   }
 
   @Test public void testCoalesce() {

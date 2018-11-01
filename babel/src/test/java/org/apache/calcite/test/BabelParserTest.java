@@ -24,6 +24,7 @@ import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -78,12 +79,12 @@ public class BabelParserTest extends SqlParserTest {
     assertThat(metadata.isKeyword("BAR"), is(false));
 
     assertThat(metadata.isReservedWord("SELECT"), is(true));
-    assertThat(metadata.isReservedWord("CURRENT_CATALOG"), is(true));
-    assertThat(metadata.isReservedWord("CURRENT_SCHEMA"), is(true));
+    assertThat(metadata.isReservedWord("CURRENT_CATALOG"), is(false)); // was true
+    assertThat(metadata.isReservedWord("CURRENT_SCHEMA"), is(false)); // was true
     assertThat(metadata.isReservedWord("KEY"), is(false));
 
     String jdbcKeywords = metadata.getJdbcKeywords();
-    assertThat(jdbcKeywords.contains(",COLLECT,"), is(true));
+    assertThat(jdbcKeywords.contains(",COLLECT,"), is(false)); // was true
     assertThat(!jdbcKeywords.contains(",SELECT,"), is(true));
   }
 
@@ -104,11 +105,12 @@ public class BabelParserTest extends SqlParserTest {
   /** Tests that there are no reserved keywords. */
   @Ignore
   @Test public void testKeywords() {
+    final String[] reserved = {"AND", "ANY", "END-EXEC"};
     final StringBuilder sql = new StringBuilder("select ");
     final StringBuilder expected = new StringBuilder("SELECT ");
     for (String keyword : keywords(null)) {
       // Skip "END-EXEC"; I don't know how a keyword can contain '-'
-      if (!keyword.equals("END-EXEC")) {
+      if (!Arrays.asList(reserved).contains(keyword)) {
         sql.append("1 as ").append(keyword).append(", ");
         expected.append("1 as `").append(keyword.toUpperCase(Locale.ROOT))
             .append("`,\n");
@@ -121,6 +123,12 @@ public class BabelParserTest extends SqlParserTest {
     sql(sql.toString()).ok(expected.toString());
   }
 
+  /** In Babel, AS is not reserved. */
+  @Test public void testAs() {
+    final String expected = "SELECT `AS`\n"
+        + "FROM `T`";
+    sql("select as from t").ok(expected);
+  }
 }
 
 // End BabelParserTest.java

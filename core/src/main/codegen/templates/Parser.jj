@@ -245,9 +245,13 @@ String NonReservedKeyWord() :
     String kw;
 }
 {
-    kw = CommonNonReservedKeyWord()
+    (
+        CommonNonReservedKeyWord() {
+    |   ExtraNonReservedKeyWord0()
+    |   ExtraNonReservedKeyWord1()
+    )
     {
-        return kw;
+        return unquotedIdentifier();
     }
 }
 
@@ -6422,10 +6426,39 @@ String CommonNonReservedKeyWord() :
     |   <WRAPPER>
     |   <WORK>
     |   <WRITE>
-    |   <XML>
-    |   <ZONE>
+    )
+    {
+        return unquotedIdentifier();
+    }
+}
+
+String ExtraNonReservedKeyWord0() :
+{
+}
+{
+    (
+        <XML>
 <#list parser.nonReservedKeywords as keyword>
+<#if keyword?index % 2 == 0>
     |   <${keyword}>
+</#if>
+</#list>
+    )
+    {
+        return unquotedIdentifier();
+    }
+}
+
+String ExtraNonReservedKeyWord1() :
+{
+}
+{
+    (
+        <ZONE>
+<#list parser.nonReservedKeywords as keyword>
+<#if keyword?index % 2 == 1>
+    |   <${keyword}>
+</#if>
 </#list>
     )
     {
