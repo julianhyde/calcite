@@ -317,8 +317,11 @@ public class AggregateCall {
         SqlTypeUtil.projectTypes(rowType, argList),
         aggregateRelBase.getGroupCount(), hasFilter());
   }
+
   /**
    * Creates an equivalent AggregateCall with new argument ordinals.
+   *
+   * @see #transform(Mappings.TargetMapping)
    *
    * @param args Arguments
    * @return AggregateCall that suits new inputs and GROUP BY columns
@@ -329,19 +332,16 @@ public class AggregateCall {
         filterArg, collation, type, name);
   }
 
-  /**
-   * Creates an equivalent AggregateCall with new argument ordinals.
-   *
-   * @param args Arguments
-   * @return AggregateCall that suits new inputs and GROUP BY columns
-   */
+  @Deprecated // to be removed before 2.0
   public AggregateCall copy(List<Integer> args, int filterArg) {
+    // ignoring collation is error-prone
     return copy(args, filterArg, collation);
   }
 
   @Deprecated // to be removed before 2.0
   public AggregateCall copy(List<Integer> args) {
-    return copy(args, filterArg);
+    // ignoring filterArg and collation is error-prone
+    return copy(args, filterArg, collation);
   }
 
   /**
@@ -366,15 +366,15 @@ public class AggregateCall {
             ? type
             : null;
     return create(aggFunction, distinct, approximate, argList, filterArg,
-        collation,
-        newGroupKeyCount, input, newType, getName());
+        collation, newGroupKeyCount, input, newType, getName());
   }
 
   /** Creates a copy of this aggregate call, applying a mapping to its
    * arguments. */
   public AggregateCall transform(Mappings.TargetMapping mapping) {
     return copy(Mappings.apply2((Mapping) mapping, argList),
-        hasFilter() ? Mappings.apply(mapping, filterArg) : -1);
+        hasFilter() ? Mappings.apply(mapping, filterArg) : -1,
+        RelCollations.permute(collation, mapping));
   }
 }
 

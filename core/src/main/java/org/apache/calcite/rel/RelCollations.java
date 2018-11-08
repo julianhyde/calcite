@@ -19,6 +19,7 @@ package org.apache.calcite.rel;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
+import org.apache.calcite.util.mapping.Mappings;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -195,6 +196,15 @@ public class RelCollations {
     return of(
         Util.transform(collation.getFieldCollations(),
             fc -> fc.copy(mapping.get(fc.getFieldIndex()))));
+  }
+
+  /** Creates a copy of this collation that changes the ordinals of input
+   * fields. */
+  public static RelCollation permute(RelCollation collation,
+      Mappings.TargetMapping mapping) {
+    return of(
+        Util.transform(collation.getFieldCollations(),
+            fc -> fc.copy(mapping.getTarget(fc.getFieldIndex()))));
   }
 }
 
