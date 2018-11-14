@@ -1739,6 +1739,7 @@ Syntax:
 {% highlight sql %}
 aggregateCall:
         agg( [ ALL | DISTINCT ] value [, value ]*)
+        [ WITHIN DISTINCT (expression [, expression ]*) ]
         [ WITHIN GROUP (ORDER BY orderItem [, orderItem ]*) ]
         [ FILTER (WHERE condition) ]
     |   agg(*) [ FILTER (WHERE condition) ]

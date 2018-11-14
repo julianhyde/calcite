@@ -373,7 +373,7 @@ public class PigRelBuilder extends RelBuilder {
 
   public AggCall aggregateCall(SqlAggFunction aggFunction, String alias, RexNode... operands) {
     return aggregateCall(aggFunction, false, false, false, null,
-        ImmutableList.of(), alias, ImmutableList.copyOf(operands));
+        null, ImmutableList.of(), alias, ImmutableList.copyOf(operands));
   }
 
   /**

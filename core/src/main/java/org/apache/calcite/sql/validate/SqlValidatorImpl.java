@@ -5091,7 +5091,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     targetWindow.setWindowCall(null);
     call.validate(this, scope);
 
-    validateAggregateParams(call, null, null, scope);
+    validateAggregateParams(call, null, null, null, scope);
 
     // Disable nested aggregates post validation
     inWindow = false;
@@ -5364,7 +5364,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validateAggregateParams(SqlCall aggCall, SqlNode filter,
-      SqlNodeList orderList, SqlValidatorScope scope) {
+      SqlNodeList distinctList, SqlNodeList orderList,
+      SqlValidatorScope scope) {
     // For "agg(expr)", expr cannot itself contain aggregate function
     // invocations.  For example, "SUM(2 * MAX(x))" is illegal; when
     // we see it, we'll report the error for the SUM (not the MAX).
@@ -5396,6 +5397,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     if (filter != null) {
       if (a.findAgg(filter) != null) {
         throw newValidationError(filter, RESOURCE.aggregateInFilterIllegal());
+      }
+    }
+    if (distinctList != null) {
+      for (SqlNode param : distinctList) {
+        if (a.findAgg(param) != null) {
+          throw newValidationError(aggCall,
+              RESOURCE.aggregateInWithinDistinctIllegal());
+        }
       }
     }
     if (orderList != null) {

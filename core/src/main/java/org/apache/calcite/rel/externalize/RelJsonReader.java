@@ -288,8 +288,7 @@ public class RelJsonReader {
     final String name = (String) jsonAggCall.get("name");
     return AggregateCall.create(aggregation, distinct, false, false, operands,
         filterOperand == null ? -1 : filterOperand,
-        RelCollations.EMPTY,
-        type, name);
+        null, RelCollations.EMPTY, type, name);
   }
 
   private RelNode lookupInput(String jsonInput) {

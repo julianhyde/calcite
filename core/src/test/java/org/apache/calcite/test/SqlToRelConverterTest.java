@@ -3852,6 +3852,11 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "  (select c+1 from (values 3)) as bar(b1)\n"
         + "  on f1=b1\n"
         + ") as r(n) where c=n)";
+  }
+
+  @Test void testWithinDistinct1() {
+    final String sql = "select avg(empno) within distinct (deptno)\n"
+        + "from emp";
     sql(sql).ok();
   }
 
