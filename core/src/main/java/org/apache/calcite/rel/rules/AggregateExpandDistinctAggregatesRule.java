@@ -324,7 +324,7 @@ public final class AggregateExpandDistinctAggregatesRule
         final AggregateCall newCall =
             AggregateCall.create(aggCall.getAggregation(), false,
                 aggCall.isApproximate(), aggCall.ignoreNulls(),
-                aggCall.getArgList(), -1,
+                aggCall.getArgList(), -1, aggCall.distinctKeys,
                 aggCall.collation, bottomGroupSet.cardinality(),
                 relBuilder.peek(), null, aggCall.name);
         bottomAggregateCalls.add(newCall);
@@ -354,6 +354,7 @@ public final class AggregateExpandDistinctAggregatesRule
                 aggCall.ignoreNulls(),
                 newArgList,
                 -1,
+                aggCall.distinctKeys,
                 aggCall.collation,
                 originalGroupSet.cardinality(),
                 relBuilder.peek(),
@@ -368,14 +369,14 @@ public final class AggregateExpandDistinctAggregatesRule
           newCall =
               AggregateCall.create(new SqlSumEmptyIsZeroAggFunction(), false,
                   aggCall.isApproximate(), aggCall.ignoreNulls(),
-                  newArgs, -1, aggCall.collation,
+                  newArgs, -1, aggCall.distinctKeys, aggCall.collation,
                   originalGroupSet.cardinality(), relBuilder.peek(),
                   aggCall.getType(), aggCall.getName());
         } else {
           newCall =
               AggregateCall.create(aggCall.getAggregation(), false,
                   aggCall.isApproximate(), aggCall.ignoreNulls(),
-                  newArgs, -1, aggCall.collation,
+                  newArgs, -1, aggCall.distinctKeys, aggCall.collation,
                   originalGroupSet.cardinality(),
                   relBuilder.peek(), aggCall.getType(), aggCall.name);
         }
@@ -464,7 +465,8 @@ public final class AggregateExpandDistinctAggregatesRule
 
     distinctAggCalls.add(
         AggregateCall.create(SqlStdOperatorTable.GROUPING, false, false, false,
-            ImmutableIntList.copyOf(fullGroupSet), -1, RelCollations.EMPTY,
+            ImmutableIntList.copyOf(fullGroupSet), -1,
+            null, RelCollations.EMPTY,
             groupSets.size(), relBuilder.peek(), null, "$g"));
 
     relBuilder.aggregate(
@@ -519,7 +521,7 @@ public final class AggregateExpandDistinctAggregatesRule
       final AggregateCall newCall =
           AggregateCall.create(aggregation, false,
               aggCall.isApproximate(), aggCall.ignoreNulls(),
-              newArgList, newFilterArg, aggCall.collation,
+              newArgList, newFilterArg, aggCall.distinctKeys, aggCall.collation,
               aggregate.getGroupCount(), relBuilder.peek(), null, aggCall.name);
       newCalls.add(newCall);
     }
@@ -730,7 +732,7 @@ public final class AggregateExpandDistinctAggregatesRule
       final AggregateCall newAggCall =
           AggregateCall.create(aggCall.getAggregation(), false,
               aggCall.isApproximate(), aggCall.ignoreNulls(),
-              newArgs, newFilterArg, aggCall.collation,
+              newArgs, newFilterArg, aggCall.distinctKeys, aggCall.collation,
               aggCall.getType(), aggCall.getName());
       assert refs.get(i) == null;
       if (leftFields == null) {
@@ -817,7 +819,8 @@ public final class AggregateExpandDistinctAggregatesRule
       }
       final AggregateCall newAggCall =
           AggregateCall.create(aggCall.getAggregation(), false,
-              aggCall.isApproximate(), aggCall.ignoreNulls(), newArgs, -1, aggCall.collation,
+              aggCall.isApproximate(), aggCall.ignoreNulls(), newArgs, -1,
+              aggCall.distinctKeys, aggCall.collation,
               aggCall.getType(), aggCall.getName());
       newAggCalls.set(i, newAggCall);
     }

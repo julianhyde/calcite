@@ -74,6 +74,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
@@ -1705,6 +1706,24 @@ public class RelBuilderTest {
         hasTree(plan));
   }
 
+  @Test void testWithinDistinct() {
+    final RelBuilder builder = RelBuilder.create(config().build());
+    RelNode root =
+        builder.scan("EMP")
+            .aggregate(builder.groupKey(),
+                builder.avg(builder.field("SAL"))
+                    .as("g"),
+                builder.avg(builder.field("SAL"))
+                    .unique(builder.field("DEPTNO"))
+                    .as("g2"))
+            .build();
+    final String expected = ""
+        + "LogicalAggregate(group=[{}], g=[AVG($5)],"
+        + " g2=[AVG($5) WITHIN DISTINCT ($7)])\n"
+        + "  LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
   @Test void testDistinct() {
     // Equivalent SQL:
     //   SELECT DISTINCT deptno
@@ -2178,7 +2197,7 @@ public class RelBuilderTest {
 
   @Test void testCorrelationFails() {
     final RelBuilder builder = RelBuilder.create(config().build());
-    final Holder<RexCorrelVariable> v = Holder.of(null);
+    final Holder<@Nullable RexCorrelVariable> v = Holder.of(null);
     try {
       builder.scan("EMP")
           .variable(v)
