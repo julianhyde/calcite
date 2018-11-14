@@ -316,7 +316,7 @@ public class RexBuilder {
       final List<Integer> nullableArgs = nullableArgs(args, aggArgTypes);
       if (!nullableArgs.equals(args)) {
         aggCall = aggCall.copy(nullableArgs, aggCall.filterArg,
-            aggCall.collation);
+            aggCall.distinctKeys, aggCall.collation);
       }
     }
     RexNode rex = aggCallMapping.get(aggCall);
