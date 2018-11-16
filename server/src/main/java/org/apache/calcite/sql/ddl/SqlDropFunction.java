@@ -27,10 +27,11 @@ import org.apache.calcite.sql.parser.SqlParserPos;
  */
 public class SqlDropFunction extends SqlDropObject {
   private static final SqlOperator OPERATOR =
-      new SqlSpecialOperator("DROP FUNCTION", SqlKind.OTHER_DDL);
+      new SqlSpecialOperator("DROP FUNCTION", SqlKind.DROP_FUNCTION);
 
   /** Creates a SqlDropFunction. */
-  public SqlDropFunction(SqlParserPos pos, boolean ifExists, SqlIdentifier name) {
+  public SqlDropFunction(SqlParserPos pos, boolean ifExists,
+      SqlIdentifier name) {
     super(OPERATOR, pos, ifExists, name);
   }
 }

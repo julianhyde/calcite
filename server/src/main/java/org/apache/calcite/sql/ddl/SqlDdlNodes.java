@@ -102,10 +102,9 @@ public class SqlDdlNodes {
   /** Creates a CREATE FUNCTION. */
   public static SqlCreateFunction createFunction(
       SqlParserPos pos, boolean replace, boolean ifNotExists,
-      SqlIdentifier name, SqlNode className,
-      SqlNodeList jarList, SqlNodeList fileList, SqlNodeList archiveList) {
+      SqlIdentifier name, SqlNode className, SqlNodeList usingList) {
     return new SqlCreateFunction(pos, replace, ifNotExists, name,
-        className, jarList, fileList, archiveList);
+        className, usingList);
   }
 
   /** Creates a DROP [ FOREIGN ] SCHEMA. */
@@ -250,6 +249,13 @@ public class SqlDdlNodes {
         | RelConversionException | SQLException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /** File type for CREATE FUNCTION. */
+  public enum FileType {
+    FILE,
+    JAR,
+    ARCHIVE
   }
 }
 

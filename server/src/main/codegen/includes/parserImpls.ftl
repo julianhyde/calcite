@@ -303,59 +303,23 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
     }
 }
 
-private void FunctionJarDef(Map<String,List<SqlNode>> map) :
+private void FunctionJarDef(SqlNodeList usingList) :
 {
-    SqlNode uri;
+    final SqlDdlNodes.FileType fileType;
+    final SqlNode uri;
 }
 {
-    ( <JAR> ) {
-        List<SqlNode> jarList =map.get("JAR");
-        jarList.add(StringLiteral());
-        map.put("JAR",jarList);
-    }
+    (
+        <ARCHIVE> { fileType = SqlDdlNodes.FileType.ARCHIVE; }
     |
-    ( <FILE> ) {
-        List<SqlNode> fileList =map.get("FILE");
-        fileList.add(StringLiteral());
-        map.put("FILE",fileList);
-    }
+        <FILE> { fileType = SqlDdlNodes.FileType.FILE; }
     |
-    ( <ARCHIVE> ) {
-        List<SqlNode> archiveList =map.get("ARCHIVE");
-        archiveList.add(StringLiteral());
-        map.put("ARCHIVE",archiveList);
+        <JAR> { fileType = SqlDdlNodes.FileType.JAR; }
+    ) {
+        usingList.add(SqlLiteral.createSymbol(fileType, getPos()));
     }
-}
-
-private Map<String,SqlNodeList> FunctionJarDefList() :
-{
-    final SqlParserPos pos;
-    final Map<String,SqlNodeList> result = new HashMap();
-    final Map<String,List<SqlNode>> map = new HashMap();
-    List<SqlNode> jarList = new ArrayList();
-    List<SqlNode> fileList = new ArrayList();
-    List<SqlNode> archiveList = new ArrayList();
-    map.put("JAR",jarList);
-    map.put("FILE",fileList);
-    map.put("ARCHIVE",archiveList);
-}
-{
-    <USING> { pos = getPos(); }
-    FunctionJarDef(map)
-    ( <COMMA> FunctionJarDef(map) )* {
-        jarList =map.get("JAR");
-        if(jarList.size() > 0){
-            result.put("JAR",new SqlNodeList(jarList, pos.plus(getPos())));
-        }
-        fileList =map.get("FILE");
-        if(fileList.size() > 0){
-            result.put("FILE",new SqlNodeList(fileList, pos.plus(getPos())));
-        }
-        archiveList =map.get("ARCHIVE");
-        if(archiveList.size() > 0){
-            result.put("ARCHIVE",new SqlNodeList(archiveList, pos.plus(getPos())));
-        }
-        return result;
+    uri = StringLiteral() {
+        usingList.add(uri);
     }
 }
 
@@ -364,10 +328,7 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
     final boolean ifNotExists;
     final SqlIdentifier id;
     final SqlNode className;
-    SqlNodeList jarList = null;
-    SqlNodeList fileList = null;
-    SqlNodeList archiveList = null;
-    Map<String,SqlNodeList> map = null;
+    SqlNodeList usingList = SqlNodeList.EMPTY;
 }
 {
     <FUNCTION> ifNotExists = IfNotExistsOpt()
@@ -375,22 +336,17 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
     <AS>
     className = StringLiteral()
     [
-        map = FunctionJarDefList()
-    ]
-    {
-        if(null != map){
-            if(map.containsKey("JAR")){
-                jarList =map.get("JAR");
-            }
-            if(map.containsKey("FILE")){
-                fileList =map.get("FILE");
-            }
-            if(map.containsKey("ARCHIVE")){
-                archiveList =map.get("ARCHIVE");
-            }
+        <USING> {
+            usingList = new SqlNodeList(getPos());
         }
+        FunctionJarDef(usingList)
+        (
+            <COMMA>
+            FunctionJarDef(usingList)
+        )*
+    ] {
         return SqlDdlNodes.createFunction(s.end(this), replace, ifNotExists,
-            id, className, jarList, fileList, archiveList);
+            id, className, usingList);
     }
 }
 
