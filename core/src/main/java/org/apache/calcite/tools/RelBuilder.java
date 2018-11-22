@@ -1275,7 +1275,8 @@ public class RelBuilder {
    * sub-classes may disable merge by overriding to return {@code false}. */
   @Experimental
   protected boolean shouldMergeProject() {
-    return mergeProjectStrategy.apply(this);
+     return true; // TODO
+//    return mergeProjectStrategy.apply(this);
   }
 
   /** Creates a {@link Project} of the given

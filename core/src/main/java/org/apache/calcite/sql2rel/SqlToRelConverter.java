@@ -2431,7 +2431,32 @@ public class SqlToRelConverter {
         (Join) RelFactories.DEFAULT_JOIN_FACTORY.createJoin(leftRel, rightRel,
             joinCond, ImmutableSet.of(), joinType, false);
 
-    return RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
+    final RelNode pushed =
+        RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
+
+    // If an input to originalJoin was a leaf, make the input to the new Join a
+    // leaf.
+    if (pushed != originalJoin) {
+      final RelNode newJoin = findJoin(pushed);
+      for (Ord<RelNode> input : Ord.zip(originalJoin.getInputs())) {
+        if (leaves.contains(input.e)) {
+          leaves.remove(input.e);
+          leaves.add(newJoin.getInput(input.i));
+        }
+      }
+    }
+    return pushed;
+  }
+
+  /** Finds a {@link Join} under several layers of {@link Project},
+   * or throws {@link ClassCastException}. */
+  private static Join findJoin(RelNode r) {
+    for (;;) {
+      if (r instanceof Join) {
+        return (Join) r;
+      }
+      r = ((SingleRel) r).getInput();
+    }
   }
 
   private CorrelationUse getCorrelationUse(Blackboard bb, final RelNode r0) {
