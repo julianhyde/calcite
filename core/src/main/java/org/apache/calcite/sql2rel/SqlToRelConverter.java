@@ -2425,7 +2425,10 @@ public class SqlToRelConverter {
         (Join) RelFactories.DEFAULT_JOIN_FACTORY.createJoin(leftRel, rightRel,
             joinCond, ImmutableSet.of(), joinType, false);
 
-    return RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
+    // Disable merging projects as we push down join conditions, because it
+    // messes up the leaf mapping.
+    return RelOptUtil.pushDownJoinConditions(originalJoin,
+        relBuilder.withMergeProject(false));
   }
 
   private CorrelationUse getCorrelationUse(Blackboard bb, final RelNode r0) {

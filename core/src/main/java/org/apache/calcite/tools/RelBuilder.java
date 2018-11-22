@@ -145,7 +145,9 @@ public class RelBuilder {
   private final RelFactories.MatchFactory matchFactory;
   private final Deque<Frame> stack = new ArrayDeque<>();
   private final boolean simplify;
+  private final RexExecutor executor;
   private final RexSimplify simplifier;
+  private final MergeProjectStrategy mergeProjectStrategy;
 
   protected RelBuilder(Context context, RelOptCluster cluster,
       RelOptSchema relOptSchema) {
@@ -194,12 +196,15 @@ public class RelBuilder {
     this.matchFactory =
         Util.first(context.unwrap(RelFactories.MatchFactory.class),
             RelFactories.DEFAULT_MATCH_FACTORY);
-    final RexExecutor executor =
+    this.executor =
         Util.first(context.unwrap(RexExecutor.class),
             Util.first(cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR));
     final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
     this.simplifier =
         new RexSimplify(cluster.getRexBuilder(), predicates, executor);
+    this.mergeProjectStrategy =
+        Util.first(context.unwrap(MergeProjectStrategy.class),
+            MergeProjectStrategy.TRUE);
   }
 
   /** Creates a RelBuilder. */
@@ -245,6 +250,42 @@ public class RelBuilder {
   /** Creates a {@link RelBuilderFactory} that uses a given set of factories. */
   public static RelBuilderFactory proto(Object... factories) {
     return proto(Contexts.of(factories));
+  }
+
+  /** Creates a RelBuilder similar to this one but with the specified behavior
+   * for {@link #shouldMergeProject()}. */
+  public RelBuilder withMergeProject(boolean mergeProject) {
+    if (mergeProject == shouldMergeProject()) {
+      return this;
+    }
+    return with(MergeProjectStrategy.of(mergeProject));
+  }
+
+  /** Creates a RelBuilder similar to this one but with overriding a given
+   * behavior. */
+  private RelBuilder with(Object o) {
+    final Context context = Contexts.chain(Contexts.of(o), context());
+    return new RelBuilder(context, cluster, relOptSchema);
+  }
+
+  /** Creates a {@link Context} that represents the current state of this
+   * RelBuilder. */
+  private Context context() {
+    return Contexts.of(aggregateFactory,
+        filterFactory,
+        projectFactory,
+        sortFactory,
+        exchangeFactory,
+        sortExchangeFactory,
+        setOpFactory,
+        joinFactory,
+        semiJoinFactory,
+        correlateFactory,
+        valuesFactory,
+        scanFactory,
+        matchFactory,
+        executor,
+        mergeProjectStrategy);
   }
 
   // Methods for manipulating the stack
@@ -1260,10 +1301,11 @@ public class RelBuilder {
   /** Whether to attempt to merge consecutive {@link Project} operators.
    *
    * <p>The default implementation returns {@code true};
-   * sub-classes may disable merge by overriding to return {@code false}. */
+   * you can change the value by calling {@link #withMergeProject(boolean)}
+   * or by sub-classing. */
   @Experimental
   protected boolean shouldMergeProject() {
-    return true;
+     return mergeProjectStrategy.value;
   }
 
   /** Creates a {@link Project} of the given
@@ -2443,6 +2485,24 @@ public class RelBuilder {
       } else {
         return rexBuilder.makeInputRef(right, inputRef.getIndex() - leftCount);
       }
+    }
+  }
+
+  /** Describes whether a {@link RelBuilder} should merge projects, per
+   * {@link RelBuilder#shouldMergeProject()}.
+   * Include in {@link Context} when you create the {@code RelBuilder}. */
+  private enum MergeProjectStrategy {
+    TRUE(true),
+    FALSE(false);
+
+    public final boolean value;
+
+    MergeProjectStrategy(boolean value) {
+      this.value = value;
+    }
+
+    public static MergeProjectStrategy of(boolean b) {
+      return b ? TRUE : FALSE;
     }
   }
 }
