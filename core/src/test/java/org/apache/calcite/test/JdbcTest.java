@@ -6733,6 +6733,32 @@ public class JdbcTest {
         .returns("EXPR$0=[250, 500, 1000]\n");
   }
 
+  @Test public void testMatch() {
+    final String sql = "select *\n"
+        + "from \"hr\".\"emps\" match_recognize (\n"
+        + "  order by \"empid\"\n"
+        + "  pattern (s up)\n"
+        + "  define up as up.\"commission\" > prev(up.\"commission\"))";
+    final String convert = ""
+        + "LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
+        + "commission=[$4])\n"
+        + "  LogicalMatch(partition=[[]], order=[[0]], outputFields=[[empid, "
+        + "deptno, name, salary, commission]], allRows=[false], "
+        + "after=[FLAG(SKIP TO NEXT ROW)], pattern=[('S', 'UP')], "
+        + "isStrictStarts=[false], isStrictEnds=[false], subsets=[[]], "
+        + "patternDefinitions=[[>(PREV(UP.$4, 0), PREV(UP.$4, 1))]], "
+        + "inputFields=[[empid, deptno, name, salary, commission]])\n"
+        + "    EnumerableTableScan(table=[[hr, emps]])\n";
+    final String plan = "EnumerableAggregate(group=[{}], "
+        + "EXPR$0=[COLLECT($4) WITHIN GROUP ([4])])";
+    CalciteAssert.that()
+        .with(CalciteAssert.Config.REGULAR)
+        .query(sql)
+        .convertContains(convert)
+        .explainContains(plan)
+        .returns("EXPR$0=[250, 500, 1000]\n");
+  }
+
   /**
    * Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2609">[CALCITE-2609]
