@@ -84,7 +84,7 @@ import org.apache.calcite.rel.rules.JoinAssociateRule;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushExpressionsRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.rules.MatchRecognizeRule;
+import org.apache.calcite.rel.rules.MatchRule;
 import org.apache.calcite.rel.rules.MaterializedViewFilterScanRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
@@ -223,7 +223,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           AggregateStarTableRule.INSTANCE,
           AggregateStarTableRule.INSTANCE2,
           TableScanRule.INSTANCE,
-          MatchRecognizeRule.INSTANCE,
+          MatchRule.INSTANCE,
           COMMUTE
               ? JoinAssociateRule.INSTANCE
               : ProjectMergeRule.INSTANCE,
