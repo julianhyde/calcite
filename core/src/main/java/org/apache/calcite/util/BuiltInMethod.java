@@ -155,6 +155,8 @@ public enum BuiltInMethod {
       DataContext.class),
   JOIN(ExtendedEnumerable.class, "join", Enumerable.class, Function1.class,
       Function1.class, Function2.class),
+  MATCH(Enumerables.class, "match", Enumerable.class, List.class,
+      Enumerables.Automaton.class, Enumerables.Emitter.class),
   MERGE_JOIN(EnumerableDefaults.class, "mergeJoin", Enumerable.class,
       Enumerable.class, Function1.class, Function1.class, Function2.class,
       boolean.class, boolean.class),
