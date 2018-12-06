@@ -1812,8 +1812,7 @@ SqlNode TableRef2(boolean lateral) :
     SqlNode tableRef;
     SqlNode over;
     SqlNodeList extendList = null;
-    Pair<String, Boolean> p;
-    String alias;
+    Pair<String, Boolean> alias;
     final SqlIdentifier id;
     final Span s, s2;
     SqlNodeList args;
@@ -1898,8 +1897,8 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = ExtendedTableRef()
     )
     [
-        [ <AS> ] p = Identifier() {
-            id = new SqlIdentifier(p.left, p.right, getPos());
+        [ <AS> ] alias = Identifier() {
+            id = new SqlIdentifier(alias.left, alias.right, getPos());
         }
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
@@ -4442,14 +4441,14 @@ SqlDataTypeSpec DataType() :
                 typeName,
                 precision,
                 scale,
-                charSetName.left,
+                charSetName == null ? null : charSetName.left,
                 s.end(collectionTypeName));
         }
         return new SqlDataTypeSpec(
             typeName,
             precision,
             scale,
-            charSetName.left,
+            charSetName == null ? null : charSetName.left,
             null,
             s.end(this));
     }
