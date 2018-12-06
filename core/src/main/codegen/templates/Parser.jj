@@ -1812,6 +1812,7 @@ SqlNode TableRef2(boolean lateral) :
     SqlNode tableRef;
     SqlNode over;
     SqlNodeList extendList = null;
+    Pair<String, Boolean> p;
     String alias;
     final SqlIdentifier id;
     final Span s, s2;
@@ -1897,8 +1898,8 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = ExtendedTableRef()
     )
     [
-        [ <AS> ] alias = Identifier() {
-            id = new SqlIdentifier(alias, getPos());
+        [ <AS> ] p = Identifier() {
+            id = new SqlIdentifier(p.left, p.right, getPos());
         }
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
@@ -3007,7 +3008,7 @@ void Expression2b(ExprContext exprContext, List<Object> list) :
 {
     SqlNode e;
     SqlOperator op;
-    String p;
+    Pair<String, Boolean> p;
 }
 {
     (
@@ -3025,7 +3026,7 @@ void Expression2b(ExprContext exprContext, List<Object> list) :
             list.add(
                 new SqlParserUtil.ToTreeListItem(
                     SqlStdOperatorTable.DOT, getPos()));
-            list.add(new SqlIdentifier(p, getPos()));
+            list.add(new SqlIdentifier(p.left, p.right, getPos()));
         }
     )*
 }
@@ -3052,7 +3053,7 @@ List<Object> Expression2(ExprContext exprContext) :
     SqlNodeList nodeList;
     SqlNode e;
     SqlOperator op;
-    String p;
+    Pair<String, Boolean> p;
     final Span s = span();
 }
 {
@@ -3181,7 +3182,7 @@ List<Object> Expression2(ExprContext exprContext) :
                         list.add(
                             new SqlParserUtil.ToTreeListItem(
                                 SqlStdOperatorTable.DOT, getPos()));
-                        list.add(new SqlIdentifier(p, getPos()));
+                        list.add(new SqlIdentifier(p.left, p.right, getPos()));
                     }
                 )*
             |
@@ -4159,18 +4160,21 @@ SqlDynamicParam DynamicParam() :
 
 
 /**
- * Parses a simple identifier as a string.
+ * Parses a simple identifier as a Pair<String, Boolean>, the pair left is string identifier,
+ * pair right is a flag indicating whether it is escaped.
  */
-String Identifier() :
+Pair<String, Boolean> Identifier() :
 {
     String id;
     char unicodeEscapeChar = BACKSLASH;
+    boolean isEscaped = true;
 }
 {
     (
         <IDENTIFIER>
         {
             id = unquotedIdentifier();
+            isEscaped = false;
         }
     |
         <QUOTED_IDENTIFIER> {
@@ -4202,17 +4206,19 @@ String Identifier() :
         {
             SqlLiteral lit = SqlLiteral.createCharString(id, "UTF16", getPos());
             lit = lit.unescapeUnicode(unicodeEscapeChar);
-            return lit.toValue();
+            return Pair.of(lit.toValue(), isEscaped);
         }
     |
-        id = NonReservedKeyWord()
+        id = NonReservedKeyWord() {
+            isEscaped = false;
+        }
     )
     {
         if (id.length() > this.identifierMaxLength) {
             throw SqlUtil.newContextException(getPos(),
                 RESOURCE.identifierTooLong(id, this.identifierMaxLength));
         }
-        return id;
+        return Pair.of(id, isEscaped);
     }
 }
 
@@ -4221,11 +4227,11 @@ String Identifier() :
  */
 SqlIdentifier SimpleIdentifier() :
 {
-    final String p;
+    final Pair<String, Boolean> p;
 }
 {
     p = Identifier() {
-        return new SqlIdentifier(p, getPos());
+        return new SqlIdentifier(p.left, p.right, getPos());
     }
 }
 
@@ -4270,19 +4276,19 @@ SqlIdentifier CompoundIdentifier() :
 {
     List<String> list = new ArrayList<String>();
     List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
-    String p;
+    Pair<String, Boolean> p;
     boolean star = false;
 }
 {
     p = Identifier()
     {
         posList.add(getPos());
-        list.add(p);
+        list.add(p.left);
     }
     (
         <DOT>
         p = Identifier() {
-            list.add(p);
+            list.add(p.left);
             posList.add(getPos());
         }
     )*
@@ -4299,7 +4305,11 @@ SqlIdentifier CompoundIdentifier() :
         if (star) {
             return SqlIdentifier.star(list, pos, posList);
         }
-        return new SqlIdentifier(list, null, pos, posList);
+        if (list.size() == 1) {
+            return new SqlIdentifier(list, null, pos, posList, p.right);
+        } else {
+            return new SqlIdentifier(list, null, pos, posList);
+        }
     }
 }
 
@@ -4402,7 +4412,7 @@ SqlDataTypeSpec DataType() :
     SqlIdentifier collectionTypeName = null;
     int scale = -1;
     int precision = -1;
-    String charSetName = null;
+    Pair<String, Boolean> charSetName = null;
     final Span s;
 }
 {
@@ -4432,14 +4442,14 @@ SqlDataTypeSpec DataType() :
                 typeName,
                 precision,
                 scale,
-                charSetName,
+                charSetName.left,
                 s.end(collectionTypeName));
         }
         return new SqlDataTypeSpec(
             typeName,
             precision,
             scale,
-            charSetName,
+            charSetName.left,
             null,
             s.end(this));
     }
@@ -5758,6 +5768,7 @@ SqlIdentifier ContextVariable() :
 SqlNode JdbcFunctionCall() :
 {
     String name;
+    Pair<String, Boolean> p;
     SqlIdentifier id;
     SqlNode e;
     SqlLiteral tl;
@@ -5804,7 +5815,9 @@ SqlNode JdbcFunctionCall() :
             // For cases like {fn substring('foo', 1,2)}
             name = NonReservedJdbcFunctionName()
         |
-            name = Identifier()
+            p = Identifier() {
+                name = p.left;
+            }
         )
         (
             LOOKAHEAD(2) <LPAREN> <STAR> { s1 = span(); } <RPAREN>
