@@ -61,8 +61,9 @@ public class LexEscapeTest {
     rootSchema.add("TMP", new AbstractTable() {
       @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return typeFactory.createStructType(
-            ImmutableList.of(typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            ImmutableList.of("localtime"));
+            ImmutableList.of(typeFactory.createSqlType(SqlTypeName.VARCHAR),
+                typeFactory.createSqlType(SqlTypeName.INTEGER)),
+            ImmutableList.of("localtime", "current_timestamp"));
       }
     });
     final FrameworkConfig config = Frameworks.newConfigBuilder()
@@ -88,38 +89,42 @@ public class LexEscapeTest {
     assertThat(transform, instanceOf(EnumerableProject.class));
     List<RelDataTypeField> fields = transform.getRowType().getFieldList();
     // Get field type from sql text and validate we parsed it after validation.
-    assert fields.size() == 2;
+    assert fields.size() == 4;
     assert fields.get(0).getType().getSqlTypeName() == SqlTypeName.VARCHAR;
     assert fields.get(1).getType().getSqlTypeName() == SqlTypeName.TIME;
+    assert fields.get(2).getType().getSqlTypeName() == SqlTypeName.INTEGER;
+    assert fields.get(3).getType().getSqlTypeName() == SqlTypeName.TIMESTAMP;
   }
 
   @Test public void testCalciteEscapeOracle()
       throws SqlParseException, ValidationException, RelConversionException {
-    String sql = "select \"localtime\", localtime from TMP";
+    String sql = "select \"localtime\", localtime, "
+        + "\"current_timestamp\", current_timestamp from TMP";
     runProjectQueryWithLex(Lex.ORACLE, sql);
   }
 
   @Test public void testCalciteEscapeMySql()
       throws SqlParseException, ValidationException, RelConversionException {
-    String sql = "select `localtime`, localtime from TMP";
+    String sql = "select `localtime`, localtime, `current_timestamp`, current_timestamp from TMP";
     runProjectQueryWithLex(Lex.MYSQL, sql);
   }
 
   @Test public void testCalciteEscapeMySqlAnsi()
       throws SqlParseException, ValidationException, RelConversionException {
-    String sql = "select \"localtime\", localtime from TMP";
+    String sql = "select \"localtime\", localtime, "
+        + "\"current_timestamp\", current_timestamp from TMP";
     runProjectQueryWithLex(Lex.MYSQL_ANSI, sql);
   }
 
   @Test public void testCalciteEscapeSqlServer()
       throws SqlParseException, ValidationException, RelConversionException {
-    String sql = "select [localtime], localtime from TMP";
+    String sql = "select [localtime], localtime, [current_timestamp], current_timestamp from TMP";
     runProjectQueryWithLex(Lex.SQL_SERVER, sql);
   }
 
   @Test public void testCalciteEscapeJava()
       throws SqlParseException, ValidationException, RelConversionException {
-    String sql = "select `localtime`, localtime from TMP";
+    String sql = "select `localtime`, localtime, `current_timestamp`, current_timestamp from TMP";
     runProjectQueryWithLex(Lex.JAVA, sql);
   }
 }
