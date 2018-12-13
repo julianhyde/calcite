@@ -1812,7 +1812,6 @@ SqlNode TableRef2(boolean lateral) :
     SqlNode tableRef;
     SqlNode over;
     SqlNodeList extendList = null;
-    Pair<String, Boolean> alias;
     final SqlIdentifier id;
     final Span s, s2;
     SqlNodeList args;
@@ -1897,9 +1896,7 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = ExtendedTableRef()
     )
     [
-        [ <AS> ] alias = Identifier() {
-            id = new SqlIdentifier(alias.left, alias.right, getPos());
-        }
+        [ <AS> ] id = SimpleIdentifier()
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
             if (columnAliasList == null) {
@@ -3007,7 +3004,7 @@ void Expression2b(ExprContext exprContext, List<Object> list) :
 {
     SqlNode e;
     SqlOperator op;
-    Pair<String, Boolean> p;
+    SqlIdentifier p;
 }
 {
     (
@@ -3021,11 +3018,11 @@ void Expression2b(ExprContext exprContext, List<Object> list) :
     }
     (
         <DOT>
-        p = Identifier() {
+        p = SimpleIdentifier() {
             list.add(
                 new SqlParserUtil.ToTreeListItem(
                     SqlStdOperatorTable.DOT, getPos()));
-            list.add(new SqlIdentifier(p.left, p.right, getPos()));
+            list.add(p);
         }
     )*
 }
@@ -3052,7 +3049,7 @@ List<Object> Expression2(ExprContext exprContext) :
     SqlNodeList nodeList;
     SqlNode e;
     SqlOperator op;
-    Pair<String, Boolean> p;
+    SqlIdentifier p;
     final Span s = span();
 }
 {
@@ -3177,11 +3174,11 @@ List<Object> Expression2(ExprContext exprContext) :
                 }
                 (
                     <DOT>
-                    p = Identifier() {
+                    p = SimpleIdentifier() {
                         list.add(
                             new SqlParserUtil.ToTreeListItem(
                                 SqlStdOperatorTable.DOT, getPos()));
-                        list.add(new SqlIdentifier(p.left, p.right, getPos()));
+                        list.add(p);
                     }
                 )*
             |
@@ -4157,12 +4154,11 @@ SqlDynamicParam DynamicParam() :
     }
 }
 
-
 /**
- * Parses a simple identifier as a Pair<String, Boolean>, the pair left is string identifier,
- * pair right is a flag indicating whether it is escaped.
+ * Parses a dot(maybe) split identifier segment. Each time it reads an identifier it writes one element
+ * to each list, and the quotes list records whether the identifier was quoted.
  */
-Pair<String, Boolean> Identifier() :
+void IdentifierSegment(List<String> names, List<SqlParserPos> positions, List<Boolean> quotes) :
 {
     String id;
     char unicodeEscapeChar = BACKSLASH;
@@ -4205,7 +4201,7 @@ Pair<String, Boolean> Identifier() :
         {
             SqlLiteral lit = SqlLiteral.createCharString(id, "UTF16", getPos());
             lit = lit.unescapeUnicode(unicodeEscapeChar);
-            return Pair.of(lit.toValue(), isEscaped);
+            id = lit.toValue();
         }
     |
         id = NonReservedKeyWord() {
@@ -4217,7 +4213,26 @@ Pair<String, Boolean> Identifier() :
             throw SqlUtil.newContextException(getPos(),
                 RESOURCE.identifierTooLong(id, this.identifierMaxLength));
         }
-        return Pair.of(id, isEscaped);
+        names.add(id);
+        if (quotes != null) {
+            quotes.add(isEscaped);
+        }
+        if (positions != null) {
+            positions.add(getPos().setQuoted(isEscaped));
+        }
+    }
+}
+
+/**
+ * Parses a simple identifier as a String.
+ */
+String Identifier() :
+{
+    List<String> names = new ArrayList<String>();
+}
+{
+    IdentifierSegment(names, null, null) {
+        return names.get(0);
     }
 }
 
@@ -4226,11 +4241,12 @@ Pair<String, Boolean> Identifier() :
  */
 SqlIdentifier SimpleIdentifier() :
 {
-    final Pair<String, Boolean> p;
+    List<String> names = new ArrayList<String>();
+    List<SqlParserPos> positions = new ArrayList<SqlParserPos>();
 }
 {
-    p = Identifier() {
-        return new SqlIdentifier(p.left, p.right, getPos());
+    IdentifierSegment(names, positions, null) {
+        return new SqlIdentifier(names.get(0), positions.get(0));
     }
 }
 
@@ -4275,21 +4291,15 @@ SqlIdentifier CompoundIdentifier() :
 {
     List<String> list = new ArrayList<String>();
     List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
+    List<Boolean> quotes = new ArrayList<Boolean>();
     Pair<String, Boolean> p;
     boolean star = false;
 }
 {
-    p = Identifier()
-    {
-        posList.add(getPos());
-        list.add(p.left);
-    }
+    IdentifierSegment(list, posList, quotes)
     (
         <DOT>
-        p = Identifier() {
-            list.add(p.left);
-            posList.add(getPos());
-        }
+        IdentifierSegment(list, posList, quotes)
     )*
     (
         <DOT>
@@ -4304,11 +4314,7 @@ SqlIdentifier CompoundIdentifier() :
         if (star) {
             return SqlIdentifier.star(list, pos, posList);
         }
-        if (list.size() == 1) {
-            return new SqlIdentifier(list, null, pos, posList, p.right);
-        } else {
-            return new SqlIdentifier(list, null, pos, posList);
-        }
+        return new SqlIdentifier(list, null, pos, posList);
     }
 }
 
@@ -4411,7 +4417,7 @@ SqlDataTypeSpec DataType() :
     SqlIdentifier collectionTypeName = null;
     int scale = -1;
     int precision = -1;
-    Pair<String, Boolean> charSetName = null;
+    String charSetName = null;
     final Span s;
 }
 {
@@ -4441,14 +4447,14 @@ SqlDataTypeSpec DataType() :
                 typeName,
                 precision,
                 scale,
-                charSetName == null ? null : charSetName.left,
+                charSetName,
                 s.end(collectionTypeName));
         }
         return new SqlDataTypeSpec(
             typeName,
             precision,
             scale,
-            charSetName == null ? null : charSetName.left,
+            charSetName,
             null,
             s.end(this));
     }
@@ -5767,7 +5773,6 @@ SqlIdentifier ContextVariable() :
 SqlNode JdbcFunctionCall() :
 {
     String name;
-    Pair<String, Boolean> p;
     SqlIdentifier id;
     SqlNode e;
     SqlLiteral tl;
@@ -5814,9 +5819,7 @@ SqlNode JdbcFunctionCall() :
             // For cases like {fn substring('foo', 1,2)}
             name = NonReservedJdbcFunctionName()
         |
-            p = Identifier() {
-                name = p.left;
-            }
+            name = Identifier()
         )
         (
             LOOKAHEAD(2) <LPAREN> <STAR> { s1 = span(); } <RPAREN>

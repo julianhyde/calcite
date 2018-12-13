@@ -63,12 +63,6 @@ public class SqlIdentifier extends SqlNode {
    */
   protected ImmutableList<SqlParserPos> componentPositions;
 
-  /**
-   * Whether this id is escaped with quoting. When this is set to be true, we always see the
-   * enclosing part as a full identifier.
-   */
-  private boolean isEscaped;
-
   //~ Constructors -----------------------------------------------------------
 
   /**
@@ -80,8 +74,7 @@ public class SqlIdentifier extends SqlNode {
       List<String> names,
       SqlCollation collation,
       SqlParserPos pos,
-      List<SqlParserPos> componentPositions,
-      Boolean isEscaped) {
+      List<SqlParserPos> componentPositions) {
     super(pos);
     this.names = ImmutableList.copyOf(names);
     this.collation = collation;
@@ -90,19 +83,10 @@ public class SqlIdentifier extends SqlNode {
     for (String name : names) {
       assert name != null;
     }
-    this.isEscaped = isEscaped;
-  }
-
-  public SqlIdentifier(
-      List<String> names,
-      SqlCollation collation,
-      SqlParserPos pos,
-      List<SqlParserPos> componentPositions) {
-    this(names, collation, pos, componentPositions, false);
   }
 
   public SqlIdentifier(List<String> names, SqlParserPos pos) {
-    this(names, null, pos, null, false);
+    this(names, null, pos, null);
   }
 
   /**
@@ -113,7 +97,7 @@ public class SqlIdentifier extends SqlNode {
       String name,
       SqlCollation collation,
       SqlParserPos pos) {
-    this(ImmutableList.of(name), collation, pos, null, false);
+    this(ImmutableList.of(name), collation, pos, null);
   }
 
   /**
@@ -122,18 +106,7 @@ public class SqlIdentifier extends SqlNode {
   public SqlIdentifier(
       String name,
       SqlParserPos pos) {
-    this(ImmutableList.of(name), null, pos, null, false);
-  }
-
-  /**
-   * Creates a simple identifier, for example <code>foo</code>, with flag indicating whether
-   * the identifier is escaped.
-   */
-  public SqlIdentifier(
-      String name,
-      Boolean escaped,
-      SqlParserPos pos) {
-    this(ImmutableList.of(name), null, pos, null, escaped);
+    this(ImmutableList.of(name), null, pos, null);
   }
 
   /** Creates an identifier that is a singleton wildcard star. */
@@ -156,7 +129,7 @@ public class SqlIdentifier extends SqlNode {
   }
 
   @Override public SqlNode clone(SqlParserPos pos) {
-    return new SqlIdentifier(names, collation, pos, componentPositions, isEscaped);
+    return new SqlIdentifier(names, collation, pos, componentPositions);
   }
 
   @Override public String toString() {
@@ -388,8 +361,17 @@ public class SqlIdentifier extends SqlNode {
   /**
    * Returns whether this id is escaped by quoting.
    */
-  public boolean isEscaped() {
-    return this.isEscaped;
+  public boolean isQuoted() {
+    if (componentPositions != null) {
+      for (SqlParserPos pos : componentPositions) {
+        // if all the component pos is quoted, we think this SqlIdentifier is quoted.
+        if (!pos.isQuoted()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public SqlMonotonicity getMonotonicity(SqlValidatorScope scope) {
