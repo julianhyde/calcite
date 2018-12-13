@@ -4292,7 +4292,6 @@ SqlIdentifier CompoundIdentifier() :
     List<String> list = new ArrayList<String>();
     List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
     List<Boolean> quotes = new ArrayList<Boolean>();
-    Pair<String, Boolean> p;
     boolean star = false;
 }
 {
