@@ -537,8 +537,8 @@ public class RexImpTable {
     }
   }
 
-  public static boolean dummy(Object a, Object b) {
-    return true;
+  public static int dummy(Object a, Object b) {
+    return (int)a;
   }
 
   private <T> Supplier<T> constructorSupplier(Class<T> klass) {
