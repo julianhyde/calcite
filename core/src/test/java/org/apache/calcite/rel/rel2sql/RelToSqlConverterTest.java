@@ -214,6 +214,117 @@ public class RelToSqlConverterTest {
         .ok(expectedMySql);
   }
 
+  /** Tests GROUP BY ROLLUP of two columns. The SQL for MySQL has
+   * "GROUP BY ... ROLLUP" but no "ORDER BY". */
+  @Test public void testSelectQueryWithGroupByRollup() {
+    final String query = "select \"product_class_id\", \"brand_name\"\n"
+        + "from \"product\"\n"
+        + "group by rollup(\"product_class_id\", \"brand_name\")\n"
+        + "order by 1, 2";
+    final String expected = "SELECT \"product_class_id\", \"brand_name\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "GROUP BY ROLLUP(\"product_class_id\", \"brand_name\")\n"
+        + "ORDER BY \"product_class_id\", \"brand_name\"";
+    final String expectedMySql = "SELECT `product_class_id`, `brand_name`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY `product_class_id`, `brand_name` WITH ROLLUP";
+    final String expectedMySql8 = "SELECT `product_class_id`, `brand_name`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY ROLLUP(`product_class_id`, `brand_name`)\n"
+        + "ORDER BY `product_class_id` NULLS LAST, `brand_name` NULLS LAST";
+    sql(query)
+        .ok(expected)
+        .withMysql()
+        .ok(expectedMySql)
+        .withMysql8()
+        .ok(expectedMySql8);
+  }
+
+  /** As {@link #testSelectQueryWithGroupByRollup()},
+   * but ORDER BY columns reversed. */
+  @Test public void testSelectQueryWithGroupByRollup2() {
+    final String query = "select \"product_class_id\", \"brand_name\"\n"
+        + "from \"product\"\n"
+        + "group by rollup(\"product_class_id\", \"brand_name\")\n"
+        + "order by 2, 1";
+    final String expected = "SELECT \"product_class_id\", \"brand_name\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "GROUP BY ROLLUP(\"product_class_id\", \"brand_name\")\n"
+        + "ORDER BY \"brand_name\", \"product_class_id\"";
+    final String expectedMySql = "SELECT `product_class_id`, `brand_name`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY `brand_name`, `product_class_id` WITH ROLLUP";
+    sql(query)
+        .ok(expected)
+        .withMysql()
+        .ok(expectedMySql);
+  }
+
+  /** CUBE of one column is equivalent to ROLLUP, and Calcite recognizes
+   * this. */
+  @Test public void testSelectQueryWithGroupByRollup3() {
+    final String query = "select \"product_class_id\", count(*) as c\n"
+        + "from \"product\"\n"
+        + "group by cube(\"product_class_id\")\n"
+        + "order by 1, 2";
+    final String expected = "SELECT \"product_class_id\", COUNT(*) AS \"C\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "GROUP BY ROLLUP(\"product_class_id\")\n"
+        + "ORDER BY \"product_class_id\", COUNT(*)";
+    final String expectedMySql = "SELECT `product_class_id`, COUNT(*) AS `C`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY `product_class_id` WITH ROLLUP\n"
+        + "ORDER BY `product_class_id` IS NULL, `product_class_id`,"
+        + " COUNT(*) IS NULL, COUNT(*)";
+    sql(query)
+        .ok(expected)
+        .withMysql()
+        .ok(expectedMySql);
+  }
+
+  /** As above, but no ORDER BY clause. */
+  @Test public void testSelectQueryWithGroupByRollup5() {
+    final String query = "select \"product_class_id\", count(*) as c\n"
+        + "from \"product\"\n"
+        + "group by cube(\"product_class_id\")";
+    final String expected = "SELECT \"product_class_id\", COUNT(*) AS \"C\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "GROUP BY ROLLUP(\"product_class_id\")";
+    final String expectedMySql = "SELECT `product_class_id`, COUNT(*) AS `C`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY `product_class_id` WITH ROLLUP";
+    sql(query)
+        .ok(expected)
+        .withMysql()
+        .ok(expectedMySql);
+  }
+
+  /** Cannot rewrite if ORDER BY contains a column not in GROUP BY (in this
+   * case COUNT(*)). */
+  @Test public void testSelectQueryWithGroupByRollup4() {
+    final String query = "select \"product_class_id\", \"brand_name\",\n"
+        + " count(*) as c\n"
+        + "from \"product\"\n"
+        + "group by rollup(\"product_class_id\", \"brand_name\")\n"
+        + "order by 1, 2, 3";
+    final String expected = "SELECT \"product_class_id\", \"brand_name\","
+        + " COUNT(*) AS \"C\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "GROUP BY ROLLUP(\"product_class_id\", \"brand_name\")\n"
+        + "ORDER BY \"product_class_id\", \"brand_name\", COUNT(*)";
+    final String expectedMySql = "SELECT `product_class_id`, `brand_name`,"
+        + " COUNT(*) AS `C`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY `product_class_id`, `brand_name` WITH ROLLUP\n"
+        + "ORDER BY `product_class_id` IS NULL, `product_class_id`,"
+        + " `brand_name` IS NULL, `brand_name`,"
+        + " COUNT(*) IS NULL, COUNT(*)";
+    sql(query)
+        .ok(expected)
+        .withMysql()
+        .ok(expectedMySql);
+  }
+
   @Test public void testSelectQueryWithMinAggregateFunction() {
     String query = "select min(\"net_weight\") from \"product\" group by \"product_class_id\" ";
     final String expected = "SELECT MIN(\"net_weight\")\n"
@@ -3098,6 +3209,17 @@ public class RelToSqlConverterTest {
 
     Sql withMysql() {
       return dialect(SqlDialect.DatabaseProduct.MYSQL.getDialect());
+    }
+
+    Sql withMysql8() {
+      final SqlDialect mysqlDialect = DatabaseProduct.MYSQL.getDialect();
+      return dialect(
+          new SqlDialect(SqlDialect.EMPTY_CONTEXT
+              .withDatabaseProduct(DatabaseProduct.MYSQL)
+              .withDatabaseMajorVersion(8)
+              .withIdentifierQuoteString(mysqlDialect.quoteIdentifier("")
+                  .substring(0, 1))
+              .withNullCollation(mysqlDialect.getNullCollation())));
     }
 
     Sql withOracle() {

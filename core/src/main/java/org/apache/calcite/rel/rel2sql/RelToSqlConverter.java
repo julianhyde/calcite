@@ -50,6 +50,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlJoin;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMatchRecognize;
 import org.apache.calcite.sql.SqlNode;
@@ -64,19 +65,24 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.ReflectUtil;
 import org.apache.calcite.util.ReflectiveVisitor;
+import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
+import java.util.stream.Collectors;
 
 /**
  * Utility to convert relational expressions to SQL abstract syntax tree.
@@ -189,6 +195,10 @@ public class RelToSqlConverter extends SqlImplementor
 
   /** @see #dispatch */
   public Result visit(Aggregate e) {
+    return visitAggregate(e, e.getGroupSet().toList());
+  }
+
+  private Result visitAggregate(Aggregate e, List<Integer> groupKeyList) {
     // "select a, b, sum(x) from ( ... ) group by a, b"
     final Result x = visitChild(0, e.getInput());
     final Builder builder;
@@ -198,18 +208,13 @@ public class RelToSqlConverter extends SqlImplementor
     } else {
       builder = x.builder(e, Clause.GROUP_BY);
     }
-    List<SqlNode> groupByList = Expressions.list();
     final List<SqlNode> selectList = new ArrayList<>();
-    for (int group : e.getGroupSet()) {
-      final SqlNode field = builder.context.field(group);
-      addSelect(selectList, field, e.getRowType());
-      groupByList.add(field);
-    }
+    final List<SqlNode> groupByList =
+        generateGroupList(builder, selectList, e, groupKeyList);
     for (AggregateCall aggCall : e.getAggCallList()) {
       SqlNode aggCallSqlNode = builder.context.toSql(aggCall);
       if (aggCall.getAggregation() instanceof SqlSingleValueAggFunction) {
-        aggCallSqlNode = dialect.
-            rewriteSingleValueExpr(aggCallSqlNode);
+        aggCallSqlNode = dialect.rewriteSingleValueExpr(aggCallSqlNode);
       }
       addSelect(selectList, aggCallSqlNode, e.getRowType());
     }
@@ -220,6 +225,56 @@ public class RelToSqlConverter extends SqlImplementor
       builder.setGroupBy(new SqlNodeList(groupByList, POS));
     }
     return builder.result();
+  }
+
+  /** Generates the GROUP BY items, for example {@code GROUP BY x, y},
+   * {@code GROUP BY CUBE (x, y)} or {@code GROUP BY ROLLUP (x, y)}.
+   *
+   * <p>Also populates the SELECT clause. If the GROUP BY list is simple, the
+   * SELECT will be identical; if the GROUP BY list contains GROUPING SETS,
+   * CUBE or ROLLUP, the SELECT clause will contain the distinct leaf
+   * expressions. */
+  private List<SqlNode> generateGroupList(Builder builder,
+      List<SqlNode> selectList, Aggregate aggregate, List<Integer> groupList) {
+    final List<Integer> sortedGroupList =
+        Ordering.natural().sortedCopy(groupList);
+    assert aggregate.getGroupSet().asList().equals(sortedGroupList)
+        : "groupList " + groupList + " must be equal to groupSet "
+        + aggregate.getGroupSet() + ", just possibly a different order";
+
+    final List<SqlNode> groupKeys = new ArrayList<>();
+    for (int key : groupList) {
+      final SqlNode field = builder.context.field(key);
+      groupKeys.add(field);
+    }
+    for (int key : sortedGroupList) {
+      final SqlNode field = builder.context.field(key);
+      addSelect(selectList, field, aggregate.getRowType());
+    }
+    switch (aggregate.getGroupType()) {
+    case SIMPLE:
+      return ImmutableList.copyOf(groupKeys);
+    case CUBE:
+      if (aggregate.getGroupSet().cardinality() > 1) {
+        return ImmutableList.of(
+            SqlStdOperatorTable.CUBE.createCall(SqlParserPos.ZERO, groupKeys));
+      }
+      // a singleton CUBE and ROLLUP are the same but we prefer ROLLUP;
+      // fall through
+    case ROLLUP:
+      return ImmutableList.of(
+          SqlStdOperatorTable.ROLLUP.createCall(SqlParserPos.ZERO, groupKeys));
+    default:
+    case OTHER:
+      return ImmutableList.of(
+          SqlStdOperatorTable.GROUPING_SETS.createCall(SqlParserPos.ZERO,
+              aggregate.getGroupSets().stream()
+                  .map(groupSet ->
+                      new SqlNodeList(
+                          Util.select(groupKeys, groupSet.asList()),
+                          SqlParserPos.ZERO))
+                  .collect(Collectors.toList())));
+    }
   }
 
   /** @see #dispatch */
@@ -337,6 +392,31 @@ public class RelToSqlConverter extends SqlImplementor
 
   /** @see #dispatch */
   public Result visit(Sort e) {
+    if (e.getInput() instanceof Aggregate) {
+      final Aggregate aggregate = (Aggregate) e.getInput();
+      if (!dialect.supportsAggregateFunction(SqlKind.ROLLUP)
+          && dialect.supportsGroupByWithRollup()
+          && (aggregate.getGroupType() == Aggregate.Group.SIMPLE
+              || aggregate.getGroupType() == Aggregate.Group.ROLLUP
+              || aggregate.getGroupType() == Aggregate.Group.CUBE
+                  && aggregate.getGroupSet().cardinality() == 1)
+          && e.collation.getFieldCollations().stream().allMatch(fc ->
+              fc.getFieldIndex() < aggregate.getGroupSet().cardinality())) {
+        // MySQL 5 does not support standard "GROUP BY ROLLUP(x, y)", only
+        // the non-standard "GROUP BY x, y WITH ROLLUP".
+        // It does not allow "WITH ROLLUP" in combination with "ORDER BY",
+        // but "GROUP BY x, y WITH ROLLUP" implicitly sorts by x, y,
+        // so skip the ORDER BY.
+        final Set<Integer> groupList = new LinkedHashSet<>();
+        for (RelFieldCollation fc : e.collation.getFieldCollations()) {
+          groupList.add(aggregate.getGroupSet().nth(fc.getFieldIndex()));
+        }
+        for (int key : aggregate.getGroupSet()) {
+          groupList.add(key);
+        }
+        return visitAggregate(aggregate, ImmutableList.copyOf(groupList));
+      }
+    }
     Result x = visitChild(0, e.getInput());
     Builder builder = x.builder(e, Clause.ORDER_BY);
     List<SqlNode> orderByList = Expressions.list();
