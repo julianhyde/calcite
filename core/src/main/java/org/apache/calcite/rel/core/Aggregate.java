@@ -478,19 +478,42 @@ public abstract class Aggregate extends SingleRel {
       if (groupSets.size() == IntMath.pow(2, groupSet.cardinality())) {
         return CUBE;
       }
-    checkRollup:
-      if (groupSets.size() == groupSet.cardinality() + 1) {
-        ImmutableBitSet g = groupSet;
-        for (ImmutableBitSet bitSet : groupSets) {
-          if (!bitSet.equals(g)) {
-            break checkRollup;
-          }
-          g = g.clear(g.length() - 1);
-        }
-        assert g.isEmpty();
+      if (isRollup(groupSet, groupSets)) {
         return ROLLUP;
       }
       return OTHER;
+    }
+
+    /** Returns whether a list of sets is a rollup.
+     *
+     * <p>For example, if {@code groupSet} is <code>{2, 4, 5}</code>, then
+     * <code>[{2, 4, 5], {2, 5}, {5}, {}]</code> is a rollup. The first item is
+     * equal to {@code groupSet}, and each subsequent item is a subset with one
+     * fewer bit than the previous. */
+    public static boolean isRollup(ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets) {
+      if (groupSets.size() != groupSet.cardinality() + 1) {
+        return false;
+      }
+      ImmutableBitSet g = null;
+      for (ImmutableBitSet bitSet : groupSets) {
+        if (g == null) {
+          // First item must equal groupSet
+          if (!bitSet.equals(groupSet)) {
+            return false;
+          }
+        } else {
+          // Each subsequent items must be a subset with one fewer bit than the
+          // previous item
+          if (!g.contains(bitSet)
+              || g.except(bitSet).cardinality() != 1) {
+            return false;
+          }
+        }
+        g = bitSet;
+      }
+      assert g.isEmpty();
+      return true;
     }
   }
 

@@ -262,7 +262,7 @@ public class RelToSqlConverterTest {
 
   /** CUBE of one column is equivalent to ROLLUP, and Calcite recognizes
    * this. */
-  @Test public void testSelectQueryWithGroupByRollup3() {
+  @Test public void testSelectQueryWithSingletonCube() {
     final String query = "select \"product_class_id\", count(*) as c\n"
         + "from \"product\"\n"
         + "group by cube(\"product_class_id\")\n"
@@ -282,8 +282,9 @@ public class RelToSqlConverterTest {
         .ok(expectedMySql);
   }
 
-  /** As above, but no ORDER BY clause. */
-  @Test public void testSelectQueryWithGroupByRollup5() {
+  /** As {@link #testSelectQueryWithSingletonCube()}, but no ORDER BY
+   * clause. */
+  @Test public void testSelectQueryWithSingletonCubeNoOrderBy() {
     final String query = "select \"product_class_id\", count(*) as c\n"
         + "from \"product\"\n"
         + "group by cube(\"product_class_id\")";
@@ -301,7 +302,7 @@ public class RelToSqlConverterTest {
 
   /** Cannot rewrite if ORDER BY contains a column not in GROUP BY (in this
    * case COUNT(*)). */
-  @Test public void testSelectQueryWithGroupByRollup4() {
+  @Test public void testSelectQueryWithRollupOrderByCount() {
     final String query = "select \"product_class_id\", \"brand_name\",\n"
         + " count(*) as c\n"
         + "from \"product\"\n"
@@ -319,6 +320,28 @@ public class RelToSqlConverterTest {
         + "ORDER BY `product_class_id` IS NULL, `product_class_id`,"
         + " `brand_name` IS NULL, `brand_name`,"
         + " COUNT(*) IS NULL, COUNT(*)";
+    sql(query)
+        .ok(expected)
+        .withMysql()
+        .ok(expectedMySql);
+  }
+
+  /** As {@link #testSelectQueryWithSingletonCube()}, but with LIMIT. */
+  @Test public void testSelectQueryWithCubeLimit() {
+    final String query = "select \"product_class_id\", count(*) as c\n"
+        + "from \"product\"\n"
+        + "group by cube(\"product_class_id\")\n"
+        + "limit 5";
+    final String expected = "SELECT \"product_class_id\", COUNT(*) AS \"C\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "GROUP BY ROLLUP(\"product_class_id\")\n"
+        + "FETCH NEXT 5 ROWS ONLY";
+    // If a MySQL 5 query has GROUP BY ... ROLLUP, you cannot add ORDER BY,
+    // but you can add LIMIT.
+    final String expectedMySql = "SELECT `product_class_id`, COUNT(*) AS `C`\n"
+        + "FROM `foodmart`.`product`\n"
+        + "GROUP BY `product_class_id` WITH ROLLUP\n"
+        + "LIMIT 5";
     sql(query)
         .ok(expected)
         .withMysql()

@@ -35,6 +35,8 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.core.Values;
+import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
@@ -65,7 +67,6 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.ReflectUtil;
 import org.apache.calcite.util.ReflectiveVisitor;
-import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -271,7 +272,11 @@ public class RelToSqlConverter extends SqlImplementor
               aggregate.getGroupSets().stream()
                   .map(groupSet ->
                       new SqlNodeList(
-                          Util.select(groupKeys, groupSet.asList()),
+                          groupSet.asList().stream()
+                              .map(key ->
+                                  groupKeys.get(aggregate.getGroupSet()
+                                      .indexOf(key)))
+                          .collect(Collectors.toList()),
                           SqlParserPos.ZERO))
                   .collect(Collectors.toList())));
     }
@@ -394,14 +399,7 @@ public class RelToSqlConverter extends SqlImplementor
   public Result visit(Sort e) {
     if (e.getInput() instanceof Aggregate) {
       final Aggregate aggregate = (Aggregate) e.getInput();
-      if (!dialect.supportsAggregateFunction(SqlKind.ROLLUP)
-          && dialect.supportsGroupByWithRollup()
-          && (aggregate.getGroupType() == Aggregate.Group.SIMPLE
-              || aggregate.getGroupType() == Aggregate.Group.ROLLUP
-              || aggregate.getGroupType() == Aggregate.Group.CUBE
-                  && aggregate.getGroupSet().cardinality() == 1)
-          && e.collation.getFieldCollations().stream().allMatch(fc ->
-              fc.getFieldIndex() < aggregate.getGroupSet().cardinality())) {
+      if (hasTrickyRollup(e, aggregate)) {
         // MySQL 5 does not support standard "GROUP BY ROLLUP(x, y)", only
         // the non-standard "GROUP BY x, y WITH ROLLUP".
         // It does not allow "WITH ROLLUP" in combination with "ORDER BY",
@@ -414,7 +412,24 @@ public class RelToSqlConverter extends SqlImplementor
         for (int key : aggregate.getGroupSet()) {
           groupList.add(key);
         }
-        return visitAggregate(aggregate, ImmutableList.copyOf(groupList));
+        return offsetFetch(e,
+            visitAggregate(aggregate, ImmutableList.copyOf(groupList)));
+      }
+    }
+    if (e.getInput() instanceof Project) {
+      // Deal with the case Sort(Project(Aggregate ...))
+      // by converting it to Project(Sort(Aggregate ...)).
+      final Project project = (Project) e.getInput();
+      if (project.getInput() instanceof Aggregate) {
+        final Aggregate aggregate = (Aggregate) project.getInput();
+        if (hasTrickyRollup(e, aggregate)) {
+          final Sort sort2 =
+              LogicalSort.create(aggregate, e.collation, e.offset, e.fetch);
+          final Project project2 =
+              LogicalProject.create(sort2, project.getProjects(),
+                  project.getRowType());
+          return visit(project2);
+        }
       }
     }
     Result x = visitChild(0, e.getInput());
@@ -427,17 +442,32 @@ public class RelToSqlConverter extends SqlImplementor
       builder.setOrderBy(new SqlNodeList(orderByList, POS));
       x = builder.result();
     }
+    x = offsetFetch(e, x);
+    return x;
+  }
+
+  Result offsetFetch(Sort e, Result x) {
     if (e.fetch != null) {
-      builder = x.builder(e, Clause.FETCH);
+      final Builder builder = x.builder(e, Clause.FETCH);
       builder.setFetch(builder.context.toSql(null, e.fetch));
       x = builder.result();
     }
     if (e.offset != null) {
-      builder = x.builder(e, Clause.OFFSET);
+      final Builder builder = x.builder(e, Clause.OFFSET);
       builder.setOffset(builder.context.toSql(null, e.offset));
       x = builder.result();
     }
     return x;
+  }
+
+  public boolean hasTrickyRollup(Sort e, Aggregate aggregate) {
+    return !dialect.supportsAggregateFunction(SqlKind.ROLLUP)
+        && dialect.supportsGroupByWithRollup()
+        && (aggregate.getGroupType() == Aggregate.Group.ROLLUP
+            || aggregate.getGroupType() == Aggregate.Group.CUBE
+                && aggregate.getGroupSet().cardinality() == 1)
+        && e.collation.getFieldCollations().stream().allMatch(fc ->
+            fc.getFieldIndex() < aggregate.getGroupSet().cardinality());
   }
 
   /** @see #dispatch */

@@ -56,6 +56,26 @@ public class InduceGroupingTypeTest {
     assertEquals(Aggregate.Group.ROLLUP,
         Aggregate.Group.induce(groupSet, groupSets));
 
+    // ROLLUP, not removing bits in order
+    groupSets = new ArrayList<>();
+    groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
+    groupSets.add(ImmutableBitSet.of(1, 4, 5));
+    groupSets.add(ImmutableBitSet.of(4, 5));
+    groupSets.add(ImmutableBitSet.of(4));
+    groupSets.add(ImmutableBitSet.of());
+    assertEquals(Aggregate.Group.ROLLUP,
+        Aggregate.Group.induce(groupSet, groupSets));
+
+    // ROLLUP, removing bits in reverse order
+    groupSets = new ArrayList<>();
+    groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
+    groupSets.add(ImmutableBitSet.of(2, 4, 5));
+    groupSets.add(ImmutableBitSet.of(4, 5));
+    groupSets.add(ImmutableBitSet.of(5));
+    groupSets.add(ImmutableBitSet.of());
+    assertEquals(Aggregate.Group.ROLLUP,
+        Aggregate.Group.induce(groupSet, groupSets));
+
     // OTHER
     groupSets = new ArrayList<>();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
@@ -70,6 +90,15 @@ public class InduceGroupingTypeTest {
     groupSets.add(ImmutableBitSet.of(1, 2, 4));
     groupSets.add(ImmutableBitSet.of(1, 2));
     groupSets.add(ImmutableBitSet.of(1));
+    assertEquals(Aggregate.Group.OTHER,
+        Aggregate.Group.induce(groupSet, groupSets));
+
+    groupSets = new ArrayList<>();
+    groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
+    groupSets.add(ImmutableBitSet.of(1, 2, 4));
+    groupSets.add(ImmutableBitSet.of(1, 2));
+    groupSets.add(ImmutableBitSet.of(1, 4));
+    groupSets.add(ImmutableBitSet.of());
     assertEquals(Aggregate.Group.OTHER,
         Aggregate.Group.induce(groupSet, groupSets));
 
