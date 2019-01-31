@@ -24,7 +24,9 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 /**
@@ -36,18 +38,31 @@ public class InduceGroupingTypeTest {
     final ImmutableBitSet groupSet = ImmutableBitSet.of(1, 2, 4, 5);
 
     // SIMPLE
-    List<ImmutableBitSet> groupSets = new ArrayList<>();
+    final List<ImmutableBitSet> groupSets = new ArrayList<>();
     groupSets.add(groupSet);
     assertEquals(Aggregate.Group.SIMPLE,
         Aggregate.Group.induce(groupSet, groupSets));
 
-    // CUBE
-    groupSets = ImmutableBitSet.ORDERING.sortedCopy(groupSet.powerSet());
+    // CUBE (has only one bit, so could also be ROLLUP)
+    groupSets.clear();
+    final ImmutableBitSet groupSet0 = ImmutableBitSet.of(2);
+    groupSets.add(groupSet0);
+    groupSets.add(ImmutableBitSet.of());
     assertEquals(Aggregate.Group.CUBE,
-        Aggregate.Group.induce(groupSet, groupSets));
+        Aggregate.Group.induce(groupSet0, groupSets));
+    assertThat(Aggregate.Group.isRollup(groupSet0, groupSets), is(true));
+    assertThat(Aggregate.Group.getRollup(groupSet0, groupSets).toString(),
+        is("[2]"));
+
+    // CUBE
+    final List<ImmutableBitSet> groupSets0 =
+        ImmutableBitSet.ORDERING.sortedCopy(groupSet.powerSet());
+    assertEquals(Aggregate.Group.CUBE,
+        Aggregate.Group.induce(groupSet, groupSets0));
+    assertThat(Aggregate.Group.isRollup(groupSet, groupSets0), is(false));
 
     // ROLLUP
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
     groupSets.add(ImmutableBitSet.of(1, 2, 4));
     groupSets.add(ImmutableBitSet.of(1, 2));
@@ -55,9 +70,12 @@ public class InduceGroupingTypeTest {
     groupSets.add(ImmutableBitSet.of());
     assertEquals(Aggregate.Group.ROLLUP,
         Aggregate.Group.induce(groupSet, groupSets));
+    assertThat(Aggregate.Group.isRollup(groupSet, groupSets), is(true));
+    assertThat(Aggregate.Group.getRollup(groupSet, groupSets).toString(),
+        is("[1, 2, 4, 5]"));
 
     // ROLLUP, not removing bits in order
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
     groupSets.add(ImmutableBitSet.of(1, 4, 5));
     groupSets.add(ImmutableBitSet.of(4, 5));
@@ -65,9 +83,11 @@ public class InduceGroupingTypeTest {
     groupSets.add(ImmutableBitSet.of());
     assertEquals(Aggregate.Group.ROLLUP,
         Aggregate.Group.induce(groupSet, groupSets));
+    assertThat(Aggregate.Group.getRollup(groupSet, groupSets).toString(),
+        is("[4, 5, 1, 2]"));
 
     // ROLLUP, removing bits in reverse order
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
     groupSets.add(ImmutableBitSet.of(2, 4, 5));
     groupSets.add(ImmutableBitSet.of(4, 5));
@@ -75,9 +95,11 @@ public class InduceGroupingTypeTest {
     groupSets.add(ImmutableBitSet.of());
     assertEquals(Aggregate.Group.ROLLUP,
         Aggregate.Group.induce(groupSet, groupSets));
+    assertThat(Aggregate.Group.getRollup(groupSet, groupSets).toString(),
+        is("[5, 4, 2, 1]"));
 
     // OTHER
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
     groupSets.add(ImmutableBitSet.of(1, 2, 4));
     groupSets.add(ImmutableBitSet.of(1, 2));
@@ -85,7 +107,7 @@ public class InduceGroupingTypeTest {
     assertEquals(Aggregate.Group.OTHER,
         Aggregate.Group.induce(groupSet, groupSets));
 
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
     groupSets.add(ImmutableBitSet.of(1, 2, 4));
     groupSets.add(ImmutableBitSet.of(1, 2));
@@ -93,7 +115,7 @@ public class InduceGroupingTypeTest {
     assertEquals(Aggregate.Group.OTHER,
         Aggregate.Group.induce(groupSet, groupSets));
 
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 4, 5));
     groupSets.add(ImmutableBitSet.of(1, 2, 4));
     groupSets.add(ImmutableBitSet.of(1, 2));
@@ -102,7 +124,7 @@ public class InduceGroupingTypeTest {
     assertEquals(Aggregate.Group.OTHER,
         Aggregate.Group.induce(groupSet, groupSets));
 
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of(1, 2, 5));
     groupSets.add(ImmutableBitSet.of(1, 2, 4));
     groupSets.add(ImmutableBitSet.of(1, 2));
@@ -116,15 +138,16 @@ public class InduceGroupingTypeTest {
       // ok
     }
 
-    groupSets = ImmutableBitSet.ORDERING.sortedCopy(groupSets);
+    List<ImmutableBitSet> groupSets1 =
+        ImmutableBitSet.ORDERING.sortedCopy(groupSets);
+    assertEquals(Aggregate.Group.OTHER,
+        Aggregate.Group.induce(groupSet, groupSets1));
+
+    groupSets.clear();
     assertEquals(Aggregate.Group.OTHER,
         Aggregate.Group.induce(groupSet, groupSets));
 
-    groupSets = new ArrayList<>();
-    assertEquals(Aggregate.Group.OTHER,
-        Aggregate.Group.induce(groupSet, groupSets));
-
-    groupSets = new ArrayList<>();
+    groupSets.clear();
     groupSets.add(ImmutableBitSet.of());
     assertEquals(Aggregate.Group.OTHER,
         Aggregate.Group.induce(groupSet, groupSets));

@@ -48,6 +48,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.math.IntMath;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -514,6 +515,29 @@ public abstract class Aggregate extends SingleRel {
       }
       assert g.isEmpty();
       return true;
+    }
+
+    /** Returns the ordered list of bits in a rollup.
+     *
+     * <p>For example, if {@code groupSet} is <code>{2, 4, 5}</code>, then
+     * <code>[{2, 4, 5], {2, 5}, {5}, {}]</code> is a rollup. This method
+     * returns the list {@code [5, 2, 4]}, which are the succession of bits
+     * added to each of the sets. */
+    public static List<Integer> getRollup(ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets) {
+      final Set<Integer> set = new LinkedHashSet<>();
+      ImmutableBitSet g = null;
+      for (ImmutableBitSet bitSet : groupSets) {
+        if (g == null) {
+          // First item must equal groupSet
+        } else {
+          // Each subsequent items must be a subset with one fewer bit than the
+          // previous item
+          set.addAll(g.except(bitSet).toList());
+        }
+        g = bitSet;
+      }
+      return ImmutableList.copyOf(set).reverse();
     }
   }
 

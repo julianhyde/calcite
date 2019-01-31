@@ -17,6 +17,8 @@
 package org.apache.calcite.rel.rel2sql;
 
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
@@ -65,6 +67,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Permutation;
 import org.apache.calcite.util.ReflectUtil;
 import org.apache.calcite.util.ReflectiveVisitor;
 
@@ -420,11 +423,15 @@ public class RelToSqlConverter extends SqlImplementor
       // Deal with the case Sort(Project(Aggregate ...))
       // by converting it to Project(Sort(Aggregate ...)).
       final Project project = (Project) e.getInput();
-      if (project.getInput() instanceof Aggregate) {
+      final Permutation permutation = project.getPermutation();
+      if (permutation != null
+          && project.getInput() instanceof Aggregate) {
         final Aggregate aggregate = (Aggregate) project.getInput();
         if (hasTrickyRollup(e, aggregate)) {
+          final RelCollation collation =
+              RelCollations.permute(e.collation, permutation.inverse());
           final Sort sort2 =
-              LogicalSort.create(aggregate, e.collation, e.offset, e.fetch);
+              LogicalSort.create(aggregate, collation, e.offset, e.fetch);
           final Project project2 =
               LogicalProject.create(sort2, project.getProjects(),
                   project.getRowType());
