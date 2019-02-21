@@ -553,6 +553,58 @@ public class MaterializationTest {
                 + "    EnumerableTableScan(table=[[hr, m0]])"));
   }
 
+  @Ignore  // fails - uses emp not m0
+  @Test public void testAggregateFilter0() {
+    checkMaterialize(
+        "select \"empid\", \"deptno\", count(*) as c, sum(\"empid\") as s\n"
+            + "from \"emps\"\n"
+            + "group by \"empid\", \"deptno\"",
+        "select count(*)\n"
+            + "from \"emps\"\n"
+            + "where \"deptno\" = 10\n"
+            + "group by \"empid\", \"deptno\"",
+        HR_FKUK_MODEL,
+        CalciteAssert.checkResultContains("m0"));
+  }
+
+  @Ignore // fails - uses emp not m0
+  @Test public void testAggregateFilterPartialRollup() {
+    checkMaterialize(
+        "select \"empid\", \"deptno\", count(*) as c, sum(\"empid\") as s\n"
+            + "from \"emps\"\n"
+            + "group by \"empid\", \"deptno\"",
+        "select count(*)\n"
+            + "from \"emps\"\n"
+            + "where \"deptno\" = 10\n"
+            + "group by \"deptno\"",
+        HR_FKUK_MODEL,
+        CalciteAssert.checkResultContains("m0"));
+  }
+
+  // works
+  @Test public void testAggregateFilter() {
+    checkMaterialize(
+        "select \"empid\", \"deptno\", count(*) as c, sum(\"empid\") as s\n"
+            + "from \"emps\"\n"
+            + "group by \"empid\", \"deptno\"",
+        "select count(*)\n"
+            + "from \"emps\"\n"
+            + "where \"deptno\" = 10\n"
+            + "group by \"empid\"",
+        HR_FKUK_MODEL,
+        CalciteAssert.checkResultContains("m0"));
+  }
+
+  // works
+  @Test public void testAggregateFilterFullRollup() {
+    checkMaterialize(
+        "select \"empid\", \"deptno\", count(*) as c, sum(\"empid\") as s from \"emps\" "
+            + "group by \"empid\", \"deptno\"",
+        "select count(*) from \"emps\" where \"deptno\" = 10",
+        HR_FKUK_MODEL,
+        CalciteAssert.checkResultContains("m0"));
+  }
+
   /** Aggregation materialization with a project. */
   @Ignore("work in progress")
   @Test public void testAggregateProject() {
