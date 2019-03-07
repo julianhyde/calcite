@@ -48,6 +48,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -89,11 +90,11 @@ public class LexEscapeTest {
     assertThat(transform, instanceOf(EnumerableProject.class));
     List<RelDataTypeField> fields = transform.getRowType().getFieldList();
     // Get field type from sql text and validate we parsed it after validation.
-    assert fields.size() == 4;
-    assert fields.get(0).getType().getSqlTypeName() == SqlTypeName.VARCHAR;
-    assert fields.get(1).getType().getSqlTypeName() == SqlTypeName.TIME;
-    assert fields.get(2).getType().getSqlTypeName() == SqlTypeName.INTEGER;
-    assert fields.get(3).getType().getSqlTypeName() == SqlTypeName.TIMESTAMP;
+    assertThat(fields.size(), is(4));
+    assertThat(fields.get(0).getType().getSqlTypeName(), is(SqlTypeName.VARCHAR));
+    assertThat(fields.get(1).getType().getSqlTypeName(), is(SqlTypeName.TIME));
+    assertThat(fields.get(2).getType().getSqlTypeName(), is(SqlTypeName.INTEGER));
+    assertThat(fields.get(3).getType().getSqlTypeName(), is(SqlTypeName.TIMESTAMP));
   }
 
   @Test public void testCalciteEscapeOracle()
