@@ -1559,7 +1559,7 @@ List<SqlNode> SelectList() :
 SqlNode SelectItem() :
 {
     SqlNode e;
-    SqlIdentifier id;
+    final SqlIdentifier id;
 }
 {
     e = SelectExpression()
@@ -1812,7 +1812,7 @@ SqlNode TableRef2(boolean lateral) :
     SqlNode tableRef;
     SqlNode over;
     SqlNodeList extendList = null;
-    final SqlIdentifier id;
+    final SqlIdentifier alias;
     final Span s, s2;
     SqlNodeList args;
     SqlNode sample;
@@ -1896,16 +1896,16 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = ExtendedTableRef()
     )
     [
-        [ <AS> ] id = SimpleIdentifier()
+        [ <AS> ] alias = SimpleIdentifier()
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
             if (columnAliasList == null) {
                 tableRef = SqlStdOperatorTable.AS.createCall(
-                    Span.of(tableRef).end(this), tableRef, id);
+                    Span.of(tableRef).end(this), tableRef, alias);
             } else {
                 List<SqlNode> idList = new ArrayList<SqlNode>();
                 idList.add(tableRef);
-                idList.add(id);
+                idList.add(alias);
                 idList.addAll(columnAliasList.getList());
                 tableRef = SqlStdOperatorTable.AS.createCall(
                     Span.of(tableRef).end(this), idList);
@@ -4155,42 +4155,49 @@ SqlDynamicParam DynamicParam() :
 }
 
 /**
- * Parses a dot(maybe) split identifier segment. Each time it reads an identifier it writes one element
- * to each list, and the quotes list records whether the identifier was quoted.
+ * Parses one segment of an identifier that may be composite.
+ *
+ * <p>Each time it reads an identifier it writes one element to each list;
+ * the entry in {@code positions} records its position and whether the
+ * segment was quoted.
  */
-void IdentifierSegment(List<String> names, List<SqlParserPos> positions, List<Boolean> quotes) :
+void IdentifierSegment(List<String> names, List<SqlParserPos> positions) :
 {
-    String id;
+    final String id;
     char unicodeEscapeChar = BACKSLASH;
-    boolean isEscaped = true;
+    final SqlParserPos pos;
+    final Span span;
 }
 {
     (
-        <IDENTIFIER>
-        {
+        <IDENTIFIER> {
             id = unquotedIdentifier();
-            isEscaped = false;
+            pos = getPos();
         }
     |
         <QUOTED_IDENTIFIER> {
             id = SqlParserUtil.strip(getToken(0).image, DQ, DQ, DQDQ,
                 quotedCasing);
+            pos = getPos().withQuoting(true);
         }
     |
         <BACK_QUOTED_IDENTIFIER> {
             id = SqlParserUtil.strip(getToken(0).image, "`", "`", "``",
                 quotedCasing);
+            pos = getPos().withQuoting(true);
         }
     |
         <BRACKET_QUOTED_IDENTIFIER> {
             id = SqlParserUtil.strip(getToken(0).image, "[", "]", "]]",
                 quotedCasing);
+            pos = getPos().withQuoting(true);
         }
     |
         <UNICODE_QUOTED_IDENTIFIER> {
-            id = getToken(0).image;
-            id = id.substring(id.indexOf('"'));
-            id = SqlParserUtil.strip(id, DQ, DQ, DQDQ, quotedCasing);
+            span = span();
+            String image = getToken(0).image;
+            image = image.substring(image.indexOf('"'));
+            image = SqlParserUtil.strip(image, DQ, DQ, DQDQ, quotedCasing);
         }
         [
             <UESCAPE> <QUOTED_STRING> {
@@ -4199,26 +4206,24 @@ void IdentifierSegment(List<String> names, List<SqlParserPos> positions, List<Bo
             }
         ]
         {
-            SqlLiteral lit = SqlLiteral.createCharString(id, "UTF16", getPos());
+            pos = span.end(this).withQuoting(true);
+            SqlLiteral lit = SqlLiteral.createCharString(image, "UTF16", pos);
             lit = lit.unescapeUnicode(unicodeEscapeChar);
             id = lit.toValue();
         }
     |
         id = NonReservedKeyWord() {
-            isEscaped = false;
+            pos = getPos();
         }
     )
     {
         if (id.length() > this.identifierMaxLength) {
-            throw SqlUtil.newContextException(getPos(),
+            throw SqlUtil.newContextException(pos,
                 RESOURCE.identifierTooLong(id, this.identifierMaxLength));
         }
         names.add(id);
-        if (quotes != null) {
-            quotes.add(isEscaped);
-        }
         if (positions != null) {
-            positions.add(getPos().setQuoted(isEscaped));
+            positions.add(pos);
         }
     }
 }
@@ -4228,10 +4233,10 @@ void IdentifierSegment(List<String> names, List<SqlParserPos> positions, List<Bo
  */
 String Identifier() :
 {
-    List<String> names = new ArrayList<String>();
+    final List<String> names = new ArrayList<String>();
 }
 {
-    IdentifierSegment(names, null, null) {
+    IdentifierSegment(names, null) {
         return names.get(0);
     }
 }
@@ -4241,11 +4246,11 @@ String Identifier() :
  */
 SqlIdentifier SimpleIdentifier() :
 {
-    List<String> names = new ArrayList<String>();
-    List<SqlParserPos> positions = new ArrayList<SqlParserPos>();
+    final List<String> names = new ArrayList<String>();
+    final List<SqlParserPos> positions = new ArrayList<SqlParserPos>();
 }
 {
-    IdentifierSegment(names, positions, null) {
+    IdentifierSegment(names, positions) {
         return new SqlIdentifier(names.get(0), positions.get(0));
     }
 }
@@ -4289,31 +4294,30 @@ SqlNodeList ParenthesizedSimpleIdentifierList() :
  */
 SqlIdentifier CompoundIdentifier() :
 {
-    List<String> list = new ArrayList<String>();
-    List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
-    List<Boolean> quotes = new ArrayList<Boolean>();
+    final List<String> nameList = new ArrayList<String>();
+    final List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
     boolean star = false;
 }
 {
-    IdentifierSegment(list, posList, quotes)
+    IdentifierSegment(nameList, posList)
     (
         <DOT>
-        IdentifierSegment(list, posList, quotes)
+        IdentifierSegment(nameList, posList)
     )*
     (
         <DOT>
         <STAR> {
             star = true;
-            list.add("");
+            nameList.add("");
             posList.add(getPos());
         }
     )?
     {
         SqlParserPos pos = SqlParserPos.sum(posList);
         if (star) {
-            return SqlIdentifier.star(list, pos, posList);
+            return SqlIdentifier.star(nameList, pos, posList);
         }
-        return new SqlIdentifier(list, null, pos, posList);
+        return new SqlIdentifier(nameList, null, pos, posList);
     }
 }
 

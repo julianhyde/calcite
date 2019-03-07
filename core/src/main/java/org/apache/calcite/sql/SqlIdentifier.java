@@ -359,19 +359,15 @@ public class SqlIdentifier extends SqlNode {
   }
 
   /**
-   * Returns whether this id is escaped by quoting.
+   * Returns whether the {@code i}th component of a compound identifier is
+   * quoted.
+   *
+   * @param i Ordinal of component
+   * @return Whether i'th component is quoted
    */
-  public boolean isQuoted() {
-    if (componentPositions != null) {
-      for (SqlParserPos pos : componentPositions) {
-        // if all the component pos is quoted, we think this SqlIdentifier is quoted.
-        if (!pos.isQuoted()) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
+  public boolean isComponentQuoted(int i) {
+    return componentPositions != null
+        && componentPositions.get(i).isQuoted();
   }
 
   public SqlMonotonicity getMonotonicity(SqlValidatorScope scope) {
