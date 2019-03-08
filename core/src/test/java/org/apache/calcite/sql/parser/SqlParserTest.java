@@ -62,7 +62,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import javax.annotation.Nonnull;
 
 import static org.hamcrest.CoreMatchers.equalTo;
