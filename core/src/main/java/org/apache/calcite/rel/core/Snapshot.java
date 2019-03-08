@@ -16,9 +16,9 @@
  */
 package org.apache.calcite.rel.core;
 
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
@@ -31,16 +31,18 @@ import org.apache.calcite.util.Litmus;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Relational expression that snapshot the input relation expression as it was at
- * the given specific time in the past.
+ * Relational expression that returns the contents of a relation expression as
+ * it was at a given time in the past.
  *
- * <p>For example, if {@code Products} is a temporal table, and {@link TableScan}(Products)
- * is a relational operator that returns all versions of the contents of the table,
- * then {@link Snapshot}(TableScan(Products)) is a relational operator that only returns
- * the contents whose versions that overlap with the given specific period (i.e. those that
- * started before given period and ended after it).
+ * <p>For example, if {@code Products} is a temporal table, and
+ * {@link TableScan}(Products) is a relational operator that returns all
+ * versions of the contents of the table, then
+ * {@link Snapshot}(TableScan(Products)) is a relational operator that only
+ * returns the contents whose versions that overlap with the given specific
+ * period (i.e. those that started before given period and ended after it).
  */
 public abstract class Snapshot extends SingleRel  {
   //~ Instance fields --------------------------------------------------------
@@ -50,18 +52,20 @@ public abstract class Snapshot extends SingleRel  {
   //~ Constructors -----------------------------------------------------------
 
   /**
-   * Creates a Snapshot
+   * Creates a Snapshot.
+   *
    * @param cluster   Cluster that this relational expression belongs to
-   * @param traits    the traits of this rel
-   * @param child     input relational expression
-   * @param period    timestamp expression which as the table was at the given specific time
-   *                  in the past.
+   * @param traitSet  The traits of this rel
+   * @param input     Input relational expression
+   * @param period    Timestamp expression which as the table was at the given
+   *                  time in the past
    */
-  protected Snapshot(RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode period) {
-    super(cluster, traits, child);
-    this.period = period;
+  protected Snapshot(RelOptCluster cluster, RelTraitSet traitSet, RelNode input,
+      RexNode period) {
+    super(cluster, traitSet, input);
+    this.period = Objects.requireNonNull(period);
     // Too expensive for everyday use:
-    assert !CalcitePrepareImpl.DEBUG || isValid(Litmus.THROW, null);
+    assert !CalciteSystemProperty.DEBUG.value() || isValid(Litmus.THROW, null);
   }
 
   //~ Methods ----------------------------------------------------------------
