@@ -55,7 +55,7 @@ public abstract class Snapshot extends SingleRel  {
    * Creates a Snapshot.
    *
    * @param cluster   Cluster that this relational expression belongs to
-   * @param traitSet  The traits of this rel
+   * @param traitSet  The traits of this relational expression
    * @param input     Input relational expression
    * @param period    Timestamp expression which as the table was at the given
    *                  time in the past

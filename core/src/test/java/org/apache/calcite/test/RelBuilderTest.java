@@ -306,8 +306,7 @@ public class RelBuilderTest {
     //   ON orders.product = products_temporal.id
     final RelBuilder builder = RelBuilder.create(config().build());
     RelNode root =
-        builder
-            .scan("orders")
+        builder.scan("orders")
             .scan("products_temporal")
             .snapshot(
                 builder.getRexBuilder().makeTimestampLiteral(

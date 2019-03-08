@@ -22,9 +22,10 @@ import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.util.ImmutableNullableList;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
- * SqlNode for FOR SYSTEM_TIME temporal clause
+ * Parse tree node for "{@code FOR SYSTEM_TIME AS OF}" temporal clause.
  */
 public class SqlSnapshot extends SqlCall {
   private static final int OPERAND_TABLE_REF = 0;
@@ -38,11 +39,8 @@ public class SqlSnapshot extends SqlCall {
   /** Creates a SqlSnapshot. */
   public SqlSnapshot(SqlParserPos pos, SqlNode tableRef, SqlNode period) {
     super(pos);
-    this.tableRef = tableRef;
-    this.period = period;
-
-    assert tableRef != null;
-    assert period != null;
+    this.tableRef = Objects.requireNonNull(tableRef);
+    this.period = Objects.requireNonNull(period);
   }
 
   // ~ Methods
@@ -66,10 +64,10 @@ public class SqlSnapshot extends SqlCall {
   @Override public void setOperand(int i, SqlNode operand) {
     switch (i) {
     case OPERAND_TABLE_REF:
-      tableRef = operand;
+      tableRef = Objects.requireNonNull(operand);
       break;
     case OPERAND_PERIOD:
-      period = operand;
+      period = Objects.requireNonNull(operand);
       break;
     default:
       throw new AssertionError(i);
@@ -125,12 +123,11 @@ public class SqlSnapshot extends SqlCall {
         SqlCall call,
         int leftPrec,
         int rightPrec) {
+      final SqlSnapshot snapshot = (SqlSnapshot) call;
 
-      final SqlSnapshot temporal = (SqlSnapshot) call;
-
-      temporal.tableRef.unparse(writer, 0, 0);
+      snapshot.tableRef.unparse(writer, 0, 0);
       writer.keyword("FOR SYSTEM_TIME AS OF");
-      temporal.period.unparse(writer, 0, 0);
+      snapshot.period.unparse(writer, 0, 0);
     }
   }
 }

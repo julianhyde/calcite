@@ -328,7 +328,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
   }
 
-  @Override public boolean isTemporalTable() {
+  @Override public boolean isTemporal() {
     return table instanceof TemporalTable;
   }
 

@@ -1811,7 +1811,9 @@ SqlNode TableRef() :
 SqlNode TableRef2(boolean lateral) :
 {
     SqlNode tableRef;
-    SqlNode over;
+    final SqlNode over;
+    final SqlNode snapshot;
+    final SqlNode match;
     SqlNodeList extendList = null;
     final SqlIdentifier alias;
     final Span s, s2;
@@ -1834,29 +1836,20 @@ SqlNode TableRef2(boolean lateral) :
                 tableRef = extend(tableRef, extendList);
             }
         ]
-        over = TableOverOpt()
-        {
+        over = TableOverOpt() {
             if (over != null) {
                 tableRef = SqlStdOperatorTable.OVER.createCall(
                     getPos(), tableRef, over);
             }
         }
         [
-            over = SnapshotOpt(tableRef)
-            {
-                if (over != null) {
-                    tableRef = SqlStdOperatorTable.LATERAL.createCall(
-                        getPos(), over);
-                }
+            snapshot = Snapshot(tableRef) {
+                tableRef = SqlStdOperatorTable.LATERAL.createCall(
+                    getPos(), snapshot);
             }
         ]
         [
-            over = MatchRecognizeOpt(tableRef)
-            {
-                if (over != null) {
-                    tableRef = over;
-                }
-            }
+            tableRef = MatchRecognize(tableRef)
         ]
     |
         [ <LATERAL> { lateral = true; } ]
@@ -1872,14 +1865,9 @@ SqlNode TableRef2(boolean lateral) :
                     getPos(), tableRef);
             }
         }
-        (
-            [ over = MatchRecognizeOpt(tableRef) ]
-            {
-                if (over != null) {
-                    tableRef = over;
-                }
-            }
-        )
+        [
+            tableRef = MatchRecognize(tableRef)
+        ]
     |
         <UNNEST> { s = span(); }
         args = ParenthesizedQueryOrCommaList(ExprContext.ACCEPT_SUB_QUERY)
@@ -2515,24 +2503,22 @@ SqlNode OrderItem() :
 /**
  * Parses a FOR SYSTEM_TIME clause following a table expression.
  */
-SqlSnapshot SnapshotOpt(SqlNode tableRef) :
+SqlSnapshot Snapshot(SqlNode tableRef) :
 {
-    final SqlParserPos pos;
-    SqlNode e;
+    final Span s;
+    final SqlNode e;
 }
 {
-    <FOR> { pos = getPos(); } <SYSTEM_TIME>
-    <AS> <OF>
-    e = Expression(ExprContext.ACCEPT_NON_QUERY)
-    {
-        return new SqlSnapshot(pos, tableRef, e);
+    <FOR> { s = span(); } <SYSTEM_TIME> <AS> <OF>
+    e = Expression(ExprContext.ACCEPT_NON_QUERY) {
+        return new SqlSnapshot(s.end(this), tableRef, e);
     }
 }
 
 /**
  * Parses a MATCH_RECOGNIZE clause following a table expression.
  */
-SqlMatchRecognize MatchRecognizeOpt(SqlNode tableRef) :
+SqlMatchRecognize MatchRecognize(SqlNode tableRef) :
 {
     final Span s, s0, s1, s2;
     SqlNodeList measureList = SqlNodeList.EMPTY;

@@ -45,6 +45,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sample;
+import org.apache.calcite.rel.core.Snapshot;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Uncollect;
@@ -2388,17 +2389,16 @@ public class SqlToRelConverter {
       LogicalTableFunctionScan callRel) {
   }
 
-
   private void snapshotTemporalTable(Blackboard bb, SqlCall call) {
     final SqlSnapshot snapshot = (SqlSnapshot) call;
-    RexNode rexCall = bb.convertExpression(snapshot.getPeriod());
+    final RexNode period = bb.convertExpression(snapshot.getPeriod());
 
     // convert inner query, could be a table name or a derived table
     SqlNode expr = snapshot.getTableRef();
     convertFrom(bb, expr);
     final TableScan scan = (TableScan) bb.root;
 
-    LogicalSnapshot snapshotRel = LogicalSnapshot.create(scan, rexCall);
+    final RelNode snapshotRel = relBuilder.push(scan).snapshot(period).build();
 
     bb.setRoot(snapshotRel, false);
   }

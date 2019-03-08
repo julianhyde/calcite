@@ -42,21 +42,22 @@ public class LogicalSnapshot extends Snapshot {
    * <p>Use {@link #create} unless you know what you're doing.
    *
    * @param cluster   Cluster that this relational expression belongs to
-   * @param traits    Traits of this relational expression
-   * @param child     Input relational expression
-   * @param period    timestamp expression which as the table was at the given specific time
-   *                  in the past.
+   * @param traitSet  The traits of this relational expression
+   * @param input     Input relational expression
+   * @param period    Timestamp expression which as the table was at the given
+   *                  time in the past
    */
-  public LogicalSnapshot(RelOptCluster cluster, RelTraitSet traits,
-      RelNode child, RexNode period) {
-    super(cluster, traits, child, period);
+  public LogicalSnapshot(RelOptCluster cluster, RelTraitSet traitSet,
+      RelNode input, RexNode period) {
+    super(cluster, traitSet, input, period);
   }
 
-  @Override public Snapshot copy(RelTraitSet traitSet, RelNode input, RexNode period) {
+  @Override public Snapshot copy(RelTraitSet traitSet, RelNode input,
+      RexNode period) {
     return new LogicalSnapshot(getCluster(), traitSet, input, period);
   }
 
-  /** Creates a LogicalSnapshot */
+  /** Creates a LogicalSnapshot. */
   public static LogicalSnapshot create(RelNode input, RexNode period) {
     final RelOptCluster cluster = input.getCluster();
     final RelMetadataQuery mq = cluster.getMetadataQuery();
