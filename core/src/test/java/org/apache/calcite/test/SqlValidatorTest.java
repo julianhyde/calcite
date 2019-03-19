@@ -893,9 +893,47 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "(?s).*Operands _ISO-8859-1.a. COLLATE ISO-8859-1.en_US.primary, _ISO-8859-1.b. COLLATE SHIFT_JIS.jp.primary.*");
   }
 
+  /** Tests expressions that use NULL without an enclosing CAST.
+   * Such expressions are not legal in standard SQL but may be
+   * supported in particular dialects.
+   *
+   * @see SqlConformance#allowNakedNull() */
   @Test public void testNull() {
+    tester = tester.withConformance(SqlConformanceEnum.MYSQL_5);
+    checkExp("nullif(null, 1)");
+    checkExp("values 1.0 + ^NULL^");
+    checkExp("1.0 + ^NULL^");
+    checkExp("case when 1 > 0 then null else 0 end");
+    checkExp("1 > 0 and null");
+    checkExp("position(null in 'abc' from 1)");
+    checkExp("substring(null from 1)");
+    checkExp("trim(null from 'ab')");
+    checkExp("trim(null from null)");
+    checkExp("null || 'a'");
+    checkExp("not(null)");
+    checkExp("+null");
+    checkExp("-null");
+    checkExp("upper(null)");
+    checkExp("lower(null)");
+    checkExp("initcap(null)");
+    checkExp("mod(null, 2) + 1");
+    checkExp("abs(null)");
+    checkExp("round(null,1)");
+    checkExp("sign(null) + 1");
+    checkExp("truncate(null,1) + 1");
+
+    sql("select avg(null) from emp").ok();
+    sql("select bit_and(null) from emp").ok();
+    sql("select bit_or(null) from emp").ok();
+
+    checkWholeExpFails("substring(null from 1) + 1",
+        "[\\d\\D]*Cannot apply '\\+' to arguments of"
+           + " type '<VARCHAR> \\+ <INTEGER>'[\\d\\D]*");
+
+    tester = tester.withConformance(SqlConformanceEnum.DEFAULT);
     checkFails("values 1.0 + ^NULL^", "(?s).*Illegal use of .NULL.*");
-    checkExpFails("1.0 + ^NULL^", "(?s).*Illegal use of .NULL.*");
+    checkExpFails("1.0 + ^NULL^",  "(?s).*Illegal use of .NULL.*");
+    checkExpFails("substring(^NULL^ from 1)", "(?s).*Illegal use of .NULL.*");
 
     // FIXME: SQL:2003 does not allow raw NULL in IN clause
     checkExp("1 in (1, null, 2)");

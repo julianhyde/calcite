@@ -30,6 +30,7 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SameOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlSingleOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransformCascade;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -46,7 +47,8 @@ public class SqlTrimFunction extends SqlFunction {
   protected static final SqlTrimFunction INSTANCE =
       new SqlTrimFunction("TRIM", SqlKind.TRIM,
           ReturnTypes.cascade(ReturnTypes.ARG2, SqlTypeTransforms.TO_NULLABLE,
-              SqlTypeTransforms.TO_VARYING),
+              SqlTypeTransforms.TO_VARYING,
+              SqlTypeTransforms.nullToDefault(SqlTypeName.VARCHAR)),
           OperandTypes.and(
               OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.STRING,
                   SqlTypeFamily.STRING),

@@ -41,6 +41,14 @@ public interface SqlReturnTypeInference {
    */
   RelDataType inferReturnType(
       SqlOperatorBinding opBinding);
+
+  /**
+   * Creates an inference rule that transforms null-type to a given default
+   * type.
+   */
+  default SqlReturnTypeInference nullDefault(SqlTypeName defaultType) {
+    return ReturnTypes.nullDefault(this, defaultType);
+  }
 }
 
 // End SqlReturnTypeInference.java

@@ -22,6 +22,7 @@ import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Optionality;
 
 import com.google.common.base.Preconditions;
@@ -47,7 +48,7 @@ public class SqlAvgAggFunction extends SqlAggFunction {
     super(name,
         null,
         kind,
-        ReturnTypes.AVG_AGG_FUNCTION,
+        ReturnTypes.AVG_AGG_FUNCTION.nullDefault(SqlTypeName.DECIMAL),
         null,
         OperandTypes.NUMERIC,
         SqlFunctionCategory.NUMERIC,

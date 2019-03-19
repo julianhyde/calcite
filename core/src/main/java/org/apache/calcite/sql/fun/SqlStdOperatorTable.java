@@ -839,7 +839,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
           "NOT",
           SqlKind.NOT,
           26,
-          ReturnTypes.ARG0,
+          ReturnTypes.ARG0.nullDefault(SqlTypeName.BOOLEAN),
           InferTypes.BOOLEAN,
           OperandTypes.BOOLEAN);
 
@@ -854,7 +854,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
           "-",
           SqlKind.MINUS_PREFIX,
           80,
-          ReturnTypes.ARG0,
+          ReturnTypes.ARG0.nullDefault(SqlTypeName.DECIMAL),
           InferTypes.RETURN_TYPE,
           OperandTypes.NUMERIC_OR_INTERVAL);
 
@@ -869,7 +869,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
           "+",
           SqlKind.PLUS_PREFIX,
           80,
-          ReturnTypes.ARG0,
+          ReturnTypes.ARG0.nullDefault(SqlTypeName.DECIMAL),
           InferTypes.RETURN_TYPE,
           OperandTypes.NUMERIC_OR_INTERVAL);
 
@@ -1490,7 +1490,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "UPPER",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE,
+          ReturnTypes.ARG0_NULLABLE.nullDefault(SqlTypeName.VARCHAR),
           null,
           OperandTypes.CHARACTER,
           SqlFunctionCategory.STRING);
@@ -1499,7 +1499,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "LOWER",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE,
+          ReturnTypes.ARG0_NULLABLE.nullDefault(SqlTypeName.VARCHAR),
           null,
           OperandTypes.CHARACTER,
           SqlFunctionCategory.STRING);
@@ -1508,7 +1508,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "INITCAP",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE,
+          ReturnTypes.ARG0_NULLABLE.nullDefault(SqlTypeName.VARCHAR),
           null,
           OperandTypes.CHARACTER,
           SqlFunctionCategory.STRING);
@@ -1557,7 +1557,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "MOD",
           SqlKind.MOD,
-          ReturnTypes.NULLABLE_MOD,
+          ReturnTypes.ARG1_NULLABLE.nullDefault(SqlTypeName.DECIMAL),
           null,
           OperandTypes.EXACT_NUMERIC_EXACT_NUMERIC,
           SqlFunctionCategory.NUMERIC);
@@ -1584,7 +1584,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "ABS",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0,
+          ReturnTypes.ARG0.nullDefault(SqlTypeName.DECIMAL),
           null,
           OperandTypes.NUMERIC_OR_INTERVAL,
           SqlFunctionCategory.NUMERIC);
@@ -1674,7 +1674,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "ROUND",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE,
+          ReturnTypes.ARG0_NULLABLE.nullDefault(SqlTypeName.DECIMAL),
           null,
           OperandTypes.NUMERIC_OPTIONAL_INTEGER,
           SqlFunctionCategory.NUMERIC);
@@ -1683,7 +1683,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "SIGN",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0,
+          ReturnTypes.ARG0.nullDefault(SqlTypeName.DECIMAL),
           null,
           OperandTypes.NUMERIC,
           SqlFunctionCategory.NUMERIC);
@@ -1696,7 +1696,6 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
           null,
           OperandTypes.NUMERIC,
           SqlFunctionCategory.NUMERIC);
-
 
   public static final SqlFunction TAN =
       new SqlFunction(
@@ -1711,7 +1710,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "TRUNCATE",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE,
+          ReturnTypes.ARG0_NULLABLE.nullDefault(SqlTypeName.DECIMAL),
           null,
           OperandTypes.NUMERIC_OPTIONAL_INTEGER,
           SqlFunctionCategory.NUMERIC);
@@ -2192,7 +2191,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlAggFunction FUSION =
       new SqlAggFunction("FUSION", null,
           SqlKind.FUSION,
-          ReturnTypes.ARG0,
+          ReturnTypes.ARG0.nullDefault(SqlTypeName.MULTISET),
           null,
           OperandTypes.MULTISET,
           SqlFunctionCategory.SYSTEM, false, false,

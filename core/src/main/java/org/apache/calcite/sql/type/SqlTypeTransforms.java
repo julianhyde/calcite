@@ -137,6 +137,8 @@ public abstract class SqlTypeTransforms {
             return SqlTypeName.VARBINARY;
           case ANY:
             return SqlTypeName.ANY;
+          case NULL:
+            return SqlTypeName.NULL;
           default:
             throw Util.unexpected(sqlTypeName);
           }
@@ -173,6 +175,21 @@ public abstract class SqlTypeTransforms {
         assert fields.size() == 1;
         return fields.get(0).getType();
       };
+
+  /**
+   * Parameter type-inference transform strategy that transforms NULL-type to
+   * the given default type.
+   */
+  public static SqlTypeTransform nullToDefault(SqlTypeName defaultType) {
+    return (opBinding, typeToTransform) -> {
+      if (typeToTransform.getSqlTypeName() == SqlTypeName.NULL) {
+        RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        return typeFactory.createTypeWithNullability(
+            typeFactory.createSqlType(defaultType), true);
+      }
+      return typeToTransform;
+    };
+  }
 }
 
 // End SqlTypeTransforms.java

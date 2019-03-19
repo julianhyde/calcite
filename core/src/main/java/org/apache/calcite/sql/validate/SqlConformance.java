@@ -393,6 +393,19 @@ public interface SqlConformance {
    * false otherwise.
    */
   boolean allowExtendedTrim();
+
+  /**
+   * Whether allow a NULL literal as a parameter of function.
+   *
+   * <p>For example, consider the query
+   * <blockquote><pre>SELECT 1 + NULL FROM EMP</pre></blockquote>
+   *
+   * <p>Among the built-in conformance levels, true in
+   * {@link SqlConformanceEnum#LENIENT},
+   * {@link SqlConformanceEnum#MYSQL_5};
+   * false otherwise.
+   */
+  boolean allowNakedNull();
 }
 
 // End SqlConformance.java

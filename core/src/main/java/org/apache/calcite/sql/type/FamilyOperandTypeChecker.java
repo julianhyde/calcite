@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static org.apache.calcite.util.Static.RESOURCE;
-
 /**
  * Operand type-checking strategy which checks operands for inclusion in type
  * families.
@@ -69,6 +68,9 @@ public class FamilyOperandTypeChecker implements SqlSingleOperandTypeChecker {
       return true;
     }
     if (SqlUtil.isNullLiteral(node, false)) {
+      if (callBinding.getValidator().getConformance().allowNakedNull()) {
+        return true;
+      }
       if (throwOnFailure) {
         throw callBinding.getValidator().newValidationError(node,
             RESOURCE.nullIllegal());
