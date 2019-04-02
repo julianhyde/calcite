@@ -19,6 +19,7 @@ package org.apache.calcite.adapter.enumerable;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
@@ -30,9 +31,12 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Match;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.runtime.Enumerables;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -114,8 +118,10 @@ public class EnumerableMatch extends Match implements EnumerableRel {
                 partitionKeys.asList(),
                 keyPhysType.getFormat()));
 
-    final Expression matcher_ = implementMatcher(builder, row_);
-    final Expression emitter_ = implementEmitter(implementor, physType);
+    final Expression matcher_ = implementMatcher(implementor, physType, builder,
+        row_);
+    final Expression emitter_ = implementEmitter(implementor, physType,
+        inputPhysType);
     builder.add(
         Expressions.return_(null,
             Expressions.call(BuiltInMethod.MATCH.method,
@@ -134,11 +140,18 @@ public class EnumerableMatch extends Match implements EnumerableRel {
     final ParameterExpression consumer_ =
         Expressions.parameter(Consumer.class, "consumer");
 
+    final RexProgramBuilder programBuilder =
+        new RexProgramBuilder(input.getRowType(), implementor.getRexBuilder());
+    for (RexNode node : nodes) {
+      programBuilder.addProject(node, null);
+    }
+    final RexProgram program = programBuilder.getProgram();
+
     final ParameterExpression row_ =
         Expressions.parameter(Object.class, "row");
     final BlockBuilder builder2 = new BlockBuilder();
     final List<Expression> arguments =
-        RexToLixTranslator.translateProjects(null,
+        RexToLixTranslator.translateProjects(program,
             (JavaTypeFactory) getCluster().getTypeFactory(),
             implementor.getConformance(), builder2, physType,
             implementor.getRootExpression(),
@@ -146,7 +159,8 @@ public class EnumerableMatch extends Match implements EnumerableRel {
                 Collections.singletonList(
                     Pair.of(row_, inputPhysType))),
             implementor.allCorrelateVariables);
-    for (RexNode measure : measures.values()) {
+    for (Map.Entry<String, RexNode> measure : measures.entrySet()) {
+      ConstantExpression impl = Expressions.constant(measure.getKey());
       arguments.add(impl);
     }
     builder2.add(
@@ -166,8 +180,8 @@ public class EnumerableMatch extends Match implements EnumerableRel {
                 builder.toBlock())));
   }
 
-  private Expression implementMatcher(BlockBuilder builder,
-      ParameterExpression row_) {
+  private Expression implementMatcher(EnumerableRelImplementor implementor,
+      PhysType physType, BlockBuilder builder, ParameterExpression row_) {
     final Expression patternBuilder_ = builder.append("patternBuilder",
         Expressions.call(BuiltInMethod.PATTERN_BUILDER.method));
     final Expression automaton_ = builder.append("automaton",
@@ -176,8 +190,25 @@ public class EnumerableMatch extends Match implements EnumerableRel {
             BuiltInMethod.PATTERN_TO_AUTOMATON.method));
     Expression matcherBuilder_ = builder.append("matcherBuilder",
         Expressions.call(BuiltInMethod.MATCHER_BUILDER.method, automaton_));
+    final BlockBuilder builder2 = new BlockBuilder();
     for (Map.Entry<String, RexNode> entry : patternDefinitions.entrySet()) {
-      final Expression predicate_ = implementPredicate(row_);
+      // TODO: Create RexProgram directly? Share one program among patterns?
+      RexProgramBuilder rexProgramBuilder =
+          new RexProgramBuilder(physType.getRowType(),
+              implementor.getRexBuilder());
+      rexProgramBuilder.addProject(entry.getValue(), null);
+      final RexProgram program = rexProgramBuilder.getProgram();
+
+      RexToLixTranslator.translateProjects(program,
+          (JavaTypeFactory) getCluster().getTypeFactory(),
+          implementor.getConformance(), builder2, physType,
+          implementor.getRootExpression(),
+          new RexToLixTranslator.InputGetterImpl(
+              Collections.singletonList(
+                  Pair.of(row_, physType))),
+          implementor.allCorrelateVariables);
+
+      final Expression predicate_ = implementPredicate(physType, row_);
       matcherBuilder_ = Expressions.call(matcherBuilder_,
           BuiltInMethod.MATCHER_BUILDER_ADD.method,
           Expressions.constant(entry.getKey()), predicate_);
@@ -188,11 +219,14 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   }
 
   /** Generates code for a predicate. */
-  private Expression implementPredicate(ParameterExpression row_) {
+  private Expression implementPredicate(PhysType physType,
+      ParameterExpression row_) {
     final ParameterExpression rows_ =
         Expressions.parameter(List.class, "rows"); // "List<E> rows"
     final BlockBuilder builder2 = new BlockBuilder();
-    builder2.add(Expressions.return_(null, Expressions.constant(true)));
+    builder2.add(Expressions.return_(null,
+        Expressions.equal(Expressions.field(row_, "empid"),
+            Expressions.constant(100))));
     final List<MemberDeclaration> memberDeclarations = new ArrayList<>();
     // Add a predicate method:
     //
