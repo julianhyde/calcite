@@ -154,6 +154,12 @@ public abstract class SqlLibraryOperators {
   public static final SqlFunction JSON_STORAGE_SIZE = new SqlJsonStorageSizeFunction();
 
   @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
+  public static final SqlFunction LEFT = new SqlLeftFunction();
+
+  @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
+  public static final SqlFunction RIGHT = new SqlRightFunction();
+
+  @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
   public static final SqlFunction REPEAT =
       new SqlFunction(
           "REPEAT",

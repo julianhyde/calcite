@@ -1847,7 +1847,13 @@ public abstract class SqlOperatorBaseTest {
     tester.checkNull("{fn DIFFERENCE('muller', cast(null as varchar(1)))}");
 
     tester.checkString("{fn REVERSE('abc')}", "cba", "VARCHAR(3) NOT NULL");
+
     tester.checkNull("{fn REVERSE(cast(null as varchar(1)))}");
+
+    tester.checkString("{fn LEFT('abcd', 3)}", "abc", "VARCHAR(2000)");
+    tester.checkNull("{fn LEFT(cast(null as varchar(1)), 3)}");
+    tester.checkString("{fn RIGHT('abcd', 3)}", "bcd", "VARCHAR(2000)");
+    tester.checkNull("{fn RIGHT(cast(null as varchar(1)), 3)}");
 
     // REVIEW: is this result correct? I think it should be "abcCdef"
     tester.checkScalar(
@@ -1858,9 +1864,6 @@ public abstract class SqlOperatorBaseTest {
         "{fn LCASE('foo' || 'bar')}",
         "foobar",
         "CHAR(6) NOT NULL");
-    if (false) {
-      tester.checkScalar("{fn LEFT(string, count)}", null, "");
-    }
     if (false) {
       tester.checkScalar("{fn LENGTH(string)}", null, "");
     }
@@ -1899,9 +1902,6 @@ public abstract class SqlOperatorBaseTest {
     tester.checkNull("{fn REPLACE('ciao', cast(null as varchar(3)), 'zz')}");
     tester.checkNull("{fn REPLACE('ciao', 'bella', cast(null as varchar(3)))}");
 
-    if (false) {
-      tester.checkScalar("{fn RIGHT(string, count)}", null, "");
-    }
 
     tester.checkScalar(
         "{fn RTRIM(' xxx  ')}",
@@ -4345,6 +4345,28 @@ public abstract class SqlOperatorBaseTest {
     tester.checkString("upper('1')", "1", "CHAR(1) NOT NULL");
     tester.checkString("upper('aa')", "AA", "CHAR(2) NOT NULL");
     tester.checkNull("upper(cast(null as varchar(1)))");
+  }
+
+  @Test public void testLeftFunc() {
+    final SqlTester testerMysql = tester(SqlLibrary.MYSQL);
+    tester.setFor(SqlLibraryOperators.LEFT);
+    tester.checkString("left('abcd', 3)", "abc", "VARCHAR(2000)");
+    tester.checkString("left('abcd', 0)", "", "VARCHAR(2000)");
+    tester.checkString("left('abcd', 5)", "abcd", "VARCHAR(2000)");
+    tester.checkString("left('abcd', -2)", "", "VARCHAR(2000)");
+    tester.checkNull("left(cast(null as varchar(1)), -2)");
+    tester.checkNull("left('abcd', cast(null as Integer))");
+  }
+
+  @Test public void testRightFunc() {
+    final SqlTester testerMysql = tester(SqlLibrary.MYSQL);
+    tester.setFor(SqlLibraryOperators.RIGHT);
+    tester.checkString("right('abcd', 3)", "bcd", "VARCHAR(2000)");
+    tester.checkString("right('abcd', 0)", "", "VARCHAR(2000)");
+    tester.checkString("right('abcd', 5)", "abcd", "VARCHAR(2000)");
+    tester.checkString("right('abcd', -2)", "", "VARCHAR(2000)");
+    tester.checkNull("right(cast(null as varchar(1)), -2)");
+    tester.checkNull("right('abcd', cast(null as Integer))");
   }
 
   @Test public void testJsonExists() {

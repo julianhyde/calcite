@@ -1508,6 +1508,10 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
           OperandTypes.CHARACTER,
           SqlFunctionCategory.STRING);
 
+  public static final SqlFunction LEFT = SqlLibraryOperators.LEFT;
+
+  public static final SqlFunction RIGHT = SqlLibraryOperators.RIGHT;
+
   /**
    * Uses SqlOperatorTable.useDouble for its return type since we don't know
    * what the result type will be by just looking at the operand types. For

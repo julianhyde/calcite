@@ -4915,6 +4915,10 @@ SqlNode BuiltinFunctionCall() :
         node = JsonArrayFunctionCall() { return node; }
     |
         node = JsonArrayAggFunctionCall() { return node; }
+    |
+        node = LeftFunctionCall() { return node; }
+    |
+        node = RightFunctionCall() { return node; }
     )
 }
 
@@ -5513,6 +5517,40 @@ SqlCall MatchRecognizeFunctionCall() :
     { return func; }
 }
 
+SqlCall LeftFunctionCall() :
+{
+    final SqlNode[] args = new SqlNode[2];
+    SqlNode e;
+    final Span span;
+}
+{
+    <LEFT> { span = span(); }
+    <LPAREN> e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[0] = e; }
+    <COMMA>
+    e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[1] = e; }
+    <RPAREN> {
+        return SqlStdOperatorTable.LEFT.createCall(
+            span.end(this), args);
+    }
+}
+
+SqlCall RightFunctionCall() :
+{
+    final SqlNode[] args = new SqlNode[2];
+    SqlNode e;
+    final Span span;
+}
+{
+    <RIGHT> { span = span(); }
+    <LPAREN> e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[0] = e; }
+    <COMMA>
+    e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[1] = e; }
+    <RPAREN> {
+        return SqlStdOperatorTable.RIGHT.createCall(
+            span.end(this), args);
+    }
+}
+
 SqlCall MatchRecognizeCallWithModifier() :
 {
     final Span s;
@@ -5931,6 +5969,12 @@ SqlNode JdbcFunctionCall() :
         (
             // INSERT is a reserved word, but we need to handle {fn insert}
             <INSERT> { name = unquotedIdentifier(); }
+        |
+            // LEFT is a reserved word, but we need to handle {fn left}
+            <LEFT> { name = unquotedIdentifier(); }
+        |
+            // RIGHT is a reserved word, but we need to handle {fn right}
+            <RIGHT> { name = unquotedIdentifier(); }
         |
             // TRUNCATE is a reserved word, but we need to handle {fn truncate}
             LOOKAHEAD(1)

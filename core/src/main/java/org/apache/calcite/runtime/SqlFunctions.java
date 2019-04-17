@@ -257,6 +257,32 @@ public class SqlFunctions {
     return SOUNDEX_LENGTH;
   }
 
+  /** SQL LEFT(string, integer) function. */
+  public static String left(String s, Integer n) {
+    if (Strings.isNullOrEmpty(s) || n == null) {
+      return null;
+    }
+    if (n < 0) {
+      return "";
+    } else {
+      int len = s.length();
+      return len > n ? s.substring(0, n) : s;
+    }
+  }
+
+  /** SQL RIGHT(string, integer) function. */
+  public static String right(String s, Integer n) {
+    if (Strings.isNullOrEmpty(s) || n == null) {
+      return null;
+    }
+    if (n < 0) {
+      return "";
+    } else {
+      int len = s.length();
+      return len - n > 0 ? s.substring(len - n) : s;
+    }
+  }
+
   /** SQL CHARACTER_LENGTH(string) function. */
   public static int charLength(String s) {
     return s.length();
