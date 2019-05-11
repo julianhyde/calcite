@@ -22,21 +22,24 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation used by {@link SqlDialectOperatorTableFactory} to mark which sql dialects
- * a sql function belongs to.
+ * An annotation that is read by {@link SqlLibraryOperatorTableFactory} to
+ * add functions and operators to a library.
  *
- * <p>We name it SqlFlavor cause there is already a class {@link org.apache.calcite.sql.SqlDialect}.
+ * <p>Typically, such collections are associated with a particular dialect or
+ * database. For example, {@link SqlLibrary#ORACLE} is a collection of functions
+ * that are in the Oracle database but not the SQL standard.
+ *
+ * <p>In {@link SqlLibraryOperatorTableFactory} this annotation is applied to
+ * function definitions to include them in a particular library. It allows
+ * an operator to belong to more than one library.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface SqlFlavor {
+public @interface LibraryOperator {
 
-  /** Supported sql dialects for the annotation. */
-  enum Flavor {
-    MYSQL, ORACLE, POSTGRES
-  }
-
-  Flavor[] flavors(); // The flavors must be an array and never null.
+  /** The set of libraries that this function or operator belongs to.
+   * Must not be null or empty. */
+  SqlLibrary[] libraries();
 }
 
-// End SqlFlavor.java
+// End LibraryOperator.java

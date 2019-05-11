@@ -27,8 +27,8 @@ import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
-import org.apache.calcite.sql.fun.SqlDialectOperatorTableFactory;
-import org.apache.calcite.sql.fun.SqlFlavor;
+import org.apache.calcite.sql.fun.SqlLibrary;
+import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlTester;
@@ -804,11 +804,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkWholeExpFails("translate('aabbcc', 'ab', '+-')",
         "No match found for function signature TRANSLATE3\\(<CHARACTER>, <CHARACTER>, <CHARACTER>\\)");
     tester = tester.withOperatorTable(
-        ChainedSqlOperatorTable
-            .of(SqlDialectOperatorTableFactory
-                    .instance()
-                    .getOperatorTable(SqlFlavor.Flavor.ORACLE),
-                SqlStdOperatorTable.instance()));
+        ChainedSqlOperatorTable.of(
+            SqlLibraryOperatorTableFactory.INSTANCE
+                .getOperatorTable(SqlLibrary.ORACLE),
+            SqlStdOperatorTable.instance()));
     checkExpType("translate('aabbcc', 'ab', '+-')",
         "VARCHAR(6) NOT NULL");
     checkWholeExpFails("translate('abc', 'ab')",
