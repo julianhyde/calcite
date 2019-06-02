@@ -705,12 +705,12 @@ public class SqlJdbcFunctionCall extends SqlFunction {
       map.put("LENGTH", simple(SqlStdOperatorTable.CHARACTER_LENGTH));
       map.put("LOCATE", simple(SqlStdOperatorTable.POSITION));
       map.put("LEFT", simple(SqlLibraryOperators.LEFT));
-      map.put("LTRIM", getValue(SqlTrimFunction.Flag.LEADING));
+      map.put("LTRIM", trim(SqlTrimFunction.Flag.LEADING));
       map.put("REPEAT", simple(SqlLibraryOperators.REPEAT));
       map.put("REPLACE", simple(SqlStdOperatorTable.REPLACE));
       map.put("REVERSE", simple(SqlLibraryOperators.REVERSE));
       map.put("RIGHT", simple(SqlLibraryOperators.RIGHT));
-      map.put("RTRIM", getValue(SqlTrimFunction.Flag.TRAILING));
+      map.put("RTRIM", trim(SqlTrimFunction.Flag.TRAILING));
       map.put("SOUNDEX", simple(SqlLibraryOperators.SOUNDEX));
       map.put("SPACE", simple(SqlLibraryOperators.SPACE));
       map.put("SUBSTRING", simple(SqlStdOperatorTable.SUBSTRING));
@@ -760,13 +760,12 @@ public class SqlJdbcFunctionCall extends SqlFunction {
       this.map = map.build();
     }
 
-    private SimpleMakeCall getValue(SqlTrimFunction.Flag flag1) {
+    private MakeCall trim(SqlTrimFunction.Flag flag) {
       return new SimpleMakeCall(SqlStdOperatorTable.TRIM) {
         @Override public SqlCall createCall(SqlParserPos pos,
             SqlNode... operands) {
           assert 1 == operands.length;
-          return super.createCall(pos,
-              flag1.symbol(SqlParserPos.ZERO),
+          return super.createCall(pos, flag.symbol(pos),
               SqlLiteral.createCharString(" ", SqlParserPos.ZERO),
               operands[0]);
         }

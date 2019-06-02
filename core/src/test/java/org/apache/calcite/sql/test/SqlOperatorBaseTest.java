@@ -82,7 +82,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -4357,22 +4356,23 @@ public abstract class SqlOperatorBaseTest {
     Stream.of(SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL)
         .map(this::tester)
         .forEach(t -> {
-      t.setFor(SqlLibraryOperators.LEFT);
-      t.checkString("left('abcd', 3)", "abc", "VARCHAR(4) NOT NULL");
-      t.checkString("left('abcd', 0)", "", "VARCHAR(4) NOT NULL");
-      t.checkString("left('abcd', 5)", "abcd", "VARCHAR(4) NOT NULL");
-      t.checkString("left('abcd', -2)", "", "VARCHAR(4) NOT NULL");
-      t.checkNull("left(cast(null as varchar(1)), -2)");
-      t.checkNull("left('abcd', cast(null as Integer))");
+          t.setFor(SqlLibraryOperators.LEFT);
+          t.checkString("left('abcd', 3)", "abc", "VARCHAR(4) NOT NULL");
+          t.checkString("left('abcd', 0)", "", "VARCHAR(4) NOT NULL");
+          t.checkString("left('abcd', 5)", "abcd", "VARCHAR(4) NOT NULL");
+          t.checkString("left('abcd', -2)", "", "VARCHAR(4) NOT NULL");
+          t.checkNull("left(cast(null as varchar(1)), -2)");
+          t.checkNull("left('abcd', cast(null as Integer))");
 
-      // test for ByteString
-      t.checkString("left(x'ABCdef', 1)", "ab", "VARBINARY(3) NOT NULL");
-      t.checkString("left(x'ABCdef', 0)", "", "VARBINARY(3) NOT NULL");
-      t.checkString("left(x'ABCdef', 4)", "abcdef", "VARBINARY(3) NOT NULL");
-      t.checkString("left(x'ABCdef', -2)", "", "VARBINARY(3) NOT NULL");
-      t.checkNull("left(cast(null as binary(1)), -2)");
-      t.checkNull("left(x'ABCdef', cast(null as Integer))");
-    });
+          // test for ByteString
+          t.checkString("left(x'ABCdef', 1)", "ab", "VARBINARY(3) NOT NULL");
+          t.checkString("left(x'ABCdef', 0)", "", "VARBINARY(3) NOT NULL");
+          t.checkString("left(x'ABCdef', 4)", "abcdef",
+              "VARBINARY(3) NOT NULL");
+          t.checkString("left(x'ABCdef', -2)", "", "VARBINARY(3) NOT NULL");
+          t.checkNull("left(cast(null as binary(1)), -2)");
+          t.checkNull("left(x'ABCdef', cast(null as Integer))");
+        });
   }
 
   @Test public void testRightFunc() {
