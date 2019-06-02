@@ -25,7 +25,6 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
-import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 
 import java.util.ArrayList;
@@ -156,23 +155,9 @@ public abstract class SqlLibraryOperators {
 
   @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
   public static final SqlFunction LEFT =
-          new SqlFunction(
-          "LEFT",
-          SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE_VARYING,
-          null,
-          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.INTEGER),
-          SqlFunctionCategory.STRING);
-
-  @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
-  public static final SqlFunction RIGHT =
-          new SqlFunction(
-          "RIGHT",
-          SqlKind.OTHER_FUNCTION,
-          ReturnTypes.ARG0_NULLABLE_VARYING,
-          null,
-          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.INTEGER),
-          SqlFunctionCategory.STRING);
+      new SqlFunction("LEFT", SqlKind.OTHER_FUNCTION,
+          ReturnTypes.ARG0_NULLABLE_VARYING, null,
+          OperandTypes.CBSTRING_INTEGER, SqlFunctionCategory.STRING);
 
   @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
   public static final SqlFunction REPEAT =
@@ -183,6 +168,12 @@ public abstract class SqlLibraryOperators {
           null,
           OperandTypes.STRING_INTEGER,
           SqlFunctionCategory.STRING);
+
+  @LibraryOperator(libraries = {MYSQL, POSTGRESQL})
+  public static final SqlFunction RIGHT =
+      new SqlFunction("RIGHT", SqlKind.OTHER_FUNCTION,
+          ReturnTypes.ARG0_NULLABLE_VARYING, null,
+          OperandTypes.CBSTRING_INTEGER, SqlFunctionCategory.STRING);
 
   @LibraryOperator(libraries = {MYSQL})
   public static final SqlFunction SPACE =

@@ -4915,30 +4915,6 @@ SqlNode BuiltinFunctionCall() :
         node = JsonArrayFunctionCall() { return node; }
     |
         node = JsonArrayAggFunctionCall() { return node; }
-    |
-      <LEFT> { s = span(); }
-      <LPAREN>
-      e = Expression(ExprContext.ACCEPT_NON_QUERY)
-      { args = startList(e); }
-      <COMMA>
-      e = Expression(ExprContext.ACCEPT_NON_QUERY)
-      { args.add(e); }
-      <RPAREN> {
-          return SqlLibraryOperators.LEFT.createCall(
-              s.end(this), args);
-      }
-    |
-      <RIGHT> { s = span(); }
-      <LPAREN>
-      e = Expression(ExprContext.ACCEPT_NON_QUERY)
-      { args = startList(e); }
-      <COMMA>
-      e = Expression(ExprContext.ACCEPT_NON_QUERY)
-      { args.add(e); }
-      <RPAREN> {
-          return SqlLibraryOperators.RIGHT.createCall(
-              s.end(this), args) ;
-      }
     )
 }
 
@@ -5849,6 +5825,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <HOUR>
     |   <LAG>
     |   <LEAD>
+    |   <LEFT>
     |   <LAST_VALUE>
     |   <LN>
     |   <LOCALTIME>
@@ -5869,6 +5846,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <REGR_COUNT>
     |   <REGR_SXX>
     |   <REGR_SYY>
+    |   <RIGHT>
     |   <ROW_NUMBER>
     |   <SECOND>
     |   <SQRT>
@@ -5954,17 +5932,8 @@ SqlNode JdbcFunctionCall() :
     |
         (
             // INSERT is a reserved word, but we need to handle {fn insert}
-            <INSERT> { name = unquotedIdentifier(); }
-        |
-            // LEFT is a reserved word, but we need to handle {fn left}
-            <LEFT> { name = unquotedIdentifier(); }
-        |
-            // RIGHT is a reserved word, but we need to handle {fn right}
-            <RIGHT> { name = unquotedIdentifier(); }
-        |
-            // TRUNCATE is a reserved word, but we need to handle {fn truncate}
-            LOOKAHEAD(1)
-            <TRUNCATE> { name = unquotedIdentifier(); }
+            // Similarly LEFT, RIGHT, TRUNCATE
+            ( <INSERT> | <LEFT> | <RIGHT> | <TRUNCATE> ) { name = unquotedIdentifier(); }
         |
             // For cases like {fn power(1,2)} and {fn lower('a')}
             id = ReservedFunctionName() { name = id.getSimple(); }
