@@ -4938,6 +4938,7 @@ SqlNode BuiltinFunctionCall() :
       <RPAREN> {
           return SqlLibraryOperators.RIGHT.createCall(
               s.end(this), args) ;
+      }
     )
 }
 
