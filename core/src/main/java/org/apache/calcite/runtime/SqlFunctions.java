@@ -259,19 +259,25 @@ public class SqlFunctions {
 
   /** SQL LEFT(string, integer) function. */
   public static String left(String s, Integer n) {
-    if (Strings.isNullOrEmpty(s) || n == null) {
-      return null;
-    }
-    if (n < 0) {
-      return "";
-    } else {
-      int len = s.length();
-      return len > n ? s.substring(0, n) : s;
-    }
+    return leftOrRight(s, n, false);
+  }
+
+  /** SQL LEFT(ByteString, integer) function. */
+  public static ByteString left(ByteString s, Integer n) {
+    return leftOrRight(s, n, false);
   }
 
   /** SQL RIGHT(string, integer) function. */
   public static String right(String s, Integer n) {
+    return leftOrRight(s, n, true);
+  }
+
+  /** SQL RIGHT(ByteString, integer) function. */
+  public static ByteString right(ByteString s, Integer n) {
+    return leftOrRight(s, n, true);
+  }
+
+  public static String leftOrRight(String s, Integer n, boolean right) {
     if (Strings.isNullOrEmpty(s) || n == null) {
       return null;
     }
@@ -279,7 +285,21 @@ public class SqlFunctions {
       return "";
     } else {
       int len = s.length();
-      return len - n > 0 ? s.substring(len - n) : s;
+      n = len > n ? n : len;
+      return right ? s.substring(len - n) : s.substring(0, n);
+    }
+  }
+
+  public static ByteString leftOrRight(ByteString s, Integer n, boolean right) {
+    if (s == null || n == null) {
+      return null;
+    }
+    if (n < 0) {
+      return ByteString.EMPTY;
+    } else {
+      int len = s.length();
+      n = len > n ? n : len;
+      return right ? s.substring(len - n) : s.substring(0, n);
     }
   }
 

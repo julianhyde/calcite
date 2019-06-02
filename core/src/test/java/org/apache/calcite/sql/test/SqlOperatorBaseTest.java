@@ -1850,9 +1850,9 @@ public abstract class SqlOperatorBaseTest {
 
     tester.checkNull("{fn REVERSE(cast(null as varchar(1)))}");
 
-    tester.checkString("{fn LEFT('abcd', 3)}", "abc", "VARCHAR(2000)");
+    tester.checkString("{fn LEFT('abcd', 3)}", "abc", "VARCHAR(4) NOT NULL");
     tester.checkNull("{fn LEFT(cast(null as varchar(1)), 3)}");
-    tester.checkString("{fn RIGHT('abcd', 3)}", "bcd", "VARCHAR(2000)");
+    tester.checkString("{fn RIGHT('abcd', 3)}", "bcd", "VARCHAR(4) NOT NULL");
     tester.checkNull("{fn RIGHT(cast(null as varchar(1)), 3)}");
 
     // REVIEW: is this result correct? I think it should be "abcCdef"
@@ -4349,24 +4349,40 @@ public abstract class SqlOperatorBaseTest {
 
   @Test public void testLeftFunc() {
     final SqlTester testerMysql = tester(SqlLibrary.MYSQL);
-    tester.setFor(SqlLibraryOperators.LEFT);
-    tester.checkString("left('abcd', 3)", "abc", "VARCHAR(2000)");
-    tester.checkString("left('abcd', 0)", "", "VARCHAR(2000)");
-    tester.checkString("left('abcd', 5)", "abcd", "VARCHAR(2000)");
-    tester.checkString("left('abcd', -2)", "", "VARCHAR(2000)");
-    tester.checkNull("left(cast(null as varchar(1)), -2)");
-    tester.checkNull("left('abcd', cast(null as Integer))");
+    testerMysql.setFor(SqlLibraryOperators.LEFT);
+    testerMysql.checkString("left('abcd', 3)", "abc", "VARCHAR(4) NOT NULL");
+    testerMysql.checkString("left('abcd', 0)", "", "VARCHAR(4) NOT NULL");
+    testerMysql.checkString("left('abcd', 5)", "abcd", "VARCHAR(4) NOT NULL");
+    testerMysql.checkString("left('abcd', -2)", "", "VARCHAR(4) NOT NULL");
+    testerMysql.checkNull("left(cast(null as varchar(1)), -2)");
+    testerMysql.checkNull("left('abcd', cast(null as Integer))");
+
+    // test for ByteString
+    testerMysql.checkString("left(x'ABCdef', 1)", "ab", "VARBINARY(3) NOT NULL");
+    testerMysql.checkString("left(x'ABCdef', 0)", "", "VARBINARY(3) NOT NULL");
+    testerMysql.checkString("left(x'ABCdef', 4)", "abcdef", "VARBINARY(3) NOT NULL");
+    testerMysql.checkString("left(x'ABCdef', -2)", "", "VARBINARY(3) NOT NULL");
+    testerMysql.checkNull("left(cast(null as binary(1)), -2)");
+    testerMysql.checkNull("left(x'ABCdef', cast(null as Integer))");
   }
 
   @Test public void testRightFunc() {
     final SqlTester testerMysql = tester(SqlLibrary.MYSQL);
-    tester.setFor(SqlLibraryOperators.RIGHT);
-    tester.checkString("right('abcd', 3)", "bcd", "VARCHAR(2000)");
-    tester.checkString("right('abcd', 0)", "", "VARCHAR(2000)");
-    tester.checkString("right('abcd', 5)", "abcd", "VARCHAR(2000)");
-    tester.checkString("right('abcd', -2)", "", "VARCHAR(2000)");
-    tester.checkNull("right(cast(null as varchar(1)), -2)");
-    tester.checkNull("right('abcd', cast(null as Integer))");
+    testerMysql.setFor(SqlLibraryOperators.RIGHT);
+    testerMysql.checkString("right('abcd', 3)", "bcd", "VARCHAR(4) NOT NULL");
+    testerMysql.checkString("right('abcd', 0)", "", "VARCHAR(4) NOT NULL");
+    testerMysql.checkString("right('abcd', 5)", "abcd", "VARCHAR(4) NOT NULL");
+    testerMysql.checkString("right('abcd', -2)", "", "VARCHAR(4) NOT NULL");
+    testerMysql.checkNull("right(cast(null as varchar(1)), -2)");
+    testerMysql.checkNull("right('abcd', cast(null as Integer))");
+
+    // test for ByteString
+    testerMysql.checkString("right(x'ABCdef', 1)", "ef", "VARBINARY(3) NOT NULL");
+    testerMysql.checkString("right(x'ABCdef', 0)", "", "VARBINARY(3) NOT NULL");
+    testerMysql.checkString("right(x'ABCdef', 4)", "abcdef", "VARBINARY(3) NOT NULL");
+    testerMysql.checkString("right(x'ABCdef', -2)", "", "VARBINARY(3) NOT NULL");
+    testerMysql.checkNull("right(cast(null as binary(1)), -2)");
+    testerMysql.checkNull("right(x'ABCdef', cast(null as Integer))");
   }
 
   @Test public void testJsonExists() {

@@ -4916,9 +4916,28 @@ SqlNode BuiltinFunctionCall() :
     |
         node = JsonArrayAggFunctionCall() { return node; }
     |
-        node = LeftFunctionCall() { return node; }
+      <LEFT> { s = span(); }
+      <LPAREN>
+      e = Expression(ExprContext.ACCEPT_NON_QUERY)
+      { args = startList(e); }
+      <COMMA>
+      e = Expression(ExprContext.ACCEPT_NON_QUERY)
+      { args.add(e); }
+      <RPAREN> {
+          return SqlLibraryOperators.LEFT.createCall(
+              s.end(this), args);
+      }
     |
-        node = RightFunctionCall() { return node; }
+      <RIGHT> { s = span(); }
+      <LPAREN>
+      e = Expression(ExprContext.ACCEPT_NON_QUERY)
+      { args = startList(e); }
+      <COMMA>
+      e = Expression(ExprContext.ACCEPT_NON_QUERY)
+      { args.add(e); }
+      <RPAREN> {
+          return SqlLibraryOperators.RIGHT.createCall(
+              s.end(this), args) ;
     )
 }
 
@@ -5515,40 +5534,6 @@ SqlCall MatchRecognizeFunctionCall() :
         func = MatchRecognizeCallWithModifier()
     )
     { return func; }
-}
-
-SqlCall LeftFunctionCall() :
-{
-    final SqlNode[] args = new SqlNode[2];
-    SqlNode e;
-    final Span span;
-}
-{
-    <LEFT> { span = span(); }
-    <LPAREN> e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[0] = e; }
-    <COMMA>
-    e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[1] = e; }
-    <RPAREN> {
-        return SqlStdOperatorTable.LEFT.createCall(
-            span.end(this), args);
-    }
-}
-
-SqlCall RightFunctionCall() :
-{
-    final SqlNode[] args = new SqlNode[2];
-    SqlNode e;
-    final Span span;
-}
-{
-    <RIGHT> { span = span(); }
-    <LPAREN> e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[0] = e; }
-    <COMMA>
-    e = Expression(ExprContext.ACCEPT_NON_QUERY) { args[1] = e; }
-    <RPAREN> {
-        return SqlStdOperatorTable.RIGHT.createCall(
-            span.end(this), args);
-    }
 }
 
 SqlCall MatchRecognizeCallWithModifier() :
