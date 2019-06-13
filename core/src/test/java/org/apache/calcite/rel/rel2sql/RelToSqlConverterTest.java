@@ -801,6 +801,19 @@ public class RelToSqlConverterTest {
     sql(query).withBigQuery().ok(expected);
   }
 
+  /** Tests that we escape single-quotes in character literals using back-slash
+   * in BigQuery. The norm is to escape single-quotes with single-quotes. */
+  @Test public void testCharLiteralForBigQuery() {
+    final String query = "select 'that''s all folks!' from \"product\"";
+    final String expectedPostgresql = "SELECT 'that''s all folks!'\n"
+        + "FROM \"foodmart\".\"product\"";
+    final String expectedBigQuery = "SELECT 'that\\'s all folks!'\n"
+        + "FROM foodmart.product";
+    sql(query)
+        .withPostgresql().ok(expectedPostgresql)
+        .withBigQuery().ok(expectedBigQuery);
+  }
+
   @Test public void testModFunctionForHive() {
     final String query = "select mod(11,3) from \"product\"";
     final String expected = "SELECT 11 % 3\n"
