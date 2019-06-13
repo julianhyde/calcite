@@ -41,6 +41,16 @@ public class BigQuerySqlDialect extends SqlDialect {
     super(context);
   }
 
+  @Override public void quoteStringLiteral(StringBuilder buf, String val) {
+    if (containsNonAscii(val)) {
+      quoteStringLiteralUnicode(buf, val);
+    } else {
+      buf.append("'");
+      buf.append(FakeUtil.replace(val, "'", "\\'"));
+      buf.append("'");
+    }
+  }
+
   @Override public void unparseCall(final SqlWriter writer, final SqlCall call, final int leftPrec,
       final int rightPrec) {
     switch (call.getKind()) {

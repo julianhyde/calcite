@@ -386,14 +386,20 @@ public class SqlDialect {
    * Converts a string into a string literal. For example, <code>can't
    * run</code> becomes <code>'can''t run'</code>.
    */
-  public String quoteStringLiteral(String val) {
+  public final String quoteStringLiteral(String val) {
+    final StringBuilder buf = new StringBuilder();
+    quoteStringLiteral(buf, val);
+    return buf.toString();
+  }
+
+  /** Appends a string literal to a buffer. */
+  public void quoteStringLiteral(StringBuilder buf, String val) {
     if (containsNonAscii(val)) {
-      final StringBuilder buf = new StringBuilder();
       quoteStringLiteralUnicode(buf, val);
-      return buf.toString();
     } else {
-      val = FakeUtil.replace(val, "'", "''");
-      return "'" + val + "'";
+      buf.append("'");
+      buf.append(FakeUtil.replace(val, "'", "''"));
+      buf.append("'");
     }
   }
 
@@ -491,7 +497,7 @@ public class SqlDialect {
    * @param s String
    * @return Whether string contains any non-7-bit-ASCII characters
    */
-  private static boolean containsNonAscii(String s) {
+  protected static boolean containsNonAscii(String s) {
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       if (c < 32 || c >= 128) {
