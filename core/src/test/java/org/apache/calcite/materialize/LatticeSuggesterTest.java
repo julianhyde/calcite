@@ -499,8 +499,14 @@ public class LatticeSuggesterTest {
         .collect(Collectors.toList());
     assertThat(derivedColumns.size(), is(2));
     final List<String> tables = ImmutableList.of("customer");
-    assertThat(derivedColumns.get(0).tables, is(tables));
-    assertThat(derivedColumns.get(1).tables, is(tables));
+    final Lattice.DerivedColumn dc0 = derivedColumns.get(0);
+    assertThat(dc0.tables, is(tables));
+    assertThat(dc0.alias, is("$f2"));
+    assertThat(lattice.isAlwaysMeasure(dc0), is(true));
+    final Lattice.DerivedColumn dc1 = derivedColumns.get(1);
+    assertThat(dc1.tables, is(tables));
+    assertThat(dc1.alias, is("full_name"));
+    assertThat(lattice.isAlwaysMeasure(dc1), is(false));
   }
 
   @Test public void testExpressionInJoin() throws Exception {

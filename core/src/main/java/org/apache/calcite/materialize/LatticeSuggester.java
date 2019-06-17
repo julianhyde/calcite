@@ -215,20 +215,23 @@ public class LatticeSuggester {
             new Lattice.Measure(measure.aggregate, measure.distinct,
                 measure.name,
                 Lists.transform(measure.arguments, colRef -> {
+                  final Lattice.Column column;
                   if (colRef instanceof BaseColRef) {
                     final BaseColRef baseColRef = (BaseColRef) colRef;
                     final MutableNode node = nodes.get(baseColRef.t);
                     final int table = flatNodes.indexOf(node);
-                    return latticeBuilder.column(table, baseColRef.c);
+                    column = latticeBuilder.column(table, baseColRef.c);
                   } else if (colRef instanceof DerivedColRef) {
                     final DerivedColRef derivedColRef =
                         (DerivedColRef) colRef;
                     final String alias = deriveAlias(measure, derivedColRef);
-                    return latticeBuilder.expression(derivedColRef.e, alias,
+                    column = latticeBuilder.expression(derivedColRef.e, alias,
                         derivedColRef.tableAliases());
                   } else {
                     throw new AssertionError("expression in measure");
                   }
+                  latticeBuilder.use(column, true);
+                  return column;
                 })));
       }
 
@@ -239,6 +242,7 @@ public class LatticeSuggester {
           final Lattice.Column expression =
               latticeBuilder.expression(derivedColRef.e,
                   derivedColRef.alias, derivedColRef.tableAliases());
+          latticeBuilder.use(expression, false);
         }
       }
 
