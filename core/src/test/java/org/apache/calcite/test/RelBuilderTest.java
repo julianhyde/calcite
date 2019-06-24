@@ -930,20 +930,45 @@ public class RelBuilderTest {
   /** Tests that {@link RelBuilder#aggregate} eliminates duplicate aggregate
    * calls and creates a {@code Project} to compensate. */
   @Test public void testAggregateEliminatesDuplicateCalls() {
-    final RelBuilder builder = RelBuilder.create(config().build());
-    RelNode root =
-        builder.scan("EMP")
-            .aggregate(builder.groupKey(),
-                builder.sum(builder.field(1)).as("S1"),
-                builder.count().as("C"),
-                builder.sum(builder.field(2)).as("S2"),
-                builder.sum(builder.field(1)).as("S1b"))
-            .build();
+    RelNode root = buildRelWithDuplicateAggregates();
     final String expected = ""
         + "LogicalProject(S1=[$0], C=[$1], S2=[$2], S1b=[$0])\n"
         + "  LogicalAggregate(group=[{}], S1=[SUM($1)], C=[COUNT()], S2=[SUM($2)])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(root, hasTree(expected));
+  }
+
+  /** As {@link #testAggregateEliminatesDuplicateCalls()} but with a
+   * single-column GROUP BY clause. */
+  @Test public void testAggregateEliminatesDuplicateCalls2() {
+    RelNode root = buildRelWithDuplicateAggregates(0);
+    final String expected = ""
+        + "LogicalProject(EMPNO=[$0], S1=[$1], C=[$2], S2=[$3], S1b=[$1])\n"
+        + "  LogicalAggregate(group=[{0}], S1=[SUM($1)], C=[COUNT()], S2=[SUM($2)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
+  /** As {@link #testAggregateEliminatesDuplicateCalls()} but with a
+   * multi-column GROUP BY clause. */
+  @Test public void testAggregateEliminatesDuplicateCalls3() {
+    RelNode root = buildRelWithDuplicateAggregates(2, 0, 4, 3);
+    final String expected = ""
+        + "LogicalProject(EMPNO=[$0], JOB=[$1], MGR=[$2], HIREDATE=[$3], S1=[$4], C=[$5], S2=[$6], S1b=[$4])\n"
+        + "  LogicalAggregate(group=[{0, 2, 3, 4}], S1=[SUM($1)], C=[COUNT()], S2=[SUM($2)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root, hasTree(expected));
+  }
+
+  private RelNode buildRelWithDuplicateAggregates(int... groupFieldOrdinals) {
+    final RelBuilder builder = RelBuilder.create(config().build());
+    return builder.scan("EMP")
+        .aggregate(builder.groupKey(groupFieldOrdinals),
+            builder.sum(builder.field(1)).as("S1"),
+            builder.count().as("C"),
+            builder.sum(builder.field(2)).as("S2"),
+            builder.sum(builder.field(1)).as("S1b"))
+        .build();
   }
 
   @Test public void testAggregateFilter() {
