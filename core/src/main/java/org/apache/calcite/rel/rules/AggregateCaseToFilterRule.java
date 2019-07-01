@@ -20,7 +20,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
@@ -39,7 +38,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,15 +50,15 @@ import javax.annotation.Nullable;
  * <p>For example,
  *
  * <blockquote>
- *   <tt>SELECT SUM(CASE WHEN gender = 'F' THEN salary END)<br>
- *   FROM Emp</tt>
+ *   <code>SELECT SUM(CASE WHEN gender = 'F' THEN salary END)<br>
+ *   FROM Emp</code>
  * </blockquote>
  *
  * <p>becomes
  *
  * <blockquote>
- *   <tt>SELECT SUM(salary) FILTER(WHERE gender = 'F')<br>
- *   FROM Emp</tt>
+ *   <code>SELECT SUM(salary) FILTER (WHERE gender = 'F')<br>
+ *   FROM Emp</code>
  * </blockquote>
  */
 public class AggregateCaseToFilterRule extends RelOptRule {
@@ -79,10 +77,9 @@ public class AggregateCaseToFilterRule extends RelOptRule {
     final Project project = call.rel(1);
 
     for (AggregateCall aggregateCall : aggregate.getAggCallList()) {
-      if (isOneArgAggregateCall(aggregateCall)
-          && isThreeArgCase(
-              project.getProjects()
-                  .get(Iterables.getOnlyElement(aggregateCall.getArgList())))) {
+      final int singleArg = isOneArgAggregateCall(aggregateCall);
+      if (singleArg >= 0
+          && isThreeArgCase(project.getProjects().get(singleArg))) {
         return true;
       }
     }
@@ -109,15 +106,15 @@ public class AggregateCaseToFilterRule extends RelOptRule {
       AggregateCall newCall =
           transform(aggregateCall, project, newProjects);
 
-      newCalls.add(newCall == null ? aggregateCall : newCall);
-
       // Possibly CAST the new aggregator to an appropriate type.
       final int i = newCasts.size();
       final RelDataType oldType =
           aggregate.getRowType().getFieldList().get(i).getType();
       if (newCall == null) {
+        newCalls.add(aggregateCall);
         newCasts.add(rexBuilder.makeInputRef(oldType, i));
       } else {
+        newCalls.add(newCall);
         newCasts.add(
             rexBuilder.makeCast(oldType,
                 rexBuilder.makeInputRef(newCall.getType(), i)));
@@ -130,56 +127,53 @@ public class AggregateCaseToFilterRule extends RelOptRule {
           .push(project.getInput())
           .project(newProjects);
 
-      final RelBuilder.GroupKey groupKey = relBuilder.groupKey(
-          aggregate.getGroupSet(),
-          aggregate.getGroupSets()
-      );
+      final RelBuilder.GroupKey groupKey =
+          relBuilder.groupKey(aggregate.getGroupSet(),
+              aggregate.getGroupSets());
 
-      final RelNode newAggregate =
-          relBuilder.aggregate(groupKey, newCalls).project(newCasts).build();
+      relBuilder.aggregate(groupKey, newCalls)
+          .project(newCasts);
 
-      call.transformTo(newAggregate);
+      call.transformTo(relBuilder.build());
       call.getPlanner().setImportance(aggregate, 0.0);
     }
   }
 
   private @Nullable AggregateCall transform(AggregateCall aggregateCall,
       Project project, List<RexNode> newProjects) {
-    final RelOptCluster cluster = project.getCluster();
-    final RexBuilder rexBuilder = cluster.getRexBuilder();
-    final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-
-    if (!isOneArgAggregateCall(aggregateCall)) {
+    final int singleArg = isOneArgAggregateCall(aggregateCall);
+    if (singleArg < 0) {
       return null;
     }
-    final List<RexNode> projects = project.getProjects();
-    final RexNode rexNode =
-        projects.get(Iterables.getOnlyElement(aggregateCall.getArgList()));
 
+    final RexNode rexNode = project.getProjects().get(singleArg);
     if (!isThreeArgCase(rexNode)) {
       return null;
     }
+
+    final RelOptCluster cluster = project.getCluster();
+    final RexBuilder rexBuilder = cluster.getRexBuilder();
     final RexCall caseCall = (RexCall) rexNode;
 
     // If one arg is null and the other is not, reverse them and set "flip",
     // which negates the filter.
-    final boolean flip = RexLiteral.isNullLiteral(caseCall.getOperands().get(1))
-        && !RexLiteral.isNullLiteral(caseCall.getOperands().get(2));
-    final RexNode arg1 = caseCall.getOperands().get(flip ? 2 : 1);
-    final RexNode arg2 = caseCall.getOperands().get(flip ? 1 : 2);
+    final boolean flip = RexLiteral.isNullLiteral(caseCall.operands.get(1))
+        && !RexLiteral.isNullLiteral(caseCall.operands.get(2));
+    final RexNode arg1 = caseCall.operands.get(flip ? 2 : 1);
+    final RexNode arg2 = caseCall.operands.get(flip ? 1 : 2);
 
     // Operand 1: Filter
     final SqlPostfixOperator op =
         flip ? SqlStdOperatorTable.IS_FALSE : SqlStdOperatorTable.IS_TRUE;
     final RexNode filterFromCase =
-        rexBuilder.makeCall(op, caseCall.getOperands().get(0));
+        rexBuilder.makeCall(op, caseCall.operands.get(0));
 
     // Combine the CASE filter with an honest-to-goodness SQL FILTER, if the
     // latter is present.
     final RexNode filter;
     if (aggregateCall.filterArg >= 0) {
       filter = rexBuilder.makeCall(SqlStdOperatorTable.AND,
-          projects.get(aggregateCall.filterArg), filterFromCase);
+          project.getProjects().get(aggregateCall.filterArg), filterFromCase);
     } else {
       filter = filterFromCase;
     }
@@ -199,61 +193,66 @@ public class AggregateCaseToFilterRule extends RelOptRule {
             newProjects.size() - 1, RelCollations.EMPTY,
             aggregateCall.getType(), aggregateCall.getName());
       }
-    } else {
-      // Four styles supported:
-      //
-      // A1: AGG(CASE WHEN x = 'foo' THEN cnt END)
-      //   => operands (x = 'foo', cnt, null)
-      // A2: SUM(CASE WHEN x = 'foo' THEN cnt ELSE 0 END)
-      //   => operands (x = 'foo', cnt, 0); must be SUM
-      // B: SUM(CASE WHEN x = 'foo' THEN 1 ELSE 0 END)
-      //   => operands (x = 'foo', 1, 0); must be SUM
-      // C: COUNT(CASE WHEN x = 'foo' THEN 'dummy' END)
-      //   => operands (x = 'foo', 'dummy', null)
-
-      if (aggregateCall.getAggregation().getKind() == SqlKind.COUNT
-          && arg1.isA(SqlKind.LITERAL)
-          && !RexLiteral.isNullLiteral(arg1)
-          && RexLiteral.isNullLiteral(arg2)) {
-        // Case C
-        newProjects.add(filter);
-        return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-            false, ImmutableList.of(), newProjects.size() - 1,
-            RelCollations.EMPTY, aggregateCall.getType(),
-            aggregateCall.getName());
-      } else if (aggregateCall.getAggregation().getKind() == SqlKind.SUM
-          && isIntLiteral(arg1) && RexLiteral.intValue(arg1) == 1
-          && isIntLiteral(arg2) && RexLiteral.intValue(arg2) == 0) {
-        // Case B
-        newProjects.add(filter);
-        final RelDataType dataType =
-            typeFactory.createTypeWithNullability(
-                typeFactory.createSqlType(SqlTypeName.BIGINT), false);
-        return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-            false, ImmutableList.of(), newProjects.size() - 1,
-            RelCollations.EMPTY, dataType, aggregateCall.getName());
-      } else if (RexLiteral.isNullLiteral(arg2) /* Case A1 */
-          || (aggregateCall.getAggregation().getKind() == SqlKind.SUM
-              && isIntLiteral(arg2)
-              && RexLiteral.intValue(arg2) == 0) /* Case A2 */) {
-        newProjects.add(arg1);
-        newProjects.add(filter);
-        return AggregateCall.create(aggregateCall.getAggregation(), false,
-            false, false, ImmutableList.of(newProjects.size() - 2),
-            newProjects.size() - 1, RelCollations.EMPTY,
-            aggregateCall.getType(), aggregateCall.getName());
-      }
+      return null;
     }
-    return null;
+
+    // Four styles supported:
+    //
+    // A1: AGG(CASE WHEN x = 'foo' THEN cnt END)
+    //   => operands (x = 'foo', cnt, null)
+    // A2: SUM(CASE WHEN x = 'foo' THEN cnt ELSE 0 END)
+    //   => operands (x = 'foo', cnt, 0); must be SUM
+    // B: SUM(CASE WHEN x = 'foo' THEN 1 ELSE 0 END)
+    //   => operands (x = 'foo', 1, 0); must be SUM
+    // C: COUNT(CASE WHEN x = 'foo' THEN 'dummy' END)
+    //   => operands (x = 'foo', 'dummy', null)
+
+    if (aggregateCall.getAggregation().getKind() == SqlKind.COUNT
+        && arg1.isA(SqlKind.LITERAL)
+        && !RexLiteral.isNullLiteral(arg1)
+        && RexLiteral.isNullLiteral(arg2)) {
+      // Case C
+      newProjects.add(filter);
+      return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
+          false, ImmutableList.of(), newProjects.size() - 1,
+          RelCollations.EMPTY, aggregateCall.getType(),
+          aggregateCall.getName());
+    } else if (aggregateCall.getAggregation().getKind() == SqlKind.SUM
+        && isIntLiteral(arg1) && RexLiteral.intValue(arg1) == 1
+        && isIntLiteral(arg2) && RexLiteral.intValue(arg2) == 0) {
+      // Case B
+      newProjects.add(filter);
+      final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+      final RelDataType dataType =
+          typeFactory.createTypeWithNullability(
+              typeFactory.createSqlType(SqlTypeName.BIGINT), false);
+      return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
+          false, ImmutableList.of(), newProjects.size() - 1,
+          RelCollations.EMPTY, dataType, aggregateCall.getName());
+    } else if (RexLiteral.isNullLiteral(arg2) /* Case A1 */
+        || (aggregateCall.getAggregation().getKind() == SqlKind.SUM
+            && isIntLiteral(arg2)
+            && RexLiteral.intValue(arg2) == 0) /* Case A2 */) {
+      newProjects.add(arg1);
+      newProjects.add(filter);
+      return AggregateCall.create(aggregateCall.getAggregation(), false,
+          false, false, ImmutableList.of(newProjects.size() - 2),
+          newProjects.size() - 1, RelCollations.EMPTY,
+          aggregateCall.getType(), aggregateCall.getName());
+    } else {
+      return null;
+    }
   }
 
-  private static boolean isOneArgAggregateCall(AggregateCall aggregateCall) {
-    return aggregateCall.getArgList().size() == 1;
+  private static int isOneArgAggregateCall(AggregateCall aggregateCall) {
+    return aggregateCall.getArgList().size() == 1
+        ? aggregateCall.getArgList().get(0)
+        : -1;
   }
 
   private static boolean isThreeArgCase(final RexNode rexNode) {
     return rexNode.getKind() == SqlKind.CASE
-        && ((RexCall) rexNode).getOperands().size() == 3;
+        && ((RexCall) rexNode).operands.size() == 3;
   }
 
   private static boolean isIntLiteral(final RexNode rexNode) {
