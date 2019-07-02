@@ -65,7 +65,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import org.hamcrest.Matcher;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -80,6 +79,7 @@ import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.TreeSet;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 
 import static org.apache.calcite.test.Matchers.hasTree;
 
@@ -156,6 +156,15 @@ public class RelBuilderTest {
     root.add("MYVIEW", macro);
 
     return Frameworks.newConfigBuilder().defaultSchema(root);
+  }
+
+  @Nonnull static RelBuilder createBuilder(
+      Function<RelBuilder.ConfigBuilder, RelBuilder.ConfigBuilder> transform) {
+    final Frameworks.ConfigBuilder configBuilder = config();
+    configBuilder.context(
+        Contexts.of(transform.apply(RelBuilder.Config.DEFAULT.builder())
+            .build()));
+    return RelBuilder.create(configBuilder.build());
   }
 
   @Test public void testScan() {
@@ -401,15 +410,6 @@ public class RelBuilderTest {
             .project(builder.isNotNull(builder.field("EMPNO")))
             .build();
     assertThat(root, matcher);
-  }
-
-  @NotNull private RelBuilder createBuilder(
-      Function<RelBuilder.ConfigBuilder, RelBuilder.ConfigBuilder> transform) {
-    final Frameworks.ConfigBuilder configBuilder = config();
-    configBuilder.context(
-        Contexts.of(transform.apply(RelBuilder.Config.DEFAULT.builder())
-            .build()));
-    return RelBuilder.create(configBuilder.build());
   }
 
   @Test public void testScanFilterOr() {
