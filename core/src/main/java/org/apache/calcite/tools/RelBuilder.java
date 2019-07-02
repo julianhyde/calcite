@@ -156,8 +156,8 @@ public class RelBuilder {
   private final RelFactories.SpoolFactory spoolFactory;
   private final RelFactories.RepeatUnionFactory repeatUnionFactory;
   private final Deque<Frame> stack = new ArrayDeque<>();
-  private final boolean simplify;
   private final RexSimplify simplifier;
+  private final Config config;
 
   protected RelBuilder(Context context, RelOptCluster cluster,
       RelOptSchema relOptSchema) {
@@ -166,7 +166,7 @@ public class RelBuilder {
     if (context == null) {
       context = Contexts.EMPTY_CONTEXT;
     }
-    this.simplify = Hook.REL_BUILDER_SIMPLIFY.get(true);
+    this.config = getConfig(context);
     this.aggregateFactory =
         Util.first(context.unwrap(RelFactories.AggregateFactory.class),
             RelFactories.DEFAULT_AGGREGATE_FACTORY);
@@ -221,6 +221,21 @@ public class RelBuilder {
     final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
     this.simplifier =
         new RexSimplify(cluster.getRexBuilder(), predicates, executor);
+  }
+
+  /** Derives the Config to be used for this RelBuilder.
+   *
+   * <p>Overrides {@link RelBuilder.Config#simplify} if
+   * {@link Hook#REL_BUILDER_SIMPLIFY} is set.
+   */
+  private Config getConfig(Context context) {
+    final Config config =
+        Util.first(context.unwrap(Config.class), Config.DEFAULT);
+    boolean simplify = Hook.REL_BUILDER_SIMPLIFY.get(config.simplify);
+    if (simplify == config.simplify) {
+      return config;
+    }
+    return config.builder().withSimplify(simplify).build();
   }
 
   /** Creates a RelBuilder. */
@@ -1297,7 +1312,7 @@ public class RelBuilder {
     }
 
     // Simplify expressions.
-    if (simplify) {
+    if (config.simplify) {
       for (int i = 0; i < nodeList.size(); i++) {
         nodeList.set(i, simplifier.simplifyPreservingType(nodeList.get(i)));
       }
@@ -1603,7 +1618,7 @@ public class RelBuilder {
       assert groupSet.contains(set);
     }
 
-    if (Util.isDistinct(aggregateCalls)) {
+    if (!config.dedupAggCalls || Util.isDistinct(aggregateCalls)) {
       return aggregate_(groupSet, groupSets, r, aggregateCalls,
           registrar.extraNodes, frame.fields);
     } else {
@@ -1874,7 +1889,7 @@ public class RelBuilder {
     final RelNode join;
     final boolean correlate = variablesSet.size() == 1;
     RexNode postCondition = literal(true);
-    if (simplify) {
+    if (config.simplify) {
       // Normalize expanded versions IS NOT DISTINCT FROM so that simplifier does not
       // transform the expression to something unrecognizable
       if (condition instanceof RexCall) {
@@ -2742,6 +2757,68 @@ public class RelBuilder {
       } else {
         return rexBuilder.makeInputRef(right, inputRef.getIndex() - leftCount);
       }
+    }
+  }
+
+  /** Configuration of RelBuilder.
+   *
+   * <p>It is immutable, and all fields are public.
+   *
+   * <p>Use the {@link #DEFAULT},
+   * or call {@link #builder()} to create a builder, then
+   * {@link RelBuilder.ConfigBuilder#build()}. */
+  public static class Config {
+    /** Default configuration. */
+    public static final Config DEFAULT =
+        new Config(false, true);
+
+    /** Whether {@link RelBuilder#aggregate} should eliminate duplicate
+     * aggregate calls; default true but currently disabled. */
+    public final boolean dedupAggCalls;
+
+    /** Whether to simplify expressions; default true. */
+    public final boolean simplify;
+
+    // called only from ConfigBuilder and when creating DEFAULT
+    private Config(boolean dedupAggCalls,
+        boolean simplify) {
+      this.dedupAggCalls = dedupAggCalls;
+      this.simplify = simplify;
+    }
+
+    /** Creates a ConfigBuilder using this Config. */
+    public ConfigBuilder builder() {
+      return new ConfigBuilder()
+          .withDedupAggregateCalls(dedupAggCalls)
+          .withSimplify(simplify);
+    }
+  }
+
+  /** Creates a {@link RelBuilder.Config}. */
+  public static class ConfigBuilder {
+    private boolean dedupAggCalls;
+    private boolean simplify;
+
+    private ConfigBuilder() {
+    }
+
+    /** Creates a {@link RelBuilder.Config}. */
+    public RelBuilder.Config build() {
+      return new RelBuilder.Config(dedupAggCalls, simplify);
+    }
+
+    /** Sets the value that will become
+     * {@link org.apache.calcite.tools.RelBuilder.Config#dedupAggCalls}. */
+    public ConfigBuilder withDedupAggregateCalls(boolean dedupAggCalls) {
+      this.dedupAggCalls = dedupAggCalls;
+      return this;
+    }
+
+    /** Sets the value that will become
+     * {@link org.apache.calcite.tools.RelBuilder.Config#simplify}. */
+    public ConfigBuilder withSimplify(boolean simplify) {
+      this.simplify = simplify;
+      return this;
     }
   }
 }
