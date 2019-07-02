@@ -229,7 +229,9 @@ public class AggregateCaseToFilterRule extends RelOptRule {
       return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
           false, ImmutableList.of(), newProjects.size() - 1,
           RelCollations.EMPTY, dataType, aggregateCall.getName());
-    } else if (RexLiteral.isNullLiteral(arg2) /* Case A1 */
+    } else if ((RexLiteral.isNullLiteral(arg2) /* Case A1 */
+            && aggregateCall.getAggregation().getKind() != SqlKind.GROUPING
+            && aggregateCall.getAggregation().getKind() != SqlKind.GROUP_ID)
         || (aggregateCall.getAggregation().getKind() == SqlKind.SUM
             && isIntLiteral(arg2)
             && RexLiteral.intValue(arg2) == 0) /* Case A2 */) {
