@@ -387,7 +387,7 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
-  /** Tests that {@linl RelBuilder#project} simplifies expressions if and only if
+  /** Tests that {@link RelBuilder#project} simplifies expressions if and only if
    * {@link RelBuilder.Config#simplify}. */
   @Test public void testSimplify() {
     checkSimplify(configBuilder -> configBuilder.withSimplify(true),

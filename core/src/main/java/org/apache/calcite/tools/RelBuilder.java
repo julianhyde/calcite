@@ -1618,7 +1618,7 @@ public class RelBuilder {
       assert groupSet.contains(set);
     }
 
-    if (!config.dedupAggCalls || Util.isDistinct(aggregateCalls)) {
+    if (!config.dedupAggregateCalls || Util.isDistinct(aggregateCalls)) {
       return aggregate_(groupSet, groupSets, r, aggregateCalls,
           registrar.extraNodes, frame.fields);
     } else {
@@ -2774,29 +2774,30 @@ public class RelBuilder {
 
     /** Whether {@link RelBuilder#aggregate} should eliminate duplicate
      * aggregate calls; default true but currently disabled. */
-    public final boolean dedupAggCalls;
+    public final boolean dedupAggregateCalls;
 
     /** Whether to simplify expressions; default true. */
     public final boolean simplify;
 
-    // called only from ConfigBuilder and when creating DEFAULT
-    private Config(boolean dedupAggCalls,
+    // called only from ConfigBuilder and when creating DEFAULT;
+    // parameters and fields must be in alphabetical order
+    private Config(boolean dedupAggregateCalls,
         boolean simplify) {
-      this.dedupAggCalls = dedupAggCalls;
+      this.dedupAggregateCalls = dedupAggregateCalls;
       this.simplify = simplify;
     }
 
     /** Creates a ConfigBuilder using this Config. */
     public ConfigBuilder builder() {
       return new ConfigBuilder()
-          .withDedupAggregateCalls(dedupAggCalls)
+          .withDedupAggregateCalls(dedupAggregateCalls)
           .withSimplify(simplify);
     }
   }
 
   /** Creates a {@link RelBuilder.Config}. */
   public static class ConfigBuilder {
-    private boolean dedupAggCalls;
+    private boolean dedupAggregateCalls;
     private boolean simplify;
 
     private ConfigBuilder() {
@@ -2804,13 +2805,13 @@ public class RelBuilder {
 
     /** Creates a {@link RelBuilder.Config}. */
     public RelBuilder.Config build() {
-      return new RelBuilder.Config(dedupAggCalls, simplify);
+      return new RelBuilder.Config(dedupAggregateCalls, simplify);
     }
 
     /** Sets the value that will become
-     * {@link org.apache.calcite.tools.RelBuilder.Config#dedupAggCalls}. */
-    public ConfigBuilder withDedupAggregateCalls(boolean dedupAggCalls) {
-      this.dedupAggCalls = dedupAggCalls;
+     * {@link org.apache.calcite.tools.RelBuilder.Config#dedupAggregateCalls}. */
+    public ConfigBuilder withDedupAggregateCalls(boolean dedupAggregateCalls) {
+      this.dedupAggregateCalls = dedupAggregateCalls;
       return this;
     }
 
