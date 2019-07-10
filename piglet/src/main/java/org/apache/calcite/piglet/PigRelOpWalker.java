@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.pig.impl.logicalLayer.FrontendException;
@@ -28,13 +27,13 @@ import org.apache.pig.newplan.logical.relational.LogicalRelationalOperator;
 
 import java.util.Collection;
 
-
 /**
- * Post-order walker for Pig logical relational plans. Walk the plan from sinks to sources
+ * Post-order walker for Pig logical relational plans. Walks the plan
+ * from sinks to sources.
  */
 class PigRelOpWalker extends PlanWalker {
   /**
-   * Visitors that allow doing pre-visit
+   * Visitor that allow doing pre-visit.
    */
   abstract static class PlanPreVisitor extends LogicalRelationalNodesVisitor {
     PlanPreVisitor(OperatorPlan plan, PlanWalker walker) throws FrontendException {
@@ -42,9 +41,10 @@ class PigRelOpWalker extends PlanWalker {
     }
 
     /**
+     * Called before a node.
      *
      * @param root Pig logical operator to check
-     * @return Returns true iff the node has been visited before
+     * @return Returns whether the node has been visited before
      */
     public abstract boolean preVisit(LogicalRelationalOperator root);
   }

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.rel.type.DynamicRecordTypeImpl;
@@ -23,7 +22,6 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Represents Pig Tuples with unknown fields. The tuple field

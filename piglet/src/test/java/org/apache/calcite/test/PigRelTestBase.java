@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.test;
 
 import org.apache.calcite.piglet.PigConverter;
@@ -31,8 +30,8 @@ public abstract class PigRelTestBase {
 
   @Before
   public void testSetup() throws Exception {
-    final PigRelBuilder builder = PigRelBuilder.create(
-        PigRelBuilderTest.config().build());
+    final PigRelBuilder builder =
+        PigRelBuilder.create(PigRelBuilderTest.config().build());
     converter = new PigConverter(builder);
   }
 }
