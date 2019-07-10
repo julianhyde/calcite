@@ -69,30 +69,21 @@ public class PigRelBuilder extends RelBuilder {
    * Context constructed during Pig to {@link RelNode} translation process.
    */
   public class PigRelTranslationContext {
-    public Map<String, FuncSpec> pigUDFs;
-
-    public PigRelTranslationContext() {
-      pigUDFs = new HashMap<>();
-    }
+    final Map<String, FuncSpec> pigUdfs = new HashMap<>();
   }
 
-  private Map<RelNode, String> reverseAliasMap;
-  private Map<String, RelNode> aliasMap;
-  private Map<Operator, RelNode> pigRelMap;
-  private Map<RelNode, Operator> relPigMap;
-  private Map<String, RelNode> storeMap;
-  private int nextCorrelId;
-  private PigRelTranslationContext pigRelContext;
+  private final Map<RelNode, String> reverseAliasMap = new HashMap<>();
+  private final Map<String, RelNode> aliasMap = new HashMap<>();
+  private final Map<Operator, RelNode> pigRelMap = new HashMap<>();
+  private final Map<RelNode, Operator> relPigMap = new HashMap<>();
+  private final Map<String, RelNode> storeMap = new HashMap<>();
+  private int nextCorrelId = 0;
+  private final PigRelTranslationContext pigRelContext =
+      new PigRelTranslationContext();
 
-  private PigRelBuilder(Context context, RelOptCluster cluster, RelOptSchema relOptSchema) {
+  private PigRelBuilder(Context context, RelOptCluster cluster,
+      RelOptSchema relOptSchema) {
     super(context, cluster, relOptSchema);
-    aliasMap = new HashMap<>();
-    reverseAliasMap = new HashMap<>();
-    pigRelMap = new HashMap<>();
-    relPigMap = new HashMap<>();
-    storeMap = new HashMap<>();
-    nextCorrelId = 0;
-    pigRelContext = new PigRelTranslationContext();
   }
 
   /** Creates a PigRelBuilder. */
@@ -112,10 +103,6 @@ public class PigRelBuilder extends RelBuilder {
     // Set unique url connection for pig conversion jdbc driver
     return Frameworks.newConfigBuilder().parserConfig(SqlParser.Config.DEFAULT).defaultSchema(
         null).traitDefs((List<RelTraitDef>) null).programs(Programs.standard());
-  }
-
-  public PigRelTranslationContext getPigRelContext() {
-    return pigRelContext;
   }
 
   public RelNode getRel(String alias) {
@@ -219,7 +206,7 @@ public class PigRelBuilder extends RelBuilder {
       // key = [clas name]_[file name]_[function name]
       key = udfClass.getName() + "_" + fileName + "_" + args[1];
     }
-    pigRelContext.pigUDFs.put(key, pigFunc);
+    pigRelContext.pigUdfs.put(key, pigFunc);
   }
 
   /**
@@ -426,7 +413,8 @@ public class PigRelBuilder extends RelBuilder {
       push(cogroupRels.get(i));
       // Create a ROW to pass to COLLECT.
       final RexNode row = field(groupCount);
-      aggregate(groupKeyList.get(i), aggregateCall(SqlStdOperatorTable.COLLECT, getAlias(), row));
+      aggregate(groupKeyList.get(i),
+          aggregateCall(SqlStdOperatorTable.COLLECT, row).as(getAlias()));
       if (i == 0) {
         continue;
       }
@@ -545,13 +533,14 @@ public class PigRelBuilder extends RelBuilder {
    * Makes the correlated expression from rel input fields and correlation id.
    *
    * @param inputFields Rel input field list
-   * @param correlId correlation id
+   * @param correlId Correlation id
    *
    * @return This builder
    */
-  public RexNode correl(List<RelDataTypeField> inputFields, CorrelationId correlId) {
+  public RexNode correl(List<RelDataTypeField> inputFields,
+      CorrelationId correlId) {
     final RelDataTypeFactory.Builder fieldBuilder =
-        new RelDataTypeFactory.Builder(PigTypes.TYPE_FACTORY);
+        PigTypes.TYPE_FACTORY.builder();
     for (RelDataTypeField field : inputFields) {
       fieldBuilder.add(field.getName(), field.getType());
     }

@@ -124,14 +124,12 @@ public class PigRelSqlUdfs {
    * @param inputType Argument type for the input
    * @param returnType Function return data type
    */
-  static SqlUserDefinedFunction createGeneralPigUDF(String udfName, Method method,
-      FuncSpec funcSpec, RelDataType inputType, final RelDataType returnType) {
-    return new PigUserDefinedFunction(
-        udfName, opBinding -> returnType,
-        OperandTypes.ANY,
-        Collections.singletonList(inputType),
-        ScalarFunctionImpl.createUnsafe(method),
-        funcSpec);
+  static SqlUserDefinedFunction createGeneralPigUdf(String udfName,
+      Method method, FuncSpec funcSpec, RelDataType inputType,
+      RelDataType returnType) {
+    return new PigUserDefinedFunction(udfName, opBinding -> returnType,
+        OperandTypes.ANY, Collections.singletonList(inputType),
+        ScalarFunctionImpl.createUnsafe(method), funcSpec);
   }
 
   /**
@@ -156,7 +154,7 @@ public class PigRelSqlUdfs {
       final List<String> destNames = new ArrayList<>();
       final List<RelDataType> destTypes = new ArrayList<>();
       for (int i = 1; i < opBinding.getOperandCount(); i++) {
-        final int fieldNo = opBinding.getOperandLiteralValue(i, BigDecimal.class).intValue();
+        final int fieldNo = opBinding.getOperandLiteralValue(i, Integer.class);
         destNames.add(fields.get(fieldNo).getName());
         destTypes.add(fields.get(fieldNo).getType());
       }
@@ -166,11 +164,7 @@ public class PigRelSqlUdfs {
   }
 
   /**
-<<<<<<< HEAD:piglet/src/main/java/org/apache/calcite/piglet/PigRelSqlUDFs.java
-   * @return  Returns a {@link SqlOperandTypeChecker} for multiset projection operator.
-=======
    * Returns a {@link SqlOperandTypeChecker} for multiset projection operator.
->>>>>>> 1c1d95f46... Fix up:piglet/src/main/java/org/apache/calcite/piglet/PigRelSqlUdfs.java
    */
   private static SqlOperandTypeChecker multisetProjectionCheck() {
     return new SqlOperandTypeChecker() {
@@ -191,14 +185,14 @@ public class PigRelSqlUdfs {
         final int maxFieldNo = source.getComponentType().getFieldCount() - 1;
 
         for (int i = 1; i < callBinding.getOperandCount(); i++) {
-          try {
-            final int fieldNo = callBinding.getOperandLiteralValue(i, BigDecimal.class).intValue();
-
-            // Field number should between 0 and maxFieldNo
-            if (fieldNo < 0 || fieldNo > maxFieldNo) {
-              return false;
-            }
-          } catch (Exception e) {
+          if (!(callBinding.getOperandLiteralValue(i, Comparable.class)
+              instanceof BigDecimal)) {
+            return false;
+          }
+          final int fieldNo =
+              callBinding.getOperandLiteralValue(i, Integer.class);
+          // Field number should between 0 and maxFieldNo
+          if (fieldNo < 0 || fieldNo > maxFieldNo) {
             return false;
           }
         }

@@ -68,26 +68,33 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import java.math.BigDecimal;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 /**
- * Visits pig expression plans and converts them into to corresponding RexNodes.
+ * Visits pig expression plans and converts them into corresponding RexNodes.
  */
 class PigRelExVisitor extends LogicalExpressionVisitor {
-  // Stack used during post order walking process when process a Pig expression plan
-  private Stack<RexNode> stack;
+  /** Stack used during post order walking process when processing a Pig
+   * expression plan */
+  private final Deque<RexNode> stack = new ArrayDeque<>();
 
-  // The relational algebra builder customized for Pig
-  private PigRelBuilder builder;
+  /** The relational algebra builder customized for Pig. */
+  private final PigRelBuilder builder;
 
   // inputCount and inputOrdinal are used to select which relation in the builder
   // stack to build the projection
-  private int inputCount; // Number of inputs
-  private int inputOrdinal; //Input ordinal
+
+  /** Number of inputs */
+  private final int inputCount;
+
+  /** Input ordinal */
+  private final int inputOrdinal;
 
   /**
+   * Creates a PigRelExVisitor.
    *
    * @param expressionPlan Pig expression plan
    * @param walker The walker over Pig expression plan.
@@ -97,16 +104,17 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
    * @throws FrontendException Exception during processing Pig operators
    */
   private PigRelExVisitor(OperatorPlan expressionPlan, PlanWalker walker,
-      PigRelBuilder builder, int inputCount, int inputOrdinal) throws FrontendException {
+      PigRelBuilder builder, int inputCount, int inputOrdinal)
+      throws FrontendException {
     super(expressionPlan, walker);
     this.builder = builder;
     this.inputCount = inputCount;
     this.inputOrdinal = inputOrdinal;
-    stack = new Stack<>();
   }
 
   /**
-   * Translates the given pig expression plan into a list of relational algebra expressions.
+   * Translates the given pig expression plan into a list of relational algebra
+   * expressions.
    *
    * @return Relational algebra expressions
    * @throws FrontendException Exception during processing Pig operators
@@ -128,8 +136,9 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
    */
   static RexNode translatePigEx(PigRelBuilder builder, LogicalExpressionPlan pigEx,
       int inputCount, int inputOrdinal) throws FrontendException {
+    final PigRelExWalker walker = new PigRelExWalker(pigEx);
     final PigRelExVisitor exVisitor =
-        new PigRelExVisitor(pigEx, new PigRelExWalker(pigEx), builder, inputCount, inputOrdinal);
+        new PigRelExVisitor(pigEx, walker, builder, inputCount, inputOrdinal);
     final List<RexNode> result = exVisitor.translate();
     assert result.size() == 1;
     return result.get(0);
