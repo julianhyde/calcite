@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.test;
 
 import org.apache.calcite.piglet.PigConverter;
 import org.apache.calcite.piglet.PigRelBuilder;
 import org.apache.calcite.piglet.PigRelPlanner;
-import org.apache.calcite.piglet.PigUDFWrapper;
+import org.apache.calcite.piglet.PigUdfWrapper;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelNode;
 
@@ -36,12 +35,12 @@ public abstract class PigRelTestBase {
 
   @Before
   public void testSetup() throws Exception {
-    final PigRelBuilder builder = PigRelBuilder.create(
-        PigRelBuilderTest.config().build());
+    final PigRelBuilder builder =
+        PigRelBuilder.create(PigRelBuilderTest.config().build());
     converter = new PigConverter(builder);
     calcitePlanner = builder.getCluster().getPlanner();
     pigRelPlanner = PigRelPlanner.createPlanner(calcitePlanner);
-    PigUDFWrapper.useUDFWrapper = true;
+    PigUdfWrapper.useUdfWrapper = true;
   }
 }
 

@@ -20,6 +20,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlWindow;
+import org.apache.calcite.sql.parser.SqlParserPos;
 
 /**
  * Abstracts "XX PRECEDING/FOLLOWING" and "CURRENT ROW" bounds for windowed

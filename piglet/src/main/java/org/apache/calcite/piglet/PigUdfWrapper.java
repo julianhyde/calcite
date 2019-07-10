@@ -14,42 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
+import org.apache.pig.builtin.BigDecimalMax;
+import org.apache.pig.builtin.BigDecimalSum;
+import org.apache.pig.builtin.COUNT;
 import org.apache.pig.data.Tuple;
+
+import com.google.common.collect.ImmutableMap;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 /**
- * The current Calcite enumerable engine does not correctly generate Java code that can handle
- * checked exceptions. This is temporary solution that catches the checked exceptions early
- * so that the enumerable code generator does not have to handle them.
+ * The current Calcite enumerable engine does not correctly generate
+ * Java code that can handle checked exceptions. This is temporary
+ * solution that catches the checked exceptions early so that the
+ * enumerable code generator does not have to handle them.
  *
- * Note that without this wrapper, we still correctly convert Pig to relational algebra,
- * but we just cannot run the converted plans with the Calcite enumerable engine.
+ * <p>Note that without this wrapper, we still correctly convert Pig
+ * to relational algebra, but we just cannot run the converted plans
+ * with the Calcite enumerable engine.
  *
- * CALCITE-3195: Fix the enumerable code generator, then remove this class.
+ * <p>TODO: [CALCITE-3195] Fix the enumerable code generator, then remove this
+ * class.
  */
-public class PigUDFWrapper {
-  private PigUDFWrapper() {}
+public class PigUdfWrapper {
+  private PigUdfWrapper() {}
 
-  public static final Map<String, Method> UDF_WRAPPER = new HashMap<>();
-  public static boolean useUDFWrapper = false;
+  public static boolean useUdfWrapper = false;
+
+  public static final Map<String, Method> UDF_WRAPPER;
   static {
-    for (Method method: PigUDFWrapper.class.getMethods()) {
-      UDF_WRAPPER.put(method.getName(), method);
+    final ImmutableMap.Builder<String, Method> map = ImmutableMap.builder();
+    for (Method method : PigUdfWrapper.class.getDeclaredMethods()) {
+      map.put(method.getName(), method);
     }
+    UDF_WRAPPER = map.build();
   }
 
   public static Method getWrappedMethod(String simpleClassName) {
-    if (useUDFWrapper) {
-      final String methodName = simpleClassName.toLowerCase(Locale.US);
+    if (useUdfWrapper) {
+      final String methodName = simpleClassName.toLowerCase(Locale.ROOT);
       return UDF_WRAPPER.get(methodName);
     }
     return null;
@@ -57,7 +66,7 @@ public class PigUDFWrapper {
 
   public static Long count(Tuple input) {
     try {
-      return new org.apache.pig.builtin.COUNT().exec(input);
+      return new COUNT().exec(input);
     } catch (IOException e) {
       throw new IllegalStateException(
           "Unexpected IOException from Pig UDF. Exception: " + e.getMessage());
@@ -66,7 +75,7 @@ public class PigUDFWrapper {
 
   public static BigDecimal bigdecimalsum(Tuple input) {
     try {
-      return new org.apache.pig.builtin.BigDecimalSum().exec(input);
+      return new BigDecimalSum().exec(input);
     } catch (IOException e) {
       throw new IllegalStateException(
           "Unexpected IOException from Pig UDF. Exception: " + e.getMessage());
@@ -75,7 +84,7 @@ public class PigUDFWrapper {
 
   public static BigDecimal bigdecimalmax(Tuple input) {
     try {
-      return new org.apache.pig.builtin.BigDecimalMax().exec(input);
+      return new BigDecimalMax().exec(input);
     } catch (IOException e) {
       throw new IllegalStateException(
           "Unexpected IOException from Pig UDF. Exception: " + e.getMessage());
@@ -84,4 +93,4 @@ public class PigUDFWrapper {
 
 }
 
-// End PigUDFWrapper.java
+// End PigUdfWrapper.java

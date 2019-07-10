@@ -252,23 +252,23 @@ public class RelToSqlConverter extends SqlImplementor
   }
 
   /**
-   * Gets the @{@link org.apache.calcite.rel.rel2sql.SqlImplementor.Builder} for the given
-   * Aggregate node.
+   * Gets the {@link org.apache.calcite.rel.rel2sql.SqlImplementor.Builder} for
+   * the given {@link Aggregate} node.
    *
    * @param e Aggregate node
-   * @param childResult Result from the child
-   * @param isInputProject True iff the child is a Project
+   * @param inputResult Result from the input
+   * @param inputIsProject Whether the input is a Project
    * @return A SQL builder
    */
-  protected Builder getAggregateBuilder(Aggregate e, Result childResult, boolean isInputProject) {
-    final Builder builder;
-    if (isInputProject) {
-      builder = childResult.builder(e);
+  protected Builder getAggregateBuilder(Aggregate e, Result inputResult,
+      boolean inputIsProject) {
+    if (inputIsProject) {
+      final Builder builder = inputResult.builder(e);
       builder.clauses.add(Clause.GROUP_BY);
+      return builder;
     } else {
-      builder = childResult.builder(e, Clause.GROUP_BY);
+      return inputResult.builder(e, Clause.GROUP_BY);
     }
-    return builder;
   }
 
   /**
@@ -279,8 +279,8 @@ public class RelToSqlConverter extends SqlImplementor
    * @param groupByList output group list
    * @param selectList output select list
    */
-  protected void buildAggGroupList(Aggregate e, Builder builder, List<SqlNode> groupByList,
-      List<SqlNode> selectList) {
+  protected void buildAggGroupList(Aggregate e, Builder builder,
+      List<SqlNode> groupByList, List<SqlNode> selectList) {
     for (int group : e.getGroupSet()) {
       final SqlNode field = builder.context.field(group);
       addSelect(selectList, field, e.getRowType());
@@ -297,8 +297,8 @@ public class RelToSqlConverter extends SqlImplementor
    * @param groupByList The precomputed select list
    * @return The aggregate query result
    */
-  protected Result buildAggregate(Aggregate e, Builder builder,  List<SqlNode> selectList,
-      List<SqlNode> groupByList) {
+  protected Result buildAggregate(Aggregate e, Builder builder,
+      List<SqlNode> selectList, List<SqlNode> groupByList) {
     for (AggregateCall aggCall : e.getAggCallList()) {
       SqlNode aggCallSqlNode = builder.context.toSql(aggCall);
       if (aggCall.getAggregation() instanceof SqlSingleValueAggFunction) {

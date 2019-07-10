@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.rel.RelNode;
@@ -173,7 +172,7 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
   }
 
   @Override public void visit(ConstantExpression op) throws FrontendException {
-    RelDataType constType = PigRelSchemaConverter.convertSchemaField(op.getFieldSchema(), false);
+    RelDataType constType = PigTypes.convertSchemaField(op.getFieldSchema(), false);
     stack.push(builder.literal(op.getValue(), constType));
   }
 
@@ -343,9 +342,9 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
             + (op.getPlan().getSoftLinkSuccessors(op) != null
                    ? op.getPlan().getSoftLinkSuccessors(op).size() : 0);
 
-    final RelDataType returnType = PigRelSchemaConverter.convertSchemaField(op.getFieldSchema());
+    final RelDataType returnType = PigTypes.convertSchemaField(op.getFieldSchema());
     stack.push(
-        PigRelUDFConverter.convertPigFunction(
+        PigRelUdfConverter.convertPigFunction(
             builder, op.getFuncSpec(), buildOperands(numAgrs), returnType));
 
     String className = op.getFuncSpec().getClassName();
@@ -374,7 +373,7 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
       for (int i = 0; i < cols.size(); i++) {
         rexCols[i + 1] = builder.literal(cols.get(i));
       }
-      stack.push(builder.call(PigRelSqlUDFs.MULTISET_PROJECTION, rexCols));
+      stack.push(builder.call(PigRelSqlUdfs.MULTISET_PROJECTION, rexCols));
     } else {
       if (cols.size() == 1) {
         // Single field projection
@@ -386,7 +385,8 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
           relFields.add(builder.dot(parentField, col));
         }
 
-        final RelDataType newRelType = RexUtil.createStructType(PigRelSchemaConverter.TYPE_FACTORY,
+        final RelDataType newRelType = RexUtil.createStructType(
+            PigTypes.TYPE_FACTORY,
             relFields);
         stack.push(
             builder.getRexBuilder().makeCall(newRelType, SqlStdOperatorTable.ROW, relFields));
@@ -395,7 +395,7 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
   }
 
   @Override public void visit(CastExpression op) throws FrontendException {
-    final RelDataType relType = PigRelSchemaConverter.convertSchemaField(op.getFieldSchema());
+    final RelDataType relType = PigTypes.convertSchemaField(op.getFieldSchema());
     final RexNode castOperand = stack.pop();
     if (castOperand instanceof RexLiteral && ((RexLiteral) castOperand).getValue() == null) {
       if (!relType.isStruct() && relType.getComponentType() == null) {

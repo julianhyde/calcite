@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.plan.RelOptUtil;
@@ -41,22 +40,22 @@ import org.apache.pig.newplan.logical.relational.LogicalSchema;
 
 import com.google.common.collect.ImmutableSet;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 /**
- * Visits pig logical operators of Pig inner logical plans
- * (in @{@link org.apache.pig.newplan.logical.relational.LOForEach}
- * and converts them into to corresponding relational algebra plans.
- *
+ * Visits Pig logical operators of Pig inner logical plans
+ * (in {@link org.apache.pig.newplan.logical.relational.LOForEach})
+ * and converts them into corresponding relational algebra plans.
  */
 class PigRelOpInnerVisitor extends PigRelOpVisitor {
   // The relational algebra operator corresponding to the input of LOForeach operator.
   private final RelNode inputRel;
 
   // Stack contains correlation id required for processing inner plan.
-  private Stack<CorrelationId> corStack;
+  private final Deque<CorrelationId> corStack = new ArrayDeque<>();
 
   /**
    *
@@ -69,7 +68,6 @@ class PigRelOpInnerVisitor extends PigRelOpVisitor {
       throws FrontendException {
     super(plan, walker, builder);
     this.inputRel = builder.peek();
-    corStack = new Stack<>();
   }
 
   @Override public void visit(LOGenerate gen) throws FrontendException {
@@ -154,11 +152,11 @@ class PigRelOpInnerVisitor extends PigRelOpVisitor {
       // If project field in null constant, dataType will by NULL type, need to check the original
       // type of Pig Schema
       if (dataType.getSqlTypeName() == SqlTypeName.NULL) {
-        dataType = PigRelSchemaConverter.convertSchema(outputFieldSchema, true);
+        dataType = PigTypes.convertSchema(outputFieldSchema, true);
       }
 
       if (outputFieldSchema.size() == 1 && !gen.getFlattenFlags()[i]) {
-        final RelDataType scriptType = PigRelSchemaConverter.convertSchemaField(
+        final RelDataType scriptType = PigTypes.convertSchemaField(
             outputFieldSchema.getField(0));
         if (dataType.getSqlTypeName() == SqlTypeName.ANY
                 || !SqlTypeUtil.isComparable(dataType, scriptType)) {

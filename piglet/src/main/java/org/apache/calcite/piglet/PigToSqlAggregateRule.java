@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.plan.RelOptRule;
@@ -32,6 +31,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
@@ -43,37 +43,40 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.calcite.piglet.PigRelSchemaConverter.TYPE_FACTORY;
-
+import static org.apache.calcite.piglet.PigTypes.TYPE_FACTORY;
 
 /**
- * PigToSqlAggregateRule convert Pig aggregate UDF calls to built-in SQL aggregates.
+ * Planner rule that converts Pig aggregate UDF calls to built-in SQL
+ * aggregates.
  *
- * This rule is applied for logical relational algebra plan that is the result of
- * Pig translation. In Pig, aggregate calls are separate from grouping where we create
- * a bag of all tuples in each group first then apply the Pig aggregate UDF later.
- * It is inefficient to do that in SQL.
+ * <p>This rule is applied for logical relational algebra plan that is
+ * the result of Pig translation. In Pig, aggregate calls are separate
+ * from grouping where we create a bag of all tuples in each group
+ * first then apply the Pig aggregate UDF later.  It is inefficient to
+ * do that in SQL.
  */
 public class PigToSqlAggregateRule extends RelOptRule {
   private static final String MULTISET_PROJECTION = "MULTISET_PROJECTION";
+
   public static final PigToSqlAggregateRule INSTANCE =
       new PigToSqlAggregateRule(RelFactories.LOGICAL_BUILDER);
 
   private PigToSqlAggregateRule(RelBuilderFactory relBuilderFactory) {
     super(
-        operand(
-            Project.class, operand(
-                Project.class, operand(
-                    Aggregate.class, operand(Project.class, any())))),
+        operand(Project.class,
+            operand(Project.class,
+                operand(Aggregate.class,
+                    operand(Project.class, any())))),
         relBuilderFactory,
         "PigToSqlAggregateRule");
   }
 
   /**
-   * Helper class to find all Pig aggregate UDFs or multiset projection called in an expression
-   * and also whether a column is referred in that expression
+   * Visitor that finds all Pig aggregate UDFs or multiset
+   * projection called in an expression and also whether a column is
+   * referred in that expression.
    */
-  private class PigAggUDFFinder extends RexVisitorImpl<Void> {
+  private class PigAggUdfFinder extends RexVisitorImpl<Void> {
     // Index of the column
     private final int projCol;
     // List of all Pig aggregate UDFs found in the expression
@@ -83,7 +86,7 @@ public class PigToSqlAggregateRule extends RelOptRule {
     // True to ignore multiset projection inside a PigUDF
     private boolean ignoreMultisetProj = false;
 
-    PigAggUDFFinder(int projCol) {
+    PigAggUdfFinder(int projCol) {
       super(true);
       this.projCol = projCol;
       pigAggCalls = new ArrayList<>();
@@ -91,7 +94,7 @@ public class PigToSqlAggregateRule extends RelOptRule {
     }
 
     @Override public Void visitCall(RexCall call) {
-      if (PigRelUDFConverter.getSqlAggFuncForPigUDF(call) != null) {
+      if (PigRelUdfConverter.getSqlAggFuncForPigUdf(call) != null) {
         pigAggCalls.add(call);
         ignoreMultisetProj = true;
       } else if (isMultisetProjection(call) && !ignoreMultisetProj) {
@@ -112,10 +115,10 @@ public class PigToSqlAggregateRule extends RelOptRule {
   }
 
   /**
-   * Helper class to replace each @{@link RexCall} by a corresponding @{@link RexNode},
-   * defined in a given map, for an expression.
+   * Helper class to replace each {@link RexCall} by a corresponding
+   * {@link RexNode}, defined in a given map, for an expression.
    *
-   * It also replaces a projection by a new projection.
+   * <p>It also replaces a projection by a new projection.
    */
   private class RexCallReplacer extends RexShuttle {
     private final Map<RexNode, RexNode> replacementMap;
@@ -177,16 +180,16 @@ public class PigToSqlAggregateRule extends RelOptRule {
     }
 
     // Step 0: Find all target Pig aggregate UDFs to rewrite
-    final List<RexCall> pigAggUDFs = new ArrayList<>();
+    final List<RexCall> pigAggUdfs = new ArrayList<>();
     // Whether we need to keep the groupping aggregate call in the new aggregate
     boolean needGoupingCol = false;
     for (RexNode rex : oldTopProject.getProjects()) {
-      PigAggUDFFinder udfVisitor = new PigAggUDFFinder(1);
+      PigAggUdfFinder udfVisitor = new PigAggUdfFinder(1);
       rex.accept(udfVisitor);
       if (!udfVisitor.pigAggCalls.isEmpty()) {
         for (RexCall pigAgg : udfVisitor.pigAggCalls) {
-          if (!pigAggUDFs.contains(pigAgg)) {
-            pigAggUDFs.add(pigAgg);
+          if (!pigAggUdfs.contains(pigAgg)) {
+            pigAggUdfs.add(pigAgg);
           }
         }
       } else if (udfVisitor.projColReferred) {
@@ -221,7 +224,7 @@ public class PigToSqlAggregateRule extends RelOptRule {
     }
     // Build a map of each agg call to a list of columns in the new projection for later use
     final Map<RexCall, List<Integer>> aggCallColumns = new HashMap<>();
-    for (RexCall rexCall : pigAggUDFs) {
+    for (RexCall rexCall : pigAggUdfs) {
       // Get columns in old projection required for the agg call
       final List<Integer> requiredColumns = getAggColumns(rexCall);
       // And map it to columns of new projection
@@ -260,32 +263,34 @@ public class PigToSqlAggregateRule extends RelOptRule {
       final String fieldName =
           relBuilder.peek().getRowType().getFieldNames().get(groupCount - 1);
       aggCalls.add(
-          relBuilder.aggregateCall(SqlStdOperatorTable.COLLECT, false, null,
-              fieldName, relBuilder.field(groupCount - 1)));
+          relBuilder.aggregateCall(SqlStdOperatorTable.COLLECT,
+              relBuilder.field(groupCount - 1)).as(fieldName));
     }
-    for (RexCall rexCall : pigAggUDFs) {
+    for (RexCall rexCall : pigAggUdfs) {
       final List<RexNode> aggOperands = new ArrayList<>();
       for (int i : aggCallColumns.get(rexCall)) {
         aggOperands.add(relBuilder.field(i));
       }
       if (isMultisetProjection(rexCall)) {
         if (aggOperands.size() == 1) {
-          // Project singe column
+          // Project single column
           aggCalls.add(
-              relBuilder.aggregateCall(SqlStdOperatorTable.COLLECT, false, null, null,
+              relBuilder.aggregateCall(SqlStdOperatorTable.COLLECT,
                   aggOperands));
         } else {
-          // Project more than one column, need to construct a record (ROW) from them
-          final RelDataType rowType = createRecordType(relBuilder, aggCallColumns.get(rexCall));
+          // Project more than one column, need to construct a record (ROW)
+          // from them
+          final RelDataType rowType =
+              createRecordType(relBuilder, aggCallColumns.get(rexCall));
           final RexNode row = relBuilder.getRexBuilder()
-                                  .makeCall(rowType, SqlStdOperatorTable.ROW, aggOperands);
+              .makeCall(rowType, SqlStdOperatorTable.ROW, aggOperands);
           aggCalls.add(
-              relBuilder.aggregateCall(SqlStdOperatorTable.COLLECT, false, null, null, row));
+              relBuilder.aggregateCall(SqlStdOperatorTable.COLLECT, row));
         }
       } else {
-        aggCalls.add(
-            relBuilder.aggregateCall(PigRelUDFConverter.getSqlAggFuncForPigUDF(rexCall), false,
-                null, null, aggOperands));
+        final SqlAggFunction udf =
+            PigRelUdfConverter.getSqlAggFuncForPigUdf(rexCall);
+        aggCalls.add(relBuilder.aggregateCall(udf, aggOperands));
       }
     }
     relBuilder.aggregate(groupKey, aggCalls);
@@ -295,8 +300,8 @@ public class PigToSqlAggregateRule extends RelOptRule {
     // First construct a map from old Pig agg UDF call to a projection
     // on new aggregate.
     final Map<RexNode, RexNode> pigCallToNewProjections = new HashMap<>();
-    for (int i = 0; i < pigAggUDFs.size(); i++) {
-      final RexCall pigAgg = pigAggUDFs.get(i);
+    for (int i = 0; i < pigAggUdfs.size(); i++) {
+      final RexCall pigAgg = pigAggUdfs.get(i);
       final int colIndex = i + groupCount;
       final RelDataType fieldType = aggType.getFieldList().get(colIndex).getType();
       final RelDataType oldFiedlType = pigAgg.getType();

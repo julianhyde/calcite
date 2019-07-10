@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.plan.Context;
@@ -61,7 +60,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Extension to {@link RelBuilder} for Pig logical operators.
@@ -324,10 +322,14 @@ public class PigRelBuilder extends RelBuilder {
    * For any field in output type, if there is no matching input field, we project
    * null value of the corresponding output field type.
    *
-   * Example:
-   *  Input rel A with A_type(X: int, Y: varchar)
-   *  Output type B_type(X: int, Y: varchar, Z: boolean, W: double)
-   * project(A, B_type) gives new relation C(X: int, Y: varchar, null, null)
+   * <p>For example, given:
+   * <ul>
+   * <li>Input rel {@code A} with {@code A_type(X: int, Y: varchar)}
+   * <li>Output type {@code B_type(X: int, Y: varchar, Z: boolean, W: double)}
+   * </ul>
+   *
+   * <p>{@code project(A, B_type)} gives new relation
+   * {@code C(X: int, Y: varchar, null, null)}.
    *
    * @param input The relation algebra operator to be projected
    * @param outputType The data type for the projected relation algebra operator
@@ -335,8 +337,8 @@ public class PigRelBuilder extends RelBuilder {
    */
   public RelNode project(RelNode input, RelDataType outputType) {
     final RelDataType inputType = input.getRowType();
-    if (compatibleType(inputType, outputType) && inputType.getFieldNames()
-                                                     .equals(outputType.getFieldNames())) {
+    if (compatibleType(inputType, outputType)
+        && inputType.getFieldNames().equals(outputType.getFieldNames())) {
       // Same data type, simply returns the input rel
       return input;
     }
@@ -545,7 +547,7 @@ public class PigRelBuilder extends RelBuilder {
    */
   public RexNode correl(List<RelDataTypeField> inputFields, CorrelationId correlId) {
     final RelDataTypeFactory.FieldInfoBuilder fieldInfoBuilder =
-        PigRelSchemaConverter.TYPE_FACTORY.builder();
+        PigTypes.TYPE_FACTORY.builder();
     for (RelDataTypeField field : inputFields) {
       fieldInfoBuilder.add(field.getName(), field.getType());
     }

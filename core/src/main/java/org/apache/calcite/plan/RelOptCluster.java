@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 /**
  * An environment for related relational expressions during the
  * optimization of a query.

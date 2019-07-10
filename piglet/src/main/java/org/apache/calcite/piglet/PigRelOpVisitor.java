@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.plan.RelOptTable;
@@ -83,7 +82,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
 
 /**
  * Visits pig logical operators and converts them into to corresponding relational algebra plans.
@@ -163,10 +161,11 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
     final LogicalSchema pigSchema = load.getSchema();
     RelOptTable pigRelOptTable = null;
     if (pigSchema != null) {
-      // If Pig schema is provided in the load command, converted it into relational row type
-      final RelDataType rowType = PigRelSchemaConverter.convertSchema(pigSchema);
-      pigRelOptTable = VirtualTable.createRelOptTable(builder.getRelOptSchema(), rowType,
-          Arrays.asList(tableNames));
+      // If Pig schema is provided in the load command, converted it into
+      // relational row type.
+      final RelDataType rowType = PigTypes.convertSchema(pigSchema);
+      pigRelOptTable = VirtualTable.createRelOptTable(builder.getRelOptSchema(),
+          rowType, Arrays.asList(tableNames));
     }
     builder.scan(pigRelOptTable, tableNames);
     builder.register(load);
@@ -234,7 +233,7 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
         fieldRexes.add(builder.field(j));
       }
       RelDataType groupDataType =
-          PigRelSchemaConverter.TYPE_FACTORY.createStructType(fieldTypes, fieldNames);
+          PigTypes.TYPE_FACTORY.createStructType(fieldTypes, fieldNames);
       groupRex = builder.getRexBuilder().makeCall(
           groupDataType, SqlStdOperatorTable.ROW, fieldRexes);
     }
@@ -391,7 +390,7 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
           fieldTypes.add(rowFields.get(i).getType());
         }
       }
-      return PigRelSchemaConverter.TYPE_FACTORY.createStructType(fieldTypes, fieldNames);
+      return PigTypes.TYPE_FACTORY.createStructType(fieldTypes, fieldNames);
     }
     return builder.peek().getRowType();
   }
@@ -584,7 +583,7 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
     }
     // First get the shared schema
     int numInputs = loUnion.getInputs().size();
-    RelDataType unionRelType = PigRelSchemaConverter.convertSchema(unionSchema);
+    RelDataType unionRelType = PigTypes.convertSchema(unionSchema);
 
     // Then using projections to adjust input relations with the shared schema
     List<RelNode> adjustedInputs = new ArrayList<>();
@@ -660,7 +659,7 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
   }
 
   /**
-   * Builds window function for @{@link LORank}.
+   * Builds a window function for {@link LORank}.
    *
    * @param loRank Pig logical rank operator
    * @return The window function
@@ -684,7 +683,7 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
     }
 
     return builder.getRexBuilder().makeOver(
-        PigRelSchemaConverter.TYPE_FACTORY.createSqlType(SqlTypeName.BIGINT), // Return type
+        PigTypes.TYPE_FACTORY.createSqlType(SqlTypeName.BIGINT), // Return type
         rank, // Aggregate function
         Collections.<RexNode>emptyList(), // Operands for the aggregate function, empty here
         Collections.<RexNode>emptyList(), // No partition keys
@@ -696,8 +695,7 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
         false, // Range-based
         true, // allow partial
         false, // not return null when count is zero
-        false // no distinct
-    );
+        false); // no distinct
   }
 
   @Override public void visit(LOStream loStream) throws FrontendException {

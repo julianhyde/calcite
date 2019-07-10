@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.pig.impl.logicalLayer.FrontendException;
@@ -27,9 +26,9 @@ import org.apache.pig.newplan.logical.expression.LogicalExpressionPlan;
 
 import java.util.Collection;
 
-
 /**
- * Post-order walker for Pig expression plans. Walk the plan from source to sinks
+ * Post-order walker for Pig expression plans. Walk the plan from
+ * source to sinks.
  */
 class PigRelExWalker extends PlanWalker {
   PigRelExWalker(OperatorPlan plan) {

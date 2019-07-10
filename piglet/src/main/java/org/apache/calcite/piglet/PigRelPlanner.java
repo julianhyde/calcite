@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreterRule;
@@ -45,15 +44,15 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
-
 /**
- * Extension of @{@link VolcanoPlanner} to optimize Pig-translated logical plans
+ * Extension of {@link VolcanoPlanner} to optimize Pig-translated
+ * logical plans.
  */
 public class PigRelPlanner extends VolcanoPlanner {
-  // Basic transformation and implementation rules to optimize for Pig-translated logical plans
+  /** Basic transformation and implementation rules to optimize for
+   * Pig-translated logical plans. */
   static final List<RelOptRule> PIG_RULES =
-      ImmutableList.of(
-          ProjectToWindowRule.PROJECT,
+      ImmutableList.of(ProjectToWindowRule.PROJECT,
           PigToSqlAggregateRule.INSTANCE,
           EnumerableRules.ENUMERABLE_VALUES_RULE,
           EnumerableRules.ENUMERABLE_JOIN_RULE,
@@ -71,8 +70,7 @@ public class PigRelPlanner extends VolcanoPlanner {
           EnumerableInterpreterRule.INSTANCE);
 
   static final List<RelOptRule> TRANSFORM_RULES =
-      ImmutableList.of(
-          ProjectWindowTransposeRule.INSTANCE,
+      ImmutableList.of(ProjectWindowTransposeRule.INSTANCE,
           FilterMergeRule.INSTANCE,
           ProjectMergeRule.INSTANCE,
           FilterProjectTransposeRule.INSTANCE,
@@ -96,7 +94,7 @@ public class PigRelPlanner extends VolcanoPlanner {
   }
 
   /**
-   * Creates a @{@link PigRelPlanner} from a @{@link RelOptPlanner} template.
+   * Creates a {@link PigRelPlanner} from a {@link RelOptPlanner} template.
    *
    * @param template RelOptPlanner template
    * @param rules RelOptRule rules to use
@@ -112,7 +110,7 @@ public class PigRelPlanner extends VolcanoPlanner {
   }
 
   /**
-   * Creates a @{@link PigRelPlanner} from a @{@link RelOptPlanner} template.
+   * Creates a {@link PigRelPlanner} from a {@link RelOptPlanner} template.
    *
    * @param template RelOptPlanner template
    */
