@@ -126,9 +126,8 @@ public class PigToSqlAggregateRule extends RelOptRule {
     private final int oldProjCol;
     private final RexNode newProjectCol;
 
-    RexCallReplacer(RexBuilder builder, Map<RexNode, RexNode> replacementMap, int oldProjCol,
-        RexNode newProjectCol) {
-      super();
+    RexCallReplacer(RexBuilder builder, Map<RexNode, RexNode> replacementMap,
+        int oldProjCol, RexNode newProjectCol) {
       this.replacementMap = replacementMap;
       this.builder = builder;
       this.oldProjCol = oldProjCol;
@@ -171,7 +170,6 @@ public class PigToSqlAggregateRule extends RelOptRule {
     final Aggregate oldAgg = call.rel(2);
     final Project oldBottomProject = call.rel(3);
     final RelBuilder relBuilder = call.builder();
-    int groupCount = oldAgg.getGroupCount();
 
     if (oldAgg.getAggCallList().size() != 1
         || oldAgg.getAggCallList().get(0).getAggregation().getKind() != SqlKind.COLLECT) {
@@ -181,7 +179,7 @@ public class PigToSqlAggregateRule extends RelOptRule {
 
     // Step 0: Find all target Pig aggregate UDFs to rewrite
     final List<RexCall> pigAggUdfs = new ArrayList<>();
-    // Whether we need to keep the groupping aggregate call in the new aggregate
+    // Whether we need to keep the grouping aggregate call in the new aggregate
     boolean needGoupingCol = false;
     for (RexNode rex : oldTopProject.getProjects()) {
       PigAggUdfFinder udfVisitor = new PigAggUdfFinder(1);
@@ -202,7 +200,7 @@ public class PigToSqlAggregateRule extends RelOptRule {
     final List<RexNode> newBottomProjects = new ArrayList<>();
     relBuilder.push(oldBottomProject.getInput());
     // First project all group keys, just copy from old one
-    for (int i = 0; i < groupCount; i++) {
+    for (int i = 0; i < oldAgg.getGroupCount(); i++) {
       newBottomProjects.add(oldBottomProject.getChildExps().get(i));
     }
     // If grouping aggregate is needed, project the whole ROW
@@ -210,8 +208,9 @@ public class PigToSqlAggregateRule extends RelOptRule {
       final RexNode row = relBuilder.getRexBuilder().makeCall(relBuilder.peek().getRowType(),
           SqlStdOperatorTable.ROW, relBuilder.fields());
       newBottomProjects.add(row);
-      groupCount++;
     }
+    final int groupCount = oldAgg.getGroupCount() + (needGoupingCol ? 1 : 0);
+
     // Now figure out which columns need to be projected for Pig UDF aggregate calls
     // We need to project these columns for the new aggregate
 
@@ -367,7 +366,8 @@ public class PigToSqlAggregateRule extends RelOptRule {
   }
 
   /**
-   * Returns a list of columns accessed in a Pig aggregate UDF call
+   * Returns a list of columns accessed in a Pig aggregate UDF call.
+   *
    * @param pigAggCall Pig aggregate UDF call
    */
   private List<Integer> getAggColumns(RexCall pigAggCall) {
@@ -377,7 +377,7 @@ public class PigToSqlAggregateRule extends RelOptRule {
 
     // The only operand should be PIG_BAG
     assert pigAggCall.getOperands().size() == 1
-               && pigAggCall.getOperands().get(0) instanceof RexCall;
+        && pigAggCall.getOperands().get(0) instanceof RexCall;
     final RexCall pigBag = (RexCall) pigAggCall.getOperands().get(0);
     assert pigBag.getOperands().size() == 1;
     final RexNode pigBagInput = pigBag.getOperands().get(0);

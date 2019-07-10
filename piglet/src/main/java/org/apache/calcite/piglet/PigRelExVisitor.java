@@ -18,6 +18,7 @@ package org.apache.calcite.piglet;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -345,11 +346,8 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
       // Skip this Pig dummy function
       return;
     }
-    final int numAgrs =
-        (op.getPlan().getSuccessors(op) != null
-             ? op.getPlan().getSuccessors(op).size() : 0)
-            + (op.getPlan().getSoftLinkSuccessors(op) != null
-                   ? op.getPlan().getSoftLinkSuccessors(op).size() : 0);
+    final int numAgrs = optSize(op.getPlan().getSuccessors(op))
+        + optSize(op.getPlan().getSoftLinkSuccessors(op));
 
     final RelDataType returnType = PigTypes.convertSchemaField(op.getFieldSchema());
     stack.push(
@@ -365,6 +363,10 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
       className = sqlFunc.method.getDeclaringClass().getName();
     }
     builder.registerPigUDF(className, op.getFuncSpec());
+  }
+
+  protected int optSize(List<Operator> list) {
+    return list != null ? list.size() : 0;
   }
 
   @Override public void visit(DereferenceExpression op) throws FrontendException {
@@ -406,9 +408,12 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
   @Override public void visit(CastExpression op) throws FrontendException {
     final RelDataType relType = PigTypes.convertSchemaField(op.getFieldSchema());
     final RexNode castOperand = stack.pop();
+    final RexBuilder rexBuilder = builder.getRexBuilder();
     if (castOperand instanceof RexLiteral && ((RexLiteral) castOperand).getValue() == null) {
       if (!relType.isStruct() && relType.getComponentType() == null) {
-        stack.push(builder.getRexBuilder().makeNullLiteral(relType.getSqlTypeName()));
+        final RelDataType type =
+            rexBuilder.getTypeFactory().createSqlType(relType.getSqlTypeName());
+        stack.push(rexBuilder.makeNullLiteral(type));
       } else {
         stack.push(castOperand);
       }

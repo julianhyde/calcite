@@ -90,7 +90,9 @@ class PigRelOpInnerVisitor extends PigRelOpVisitor {
   }
 
   /**
-   * Rejoins all multiset (bag) columns that have been processed in the nested foreach block
+   * Rejoins all multiset (bag) columns that have been processed in the nested
+   * foreach block.
+   *
    * @throws FrontendException Exception during processing Pig operators
    */
   private void makeCorrelates() throws FrontendException {

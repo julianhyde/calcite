@@ -17,6 +17,8 @@
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableInterpreter;
+import org.apache.calcite.adapter.enumerable.EnumerableLimit;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -203,28 +205,31 @@ public class PigConverter extends PigServer {
   private List<String> pigToSql(String pigScript, SqlWriter writer) throws IOException {
     final RelToSqlConverter sqlConverter = new PigRelToSqlConverter(writer.getDialect());
     final List<RelNode> finalRels = pigQuery2Rel(pigScript);
-    final List<String> sqlStatments = new ArrayList<>();
+    final List<String> sqlStatements = new ArrayList<>();
     for (RelNode rel : finalRels) {
       final SqlNode sqlNode = sqlConverter.visitChild(0, rel).asStatement();
       sqlNode.unparse(writer, 0, 0);
-      sqlStatments.add(writer.toString());
+      sqlStatements.add(writer.toString());
     }
-    return  sqlStatments;
+    return sqlStatements;
   }
 
-  private List<RelNode> optimizePlans(List<RelNode> orgionalRels, List<RelOptRule> rules) {
-    PigRelPlanner planner = PigRelPlanner.createPlanner(builder.getCluster().getPlanner(), rules);
+  private List<RelNode> optimizePlans(List<RelNode> originalRels,
+      List<RelOptRule> rules) {
+    PigRelPlanner planner =
+        PigRelPlanner.createPlanner(builder.getCluster().getPlanner(), rules);
     setPlanner(planner);
     final Program program = Programs.of(RuleSets.ofList(planner.getRules()));
     final List<RelNode> optimizedPlans = new ArrayList<>();
-    for (RelNode rel : orgionalRels) {
+    for (RelNode rel : originalRels) {
       final RelCollation collation = rel instanceof Sort
-                                         ? ((Sort) rel).collation
-                                         : RelCollations.EMPTY;
+          ? ((Sort) rel).collation
+          : RelCollations.EMPTY;
       // Apply the planner to obtain the physical plan
       final RelNode physicalPlan = program.run(planner, rel,
-          rel.getTraitSet().replace(EnumerableConvention.INSTANCE).replace(collation).simplify(),
-          ImmutableList.<RelOptMaterialization>of(), ImmutableList.<RelOptLattice>of());
+          rel.getTraitSet().replace(EnumerableConvention.INSTANCE)
+              .replace(collation).simplify(),
+          ImmutableList.of(), ImmutableList.of());
 
       // Then convert the physical plan back to logical plan
       final RelNode logicalPlan = new ToLogicalConverter(builder).visit(physicalPlan);

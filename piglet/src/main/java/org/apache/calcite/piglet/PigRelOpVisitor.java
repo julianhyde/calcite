@@ -84,12 +84,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Visits pig logical operators and converts them into to corresponding relational algebra plans.
+ * Visits Pig logical operators and converts them into corresponding relational
+ * algebra plans.
  */
 class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
   private static final String RANK_PREFIX = "rank_";
+
   // The relational algebra builder customized for Pig
-  protected PigRelBuilder builder;
+  protected final PigRelBuilder builder;
   private Operator currentRoot;
 
   /**
@@ -102,6 +104,8 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
   }
 
   /**
+   * Creates a PigRelOpVisitor.
+   *
    * @param plan    Pig logical plan
    * @param walker  The walker over Pig logical plan
    * @param builder Relational algebra builder
@@ -395,13 +399,13 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
     return builder.peek().getRowType();
   }
 
-  // Gets the operands for the ROW operator to construct the group column.
-  private List<RexNode> getGroupRowOperands(List<RexNode> fieldRels, boolean isCubeRollup) {
-    List<RexNode> rowFields = builder.fields();
+  /** Gets the operands for the ROW operator to construct the group column. */
+  private List<RexNode> getGroupRowOperands(List<RexNode> fieldRels,
+      boolean isCubeRollup) {
+    final List<RexNode> rowFields = builder.fields();
     if (isCubeRollup) {
-      List<RexNode> cubeRowFields = new ArrayList<>();
       // Add group by columns first
-      cubeRowFields.addAll(fieldRels);
+      List<RexNode> cubeRowFields = new ArrayList<>(fieldRels);
 
       // Then and remaining columns
       for (RexNode field : rowFields) {

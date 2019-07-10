@@ -43,7 +43,7 @@ class PigTypes {
 
   /**
    * Type factory that produces types with the nullability when converting
-   * from Pig types. It also translate Pig DataBag type into multiset of
+   * from Pig types. It also translates a Pig DataBag type into a multiset of
    * objects type.
    */
   static class PigRelDataTypeFactory extends JavaTypeFactoryImpl {

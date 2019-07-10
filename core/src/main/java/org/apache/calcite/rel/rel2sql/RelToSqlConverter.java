@@ -173,16 +173,18 @@ public class RelToSqlConverter extends SqlImplementor
         visitChild(0, e.getLeft()).resetAlias(e.getCorrelVariable(), e.getRowType());
     parseCorrelTable(e, leftResult);
     final Result rightResult = visitChild(1, e.getRight());
-    SqlNode rightLateral = SqlStdOperatorTable.LATERAL.createCall(POS, rightResult.node);
-    rightLateral = SqlStdOperatorTable.AS.createCall(POS, rightLateral,
-        new SqlIdentifier(rightResult.neededAlias, POS));
+    final SqlNode rightLateral =
+        SqlStdOperatorTable.LATERAL.createCall(POS, rightResult.node);
+    final SqlNode rightLateralAs =
+        SqlStdOperatorTable.AS.createCall(POS, rightLateral,
+            new SqlIdentifier(rightResult.neededAlias, POS));
 
-    SqlNode join =
+    final SqlNode join =
         new SqlJoin(POS,
             leftResult.asFrom(),
             SqlLiteral.createBoolean(false, POS),
             JoinType.COMMA.symbol(POS),
-            rightLateral,
+            rightLateralAs,
             JoinConditionType.NONE.symbol(POS),
             null);
     return result(join, leftResult, rightResult);
