@@ -47,7 +47,7 @@ public class PigRelToSqlConverter extends RelToSqlConverter {
   /** Creates a RelToSqlConverter.
    *
    * @param dialect SQL dialect
-   * */
+   */
   PigRelToSqlConverter(SqlDialect dialect) {
     super(dialect);
   }

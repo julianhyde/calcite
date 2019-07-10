@@ -101,7 +101,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
       int rightPrec) {
     if (call.operandCount() == 1
         && call.getOperandList().get(0).getKind() == SqlKind.SELECT) {
-      // avoid double ( ) on unnesting a sub query
+      // avoid double ( ) on unnesting a sub-query
       writer.keyword(getName());
       call.operand(0).unparse(writer, 0, 0);
     } else {

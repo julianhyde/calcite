@@ -19,8 +19,6 @@ package org.apache.calcite.piglet;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreterRule;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
-import org.apache.calcite.plan.RelOptLattice;
-import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.RelCollation;
@@ -38,6 +36,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSets;
@@ -103,22 +102,14 @@ public class PigConverter extends PigServer {
 
   private final PigRelBuilder builder;
 
-  public PigConverter(PigRelBuilder builder) throws Exception {
-    this(builder, ExecType.LOCAL);
-  }
-
-  PigConverter(PigRelBuilder builder, ExecType execType) throws Exception {
+  private PigConverter(FrameworkConfig config, ExecType execType)
+      throws Exception {
     super(execType);
-    this.builder = builder;
-    builder.clear();
+    this.builder = PigRelBuilder.create(config);
   }
 
-  public PigConverter() throws Exception {
-    this(ExecType.LOCAL);
-  }
-
-  public PigConverter(ExecType execType) throws Exception {
-    this(PigRelBuilder.create(), execType);
+  public static PigConverter create(FrameworkConfig config) throws Exception {
+    return new PigConverter(config, ExecType.LOCAL);
   }
 
   public PigRelBuilder getBuilder() {
@@ -177,7 +168,8 @@ public class PigConverter extends PigServer {
   }
 
   /**
-   * Gets Pig script string from a file after doing param substitution
+   * Gets a Pig script string from a file after doing param substitution.
+   *
    * @param in Pig script file
    * @param params Param sub map
    */
@@ -253,10 +245,11 @@ public class PigConverter extends PigServer {
       sqlNode.unparse(writer, 0, 0);
       sqlStatements.add(writer.toString());
     }
-    return  sqlStatements;
+    return sqlStatements;
   }
 
-  private List<RelNode> optimizePlans(List<RelNode> originalRels, List<RelOptRule> rules) {
+  private List<RelNode> optimizePlans(List<RelNode> originalRels,
+      List<RelOptRule> rules) {
     final RelOptPlanner planner = originalRels.get(0).getCluster().getPlanner();
     // Remember old rule set of the planner before resetting it with new rules
     final List<RelOptRule> oldRules = planner.getRules();
@@ -265,12 +258,13 @@ public class PigConverter extends PigServer {
     final List<RelNode> optimizedPlans = new ArrayList<>();
     for (RelNode rel : originalRels) {
       final RelCollation collation = rel instanceof Sort
-                                         ? ((Sort) rel).collation
-                                         : RelCollations.EMPTY;
+          ? ((Sort) rel).collation
+          : RelCollations.EMPTY;
       // Apply the planner to obtain the physical plan
       final RelNode physicalPlan = program.run(planner, rel,
-          rel.getTraitSet().replace(EnumerableConvention.INSTANCE).replace(collation).simplify(),
-          ImmutableList.<RelOptMaterialization>of(), ImmutableList.<RelOptLattice>of());
+          rel.getTraitSet().replace(EnumerableConvention.INSTANCE)
+              .replace(collation).simplify(),
+          ImmutableList.of(), ImmutableList.of());
 
       // Then convert the physical plan back to logical plan
       final RelNode logicalPlan = new ToLogicalConverter(builder).visit(physicalPlan);

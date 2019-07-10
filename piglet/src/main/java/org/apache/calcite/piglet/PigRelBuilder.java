@@ -21,7 +21,6 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -36,11 +35,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.MultisetSqlType;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
@@ -65,13 +61,6 @@ import java.util.Map;
  * Extension to {@link RelBuilder} for Pig logical operators.
  */
 public class PigRelBuilder extends RelBuilder {
-  /**
-   * Context constructed during Pig to {@link RelNode} translation process.
-   */
-  public class PigRelTranslationContext {
-    final Map<String, FuncSpec> pigUdfs = new HashMap<>();
-  }
-
   private final Map<RelNode, String> reverseAliasMap = new HashMap<>();
   private final Map<String, RelNode> aliasMap = new HashMap<>();
   private final Map<Operator, RelNode> pigRelMap = new HashMap<>();
@@ -92,17 +81,6 @@ public class PigRelBuilder extends RelBuilder {
     Hook.REL_BUILDER_SIMPLIFY.add(Hook.propertyJ(false));
     return new PigRelBuilder(config.getContext(), relBuilder.getCluster(),
         relBuilder.getRelOptSchema());
-  }
-
-  /** Creates a PigRelBuilder. */
-  public static PigRelBuilder create() {
-    return create(config().build());
-  }
-
-  private static Frameworks.ConfigBuilder config() {
-    // Set unique url connection for pig conversion jdbc driver
-    return Frameworks.newConfigBuilder().parserConfig(SqlParser.Config.DEFAULT).defaultSchema(
-        null).traitDefs((List<RelTraitDef>) null).programs(Programs.standard());
   }
 
   public RelNode getRel(String alias) {
@@ -667,6 +645,13 @@ public class PigRelBuilder extends RelBuilder {
       }
     }
     return t1.getSqlTypeName().getFamily() == t2.getSqlTypeName().getFamily();
+  }
+
+  /**
+   * Context constructed during Pig-to-{@link RelNode} translation process.
+   */
+  public class PigRelTranslationContext {
+    final Map<String, FuncSpec> pigUdfs = new HashMap<>();
   }
 }
 

@@ -17,8 +17,8 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.piglet.PigConverter;
-import org.apache.calcite.piglet.PigRelBuilder;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.tools.FrameworkConfig;
 
 import org.junit.Before;
 
@@ -30,9 +30,8 @@ public abstract class PigRelTestBase {
 
   @Before
   public void testSetup() throws Exception {
-    final PigRelBuilder builder =
-        PigRelBuilder.create(PigRelBuilderTest.config().build());
-    converter = new PigConverter(builder);
+    final FrameworkConfig config = PigRelBuilderTest.config().build();
+    converter = PigConverter.create(config);
   }
 }
 
