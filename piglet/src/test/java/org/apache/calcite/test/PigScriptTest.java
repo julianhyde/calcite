@@ -14,12 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.test;
 
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.util.Util;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,15 +31,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.apache.calcite.test.Matchers.hasTree;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * Test for converting a pig script file.
+ * Test for converting a Pig script file.
  */
 public class PigScriptTest extends PigRelTestBase {
-  static String projectRootDir;
-  static String dataFile;
+  private static String projectRootDir;
+  private static String dataFile;
 
   @BeforeClass
   public static void setUpOnce() throws IOException {
@@ -64,17 +62,17 @@ public class PigScriptTest extends PigRelTestBase {
     params.put("input", dataFile);
     params.put("output", "outputFile");
 
-    RelNode rel = converter.pigScript2Rel(projectRootDir + "/src/test/resources/testPig.pig",
-        params, true).get(0);
+    final String pigFile = projectRootDir + "/src/test/resources/testPig.pig";
+    final RelNode rel = converter.pigScript2Rel(pigFile, params, true).get(0);
 
-    String epxectedPlan = ""
-                              + "LogicalSort(sort0=[$1], dir0=[DESC], fetch=[5])\n"
-                              + "  LogicalProject(query=[$0], count=[CAST($1):BIGINT])\n"
-                              + "    LogicalAggregate(group=[{0}], agg#0=[SUM($1)])\n"
-                              + "      LogicalTableScan(table=[[" + projectRootDir
-                              + "/src/test/resources/input.data]])\n";
+    final String dataFile = projectRootDir + "/src/test/resources/input.data";
+    String expectedPlan = ""
+        + "LogicalSort(sort0=[$1], dir0=[DESC], fetch=[5])\n"
+        + "  LogicalProject(query=[$0], count=[CAST($1):BIGINT])\n"
+        + "    LogicalAggregate(group=[{0}], agg#0=[SUM($1)])\n"
+        + "      LogicalTableScan(table=[[" + dataFile + "]])\n";
 
-    assertThat(Util.toLinux(RelOptUtil.toString(rel)), is(epxectedPlan));
+    assertThat(rel, hasTree(expectedPlan));
   }
 }
 

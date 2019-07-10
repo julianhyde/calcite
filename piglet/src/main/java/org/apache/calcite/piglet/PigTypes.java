@@ -28,12 +28,11 @@ import org.apache.pig.newplan.logical.relational.LogicalSchema;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
- * This class contains methods for converting Pig data types to SQL types.
+ * Utility methods for converting Pig data types to SQL types.
  */
-class PigRelSchemaConverter {
-  private PigRelSchemaConverter() {
+class PigTypes {
+  private PigTypes() {
   }
 
   private static final String PIG_TUPLE_WRAPPER = "PIG_WRAPPER";
@@ -43,8 +42,9 @@ class PigRelSchemaConverter {
       new PigRelDataTypeFactory(RelDataTypeSystem.DEFAULT);
 
   /**
-   * This specialized type factory produces types with the nullability when converting
-   * from Pig types. It also translate Pig DataBag type into multiset of objects type.
+   * Type factory that produces types with the nullability when converting
+   * from Pig types. It also translates a Pig DataBag type into a multiset of
+   * objects type.
    */
   static class PigRelDataTypeFactory extends JavaTypeFactoryImpl {
     private PigRelDataTypeFactory(RelDataTypeSystem typeSystem) {
@@ -74,8 +74,8 @@ class PigRelSchemaConverter {
 
     public RelDataType toSql(RelDataType type) {
       if (type instanceof JavaType
-              && ((JavaType) type).getJavaClass() == DataBag.class) {
-        // We dont know the structure of each tuple inside the bag until the runtime.
+          && ((JavaType) type).getJavaClass() == DataBag.class) {
+        // We don't know the structure of each tuple inside the bag until the runtime.
         // Thus just consider a bag as a multiset of unknown objects.
         return createMultisetType(createSqlType(SqlTypeName.ANY, true), -1, true);
       }
@@ -126,7 +126,6 @@ class PigRelSchemaConverter {
     case DataType.CHARARRAY:
       return TYPE_FACTORY.createSqlType(SqlTypeName.VARCHAR, nullable);
     case DataType.BIGINTEGER:
-      return TYPE_FACTORY.createSqlType(SqlTypeName.DECIMAL, nullable);
     case DataType.BIGDECIMAL:
       return TYPE_FACTORY.createSqlType(SqlTypeName.DECIMAL, nullable);
     case DataType.TUPLE: {
@@ -160,8 +159,9 @@ class PigRelSchemaConverter {
           convertSchemaField(pigField.schema.getField(0), nullable), -1, nullable);
     }
     default:
-      throw new IllegalArgumentException("Unsupported conversion for Pig Data type: "
-                                             + DataType.findTypeName(pigField.type));
+      throw new IllegalArgumentException(
+          "Unsupported conversion for Pig Data type: "
+              + DataType.findTypeName(pigField.type));
     }
   }
 
@@ -197,4 +197,4 @@ class PigRelSchemaConverter {
   }
 }
 
-// End PigRelSchemaConverter.java
+// End PigTypes.java

@@ -83,7 +83,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-
 /**
  * Tests for {@link RelToSqlConverter}.
  */
@@ -3314,8 +3313,8 @@ public class RelToSqlConverterTest {
 
     final boolean[] callsUnparseCallOnSqlSelect = {false};
     final SqlDialect dialect = new SqlDialect(SqlDialect.EMPTY_CONTEXT) {
-      @Override public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec,
-          int rightPrec) {
+      @Override public void unparseCall(SqlWriter writer, SqlCall call,
+          int leftPrec, int rightPrec) {
         if (call instanceof SqlSelect) {
           callsUnparseCallOnSqlSelect[0] = true;
         }
@@ -3341,7 +3340,7 @@ public class RelToSqlConverterTest {
     sql(sql).ok(expected);
   }
 
-  @Test public void testUnCollectExlicitAlias() {
+  @Test public void testUncollectExplicitAlias() {
     final String sql = "select did + 1 \n"
         + "from unnest(select collect(\"department_id\") as deptid"
         + "            from \"department\") as t(did)";
@@ -3352,7 +3351,7 @@ public class RelToSqlConverterTest {
     sql(sql).ok(expected);
   }
 
-  @Test public void testUnCollectImplicitAlias() {
+  @Test public void testUncollectImplicitAlias() {
     final String sql = "select did + 1 \n"
         + "from unnest(select collect(\"department_id\") "
         + "            from \"department\") as t(did)";

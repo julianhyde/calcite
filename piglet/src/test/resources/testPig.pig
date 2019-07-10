@@ -40,3 +40,5 @@ queries_ordered =
 queries_limit = LIMIT queries_ordered $n;
 
 STORE queries_limit INTO '$output';
+
+-- End testPig.pig

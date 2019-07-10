@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreter;
@@ -40,24 +39,25 @@ import java.util.List;
  * An extension of {@link RelToSqlConverter} to convert a relation algebra tree,
  * translated from a Pig script, into a SQL statement.
  *
- * The input relational algebra tree can be optimized by the planner for Pig to {@link RelNode}.
+ * <p>The input relational algebra tree can be optimized by the planner for Pig
+ * to {@link RelNode}.
  */
 public class PigRelToSqlConverter extends RelToSqlConverter {
 
   /** Creates a RelToSqlConverter.
    *
    * @param dialect SQL dialect
-   * */
+   */
   PigRelToSqlConverter(SqlDialect dialect) {
     super(dialect);
   }
 
   @Override public Result visit(Aggregate e) {
     final Result x = visitChild(0, e.getInput());
-    final boolean isProjectOutput =
-        e.getInput() instanceof Project
-            || (e.getInput() instanceof EnumerableInterpreter
-                    && ((EnumerableInterpreter) e.getInput()).getInput() instanceof Project);
+    final boolean isProjectOutput = e.getInput() instanceof Project
+        || (e.getInput() instanceof EnumerableInterpreter
+            && ((EnumerableInterpreter) e.getInput()).getInput()
+                instanceof Project);
     final Builder builder = getAggregateBuilder(e, x, isProjectOutput);
 
     final List<SqlNode> groupByList = Expressions.list();
@@ -86,8 +86,8 @@ public class PigRelToSqlConverter extends RelToSqlConverter {
   public Result visit(Window e) {
     final Result x = visitChild(0, e.getInput());
     final Builder builder = x.builder(e, Clause.SELECT);
-    final List<SqlNode> selectList = new ArrayList<>();
-    selectList.addAll(builder.context.fieldList());
+    final List<SqlNode> selectList =
+        new ArrayList<>(builder.context.fieldList());
 
     for (Window.Group winGroup : e.groups) {
       final List<SqlNode> partitionList = Expressions.list();

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.plan.Context;
@@ -22,7 +21,6 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -37,11 +35,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.MultisetSqlType;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
@@ -62,39 +57,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * Extension to {@link RelBuilder} for Pig logical operators.
  */
 public class PigRelBuilder extends RelBuilder {
-  /**
-   * Context constructed during Pig to {@link RelNode} translation process.
-   */
-  public class PigRelTranslationContext {
-    public Map<String, FuncSpec> pigUDFs;
+  private final Map<RelNode, String> reverseAliasMap = new HashMap<>();
+  private final Map<String, RelNode> aliasMap = new HashMap<>();
+  private final Map<Operator, RelNode> pigRelMap = new HashMap<>();
+  private final Map<RelNode, Operator> relPigMap = new HashMap<>();
+  private final Map<String, RelNode> storeMap = new HashMap<>();
+  private int nextCorrelId = 0;
+  private final PigRelTranslationContext pigRelContext =
+      new PigRelTranslationContext();
 
-    public PigRelTranslationContext() {
-      pigUDFs = new HashMap<>();
-    }
-  }
-
-  private Map<RelNode, String> reverseAliasMap;
-  private Map<String, RelNode> aliasMap;
-  private Map<Operator, RelNode> pigRelMap;
-  private Map<RelNode, Operator> relPigMap;
-  private Map<String, RelNode> storeMap;
-  private int nextCorrelId;
-  private PigRelTranslationContext pigRelContext;
-
-  private PigRelBuilder(Context context, RelOptCluster cluster, RelOptSchema relOptSchema) {
+  private PigRelBuilder(Context context, RelOptCluster cluster,
+      RelOptSchema relOptSchema) {
     super(context, cluster, relOptSchema);
-    aliasMap = new HashMap<>();
-    reverseAliasMap = new HashMap<>();
-    pigRelMap = new HashMap<>();
-    relPigMap = new HashMap<>();
-    storeMap = new HashMap<>();
-    nextCorrelId = 0;
-    pigRelContext = new PigRelTranslationContext();
   }
 
   /** Creates a PigRelBuilder. */
@@ -103,21 +81,6 @@ public class PigRelBuilder extends RelBuilder {
     Hook.REL_BUILDER_SIMPLIFY.add(Hook.propertyJ(false));
     return new PigRelBuilder(config.getContext(), relBuilder.getCluster(),
         relBuilder.getRelOptSchema());
-  }
-
-  /** Creates a PigRelBuilder. */
-  public static PigRelBuilder create() {
-    return create(config().build());
-  }
-
-  private static Frameworks.ConfigBuilder config() {
-    // Set unique url connection for pig conversion jdbc driver
-    return Frameworks.newConfigBuilder().parserConfig(SqlParser.Config.DEFAULT).defaultSchema(
-        null).traitDefs((List<RelTraitDef>) null).programs(Programs.standard());
-  }
-
-  public PigRelTranslationContext getPigRelContext() {
-    return pigRelContext;
   }
 
   public RelNode getRel(String alias) {
@@ -221,7 +184,7 @@ public class PigRelBuilder extends RelBuilder {
       // key = [clas name]_[file name]_[function name]
       key = udfClass.getName() + "_" + fileName + "_" + args[1];
     }
-    pigRelContext.pigUDFs.put(key, pigFunc);
+    pigRelContext.pigUdfs.put(key, pigFunc);
   }
 
   /**
@@ -314,8 +277,8 @@ public class PigRelBuilder extends RelBuilder {
    * @return This builder
    */
   public RelBuilder scan(RelDataType rowType, List<String> tableNames) {
-    final RelOptTable relOptTable = PigTable.createRelOptTable(getRelOptSchema(), rowType,
-        tableNames);
+    final RelOptTable relOptTable =
+        PigTable.createRelOptTable(getRelOptSchema(), rowType, tableNames);
     return scan(relOptTable);
   }
 
@@ -324,10 +287,14 @@ public class PigRelBuilder extends RelBuilder {
    * For any field in output type, if there is no matching input field, we project
    * null value of the corresponding output field type.
    *
-   * Example:
-   *  Input rel A with A_type(X: int, Y: varchar)
-   *  Output type B_type(X: int, Y: varchar, Z: boolean, W: double)
-   * project(A, B_type) gives new relation C(X: int, Y: varchar, null, null)
+   * <p>For example, given:
+   * <ul>
+   * <li>Input rel {@code A} with {@code A_type(X: int, Y: varchar)}
+   * <li>Output type {@code B_type(X: int, Y: varchar, Z: boolean, W: double)}
+   * </ul>
+   *
+   * <p>{@code project(A, B_type)} gives new relation
+   * {@code C(X: int, Y: varchar, null, null)}.
    *
    * @param input The relation algebra operator to be projected
    * @param outputType The data type for the projected relation algebra operator
@@ -335,8 +302,8 @@ public class PigRelBuilder extends RelBuilder {
    */
   public RelNode project(RelNode input, RelDataType outputType) {
     final RelDataType inputType = input.getRowType();
-    if (compatibleType(inputType, outputType) && inputType.getFieldNames()
-                                                     .equals(outputType.getFieldNames())) {
+    if (compatibleType(inputType, outputType)
+        && inputType.getFieldNames().equals(outputType.getFieldNames())) {
       // Same data type, simply returns the input rel
       return input;
     }
@@ -424,7 +391,8 @@ public class PigRelBuilder extends RelBuilder {
       push(cogroupRels.get(i));
       // Create a ROW to pass to COLLECT.
       final RexNode row = field(groupCount);
-      aggregate(groupKeyList.get(i), aggregateCall(SqlStdOperatorTable.COLLECT, getAlias(), row));
+      aggregate(groupKeyList.get(i),
+          aggregateCall(SqlStdOperatorTable.COLLECT, row).as(getAlias()));
       if (i == 0) {
         continue;
       }
@@ -543,13 +511,14 @@ public class PigRelBuilder extends RelBuilder {
    * Makes the correlated expression from rel input fields and correlation id.
    *
    * @param inputFields Rel input field list
-   * @param correlId correlation id
+   * @param correlId Correlation id
+   *
    * @return This builder
    */
-  public RexNode correl(List<RelDataTypeField> inputFields, CorrelationId correlId) {
+  public RexNode correl(List<RelDataTypeField> inputFields,
+      CorrelationId correlId) {
     final RelDataTypeFactory.Builder fieldBuilder =
-        new RelDataTypeFactory.Builder(PigRelSchemaConverter.TYPE_FACTORY);
-
+        PigTypes.TYPE_FACTORY.builder();
     for (RelDataTypeField field : inputFields) {
       fieldBuilder.add(field.getName(), field.getType());
     }
@@ -676,6 +645,13 @@ public class PigRelBuilder extends RelBuilder {
       }
     }
     return t1.getSqlTypeName().getFamily() == t2.getSqlTypeName().getFamily();
+  }
+
+  /**
+   * Context constructed during Pig-to-{@link RelNode} translation process.
+   */
+  public class PigRelTranslationContext {
+    final Map<String, FuncSpec> pigUdfs = new HashMap<>();
   }
 }
 

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -52,41 +51,40 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.apache.calcite.piglet.PigRelSchemaConverter.TYPE_FACTORY;
-
+import static org.apache.calcite.piglet.PigTypes.TYPE_FACTORY;
 
 /**
- * This class defines all {@link SqlUserDefinedFunction} needed for Pig to {@link RelNode}
- * translation.
+ * User-defined functions ({@link SqlUserDefinedFunction UDFs})
+ * needed for Pig-to-{@link RelNode} translation.
  */
-public class PigRelSqlUDFs {
-  private PigRelSqlUDFs() {
+public class PigRelSqlUdfs {
+  private PigRelSqlUdfs() {
   }
 
   // Defines ScalarFunc from their implementations
-  private static final ScalarFunction PIG_TUPLE_FUNC = ScalarFunctionImpl.create(
-      PigRelSqlUDFs.class, "buildTuple");
-  private static final ScalarFunction PIG_BAG_FUNC = ScalarFunctionImpl.create(PigRelSqlUDFs.class,
-      "buildBag");
-  private static final ScalarFunction MULTISET_PROJECTION_FUNC = ScalarFunctionImpl.create(
-      PigRelSqlUDFs.class, "projectMultiset");
+  private static final ScalarFunction PIG_TUPLE_FUNC =
+      ScalarFunctionImpl.create(PigRelSqlUdfs.class, "buildTuple");
+  private static final ScalarFunction PIG_BAG_FUNC =
+      ScalarFunctionImpl.create(PigRelSqlUdfs.class, "buildBag");
+  private static final ScalarFunction MULTISET_PROJECTION_FUNC =
+      ScalarFunctionImpl.create(PigRelSqlUdfs.class, "projectMultiset");
 
   /**
    * Multiset projection projects a subset of columns from the component type
    * of a multiset type. The result is still a multiset but the component
    * type only has a subset of columns of the original component type
    *
-   * Example:
-   *  A multitset type M = [(A: int, B: double, C: varchar)]
-   *  A projection MULTISET_PROJECTION(M, A, C) gives a new multiset
-   *  N = [(A: int, C: varchar)]
+   * <p>For example, given a multiset type
+   * {@code M = [(A: int, B: double, C: varchar)]},
+   * a projection
+   * {@code MULTISET_PROJECTION(M, A, C)}
+   * gives a new multiset
+   * {@code N = [(A: int, C: varchar)]}.
    */
-  static final SqlUserDefinedFunction MULTISET_PROJECTION = new PigUserDefinedFunction(
-      "MULTISET_PROJECTION",
-      multisetProjectionInfer(),
-      multisetProjectionCheck(),
-      null,
-      MULTISET_PROJECTION_FUNC);
+  static final SqlUserDefinedFunction MULTISET_PROJECTION =
+      new PigUserDefinedFunction("MULTISET_PROJECTION",
+          multisetProjectionInfer(), multisetProjectionCheck(), null,
+          MULTISET_PROJECTION_FUNC);
 
   /**
    * Creates a Pig Tuple from a list of relational operands.
@@ -95,12 +93,11 @@ public class PigRelSqlUDFs {
    * @return Pig Tuple SqlUDF
    */
   static SqlUserDefinedFunction createPigTupleUDF(ImmutableList<RexNode> operands) {
-    return new PigUserDefinedFunction(
-        "PIG_TUPLE",
-        infer(PigRelSqlUDFs.PIG_TUPLE_FUNC),
+    return new PigUserDefinedFunction("PIG_TUPLE",
+        infer(PigRelSqlUdfs.PIG_TUPLE_FUNC),
         OperandTypes.family(getFamilitTypes(operands)),
         getRelDataTypes(operands),
-        PigRelSqlUDFs.PIG_TUPLE_FUNC);
+        PigRelSqlUdfs.PIG_TUPLE_FUNC);
   }
 
   /**
@@ -112,10 +109,10 @@ public class PigRelSqlUDFs {
   static SqlUserDefinedFunction createPigBagUDF(ImmutableList<RexNode> operands) {
     return new PigUserDefinedFunction(
         "PIG_BAG",
-        infer(PigRelSqlUDFs.PIG_BAG_FUNC),
+        infer(PigRelSqlUdfs.PIG_BAG_FUNC),
         OperandTypes.family(getFamilitTypes(operands)),
         getRelDataTypes(operands),
-        PigRelSqlUDFs.PIG_BAG_FUNC);
+        PigRelSqlUdfs.PIG_BAG_FUNC);
   }
 
   /**
@@ -127,18 +124,16 @@ public class PigRelSqlUDFs {
    * @param inputType Argument type for the input
    * @param returnType Function return data type
    */
-  static SqlUserDefinedFunction createGeneralPigUDF(String udfName, Method method,
-      FuncSpec funcSpec, RelDataType inputType, final RelDataType returnType) {
-    return new PigUserDefinedFunction(
-        udfName, opBinding -> returnType,
-        OperandTypes.ANY,
-        Collections.singletonList(inputType),
-        ScalarFunctionImpl.createUnsafe(method),
-        funcSpec);
+  static SqlUserDefinedFunction createGeneralPigUdf(String udfName,
+      Method method, FuncSpec funcSpec, RelDataType inputType,
+      RelDataType returnType) {
+    return new PigUserDefinedFunction(udfName, opBinding -> returnType,
+        OperandTypes.ANY, Collections.singletonList(inputType),
+        ScalarFunctionImpl.createUnsafe(method), funcSpec);
   }
 
   /**
-   * @return  Returns a {@link SqlReturnTypeInference} for multiset projection operator.
+   * Returns a {@link SqlReturnTypeInference} for multiset projection operator.
    */
   private static SqlReturnTypeInference multisetProjectionInfer() {
     return opBinding -> {
@@ -146,7 +141,7 @@ public class PigRelSqlUDFs {
       final List<RelDataTypeField> fields = source.getComponentType().getFieldList();
       // Project a multiset of single column
       if (opBinding.getOperandCount() == 2) {
-        final int fieldNo = opBinding.getOperandLiteralValue(1, BigDecimal.class).intValue();
+        final int fieldNo = opBinding.getOperandLiteralValue(1, Integer.class);
         if (fields.size() == 1) {
           // Corner case: source with only single column, nothing to do.
           assert fieldNo == 0;
@@ -159,7 +154,7 @@ public class PigRelSqlUDFs {
       final List<String> destNames = new ArrayList<>();
       final List<RelDataType> destTypes = new ArrayList<>();
       for (int i = 1; i < opBinding.getOperandCount(); i++) {
-        final int fieldNo = opBinding.getOperandLiteralValue(i, BigDecimal.class).intValue();
+        final int fieldNo = opBinding.getOperandLiteralValue(i, Integer.class);
         destNames.add(fields.get(fieldNo).getName());
         destTypes.add(fields.get(fieldNo).getType());
       }
@@ -169,7 +164,7 @@ public class PigRelSqlUDFs {
   }
 
   /**
-   * @return  Returns a {@link SqlOperandTypeChecker} for multiset projection operator.
+   * Returns a {@link SqlOperandTypeChecker} for multiset projection operator.
    */
   private static SqlOperandTypeChecker multisetProjectionCheck() {
     return new SqlOperandTypeChecker() {
@@ -190,14 +185,14 @@ public class PigRelSqlUDFs {
         final int maxFieldNo = source.getComponentType().getFieldCount() - 1;
 
         for (int i = 1; i < callBinding.getOperandCount(); i++) {
-          try {
-            final int fieldNo = callBinding.getOperandLiteralValue(i, BigDecimal.class).intValue();
-
-            // Field number should between 0 and maxFieldNo
-            if (fieldNo < 0 || fieldNo > maxFieldNo) {
-              return false;
-            }
-          } catch (Exception e) {
+          if (!(callBinding.getOperandLiteralValue(i, Comparable.class)
+              instanceof BigDecimal)) {
+            return false;
+          }
+          final int fieldNo =
+              callBinding.getOperandLiteralValue(i, Integer.class);
+          // Field number should between 0 and maxFieldNo
+          if (fieldNo < 0 || fieldNo > maxFieldNo) {
             return false;
           }
         }
@@ -252,7 +247,8 @@ public class PigRelSqlUDFs {
   }
 
   /**
-   * Gets the SqlReturnTypeInference that can inter the return tupe from a function
+   * Gets the SqlReturnTypeInference that can infer the return type from a
+   * function.
    *
    * @param function ScalarFunction
    * @return SqlReturnTypeInference
@@ -268,7 +264,7 @@ public class PigRelSqlUDFs {
    * @return returned data type
    */
   private static RelDataType getRelDataType(ScalarFunction function) {
-    final JavaTypeFactory typeFactory =  TYPE_FACTORY;
+    final JavaTypeFactory typeFactory = TYPE_FACTORY;
     final RelDataType type = function.getReturnType(typeFactory);
     if (type instanceof RelDataTypeFactoryImpl.JavaType
         && ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass()
@@ -306,8 +302,8 @@ public class PigRelSqlUDFs {
     if (elements != null) {
       // The first input contains a list of rows for the bag
       final List bag = (elements[0] instanceof List)
-                           ? (List) elements[0]
-                           : Collections.singletonList(elements[0]);
+          ? (List) elements[0]
+          : Collections.singletonList(elements[0]);
       for (Object row : bag) {
         tupleList.add(tupleFactory.newTuple(Arrays.asList(row)));
       }
@@ -316,7 +312,8 @@ public class PigRelSqlUDFs {
     // Then build a bag from the tuple list
     DataBag resultBag = bagFactory.newDefaultBag(tupleList);
 
-    // The returned result is a new Tuple with the newly constructed DataBag as the first item
+    // The returned result is a new Tuple with the newly constructed DataBag
+    // as the first item.
     List<Object> finalTuple = new ArrayList<>();
     finalTuple.add(resultBag);
 
@@ -340,11 +337,10 @@ public class PigRelSqlUDFs {
    */
   public static List projectMultiset(Object... objects) {
     // The first input is a multiset
-    final List input_multiset = (List) objects[0];
-    final List projectd_multiset = new ArrayList<>();
+    final List<Object[]> inputMultiset = (List) objects[0];
+    final List projectedMultiset = new ArrayList<>();
 
-    for (int i = 0; i < input_multiset.size(); i++) {
-      Object[] row = (Object[]) input_multiset.get(i);
+    for (Object[] row : inputMultiset) {
       if (objects.length > 2) {
         // Projecting more than one column, the projected multiset should have
         // the component type of a row
@@ -352,14 +348,14 @@ public class PigRelSqlUDFs {
         for (int j = 1; j < objects.length; j++) {
           newRow[j - 1] = row[(Integer) objects[j]];
         }
-        projectd_multiset.add(newRow);
+        projectedMultiset.add(newRow);
       } else {
         // Projecting a single column
-        projectd_multiset.add(row[(Integer) objects[1]]);
+        projectedMultiset.add(row[(Integer) objects[1]]);
       }
     }
-    return projectd_multiset;
+    return projectedMultiset;
   }
 }
 
-// End PigRelSqlUDFs.java
+// End PigRelSqlUdfs.java

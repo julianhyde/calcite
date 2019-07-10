@@ -14,25 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.test;
+package org.apache.calcite.piglet;
 
-import org.apache.calcite.piglet.PigConverter;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.pig.builtin.BigDecimalMax;
+import org.apache.pig.builtin.BigDecimalSum;
+import org.apache.pig.data.Tuple;
 
-import org.junit.Before;
+import java.io.IOException;
+import java.math.BigDecimal;
 
 /**
- * Abstract class for Pig to {@link RelNode} tests.
+ * Implementation methods.
+ *
+ * <p>Found by {@link PigUdfFinder} using reflection.
  */
-public abstract class PigRelTestBase {
-  PigConverter converter;
+public class PigUdfs {
+  private PigUdfs() {}
 
-  @Before
-  public void testSetup() throws Exception {
-    final FrameworkConfig config = PigRelBuilderTest.config().build();
-    converter = PigConverter.create(config);
+  public static BigDecimal bigdecimalsum(Tuple input) throws IOException {
+    // "exec" method is declared in the parent class of
+    // AlgebraicBigDecimalMathBase
+    return new BigDecimalSum().exec(input);
+  }
+
+  public static BigDecimal bigdecimalmax(Tuple input) throws IOException {
+    // "exec" method is declared in the parent class of
+    // AlgebraicBigDecimalMathBase
+    return new BigDecimalMax().exec(input);
   }
 }
 
-// End PigRelTestBase.java
+// End PigUdfs.java

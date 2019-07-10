@@ -14,53 +14,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
 
-import org.apache.pig.builtin.BigDecimalMax;
-import org.apache.pig.builtin.BigDecimalSum;
-import org.apache.pig.data.Tuple;
+import com.google.common.collect.ImmutableMap;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 /**
- * Util class to find the implementation method object for a given Pig UDF class.
+ * Utility class to find the implementation method object for a given Pig UDF
+ * class.
  */
-public class PigUDFFinder {
-  private PigUDFFinder() {}
-
+class PigUdfFinder {
   /**
-   * For Pig UDF classes where the "exec" method is declared in parent class, the Calcite
-   * enumerable engine will generate incorrect Java code that instantiates an object of the parent
-   * class, not object of the actual UDF class. If the parent class is an abstract class, the
-   * auto-generated code failed to compile (we can not instantiate an object of an abstract class)
+   * For Pig UDF classes where the "exec" method is declared in parent class,
+   * the Calcite enumerable engine will generate incorrect Java code that
+   * instantiates an object of the parent class, not object of the actual UDF
+   * class. If the parent class is an abstract class, the auto-generated code
+   * failed to compile (we can not instantiate an object of an abstract class).
    *
-   * Workaround is to write a wrapper for such UDFs to instantiate the correct UDF object.
-   * See method "bigdecimalsum" below as an example and add others if needed.
+   * <p>Workaround is to write a wrapper for such UDFs to instantiate the
+   * correct UDF object. See method {@link PigUdfs#bigdecimalsum} as an example
+   * and add others if needed.
    */
-  private static final Map<String, Method> UDF_WRAPPER = new HashMap<>();
-  static {
-    for (Method method: PigUDFFinder.class.getMethods()) {
-      if (Modifier.isPublic(method.getModifiers()) && method.getReturnType() != Method.class) {
-        UDF_WRAPPER.put(method.getName(), method);
+  private final ImmutableMap<String, Method> udfWrapper;
+
+  PigUdfFinder() {
+    final Map<String, Method> map = new HashMap<>();
+    for (Method method : PigUdfs.class.getMethods()) {
+      if (Modifier.isPublic(method.getModifiers())
+          && method.getReturnType() != Method.class) {
+        map.put(method.getName(), method);
       }
     }
+    udfWrapper = ImmutableMap.copyOf(map);
   }
 
   /**
    * Finds the implementation method object for a given Pig UDF class.
    *
    * @param clazz The Pig UDF class
+   *
+   * @throws IllegalArgumentException if not found
    */
-  public static Method findPigUDFImplementationMethod(Class clazz) {
+  @Nonnull Method findPigUdfImplementationMethod(Class clazz) {
     // Find implementation method in the wrapper map
-    Method returnedMethod = UDF_WRAPPER.get(clazz.getSimpleName().toLowerCase(Locale.US));
+    Method returnedMethod =
+        udfWrapper.get(clazz.getSimpleName().toLowerCase(Locale.US));
     if (returnedMethod != null) {
       return returnedMethod;
     }
@@ -77,8 +81,8 @@ public class PigUDFFinder {
       return returnedMethod;
     }
 
-    throw new IllegalArgumentException("Could not find 'exec' method for PigUDF class of"
-                                           + clazz.getName());
+    throw new IllegalArgumentException(
+        "Could not find 'exec' method for PigUDF class of " + clazz.getName());
   }
 
   /**
@@ -103,17 +107,6 @@ public class PigUDFFinder {
     }
     return returnedMethod;
   }
-
-
-  public static BigDecimal bigdecimalsum(Tuple input) throws IOException {
-    // "exec" method is declared in the parent class of AlgebraicBigDecimalMathBase
-    return new BigDecimalSum().exec(input);
-  }
-
-  public static BigDecimal bigdecimalmax(Tuple input) throws IOException {
-    // "exec" method is declared in the parent class of AlgebraicBigDecimalMathBase
-    return new BigDecimalMax().exec(input);
-  }
 }
 
-// End PigUDFFinder.java
+// End PigUdfFinder.java
