@@ -151,8 +151,9 @@ class PigRelUdfConverter {
       final RexNode rexTuple = builder.call(convertOp, operands);
 
       // Then convert the Pig function into a @SqlUserDefinedFunction.
-      SqlUserDefinedFunction userFuncOp = PigRelSqlUdfs.createGeneralPigUDF(clazz.getSimpleName(),
-          method, pigFunc, rexTuple.getType(), returnType);
+      SqlUserDefinedFunction userFuncOp =
+          PigRelSqlUdfs.createGeneralPigUdf(clazz.getSimpleName(),
+              method, pigFunc, rexTuple.getType(), returnType);
 
       // Ready to return SqlCall after having SqlUDF and operand
       return builder.call(userFuncOp, ImmutableList.of(rexTuple));
