@@ -329,13 +329,7 @@ public class RelJson {
       final RexLiteral literal = (RexLiteral) node;
       final Object value = literal.getValue3();
       map = jsonBuilder.map();
-      map.put("literal", value);
-      if (value instanceof Enum) {
-        // Using the name "flag" to be be in consistent
-        // with the method "makeFlag" of RexBuilder, which will
-        // be used for converting an Enum object to a RexLiteral.
-        map.put("flag", value.getClass().getName());
-      }
+      map.put("literal", RelEnumTypes.fromEnum(value));
       map.put("type", toJson(node.getType()));
       return map;
     case INPUT_REF:
@@ -512,7 +506,7 @@ public class RelJson {
         return rexBuilder.makeCorrel(type, new CorrelationId(correl));
       }
       if (map.containsKey("literal")) {
-        final Object literal = map.get("literal");
+        Object literal = map.get("literal");
         final RelDataType type = toType(typeFactory, map.get("type"));
         if (literal == null) {
           return rexBuilder.makeNullLiteral(type);
@@ -523,17 +517,8 @@ public class RelJson {
           // we just interpret the literal
           return toRex(relInput, literal);
         }
-        if (map.containsKey("flag")) {
-          // rebuild flag.
-          String className = (String) map.get("flag");
-          try {
-            Class<Enum> clazz = (Class<Enum>) Class.forName(className);
-            Enum flag = Enum.valueOf(clazz, (String) literal);
-            return rexBuilder.makeFlag(flag);
-          } catch (ClassNotFoundException e) {
-            throw new UnsupportedOperationException("cannot convert to rex "
-                + literal + " of class " + className);
-          }
+        if (type.getSqlTypeName() == SqlTypeName.SYMBOL) {
+          literal = RelEnumTypes.toEnum((String) literal);
         }
         return rexBuilder.makeLiteral(literal, type, false);
       }
@@ -643,6 +628,7 @@ public class RelJson {
     // User-defined operators are not yet handled.
     return operator.getName();
   }
+
 }
 
 // End RelJson.java

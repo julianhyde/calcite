@@ -17,6 +17,7 @@
 package org.apache.calcite.util;
 
 import org.apache.calcite.avatica.util.Spaces;
+import org.apache.calcite.rel.externalize.RelEnumTypes;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -93,9 +94,6 @@ public class JsonBuilder {
               ((String) o).replace("\"", "\\\"")
                   .replace("\n", "\\n"))
           .append('"');
-    } else if (o instanceof Enum) {
-      // for some Enum type like Flag.BOTH.
-      buf.append('"').append(o.toString()).append('"');
     } else {
       assert o instanceof Number || o instanceof Boolean;
       buf.append(o);

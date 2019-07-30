@@ -43,6 +43,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.JdbcTest;
 import org.apache.calcite.test.SqlToRelTestBase;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.TestUtil;
 
@@ -483,19 +484,11 @@ public class RelWriterTest extends SqlToRelTestBase {
     RelJsonWriter jsonWriter = new RelJsonWriter();
     relRoot.rel.explain(jsonWriter);
     String relJson = jsonWriter.asString();
-    // Find the schema. If there are no tables in the plan, we won't need one.
-    final RelOptSchema[] schemas = {null};
-    relRoot.rel.accept(new RelShuttleImpl() {
-      @Override public RelNode visit(TableScan scan) {
-        schemas[0] = scan.getTable().getRelOptSchema();
-        return super.visit(scan);
-      }
-    });
-    String s =
+    final RelOptSchema schema = getSchema(relRoot);
+    final String s =
         Frameworks.withPlanner((cluster, relOptSchema, rootSchema) -> {
-          final RelJsonReader reader = new RelJsonReader(
-              cluster,
-              schemas[0], rootSchema);
+          final RelJsonReader reader =
+              new RelJsonReader(cluster, schema, rootSchema);
           RelNode node;
           try {
             node = reader.read(relJson);
@@ -508,6 +501,20 @@ public class RelWriterTest extends SqlToRelTestBase {
     assertThat(s,
         isLinux("LogicalProject(EXPR$0=[TRIM(FLAG(BOTH), ' ', $1)])\n"
         + "  LogicalTableScan(table=[[CATALOG, SALES, EMP]])\n"));
+  }
+
+  /** Returns the schema of a {@link org.apache.calcite.rel.core.TableScan}
+   * in this plan, or null if there are no scans. */
+  private RelOptSchema getSchema(RelRoot relRoot) {
+    final Holder<RelOptSchema> schemaHolder = Holder.of(null);
+    relRoot.rel.accept(
+        new RelShuttleImpl() {
+          @Override public RelNode visit(TableScan scan) {
+            schemaHolder.set(scan.getTable().getRelOptSchema());
+            return super.visit(scan);
+          }
+        });
+    return schemaHolder.get();
   }
 }
 
