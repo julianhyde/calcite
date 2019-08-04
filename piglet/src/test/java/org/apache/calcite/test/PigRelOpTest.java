@@ -406,104 +406,24 @@ public class PigRelOpTest extends PigRelTestBase {
         .assertSql(is(sql));
 
     // TODO fix Calcite execution
+    final String result = ""
+        + "(10,7782,CLARK,MANAGER,7839,1981-06-09,2450.00,null,10)\n"
+        + "(10,7839,KING,PRESIDENT,null,1981-11-17,5000.00,null,10)\n"
+        + "(20,7566,JONES,MANAGER,7839,1981-02-04,2975.00,null,20)\n"
+        + "(20,7788,SCOTT,ANALYST,7566,1987-04-19,3000.00,null,20)\n"
+        + "(20,7902,FORD,ANALYST,7566,1981-12-03,3000.00,null,20)\n"
+        + "(30,7499,ALLEN,SALESMAN,7698,1981-02-20,1600.00,300.00,30)\n"
+        + "(30,7521,WARD,SALESMAN,7698,1981-02-22,1250.00,500.00,30)\n"
+        + "(30,7654,MARTIN,SALESMAN,7698,1981-09-28,1250.00,1400.00,30)\n"
+        + "(30,7698,BLAKE,MANAGER,7839,1981-01-05,2850.00,null,30)\n"
+        + "(30,7844,TURNER,SALESMAN,7698,1981-09-08,1500.00,0.00,30)\n";
     if (false) {
-      final String result = ""
-          + "(10,7782,CLARK,MANAGER,7839,1981-06-09,2450.00,null,10)\n"
-          + "(10,7839,KING,PRESIDENT,null,1981-11-17,5000.00,null,10)\n"
-          + "(20,7566,JONES,MANAGER,7839,1981-02-04,2975.00,null,20)\n"
-          + "(20,7788,SCOTT,ANALYST,7566,1987-04-19,3000.00,null,20)\n"
-          + "(20,7902,FORD,ANALYST,7566,1981-12-03,3000.00,null,20)\n"
-          + "(30,7499,ALLEN,SALESMAN,7698,1981-02-20,1600.00,300.00,30)\n"
-          + "(30,7521,WARD,SALESMAN,7698,1981-02-22,1250.00,500.00,30)\n"
-          + "(30,7654,MARTIN,SALESMAN,7698,1981-09-28,1250.00,1400.00,30)\n"
-          + "(30,7698,BLAKE,MANAGER,7839,1981-01-05,2850.00,null,30)\n"
-          + "(30,7844,TURNER,SALESMAN,7698,1981-09-08,1500.00,0.00,30)\n";
       pig(script).assertResult(is(result));
     }
   }
 
   @Test
   public void testForEachNested() throws IOException {
-    String script = ""
-                        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-                        + "MGR:int, "
-                        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
-                        + "B = GROUP A BY DEPTNO;\n"
-                        + "C = FOREACH B {\n"
-                        + "      S = FILTER A BY JOB != 'CLERK';\n"
-                        + "      Y = FOREACH S GENERATE ENAME, JOB, DEPTNO, SAL;\n"
-                        + "      X = ORDER Y BY SAL;\n"
-                        + "      GENERATE group, COUNT(X) as cnt, flatten(X), BigDecimalMax(X.SAL);"
-                        + "}\n"
-                        + "D = ORDER C BY $0;\n";
-    String expectedPlan =
-        ""
-            + "LogicalSort(sort0=[$0], dir0=[ASC])\n"
-            + "  LogicalProject(group=[$0], cnt=[$1], ENAME=[$4], JOB=[$5], DEPTNO=[$6], SAL=[$7], "
-            + "$f3=[$3])\n"
-            + "    LogicalCorrelate(correlation=[$cor1], joinType=[inner], requiredColumns=[{2}])\n"
-            + "      LogicalProject(group=[$0], cnt=[COUNT(PIG_BAG($2))], X=[$2], "
-            + "$f3=[BigDecimalMax(PIG_BAG(MULTISET_PROJECTION($2, 3)))])\n"
-            + "        LogicalCorrelate(correlation=[$cor0], joinType=[inner], "
-            + "requiredColumns=[{1}])\n"
-            + "          LogicalProject(group=[$0], A=[$1])\n"
-            + "            LogicalAggregate(group=[{0}], A=[COLLECT($1)])\n"
-            + "              LogicalProject(DEPTNO=[$7], $f1=[ROW($0, $1, $2, "
-            + "$3, $4, $5, $6, $7)])\n"
-            + "                LogicalTableScan(table=[[scott, EMP]])\n"
-            + "          LogicalProject(X=[$1])\n"
-            + "            LogicalAggregate(group=[{0}], X=[COLLECT($1)])\n"
-            + "              LogicalProject($f0=['all'], $f1=[ROW($0, $1, $2, $3)])\n"
-            + "                LogicalSort(sort0=[$3], dir0=[ASC])\n"
-            + "                  LogicalProject(ENAME=[$1], JOB=[$2], "
-            + "DEPTNO=[$7], SAL=[$5])\n"
-            + "                    LogicalFilter(condition=[<>($2, 'CLERK')])\n"
-            + "                      Uncollect\n"
-            + "                        LogicalProject($f0=[$cor0.A])\n"
-            + "                          LogicalValues(tuples=[[{ 0 }]])\n"
-            + "      Uncollect\n"
-            + "        LogicalProject($f0=[$cor1.X])\n"
-            + "          LogicalValues(tuples=[[{ 0 }]])\n";
-
-    String expectedResult = ""
-                                + "(10,2,CLARK,MANAGER,10,2450.00,5000.00)\n"
-                                + "(10,2,KING,PRESIDENT,10,5000.00,5000.00)\n"
-                                + "(20,3,JONES,MANAGER,20,2975.00,3000.00)\n"
-                                + "(20,3,SCOTT,ANALYST,20,3000.00,3000.00)\n"
-                                + "(20,3,FORD,ANALYST,20,3000.00,3000.00)\n"
-                                + "(30,5,WARD,SALESMAN,30,1250.00,2850.00)\n"
-                                + "(30,5,MARTIN,SALESMAN,30,1250.00,2850.00)\n"
-                                + "(30,5,TURNER,SALESMAN,30,1500.00,2850.00)\n"
-                                + "(30,5,ALLEN,SALESMAN,30,1600.00,2850.00)\n"
-                                + "(30,5,BLAKE,MANAGER,30,2850.00,2850.00)\n";
-    testPigRelOpTranslation(script, expectedPlan);
-    testRunPigScript(script, expectedResult);
-
-    String expectedSql =
-        ""
-            + "SELECT $cor5.group, $cor5.cnt, $cor5.ENAME, $cor5.JOB, $cor5.DEPTNO, $cor5.SAL, "
-            + "$cor5.$f3\n"
-            + "FROM (SELECT $cor4.DEPTNO AS group, COUNT(PIG_BAG($cor4.X)) AS cnt, $cor4.X, "
-            + "BigDecimalMax(PIG_BAG(MULTISET_PROJECTION($cor4.X, 3))) AS $f3\n"
-            + "      FROM (SELECT DEPTNO, COLLECT(ROW(EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, "
-            + "COMM, DEPTNO)) AS A\n"
-            + "            FROM scott.EMP\n"
-            + "            GROUP BY DEPTNO) AS $cor4,\n"
-            + "          LATERAL (SELECT COLLECT(ROW(ENAME, JOB, DEPTNO, SAL)) AS X\n"
-            + "            FROM (SELECT ENAME, JOB, DEPTNO, SAL\n"
-            + "                  FROM UNNEST (SELECT $cor4.A AS $f0\n"
-            + "                        FROM (VALUES  (0)) AS t (ZERO)) AS t2 (EMPNO, ENAME, JOB, "
-            + "MGR, HIREDATE, SAL, COMM, DEPTNO)\n"
-            + "                  WHERE JOB <> 'CLERK'\n"
-            + "                  ORDER BY SAL) AS t5\n"
-            + "            GROUP BY 'all') AS t8) AS $cor5,\n"
-            + "    LATERAL UNNEST (SELECT $cor5.X AS $f0\n"
-            + "        FROM (VALUES  (0)) AS t (ZERO)) AS t11 (ENAME, JOB, DEPTNO, SAL) AS t110\n"
-            + "ORDER BY $cor5.group";
-    testSQLTranslation(script, expectedSql);
-  }
-
-  public void testForEachNested() {
     final String script = ""
         + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
         + "MGR:int, "
@@ -555,31 +475,26 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(30,5,TURNER,SALESMAN,30,1500.00,2850.00)\n"
         + "(30,5,ALLEN,SALESMAN,30,1600.00,2850.00)\n"
         + "(30,5,BLAKE,MANAGER,30,2850.00,2850.00)\n";
+
     final String sql = ""
-        + "SELECT $cor5.group, $cor5.cnt, $cor5.ENAME, $cor5.JOB, $cor5"
-        + ".DEPTNO, $cor5.SAL, $cor5"
-        + ".$f3\n"
-        + "FROM (SELECT $cor4.group, COUNT(PIG_BAG($cor4.X)) AS cnt, $cor4"
-        + ".X, BigDecimalMax"
-        + "(PIG_BAG(MULTISET_PROJECTION($cor4.X, 3))) AS $f3\n"
-        + "      FROM (SELECT DEPTNO AS group, COLLECT(ROW(EMPNO, ENAME, "
-        + "JOB, MGR, HIREDATE, "
-        + "SAL, COMM, DEPTNO)) AS A\n"
+        + "SELECT $cor5.group, $cor5.cnt, $cor5.ENAME, $cor5.JOB, $cor5.DEPTNO, $cor5.SAL, "
+        + "$cor5.$f3\n"
+        + "FROM (SELECT $cor4.DEPTNO AS group, COUNT(PIG_BAG($cor4.X)) AS cnt, $cor4.X, "
+        + "BigDecimalMax(PIG_BAG(MULTISET_PROJECTION($cor4.X, 3))) AS $f3\n"
+        + "      FROM (SELECT DEPTNO, COLLECT(ROW(EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, "
+        + "COMM, DEPTNO)) AS A\n"
         + "            FROM scott.EMP\n"
         + "            GROUP BY DEPTNO) AS $cor4,\n"
-        + "          LATERAL (SELECT COLLECT(ROW(ENAME, JOB, DEPTNO, SAL)) "
-        + "AS X\n"
+        + "          LATERAL (SELECT COLLECT(ROW(ENAME, JOB, DEPTNO, SAL)) AS X\n"
         + "            FROM (SELECT ENAME, JOB, DEPTNO, SAL\n"
         + "                  FROM UNNEST (SELECT $cor4.A AS $f0\n"
-        + "                        FROM (VALUES  (0)) AS t (ZERO)) AS t3 "
-        + "(EMPNO, ENAME, JOB, "
+        + "                        FROM (VALUES  (0)) AS t (ZERO)) AS t2 (EMPNO, ENAME, JOB, "
         + "MGR, HIREDATE, SAL, COMM, DEPTNO)\n"
         + "                  WHERE JOB <> 'CLERK'\n"
-        + "                  ORDER BY SAL) AS t6\n"
-        + "            GROUP BY 'all') AS t9) AS $cor5,\n"
+        + "                  ORDER BY SAL) AS t5\n"
+        + "            GROUP BY 'all') AS t8) AS $cor5,\n"
         + "    LATERAL UNNEST (SELECT $cor5.X AS $f0\n"
-        + "        FROM (VALUES  (0)) AS t (ZERO)) AS t12 (ENAME, JOB, "
-        + "DEPTNO, SAL) AS t120\n"
+        + "        FROM (VALUES  (0)) AS t (ZERO)) AS t11 (ENAME, JOB, DEPTNO, SAL) AS t110\n"
         + "ORDER BY $cor5.group";
     pig(script).assertRel(hasTree(plan))
         .assertResult(is(result))
@@ -967,49 +882,11 @@ public class PigRelOpTest extends PigRelTestBase {
   }
 
   @Test
-  public void testGroupby() throws IOException {
-    String base = "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n";
-    String expectedBasePlan = "      LogicalTableScan(table=[[scott, DEPT]])\n";
-    String script = base + "B = GROUP A BY DEPTNO;\n";
-    String expectedPlan = ""
-                              + "LogicalProject(group=[$0], A=[$1])\n"
-                              + "  LogicalAggregate(group=[{0}], A=[COLLECT($1)])\n"
-                              + "    LogicalProject(DEPTNO=[$0], $f1=[ROW($0, $1, $2)])\n"
-                              + expectedBasePlan;
-    String expectedResult = ""
-                                + "(20,{(20,RESEARCH,DALLAS)})\n"
-                                + "(40,{(40,OPERATIONS,BOSTON)})\n"
-                                + "(10,{(10,ACCOUNTING,NEW YORK)})\n"
-                                + "(30,{(30,SALES,CHICAGO)})\n";
-    testPigRelOpTranslation(script, expectedPlan);
-    testRunPigScript(script, expectedResult);
-
-    String expectedSql = ""
-                             + "SELECT DEPTNO, COLLECT(ROW(DEPTNO, DNAME, LOC)) AS A\n"
-                             + "FROM scott.DEPT\n"
-                             + "GROUP BY DEPTNO";
-    testSQLTranslation(script, expectedSql);
-
-    script = base + "B = GROUP A ALL;\n";
-    expectedPlan = ""
-                       + "LogicalProject(group=[$0], A=[$1])\n"
-                       + "  LogicalAggregate(group=[{0}], A=[COLLECT($1)])\n"
-                       + "    LogicalProject($f0=['all'], $f1=[ROW($0, $1, $2)])\n"
-                       + expectedBasePlan;
-    expectedResult =
-        "(all,{(10,ACCOUNTING,NEW YORK),(20,RESEARCH,DALLAS),(30,SALES,CHICAGO),(40,OPERATIONS,"
-            + "BOSTON)})"
-            + "\n";
-    testRunPigScript(script, expectedResult);
-    testPigRelOpTranslation(script, expectedPlan);
-  }
-
   public void testGroupby() {
-    final String baseScript =
+    final String base =
         "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n";
     final String basePlan = "      LogicalTableScan(table=[[scott, DEPT]])\n";
-
-    final String script = baseScript + "B = GROUP A BY DEPTNO;\n";
+    final String script = base + "B = GROUP A BY DEPTNO;\n";
     final String plan = ""
         + "LogicalProject(group=[$0], A=[$1])\n"
         + "  LogicalAggregate(group=[{0}], A=[COLLECT($1)])\n"
@@ -1022,22 +899,22 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(30,{(30,SALES,CHICAGO)})\n";
 
     final String sql = ""
-        + "SELECT DEPTNO AS group, COLLECT(ROW(DEPTNO, DNAME, LOC)) AS A\n"
+        + "SELECT DEPTNO, COLLECT(ROW(DEPTNO, DNAME, LOC)) AS A\n"
         + "FROM scott.DEPT\n"
         + "GROUP BY DEPTNO";
     pig(script).assertRel(hasTree(plan))
         .assertResult(is(result))
         .assertSql(is(sql));
 
-    final String script1 = baseScript + "B = GROUP A ALL;\n";
+    final String script1 = base + "B = GROUP A ALL;\n";
     final String plan1 = ""
         + "LogicalProject(group=[$0], A=[$1])\n"
         + "  LogicalAggregate(group=[{0}], A=[COLLECT($1)])\n"
         + "    LogicalProject($f0=['all'], $f1=[ROW($0, $1, $2)])\n"
         + basePlan;
     final String result1 = ""
-        + "(all,{(10,ACCOUNTING,NEW YORK),(20,RESEARCH,DALLAS)"
-        + ",(30,SALES,CHICAGO),(40,OPERATIONS,BOSTON)})\n";
+        + "(all,{(10,ACCOUNTING,NEW YORK),(20,RESEARCH,DALLAS),"
+        + "(30,SALES,CHICAGO),(40,OPERATIONS,BOSTON)})\n";
     pig(script1).assertResult(is(result1))
         .assertRel(hasTree(plan1));
   }
@@ -1709,65 +1586,6 @@ public class PigRelOpTest extends PigRelTestBase {
   }
 
   @Test
-  public void testCoGroup() throws IOException {
-    String script = ""
-                        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n"
-                        + "B = FILTER A BY DEPTNO <= 30;\n"
-                        + "C = FILTER A BY DEPTNO >= 20;\n"
-                        + "D = GROUP A BY DEPTNO + 10, B BY (int) DEPTNO, C BY (int) DEPTNO;\n"
-                        + "E = ORDER D BY $0;\n";
-    String expectedPlan =
-        ""
-            + "LogicalSort(sort0=[$0], dir0=[ASC])\n"
-            + "  LogicalProject(group=[$0], A=[$1], B=[$2], C=[$3])\n"
-            + "    LogicalProject(DEPTNO=[CASE(IS NOT NULL($0), $0, $3)], A=[$1], B=[$2], C=[$4])\n"
-            + "      LogicalJoin(condition=[=($0, $3)], joinType=[full])\n"
-            + "        LogicalProject(DEPTNO=[CASE(IS NOT NULL($0), $0, $2)], A=[$1], B=[$3])\n"
-            + "          LogicalJoin(condition=[=($0, $2)], joinType=[full])\n"
-            + "            LogicalAggregate(group=[{0}], A=[COLLECT($1)])\n"
-            + "              LogicalProject($f0=[+($0, 10)], $f1=[ROW($0, $1, $2)])\n"
-            + "                LogicalTableScan(table=[[scott, DEPT]])\n"
-            + "            LogicalAggregate(group=[{0}], B=[COLLECT($1)])\n"
-            + "              LogicalProject(DEPTNO=[CAST($0):INTEGER], $f1=[ROW($0, $1, $2)])\n"
-            + "                LogicalFilter(condition=[<=($0, 30)])\n"
-            + "                  LogicalTableScan(table=[[scott, DEPT]])\n"
-            + "        LogicalAggregate(group=[{0}], C=[COLLECT($1)])\n"
-            + "          LogicalProject(DEPTNO=[CAST($0):INTEGER], $f1=[ROW($0, $1, $2)])\n"
-            + "            LogicalFilter(condition=[>=($0, 20)])\n"
-            + "              LogicalTableScan(table=[[scott, DEPT]])\n";
-
-    String expectedResult =
-        ""
-            + "(10,{},{(10,ACCOUNTING,NEW YORK)},{})\n"
-            + "(20,{(10,ACCOUNTING,NEW YORK)},{(20,RESEARCH,DALLAS)},{(20,RESEARCH,DALLAS)})\n"
-            + "(30,{(20,RESEARCH,DALLAS)},{(30,SALES,CHICAGO)},{(30,SALES,CHICAGO)})\n"
-            + "(40,{(30,SALES,CHICAGO)},{},{(40,OPERATIONS,BOSTON)})\n"
-            + "(50,{(40,OPERATIONS,BOSTON)},{},{})\n";
-    testPigRelOpTranslation(script, expectedPlan);
-    testRunPigScript(script, expectedResult);
-    String sql =
-        ""
-            + "SELECT CASE WHEN t4.DEPTNO IS NOT NULL THEN t4.DEPTNO ELSE t7.DEPTNO END "
-            + "AS DEPTNO, t4.A, t4.B, t7.C\n"
-            + "FROM (SELECT CASE WHEN t0.$f0 IS NOT NULL THEN t0.$f0 ELSE t3.DEPTNO END "
-            + "AS DEPTNO, t0.A, t3.B\n"
-            + "      FROM (SELECT DEPTNO + 10 AS $f0, COLLECT(ROW(DEPTNO, DNAME, LOC)) AS A\n"
-            + "            FROM scott.DEPT\n"
-            + "            GROUP BY DEPTNO + 10) AS t0\n"
-            + "        FULL JOIN (SELECT CAST(DEPTNO AS INTEGER) AS DEPTNO, COLLECT(ROW"
-            + "(DEPTNO, DNAME, LOC)) AS B\n"
-            + "            FROM scott.DEPT\n"
-            + "            WHERE DEPTNO <= 30\n"
-            + "            GROUP BY CAST(DEPTNO AS INTEGER)) AS t3 ON t0.$f0 = t3.DEPTNO) AS t4\n"
-            + "  FULL JOIN (SELECT CAST(DEPTNO AS INTEGER) AS DEPTNO, COLLECT(ROW(DEPTNO, DNAME, "
-            + "LOC)) AS C\n"
-            + "      FROM scott.DEPT\n"
-            + "      WHERE DEPTNO >= 20\n"
-            + "      GROUP BY CAST(DEPTNO AS INTEGER)) AS t7 ON t4.DEPTNO = t7.DEPTNO\n"
-            + "ORDER BY CASE WHEN t4.DEPTNO IS NOT NULL THEN t4.DEPTNO ELSE t7.DEPTNO END";
-    testSQLTranslation(script, sql);
-  }
-
   public void testCoGroup() {
     final String script = ""
         + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n"
@@ -1800,9 +1618,10 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(30,{(20,RESEARCH,DALLAS)},{(30,SALES,CHICAGO)},{(30,SALES,CHICAGO)})\n"
         + "(40,{(30,SALES,CHICAGO)},{},{(40,OPERATIONS,BOSTON)})\n"
         + "(50,{(40,OPERATIONS,BOSTON)},{},{})\n";
+
     final String sql = ""
         + "SELECT CASE WHEN t4.DEPTNO IS NOT NULL THEN t4.DEPTNO ELSE t7.DEPTNO END "
-        + "AS group, t4.A, t4.B, t7.C\n"
+        + "AS DEPTNO, t4.A, t4.B, t7.C\n"
         + "FROM (SELECT CASE WHEN t0.$f0 IS NOT NULL THEN t0.$f0 ELSE t3.DEPTNO END "
         + "AS DEPTNO, t0.A, t3.B\n"
         + "      FROM (SELECT DEPTNO + 10 AS $f0, COLLECT(ROW(DEPTNO, DNAME, LOC)) AS A\n"
