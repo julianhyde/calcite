@@ -170,8 +170,8 @@ class PigRelUdfConverter {
    * @return Java method implementing the Pig UDF
    */
   private static Method findMethod(Class<?> clazz) {
-    // @PigUDFWrapper is a temporary solution for handling checked exceptions
-    // thrown from the function. See @PigUDFWrapper for details.
+    // PigUdfWrapper is a temporary solution for handling checked exceptions
+    // thrown from the function. See PigUdfWrapper for details.
     Method returnedMethod = PigUdfWrapper.getWrappedMethod(clazz.getSimpleName());
     if (returnedMethod != null) {
       return returnedMethod;

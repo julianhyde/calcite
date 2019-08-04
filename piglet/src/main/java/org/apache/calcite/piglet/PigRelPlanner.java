@@ -124,21 +124,23 @@ public class PigRelPlanner extends VolcanoPlanner {
       final Aggregate agg = (Aggregate) rel;
       if (agg.getAggCallList().size() == 1) {
         AggregateCall aggCall = agg.getAggCallList().get(0);
-        // Make Pig aggregates 10 times more expensive to have the @PigToSqlAggregateRule applied.
-        if (aggCall.getAggregation().getName().equals("COLLECT")) {
-          return costFactory.makeCost(10 * cost.getRows(), 10 * cost.getCpu(), 10 * cost.getIo());
+        // Make Pig aggregates 10 times more expensive, so that
+        // PigToSqlAggregateRule gets applied.
+        if (aggCall.getAggregation().getKind() == SqlKind.COLLECT) {
+          return costFactory.makeCost(10 * cost.getRows(), 10 * cost.getCpu(),
+              10 * cost.getIo());
         }
       }
     }
     if (rel instanceof Project) {
-      final Project proj = (Project) rel;
-      for (RexNode rexNode : proj.getProjects()) {
+      final Project project = (Project) rel;
+      for (RexNode rexNode : project.getProjects()) {
         if (rexNode.getKind() == SqlKind.ROW) {
-          // Penalize row with more operands so PigToSqlAggregateRule will be applied instead of
-          // multiset projection
+          // Penalize row with more operands, so that PigToSqlAggregateRule will
+          // be applied instead of multiset projection.
           final int operandCnt = ((RexCall) rexNode).operands.size();
-          return costFactory.makeCost(operandCnt * cost.getRows(), operandCnt * cost.getCpu(),
-              operandCnt * cost.getIo());
+          return costFactory.makeCost(operandCnt * cost.getRows(),
+              operandCnt * cost.getCpu(), operandCnt * cost.getIo());
         }
       }
     }

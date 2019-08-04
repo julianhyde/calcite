@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.piglet;
 
-import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
@@ -101,8 +100,6 @@ public class PigRelBuilder extends RelBuilder {
   }
 
   private static Frameworks.ConfigBuilder config() {
-    // Set unique url connection for pig conversion jdbc driver
-    // TODO Driver.setDefaultConnectStringPrefix("jdbc:pig-calcite:");
     return Frameworks.newConfigBuilder()
         .parserConfig(SqlParser.Config.DEFAULT)
         .defaultSchema(null)
