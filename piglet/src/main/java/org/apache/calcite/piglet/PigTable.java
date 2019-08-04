@@ -50,17 +50,14 @@ public class PigTable extends AbstractTable implements ScannableTable {
   /**
    * Creates a {@link RelOptTable} for a schema only table.
    *
-   * @param optSchema Catalog object
+   * @param schema Catalog object
    * @param rowType Relational schema for the table
    * @param names Names of Pig table
    */
-  public static RelOptTable createRelOptTable(RelOptSchema optSchema, RelDataType rowType,
-      List<String> names) {
-    return RelOptTableImpl.create(
-        optSchema,
-        rowType,
-        names,
-        new PigTable(rowType),
+  public static RelOptTable createRelOptTable(RelOptSchema schema,
+      RelDataType rowType, List<String> names) {
+    final PigTable pigTable = new PigTable(rowType);
+    return RelOptTableImpl.create(schema, rowType, names, pigTable,
         Expressions.constant(Boolean.TRUE));
   }
 

@@ -55,7 +55,7 @@ import static org.apache.calcite.piglet.PigTypes.TYPE_FACTORY;
 
 /**
  * User-defined functions ({@link SqlUserDefinedFunction UDFs})
- * needed 4for Pig to {@link RelNode} translation.
+ * needed for Pig-to-{@link RelNode} translation.
  */
 public class PigRelSqlUdfs {
   private PigRelSqlUdfs() {
@@ -247,7 +247,8 @@ public class PigRelSqlUdfs {
   }
 
   /**
-   * Gets the SqlReturnTypeInference that can inter the return tupe from a function
+   * Gets the SqlReturnTypeInference that can infer the return type from a
+   * function.
    *
    * @param function ScalarFunction
    * @return SqlReturnTypeInference
@@ -263,7 +264,7 @@ public class PigRelSqlUdfs {
    * @return returned data type
    */
   private static RelDataType getRelDataType(ScalarFunction function) {
-    final JavaTypeFactory typeFactory =  TYPE_FACTORY;
+    final JavaTypeFactory typeFactory = TYPE_FACTORY;
     final RelDataType type = function.getReturnType(typeFactory);
     if (type instanceof RelDataTypeFactoryImpl.JavaType
         && ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass()
@@ -301,8 +302,8 @@ public class PigRelSqlUdfs {
     if (elements != null) {
       // The first input contains a list of rows for the bag
       final List bag = (elements[0] instanceof List)
-                           ? (List) elements[0]
-                           : Collections.singletonList(elements[0]);
+          ? (List) elements[0]
+          : Collections.singletonList(elements[0]);
       for (Object row : bag) {
         tupleList.add(tupleFactory.newTuple(Arrays.asList(row)));
       }
@@ -311,7 +312,8 @@ public class PigRelSqlUdfs {
     // Then build a bag from the tuple list
     DataBag resultBag = bagFactory.newDefaultBag(tupleList);
 
-    // The returned result is a new Tuple with the newly constructed DataBag as the first item
+    // The returned result is a new Tuple with the newly constructed DataBag
+    // as the first item.
     List<Object> finalTuple = new ArrayList<>();
     finalTuple.add(resultBag);
 

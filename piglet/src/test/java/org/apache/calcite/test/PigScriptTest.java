@@ -36,11 +36,11 @@ import static org.apache.calcite.test.Matchers.hasTree;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * Test for converting a pig script file.
+ * Test for converting a Pig script file.
  */
 public class PigScriptTest extends PigRelTestBase {
-  static String projectRootDir;
-  static String dataFile;
+  private static String projectRootDir;
+  private static String dataFile;
 
   @BeforeClass
   public static void setUpOnce() throws IOException {

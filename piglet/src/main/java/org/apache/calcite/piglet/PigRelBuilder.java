@@ -277,8 +277,8 @@ public class PigRelBuilder extends RelBuilder {
    * @return This builder
    */
   public RelBuilder scan(RelDataType rowType, List<String> tableNames) {
-    final RelOptTable relOptTable = PigTable.createRelOptTable(getRelOptSchema(), rowType,
-        tableNames);
+    final RelOptTable relOptTable =
+        PigTable.createRelOptTable(getRelOptSchema(), rowType, tableNames);
     return scan(relOptTable);
   }
 

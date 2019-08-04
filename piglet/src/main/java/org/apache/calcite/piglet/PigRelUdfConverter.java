@@ -135,11 +135,7 @@ class PigRelUdfConverter {
       // Find the implementation method for the Pig function from
       // the class defining the UDF.
       final Class clazz = Class.forName(pigFunc.getClassName());
-      final Method method = PigUDFFinder.findPigUDFImplementationMethod(clazz);
-      if (method == null) {
-        throw new FrontendException("Cannot find 'exec' method for Pig UDF: "
-            + pigFunc.getClassName());
-      }
+      final Method method = PigUdfFinder.findPigUdfImplementationMethod(clazz);
 
       // Now create the argument wrapper. Depend on the type of the UDF, the
       // relational operands are converted into a Pig Tuple or Pig DataBag

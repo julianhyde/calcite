@@ -33,6 +33,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.apache.calcite.test.Matchers.hasTree;
 
@@ -71,10 +72,11 @@ public class PigRelOpTest extends PigRelTestBase {
         Matcher<RelNode> relMatcher) {
       try {
         final RelNode rel;
+        final List<RelNode> relNodes =
+            converter.pigQuery2Rel(script, optimized, true, optimized);
         if (pigAlias == null) {
-          rel = converter.pigQuery2Rel(script, optimized).get(0);
+          rel = relNodes.get(0);
         } else {
-          converter.pigQuery2Rel(script, optimized);
           rel = converter.getBuilder().getRel(pigAlias);
         }
         assertThat(rel, relMatcher);
@@ -106,7 +108,7 @@ public class PigRelOpTest extends PigRelTestBase {
     private Fluent assertResult(Matcher<String> resultMatcher) {
       final RelNode rel;
       try {
-        rel = converter.pigQuery2Rel(script, false).get(0);
+        rel = converter.pigQuery2Rel(script, false, true, false).get(0);
       } catch (IOException e) {
         throw TestUtil.rethrow(e);
       }
@@ -226,9 +228,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testSplit() {
     String script = ""
-        + "A = LOAD 'scott.EMP'as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP'as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "SPLIT A INTO B1 IF DEPTNO == 10, B2 IF  DEPTNO == 20;\n"
         + "B = UNION B1, B2;\n";
     final String scan = "  LogicalTableScan(table=[[scott, EMP]])\n";
@@ -289,24 +291,21 @@ public class PigRelOpTest extends PigRelTestBase {
   @Test public void testSimpleForEach1() {
     String script = ""
         + "A = LOAD 'testSchema.testTable' as (a:int, b:long, c:float, "
-        + "d:double, e:chararray, "
-        + "f:bytearray, g:boolean, "
-        + "h:datetime, i:biginteger, j:bigdecimal, k1:tuple(), k2:tuple"
-        + "(k21:int, k22:float), "
-        + "l1:bag{}, "
-        + "l2:bag{l21:(l22:int, l23:float)}, m1:map[], m2:map[int], m3:map["
-        + "(m3:float)]);\n"
+        + "d:double, e:chararray, f:bytearray, g:boolean, "
+        + "h:datetime, i:biginteger, j:bigdecimal, k1:tuple(), "
+        + "k2:tuple(k21:int, k22:float), l1:bag{}, "
+        + "l2:bag{l21:(l22:int, l23:float)}, "
+        + "m1:map[], m2:map[int], m3:map[(m3:float)]);\n"
         + "B = FOREACH A GENERATE a, a as a2, b, c, d, e, f, g, h, i, j, k2, "
-        + "l2, m2, null as "
-        + "n:chararray; \n";
+        + "l2, m2, null as n:chararray; \n";
     final String plan = ""
         + "LogicalProject(a=[$0], a2=[$0], b=[$1], c=[$2], d=[$3], e=[$4], "
         + "f=[$5], g=[$6], h=[$7], i=[$8], j=[$9], k2=[$11], l2=[$13], "
         + "m2=[$15], n=[null:VARCHAR])\n"
         + "  LogicalTableScan(table=[[testSchema, testTable]])\n";
     final String sql = ""
-        + "SELECT a, a AS a2, b, c, d, e, f, g, h, i, j, k2, l2, m2, NULL AS"
-        + " n\n"
+        + "SELECT a, a AS a2, b, c, d, e, f, g, h, i, j, k2, l2, m2, "
+        + "NULL AS n\n"
         + "FROM testSchema.testTable";
     pig(script).assertRel(hasTree(plan))
         .assertSql(is(sql));
@@ -314,9 +313,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testSimpleForEach2() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FOREACH A GENERATE DEPTNO + 10 as dept, MGR;\n";
     final String plan = ""
         + "LogicalProject(dept=[+($7, 10)], MGR=[$3])\n"
@@ -347,9 +346,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testSimpleForEach3() {
     String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FILTER A BY JOB != 'CLERK';\n"
         + "C = GROUP B BY (DEPTNO, JOB);\n"
         + "D = FOREACH C GENERATE flatten(group) as (dept, job), flatten(B);\n"
@@ -357,16 +356,15 @@ public class PigRelOpTest extends PigRelTestBase {
     final String plan = ""
         + "LogicalSort(sort0=[$0], sort1=[$1], dir0=[ASC], dir1=[ASC])\n"
         + "  LogicalProject(dept=[$0], job=[$1], EMPNO=[$3], ENAME=[$4], "
-        + "JOB=[$5], MGR=[$6], "
-        + "HIREDATE=[$7], SAL=[$8], COMM=[$9], DEPTNO=[$10])\n"
+        + "JOB=[$5], MGR=[$6], HIREDATE=[$7], SAL=[$8], COMM=[$9], "
+        + "DEPTNO=[$10])\n"
         + "    LogicalCorrelate(correlation=[$cor0], joinType=[inner], "
         + "requiredColumns=[{2}])\n"
         + "      LogicalProject(dept=[$0.DEPTNO], job=[$0.JOB], B=[$1])\n"
         + "        LogicalProject(group=[ROW($0, $1)], B=[$2])\n"
         + "          LogicalAggregate(group=[{0, 1}], B=[COLLECT($2)])\n"
         + "            LogicalProject(DEPTNO=[$7], JOB=[$2], $f2=[ROW($0, "
-        + "$1, $2, $3, $4, $5, "
-        + "$6, $7)])\n"
+        + "$1, $2, $3, $4, $5, $6, $7)])\n"
         + "              LogicalFilter(condition=[<>($2, 'CLERK')])\n"
         + "                LogicalTableScan(table=[[scott, EMP]])\n"
         + "      Uncollect\n"
@@ -374,20 +372,17 @@ public class PigRelOpTest extends PigRelTestBase {
         + "          LogicalValues(tuples=[[{ 0 }]])\n";
 
     final String sql = ""
-        + "SELECT $cor1.DEPTNO AS dept, $cor1.JOB AS job, $cor1.EMPNO, $cor1"
-        + ".ENAME, $cor1.JOB0 "
-        + "AS JOB, $cor1.MGR, $cor1.HIREDATE, $cor1.SAL, $cor1.COMM, $cor1"
-        + ".DEPTNO0 AS DEPTNO\n"
+        + "SELECT $cor1.DEPTNO AS dept, $cor1.JOB AS job, $cor1.EMPNO,"
+        + " $cor1.ENAME, $cor1.JOB0 AS JOB, $cor1.MGR, $cor1.HIREDATE,"
+        + " $cor1.SAL, $cor1.COMM, $cor1.DEPTNO0 AS DEPTNO\n"
         + "FROM (SELECT DEPTNO, JOB, COLLECT(ROW(EMPNO, ENAME, JOB, MGR, "
-        + "HIREDATE, SAL, COMM, "
-        + "DEPTNO)) AS $f2\n"
+        + "HIREDATE, SAL, COMM, DEPTNO)) AS $f2\n"
         + "      FROM scott.EMP\n"
         + "      WHERE JOB <> 'CLERK'\n"
         + "      GROUP BY DEPTNO, JOB) AS $cor1,\n"
         + "    LATERAL UNNEST (SELECT $cor1.$f2 AS $f0\n"
         + "        FROM (VALUES  (0)) AS t (ZERO)) AS t3 (EMPNO, ENAME, JOB,"
-        + " MGR, HIREDATE, SAL,"
-        + " COMM, DEPTNO) AS t30\n"
+        + " MGR, HIREDATE, SAL, COMM, DEPTNO) AS t30\n"
         + "ORDER BY $cor1.DEPTNO, $cor1.JOB";
     pig(script).assertRel(hasTree(plan))
         .assertSql(is(sql));
@@ -411,22 +406,23 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testForEachNested() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY DEPTNO;\n"
         + "C = FOREACH B {\n"
         + "      S = FILTER A BY JOB != 'CLERK';\n"
         + "      Y = FOREACH S GENERATE ENAME, JOB, DEPTNO, SAL;\n"
         + "      X = ORDER Y BY SAL;\n"
-        + "      GENERATE group, COUNT(X) as cnt, flatten(X), BigDecimalMax(X.SAL);"
+        + "      GENERATE group, COUNT(X) as cnt, flatten(X), BigDecimalMax(X.SAL);\n"
         + "}\n"
         + "D = ORDER C BY $0;\n";
     final String plan = ""
         + "LogicalSort(sort0=[$0], dir0=[ASC])\n"
-        + "  LogicalProject(group=[$0], cnt=[$1], ENAME=[$4], JOB=[$5], DEPTNO=[$6], SAL=[$7], "
-        + "$f3=[$3])\n"
-        + "    LogicalCorrelate(correlation=[$cor1], joinType=[inner], requiredColumns=[{2}])\n"
+        + "  LogicalProject(group=[$0], cnt=[$1], ENAME=[$4], JOB=[$5], "
+        + "DEPTNO=[$6], SAL=[$7], $f3=[$3])\n"
+        + "    LogicalCorrelate(correlation=[$cor1], joinType=[inner], "
+        + "requiredColumns=[{2}])\n"
         + "      LogicalProject(group=[$0], cnt=[COUNT(PIG_BAG($2))], X=[$2], "
         + "$f3=[BigDecimalMax(PIG_BAG(MULTISET_PROJECTION($2, 3)))])\n"
         + "        LogicalCorrelate(correlation=[$cor0], joinType=[inner], "
@@ -465,8 +461,8 @@ public class PigRelOpTest extends PigRelTestBase {
     final String sql = ""
         + "SELECT $cor5.group, $cor5.cnt, $cor5.ENAME, $cor5.JOB, "
         + "$cor5.DEPTNO, $cor5.SAL, $cor5.$f3\n"
-        + "FROM (SELECT $cor4.DEPTNO AS group, COUNT(PIG_BAG($cor4.X)) AS cnt, "
-        + "$cor4.X, "
+        + "FROM (SELECT $cor4.DEPTNO AS group, "
+        + "COUNT(PIG_BAG($cor4.X)) AS cnt, $cor4.X, "
         + "BigDecimalMax(PIG_BAG(MULTISET_PROJECTION($cor4.X, 3))) AS $f3\n"
         + "      FROM (SELECT DEPTNO, COLLECT(ROW(EMPNO, ENAME, JOB, MGR, "
         + "HIREDATE, SAL, COMM, DEPTNO)) AS A\n"
@@ -481,8 +477,8 @@ public class PigRelOpTest extends PigRelTestBase {
         + "                  ORDER BY SAL) AS t5\n"
         + "            GROUP BY 'all') AS t8) AS $cor5,\n"
         + "    LATERAL UNNEST (SELECT $cor5.X AS $f0\n"
-        + "        FROM (VALUES  (0)) AS t (ZERO)) AS t11 (ENAME, JOB, "
-        + "DEPTNO, SAL) AS t110\n"
+        + "        FROM (VALUES  (0)) AS t (ZERO)) "
+        + "AS t11 (ENAME, JOB, DEPTNO, SAL) AS t110\n"
         + "ORDER BY $cor5.group";
     pig(script).assertRel(hasTree(plan))
         .assertResult(is(result))
@@ -491,9 +487,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testUnionSameSchema() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FILTER A BY DEPTNO == 10;\n"
         + "C = FILTER A BY DEPTNO == 20;\n"
         + "D = UNION B, C;\n";
@@ -564,25 +560,23 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testUnionDifferentSchemas2() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FILTER A BY DEPTNO == 10;\n"
         + "C = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n"
         + "D = UNION ONSCHEMA B, C;\n";
     final String plan = ""
         + "LogicalUnion(all=[true])\n"
         + "  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], "
-        + "HIREDATE=[$4], "
-        + "SAL=[$5], COMM=[$6], DEPTNO=[$7], DNAME=[null:VARCHAR], "
-        + "LOC=[null:VARCHAR])\n"
+        + "HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], "
+        + "DNAME=[null:VARCHAR], LOC=[null:VARCHAR])\n"
         + "    LogicalFilter(condition=[=($7, 10)])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n"
         + "  LogicalProject(EMPNO=[null:INTEGER], ENAME=[null:VARCHAR], "
-        + "JOB=[null:VARCHAR], "
-        + "MGR=[null:INTEGER], HIREDATE=[null:DATE], SAL=[null:DECIMAL(19, "
-        + "0)], "
-        + "COMM=[null:DECIMAL(19, 0)], DEPTNO=[$0], DNAME=[$1], LOC=[$2])\n"
+        + "JOB=[null:VARCHAR], MGR=[null:INTEGER], HIREDATE=[null:DATE], "
+        + "SAL=[null:DECIMAL(19, 0)], COMM=[null:DECIMAL(19, 0)], DEPTNO=[$0], "
+        + "DNAME=[$1], LOC=[$2])\n"
         + "    LogicalTableScan(table=[[scott, DEPT]])\n";
     final String result = ""
         + "(7782,CLARK,MANAGER,7839,1981-06-09,2450.00,null,10,null,null)\n"
@@ -595,14 +589,12 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(null,null,null,null,null,null,null,40,OPERATIONS,BOSTON)\n";
     final String sql = ""
         + "SELECT EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO, NULL "
-        + "AS DNAME, NULL AS "
-        + "LOC\n"
+        + "AS DNAME, NULL AS LOC\n"
         + "  FROM scott.EMP\n"
         + "  WHERE DEPTNO = 10\n"
         + "UNION ALL\n"
         + "  SELECT NULL AS EMPNO, NULL AS ENAME, NULL AS JOB, NULL AS MGR, "
-        + "NULL AS HIREDATE, "
-        + "NULL AS SAL, NULL AS COMM, DEPTNO, DNAME, LOC\n"
+        + "NULL AS HIREDATE, NULL AS SAL, NULL AS COMM, DEPTNO, DNAME, LOC\n"
         + "  FROM scott.DEPT";
     pig(script).assertRel(hasTree(plan))
         .assertResult(is(result))
@@ -611,9 +603,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testJoin2Rels() {
     final String scanScript = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n";
     final String scanPlan = ""
         + "  LogicalTableScan(table=[[scott, EMP]])\n"
@@ -704,9 +696,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testJoin3Rels() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n"
         + "C = FILTER B BY LOC == 'CHICAGO';\n"
         + "D = JOIN A BY DEPTNO, B BY DEPTNO, C BY DEPTNO;\n";
@@ -748,14 +740,14 @@ public class PigRelOpTest extends PigRelTestBase {
         .assertResult(is(result));
 
     final String script2 = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
-        + "B = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY)"
-        + ";\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
+        + "B = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray,\n"
+        + "    LOC:CHARARRAY);\n"
         + "C = FILTER B BY LOC == 'CHICAGO';\n"
-        + "D = JOIN A BY (DEPTNO, ENAME), B BY (DEPTNO, DNAME), C BY (DEPTNO, "
-        + "DNAME);\n";
+        + "D = JOIN A BY (DEPTNO, ENAME), B BY (DEPTNO, DNAME),\n"
+        + "    C BY (DEPTNO, DNAME);\n";
     final String plan2 = ""
         + "LogicalJoin(condition=[AND(=($7, $11), =($9, $12))], "
         + "joinType=[inner])\n"
@@ -768,19 +760,20 @@ public class PigRelOpTest extends PigRelTestBase {
     final String sql2 = ""
         + "SELECT *\n"
         + "FROM scott.EMP\n"
-        + "  INNER JOIN scott.DEPT ON EMP.DEPTNO = DEPT.DEPTNO AND EMP"
-        + ".ENAME = DEPT.DNAME\n"
+        + "  INNER JOIN scott.DEPT ON EMP.DEPTNO = DEPT.DEPTNO "
+        + "AND EMP.ENAME = DEPT.DNAME\n"
         + "  INNER JOIN (SELECT *\n"
         + "      FROM scott.DEPT\n"
-        + "      WHERE LOC = 'CHICAGO') AS t ON EMP.DEPTNO = t.DEPTNO AND "
-        + "DEPT.DNAME = t.DNAME";
+        + "      WHERE LOC = 'CHICAGO') AS t ON EMP.DEPTNO = t.DEPTNO "
+        + "AND DEPT.DNAME = t.DNAME";
     pig(script2).assertRel(hasTree(plan2))
         .assertSql(is(sql2));
   }
 
   @Test public void testCross() {
     final String script = ""
-        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n"
+        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray,\n"
+        + "    LOC:CHARARRAY);\n"
         + "B = FOREACH A GENERATE DEPTNO; \n"
         + "C = FILTER B BY DEPTNO <= 20;\n"
         + "D = CROSS B, C;\n";
@@ -812,8 +805,8 @@ public class PigRelOpTest extends PigRelTestBase {
         .assertResult(is(result));
 
     final String script2 = ""
-        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY)"
-        + ";\n"
+        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray,"
+        + "    LOC:CHARARRAY);\n"
         + "B = FOREACH A GENERATE DEPTNO; \n"
         + "C = FILTER B BY DEPTNO <= 20;\n"
         + "D = FILTER B BY DEPTNO > 20;\n"
@@ -902,9 +895,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testGroupby2() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FOREACH A GENERATE EMPNO, ENAME, JOB, MGR, SAL, COMM, DEPTNO;\n"
         + "C = GROUP B BY (DEPTNO, JOB);\n";
     final String plan = ""
@@ -913,24 +906,20 @@ public class PigRelOpTest extends PigRelTestBase {
         + "    LogicalProject(DEPTNO=[$6], JOB=[$2], $f2=[ROW($0, $1, $2, "
         + "$3, $4, $5, $6)])\n"
         + "      LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3],"
-        + " SAL=[$5], "
-        + "COMM=[$6], DEPTNO=[$7])\n"
+        + " SAL=[$5], COMM=[$6], DEPTNO=[$7])\n"
         + "        LogicalTableScan(table=[[scott, EMP]])\n";
     final String result = ""
         + "({10, MANAGER},{(7782,CLARK,MANAGER,7839,2450.00,null,10)})\n"
         + "({10, PRESIDENT},{(7839,KING,PRESIDENT,null,5000.00,null,10)})\n"
-        + "({20, CLERK},{(7369,SMITH,CLERK,7902,800.00,null,20),(7876,"
-        + "ADAMS,CLERK,7788,1100"
-        + ".00,null,20)})\n"
+        + "({20, CLERK},{(7369,SMITH,CLERK,7902,800.00,null,20),"
+        + "(7876,ADAMS,CLERK,7788,1100.00,null,20)})\n"
         + "({30, MANAGER},{(7698,BLAKE,MANAGER,7839,2850.00,null,30)})\n"
         + "({20, ANALYST},{(7788,SCOTT,ANALYST,7566,3000.00,null,20),"
-        + "(7902,FORD,ANALYST,7566,"
-        + "3000.00,null,20)})\n"
+        + "(7902,FORD,ANALYST,7566,3000.00,null,20)})\n"
         + "({30, SALESMAN},{(7499,ALLEN,SALESMAN,7698,1600.00,300.00,30),"
-        + "(7521,WARD,SALESMAN,"
-        + "7698,1250.00,500.00,30),(7654,MARTIN,SALESMAN,7698,1250.00,"
-        + "1400.00,30),(7844,"
-        + "TURNER,SALESMAN,7698,1500.00,0.00,30)})\n"
+        + "(7521,WARD,SALESMAN,7698,1250.00,500.00,30),"
+        + "(7654,MARTIN,SALESMAN,7698,1250.00,1400.00,30),"
+        + "(7844,TURNER,SALESMAN,7698,1500.00,0.00,30)})\n"
         + "({30, CLERK},{(7900,JAMES,CLERK,7698,950.00,null,30)})\n"
         + "({20, MANAGER},{(7566,JONES,MANAGER,7839,2975.00,null,20)})\n"
         + "({10, CLERK},{(7934,MILLER,CLERK,7782,1300.00,null,10)})\n";
@@ -941,28 +930,24 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testCubeCube() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = CUBE A BY CUBE(DEPTNO, JOB);\n"
         + "C = FOREACH B GENERATE group, COUNT(cube.ENAME);\n";
     final String plan = ""
         + "LogicalProject(group=[$0], $f1=[COUNT(PIG_BAG"
         + "(MULTISET_PROJECTION($1, 3)))])\n"
         + "  LogicalProject(group=[ROW($0, $1)], cube=[$2])\n"
-        + "    LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {0}, {1}, "
-        + "{}]], cube=[COLLECT"
-        + "($2)])\n"
-        + "      LogicalProject(DEPTNO=[$7], JOB=[$2], $f2=[ROW($7, $2, $0,"
-        + " $1, $3, $4, $5, $6)"
-        + "])\n"
+        + "    LogicalAggregate(group=[{0, 1}], "
+        + "groups=[[{0, 1}, {0}, {1}, {}]], cube=[COLLECT($2)])\n"
+        + "      LogicalProject(DEPTNO=[$7], JOB=[$2], "
+        + "$f2=[ROW($7, $2, $0, $1, $3, $4, $5, $6)])\n"
         + "        LogicalTableScan(table=[[scott, EMP]])\n";
     final String optimizedPlan = ""
-        + "LogicalProject(group=[ROW($0, $1)], $f1=[CAST($2)"
-        + ":BIGINT])\n"
-        + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, "
-        + "{0}, {1}, {}]], "
-        + "agg#0=[COUNT($2)])\n"
+        + "LogicalProject(group=[ROW($0, $1)], $f1=[CAST($2):BIGINT])\n"
+        + "  LogicalAggregate(group=[{0, 1}], "
+        + "groups=[[{0, 1}, {0}, {1}, {}]], agg#0=[COUNT($2)])\n"
         + "    LogicalProject(DEPTNO=[$7], JOB=[$2], ENAME=[$1])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n";
     final String result = ""
@@ -986,8 +971,8 @@ public class PigRelOpTest extends PigRelTestBase {
         + "({null, MANAGER},3)\n";
 
     final String sql = ""
-        + "SELECT ROW(DEPTNO, JOB) AS group, CAST(COUNT(ENAME) AS BIGINT) AS"
-        + " $f1\n"
+        + "SELECT ROW(DEPTNO, JOB) AS group,"
+        + " CAST(COUNT(ENAME) AS BIGINT) AS $f1\n"
         + "FROM scott.EMP\n"
         + "GROUP BY CUBE(DEPTNO, JOB)";
     pig(script).assertRel(hasTree(plan))
@@ -998,8 +983,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testCubeRollup() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = CUBE A BY ROLLUP(DEPTNO, JOB);\n"
         + "C = FOREACH B GENERATE group, COUNT(cube.ENAME);\n";
     final String plan = ""
@@ -1009,15 +995,12 @@ public class PigRelOpTest extends PigRelTestBase {
         + "    LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {1}, {}]],"
         + " cube=[COLLECT($2)])\n"
         + "      LogicalProject(DEPTNO=[$7], JOB=[$2], $f2=[ROW($7, $2, $0,"
-        + " $1, $3, $4, $5, $6)"
-        + "])\n"
+        + " $1, $3, $4, $5, $6)])\n"
         + "        LogicalTableScan(table=[[scott, EMP]])\n";
     final String optimizedPlan = ""
-        + "LogicalProject(group=[ROW($0, $1)], $f1=[CAST($2)"
-        + ":BIGINT])\n"
-        + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, "
-        + "{1}, {}]], agg#0=[COUNT"
-        + "($2)])\n"
+        + "LogicalProject(group=[ROW($0, $1)], $f1=[CAST($2):BIGINT])\n"
+        + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {1}, {}]], "
+        + "agg#0=[COUNT($2)])\n"
         + "    LogicalProject(DEPTNO=[$7], JOB=[$2], ENAME=[$1])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n";
     final String result = ""
@@ -1037,8 +1020,8 @@ public class PigRelOpTest extends PigRelTestBase {
         + "({20, CLERK},2)\n"
         + "({null, MANAGER},3)\n";
     final String sql = ""
-        + "SELECT ROW(DEPTNO, JOB) AS group, CAST(COUNT(ENAME) AS BIGINT) AS"
-        + " $f1\n"
+        + "SELECT ROW(DEPTNO, JOB) AS group, "
+        + "CAST(COUNT(ENAME) AS BIGINT) AS $f1\n"
         + "FROM scott.EMP\n"
         + "GROUP BY ROLLUP(DEPTNO, JOB)";
     pig(script).assertRel(hasTree(plan))
@@ -1049,7 +1032,8 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testMultisetProjection() {
     final String script = ""
-        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n"
+        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray,\n"
+        + "    LOC:CHARARRAY);\n"
         + "B = GROUP A BY DEPTNO;\n"
         + "C = FOREACH B GENERATE A.(DEPTNO, DNAME);\n";
     final String plan = ""
@@ -1080,8 +1064,9 @@ public class PigRelOpTest extends PigRelTestBase {
   }
 
   @Test public void testOrderBy() {
-    final String scan =
-        "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n";
+    final String scan = ""
+        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray,\n"
+        + "    LOC:CHARARRAY);\n";
     final String scanPlan =
         "  LogicalTableScan(table=[[scott, DEPT]])\n";
 
@@ -1144,9 +1129,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testRank() {
     final String base = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FOREACH A GENERATE EMPNO, JOB, DEPTNO;\n";
     final String basePlan = ""
         + "  LogicalProject(EMPNO=[$0], JOB=[$2], DEPTNO=[$7])\n"
@@ -1160,8 +1145,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
     final String script = base + "C = RANK B BY DEPTNO ASC, JOB DESC;\n";
     final String plan = ""
-        + "LogicalProject(rank_C=[RANK() OVER (ORDER BY $2, $1 DESC RANGE BETWEEN UNBOUNDED "
-        + "PRECEDING AND CURRENT ROW)" + "], EMPNO=[$0], JOB=[$1], DEPTNO=[$2])\n"
+        + "LogicalProject(rank_C=[RANK() OVER (ORDER BY $2, "
+        + "$1 DESC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)" + "], "
+        + "EMPNO=[$0], JOB=[$1], DEPTNO=[$2])\n"
         + basePlan;
     final String result = ""
         + "(1,7839,PRESIDENT,10)\n"
@@ -1180,8 +1166,7 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(14,7900,CLERK,30)\n";
     final String sql = ""
         + "SELECT RANK() OVER (ORDER BY DEPTNO, JOB DESC RANGE BETWEEN "
-        + "UNBOUNDED PRECEDING AND "
-        + "CURRENT ROW) AS rank_C, EMPNO, JOB, DEPTNO\n"
+        + "UNBOUNDED PRECEDING AND CURRENT ROW) AS rank_C, EMPNO, JOB, DEPTNO\n"
         + "FROM scott.EMP";
     pig(script).assertRel(hasTree(plan))
         .assertOptimizedRel(hasTree(optimizedPlan))
@@ -1199,8 +1184,9 @@ public class PigRelOpTest extends PigRelTestBase {
         + "    LogicalProject(EMPNO=[$0], JOB=[$2], DEPTNO=[$7])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n";
     final String plan2 = ""
-        + "LogicalProject(rank_C=[DENSE_RANK() OVER (ORDER BY $2, $1 DESC RANGE BETWEEN UNBOUNDED "
-        + "PRECEDING AND CURRENT" + " ROW)], EMPNO=[$0], JOB=[$1], DEPTNO=[$2])\n"
+        + "LogicalProject(rank_C=[DENSE_RANK() OVER (ORDER BY $2, "
+        + "$1 DESC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT" + " ROW)], "
+        + "EMPNO=[$0], JOB=[$1], DEPTNO=[$2])\n"
         + basePlan;
     final String result2 = ""
         + "(1,7839,PRESIDENT,10)\n"
@@ -1219,8 +1205,7 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(9,7900,CLERK,30)\n";
     final String sql2 = ""
         + "SELECT DENSE_RANK() OVER (ORDER BY DEPTNO, JOB DESC RANGE BETWEEN "
-        + "UNBOUNDED PRECEDING AND "
-        + "CURRENT ROW) AS rank_C, EMPNO, JOB, DEPTNO\n"
+        + "UNBOUNDED PRECEDING AND CURRENT ROW) AS rank_C, EMPNO, JOB, DEPTNO\n"
         + "FROM scott.EMP";
     pig(script2).assertRel(hasTree(plan2))
         .assertOptimizedRel(hasTree(optimizedPlan2))
@@ -1229,7 +1214,9 @@ public class PigRelOpTest extends PigRelTestBase {
   }
 
   @Test public void testLimit() {
-    final String scan = "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n";
+    final String scan = ""
+        + "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray,\n"
+        + "    LOC:CHARARRAY);\n";
     final String scanPlan = "  LogicalTableScan(table=[[scott, DEPT]])\n";
 
     final String plan1 = "LogicalSort(sort0=[$1], dir0=[ASC], fetch=[2])\n"
@@ -1260,9 +1247,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testDistinct() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = FOREACH A GENERATE DEPTNO;\n"
         + "C = DISTINCT B;\n";
     final String plan = ""
@@ -1284,8 +1271,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testAggregate() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, MGR:int, "
-        + "    HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY DEPTNO;\n"
         + "C = FOREACH B GENERATE group, COUNT(A), BigDecimalSum(A.SAL);\n";
     final String plan = ""
@@ -1317,8 +1305,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testAggregate2() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
         + "C = FOREACH B GENERATE group, COUNT(A), SUM(A.SAL) as salSum;\n"
         + "D = ORDER C BY salSum;\n";
@@ -1368,11 +1357,13 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testAggregate2half() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
-        + "C = FOREACH B GENERATE flatten(group) as (DEPTNO, MGR, HIREDATE), COUNT(A), "
-        + "SUM(A.SAL) as salSum, MAX(A.DEPTNO) as maxDep, MIN(A.HIREDATE) as minHire;\n"
+        + "C = FOREACH B GENERATE flatten(group) as (DEPTNO, MGR, HIREDATE),\n"
+        + "    COUNT(A), SUM(A.SAL) as salSum, MAX(A.DEPTNO) as maxDep,\n"
+        + "    MIN(A.HIREDATE) as minHire;\n"
         + "D = ORDER C BY salSum;\n";
     final String plan = ""
         + "LogicalSort(sort0=[$4], dir0=[ASC])\n"
@@ -1398,9 +1389,9 @@ public class PigRelOpTest extends PigRelTestBase {
         .assertOptimizedRel(hasTree(optimizedPlan));
 
     final String script2 = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, "
-        + "DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
         + "C = FOREACH B GENERATE group.DEPTNO, COUNT(A), SUM(A.SAL) as salSum, "
         + "group.MGR, MAX(A.DEPTNO) as maxDep, MIN(A.HIREDATE) as minHire;\n"
@@ -1431,8 +1422,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testAggregate3() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
         + "C = FOREACH B GENERATE group, COUNT(A) + 1, BigDecimalSum(A.SAL) as "
         + "salSum, BigDecimalSum(A.SAL) / COUNT(A) as salAvg;\n"
@@ -1485,8 +1477,9 @@ public class PigRelOpTest extends PigRelTestBase {
         .assertSql(is(sql));
 
     final String script2 = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
         + "C = FOREACH B GENERATE group, COUNT(A) + 1, BigDecimalSum(A.SAL) as salSum, "
         + "BigDecimalSum(A.SAL) / COUNT(A) as salAvg, A;\n"
@@ -1503,8 +1496,9 @@ public class PigRelOpTest extends PigRelTestBase {
     pig(script2).assertSql(is(sql2));
 
     final String script3 = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, MGR:int, "
-        + "HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
         + "C = FOREACH B GENERATE group, A, COUNT(A);\n";
     final String sql3 = ""
@@ -1518,8 +1512,9 @@ public class PigRelOpTest extends PigRelTestBase {
 
   @Test public void testAggregate4() {
     final String script = ""
-        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray, JOB:chararray, "
-        + "MGR:int, HIREDATE:datetime, SAL:bigdecimal, COMM:bigdecimal, DEPTNO:int);\n"
+        + "A = LOAD 'scott.EMP' as (EMPNO:int, ENAME:chararray,\n"
+        + "    JOB:chararray, MGR:int, HIREDATE:datetime, SAL:bigdecimal,\n"
+        + "    COMM:bigdecimal, DEPTNO:int);\n"
         + "B = GROUP A BY (DEPTNO, MGR, HIREDATE);\n"
         + "C = FOREACH B GENERATE FLATTEN(group) as (DEPTNO, MGR, HIREDATE), "
         + "COUNT(A), 1L as newCol, A.COMM as comArray, SUM(A.SAL) as salSum;\n"

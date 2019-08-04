@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.rel.logical;
 
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreter;
@@ -49,39 +48,36 @@ public class ToLogicalConverter extends RelShuttleImpl {
     this.relBuilder = relBuilder;
   }
 
-  @Override public RelNode visit(TableScan tableScan) {
-    return createLogicalTableScan(tableScan);
-  }
-
-  private RelNode createLogicalTableScan(final TableScan tableScan) {
-    return LogicalTableScan.create(tableScan.getCluster(), tableScan.getTable());
+  @Override public RelNode visit(TableScan scan) {
+    return LogicalTableScan.create(scan.getCluster(), scan.getTable());
   }
 
   @Override public RelNode visit(RelNode relNode) {
     if (relNode instanceof Aggregate) {
       final Aggregate agg = (Aggregate) relNode;
-      relBuilder.push(visit(agg.getInput()));
-      relBuilder.aggregate(
-          relBuilder.groupKey(agg.getGroupSet(), agg.groupSets), agg.getAggCallList());
-      return relBuilder.build();
+      return relBuilder.push(visit(agg.getInput()))
+          .aggregate(
+              relBuilder.groupKey(agg.getGroupSet(), agg.groupSets),
+              agg.getAggCallList())
+          .build();
     }
 
     if (relNode instanceof TableScan) {
-      return createLogicalTableScan((TableScan) relNode);
+      return visit((TableScan) relNode);
     }
 
     if (relNode instanceof Filter) {
       final Filter filter = (Filter) relNode;
-      relBuilder.push(visit(filter.getInput()));
-      relBuilder.filter(filter.getCondition());
-      return relBuilder.build();
+      return relBuilder.push(visit(filter.getInput()))
+          .filter(filter.getCondition())
+          .build();
     }
 
     if (relNode instanceof Project) {
       final Project project = (Project) relNode;
-      relBuilder.push(visit(project.getInput()));
-      relBuilder.project(project.getProjects(), project.getRowType().getFieldNames());
-      return relBuilder.build();
+      return relBuilder.push(visit(project.getInput()))
+          .project(project.getProjects(), project.getRowType().getFieldNames())
+          .build();
     }
 
     if (relNode instanceof Union) {
@@ -89,36 +85,37 @@ public class ToLogicalConverter extends RelShuttleImpl {
       for (RelNode rel : union.getInputs()) {
         relBuilder.push(visit(rel));
       }
-      relBuilder.union(union.all, union.getInputs().size());
-      return relBuilder.build();
+      return relBuilder.union(union.all, union.getInputs().size())
+          .build();
     }
 
     if (relNode instanceof Join) {
       final Join join = (Join) relNode;
-      relBuilder.push(visit(join.getLeft()));
-      relBuilder.push(visit(join.getRight()));
-      relBuilder.join(join.getJoinType(), join.getCondition());
-      return relBuilder.build();
+      return relBuilder.push(visit(join.getLeft()))
+          .push(visit(join.getRight()))
+          .join(join.getJoinType(), join.getCondition())
+          .build();
     }
 
     if (relNode instanceof Correlate) {
       final Correlate corr = (Correlate) relNode;
-      relBuilder.push(visit(corr.getLeft()));
-      relBuilder.push(visit(corr.getRight()));
-      relBuilder.join(corr.getJoinType(), relBuilder.literal(true), corr.getVariablesSet());
-      return relBuilder.build();
+      return relBuilder.push(visit(corr.getLeft()))
+          .push(visit(corr.getRight()))
+          .join(corr.getJoinType(), relBuilder.literal(true),
+              corr.getVariablesSet())
+          .build();
     }
 
     if (relNode instanceof Values) {
       final Values values = (Values) relNode;
-      relBuilder.values(values.tuples, values.getRowType());
-      return relBuilder.build();
+      return relBuilder.values(values.tuples, values.getRowType())
+          .build();
     }
 
     if (relNode instanceof Sort) {
       final Sort sort = (Sort) relNode;
-      return LogicalSort.create(visit(sort.getInput()), sort.getCollation(), sort.offset,
-          sort.fetch);
+      return LogicalSort.create(visit(sort.getInput()), sort.getCollation(),
+          sort.offset, sort.fetch);
     }
 
     if (relNode instanceof Window) {
@@ -133,7 +130,8 @@ public class ToLogicalConverter extends RelShuttleImpl {
       return LogicalCalc.create(visit(calc.getInput()), calc.getProgram());
     }
 
-    if (relNode instanceof EnumerableInterpreter || relNode instanceof JdbcToEnumerableConverter) {
+    if (relNode instanceof EnumerableInterpreter
+        || relNode instanceof JdbcToEnumerableConverter) {
       return visit(((SingleRel) relNode).getInput());
     }
 
@@ -145,7 +143,8 @@ public class ToLogicalConverter extends RelShuttleImpl {
         collation = ((Sort) logicalInput).collation;
         logicalInput = ((Sort) logicalInput).getInput();
       }
-      return LogicalSort.create(logicalInput, collation, limit.offset, limit.fetch);
+      return LogicalSort.create(logicalInput, collation, limit.offset,
+          limit.fetch);
     }
 
     if (relNode instanceof Uncollect) {
@@ -155,9 +154,8 @@ public class ToLogicalConverter extends RelShuttleImpl {
           uncollect.withOrdinality);
     }
 
-
-    throw new AssertionError("Need to implement logical converter for"
-                                 + relNode.getClass().getName());
+    throw new AssertionError("Need to implement logical converter for "
+        + relNode.getClass().getName());
   }
 }
 
