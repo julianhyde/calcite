@@ -393,18 +393,18 @@ public class PigRelOpTest extends PigRelTestBase {
         .assertSql(is(sql));
 
     // TODO fix Calcite execution
+    final String result = ""
+        + "(10,7782,CLARK,MANAGER,7839,1981-06-09,2450.00,null,10)\n"
+        + "(10,7839,KING,PRESIDENT,null,1981-11-17,5000.00,null,10)\n"
+        + "(20,7566,JONES,MANAGER,7839,1981-02-04,2975.00,null,20)\n"
+        + "(20,7788,SCOTT,ANALYST,7566,1987-04-19,3000.00,null,20)\n"
+        + "(20,7902,FORD,ANALYST,7566,1981-12-03,3000.00,null,20)\n"
+        + "(30,7499,ALLEN,SALESMAN,7698,1981-02-20,1600.00,300.00,30)\n"
+        + "(30,7521,WARD,SALESMAN,7698,1981-02-22,1250.00,500.00,30)\n"
+        + "(30,7654,MARTIN,SALESMAN,7698,1981-09-28,1250.00,1400.00,30)\n"
+        + "(30,7698,BLAKE,MANAGER,7839,1981-01-05,2850.00,null,30)\n"
+        + "(30,7844,TURNER,SALESMAN,7698,1981-09-08,1500.00,0.00,30)\n";
     if (false) {
-      final String result = ""
-          + "(10,7782,CLARK,MANAGER,7839,1981-06-09,2450.00,null,10)\n"
-          + "(10,7839,KING,PRESIDENT,null,1981-11-17,5000.00,null,10)\n"
-          + "(20,7566,JONES,MANAGER,7839,1981-02-04,2975.00,null,20)\n"
-          + "(20,7788,SCOTT,ANALYST,7566,1987-04-19,3000.00,null,20)\n"
-          + "(20,7902,FORD,ANALYST,7566,1981-12-03,3000.00,null,20)\n"
-          + "(30,7499,ALLEN,SALESMAN,7698,1981-02-20,1600.00,300.00,30)\n"
-          + "(30,7521,WARD,SALESMAN,7698,1981-02-22,1250.00,500.00,30)\n"
-          + "(30,7654,MARTIN,SALESMAN,7698,1981-09-28,1250.00,1400.00,30)\n"
-          + "(30,7698,BLAKE,MANAGER,7839,1981-01-05,2850.00,null,30)\n"
-          + "(30,7844,TURNER,SALESMAN,7698,1981-09-08,1500.00,0.00,30)\n";
       pig(script).assertResult(is(result));
     }
   }
@@ -461,6 +461,7 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(30,5,TURNER,SALESMAN,30,1500.00,2850.00)\n"
         + "(30,5,ALLEN,SALESMAN,30,1600.00,2850.00)\n"
         + "(30,5,BLAKE,MANAGER,30,2850.00,2850.00)\n";
+
     final String sql = ""
         + "SELECT $cor5.group, $cor5.cnt, $cor5.ENAME, $cor5.JOB, "
         + "$cor5.DEPTNO, $cor5.SAL, $cor5.$f3\n"
@@ -471,8 +472,7 @@ public class PigRelOpTest extends PigRelTestBase {
         + "HIREDATE, SAL, COMM, DEPTNO)) AS A\n"
         + "            FROM scott.EMP\n"
         + "            GROUP BY DEPTNO) AS $cor4,\n"
-        + "          LATERAL (SELECT COLLECT(ROW(ENAME, JOB, DEPTNO, SAL)) "
-        + "AS X\n"
+        + "          LATERAL (SELECT COLLECT(ROW(ENAME, JOB, DEPTNO, SAL)) AS X\n"
         + "            FROM (SELECT ENAME, JOB, DEPTNO, SAL\n"
         + "                  FROM UNNEST (SELECT $cor4.A AS $f0\n"
         + "                        FROM (VALUES  (0)) AS t (ZERO)) "
@@ -867,7 +867,6 @@ public class PigRelOpTest extends PigRelTestBase {
     final String baseScript =
         "A = LOAD 'scott.DEPT' as (DEPTNO:int, DNAME:chararray, LOC:CHARARRAY);\n";
     final String basePlan = "      LogicalTableScan(table=[[scott, DEPT]])\n";
-
     final String script = baseScript + "B = GROUP A BY DEPTNO;\n";
     final String plan = ""
         + "LogicalProject(group=[$0], A=[$1])\n"
@@ -895,8 +894,8 @@ public class PigRelOpTest extends PigRelTestBase {
         + "    LogicalProject($f0=['all'], $f1=[ROW($0, $1, $2)])\n"
         + basePlan;
     final String result1 = ""
-        + "(all,{(10,ACCOUNTING,NEW YORK),(20,RESEARCH,DALLAS)"
-        + ",(30,SALES,CHICAGO),(40,OPERATIONS,BOSTON)})\n";
+        + "(all,{(10,ACCOUNTING,NEW YORK),(20,RESEARCH,DALLAS),"
+        + "(30,SALES,CHICAGO),(40,OPERATIONS,BOSTON)})\n";
     pig(script1).assertResult(is(result1))
         .assertRel(hasTree(plan1));
   }
@@ -1586,6 +1585,7 @@ public class PigRelOpTest extends PigRelTestBase {
         + "(30,{(20,RESEARCH,DALLAS)},{(30,SALES,CHICAGO)},{(30,SALES,CHICAGO)})\n"
         + "(40,{(30,SALES,CHICAGO)},{},{(40,OPERATIONS,BOSTON)})\n"
         + "(50,{(40,OPERATIONS,BOSTON)},{},{})\n";
+
     final String sql = ""
         + "SELECT CASE WHEN t4.DEPTNO IS NOT NULL THEN t4.DEPTNO ELSE t7.DEPTNO END "
         + "AS DEPTNO, t4.A, t4.B, t7.C\n"
