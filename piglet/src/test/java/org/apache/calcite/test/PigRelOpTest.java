@@ -70,7 +70,6 @@ public class PigRelOpTest extends PigRelTestBase {
 
     private Fluent assertRel(String pigAlias, boolean optimized,
         Matcher<RelNode> relMatcher) {
-      converter.setPlanner(pigRelPlanner);
       try {
         final RelNode rel;
         final List<RelNode> relNodes =
@@ -96,7 +95,6 @@ public class PigRelOpTest extends PigRelTestBase {
     }
 
     private Fluent assertSql(Matcher<String> sqlMatcher) {
-      converter.setPlanner(pigRelPlanner);
       try {
         final String sql =
             converter.pigToSql(script, PigRelSqlDialect.DEFAULT).get(0);
@@ -108,7 +106,6 @@ public class PigRelOpTest extends PigRelTestBase {
     }
 
     private Fluent assertResult(Matcher<String> resultMatcher) {
-      converter.setPlanner(calcitePlanner);
       final RelNode rel;
       try {
         rel = converter.pigQuery2Rel(script, false, true, false).get(0);

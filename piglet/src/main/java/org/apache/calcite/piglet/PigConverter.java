@@ -75,10 +75,6 @@ public class PigConverter extends PigServer {
     return builder;
   }
 
-  public void setPlanner(RelOptPlanner planner) {
-    builder.getCluster().setPlanner(planner);
-  }
-
   /**
    * Parses a Pig script and converts it into relational algebra plans,
    * optimizing the result.
@@ -215,9 +211,12 @@ public class PigConverter extends PigServer {
 
   private List<RelNode> optimizePlans(List<RelNode> originalRels,
       List<RelOptRule> rules) {
-    PigRelPlanner planner =
+    final RelOptPlanner planner =
+        true ? originalRels.get(0).getCluster().getPlanner() :
         PigRelPlanner.createPlanner(builder.getCluster().getPlanner(), rules);
-    setPlanner(planner);
+    for (RelOptRule rule : rules) {
+      planner.addRule(rule);
+    }
     final Program program = Programs.of(RuleSets.ofList(planner.getRules()));
     final List<RelNode> optimizedPlans = new ArrayList<>();
     for (RelNode rel : originalRels) {

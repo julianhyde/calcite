@@ -30,7 +30,7 @@ import org.junit.Before;
  */
 public abstract class PigRelTestBase {
   PigConverter converter;
-  PigRelPlanner pigRelPlanner;
+  RelOptPlanner pigRelPlanner;
   RelOptPlanner calcitePlanner;
 
   @Before
@@ -39,7 +39,8 @@ public abstract class PigRelTestBase {
         PigRelBuilder.create(PigRelBuilderTest.config().build());
     converter = new PigConverter(builder);
     calcitePlanner = builder.getCluster().getPlanner();
-    pigRelPlanner = PigRelPlanner.createPlanner(calcitePlanner);
+    pigRelPlanner = true ? calcitePlanner // TODO
+        : PigRelPlanner.createPlanner(calcitePlanner);
     PigUdfWrapper.useUdfWrapper = true;
   }
 }

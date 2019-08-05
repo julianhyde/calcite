@@ -99,8 +99,8 @@ public class PigRelPlanner extends VolcanoPlanner {
    * @param template RelOptPlanner template
    * @param rules RelOptRule rules to use
    */
-  public static PigRelPlanner createPlanner(RelOptPlanner template, List<RelOptRule> rules) {
-    PigRelPlanner planner = new PigRelPlanner(template.getCostFactory(), template.getContext());
+  public static RelOptPlanner createPlanner(RelOptPlanner template, List<RelOptRule> rules) {
+    VolcanoPlanner planner = new VolcanoPlanner(template.getCostFactory(), template.getContext());
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
     for (RelOptRule rule : rules) {
@@ -114,7 +114,7 @@ public class PigRelPlanner extends VolcanoPlanner {
    *
    * @param template RelOptPlanner template
    */
-  public static PigRelPlanner createPlanner(RelOptPlanner template) {
+  public static RelOptPlanner createPlanner(RelOptPlanner template) {
     return createPlanner(template, PIG_RULES);
   }
 
