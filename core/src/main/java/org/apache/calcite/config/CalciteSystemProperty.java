@@ -380,20 +380,21 @@ public final class CalciteSystemProperty<T> {
       // we're in a sandbox
     }
 
-    Properties allProperties = new Properties();
-    // Merge system and saffron properties mapping deprecated saffron namespaces to calcite
+    // Merge system and saffron properties, mapping deprecated saffron
+    // namespaces to calcite
+    final Properties allProperties = new Properties();
     Stream.concat(
         saffronProperties.entrySet().stream(),
-        System.getProperties().entrySet().stream()).
-        forEach(prop -> {
-            String deprecatedKey = (String) prop.getKey();
-            String newKey = deprecatedKey
-                .replace("net.sf.saffron.", "calcite.")
-                .replace("saffron.", "calcite.");
-            if (newKey.startsWith("calcite.")) {
-              allProperties.setProperty(newKey, (String) prop.getValue());
-            }
-          });
+        System.getProperties().entrySet().stream())
+        .forEach(prop -> {
+          String deprecatedKey = (String) prop.getKey();
+          String newKey = deprecatedKey
+              .replace("net.sf.saffron.", "calcite.")
+              .replace("saffron.", "calcite.");
+          if (newKey.startsWith("calcite.")) {
+            allProperties.setProperty(newKey, (String) prop.getValue());
+          }
+        });
     return allProperties;
   }
 
