@@ -312,9 +312,12 @@ public final class CalciteSystemProperty<T> {
       intProperty("calcite.bindable.cache.concurrencyLevel", 1,
           v -> v >= 1 && v <= Integer.MAX_VALUE);
 
-  private static CalciteSystemProperty<Boolean> booleanProperty(String key, boolean defaultValue) {
+  private static CalciteSystemProperty<Boolean> booleanProperty(String key,
+      boolean defaultValue) {
+    // Note that "" -> true (convenient for command-lines flags like '-Dflag')
     return new CalciteSystemProperty<>(key,
-        v -> v == null ? defaultValue : Boolean.parseBoolean(v));
+        v -> v == null ? defaultValue
+            : "".equals(v) || Boolean.parseBoolean(v));
   }
 
   private static CalciteSystemProperty<Integer> intProperty(String key, int defaultValue) {
