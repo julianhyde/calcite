@@ -43,44 +43,6 @@ public class MemoryEnumerable<E> extends AbstractEnumerable<MemoryFactory.Memory
     return new MemoryEnumerator<>(input.enumerator(), history, future);
   }
 
-  /**
-   * Represents a finite integer, i.e., calculation modulo.
-   *
-   * <p>This object is immutable; all operations create a new object.
-   */
-  public static class FiniteInteger {
-    private final int value;
-    private final int modulus;
-
-    public FiniteInteger(int value, int modulus) {
-      this.value = value;
-      this.modulus = modulus;
-    }
-
-    public int get() {
-      return this.value;
-    }
-
-    public FiniteInteger plus(int operand) {
-      if (operand < 0) {
-        return minus(Math.abs(operand));
-      }
-      return new FiniteInteger((value + operand) % modulus, modulus);
-    }
-
-    public FiniteInteger minus(int operand) {
-      assert operand >= 0;
-      int r = value - operand;
-      while (r < 0) {
-        r = r + modulus;
-      }
-      return new FiniteInteger(r, modulus);
-    }
-
-    @Override public String toString() {
-      return value + " (" + modulus + ')';
-    }
-  }
 }
 
 // End MemoryEnumerable.java

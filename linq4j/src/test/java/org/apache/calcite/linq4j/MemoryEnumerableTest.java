@@ -55,16 +55,15 @@ public class MemoryEnumerableTest {
     assertThat(results.get(99).get(1), nullValue());
   }
 
-  @Test public void testFiniteInteger() {
-    final MemoryEnumerable.FiniteInteger finiteInteger =
-        new MemoryEnumerable.FiniteInteger(4, 5);
-    assertThat(finiteInteger.toString(), is("4 (5)"));
+  @Test public void testModularInteger() {
+    final ModularInteger modularInteger = new ModularInteger(4, 5);
+    assertThat(modularInteger.toString(), is("4 mod 5"));
 
-    final MemoryEnumerable.FiniteInteger plus = finiteInteger.plus(1);
-    assertThat(plus.toString(), is("0 (5)"));
+    final ModularInteger plus = modularInteger.plus(1);
+    assertThat(plus.toString(), is("0 mod 5"));
 
-    final MemoryEnumerable.FiniteInteger minus = finiteInteger.plus(-6);
-    assertThat(minus.toString(), is("3 (5)"));
+    final ModularInteger minus = modularInteger.plus(-6);
+    assertThat(minus.toString(), is("3 mod 5"));
   }
 }
 

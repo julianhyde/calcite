@@ -29,14 +29,14 @@ public class MemoryFactory<E> {
   private final int future;
   // Index:      0   1   2   3   4
   // Idea       -2  -1   0  +1  +2
-  MemoryEnumerable.FiniteInteger offset;
+  ModularInteger offset;
   private Object[] values;
 
   public MemoryFactory(int history, int future) {
     this.history = history;
     this.future = future;
     this.values = new Object[history + future + 1];
-    this.offset = new MemoryEnumerable.FiniteInteger(0, history + future + 1);
+    this.offset = new ModularInteger(0, history + future + 1);
   }
 
   public void add(E current) {
@@ -61,11 +61,11 @@ public class MemoryFactory<E> {
   public static class Memory<E> {
     private final int history;
     private final int future;
-    private final MemoryEnumerable.FiniteInteger offset;
+    private final ModularInteger offset;
     private final Object[] values;
 
     public Memory(int history, int future,
-        MemoryEnumerable.FiniteInteger offset, Object[] values) {
+        ModularInteger offset, Object[] values) {
       this.history = history;
       this.future = future;
       this.offset = offset;

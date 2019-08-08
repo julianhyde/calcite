@@ -494,8 +494,14 @@ public class Pair<T1, T2>
 
   /** Unmodifiable list of pairs, backed by a pair of lists.
    *
+   * <p>Though it is unmodifiable, it is mutable: if the contents of one
+   * of the backing lists changes, the contents of this list will appear to
+   * change. The length, however, is fixed on creation.
+   *
    * @param <K> Left-hand type
-   * @param <V> Right-hand type */
+   * @param <V> Right-hand type
+   *
+   * @see MutableZipList */
   private static class ZipList<K, V> extends AbstractList<Pair<K, V>> {
     private final List<K> ks;
     private final List<V> vs;
@@ -533,7 +539,7 @@ public class Pair<T1, T2>
     }
 
     @Override public Pair<K, V> get(int index) {
-      return of(ks.get(index), vs.get(index));
+      return Pair.of(ks.get(index), vs.get(index));
     }
 
     @Override public int size() {
@@ -548,7 +554,7 @@ public class Pair<T1, T2>
     @Override public Pair<K, V> remove(int index) {
       final K bufferedRow = ks.remove(index);
       final V stateSet = vs.remove(index);
-      return of(bufferedRow, stateSet);
+      return Pair.of(bufferedRow, stateSet);
     }
 
     @Override public Pair<K, V> set(int index, Pair<K, V> pair) {
