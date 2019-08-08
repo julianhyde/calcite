@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.linq4j;
 
 import java.util.Arrays;
@@ -50,19 +49,23 @@ public class MemoryFactory<E> {
   }
 
   /**
-   * Class that represents a "Memory Segment".
-   * This means a "window" around a record which can be browsed
-   * using the {@link #get()} or {@link #get(int)} methods.
+   * Contents of a "memory segment", used for implementing the
+   * {@code MATCH_RECOGNIZE} operator.
+   *
+   * <p>Memory maintains a "window" of records preceding and following a record;
+   * the records can be browsed using the {@link #get()} or {@link #get(int)}
+   * methods.
+   *
    * @param <E> Row type
    */
   public static class Memory<E> {
-
     private final int history;
     private final int future;
     private final MemoryEnumerable.FiniteInteger offset;
     private final Object[] values;
 
-    public Memory(int history, int future, MemoryEnumerable.FiniteInteger offset, Object[] values) {
+    public Memory(int history, int future,
+        MemoryEnumerable.FiniteInteger offset, Object[] values) {
       this.history = history;
       this.future = future;
       this.offset = offset;

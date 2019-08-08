@@ -390,8 +390,6 @@ public class SqlTest {
 
   /**
    * Test returns the result of two json file joins.
-   *
-   * @throws SQLException
    */
   @Test public void testJsonJoinOnString() throws SQLException {
     final String sql = "select emps.EMPNO, emps.NAME, depts.deptno from emps\n"
@@ -406,8 +404,6 @@ public class SqlTest {
 
   /**
    * The folder contains both JSON files and CSV files joins.
-   *
-   * @throws SQLException
    */
   @Test public void testJsonWithCsvJoin() throws SQLException {
     final String sql = "select emps.empno,\n"

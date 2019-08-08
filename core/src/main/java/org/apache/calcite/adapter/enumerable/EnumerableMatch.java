@@ -32,6 +32,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Match;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
@@ -48,6 +49,7 @@ import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.runtime.Enumerables;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.BuiltInMethod;
@@ -67,7 +69,6 @@ import java.util.SortedSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.NO_EXPRS;
 
@@ -135,17 +136,12 @@ public class EnumerableMatch extends Match implements EnumerableRel {
                 partitionKeys.asList(),
                 keyPhysType.getFormat()));
 
-    // ...
-    List<Map.Entry<String, RelDataType>> types = measures.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    e -> e.getKey(),
-                    e -> e.getValue().getType()
-            )).entrySet().stream()
-            .collect(Collectors.toList());
+    final RelDataTypeFactory.Builder typeBuilder =
+        implementor.getTypeFactory().builder();
+    measures.forEach((name, value) -> typeBuilder.add(name, value.getType()));
 
-    final PhysType emitType = PhysTypeImpl.of(implementor.getTypeFactory(),
-            implementor.getTypeFactory().createStructType(types),
+    final PhysType emitType =
+        PhysTypeImpl.of(implementor.getTypeFactory(), typeBuilder.build(),
             result.format);
 
     final Expression matcher_ = implementMatcher(implementor, physType, builder, row_);
@@ -213,15 +209,12 @@ public class EnumerableMatch extends Match implements EnumerableRel {
     // builder2.add(Expressions.declare(Modifier.PUBLIC, result__, physType.record(arguments)));
     builder2.add(
         Expressions.statement(
-            Expressions.call(consumer_, BuiltInMethod.CONSUMER_ACCEPT.method, result_)
-        ));
+            Expressions.call(consumer_, BuiltInMethod.CONSUMER_ACCEPT.method,
+                result_)));
 
     final BlockBuilder builder = new BlockBuilder();
 
-    builder.add(
-        Expressions.forEach(row_, rows_,
-                    builder2.toBlock()
-    ));
+    builder.add(Expressions.forEach(row_, rows_, builder2.toBlock()));
 
     return Expressions.new_(
         Types.of(Enumerables.Emitter.class), NO_EXPRS,
@@ -233,12 +226,11 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   }
 
   private Expression implementMatcher(EnumerableRelImplementor implementor, PhysType physType,
-                                      BlockBuilder builder, ParameterExpression row_) {
+      BlockBuilder builder, ParameterExpression row_) {
     final Expression patternBuilder_ = builder.append("patternBuilder",
         Expressions.call(BuiltInMethod.PATTERN_BUILDER.method));
     final Expression automaton_ = builder.append("automaton",
-        Expressions.call(
-            implementPattern(patternBuilder_, pattern),
+        Expressions.call(implementPattern(patternBuilder_, pattern),
             BuiltInMethod.PATTERN_TO_AUTOMATON.method));
     Expression matcherBuilder_ = builder.append("matcherBuilder",
         Expressions.call(BuiltInMethod.MATCHER_BUILDER.method, automaton_));
@@ -246,7 +238,6 @@ public class EnumerableMatch extends Match implements EnumerableRel {
 
 
     // Wrap a MemoryEnumerable around
-
 
     for (Map.Entry<String, RexNode> entry : patternDefinitions.entrySet()) {
       // Translate REX to Expressions
@@ -256,20 +247,20 @@ public class EnumerableMatch extends Match implements EnumerableRel {
 
       rexProgramBuilder.addCondition(entry.getValue());
 
-      final RexToLixTranslator.InputGetter inputGetter1 = new PrevInputGetter(row_, physType);
-
+      final RexToLixTranslator.InputGetter inputGetter1 =
+          new PrevInputGetter(row_, physType);
 
       final Expression condition = RexToLixTranslator
           .translateCondition(rexProgramBuilder.getProgram(),
-            (JavaTypeFactory) getCluster().getTypeFactory(),
-            builder2,
-            inputGetter1,
-            implementor.allCorrelateVariables,
-            implementor.getConformance());
-
+              (JavaTypeFactory) getCluster().getTypeFactory(),
+              builder2,
+              inputGetter1,
+              implementor.allCorrelateVariables,
+              implementor.getConformance());
 
       builder2.add(Expressions.return_(null, condition));
-      final Expression predicate_ = implementPredicate(physType, row_, builder2.toBlock());
+      final Expression predicate_ =
+          implementPredicate(physType, row_, builder2.toBlock());
 
       matcherBuilder_ = Expressions.call(matcherBuilder_,
           BuiltInMethod.MATCHER_BUILDER_ADD.method,
@@ -282,21 +273,16 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   }
 
   /** Generates code for a predicate. */
-  private Expression implementPredicate(PhysType physType, ParameterExpression rows_,
-                                        BlockStatement body) {
+  private Expression implementPredicate(PhysType physType,
+      ParameterExpression rows_, BlockStatement body) {
     final List<MemberDeclaration> memberDeclarations = new ArrayList<>();
     ParameterExpression row_ = Expressions.parameter(
         Types.of(MemoryFactory.Memory.class,
             physType.getJavaRowType()), "row_");
-    try {
-      Expressions.assign(row_,
-          Expressions.call(rows_, MemoryFactory.Memory.class.getMethod("get")));
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException();
-    }
+    Expressions.assign(row_,
+        Expressions.call(rows_, BuiltInMethod.MEMORY_GET0.method));
 
     // Implement the Predicate here based on the pattern definition
-
 
     // Add a predicate method:
     //
@@ -367,10 +353,13 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   /**
    * Visitor that finds out how much "history" we need in the past and future.
    */
-  private static class MaxHistoryFutureVisitor implements RexVisitor<Integer> {
+  private static class MaxHistoryFutureVisitor extends RexVisitorImpl<Void> {
+    private int history;
+    private int future;
 
-    private int history = 0;
-    private int future = 0;
+    protected MaxHistoryFutureVisitor() {
+      super(true);
+    }
 
     public int getHistory() {
       return history;
@@ -380,76 +369,39 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       return future;
     }
 
-    @Override public Integer visitInputRef(RexInputRef inputRef) {
-      return null;
-    }
-
-    @Override public Integer visitLocalRef(RexLocalRef localRef) {
-      return null;
-    }
-
-    @Override public Integer visitLiteral(RexLiteral literal) {
-      return null;
-    }
-
-    @Override public Integer visitCall(RexCall call) {
+    @Override public Void visitCall(RexCall call) {
       call.operands.forEach(o -> o.accept(this));
-      if (call.op == SqlStdOperatorTable.PREV) {
-        final int prev = (int) ((BigDecimal) ((RexLiteral) call.getOperands()
-            .get(1)).getValue()).longValue();
+      final RexLiteral operand;
+      switch (call.op.kind) {
+      case PREV:
+        operand = (RexLiteral) call.getOperands().get(1);
+        final int prev = operand.getValueAs(Integer.class);
         this.history = Math.max(this.history, prev);
-      } else if (call.op == SqlStdOperatorTable.NEXT) {
-        final int next = (int) ((BigDecimal) ((RexLiteral) call.getOperands()
-            .get(1)).getValue()).longValue();
+        break;
+      case NEXT:
+        operand = (RexLiteral) call.getOperands().get(1);
+        final int next = operand.getValueAs(Integer.class);
         this.future = Math.max(this.future, next);
+        break;
       }
       return null;
     }
 
-    @Override public Integer visitOver(RexOver over) {
-      return null;
-    }
-
-    @Override public Integer visitCorrelVariable(RexCorrelVariable correlVariable) {
-      return null;
-    }
-
-    @Override public Integer visitDynamicParam(RexDynamicParam dynamicParam) {
-      return null;
-    }
-
-    @Override public Integer visitRangeRef(RexRangeRef rangeRef) {
-      return null;
-    }
-
-    @Override public Integer visitFieldAccess(RexFieldAccess fieldAccess) {
-      return null;
-    }
-
-    @Override public Integer visitSubQuery(RexSubQuery subQuery) {
-      return null;
-    }
-
-    @Override public Integer visitTableInputRef(RexTableInputRef fieldRef) {
-      return null;
-    }
-
-    @Override public Integer visitPatternFieldRef(RexPatternFieldRef fieldRef) {
+    @Override public Void visitSubQuery(RexSubQuery subQuery) {
       return null;
     }
   }
 
   /**
-   * A special Getter which "interchanges" the PREV and the field call.
+   * A special Getter that "interchanges" the PREV and the field call.
    */
-  public static class PrevInputGetter implements RexToLixTranslator.InputGetter {
-
+  static class PrevInputGetter implements RexToLixTranslator.InputGetter {
     private Expression offset;
     private final ParameterExpression row;
     private final Function<Expression, RexToLixTranslator.InputGetter> generator;
     private final PhysType physType;
 
-    public PrevInputGetter(ParameterExpression row, PhysType physType) {
+    PrevInputGetter(ParameterExpression row, PhysType physType) {
       this.row = row;
       generator = e -> new RexToLixTranslator.InputGetterImpl(
           Collections.singletonList(
@@ -457,43 +409,32 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       this.physType = physType;
     }
 
-    public void setOffset(Expression offset) {
+    void setOffset(Expression offset) {
       this.offset = offset;
     }
 
-    @Override public Expression field(BlockBuilder list, int index, Type storageType) {
-      try {
-        final ParameterExpression row = Expressions.parameter(physType.getJavaRowType());
-        final ParameterExpression tmp = Expressions.parameter(Object.class);
-        list.add(
-            Expressions.declare(0, tmp,
-                Expressions.call(this.row,
-                    MemoryFactory.Memory.class.getMethod("get", int.class),
-                    offset)
-            ));
-        list.add(
-            Expressions.declare(0, row,
-                Expressions.convert_(tmp, physType.getJavaRowType())
-            ));
+    @Override public Expression field(BlockBuilder list, int index,
+        Type storageType) {
+      final ParameterExpression row =
+          Expressions.parameter(physType.getJavaRowType());
+      final ParameterExpression tmp =
+          Expressions.parameter(Object.class);
+      list.add(
+          Expressions.declare(0, tmp,
+              Expressions.call(this.row, BuiltInMethod.MEMORY_GET1.method,
+                  offset)));
+      list.add(
+          Expressions.declare(0, row,
+              Expressions.convert_(tmp, physType.getJavaRowType())));
 
-        // Add return statement if here is a null!
-        list.add(
-                Expressions.ifThen(
-                        Expressions.equal(tmp, Expressions.constant(null)),
-                        Expressions.return_(null, Expressions.constant(false))
-                )
-        );
+      // Add return statement if here is a null!
+      list.add(
+          Expressions.ifThen(
+              Expressions.equal(tmp, Expressions.constant(null)),
+              Expressions.return_(null, Expressions.constant(false))));
 
-//        list.add(
-//            Expressions.assign(row,
-//                ));
-        return generator.apply(row).field(list, index, storageType);
-      } catch (NoSuchMethodException e) {
-        e.printStackTrace();
-        return null;
-      }
+      return generator.apply(row).field(list, index, storageType);
     }
-
   }
 }
 

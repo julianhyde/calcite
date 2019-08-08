@@ -1218,29 +1218,25 @@ public class ExpressionTest {
         Expressions.toString(builder.toBlock()));
   }
 
-  @Test
-  public void testForEach() {
+  @Test public void testForEach() {
     final BlockBuilder builder = new BlockBuilder();
     final ParameterExpression i_ = Expressions.parameter(int.class, "i");
     final ParameterExpression list_ = Expressions.parameter(List.class, "list");
     builder.add(
-            Expressions.forEach(i_, list_,
-                    Expressions.ifThen(
-                            Expressions.lessThan(
-                                    Expressions.constant(1),
-                                    Expressions.constant(2)),
-                            Expressions.break_(null))
-            )
-    );
-    assertEquals(
-        "{\n"
+        Expressions.forEach(i_, list_,
+            Expressions.ifThen(
+                Expressions.lessThan(
+                    Expressions.constant(1),
+                    Expressions.constant(2)),
+                Expressions.break_(null))));
+    assertThat(Expressions.toString(builder.toBlock()),
+        is("{\n"
             + "  for (int i : list) {\n"
             + "    if (1 < 2) {\n"
             + "      break;\n"
             + "    }\n"
             + "  }\n"
-            + "}\n",
-            Expressions.toString(builder.toBlock()));
+            + "}\n"));
   }
 
   @Test public void testEmptyListLiteral() throws Exception {

@@ -26,9 +26,7 @@ public class ForEachStatement extends Statement {
   public final Expression iterable;
   public final Statement body;
 
-  /**
-   * Cache the hash code for the expression
-   */
+  /** Cache the hash code for the expression */
   private int hash;
 
   public ForEachStatement(ParameterExpression parameter, Expression iterable,

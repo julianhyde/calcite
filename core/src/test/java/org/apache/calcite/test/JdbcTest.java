@@ -6877,36 +6877,36 @@ public class JdbcTest {
 
   @Test public void testMatchSimple() {
     final String sql = "select *\n"
-            + "from \"hr\".\"emps\" match_recognize (\n"
-            + "  order by \"empid\" desc\n"
-            + "  measures up.\"commission\" as c,\n"
-            + "    up.\"empid\" as empid,\n"
-            + "    2 as two\n"
-            + "  pattern (up s)\n"
-            + "  define up as up.\"empid\" = 100)";
+        + "from \"hr\".\"emps\" match_recognize (\n"
+        + "  order by \"empid\" desc\n"
+        + "  measures up.\"commission\" as c,\n"
+        + "    up.\"empid\" as empid,\n"
+        + "    2 as two\n"
+        + "  pattern (up s)\n"
+        + "  define up as up.\"empid\" = 100)";
     final String convert = ""
-            + "LogicalProject(C=[$0], EMPID=[$1], TWO=[$2])\n"
-            + "  LogicalMatch(partition=[[]], order=[[0 DESC]], "
-            + "outputFields=[[C, EMPID, TWO]], allRows=[false], "
-            + "after=[FLAG(SKIP TO NEXT ROW)], pattern=[('UP', 'S')], "
-            + "isStrictStarts=[false], isStrictEnds=[false], subsets=[[]], "
-            + "patternDefinitions=[[=(CAST(PREV(UP.$0, 0)):INTEGER NOT NULL, 100)]], "
-            + "inputFields=[[empid, deptno, name, salary, commission]])\n"
-            + "    EnumerableTableScan(table=[[hr, emps]])\n";
+        + "LogicalProject(C=[$0], EMPID=[$1], TWO=[$2])\n"
+        + "  LogicalMatch(partition=[[]], order=[[0 DESC]], "
+        + "outputFields=[[C, EMPID, TWO]], allRows=[false], "
+        + "after=[FLAG(SKIP TO NEXT ROW)], pattern=[('UP', 'S')], "
+        + "isStrictStarts=[false], isStrictEnds=[false], subsets=[[]], "
+        + "patternDefinitions=[[=(CAST(PREV(UP.$0, 0)):INTEGER NOT NULL, 100)]], "
+        + "inputFields=[[empid, deptno, name, salary, commission]])\n"
+        + "    EnumerableTableScan(table=[[hr, emps]])\n";
     final String plan = "PLAN="
-            + "EnumerableMatch(partition=[[]], order=[[0 DESC]], "
-            + "outputFields=[[C, EMPID, TWO]], allRows=[false], "
-            + "after=[FLAG(SKIP TO NEXT ROW)], pattern=[('UP', 'S')], "
-            + "isStrictStarts=[false], isStrictEnds=[false], subsets=[[]], "
-            + "patternDefinitions=[[=(CAST(PREV(UP.$0, 0)):INTEGER NOT NULL, 100)]], "
-            + "inputFields=[[empid, deptno, name, salary, commission]])\n"
-            + "  EnumerableTableScan(table=[[hr, emps]])";
+        + "EnumerableMatch(partition=[[]], order=[[0 DESC]], "
+        + "outputFields=[[C, EMPID, TWO]], allRows=[false], "
+        + "after=[FLAG(SKIP TO NEXT ROW)], pattern=[('UP', 'S')], "
+        + "isStrictStarts=[false], isStrictEnds=[false], subsets=[[]], "
+        + "patternDefinitions=[[=(CAST(PREV(UP.$0, 0)):INTEGER NOT NULL, 100)]], "
+        + "inputFields=[[empid, deptno, name, salary, commission]])\n"
+        + "  EnumerableTableScan(table=[[hr, emps]])";
     CalciteAssert.that()
-            .with(CalciteAssert.Config.REGULAR)
-            .query(sql)
-            .convertContains(convert)
-            .explainContains(plan)
-            .returns("C=1000; EMPID=100; TWO=2\nC=500; EMPID=200; TWO=2\n");
+        .with(CalciteAssert.Config.REGULAR)
+        .query(sql)
+        .convertContains(convert)
+        .explainContains(plan)
+        .returns("C=1000; EMPID=100; TWO=2\nC=500; EMPID=200; TWO=2\n");
   }
 
   @Test public void testMatch() {

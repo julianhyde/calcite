@@ -14,23 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.linq4j;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Enumerator that keeps some recent and some "future" values.
+ *
  * @param <E> Row value
  */
 public class MemoryEnumerator<E> implements Enumerator<MemoryFactory.Memory<E>> {
-
   private final Enumerator<E> enumerator;
   private final MemoryFactory<E> memoryFactory;
   private final AtomicInteger prevCounter;
   private final AtomicInteger postCounter;
 
-  public MemoryEnumerator(Enumerator<E> enumerator, int history, int future) {
+  /**
+   * Creates a MemoryEnumerator.
+   *
+   * <p>Use factory method {@link MemoryEnumerable#enumerator()}.
+   *
+   * @param enumerator The Enumerator that memory should be "wrapped" around
+   * @param history Number of present steps to remember
+   * @param future Number of future steps to "remember"
+   */
+  MemoryEnumerator(Enumerator<E> enumerator, int history, int future) {
     this.enumerator = enumerator;
     this.memoryFactory = new MemoryFactory<>(history, future);
     this.prevCounter = new AtomicInteger(future);
@@ -38,7 +46,7 @@ public class MemoryEnumerator<E> implements Enumerator<MemoryFactory.Memory<E>> 
   }
 
   @Override public MemoryFactory.Memory<E> current() {
-    return this.memoryFactory.create(); //enumerator.current();
+    return memoryFactory.create();
   }
 
   @Override public boolean moveNext() {

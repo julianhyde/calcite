@@ -37,8 +37,8 @@ public class DFATest {
 
     assertThat(da.startState,
         equalTo(
-            new DFA.MultiState(new Automaton.State(0), new Automaton.State(2)
-        )));
+            new DFA.MultiState(new Automaton.State(0),
+                new Automaton.State(2))));
 
     // Result should have three states
     // 0 -A-> 1 -A-> 2

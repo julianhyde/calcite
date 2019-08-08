@@ -36,6 +36,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.ExtendedEnumerable;
 import org.apache.calcite.linq4j.JoinType;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.MemoryFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.EqualityComparer;
@@ -245,6 +246,8 @@ public enum BuiltInMethod {
   AS_ENUMERABLE2(Linq4j.class, "asEnumerable", Iterable.class),
   ENUMERABLE_TO_LIST(ExtendedEnumerable.class, "toList"),
   AS_LIST(Primitive.class, "asList", Object.class),
+  MEMORY_GET0(MemoryFactory.Memory.class, "get"),
+  MEMORY_GET1(MemoryFactory.Memory.class, "get", int.class),
   ENUMERATOR_CURRENT(Enumerator.class, "current"),
   ENUMERATOR_MOVE_NEXT(Enumerator.class, "moveNext"),
   ENUMERATOR_CLOSE(Enumerator.class, "close"),

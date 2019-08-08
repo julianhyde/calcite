@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.linq4j;
 
 import org.junit.Test;
@@ -24,16 +23,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 /** Tests for {@link org.apache.calcite.linq4j.MemoryEnumerable} */
 public class MemoryEnumerableTest {
 
-  @Test
-  public void testHistoryAndFuture() {
-    final Enumerable<Integer> input = Linq4j.asEnumerable(IntStream.range(0, 100)
-        .boxed().collect(Collectors.toList()));
+  @Test public void testHistoryAndFuture() {
+    final Enumerable<Integer> input =
+        Linq4j.asEnumerable(IntStream.range(0, 100)
+            .boxed().collect(Collectors.toList()));
 
     final MemoryEnumerable<Integer> integers = new MemoryEnumerable<>(input, 5, 1);
     final Enumerator<MemoryFactory.Memory<Integer>> enumerator = integers.enumerator();
@@ -44,29 +44,28 @@ public class MemoryEnumerableTest {
       results.add(current);
     }
 
-    assertEquals(100, results.size());
+    assertThat(results.size(), is(100));
     // First entry
-    assertEquals(0, (int) results.get(0).get());
-    assertEquals(1, (int) results.get(0).get(1));
-    assertNull(results.get(0).get(-2));
+    assertThat((int) results.get(0).get(), is(0));
+    assertThat((int) results.get(0).get(1), is(1));
+    assertThat(results.get(0).get(-2), nullValue());
     // Last entry
-    assertEquals(99, (int) results.get(99).get());
-    assertEquals(97, (int) results.get(99).get(-2));
-    assertNull(results.get(99).get(1));
+    assertThat((int) results.get(99).get(), is(99));
+    assertThat((int) results.get(99).get(-2), is(97));
+    assertThat(results.get(99).get(1), nullValue());
   }
 
-  @Test
-  public void testFiniteInteger() {
-    final MemoryEnumerable.FiniteInteger finiteInteger = new MemoryEnumerable.FiniteInteger(4, 5);
-    assertEquals("4 (5)", finiteInteger.toString());
+  @Test public void testFiniteInteger() {
+    final MemoryEnumerable.FiniteInteger finiteInteger =
+        new MemoryEnumerable.FiniteInteger(4, 5);
+    assertThat(finiteInteger.toString(), is("4 (5)"));
 
     final MemoryEnumerable.FiniteInteger plus = finiteInteger.plus(1);
-    assertEquals("0 (5)", plus.toString());
+    assertThat(plus.toString(), is("0 (5)"));
 
     final MemoryEnumerable.FiniteInteger minus = finiteInteger.plus(-6);
-    assertEquals("3 (5)", minus.toString());
+    assertThat(minus.toString(), is("3 (5)"));
   }
-
 }
 
 // End MemoryEnumerableTest.java
