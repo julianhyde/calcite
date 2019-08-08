@@ -23,13 +23,14 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.Objects;
 
-/** A finite-state automaton (Nondeterministic).
+/** A nondeterministic finite-state automaton (NFA).
  *
  * <p>It is used to implement the {@link Match}
  * relational expression (for the {@code MATCH_RECOGNIZE} clause in SQL).
  *
  * @see Pattern
  * @see AutomatonBuilder
+ * @see DeterministicAutomaton
  */
 public class Automaton {
   final State startState;

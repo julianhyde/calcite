@@ -52,13 +52,13 @@ public class Matcher<E> {
   private final ImmutableList<Tuple<Integer>> emptyStateSet = ImmutableList.of();
   private final ImmutableBitSet startSet;
   private final List<Integer> rowSymbols = new ArrayList<>();
-  private final DFA dfa;
+  private final DeterministicAutomaton dfa;
 
   /**
    * Creates a Matcher; use {@link #builder}.
    */
   private Matcher(Automaton automaton,
-                  ImmutableMap<String, Predicate<MemoryFactory.Memory<E>>> predicates) {
+      ImmutableMap<String, Predicate<MemoryFactory.Memory<E>>> predicates) {
     this.automaton = Objects.requireNonNull(automaton);
     this.predicates = Objects.requireNonNull(predicates);
     final ImmutableBitSet.Builder startSetBuilder =
@@ -67,7 +67,7 @@ public class Matcher<E> {
     automaton.epsilonSuccessors(automaton.startState.id, startSetBuilder);
     startSet = startSetBuilder.build();
     // Build the DFA
-    dfa = new DFA(automaton);
+    dfa = new DeterministicAutomaton(automaton);
   }
 
   public static <E> Builder<E> builder(Automaton automaton) {
@@ -100,7 +100,7 @@ public class Matcher<E> {
    * This method ignores the symbols that caused a transition.
    */
   protected void matchOne(MemoryFactory.Memory<E> rows, PartitionState<E> partitionState,
-                          Consumer<List<E>> resultMatches) {
+      Consumer<List<E>> resultMatches) {
     List<PartialMatch<E>> matches = matchOneWithSymbols(rows, partitionState);
     for (PartialMatch<E> pm : matches) {
       resultMatches.accept(pm.rows);
@@ -108,37 +108,39 @@ public class Matcher<E> {
   }
 
   protected List<PartialMatch<E>> matchOneWithSymbols(MemoryFactory.Memory<E> rows,
-                                                      PartitionState<E> partitionState) {
+      PartitionState<E> partitionState) {
     final HashSet<PartialMatch<E>> newMatches = new HashSet<>();
     for (Map.Entry<String, Predicate<MemoryFactory.Memory<E>>> predicate : predicates.entrySet()) {
       for (PartialMatch<E> pm : partitionState.getPartialMatches()) {
         // Remove this match
         if (predicate.getValue().test(rows)) {
           // Check if we have transitions from here
-          final List<DFA.Transition> transitions = dfa.getTransitions().stream()
-              .filter(t -> predicate.getKey().equals(t.getSymbol()))
-              .filter(t -> pm.currentState.equals(t.getFromState()))
-              .collect(Collectors.toList());
+          final List<DeterministicAutomaton.Transition> transitions =
+              dfa.getTransitions().stream()
+                  .filter(t -> predicate.getKey().equals(t.symbol))
+                  .filter(t -> pm.currentState.equals(t.fromState))
+                  .collect(Collectors.toList());
 
-          for (DFA.Transition transition : transitions) {
+          for (DeterministicAutomaton.Transition transition : transitions) {
             // System.out.println("Append new transition to ");
-            final PartialMatch<E> newMatch = pm.append(transition.getSymbol(), rows.get(),
-                transition.getToState());
+            final PartialMatch<E> newMatch = pm.append(transition.symbol,
+                rows.get(), transition.toState);
             newMatches.add(newMatch);
           }
         }
       }
       // Check if a new Match starts here
       if (predicate.getValue().test(rows)) {
-        final List<DFA.Transition> transitions = dfa.getTransitions().stream()
-            .filter(t -> predicate.getKey().equals(t.getSymbol()))
-            .filter(t -> dfa.startState.equals(t.getFromState()))
-            .collect(Collectors.toList());
+        final List<DeterministicAutomaton.Transition> transitions =
+            dfa.getTransitions().stream()
+                .filter(t -> predicate.getKey().equals(t.symbol))
+                .filter(t -> dfa.startState.equals(t.fromState))
+                .collect(Collectors.toList());
 
-        for (DFA.Transition transition : transitions) {
+        for (DeterministicAutomaton.Transition transition : transitions) {
           final PartialMatch<E> newMatch = new PartialMatch<>(-1L,
-              ImmutableList.of(transition.getSymbol()), ImmutableList.of(rows.get()),
-              transition.getToState());
+              ImmutableList.of(transition.symbol), ImmutableList.of(rows.get()),
+              transition.toState);
           newMatches.add(newMatch);
         }
       }
@@ -169,7 +171,6 @@ public class Matcher<E> {
    * @param <E> Row type
    */
   static class PartitionState<E> {
-
     private final Set<PartialMatch<E>> partialMatches = new HashSet<>();
     private final MemoryFactory<E> memoryFactory;
 
@@ -203,49 +204,34 @@ public class Matcher<E> {
   }
 
   /**
-   * Partial Match of the NFA.
-   * This class is Immutable and the {@link #copy()} and
-   * {@link #append(String, Object, DFA.MultiState)}
-   * methods generate new Instances.
+   * Partial match of the NFA.
+   *
+   * <p>This class is immutable; the {@link #copy()} and
+   * {@link #append(String, Object, DeterministicAutomaton.MultiState)}
+   * methods generate new instances.
    *
    * @param <E> Row type
    */
   static class PartialMatch<E> {
+    final long startRow;
+    final ImmutableList<String> symbols;
+    final ImmutableList<E> rows;
+    final DeterministicAutomaton.MultiState currentState;
 
-    private final long startRow;
-    private final ImmutableList<String> symbols;
-    private final ImmutableList<E> rows;
-    private final DFA.MultiState currentState;
-
-    PartialMatch(long startRow, ImmutableList<String> symbols, ImmutableList<E> rows,
-                        DFA.MultiState currentState) {
+    PartialMatch(long startRow, ImmutableList<String> symbols,
+        ImmutableList<E> rows, DeterministicAutomaton.MultiState currentState) {
       this.startRow = startRow;
       this.symbols = symbols;
       this.rows = rows;
       this.currentState = currentState;
     }
 
-    public long getStartRow() {
-      return startRow;
-    }
-
-    public ImmutableList<String> getSymbols() {
-      return symbols;
-    }
-
-    public ImmutableList<E> getRows() {
-      return this.rows;
-    }
-
-    public DFA.MultiState getCurrentState() {
-      return currentState;
-    }
-
     public PartialMatch<E> copy() {
       return new PartialMatch<>(startRow, symbols, rows, currentState);
     }
 
-    public PartialMatch<E> append(String symbol, E row, DFA.MultiState toState) {
+    public PartialMatch<E> append(String symbol, E row,
+        DeterministicAutomaton.MultiState toState) {
       ImmutableList<String> symbols = ImmutableList.<String>builder()
           .addAll(this.symbols)
           .add(symbol)
@@ -258,17 +244,12 @@ public class Matcher<E> {
     }
 
     @Override public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      PartialMatch<?> that = (PartialMatch<?>) o;
-      return startRow == that.startRow
-          && Objects.equals(symbols, that.symbols)
-          && Objects.equals(rows, that.rows)
-          && Objects.equals(currentState, that.currentState);
+      return o == this
+          || o instanceof PartialMatch
+          && startRow == ((PartialMatch) o).startRow
+          && Objects.equals(symbols, ((PartialMatch) o).symbols)
+          && Objects.equals(rows, ((PartialMatch) o).rows)
+          && Objects.equals(currentState, ((PartialMatch) o).currentState);
     }
 
     @Override public int hashCode() {
@@ -311,7 +292,7 @@ public class Matcher<E> {
      * Associates a predicate with a symbol.
      */
     public Builder<E> add(String symbolName,
-                          Predicate<MemoryFactory.Memory<E>> predicate) {
+        Predicate<MemoryFactory.Memory<E>> predicate) {
       symbolPredicates.put(symbolName, predicate);
       return this;
     }

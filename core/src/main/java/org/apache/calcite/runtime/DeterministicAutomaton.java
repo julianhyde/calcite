@@ -26,31 +26,34 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A deterministic finite automaton (DFA) which can be constructed from the
- * nondeterministic {@link Automaton}.
+ * A deterministic finite automaton (DFA).
+ *
+ * <p>It is constructed from a
+ * {@link Automaton nondeterministic finite state automaton (NFA)}.
  */
-public class DFA {
-
+public class DeterministicAutomaton {
   final MultiState startState;
   private final Automaton automaton;
   private final ImmutableSet<MultiState> endStates;
   private final ImmutableList<Transition> transitions;
 
-  /** Construct the DFA from epsilon-NFA */
-  DFA(Automaton automaton) {
-    this.automaton = automaton;
+  /** Constructs the DFA from epsilon-NFA. */
+  DeterministicAutomaton(Automaton automaton) {
+    this.automaton = Objects.requireNonNull(automaton);
     // Calculate eps closure of start state
-    final HashSet<MultiState> traversedStates = new HashSet<>();
+    final Set<MultiState> traversedStates = new HashSet<>();
     // Add transitions
     this.startState = epsilonClosure(automaton.startState);
 
-    final ImmutableList.Builder<Transition> transitionsBuilder = ImmutableList.builder();
+    final ImmutableList.Builder<Transition> transitionsBuilder =
+        ImmutableList.builder();
     traverse(startState, transitionsBuilder, traversedStates);
     // Store transitions
     transitions = transitionsBuilder.build();
 
     // Calculate final States
-    final ImmutableSet.Builder<MultiState> endStateBuilder = ImmutableSet.builder();
+    final ImmutableSet.Builder<MultiState> endStateBuilder =
+        ImmutableSet.builder();
     traversedStates.stream()
         .filter(ms -> ms.contains(automaton.endState))
         .forEach(endStateBuilder::add);
@@ -69,10 +72,11 @@ public class DFA {
     return transitions;
   }
 
-  private void traverse(MultiState start, ImmutableList.Builder<Transition> transitionsBuilder,
-                        HashSet<MultiState> traversedStates) {
+  private void traverse(MultiState start,
+      ImmutableList.Builder<Transition> transitionsBuilder,
+      Set<MultiState> traversedStates) {
     traversedStates.add(start);
-    final HashSet<MultiState> newStates = new HashSet<>();
+    final Set<MultiState> newStates = new HashSet<>();
     for (int symbol = 0; symbol < automaton.symbolNames.size(); symbol++) {
       final Optional<MultiState> next = addTransitions(start, symbol, transitionsBuilder);
       next.ifPresent(newStates::add);
@@ -84,7 +88,7 @@ public class DFA {
   }
 
   private Optional<MultiState> addTransitions(MultiState start, int symbol,
-                                          ImmutableList.Builder<Transition> transitionsBuilder) {
+      ImmutableList.Builder<Transition> transitionsBuilder) {
     final ImmutableSet.Builder<Automaton.State> builder = ImmutableSet.builder();
     for (Automaton.SymbolTransition transition : this.automaton.getTransitions()) {
       // Consider only transitions for the given symbol
@@ -111,17 +115,18 @@ public class DFA {
   }
 
   private MultiState epsilonClosure(Automaton.State state) {
-    final HashSet<Automaton.State> closure = new HashSet<>();
+    final Set<Automaton.State> closure = new HashSet<>();
     finder(state, closure);
     return new MultiState(ImmutableSet.copyOf(closure));
   }
 
   private void finder(Automaton.State state, Set<Automaton.State> closure) {
     closure.add(state);
-    final Set<Automaton.State> newStates = automaton.getEpsilonTransitions().stream()
-        .filter(t -> t.fromState.equals(state))
-        .map(t -> t.toState)
-        .collect(Collectors.toSet());
+    final Set<Automaton.State> newStates =
+        automaton.getEpsilonTransitions().stream()
+            .filter(t -> t.fromState.equals(state))
+            .map(t -> t.toState)
+            .collect(Collectors.toSet());
     newStates.removeAll(closure);
     // Recursively call all "new" states
     for (Automaton.State s : newStates) {
@@ -129,51 +134,35 @@ public class DFA {
     }
   }
 
-  /** Class reperesenting a Transition */
+  /** Transition between states. */
   static class Transition {
-    private MultiState fromState;
-    private MultiState toState;
-    private int symbolId;
-    private String symbol;
+    final MultiState fromState;
+    final MultiState toState;
+    final int symbolId;
+    final String symbol;
 
-    Transition(MultiState fromState, MultiState toState, int symbolId, String symbol) {
-      this.fromState = fromState;
-      this.toState = toState;
+    Transition(MultiState fromState, MultiState toState, int symbolId,
+        String symbol) {
+      this.fromState = Objects.requireNonNull(fromState);
+      this.toState = Objects.requireNonNull(toState);
       this.symbolId = symbolId;
-      this.symbol = symbol;
-    }
-
-    public MultiState getFromState() {
-      return fromState;
-    }
-
-    public MultiState getToState() {
-      return toState;
-    }
-
-    public int getSymbolId() {
-      return symbolId;
-    }
-
-    public String getSymbol() {
-      return symbol;
+      this.symbol = Objects.requireNonNull(symbol);
     }
   }
 
   /**
-   * Class representing a DFA State, i.e., a state consisting of (possibly) multiple states
+   * A state of the deterministic finite automaton. Consists of a set of states
    * from the underlying eps-NFA.
    */
   static class MultiState {
-
-    private ImmutableSet<Automaton.State> states;
+    private final ImmutableSet<Automaton.State> states;
 
     MultiState(Automaton.State... states) {
-      this.states = ImmutableSet.copyOf(states);
+      this(ImmutableSet.copyOf(states));
     }
 
     MultiState(ImmutableSet<Automaton.State> states) {
-      this.states = states;
+      this.states = Objects.requireNonNull(states);
     }
 
     public boolean contains(Automaton.State state) {
@@ -181,14 +170,9 @@ public class DFA {
     }
 
     @Override public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      MultiState that = (MultiState) o;
-      return Objects.equals(states, that.states);
+      return this == o
+          || o instanceof MultiState
+          && Objects.equals(states, ((MultiState) o).states);
     }
 
     @Override public int hashCode() {
@@ -201,4 +185,4 @@ public class DFA {
   }
 }
 
-// End DFA.java
+// End DeterministicAutomaton.java

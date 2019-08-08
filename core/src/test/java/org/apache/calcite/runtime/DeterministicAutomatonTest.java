@@ -18,33 +18,31 @@ package org.apache.calcite.runtime;
 
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-/** Tests for the {@link DFA} */
-public class DFATest {
-
-  @Test
-  public void convertAutomaton() {
+/** Tests for the {@link DeterministicAutomaton} */
+public class DeterministicAutomatonTest {
+  @Test public void convertAutomaton() {
     final Pattern.PatternBuilder builder = Pattern.builder();
     final Pattern pattern = builder.symbol("A")
         .repeat(1, 2)
         .build();
     final Automaton automaton = pattern.toAutomaton();
 
-    final DFA da =
-        new DFA(automaton);
+    final DeterministicAutomaton da =
+        new DeterministicAutomaton(automaton);
 
     assertThat(da.startState,
-        equalTo(
-            new DFA.MultiState(new Automaton.State(0),
+        is(
+            new DeterministicAutomaton.MultiState(new Automaton.State(0),
                 new Automaton.State(2))));
 
     // Result should have three states
     // 0 -A-> 1 -A-> 2
     // 1 and 2 should be final
-    assertThat(da.getTransitions().size(), equalTo(2));
-    assertThat(da.getEndStates().size(), equalTo(2));
+    assertThat(da.getTransitions().size(), is(2));
+    assertThat(da.getEndStates().size(), is(2));
   }
 
   @Test public void convertAutomaton2() {
@@ -56,15 +54,15 @@ public class DFATest {
         .build();
     final Automaton automaton = pattern.toAutomaton();
 
-    final DFA da =
-        new DFA(automaton);
+    final DeterministicAutomaton da =
+        new DeterministicAutomaton(automaton);
 
     // Result should have two transitions
     // 0 -A-> 1
     //   -B->
     // 1 should be final
-    assertThat(da.getTransitions().size(), equalTo(2));
-    assertThat(da.getEndStates().size(), equalTo(1));
+    assertThat(da.getTransitions().size(), is(2));
+    assertThat(da.getEndStates().size(), is(1));
   }
 
   @Test public void convertAutomaton3() {
@@ -75,14 +73,14 @@ public class DFATest {
         .build();
     final Automaton automaton = pattern.toAutomaton();
 
-    final DFA da =
-        new DFA(automaton);
+    final DeterministicAutomaton da =
+        new DeterministicAutomaton(automaton);
 
     // Result should have two transitions
     // 0 -A-> 1 -B-> 2 (which again goes to 2 on a "B")
     // 1 should be final
-    assertThat(da.getTransitions().size(), equalTo(3));
-    assertThat(da.getEndStates().size(), equalTo(2));
+    assertThat(da.getTransitions().size(), is(3));
+    assertThat(da.getEndStates().size(), is(2));
   }
 
   @Test public void convertAutomaton4() {
@@ -94,15 +92,13 @@ public class DFATest {
         .build();
     final Automaton automaton = pattern.toAutomaton();
 
-    final DFA da =
-        new DFA(automaton);
+    final DeterministicAutomaton da =
+        new DeterministicAutomaton(automaton);
 
     // Result should have four transitions and one end state
-    assertThat(da.getTransitions().size(), equalTo(4));
-    assertThat(da.getEndStates().size(), equalTo(1));
+    assertThat(da.getTransitions().size(), is(4));
+    assertThat(da.getEndStates().size(), is(1));
   }
-
-
 }
 
-// End DFATest.java
+// End DeterministicAutomatonTest.java

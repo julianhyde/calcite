@@ -231,19 +231,19 @@ public class EnumerablesTest {
             .add("B", s -> s.get().deptno != 20)
             .build();
 
-    final Enumerables.Emitter<Emp, String> emitter = (rows, rowStates,
-        rowSymbols, match, consumer) -> {
-      for (int i = 0; i < rows.size(); i++) {
-        if (rowSymbols == null) {
-          continue;
-        }
-        if ("A".equals(rowSymbols.get(i))) {
-          consumer.accept(
-              String.format(Locale.ENGLISH, "%s %s %d", rows, rowStates,
-                  match));
-        }
-      }
-    };
+    final Enumerables.Emitter<Emp, String> emitter =
+        (rows, rowStates, rowSymbols, match, consumer) -> {
+          for (int i = 0; i < rows.size(); i++) {
+            if (rowSymbols == null) {
+              continue;
+            }
+            if ("A".equals(rowSymbols.get(i))) {
+              consumer.accept(
+                  String.format(Locale.ENGLISH, "%s %s %d", rows, rowStates,
+                      match));
+            }
+          }
+        };
 
     final Enumerable<String> matches =
         Enumerables.match(emps, emp -> 0L, matcher, emitter, 1, 1);
