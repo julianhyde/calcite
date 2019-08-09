@@ -403,7 +403,7 @@ data: {
     # Binary operators tokens
     binaryOperatorsTokens: [
     ]
-    
+
     # Binary operators initialization
     extraBinaryExpressions: [
     ]

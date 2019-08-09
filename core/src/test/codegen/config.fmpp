@@ -380,11 +380,11 @@ data: {
       # Each must accept arguments "(SqlParserPos pos)".
       dropStatementParserMethods: [
       ]
-      
+
       # Binary operators tokens
       binaryOperatorsTokens: [
       ]
-      
+
       # Binary operators initialization
       extraBinaryExpressions: [
       ]

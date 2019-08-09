@@ -860,12 +860,12 @@ data: {
 
       # Binary operators tokens
       binaryOperatorsTokens: [
-        "< PG_CAST: \"::\" >"
+        "< INFIX_CAST: \"::\" >"
       ]
 
       # Binary operators initialization
       extraBinaryExpressions: [
-        "PostgreSQLCasting"
+        "InfixCast"
       ]
 
       # List of files in @includes directory that have parser method

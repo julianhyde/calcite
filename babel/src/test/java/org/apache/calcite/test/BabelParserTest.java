@@ -17,7 +17,6 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.sql.parser.SqlParserUtil;
@@ -235,14 +234,20 @@ public class BabelParserTest extends SqlParserTest {
     };
   }
 
-  @Test public void testParsingPostgresCastingOperatorParsing() throws SqlParseException {
-    String[] sqlTypes = {"integer", "varchar", "boolean", "double", "bigint"};
-    for (String sqlType : sqlTypes) {
-      String sql = "SELECT x::" + sqlType + " FROM (VALUES (1, 2)) as tbl(x,y)";
-      String expected = "SELECT `X` :: " + sqlType.toUpperCase(Locale.ROOT) + "\n"
-          + "FROM (VALUES (ROW(1, 2))) AS `TBL` (`X`, `Y`)";
-      sql(sql).ok(expected);
-    }
+  /** Tests parsing PostgreSQL-style "::" cast operator. */
+  @Test public void testParseInfixCast()  {
+    checkParseInfixCast("integer");
+    checkParseInfixCast("varchar");
+    checkParseInfixCast("boolean");
+    checkParseInfixCast("double");
+    checkParseInfixCast("bigint");
+  }
+
+  private void checkParseInfixCast(String sqlType) {
+    String sql = "SELECT x::" + sqlType + " FROM (VALUES (1, 2)) as tbl(x,y)";
+    String expected = "SELECT `X` :: " + sqlType.toUpperCase(Locale.ROOT) + "\n"
+        + "FROM (VALUES (ROW(1, 2))) AS `TBL` (`X`, `Y`)";
+    sql(sql).ok(expected);
   }
 }
 

@@ -49,11 +49,10 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * because they always get fetched via the StdOperatorTable. So you can't store
  * any local info in the class and hence the return type data is maintained in
  * operand[1] through the validation phase.
+ *
+ * @see SqlLibraryOperators#INFIX_CAST
  */
 public class SqlCastFunction extends SqlFunction {
-  //~ Static fields --------------------------------------------------------
-  public static final SqlCastFunction POSTGRESQL_CAST = new PostgreSQLCastOperator();
-
   //~ Instance fields --------------------------------------------------------
 
   /** Map of all casts that do not preserve monotonicity. */
@@ -79,7 +78,7 @@ public class SqlCastFunction extends SqlFunction {
     this("CAST");
   }
 
-  private SqlCastFunction(String name) {
+  protected SqlCastFunction(String name) {
     super(
         name,
         SqlKind.CAST,
@@ -196,28 +195,6 @@ public class SqlCastFunction extends SqlFunction {
       return SqlMonotonicity.NOT_MONOTONIC;
     } else {
       return call.getOperandMonotonicity(0);
-    }
-  }
-
-  /** PostgreSQL's casting operator <code>::</code> */
-  private static class PostgreSQLCastOperator extends SqlCastFunction {
-
-    private PostgreSQLCastOperator() {
-      super("::");
-    }
-
-    @Override public SqlSyntax getSyntax() {
-      return SqlSyntax.FUNCTION;
-    }
-
-    @Override public String getSignatureTemplate(int operandsCount) {
-      return "{1}::{2}";
-    }
-
-    @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-      call.operand(0).unparse(writer, leftPrec, rightPrec);
-      writer.print(":: ");
-      call.operand(1).unparse(writer, leftPrec, rightPrec);
     }
   }
 }

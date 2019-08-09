@@ -18,11 +18,14 @@ package org.apache.calcite.sql.fun;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlSyntax;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -265,11 +268,25 @@ public abstract class SqlLibraryOperators {
                   OperandTypes.INTEGER,
                   SqlFunctionCategory.STRING);
 
-  /**
-   * Casting operator used by PostgreSQL '<code>::</code>'.
-   */
+  /** Infix "::" cast operator used by PostgreSQL, for example
+   * {@code '100'::INTEGER}. */
   @LibraryOperator(libraries = { POSTGRESQL })
-  public static final SqlOperator PG_CAST = SqlCastFunction.POSTGRESQL_CAST;
+  public static final SqlOperator INFIX_CAST = new SqlCastFunction("::")  {
+    @Override public SqlSyntax getSyntax() {
+      return SqlSyntax.FUNCTION;
+    }
+
+    @Override public String getSignatureTemplate(int operandsCount) {
+      return "{1}::{2}";
+    }
+
+    @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
+        int rightPrec) {
+      call.operand(0).unparse(writer, leftPrec, rightPrec);
+      writer.print(":: ");
+      call.operand(1).unparse(writer, leftPrec, rightPrec);
+    }
+  };
 }
 
 // End SqlLibraryOperators.java

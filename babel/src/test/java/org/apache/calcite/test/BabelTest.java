@@ -30,11 +30,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.function.UnaryOperator;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for Babel framework.
@@ -47,43 +46,44 @@ public class BabelTest {
   public ExpectedException thrown = ExpectedException.none();
 
   static Connection connect() throws SQLException {
-    return DriverManager.getConnection(URL,
+    return connect(UnaryOperator.identity());
+  }
+
+  static Connection connect(UnaryOperator<CalciteAssert.PropBuilder> propBuild)
+      throws SQLException {
+    final CalciteAssert.PropBuilder propBuilder =
         CalciteAssert.propBuilder()
             .set(CalciteConnectionProperty.PARSER_FACTORY,
-                SqlBabelParserImpl.class.getName() + "#FACTORY")
-            .build());
-  }
-
-  static Connection connect(String libraries) throws SQLException {
+                SqlBabelParserImpl.class.getName() + "#FACTORY");
     return DriverManager.getConnection(URL,
-        CalciteAssert.propBuilder()
-            .set(CalciteConnectionProperty.PARSER_FACTORY,
-                SqlBabelParserImpl.class.getName() + "#FACTORY")
-            .set(CalciteConnectionProperty.FUN, libraries)
-            .build());
+        propBuild.apply(propBuilder).build());
   }
 
-  @Test public void testFoo() {
-    assertThat(1 + 1, is(2));
+  private Connection connectWithFun(String libraryList) throws SQLException {
+    return connect(propBuilder ->
+        propBuilder.set(CalciteConnectionProperty.FUN, libraryList));
   }
 
-  @Test public void testPostgreSQLCastingOp() throws SQLException {
-    Connection connection = connect("standard,postgresql");
-    Statement statement = connection.createStatement();
-    Object[][] sqlTypes = {
-        { "integer", Types.INTEGER },
-        { "varchar", Types.VARCHAR },
-        { "boolean", Types.BOOLEAN },
-        { "double", Types.DOUBLE },
-        { "bigint", Types.BIGINT } };
-    for (Object[] sqlType : sqlTypes) {
-      String sql = "SELECT x::" + sqlType[0] + " FROM (VALUES ('1', '2')) as tbl(x,y)";
-      assertTrue(statement.execute(sql));
-      ResultSet resultSet = statement.getResultSet();
+  @Test public void testInfixCast() throws SQLException {
+    try (Connection connection = connectWithFun("standard,postgresql");
+         Statement statement = connection.createStatement()) {
+      checkInfixCast(statement, "integer", Types.INTEGER);
+      checkInfixCast(statement, "varchar", Types.VARCHAR);
+      checkInfixCast(statement, "boolean", Types.BOOLEAN);
+      checkInfixCast(statement, "double", Types.DOUBLE);
+      checkInfixCast(statement, "bigint", Types.BIGINT);
+    }
+  }
 
-      ResultSetMetaData metaData = resultSet.getMetaData();
-      assertEquals("Invalid column count", 1, metaData.getColumnCount());
-      assertEquals("Invalid column type", (int) sqlType[1], metaData.getColumnType(1));
+  private void checkInfixCast(Statement statement, String typeName, int sqlType)
+      throws SQLException {
+    final String sql = "SELECT x::" + typeName + "\n"
+        + "FROM (VALUES ('1', '2')) as tbl(x, y)";
+    try (ResultSet resultSet = statement.executeQuery(sql)) {
+      final ResultSetMetaData metaData = resultSet.getMetaData();
+      assertThat("Invalid column count", metaData.getColumnCount(), is(1));
+      assertThat("Invalid column type", metaData.getColumnType(1),
+          is(sqlType));
     }
   }
 }
