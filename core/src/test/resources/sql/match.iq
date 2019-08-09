@@ -18,6 +18,32 @@
 
 # TODO Enable this
 
+!use post
+!set outputformat oracle
+
+#SELECT *
+#FROM "scott".emp MATCH_RECOGNIZE(
+#  ORDER BY hiredate
+#  MEASURES 1 AS m1
+#  PATTERN (s up)
+#  DEFINE up AS up.deptno < prev(up.deptno));
+#!ok
+
+select *
+from "hr"."emps" match_recognize (
+    order by "empid" desc
+    measures "commission" as c,
+    "empid" as empid
+    pattern (s up)
+    define up as up."commission" < prev(up."commission"));
+
+C    EMPID
+---- -----
+1000   100
+ 500   200
+
+!ok
+
 
 #!use post
 #!set outputformat oracle
