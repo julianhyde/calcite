@@ -1108,6 +1108,7 @@ The operator precedence and associativity, highest to lowest.
 | Operator                                          | Associativity
 |:------------------------------------------------- |:-------------
 | .                                                 | left
+| ::                                                | left
 | [ ] (array element)                               | left
 | + - (unary plus, minus)                           | right
 | * / %                                             | left
@@ -1118,6 +1119,9 @@ The operator precedence and associativity, highest to lowest.
 | NOT                                               | right
 | AND                                               | left
 | OR                                                | left
+
+Note that `::` is dialect-specific, but is shown in this table for
+completeness.
 
 ### Comparison operators
 

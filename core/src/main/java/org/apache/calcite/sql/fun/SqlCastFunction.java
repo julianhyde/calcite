@@ -50,7 +50,13 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * any local info in the class and hence the return type data is maintained in
  * operand[1] through the validation phase.
  *
- * @see SqlLibraryOperators#INFIX_CAST
+ * <p>Can be used for both {@link SqlCall} and
+ * {@link org.apache.calcite.rex.RexCall}.
+ * Note that the {@code SqlCall} has two operands (expression and type),
+ * while the {@code RexCall} has one operand (expression) and the type is
+ * obtained from {@link org.apache.calcite.rex.RexNode#getType()}.
+ *
+ * @see SqlCastOperator
  */
 public class SqlCastFunction extends SqlFunction {
   //~ Instance fields --------------------------------------------------------
@@ -75,12 +81,7 @@ public class SqlCastFunction extends SqlFunction {
   //~ Constructors -----------------------------------------------------------
 
   public SqlCastFunction() {
-    this("CAST");
-  }
-
-  protected SqlCastFunction(String name) {
-    super(
-        name,
+    super("CAST",
         SqlKind.CAST,
         null,
         InferTypes.FIRST_KNOWN,

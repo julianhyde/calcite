@@ -241,6 +241,13 @@ public class BabelParserTest extends SqlParserTest {
     checkParseInfixCast("boolean");
     checkParseInfixCast("double");
     checkParseInfixCast("bigint");
+
+    final String sql = "select -('12' || '.34')::VARCHAR(30)::INTEGER as x\n"
+        + "from t";
+    final String expected = ""
+        + "SELECT (- ('12' || '.34') :: VARCHAR(30) :: INTEGER) AS `X`\n"
+        + "FROM `T`";
+    sql(sql).ok(expected);
   }
 
   private void checkParseInfixCast(String sqlType) {

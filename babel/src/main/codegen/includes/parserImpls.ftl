@@ -83,23 +83,17 @@ SqlNode DateaddFunctionCall() :
 /** Parses the infix "::" cast operator used in PostgreSQL. */
 void InfixCast(List<Object> list, ExprContext exprContext, Span s) :
 {
-    final SqlBinaryOperator op;
     final SqlDataTypeSpec dt;
-    final List<SqlNode> args;
 }
 {
     <INFIX_CAST> {
         checkNonQueryExpression(exprContext);
-        args = startList((SqlNode) list.get(0));
     }
     dt = DataType() {
-        args.add(dt);
-
-        // Since we're already parsing a binary expression, the first operand is
-        // already available within the input list so we replace it with a call
-        // to the PostgreSQL-style cast operator that includes all operands.
-        list.set(list.size() - 1,
-            SqlLibraryOperators.INFIX_CAST.createCall(s.end(this), args));
+        list.add(
+            new SqlParserUtil.ToTreeListItem(SqlLibraryOperators.INFIX_CAST,
+                s.pos()));
+        list.add(dt);
     }
 }
 

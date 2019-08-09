@@ -18,14 +18,11 @@ package org.apache.calcite.sql.fun;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.SqlSyntax;
-import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -198,8 +195,7 @@ public abstract class SqlLibraryOperators {
 
   @LibraryOperator(libraries = {MYSQL})
   public static final SqlFunction SPACE =
-      new SqlFunction(
-          "SPACE",
+      new SqlFunction("SPACE",
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.VARCHAR_2000_NULLABLE,
           null,
@@ -208,8 +204,7 @@ public abstract class SqlLibraryOperators {
 
   @LibraryOperator(libraries = {MYSQL, POSTGRESQL, ORACLE})
   public static final SqlFunction SOUNDEX =
-      new SqlFunction(
-          "SOUNDEX",
+      new SqlFunction("SOUNDEX",
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.VARCHAR_4_NULLABLE,
           null,
@@ -218,8 +213,7 @@ public abstract class SqlLibraryOperators {
 
   @LibraryOperator(libraries = {POSTGRESQL})
   public static final SqlFunction DIFFERENCE =
-      new SqlFunction(
-          "DIFFERENCE",
+      new SqlFunction("DIFFERENCE",
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.INTEGER_NULLABLE,
           null,
@@ -228,8 +222,7 @@ public abstract class SqlLibraryOperators {
 
   @LibraryOperator(libraries = {MYSQL})
   public static final SqlFunction REVERSE =
-      new SqlFunction(
-          "REVERSE",
+      new SqlFunction("REVERSE",
           SqlKind.REVERSE,
           ReturnTypes.ARG0_NULLABLE_VARYING,
           null,
@@ -238,55 +231,39 @@ public abstract class SqlLibraryOperators {
 
   @LibraryOperator(libraries = {MYSQL})
   public static final SqlFunction FROM_BASE64 =
-      new SqlFunction(
-          "FROM_BASE64",
+      new SqlFunction("FROM_BASE64",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.cascade(
-                  ReturnTypes.explicit(SqlTypeName.VARBINARY), SqlTypeTransforms.TO_NULLABLE),
+          ReturnTypes.cascade(ReturnTypes.explicit(SqlTypeName.VARBINARY),
+              SqlTypeTransforms.TO_NULLABLE),
           null,
           OperandTypes.STRING,
           SqlFunctionCategory.STRING);
 
   @LibraryOperator(libraries = {MYSQL})
   public static final SqlFunction TO_BASE64 =
-      new SqlFunction(
-          "TO_BASE64",
+      new SqlFunction("TO_BASE64",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.cascade(
-                  ReturnTypes.explicit(SqlTypeName.VARCHAR), SqlTypeTransforms.TO_NULLABLE),
+          ReturnTypes.cascade(ReturnTypes.explicit(SqlTypeName.VARCHAR),
+              SqlTypeTransforms.TO_NULLABLE),
           null,
           OperandTypes.or(OperandTypes.STRING, OperandTypes.BINARY),
           SqlFunctionCategory.STRING);
 
   @LibraryOperator(libraries = {ORACLE})
   public static final SqlFunction CHR =
-          new SqlFunction(
-                  "CHR",
-                  SqlKind.OTHER_FUNCTION,
-                  ReturnTypes.CHAR,
-                  null,
-                  OperandTypes.INTEGER,
-                  SqlFunctionCategory.STRING);
+      new SqlFunction("CHR",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.CHAR,
+          null,
+          OperandTypes.INTEGER,
+          SqlFunctionCategory.STRING);
 
   /** Infix "::" cast operator used by PostgreSQL, for example
    * {@code '100'::INTEGER}. */
   @LibraryOperator(libraries = { POSTGRESQL })
-  public static final SqlOperator INFIX_CAST = new SqlCastFunction("::")  {
-    @Override public SqlSyntax getSyntax() {
-      return SqlSyntax.FUNCTION;
-    }
+  public static final SqlOperator INFIX_CAST =
+      new SqlCastOperator();
 
-    @Override public String getSignatureTemplate(int operandsCount) {
-      return "{1}::{2}";
-    }
-
-    @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
-        int rightPrec) {
-      call.operand(0).unparse(writer, leftPrec, rightPrec);
-      writer.print(":: ");
-      call.operand(1).unparse(writer, leftPrec, rightPrec);
-    }
-  };
 }
 
 // End SqlLibraryOperators.java
