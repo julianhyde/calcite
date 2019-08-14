@@ -595,7 +595,9 @@ public class LatticeSuggesterTest {
   }
 
   @Test public void testDialect() throws Exception {
-    final Tester t = new Tester().foodmart().withEvolve(true).withDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect()).withLibrary(SqlLibrary.POSTGRESQL);
+    final Tester t = new Tester().foodmart().withEvolve(true)
+        .withDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect())
+        .withLibrary(SqlLibrary.POSTGRESQL);
 
     final String q0 = "select\n"
         + "  left(\"fname\", 1) as \"initial\",\n"
@@ -718,9 +720,8 @@ public class LatticeSuggesterTest {
     }
 
     Tester withLibrary(SqlLibrary library) {
-      SqlOperatorTable opTab =
-          SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
-              SqlLibrary.STANDARD, library);
+      SqlOperatorTable opTab = SqlLibraryOperatorTableFactory.INSTANCE
+          .getOperatorTable(EnumSet.of(SqlLibrary.STANDARD, library));
       return withConfig(builder().operatorTable(opTab).build());
     }
   }
