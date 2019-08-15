@@ -668,7 +668,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkExpType("concat('aabbcc', 'ab', '+-')",
         "VARCHAR(10) NOT NULL");
     checkExpType("concat('aabbcc', CAST(NULL AS VARCHAR(20)), '+-')",
-        "VARCHAR(10) NOT NULL");
+        "VARCHAR(28)");
     checkWholeExpFails("concat('aabbcc', 2)",
         "(?s)Cannot apply 'CONCAT' to arguments of type 'CONCAT\\(<CHAR\\(6\\)>, <INTEGER>\\)'\\. .*");
     checkWholeExpFails("concat('abc', 'ab', 123)",

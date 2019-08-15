@@ -221,21 +221,23 @@ public abstract class SqlLibraryOperators {
           OperandTypes.STRING_STRING,
           SqlFunctionCategory.STRING);
 
+  /** The "CONCAT(arg, ...)" function that concatenates strings.
+   * For example, "CONCACT('a', 'bc', 'd')" returns "abcd". */
   @LibraryOperator(libraries = {MYSQL, POSTGRESQL, ORACLE})
   public static final SqlFunction CONCAT_FUNCTION =
-      new SqlFunction(
-          "CONCAT",
+      new SqlFunction("CONCAT",
           SqlKind.OTHER_FUNCTION,
-          opBinding -> {
-            int precision = 0;
-            for (RelDataType operandType : opBinding.collectOperandTypes()) {
-              precision += operandType.getPrecision();
-            }
-            return opBinding.getTypeFactory().createSqlType(SqlTypeName.VARCHAR, precision);
-          },
+          ReturnTypes.cascade(
+              opBinding -> {
+                int precision = opBinding.collectOperandTypes().stream()
+                    .mapToInt(RelDataType::getPrecision).sum();
+                return opBinding.getTypeFactory()
+                    .createSqlType(SqlTypeName.VARCHAR, precision);
+              },
+              SqlTypeTransforms.TO_NULLABLE),
           null,
           OperandTypes.repeat(SqlOperandCountRanges.from(2),
-                  OperandTypes.STRING),
+              OperandTypes.STRING),
           SqlFunctionCategory.STRING);
 
   @LibraryOperator(libraries = {MYSQL})
