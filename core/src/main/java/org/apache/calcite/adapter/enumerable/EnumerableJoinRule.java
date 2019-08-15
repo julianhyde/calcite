@@ -77,7 +77,7 @@ class EnumerableJoinRule extends ConverterRule {
           join.getJoinType());
       if (!info.isEqui()) {
         RexNode nonEqui = RexUtil.composeConjunction(cluster.getRexBuilder(),
-            info.getNonEquiConditions());
+            info.nonEquiConditions);
         newRel = new EnumerableFilter(cluster, newRel.getTraitSet(),
             newRel, nonEqui);
       }

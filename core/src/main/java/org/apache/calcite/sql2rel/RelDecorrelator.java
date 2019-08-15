@@ -236,7 +236,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         .addRuleInstance(new AdjustProjectForCountAggregateRule(true, f))
         .addRuleInstance(
             new FilterJoinRule.FilterIntoJoinRule(true, f,
-                FilterJoinRule.TRUE))
+                FilterJoinRule.TRUE_PREDICATE))
         .addRuleInstance(
             new FilterProjectTransposeRule(Filter.class, Project.class, true,
                 true, f))
@@ -258,11 +258,11 @@ public class RelDecorrelator implements ReflectiveVisitor {
           .addRuleInstance(
               new FilterJoinRule.FilterIntoJoinRule(
                   true, f,
-                  FilterJoinRule.TRUE))
+                  FilterJoinRule.TRUE_PREDICATE))
           .addRuleInstance(
               new FilterJoinRule.JoinConditionPushRule(
                   f,
-                  FilterJoinRule.TRUE))
+                  FilterJoinRule.TRUE_PREDICATE))
           .build();
 
       final HepPlanner planner2 = createPlanner(program2);

@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /** An analyzed join condition.
  *
@@ -46,7 +45,7 @@ import javax.annotation.Nonnull;
 public class JoinInfo {
   public final ImmutableIntList leftKeys;
   public final ImmutableIntList rightKeys;
-  protected final ImmutableList<RexNode> nonEquiConditions;
+  public final ImmutableList<RexNode> nonEquiConditions;
 
   /** Creates a JoinInfo. */
   protected JoinInfo(ImmutableIntList leftKeys, ImmutableIntList rightKeys,
@@ -62,17 +61,11 @@ public class JoinInfo {
     final List<Integer> leftKeys = new ArrayList<>();
     final List<Integer> rightKeys = new ArrayList<>();
     final List<Boolean> filterNulls = new ArrayList<>();
-    final ImmutableList<RexNode> remainingConds;
-    RexNode remaining =
-        RelOptUtil.splitJoinCondition(left, right, condition, leftKeys,
-            rightKeys, filterNulls);
-    if (remaining.isAlwaysTrue()) {
-      remainingConds = ImmutableList.of();
-    } else {
-      remainingConds = RexUtil.flattenAnd(ImmutableList.of(remaining));
-    }
+    final List<RexNode> nonEquiList = new ArrayList<>();
+    RelOptUtil.splitJoinCondition(left, right, condition, leftKeys, rightKeys,
+        filterNulls, nonEquiList);
     return new JoinInfo(ImmutableIntList.copyOf(leftKeys),
-        ImmutableIntList.copyOf(rightKeys), remainingConds);
+        ImmutableIntList.copyOf(rightKeys), ImmutableList.copyOf(nonEquiList));
   }
 
   /** Creates an equi-join. */
@@ -104,10 +97,6 @@ public class JoinInfo {
     return RexUtil.composeConjunction(rexBuilder, nonEquiConditions);
   }
 
-  public @Nonnull ImmutableList<RexNode> getNonEquiConditions() {
-    return nonEquiConditions;
-  }
-
   public RexNode getEquiCondition(RelNode left, RelNode right,
       RexBuilder rexBuilder) {
     return RelOptUtil.createEquiJoinCondition(left, leftKeys, right, rightKeys,
@@ -117,7 +106,6 @@ public class JoinInfo {
   public List<ImmutableIntList> keys() {
     return FlatLists.of(leftKeys, rightKeys);
   }
-
 
 }
 

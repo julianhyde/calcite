@@ -51,13 +51,10 @@ import static org.apache.calcite.plan.RelOptUtil.conjunctions;
 public abstract class FilterJoinRule extends RelOptRule {
   /** Predicate that always returns true. With this predicate, every filter
    * will be pushed into the ON clause. */
-  public static final Predicate TRUE = (join, joinType, exp) -> true;
-
-  @Deprecated // to be removed before 1.22.0
-  public static final Predicate TRUE_PREDICATE = TRUE;
+  public static final Predicate TRUE_PREDICATE = (join, joinType, exp) -> true;
 
   /** Predicate that returns true if the join is not Enumerable convention,
-   * will be replaced by {@link #TRUE} once enumerable join supports
+   * will be replaced by {@link #TRUE_PREDICATE} once enumerable join supports
    * non-equi join. */
   // to be removed before 1.22.0
   private static final Predicate NOT_ENUMERABLE = (join, joinType, exp) ->
