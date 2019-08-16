@@ -485,23 +485,6 @@ public class LatticeSuggesterTest {
         is(l3));
   }
 
-  @Test public void testRedshiftDialect() throws Exception {
-    final Tester t = new Tester().foodmart().withEvolve(true)
-        .withDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect())
-        .withLibrary(SqlLibrary.POSTGRESQL);
-
-    final String q0 = "select\n"
-        + "  convert_timezone('UTC', 'America/Los_Angeles', cast('2019-01-01 01:00:00' as timestamp)),\n"
-        + "  to_date('2019-01-01', 'YYYY-MM-DD'),\n"
-        + "  to_timestamp('2019-01-01 01:00:00', 'YYYY-MM-DD HH:MM:SS'),\n"
-        + "  count(*) as c,\n"
-        + "  avg(\"total_children\" - \"num_children_at_home\")\n"
-        + "from \"customer\" join \"sales_fact_1997\" using (\"customer_id\")\n"
-        + "group by \"fname\", \"lname\"";
-    t.addQuery(q0);
-    assertThat(t.s.latticeMap.size(), is(1));
-  }
-
   @Test public void testExpression() throws Exception {
     final Tester t = new Tester().foodmart().withEvolve(true);
 
@@ -611,14 +594,18 @@ public class LatticeSuggesterTest {
     assertThat(derivedColumns.get(1).tables, is(tables));
   }
 
-  @Test public void testDialect() throws Exception {
+  @Test public void testRedshiftDialect() throws Exception {
     final Tester t = new Tester().foodmart().withEvolve(true)
         .withDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect())
         .withLibrary(SqlLibrary.POSTGRESQL);
 
     final String q0 = "select\n"
-        + "  left(\"fname\", 1) as \"initial\",\n"
         + "  CONCAT(\"fname\", ' ', \"lname\") as \"full_name\",\n"
+        + "  convert_timezone('UTC', 'America/Los_Angeles',\n"
+        + "    cast('2019-01-01 01:00:00' as timestamp)),\n"
+        + "  left(\"fname\", 1) as \"initial\",\n"
+        + "  to_date('2019-01-01', 'YYYY-MM-DD'),\n"
+        + "  to_timestamp('2019-01-01 01:00:00', 'YYYY-MM-DD HH:MM:SS'),\n"
         + "  count(*) as c,\n"
         + "  avg(\"total_children\" - \"num_children_at_home\")\n"
         + "from \"customer\" join \"sales_fact_1997\" using (\"customer_id\")\n"
