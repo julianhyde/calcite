@@ -659,16 +659,16 @@ public class LatticeSuggesterTest {
         + "  min(c.\"fname\") as \"customer.count\"\n"
         + "from \"customer\" as c\n"
         + "left join \"sales_fact_1997\" as s\n"
-        + "on c.\"customer_id\" + 1 = s.\"customer_id\"";
+        + "on c.\"customer_id\" + 1 = s.\"customer_id\" + 2";
     t.addQuery(q0);
     assertThat(t.s.latticeMap.size(), is(1));
     assertThat(t.s.latticeMap.keySet().iterator().next(),
-        is("sales_fact_1997 (customer:customer_id):[MIN(customer.fname)]"));
+        is("sales_fact_1997 (customer:+($2, 2)):[MIN(customer.fname)]"));
     assertThat(t.s.space.g.toString(),
         is("graph(vertices: [[foodmart, customer],"
             + " [foodmart, sales_fact_1997]], "
             + "edges: [Step([foodmart, sales_fact_1997],"
-            + " [foodmart, customer], customer_id:+($0, 1))])"));
+            + " [foodmart, customer], +($2, 2):+($0, 1))])"));
   }
 
   /** Creates a matcher that matches query graphs to strings. */
