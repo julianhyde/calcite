@@ -93,13 +93,21 @@ class Step extends DefaultEdge {
     final List<Integer> sourceColumns = IntPair.left(keys);
     final RelOptTable targetTable = target().t;
     final List<Integer> targetColumns = IntPair.right(keys);
-    final boolean forwardForeignKey =
-        statisticProvider.isForeignKey(sourceTable, sourceColumns, targetTable,
-            targetColumns)
+    final boolean noDerivedSourceColumns =
+        sourceColumns.stream().allMatch(i ->
+            i < sourceTable.getRowType().getFieldCount());
+    final boolean noDerivedTargetColumns =
+        targetColumns.stream().allMatch(i ->
+            i < targetTable.getRowType().getFieldCount());
+    final boolean forwardForeignKey = noDerivedSourceColumns
+        && noDerivedTargetColumns
+        && statisticProvider.isForeignKey(sourceTable, sourceColumns,
+            targetTable, targetColumns)
         && statisticProvider.isKey(targetTable, targetColumns);
-    final boolean backwardForeignKey =
-        statisticProvider.isForeignKey(targetTable, targetColumns, sourceTable,
-            sourceColumns)
+    final boolean backwardForeignKey = noDerivedSourceColumns
+        && noDerivedTargetColumns
+        && statisticProvider.isForeignKey(targetTable, targetColumns,
+            sourceTable, sourceColumns)
         && statisticProvider.isKey(sourceTable, sourceColumns);
     if (backwardForeignKey != forwardForeignKey) {
       return backwardForeignKey;

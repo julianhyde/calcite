@@ -27,6 +27,7 @@ import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.statistic.MapSqlStatisticProvider;
+import org.apache.calcite.statistic.QuerySqlStatisticProvider;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.FoodMartQuerySet;
 import org.apache.calcite.test.SlowTests;
@@ -653,7 +654,11 @@ public class LatticeSuggesterTest {
   }
 
   @Test public void testDerivedColRef() throws Exception {
-    final Tester t = new Tester().foodmart().withEvolve(true);
+    final FrameworkConfig config = Frameworks.newConfigBuilder()
+        .defaultSchema(Tester.schemaFrom(CalciteAssert.SchemaSpec.SCOTT))
+        .statisticProvider(QuerySqlStatisticProvider.SILENT_CACHING_INSTANCE)
+        .build();
+    final Tester t = new Tester(config).foodmart().withEvolve(true);
 
     final String q0 = "select\n"
         + "  min(c.\"fname\") as \"customer.count\"\n"
