@@ -42,7 +42,10 @@ import java.util.Map;
  *
  */
 class PigRelUdfConverter {
+
   private PigRelUdfConverter() {}
+
+  private static final PigUdfFinder PIG_UDF_FINDER = new PigUdfFinder();
 
   private static final Map<String, SqlOperator> BUILTIN_FUNC =
       ImmutableMap.<String, SqlOperator>builder()
@@ -135,7 +138,8 @@ class PigRelUdfConverter {
       // Find the implementation method for the Pig function from
       // the class defining the UDF.
       final Class clazz = Class.forName(pigFunc.getClassName());
-      final Method method = PigUdfFinder.findPigUdfImplementationMethod(clazz);
+      final Method method =
+          PIG_UDF_FINDER.findPigUdfImplementationMethod(clazz);
 
       // Now create the argument wrapper. Depend on the type of the UDF, the
       // relational operands are converted into a Pig Tuple or Pig DataBag

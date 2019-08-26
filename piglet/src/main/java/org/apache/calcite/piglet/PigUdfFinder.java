@@ -14,19 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.piglet;
-
-import org.apache.pig.builtin.BigDecimalMax;
-import org.apache.pig.builtin.BigDecimalSum;
-import org.apache.pig.data.Tuple;
 
 import com.google.common.collect.ImmutableMap;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -37,8 +30,6 @@ import javax.annotation.Nonnull;
  * class.
  */
 class PigUdfFinder {
-  private PigUdfFinder() {}
-
   /**
    * For Pig UDF classes where the "exec" method is declared in parent class,
    * the Calcite enumerable engine will generate incorrect Java code that
@@ -47,19 +38,20 @@ class PigUdfFinder {
    * failed to compile (we can not instantiate an object of an abstract class).
    *
    * <p>Workaround is to write a wrapper for such UDFs to instantiate the
-   * correct UDF object. See method {@link #bigdecimalsum} below as an example
+   * correct UDF object. See method {@link PigUdfs#bigdecimalsum} as an example
    * and add others if needed.
    */
-  private static final ImmutableMap<String, Method> UDF_WRAPPER;
-  static {
+  private final ImmutableMap<String, Method> udfWrapper;
+
+  PigUdfFinder() {
     final Map<String, Method> map = new HashMap<>();
-    for (Method method : PigUdfFinder.class.getMethods()) {
+    for (Method method : PigUdfs.class.getMethods()) {
       if (Modifier.isPublic(method.getModifiers())
           && method.getReturnType() != Method.class) {
         map.put(method.getName(), method);
       }
     }
-    UDF_WRAPPER = ImmutableMap.copyOf(map);
+    udfWrapper = ImmutableMap.copyOf(map);
   }
 
   /**
@@ -69,9 +61,10 @@ class PigUdfFinder {
    *
    * @throws IllegalArgumentException if not found
    */
-  public static @Nonnull Method findPigUdfImplementationMethod(Class clazz) {
+  @Nonnull Method findPigUdfImplementationMethod(Class clazz) {
     // Find implementation method in the wrapper map
-    Method returnedMethod = UDF_WRAPPER.get(clazz.getSimpleName().toLowerCase(Locale.US));
+    Method returnedMethod =
+        udfWrapper.get(clazz.getSimpleName().toLowerCase(Locale.US));
     if (returnedMethod != null) {
       return returnedMethod;
     }
@@ -113,17 +106,6 @@ class PigUdfFinder {
       }
     }
     return returnedMethod;
-  }
-
-
-  public static BigDecimal bigdecimalsum(Tuple input) throws IOException {
-    // "exec" method is declared in the parent class of AlgebraicBigDecimalMathBase
-    return new BigDecimalSum().exec(input);
-  }
-
-  public static BigDecimal bigdecimalmax(Tuple input) throws IOException {
-    // "exec" method is declared in the parent class of AlgebraicBigDecimalMathBase
-    return new BigDecimalMax().exec(input);
   }
 }
 

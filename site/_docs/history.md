@@ -32,7 +32,7 @@ Downloads are available on the
 
 #### Breaking Changes
 
-* core parser config.fmpp#dataTypeParserMethods should return "SqlTypeNameSpec" 
+* core parser config.fmpp#dataTypeParserMethods should return "SqlTypeNameSpec"
 instead of "SqlIdentifier".
 
 ## <a href="https://github.com/apache/calcite/releases/tag/calcite-1.20.0">1.20.0</a> / 2019-06-24
