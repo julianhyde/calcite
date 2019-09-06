@@ -36,21 +36,21 @@ issues, comprising a large number of new features as well as general improvement
 and bug-fixes. Among others, it is worth highlighting the following.
 
 * Added support for implicit type coercion in various contexts
-(<a href="https://issues.apache.org/jira/browse/CALCITE-2302">CALCITE-2302</a>).
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-2302">CALCITE-2302</a>).
 * Pig Latin scrips can now be transformed into algebraic plans
-(<a href="https://issues.apache.org/jira/browse/CALCITE-3122">CALCITE-3122</a>).
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-3122">CALCITE-3122</a>).
 * The basic features of MATCH_RECOGNIZE are now implemented
-(<a href="https://issues.apache.org/jira/browse/CALCITE-1935">CALCITE-1935</a>).
-* Correlated ANY/SOME/ALL subqueries are now supported    
-(<a href="https://issues.apache.org/jira/browse/CALCITE-3031">CALCITE-3031</a>).
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-1935">CALCITE-1935</a>).
+* Correlated ANY/SOME/ALL sub-queries are now supported
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-3031">CALCITE-3031</a>).
 * The parser has been enhanced to handle ROW, ARRAY, and COLLECTION types
-(<a href="https://issues.apache.org/jira/browse/CALCITE-3250">CALCITE-3250</a>,
-<a href="https://issues.apache.org/jira/browse/CALCITE-3233">CALCITE-3233</a>,
-<a href="https://issues.apache.org/jira/browse/CALCITE-3231">CALCITE-3231</a>).
-* New join algorithms for the Enumeberable convention have been added
-(<a href="https://issues.apache.org/jira/browse/CALCITE-2979">CALCITE-2979</a>,
- <a href="https://issues.apache.org/jira/browse/CALCITE-2973">CALCITE-2973</a>
- <a href="https://issues.apache.org/jira/browse/CALCITE-3284">CALCITE-3284</a>).
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-3250">CALCITE-3250</a>,
+  <a href="https://issues.apache.org/jira/browse/CALCITE-3233">CALCITE-3233</a>,
+  <a href="https://issues.apache.org/jira/browse/CALCITE-3231">CALCITE-3231</a>).
+* New join algorithms for the Enumerable convention have been added
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-2979">CALCITE-2979</a>,
+  <a href="https://issues.apache.org/jira/browse/CALCITE-2973">CALCITE-2973</a>
+  <a href="https://issues.apache.org/jira/browse/CALCITE-3284">CALCITE-3284</a>).
 
 Compatibility: This release is tested
 on Linux, macOS, Microsoft Windows;
@@ -62,17 +62,18 @@ other software versions as specified in `pom.xml`.
 #### Breaking Changes
 
 * Core parser config.fmpp#dataTypeParserMethods should return `SqlTypeNameSpec`
-instead of `SqlIdentifier`.
-* The description of converter rules has slightly changed (
-  <a href="https://issues.apache.org/jira/browse/CALCITE-3115">CALCITE-3115</a>).
+  instead of `SqlIdentifier`.
+* The description of converter rules has slightly changed
+  (<a href="https://issues.apache.org/jira/browse/CALCITE-3115">CALCITE-3115</a>).
   In some rare cases this may lead to a `Rule description ... is not valid`
   exception. The exception can easily disappear by changing the name of the
-  `Convention` which causes the problem.  
+  `Convention` which causes the problem.
 
 #### New features
+
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2973">CALCITE-2973</a>]
   [<a href="https://issues.apache.org/jira/browse/CALCITE-3284">CALCITE-3284</a>]
-  Allow joins (hash,semi,anti) that have equi conditions to be executed using a
+  Allow joins (hash, semi, anti) that have equi conditions to be executed using a
   hash join algorithm (Lai Zhou)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2302">CALCITE-2302</a>]
   Implicit type cast support
@@ -82,84 +83,79 @@ instead of `SqlIdentifier`.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2979">CALCITE-2979</a>]
   Add a block-based nested loop join algorithm (Khawla Mouhoubi)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3263">CALCITE-3263</a>]
-  Add MD5, SHA1 SQL functions (Shuming Li)
+  Add `MD5`, `SHA1` SQL functions (Shuming Li)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3204">CALCITE-3204</a>]
-  Implement jps command for OS adapter (Qianjin Xu)
+  Implement `jps` command for OS adapter (Qianjin Xu)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3260">CALCITE-3260</a>]
   Add Expressions.evaluate(Node), a public API for evaluating linq4j expressions
   (Wang Yanlin)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3280">CALCITE-3280</a>]
-  Add REGEXP_REPLACE function in Oracle, MySQL libraries (Shuming Li)
+  Add `REGEXP_REPLACE` function in Oracle, MySQL libraries (Shuming Li)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3111">CALCITE-3111</a>]
-  Add RelBuilder.correlate method, and allow custom implementations of Correlate
-  in RelDecorrelator (Juhwan Kim)
+  Add `RelBuilder.correlate` method, and allow custom implementations of
+  `Correlate` in `RelDecorrelator` (Juhwan Kim)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3252">CALCITE-3252</a>]
-  Add CONVERT_TIMEZONE, TO_DATE and TO_TIMESTAMP non-standard functions (Lindsey
-  Meyer)
+  Add `CONVERT_TIMEZONE`, `TO_DATE` and `TO_TIMESTAMP` non-standard SQL functions
+  (Lindsey Meyer)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3235">CALCITE-3235</a>]
-  Add CONCAT function for Redshift (Ryan Fu)
+  Add `CONCAT` function for Redshift (Ryan Fu)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3250">CALCITE-3250</a>]
-  Support nested collection type for  SqlDataTypeSpec
+  Support nested collection type for `SqlDataTypeSpec`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-1935">CALCITE-1935</a>]
-  Implement MATCH_RECOGNIZE, part 3: get it working (Julian Feinauer)
-* [<a href="https://issues.apache.org/jira/browse/CALCITE-1935">CALCITE-1935</a>]
-  Implement MATCH_RECOGNIZE, part 2: add class Automaton
-* [<a href="https://issues.apache.org/jira/browse/CALCITE-1935">CALCITE-1935</a>]
-  Implement MATCH_RECOGNIZE, part 1: add basic classes: LogicalMatch,
-  BindableMatch, EnumerableMatch, MatchRule (Zhiqiang-He)  
+  Implement `MATCH_RECOGNIZE` (Julian Feinauer, Zhiqiang-He)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2843">CALCITE-2843</a>]
-  Support PostgreSQL cast operator '::' (Muhammad Gelbana)
+  Support PostgreSQL cast operator (`::`) (Muhammad Gelbana)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3233">CALCITE-3233</a>]
-  Support Row type for SqlDataTypeSpec
+  Support `ROW` type for `SqlDataTypeSpec`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3231">CALCITE-3231</a>]
-  Support ARRAY type for SqlDataTypeSpec
+  Support `ARRAY` type for `SqlDataTypeSpec`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2624">CALCITE-2624</a>]
   Add a rule to copy a sort below a join operator (Khawla Mouhoubi)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3031">CALCITE-3031</a>]
   Support for correlated ANY/SOME/ALL sub-query (Vineet Garg)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2510">CALCITE-2510</a>]
-  Implement CHR function (Sergey Tsvetkov, Chunwei Lei)
+  Implement `CHR` function (Sergey Tsvetkov, Chunwei Lei)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3176">CALCITE-3176</a>]
   File adapter for parsing JSON files
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3144">CALCITE-3144</a>]
-  Add rule, AggregateCaseToFilterRule, that converts "SUM(CASE WHEN b THEN x
-  END)" to "SUM(x) FILTER (WHERE b)"
+  Add rule, `AggregateCaseToFilterRule`, that converts `SUM(CASE WHEN b THEN x
+  END)` to `SUM(x) FILTER (WHERE b)`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2995">CALCITE-2995</a>]
-  Implement DAYNAME，MONTHNAME functions; add "locale" connection property
+  Implement `DAYNAME`，`MONTHNAME` functions; add `locale` connection property
   (xuqianjin)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2460">CALCITE-2460</a>]
-  [CALCITE-2459] Add TO_BASE64 / FROM_BASE64 SQL functions (Wenhui Tang)
+  [CALCITE-2459] Add `TO_BASE64`, `FROM_BASE64` SQL functions (Wenhui Tang)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3063">CALCITE-3063</a>]
   Parse and process PostgreSQL posix regular expressions
 
 #### Bug-fixes, API changes and minor enhancements
+
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-3321">CALCITE-3321</a>]
+  Set casing rules for BigQuery SQL dialect (Lindsey Meyer)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3115">CALCITE-3115</a>]
-  Cannot add JdbcRules which have different JdbcConvention to same
-  VolcanoPlanner's RuleSet (Wenhui Tang, Igor Guzenko)
+  Cannot add `JdbcRule` instances that have different `JdbcConvention` to same
+  `VolcanoPlanner`'s `RuleSet` (Wenhui Tang, Igor Guzenko)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3309">CALCITE-3309</a>]
-  Refactor generatePredicate method from EnumerableNestedLoopJoin,
-  EnumerableHashJoin, and EnumerableBatchNestedLoopJoin into a single location
+  Refactor `generatePredicate` method from `EnumerableNestedLoopJoin`,
+  `EnumerableHashJoin`, and `EnumerableBatchNestedLoopJoin` into a single location
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3310">CALCITE-3310</a>]
   Approximate and exact aggregate calls are recognized as the same during
-  sql-to-rel conversion
+  SQL-to-RelNode conversion
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3292">CALCITE-3292</a>]
   SqlToRelConverter#substituteSubQuery fails with NullPointerException when
-  converting SqlUpdate (Jin Xing)
+  converting `SqlUpdate` (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3297">CALCITE-3297</a>]
-  PigToSqlAggregateRule should be applied on multi-set projection to produce an
+  `PigToSqlAggregateRule` should be applied on multi-set projection to produce an
   optimal plan (Igor Guzenko)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3295">CALCITE-3295</a>]
   Add aggregate call name in serialized json string for relnode (Wang Yanlin)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3296">CALCITE-3296</a>]
   Decorrelator shouldn't give empty value when fetch and offset values are null
-  in Sort rel (Juhwan Kim)
-* Following
-  [<a href="https://issues.apache.org/jira/browse/CALCITE-3122">CALCITE-3122</a>]
-  Fix getFamilitTypes typo
+  in `Sort` rel (Juhwan Kim)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3283">CALCITE-3283</a>]
-  RelSubset does not contain its best RelNode (Xiening Dai)  
+  `RelSubset` does not contain its best `RelNode` (Xiening Dai)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3210">CALCITE-3210</a>]
-  JDBC adapter should generate "CAST(NULL AS type)" rather than "NULL"
+  JDBC adapter should generate `CAST(NULL AS type)` rather than `NULL`
   conditionally (Wang Weidong)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3220">CALCITE-3220</a>]
   JDBC adapter now transforms TRIM to TRIM, LTRIM or RTRIM when target is Hive
@@ -167,24 +163,25 @@ instead of `SqlIdentifier`.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3228">CALCITE-3228</a>]
   Error while applying rule ProjectScanRule: interpreter
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3223">CALCITE-3223</a>]
-  MV fails to match when there is Non-RexInputRef in the projects (Jin Xing)
+  Materialized view fails to match when there is non-`RexInputRef` in the
+  projects (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3257">CALCITE-3257</a>]
-  RelMetadataQuery cache is not invalidated when log trace is enabled (Xiening
-  Dai)
+  `RelMetadataQuery` cache is not invalidated when log trace is enabled
+  (Xiening Dai)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3138">CALCITE-3138</a>]
-  RelStructuredTypeFlattener doesn't restructure ROW type fields (Igor Guzenko)
+  `RelStructuredTypeFlattener` doesn't restructure `ROW` type fields (Igor Guzenko)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3251">CALCITE-3251</a>]
-  BinaryExpression evaluate method support full numeric types in Primitive
+  `BinaryExpression` evaluate method support full numeric types in `Primitive`
   (xy2953396112)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3259">CALCITE-3259</a>]
-  Align 'Property' in the serialized xml string of RelXmlWriter (Wang Yanlin).
+  Align 'Property' in the serialized XML string of `RelXmlWriter` (Wang Yanlin)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3167">CALCITE-3167</a>]
-  Make equals and hashCode methods final in AbstractRelNode, and remove
-  overriding methods in EnumerableTableScan (Jin Xing)
+  Make `equals` and `hashCode` methods final in `AbstractRelNode`, and remove
+  overriding methods in `EnumerableTableScan` (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3089">CALCITE-3089</a>]
-  Deprecate EquiJoin
+  Deprecate `EquiJoin`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3267">CALCITE-3267</a>]
-  Remove method SqlDataTypeSpec#deriveType(RelDataTypefactory)
+  Remove method `SqlDataTypeSpec#deriveType(RelDataTypefactory)`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3214">CALCITE-3214</a>]
   Add UnionToUnionRule for materialization matching (refine rule name) (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3214">CALCITE-3214</a>]
@@ -192,96 +189,93 @@ instead of `SqlIdentifier`.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3249">CALCITE-3249</a>]
   Substitution#getRexShuttle does not consider RexLiteral (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3229">CALCITE-3229</a>]
-  UnsupportedOperationException for UPDATE with IN query
+  `UnsupportedOperationException` for `UPDATE` with `IN` query
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3236">CALCITE-3236</a>]
   Handle issues found in static code analysis (DonnyZone)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3238">CALCITE-3238</a>]
-  Support Time Zone suffix of DateTime types for SqlDataTypeSpec
+  Support Time Zone suffix of DateTime types for `SqlDataTypeSpec`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3159">CALCITE-3159</a>]
-  Remove DISTINCT flag from calls to MIN, MAX, BIT_OR, BIT_AND aggregate
-  functions (xuqianjin)
+  Remove `DISTINCT` flag from calls to `MIN`, `MAX`, `BIT_OR`, `BIT_AND`
+  aggregate functions (xuqianjin)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3237">CALCITE-3237</a>]
-  IndexOutOfBoundsException when generating deeply nested Java code from linq4j
+  `IndexOutOfBoundsException` when generating deeply nested Java code from linq4j
   (Sahith Nallapareddy)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3234">CALCITE-3234</a>]
   For boolean properties, empty string should mean "true"
-* [<a href="https://issues.apache.org/jira/browse/CALCITE-3198">CALCITE-3198</a>]
-  Enhance RexSimplify to handle '(x<>a or x<>b)' (fix javadoc)
-* [<a href="https://issues.apache.org/jira/browse/CALCITE-3198">CALCITE-3198</a>]
-  Enhance RexSimplify to handle '(x<>a or x<>b)' (fix javadoc)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3226">CALCITE-3226</a>]
-  RelBuilder doesn't keep the alias when scan from an expanded view (Jin Xing)
+  `RelBuilder` doesn't keep the alias when `scan` from an expanded view (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3198">CALCITE-3198</a>]
-  Enhance RexSimplify to handle (x<>a or x<>b)
+  Enhance `RexSimplify` to handle `(x <> a or x <> b)`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3101">CALCITE-3101</a>]
-  Don't push non-equi join conditions into Project below Join
+  Don't push non-equi join conditions into `Project` below `Join`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3227">CALCITE-3227</a>]
-  IndexOutOfBound when checking candidate parent match's input ordinal in
-  VolcanoRuleCall
+  `IndexOutOfBoundsException` when checking candidate parent match's input
+  ordinal in `VolcanoRuleCall`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3177">CALCITE-3177</a>]
- Ensure correct deserialization of relational algebra.
+  Ensure correct deserialization of relational algebra
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3218">CALCITE-3218</a>]
-  Syntax error while parsing DATEADD function (which is valid on Redshift)
+  Syntax error while parsing `DATEADD` function (which is valid on Redshift)
   (Lindsey Meyer)
-* Deprecate RexBuilder.constantNull(), because it produces untyped NULL literals
-  that make planning difficult
+* Deprecate `RexBuilder.constantNull()`, because it produces untyped `NULL`
+  literals that make planning difficult
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3191">CALCITE-3191</a>]
-  In JDBC adapter for MySQL, implement Values by generating SELECT without FROM
+  In JDBC adapter for MySQL, implement `Values` by generating `SELECT` without
+  `FROM`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3147">CALCITE-3147</a>]
   In JDBC adapter, accommodate the idiosyncrasies of how BigQuery (standard SQL)
   quotes character literals and identifiers
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3131">CALCITE-3131</a>]
-  In LatticeSuggester, record whether columns are used as "dimensions" or
+  In `LatticeSuggester`, record whether columns are used as "dimensions" or
   "measures"
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3175">CALCITE-3175</a>]
-  AssertionError while serializing to JSON a RexLiteral with Enum type (Wang
-  Yanlin)
+  `AssertionError` while serializing to JSON a `RexLiteral` with `Enum` type
+  (Wang Yanlin)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3225">CALCITE-3225</a>]
-  JoinToMultiJoinRule should not match SEMI/ANTI LogicalJoin
+  `JoinToMultiJoinRule` should not match semi- or anti-LogicalJoin
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3215">CALCITE-3215</a>]
-  Simplification may have not fully simplified IS NOT NULL expressions
+  Simplification may have not fully simplified IS `NOT NULL` expressions
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3192">CALCITE-3192</a>]
   Simplification may weaken OR conditions containing inequalities
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3211">CALCITE-3211</a>]
-  List of MutableRel may fail to be identified by SubstitutionVisitor during
-  matching. (Jin Xing)
+  List of `MutableRel` may fail to be identified by `SubstitutionVisitor` during
+  matching (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3207">CALCITE-3207</a>]
-  Fail to convert Join RelNode with like condition to sql statement (wojustme)
+  Fail to convert `Join` with `LIKE` condition to SQL statement (wojustme)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2496">CALCITE-2496</a>]
-  Return 0 in case of extract(milli/micro/nanosecond from datel) (Sergey
-  Nuyanzin, Chunwei Lei)
+  Return 0 in case of `EXTRACT(MILLI/MICRO/NANOSECOND FROM date)`
+  (Sergey Nuyanzin, Chunwei Lei)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3109">CALCITE-3109</a>]
-  Improvements on algebraic operators to express recursive queries (RepeatUnion
-  & TableSpool)
+  Improvements on algebraic operators to express recursive queries (`RepeatUnion`
+  and `TableSpool`)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3209">CALCITE-3209</a>]
-  When calling MutableMultiRel::setInput, exception thrown (Jin Xing)
+  When calling `MutableMultiRel.setInput`, exception thrown (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3195">CALCITE-3195</a>]
   Handle a UDF that throws checked exceptions in the Enumerable code generator
   (DonnyZone)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3118">CALCITE-3118</a>]
-  VolcanoRuleCall should look at RelSubset rather than RelSet when checking
+  `VolcanoRuleCall` should look at `RelSubset` rather than `RelSet` when checking
   child ordinal of a parent operand (Botong Huang)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3201">CALCITE-3201</a>]
-  SqlValidator throws exception for sql insert target table with virtual columns
+  `SqlValidator` throws exception for SQL insert target table with virtual columns
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3182">CALCITE-3182</a>]
   Trim unused fields for plan of materialized-view before matching (Jin Xing)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3174">CALCITE-3174</a>]
-  IS NOT DISTINCT FROM condition pushed from filter to join is not
-  collapsed(Bohdan Kazydub)
+  `IS NOT DISTINCT FROM` condition pushed from `Filter` to `Join` is not
+  collapsed (Bohdan Kazydub)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3166">CALCITE-3166</a>]
-  Make RelBuilder configurable
+  Make `RelBuilder` configurable
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3113">CALCITE-3113</a>]
-  Equivalent MutableAggregates with different row types should match with each
-  other(Jin Xing)
+  Equivalent `MutableAggregate`s with different row types should match with each
+  other (Jin Xing)
 * <a href="https://issues.apache.org/jira/browse/CALCITE-3187">CALCITE-3187</a>:
   Make decimal type inference overridable (Praveen Kumar)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3145">CALCITE-3145</a>]
-  RelBuilder.aggregate throws IndexOutOfBoundsException if groupKey is non-empty
-  and there are duplicate aggregate functions
-* Change type of SqlStdOperatorTable.GROUPING field to public class
+  `RelBuilder.aggregate` throws `IndexOutOfBoundsException` if `groupKey` is
+  non-empty and there are duplicate aggregate functions
+* Change type of `SqlStdOperatorTable.GROUPING` field to public class
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3196">CALCITE-3196</a>]
-  In Frameworks, add interface BasePrepareAction (a functional interface) and
-  deprecate abstract class PrepareAction
+  In `Frameworks`, add `interface BasePrepareAction` (a functional interface) and
+  deprecate `abstract class PrepareAction`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3183">CALCITE-3183</a>]
   During field trimming, Filter is copied with wrong traitSet (Juhwan Kim)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3189">CALCITE-3189</a>]
@@ -303,44 +297,47 @@ instead of `SqlIdentifier`.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3172">CALCITE-3172</a>]
   RelBuilder#empty does not keep aliases
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3121">CALCITE-3121</a>]
-  VolcanoPlanner hangs due to subquery with dynamic star
+  VolcanoPlanner hangs due to sub-query with dynamic star
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3152">CALCITE-3152</a>]
-  Unify throws in sql parser
+  Unify throws in SQL parser
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3125">CALCITE-3125</a>]
-  Remove completely CorrelateJoinType
+  Remove completely `class CorrelateJoinType`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3133">CALCITE-3133</a>]
-  Remove completely SemiJoinType
+  Remove completely `class SemiJoinType`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3126">CALCITE-3126</a>]
   Remove deprecated SemiJoin usage completely
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3146">CALCITE-3146</a>]
-  Support the detection of nested aggregations for JdbcAggregate in
-  SqlImplementor.(Wenhui Tang)
+  Support the detection of nested aggregations for `JdbcAggregate` in
+  `SqlImplementor` (Wenhui Tang)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3155">CALCITE-3155</a>]
-  Empty LogicalValues can not be converted to UNION_ALL without operands which
+  Empty `LogicalValues` can not be converted to UNION_ALL without operands which
   can not be unparsed (Musbah EL FIL)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3151">CALCITE-3151</a>]
   RexCall's Monotonicity is not considered in determining a Calc's collation
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2801">CALCITE-2801</a>]
-  Check input type in AggregateUnionAggregateRule when remove the bottom
-  Aggregate (Hequn Cheng)
+  Check input type in `AggregateUnionAggregateRule` when remove the bottom
+  `Aggregate` (Hequn Cheng)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3149">CALCITE-3149</a>]
   RelDataType CACHE in RelDataTypeFactoryImpl can't be garbage collected
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3060">CALCITE-3060</a>]
-  MutableProject should be generated based on INVERSE_SURJECTION mapping
+  `MutableProject` should be generated based on INVERSE_SURJECTION mapping
   (DonnyZone)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3148">CALCITE-3148</a>]
-  Validator throws IndexOutOfBoundsException for SqlInsert when source and sink
-  have non-equal fields number
+  Validator throws `IndexOutOfBoundsException` for `SqlInsert` when source and
+  sink have non-equal number of fields
 
 #### Build and test suite
+
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-3322">CALCITE-3322</a>]
+  Remove duplicate test case in `RelMetadataTest`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3314">CALCITE-3314</a>]
   CVSS dependency-check-maven fails for calcite-pig, calcite-piglet,
   calcite-spark
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3315">CALCITE-3315</a>]
   Multiple failures in Druid IT tests due to implicit casts
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3307">CALCITE-3307</a>]
-  PigRelExTest, PigRelOpTest and PigScriptTest fail on Windows
-* In SqlFunctionsTest, replace assertEquals and assertNull with assertThat
+  `PigRelExTest`, `PigRelOpTest` and `PigScriptTest` fail on Windows
+* In `SqlFunctionsTest`, replace `assertEquals` and `assertNull` with `assertThat`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3258">CALCITE-3258</a>]
   Upgrade jackson-databind from 2.9.9 to 2.9.9.3, and kafka-clients from 2.0.0
   to 2.1.1
@@ -349,12 +346,12 @@ instead of `SqlIdentifier`.
 * More compiler fixes, and cosmetic changes
 * Fix compiler warnings
 * Update stale tests in DruidAdapter
-* Following [<a
-  href="https://issues.apache.org/jira/browse/CALCITE-2804">CALCITE-2804</a>]
- , fix incorrect expected Druid query in test case
-  DruidAdapterIT#testCastToTimestamp (Justin Szeluga)
+* Following
+  [<a href="https://issues.apache.org/jira/browse/CALCITE-2804">CALCITE-2804</a>],
+  fix incorrect expected Druid query in test case
+  `DruidAdapterIT#testCastToTimestamp` (Justin Szeluga)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3153">CALCITE-3153</a>]
-  Improve testing in TpcdsTest using assertEqual instead of printing results
+  Improve testing in `TpcdsTest` using `assertEqual` instead of printing results
 * Fix javadoc error
 * Fix compilation warnings after Mongo java driver upgrade
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3179">CALCITE-3179</a>]
@@ -364,9 +361,10 @@ instead of `SqlIdentifier`.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3156">CALCITE-3156</a>]
   Mongo adapter. Replace fongo with Mongo Java Server for tests
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3168">CALCITE-3168</a>]
-  Add test for invalid literal of sql parser
+  Add test for invalid literal of SQL parser
 
 #### Web site and documentation
+
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3303">CALCITE-3303</a>]
   Release Calcite 1.21.0
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3311">CALCITE-3311</a>]
