@@ -50,6 +50,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -346,15 +347,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   @Test public void testPrefix() {
     checkExpType("+interval '1' second", "INTERVAL SECOND NOT NULL");
     checkExpType("-interval '1' month", "INTERVAL MONTH NOT NULL");
-    checkFails(
-        "SELECT ^-'abc'^ from (values(true))",
-        "(?s).*Cannot apply '-' to arguments of type '-<CHAR.3.>'.*",
-        false);
+    sql("SELECT ^-'abc'^ from (values(true))")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply '-' to arguments of type '-<CHAR.3.>'.*");
     check("SELECT -'abc' from (values(true))");
-    checkFails(
-        "SELECT ^+'abc'^ from (values(true))",
-        "(?s).*Cannot apply '\\+' to arguments of type '\\+<CHAR.3.>'.*",
-        false);
+    sql("SELECT ^+'abc'^ from (values(true))")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply '\\+' to arguments of type '\\+<CHAR.3.>'.*");
     check("SELECT +'abc' from (values(true))");
   }
 
@@ -410,10 +409,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkExp("1<>n'abc'"); // compare INTEGER, NCHAR ok
     checkExp("''=.1"); // compare CHAR, DECIMAL ok
     checkExp("true<>1e-1");
-    checkExpFails(
-        "^true<>1e-1^",
-        "(?s).*Cannot apply '<>' to arguments of type '<BOOLEAN> <> <DOUBLE>'.*",
-        false);
+    expr("^true<>1e-1^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply '<>' to arguments of type '<BOOLEAN> <> <DOUBLE>'.*");
     checkExp("false=''"); // compare BOOLEAN, CHAR ok
     checkExpFails(
         "^x'a4'=0.01^",
@@ -485,10 +483,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test public void testArithmeticOperatorsFails() {
-    checkExpFails(
-        "^power(2,'abc')^",
-        "(?s).*Cannot apply 'POWER' to arguments of type 'POWER.<INTEGER>, <CHAR.3.>.*",
-        false);
+    expr("^power(2,'abc')^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply 'POWER' to arguments of type 'POWER.<INTEGER>, <CHAR.3.>.*");
     checkExpType("power(2,'abc')", "DOUBLE NOT NULL");
     checkExpFails(
         "^power(true,1)^",
@@ -499,20 +496,18 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkExpFails(
         "^mod(1, x'1100')^",
         "(?s).*Cannot apply 'MOD' to arguments of type 'MOD.<INTEGER>, <BINARY.2.>.*");
-    checkExpFails(
-        "^abs(x'')^",
-        "(?s).*Cannot apply 'ABS' to arguments of type 'ABS.<BINARY.0.>.*",
-        false);
+    expr("^abs(x'')^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply 'ABS' to arguments of type 'ABS.<BINARY.0.>.*");
     checkExpFails(
         "^ln(x'face12')^",
         "(?s).*Cannot apply 'LN' to arguments of type 'LN.<BINARY.3.>.*");
     checkExpFails(
         "^log10(x'fa')^",
         "(?s).*Cannot apply 'LOG10' to arguments of type 'LOG10.<BINARY.1.>.*");
-    checkExpFails(
-        "^exp('abc')^",
-        "(?s).*Cannot apply 'EXP' to arguments of type 'EXP.<CHAR.3.>.*",
-        false);
+    expr("^exp('abc')^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply 'EXP' to arguments of type 'EXP.<CHAR.3.>.*");
     checkExpType("exp('abc')", "DOUBLE NOT NULL");
   }
 
@@ -987,11 +982,17 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     check("select bit_or(null) from emp");
 
     checkExp("substring(null from 1) + 1");
-    checkExpFails("substring(^NULL^ from 1)", "(?s).*Illegal use of .NULL.*", false);
+    expr("substring(^NULL^ from 1)")
+        .withTypeCoercion(false)
+        .fails("(?s).*Illegal use of .NULL.*");
 
-    checkExpFails("values 1.0 + ^NULL^", "(?s).*Illegal use of .NULL.*", false);
+    expr("values 1.0 + ^NULL^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Illegal use of .NULL.*");
     checkExpType("values 1.0 + NULL", "DECIMAL(2, 1)");
-    checkExpFails("1.0 + ^NULL^", "(?s).*Illegal use of .NULL.*", false);
+    expr("1.0 + ^NULL^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Illegal use of .NULL.*");
     checkExpType("1.0 + NULL", "DECIMAL(2, 1)");
 
     // FIXME: SQL:2003 does not allow raw NULL in IN clause
@@ -1370,6 +1371,11 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkWholeExpFails("foo()", "No match found for function signature FOO..");
     checkWholeExpFails("mod(123)",
         "Invalid number of arguments to function 'MOD'. Was expecting 2 arguments");
+    Assume.assumeTrue("test case for [CALCITE-3326], disabled til it is fixed",
+        false);
+    sql("select foo()")
+        .withTypeCoercion(false)
+        .fails("No match found for function signature FOO..");
   }
 
   @Test public void testJdbcFunctionCall() {
@@ -4683,9 +4689,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "sum(sal) over (partition by empno + deptno order by empno range 5 preceding)")
         .ok();
 
-    winExp2(
-        "sum(sal) over (partition by ^empno + ename^ order by empno range 5 preceding)",
-        false)
+    winSql("select "
+        + "sum(sal) over (partition by ^empno + ename^ order by empno range 5 preceding)"
+        + " from emp")
+        .withTypeCoercion(false)
         .fails(
             "(?s)Cannot apply '\\+' to arguments of type '<INTEGER> \\+ <VARCHAR\\(20\\)>'.*");
 
@@ -5194,9 +5201,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     check("select * from emp\n"
         + "where empno in (10 + deptno, cast(null as integer))");
     check("select * from emp where empno in (10, '20')");
-    checkFails(
-        "select * from emp where empno in ^(10, '20')^",
-        ERR_IN_VALUES_INCOMPATIBLE, false);
+    sql("select * from emp where empno in ^(10, '20')^")
+        .withTypeCoercion(false)
+        .fails(ERR_IN_VALUES_INCOMPATIBLE);
 
     checkExpType("1 in (2, 3, 4)", "BOOLEAN NOT NULL");
     checkExpType("cast(null as integer) in (2, 3, 4)", "BOOLEAN");
@@ -5220,10 +5227,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "BOOLEAN");
 
     checkExp("1 in (2, 'c')");
-    checkExpFails(
-        "1 in ^(2, 'c')^",
-        ERR_IN_VALUES_INCOMPATIBLE,
-        false);
+    expr("1 in ^(2, 'c')^")
+        .withTypeCoercion(false)
+        .fails(ERR_IN_VALUES_INCOMPATIBLE);
     checkExpFails(
         "1 in ^((2), (3,4))^",
         ERR_IN_VALUES_INCOMPATIBLE);
@@ -5255,9 +5261,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     check("select * from emp\n"
         + "where empno < any (10 + deptno, cast(null as integer))");
     check("select * from emp where empno < any (10, '20')");
-    checkFails(
-        "select * from emp where empno < any ^(10, '20')^",
-        ERR_IN_VALUES_INCOMPATIBLE, false);
+    sql("select * from emp where empno < any ^(10, '20')^")
+        .withTypeCoercion(false)
+        .fails(ERR_IN_VALUES_INCOMPATIBLE);
 
     checkExpType("1 < all (2, 3, 4)", "BOOLEAN NOT NULL");
     checkExpType("cast(null as integer) < all (2, 3, 4)", "BOOLEAN");
@@ -5281,8 +5287,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "BOOLEAN");
 
     checkExp("1 = any (2, 'c')");
-    checkExpFails("1 = any ^(2, 'c')^",
-        ERR_IN_VALUES_INCOMPATIBLE, false);
+    expr("1 = any ^(2, 'c')^")
+        .withTypeCoercion(false)
+        .fails(ERR_IN_VALUES_INCOMPATIBLE);
     checkExpFails("1 > all ^((2), (3,4))^",
         ERR_IN_VALUES_INCOMPATIBLE);
     checkExp("false and 1 = any ('b', 'c')");
@@ -5413,7 +5420,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test public void testInvalidGroupBy2() {
-    sql("select count(*) from emp group by ^deptno + 'a'^", false)
+    sql("select count(*) from emp group by ^deptno + 'a'^")
+        .withTypeCoercion(false)
         .fails("(?s)Cannot apply '\\+' to arguments of type.*");
     sql("select count(*) from emp group by deptno + 'a'").ok();
   }
@@ -5421,7 +5429,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   @Test public void testInvalidGroupBy3() {
     sql("select deptno / 2 + 1, count(*) as c\n"
         + "from emp\n"
-        + "group by rollup(deptno / 2, sal), rollup(empno, ^deptno + 'a'^)", false)
+        + "group by rollup(deptno / 2, sal), rollup(empno, ^deptno + 'a'^)")
+        .withTypeCoercion(false)
         .fails("(?s)Cannot apply '\\+' to arguments of type.*");
     sql("select deptno / 2 + 1, count(*) as c\n"
         + "from emp\n"
@@ -5733,9 +5742,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test public void testSumInvalidArgs() {
-    checkFails("select ^sum(ename)^, deptno from emp group by deptno",
-        "(?s)Cannot apply 'SUM' to arguments of type 'SUM\\(<VARCHAR\\(20\\)>\\)'\\. .*",
-        false);
+    sql("select ^sum(ename)^, deptno from emp group by deptno")
+        .withTypeCoercion(false)
+        .fails("(?s)Cannot apply 'SUM' to arguments of type 'SUM\\(<VARCHAR\\(20\\)>\\)'\\. .*");
     checkResultType("select sum(ename), deptno from emp group by deptno",
         "RecordType(DECIMAL(19, 19) NOT NULL EXPR$0, INTEGER NOT NULL DEPTNO) NOT NULL");
   }
@@ -5827,70 +5836,63 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test public void testUnionTypeMismatchFails() {
-    checkFails(
-        "select 1, ^2^ from emp union select deptno, name from dept",
-        "Type mismatch in column 2 of UNION",
-        false);
+    sql("select 1, ^2^ from emp union select deptno, name from dept")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 2 of UNION");
 
     check("select 1, 2 from emp union select deptno, ^name^ from dept");
 
-    checkFails(
-        "select ^slacker^ from emp union select name from dept",
-        "Type mismatch in column 1 of UNION",
-        false);
+    sql("select ^slacker^ from emp union select name from dept")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 1 of UNION");
 
     check("select ^slacker^ from emp union select name from dept");
   }
 
   @Test public void testUnionTypeMismatchWithStarFails() {
-    checkFails(
-        "select ^*^ from dept union select 1, 2 from emp",
-        "Type mismatch in column 2 of UNION",
-        false);
+    sql("select ^*^ from dept union select 1, 2 from emp")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 2 of UNION");
 
     check("select * from dept union select 1, 2 from emp");
 
-    checkFails(
-        "select ^dept.*^ from dept union select 1, 2 from emp",
-        "Type mismatch in column 2 of UNION",
-        false);
+    sql("select ^dept.*^ from dept union select 1, 2 from emp")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 2 of UNION");
 
     check("select dept.* from dept union select 1, 2 from emp");
   }
 
   @Test public void testUnionTypeMismatchWithValuesFails() {
-    checkFails(
-        "values (1, ^2^, 3), (3, 4, 5), (6, 7, 8) union\n"
-            + "select deptno, name, deptno from dept",
-        "Type mismatch in column 2 of UNION",
-        false);
+    sql("values (1, ^2^, 3), (3, 4, 5), (6, 7, 8) union\n"
+            + "select deptno, name, deptno from dept")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 2 of UNION");
 
     check(
         "values (1, 2, 3), (3, 4, 5), (6, 7, 8) union\n"
             + "select deptno, ^name^, deptno from dept");
 
-    checkFails(
-        "select 1 from (values (^'x'^)) union\n"
-            + "select 'a' from (values ('y'))",
-        "Type mismatch in column 1 of UNION",
-        false);
+    sql("select 1 from (values (^'x'^)) union\n"
+            + "select 'a' from (values ('y'))")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 1 of UNION");
 
     check("select 1 from (values ('x')) union\n"
         + "select 'a' from (values ('y'))");
 
-    checkFails(
-        "select 1 from (values (^'x'^)) union\n"
-            + "(values ('a'))",
-        "Type mismatch in column 1 of UNION",
-        false);
+    sql("select 1 from (values (^'x'^)) union\n"
+            + "(values ('a'))")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 1 of UNION");
 
     check("select 1 from (values ('x')) union\n"
         + "(values ('a'))");
 
-    checkFails(
-        "select 1, ^2^, 3 union\n "
-            + "select deptno, name, deptno from dept",
-        "Type mismatch in column 2 of UNION", false);
+    sql("select 1, ^2^, 3 union\n "
+            + "select deptno, name, deptno from dept")
+        .withTypeCoercion(false)
+        .fails("Type mismatch in column 2 of UNION");
 
     check("select 1, 2, 3 union\n "
         + "select deptno, name, deptno from dept");
@@ -6620,10 +6622,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "Column 'NONEXISTENT' not found in any table");
 
     // Overriding expression has different type.
-    checkFails(
-        "select 'foo' as empno from emp order by ^empno + 5^",
-        "(?s)Cannot apply '\\+' to arguments of type '<CHAR\\(3\\)> \\+ <INTEGER>'\\..*",
-        false);
+    sql("select 'foo' as empno from emp order by ^empno + 5^")
+        .withTypeCoercion(false)
+        .fails("(?s)Cannot apply '\\+' to arguments of type '<CHAR\\(3\\)> \\+ <INTEGER>'\\..*");
 
     check("select 'foo' as empno from emp order by empno + 5");
   }
@@ -8351,9 +8352,11 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         "select * from table(ramp(3))",
         "RecordType(INTEGER NOT NULL I) NOT NULL");
 
-    checkFails("select * from table(^ramp('3')^)",
-        "Cannot apply 'RAMP' to arguments of type 'RAMP\\(<CHAR\\(1\\)>\\)'\\. Supported form\\(s\\): 'RAMP\\(<NUMERIC>\\)'",
-        false);
+    sql("select * from table(^ramp('3')^)")
+        .withTypeCoercion(false)
+        .fails("Cannot apply 'RAMP' to arguments of type "
+            + "'RAMP\\(<CHAR\\(1\\)>\\)'\\. "
+            + "Supported form\\(s\\): 'RAMP\\(<NUMERIC>\\)'");
 
     checkResultType("select * from table(ramp('3'))",
         "RecordType(INTEGER NOT NULL I) NOT NULL");
@@ -8383,7 +8386,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql("select * from dept left join lateral table(ramp(dept.deptno)) on true")
         .type(expectedType2);
 
-    sql("select * from dept, lateral table(^ramp(dept.name)^)", false)
+    sql("select * from dept, lateral table(^ramp(dept.name)^)")
+        .withTypeCoercion(false)
         .fails("(?s)Cannot apply 'RAMP' to arguments of type 'RAMP\\(<VARCHAR\\(10\\)>\\)'.*");
 
     sql("select * from dept, lateral table(ramp(dept.name))")
@@ -11330,7 +11334,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkExpType("'null' format json", "ANY NOT NULL");
     checkExpType("cast(null as varchar) format json", "ANY");
     checkExpType("null format json", "ANY");
-    checkExpFails("^null^ format json", "(?s).*Illegal use of .NULL.*", false);
+    expr("^null^ format json")
+        .withTypeCoercion(false)
+        .fails("(?s).*Illegal use of .NULL.*");
   }
 
   @Test public void testJsonExists() {
@@ -11397,8 +11403,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     check("select json_pretty(ename) from emp");
     checkExp("json_pretty('{\"foo\":\"bar\"}')");
     checkExpType("json_pretty('{\"foo\":\"bar\"}')", "VARCHAR(2000)");
-    checkFails("select json_pretty(^NULL^) from emp",
-        "(?s).*Illegal use of .NULL.*", false);
+    sql("select json_pretty(^NULL^) from emp")
+        .withTypeCoercion(false)
+        .fails("(?s).*Illegal use of .NULL.*");
     check("select json_pretty(NULL) from emp");
 
     if (!Bug.CALCITE_2869_FIXED) {
@@ -11468,8 +11475,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   @Test public void testJsonObjectAgg() {
     check("select json_objectagg(ename: empno) from emp");
     check("select json_objectagg(empno: ename) from emp");
-    checkFails("select ^json_objectagg(empno: ename)^ from emp",
-        "(?s).*Cannot apply.*", false);
+    sql("select ^json_objectagg(empno: ename)^ from emp")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply.*");
     checkExpType("json_objectagg('foo': 'bar')", "VARCHAR(2000) NOT NULL");
   }
 
@@ -11485,7 +11493,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkExpType("'[]' is not json array", "BOOLEAN NOT NULL");
     checkExpType("'100' is not json scalar", "BOOLEAN NOT NULL");
     checkExpType("100 is json value", "BOOLEAN NOT NULL");
-    checkExpFails("^100 is json value^", "(?s).*Cannot apply.*", false);
+    expr("^100 is json value^")
+        .withTypeCoercion(false)
+        .fails("(?s).*Cannot apply.*");
   }
 
   @Test public void testRegexpReplace() {
