@@ -291,7 +291,7 @@ public class RexImpTable {
       new HashMap<>();
   private final Map<SqlAggFunction, Supplier<? extends WinAggImplementor>> winAggMap =
       new HashMap<>();
-  private final Map<SqlMatchFunction, Supplier<? extends MatchImplementor>> mrMap =
+  private final Map<SqlMatchFunction, Supplier<? extends MatchImplementor>> matchMap =
       new HashMap<>();
 
   RexImpTable() {
@@ -628,8 +628,8 @@ public class RexImpTable {
     winAggMap.put(REGR_COUNT, constructorSupplier(CountWinImplementor.class));
 
     // Functions for MATCH_RECOGNIZE
-    mrMap.put(CLASSIFIER, ClassifierImplementor::new);
-    mrMap.put(LAST, LastImplementor::new);
+    matchMap.put(CLASSIFIER, ClassifierImplementor::new);
+    matchMap.put(LAST, LastImplementor::new);
     map.put(PREV, new PrevImplementor());
   }
 
@@ -916,7 +916,8 @@ public class RexImpTable {
   }
 
   public MatchImplementor get(final SqlMatchFunction function) {
-    final Supplier<? extends MatchImplementor> supplier = mrMap.get(function);
+    final Supplier<? extends MatchImplementor> supplier =
+        matchMap.get(function);
     if (supplier != null) {
       return supplier.get();
     } else {
@@ -2934,19 +2935,17 @@ public class RexImpTable {
     }
   }
 
-  /** Implements CLASSIFIER MR Function */
+  /** Implements CLASSIFIER match-recognize function. */
   private static class ClassifierImplementor implements MatchImplementor {
     @Override public Expression implement(RexToLixTranslator translator, RexCall call,
         ParameterExpression row, ParameterExpression rows,
         ParameterExpression symbols, ParameterExpression i) {
       return Types.castIfNecessary(String.class,
-          Expressions.call(
-              symbols,
-              Types.lookupMethod(List.class, "get", int.class), i));
+          Expressions.call(symbols, BuiltInMethod.LIST_GET.method, i));
     }
   }
 
-  /** Implements LAST MR Function */
+  /** Implements the LAST match-recognize function. */
   private static class LastImplementor implements MatchImplementor {
     @Override public Expression implement(RexToLixTranslator translator, RexCall call,
         ParameterExpression row, ParameterExpression rows,
@@ -2956,41 +2955,35 @@ public class RexImpTable {
       final String alpha = ((RexPatternFieldRef) call.getOperands().get(0)).getAlpha();
 
       final BinaryExpression lastIndex = Expressions.subtract(
-          Expressions.call(rows, Types.lookupMethod(List.class, "size")),
-          Expressions.constant(1)
-      );
+          Expressions.call(rows, BuiltInMethod.COLLECTION_SIZE.method),
+          Expressions.constant(1));
 
       // Just take the last one, if exists
       if ("*".equals(alpha)) {
         ((EnumerableMatch.PassedRowsInputGetter) translator.inputGetter).setIndex(i);
         // Important, unbox the node / expression to avoid NullAs.NOT_POSSIBLE
         final RexPatternFieldRef ref = (RexPatternFieldRef) node;
-        final RexPatternFieldRef newRef = new RexPatternFieldRef(
-            ref.getAlpha(),
-            ref.getIndex(),
-            translator.typeFactory.createTypeWithNullability(ref.getType(), true)
-        );
+        final RexPatternFieldRef newRef =
+            new RexPatternFieldRef(ref.getAlpha(),
+                ref.getIndex(),
+                translator.typeFactory.createTypeWithNullability(ref.getType(),
+                    true));
         final Expression expression = translator.translate(newRef, NullAs.NULL);
         ((EnumerableMatch.PassedRowsInputGetter) translator.inputGetter).setIndex(null);
         return expression;
       } else {
         // Alpha != "*" so we have to search for a specific one to find and use that, if found
         ((EnumerableMatch.PassedRowsInputGetter) translator.inputGetter).setIndex(
-            Expressions.call(
-                Types.lookupMethod(MatchUtils.class, "lastWithSymbol", String.class,
-                    List.class, List.class, int.class),
-                Expressions.constant(alpha),
-                rows,
-                symbols,
-                i));
+            Expressions.call(BuiltInMethod.MATCH_UTILS_LAST_WITH_SYMBOL.method,
+                Expressions.constant(alpha), rows, symbols, i));
 
         // Important, unbox the node / expression to avoid NullAs.NOT_POSSIBLE
         final RexPatternFieldRef ref = (RexPatternFieldRef) node;
-        final RexPatternFieldRef newRef = new RexPatternFieldRef(
-            ref.getAlpha(),
-            ref.getIndex(),
-            translator.typeFactory.createTypeWithNullability(ref.getType(), true)
-        );
+        final RexPatternFieldRef newRef =
+            new RexPatternFieldRef(ref.getAlpha(),
+                ref.getIndex(),
+                translator.typeFactory.createTypeWithNullability(ref.getType(),
+                    true));
         final Expression expression = translator.translate(newRef, NullAs.NULL);
         ((EnumerableMatch.PassedRowsInputGetter) translator.inputGetter).setIndex(null);
         return expression;
@@ -2998,7 +2991,7 @@ public class RexImpTable {
     }
   }
 
-  /** Implements PREV MR Function */
+  /** Implements PREV match-recognize function. */
   private static class PrevImplementor implements CallImplementor {
     @Override public Expression implement(RexToLixTranslator translator, RexCall call,
         NullAs nullAs) {

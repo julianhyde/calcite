@@ -16,12 +16,9 @@
  */
 package org.apache.calcite.sql;
 
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
-
-import java.util.List;
 
 /** Base class for all functions used in MATCH_RECOGNIZE. */
 public class SqlMatchFunction extends SqlFunction {
@@ -31,25 +28,6 @@ public class SqlMatchFunction extends SqlFunction {
       SqlOperandTypeChecker operandTypeChecker, SqlFunctionCategory category) {
     super(name, kind, returnTypeInference, operandTypeInference, operandTypeChecker, category);
   }
-
-  public SqlMatchFunction(SqlIdentifier sqlIdentifier, SqlReturnTypeInference returnTypeInference,
-      SqlOperandTypeInference operandTypeInference,
-      SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes,
-      SqlFunctionCategory funcType) {
-    super(sqlIdentifier, returnTypeInference, operandTypeInference, operandTypeChecker, paramTypes,
-        funcType);
-  }
-
-  protected SqlMatchFunction(String name, SqlIdentifier sqlIdentifier, SqlKind kind,
-      SqlReturnTypeInference returnTypeInference,
-      SqlOperandTypeInference operandTypeInference,
-      SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes,
-      SqlFunctionCategory category) {
-    super(name, sqlIdentifier, kind, returnTypeInference, operandTypeInference, operandTypeChecker,
-        paramTypes, category);
-  }
-
-
 }
 
 // End SqlMatchFunction.java
