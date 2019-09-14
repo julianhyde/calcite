@@ -49,9 +49,33 @@ public class MssqlSqlDialect extends SqlDialect {
           ReturnTypes.ARG0_NULLABLE_VARYING, null, null,
           SqlFunctionCategory.STRING);
 
+  /** Whether to generate "SELECT TOP(fetch)" rather than
+   * "SELECT ... FETCH NEXT fetch ROWS ONLY". */
+  private final boolean top;
+
   /** Creates a MssqlSqlDialect. */
   public MssqlSqlDialect(Context context) {
     super(context);
+    // MSSQL 2008 (version 10) and earlier only supports TOP
+    // MSSQL 2012 (version 11) and higher supports OFFSET and FETCH
+    top = context.databaseMajorVersion() < 11;
+  }
+
+  @Override public void unparseOffsetFetch(SqlWriter writer, SqlNode offset,
+      SqlNode fetch) {
+    if (!top) {
+      super.unparseOffsetFetch(writer, offset, fetch);
+    }
+  }
+
+  @Override public void unparseTopN(SqlWriter writer, SqlNode offset,
+      SqlNode fetch) {
+    if (top) {
+      writer.keyword("TOP");
+      writer.keyword("(");
+      fetch.unparse(writer, -1, -1);
+      writer.keyword(")");
+    }
   }
 
   @Override public void unparseDateTimeLiteral(SqlWriter writer,
