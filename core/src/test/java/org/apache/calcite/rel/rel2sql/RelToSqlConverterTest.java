@@ -1329,10 +1329,14 @@ public class RelToSqlConverterTest {
         + "FROM [foodmart].[product]\n"
         + "ORDER BY [product_id]\n"
         + "FETCH NEXT 100 ROWS ONLY";
+    final String expectedSybase = "SELECT TOP (100) product_id\n"
+        + "FROM foodmart.product\n"
+        + "ORDER BY product_id";
     sql(query).ok(expected)
         .withMssql(10).ok(expectedMssql10)
         .withMssql(11).ok(expectedMssql)
-        .withMssql(14).ok(expectedMssql);
+        .withMssql(14).ok(expectedMssql)
+        .withSybase().ok(expectedSybase);
   }
 
   @Test public void testSelectQueryComplex() {
@@ -3985,6 +3989,10 @@ public class RelToSqlConverterTest {
 
     Sql withSnowflake() {
       return dialect(DatabaseProduct.SNOWFLAKE.getDialect());
+    }
+
+    Sql withSybase() {
+      return dialect(DatabaseProduct.SYBASE.getDialect());
     }
 
     Sql withVertica() {
