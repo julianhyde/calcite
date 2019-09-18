@@ -42,8 +42,8 @@ public class ExtensionSqlParserTest extends SqlParserTest {
 
   @Test public void testAlterSystemExtensionWithoutAlter() {
     // We need to include the scope for custom alter operations
-    checkFails("^upload^ jar '/path/to/jar'",
-        "(?s).*Encountered \"upload\" at .*");
+    sql("^upload^ jar '/path/to/jar'")
+        .fails("(?s).*Encountered \"upload\" at .*");
   }
 
   @Test public void testCreateTable() {
