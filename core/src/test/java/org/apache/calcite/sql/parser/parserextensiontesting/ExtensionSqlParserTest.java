@@ -36,8 +36,8 @@ public class ExtensionSqlParserTest extends SqlParserTest {
   }
 
   @Test public void testAlterSystemExtension() {
-    check("alter system upload jar '/path/to/jar'",
-        "ALTER SYSTEM UPLOAD JAR '/path/to/jar'");
+    sql("alter system upload jar '/path/to/jar'")
+        .ok("ALTER SYSTEM UPLOAD JAR '/path/to/jar'");
   }
 
   @Test public void testAlterSystemExtensionWithoutAlter() {
