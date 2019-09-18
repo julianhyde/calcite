@@ -765,10 +765,12 @@ public class SqlParserTest {
   }
 
   @Test public void testDerivedColumnListInJoin() {
-    sql("select * from emp as e (empno, gender) join dept as d (deptno, dname) on emp.deptno = dept.deptno")
-        .ok("SELECT *\n"
-            + "FROM `EMP` AS `E` (`EMPNO`, `GENDER`)\n"
-            + "INNER JOIN `DEPT` AS `D` (`DEPTNO`, `DNAME`) ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)");
+    final String sql = "select * from emp as e (empno, gender)\n"
+        + " join dept as d (deptno, dname) on emp.deptno = dept.deptno";
+    final String expected = "SELECT *\n"
+        + "FROM `EMP` AS `E` (`EMPNO`, `GENDER`)\n"
+        + "INNER JOIN `DEPT` AS `D` (`DEPTNO`, `DNAME`) ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)";
+    sql(sql).ok(expected);
   }
 
   /** Test case that does not reproduce but is related to
@@ -1020,23 +1022,41 @@ public class SqlParserTest {
             + "FROM `T`\n"
             + "WHERE (`PRICE` BETWEEN ASYMMETRIC 1 AND (2 + (2 * 2)))");
 
-    sql("select * from t where price > 5 and price not between 1 + 2 and 3 * 4 AnD price is null")
-        .ok("SELECT *\n"
-            + "FROM `T`\n"
-            + "WHERE (((`PRICE` > 5) AND (`PRICE` NOT BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) AND (`PRICE` IS NULL))");
+    final String sql0 = "select * from t\n"
+        + " where price > 5\n"
+        + " and price not between 1 + 2 and 3 * 4 AnD price is null";
+    final String expected0 = "SELECT *\n"
+        + "FROM `T`\n"
+        + "WHERE (((`PRICE` > 5) "
+        + "AND (`PRICE` NOT BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) "
+        + "AND (`PRICE` IS NULL))";
+    sql(sql0).ok(expected0);
 
-    sql("select * from t where price > 5 and price between 1 + 2 and 3 * 4 + price is null")
-        .ok("SELECT *\n"
-            + "FROM `T`\n"
-            + "WHERE ((`PRICE` > 5) AND ((`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND ((3 * 4) + `PRICE`)) IS NULL))");
+    final String sql1 = "select * from t\n"
+        + "where price > 5\n"
+        + "and price between 1 + 2 and 3 * 4 + price is null";
+    final String expected1 = "SELECT *\n"
+        + "FROM `T`\n"
+        + "WHERE ((`PRICE` > 5) "
+        + "AND ((`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND ((3 * 4) + `PRICE`)) "
+        + "IS NULL))";
+    sql(sql1).ok(expected1);
 
-    sql("select * from t where price > 5 and price between 1 + 2 and 3 * 4 or price is null")
-        .ok("SELECT *\n"
-            + "FROM `T`\n"
-            + "WHERE (((`PRICE` > 5) AND (`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) OR (`PRICE` IS NULL))");
+    final String sql2 = "select * from t\n"
+        + "where price > 5\n"
+        + "and price between 1 + 2 and 3 * 4 or price is null";
+    final String expected2 = "SELECT *\n"
+        + "FROM `T`\n"
+        + "WHERE (((`PRICE` > 5) "
+        + "AND (`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) "
+        + "OR (`PRICE` IS NULL))";
+    sql(sql2).ok(expected2);
 
-    sql("values a between c and d and e and f between g and h")
-        .ok("VALUES (ROW((((`A` BETWEEN ASYMMETRIC `C` AND `D`) AND `E`) AND (`F` BETWEEN ASYMMETRIC `G` AND `H`))))");
+    final String sql3 = "values a between c and d and e and f between g and h";
+    final String expected3 = "VALUES ("
+        + "ROW((((`A` BETWEEN ASYMMETRIC `C` AND `D`) AND `E`)"
+        + " AND (`F` BETWEEN ASYMMETRIC `G` AND `H`))))";
+    sql(sql3).ok(expected3);
 
     sql("values a between b or c^")
         .fails(".*BETWEEN operator has no terminating AND");
@@ -1844,17 +1864,20 @@ public class SqlParserTest {
   }
 
   @Test public void testHavingAfterGroup() {
-    sql("select deptno from emp group by deptno, emp having count(*) > 5 and 1 = 2 order by 5, 2")
-        .ok("SELECT `DEPTNO`\n"
-            + "FROM `EMP`\n"
-            + "GROUP BY `DEPTNO`, `EMP`\n"
-            + "HAVING ((COUNT(*) > 5) AND (1 = 2))\n"
-            + "ORDER BY 5, 2");
+    final String sql = "select deptno from emp group by deptno, emp\n"
+        + "having count(*) > 5 and 1 = 2 order by 5, 2";
+    final String expected = "SELECT `DEPTNO`\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY `DEPTNO`, `EMP`\n"
+        + "HAVING ((COUNT(*) > 5) AND (1 = 2))\n"
+        + "ORDER BY 5, 2";
+    sql(sql).ok(expected);
   }
 
   @Test public void testHavingBeforeGroupFails() {
-    sql("select deptno from emp having count(*) > 5 and deptno < 4 ^group^ by deptno, emp")
-        .fails("(?s).*Encountered \"group\" at .*");
+    final String sql = "select deptno from emp\n"
+        + "having count(*) > 5 and deptno < 4 ^group^ by deptno, emp";
+    sql(sql).fails("(?s).*Encountered \"group\" at .*");
   }
 
   @Test public void testHavingNoGroup() {
@@ -1902,113 +1925,124 @@ public class SqlParserTest {
   }
 
   @Test public void testGroupByCube() {
-    sql("select deptno from emp\n"
-        + "group by cube ((a, b), (c, d))")
-        .ok("SELECT `DEPTNO`\n"
-            + "FROM `EMP`\n"
-            + "GROUP BY CUBE((`A`, `B`), (`C`, `D`))");
+    final String sql = "select deptno from emp\n"
+        + "group by cube ((a, b), (c, d))";
+    final String expected = "SELECT `DEPTNO`\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY CUBE((`A`, `B`), (`C`, `D`))";
+    sql(sql).ok(expected);
   }
 
   @Test public void testGroupByCube2() {
-    sql("select deptno from emp\n"
-        + "group by cube ((a, b), (c, d)) order by a")
-        .ok("SELECT `DEPTNO`\n"
-            + "FROM `EMP`\n"
-            + "GROUP BY CUBE((`A`, `B`), (`C`, `D`))\n"
-            + "ORDER BY `A`");
-    sql("select deptno from emp\n"
-        + "group by cube (^)")
-        .fails("(?s)Encountered \"\\)\" at .*");
+    final String sql = "select deptno from emp\n"
+        + "group by cube ((a, b), (c, d)) order by a";
+    final String expected = "SELECT `DEPTNO`\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY CUBE((`A`, `B`), (`C`, `D`))\n"
+        + "ORDER BY `A`";
+    sql(sql).ok(expected);
+
+    final String sql2 = "select deptno from emp\n"
+        + "group by cube (^)";
+    sql(sql2).fails("(?s)Encountered \"\\)\" at .*");
   }
 
   @Test public void testGroupByRollup() {
-    sql("select deptno from emp\n"
-        + "group by rollup (deptno, deptno + 1, gender)")
-        .ok("SELECT `DEPTNO`\n"
-            + "FROM `EMP`\n"
-            + "GROUP BY ROLLUP(`DEPTNO`, (`DEPTNO` + 1), `GENDER`)");
+    final String sql = "select deptno from emp\n"
+        + "group by rollup (deptno, deptno + 1, gender)";
+    final String expected = "SELECT `DEPTNO`\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY ROLLUP(`DEPTNO`, (`DEPTNO` + 1), `GENDER`)";
+    sql(sql).ok(expected);
 
     // Nested rollup not ok
-    sql("select deptno from emp\n"
-        + "group by rollup (deptno^, rollup(e, d))")
-        .fails("(?s)Encountered \", rollup\" at .*");
+    final String sql1 = "select deptno from emp\n"
+        + "group by rollup (deptno^, rollup(e, d))";
+    sql(sql1).fails("(?s)Encountered \", rollup\" at .*");
   }
 
   @Test public void testGrouping() {
-    sql("select deptno, grouping(deptno) from emp\n"
-        + "group by grouping sets (deptno, (deptno, gender), ())")
-        .ok("SELECT `DEPTNO`, GROUPING(`DEPTNO`)\n"
-            + "FROM `EMP`\n"
-            + "GROUP BY GROUPING SETS(`DEPTNO`, (`DEPTNO`, `GENDER`), ())");
+    final String sql = "select deptno, grouping(deptno) from emp\n"
+        + "group by grouping sets (deptno, (deptno, gender), ())";
+    final String expected = "SELECT `DEPTNO`, GROUPING(`DEPTNO`)\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY GROUPING SETS(`DEPTNO`, (`DEPTNO`, `GENDER`), ())";
+    sql(sql).ok(expected);
   }
 
   @Test public void testWith() {
-    sql("with femaleEmps as (select * from emps where gender = 'F')"
-        + "select deptno from femaleEmps")
-        .ok("WITH `FEMALEEMPS` AS (SELECT *\n"
-            + "FROM `EMPS`\n"
-            + "WHERE (`GENDER` = 'F')) (SELECT `DEPTNO`\n"
-            + "FROM `FEMALEEMPS`)");
+    final String sql = "with femaleEmps as (select * from emps where gender = 'F')"
+        + "select deptno from femaleEmps";
+    final String expected = "WITH `FEMALEEMPS` AS (SELECT *\n"
+        + "FROM `EMPS`\n"
+        + "WHERE (`GENDER` = 'F')) (SELECT `DEPTNO`\n"
+        + "FROM `FEMALEEMPS`)";
+    sql(sql).ok(expected);
   }
 
   @Test public void testWith2() {
-    sql("with femaleEmps as (select * from emps where gender = 'F'),\n"
+    final String sql = "with femaleEmps as (select * from emps where gender = 'F'),\n"
         + "marriedFemaleEmps(x, y) as (select * from femaleEmps where maritaStatus = 'M')\n"
-        + "select deptno from femaleEmps")
-        .ok("WITH `FEMALEEMPS` AS (SELECT *\n"
-            + "FROM `EMPS`\n"
-            + "WHERE (`GENDER` = 'F')), `MARRIEDFEMALEEMPS` (`X`, `Y`) AS (SELECT *\n"
-            + "FROM `FEMALEEMPS`\n"
-            + "WHERE (`MARITASTATUS` = 'M')) (SELECT `DEPTNO`\n"
-            + "FROM `FEMALEEMPS`)");
+        + "select deptno from femaleEmps";
+    final String expected = "WITH `FEMALEEMPS` AS (SELECT *\n"
+        + "FROM `EMPS`\n"
+        + "WHERE (`GENDER` = 'F')), `MARRIEDFEMALEEMPS` (`X`, `Y`) AS (SELECT *\n"
+        + "FROM `FEMALEEMPS`\n"
+        + "WHERE (`MARITASTATUS` = 'M')) (SELECT `DEPTNO`\n"
+        + "FROM `FEMALEEMPS`)";
+    sql(sql).ok(expected);
   }
 
   @Test public void testWithFails() {
-    sql("with femaleEmps as ^select^ * from emps where gender = 'F'\n"
-            + "select deptno from femaleEmps")
-        .fails("(?s)Encountered \"select\" at .*");
+    final String sql = "with femaleEmps as ^select^ *\n"
+        + "from emps where gender = 'F'\n"
+        + "select deptno from femaleEmps";
+    sql(sql).fails("(?s)Encountered \"select\" at .*");
   }
 
   @Test public void testWithValues() {
-    sql("with v(i,c) as (values (1, 'a'), (2, 'bb'))\n"
-        + "select c, i from v")
-        .ok("WITH `V` (`I`, `C`) AS (VALUES (ROW(1, 'a')),\n"
-            + "(ROW(2, 'bb'))) (SELECT `C`, `I`\n"
-            + "FROM `V`)");
+    final String sql = "with v(i,c) as (values (1, 'a'), (2, 'bb'))\n"
+        + "select c, i from v";
+    final String expected = "WITH `V` (`I`, `C`) AS (VALUES (ROW(1, 'a')),\n"
+        + "(ROW(2, 'bb'))) (SELECT `C`, `I`\n"
+        + "FROM `V`)";
+    sql(sql).ok(expected);
   }
 
   @Test public void testWithNestedFails() {
     // SQL standard does not allow WITH to contain WITH
-    sql("with emp2 as (select * from emp)\n"
-            + "^with^ dept2 as (select * from dept)\n"
-            + "select 1 as uno from emp, dept")
-        .fails("(?s)Encountered \"with\" at .*");
+    final String sql = "with emp2 as (select * from emp)\n"
+        + "^with^ dept2 as (select * from dept)\n"
+        + "select 1 as uno from emp, dept";
+    sql(sql).fails("(?s)Encountered \"with\" at .*");
   }
 
   @Test public void testWithNestedInSubQuery() {
     // SQL standard does not allow sub-query to contain WITH but we do
-    sql("with emp2 as (select * from emp)\n"
+    final String sql = "with emp2 as (select * from emp)\n"
         + "(\n"
         + "  with dept2 as (select * from dept)\n"
-        + "  select 1 as uno from empDept)")
-        .ok("WITH `EMP2` AS (SELECT *\n"
-            + "FROM `EMP`) (WITH `DEPT2` AS (SELECT *\n"
-            + "FROM `DEPT`) (SELECT 1 AS `UNO`\n"
-            + "FROM `EMPDEPT`))");
+        + "  select 1 as uno from empDept)";
+    final String expected = "WITH `EMP2` AS (SELECT *\n"
+        + "FROM `EMP`) (WITH `DEPT2` AS (SELECT *\n"
+        + "FROM `DEPT`) (SELECT 1 AS `UNO`\n"
+        + "FROM `EMPDEPT`))";
+    sql(sql).ok(expected);
   }
 
   @Test public void testWithUnion() {
     // Per the standard WITH ... SELECT ... UNION is valid even without parens.
-    sql("with emp2 as (select * from emp)\n"
+    final String sql = "with emp2 as (select * from emp)\n"
         + "select * from emp2\n"
         + "union\n"
-        + "select * from emp2\n")
-        .ok("WITH `EMP2` AS (SELECT *\n"
-            + "FROM `EMP`) (SELECT *\n"
-            + "FROM `EMP2`\n"
-            + "UNION\n"
-            + "SELECT *\n"
-            + "FROM `EMP2`)");
+        + "select * from emp2\n";
+    final String expected = "WITH `EMP2` AS (SELECT *\n"
+        + "FROM `EMP`) (SELECT *\n"
+        + "FROM `EMP2`\n"
+        + "UNION\n"
+        + "SELECT *\n"
+        + "FROM `EMP2`)";
+    sql(sql).ok(expected);
   }
 
   @Test public void testIdentifier() {
@@ -2588,15 +2622,15 @@ public class SqlParserTest {
 
     // test repeatable with invalid int literal.
     sql("select * "
-            + "from emp as x "
-            + "tablesample bernoulli(50) REPEATABLE(^100000000000000000000^) ")
+        + "from emp as x "
+        + "tablesample bernoulli(50) REPEATABLE(^100000000000000000000^) ")
         .fails("Literal '100000000000000000000' "
             + "can not be parsed to type 'java\\.lang\\.Integer'");
 
     // test repeatable with invalid negative int literal.
     sql("select * "
-            + "from emp as x "
-            + "tablesample bernoulli(50) REPEATABLE(-^100000000000000000000^) ")
+        + "from emp as x "
+        + "tablesample bernoulli(50) REPEATABLE(-^100000000000000000000^) ")
         .fails("Literal '100000000000000000000' "
             + "can not be parsed to type 'java\\.lang\\.Integer'");
   }
@@ -2696,10 +2730,15 @@ public class SqlParserTest {
   }
 
   @Test public void testOrderNullsFirst() {
-    sql("select * from emp order by gender desc nulls last, deptno asc nulls first, empno nulls last")
-        .ok("SELECT *\n"
-            + "FROM `EMP`\n"
-            + "ORDER BY `GENDER` DESC NULLS LAST, `DEPTNO` NULLS FIRST, `EMPNO` NULLS LAST");
+    final String sql = "select * from emp\n"
+        + "order by gender desc nulls last,\n"
+        + " deptno asc nulls first,\n"
+        + " empno nulls last";
+    final String expected = "SELECT *\n"
+        + "FROM `EMP`\n"
+        + "ORDER BY `GENDER` DESC NULLS LAST, `DEPTNO` NULLS FIRST,"
+        + " `EMPNO` NULLS LAST";
+    sql(sql).ok(expected);
   }
 
   @Test public void testOrderInternal() {
@@ -3853,12 +3892,12 @@ public class SqlParserTest {
     exp("x'fffff'=X''")
         .ok("(X'FFFFF' = X'')");
     exp("x'1' \t\t\f\r \n"
-            + "'2'--hi this is a comment'FF'\r\r\t\f \n"
-            + "'34'")
+        + "'2'--hi this is a comment'FF'\r\r\t\f \n"
+        + "'34'")
         .ok("X'1'\n'2'\n'34'");
     exp("x'1' \t\t\f\r \n"
-            + "'000'--\n"
-            + "'01'")
+        + "'000'--\n"
+        + "'01'")
         .ok("X'1'\n'000'\n'01'");
     exp("x'1234567890abcdef'=X'fFeEdDcCbBaA'")
         .ok("(X'1234567890ABCDEF' = X'FFEEDDCCBBAA')");
@@ -4213,7 +4252,7 @@ public class SqlParserTest {
     exp("trim(\r\n\ttrailing\n  'mustache' FROM 'beard')")
         .ok("TRIM(TRAILING 'mustache' FROM 'beard')");
     exp("trim (coalesce(cast(null as varchar(2)))||"
-            + "' '||coalesce('junk ',''))")
+        + "' '||coalesce('junk ',''))")
         .ok("TRIM(BOTH ' ' FROM ((COALESCE(CAST(NULL AS VARCHAR(2))) || "
             + "' ') || COALESCE('junk ', '')))");
 
@@ -4293,43 +4332,59 @@ public class SqlParserTest {
   }
 
   @Test public void testWindowInSubQuery() {
-    sql("select * from ( select sum(x) over w, sum(y) over w from s window w as (range interval '1' minute preceding))")
-        .ok("SELECT *\n"
-            + "FROM (SELECT (SUM(`X`) OVER `W`), (SUM(`Y`) OVER `W`)\n"
-            + "FROM `S`\n"
-            + "WINDOW `W` AS (RANGE INTERVAL '1' MINUTE PRECEDING))");
+    final String sql = "select * from (\n"
+        + " select sum(x) over w, sum(y) over w\n"
+        + " from s\n"
+        + " window w as (range interval '1' minute preceding))";
+    final String expected = "SELECT *\n"
+        + "FROM (SELECT (SUM(`X`) OVER `W`), (SUM(`Y`) OVER `W`)\n"
+        + "FROM `S`\n"
+        + "WINDOW `W` AS (RANGE INTERVAL '1' MINUTE PRECEDING))";
+    sql(sql).ok(expected);
   }
 
   @Test public void testWindowSpec() {
     // Correct syntax
-    sql("select count(z) over w as foo from Bids window w as (partition by y + yy, yyy order by x rows between 2 preceding and 2 following)")
-        .ok("SELECT (COUNT(`Z`) OVER `W`) AS `FOO`\n"
-            + "FROM `BIDS`\n"
-            + "WINDOW `W` AS (PARTITION BY (`Y` + `YY`), `YYY` ORDER BY `X` ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)");
+    final String sql1 = "select count(z) over w as foo\n"
+        + "from Bids\n"
+        + "window w as (partition by y + yy, yyy\n"
+        + " order by x\n"
+        + " rows between 2 preceding and 2 following)";
+    final String expected1 = "SELECT (COUNT(`Z`) OVER `W`) AS `FOO`\n"
+        + "FROM `BIDS`\n"
+        + "WINDOW `W` AS (PARTITION BY (`Y` + `YY`), `YYY` ORDER BY `X` ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)";
+    sql(sql1).ok(expected1);
 
-    sql("select count(*) over w from emp window w as (rows 2 preceding)")
-        .ok("SELECT (COUNT(*) OVER `W`)\n"
-            + "FROM `EMP`\n"
-            + "WINDOW `W` AS (ROWS 2 PRECEDING)");
+    final String sql2 = "select count(*) over w\n"
+        + "from emp window w as (rows 2 preceding)";
+    final String expected2 = "SELECT (COUNT(*) OVER `W`)\n"
+        + "FROM `EMP`\n"
+        + "WINDOW `W` AS (ROWS 2 PRECEDING)";
+    sql(sql2).ok(expected2);
 
     // Chained string literals are valid syntax. They are unlikely to be
     // semantically valid, because intervals are usually numeric or
     // datetime.
     // Note: literal chain is not yet replaced with combined literal
     // since we are just parsing, and not validating the sql.
-    final String sql = "select count(*) over w from emp window w as (\n"
+    final String sql3 = "select count(*) over w from emp window w as (\n"
         + "  rows 'foo' 'bar'\n"
         + "       'baz' preceding)";
-    final String expected = "SELECT (COUNT(*) OVER `W`)\n"
+    final String expected3 = "SELECT (COUNT(*) OVER `W`)\n"
         + "FROM `EMP`\n"
         + "WINDOW `W` AS (ROWS 'foo'\n'bar'\n'baz' PRECEDING)";
-    sql(sql).ok(expected);
+    sql(sql3).ok(expected3);
 
     // Partition clause out of place. Found after ORDER BY
-    sql("select count(z) over w as foo \n"
-            + "from Bids window w as (partition by y order by x ^partition^ by y)")
+    final String sql4 = "select count(z) over w as foo\n"
+        + "from Bids\n"
+        + "window w as (partition by y order by x ^partition^ by y)";
+    sql(sql4)
         .fails("(?s).*Encountered \"partition\".*");
-    sql("select count(z) over w as foo from Bids window w as (order by x ^partition^ by y)")
+
+    final String sql5 = "select count(z) over w as foo\n"
+        + "from Bids window w as (order by x ^partition^ by y)";
+    sql(sql5)
         .fails("(?s).*Encountered \"partition\".*");
 
     // Cannot partition by sub-query
@@ -4337,7 +4392,9 @@ public class SqlParserTest {
         .fails("Query expression encountered in illegal context");
 
     // AND is required in BETWEEN clause of window frame
-    sql("select sum(x) over (order by x range between unbounded preceding ^unbounded^ following)")
+    final String sql7 = "select sum(x) over\n"
+        + " (order by x range between unbounded preceding ^unbounded^ following)";
+    sql(sql7)
         .fails("(?s).*Encountered \"unbounded\".*");
 
     // WINDOW keyword is not permissible.
@@ -4480,26 +4537,39 @@ public class SqlParserTest {
         .ok("(SUM(`SAL`) OVER (ORDER BY `X` DESC, `Y`))");
     exp("sum(sal) over (rows 5 preceding)")
         .ok("(SUM(`SAL`) OVER (ROWS 5 PRECEDING))");
-    exp("sum(sal) over (range between interval '1' second preceding and interval '1' second following)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND PRECEDING AND INTERVAL '1' SECOND FOLLOWING))");
-    exp("sum(sal) over (range between interval '1:03' hour preceding and interval '2' minute following)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1:03' HOUR PRECEDING AND INTERVAL '2' MINUTE FOLLOWING))");
-    exp("sum(sal) over (range between interval '5' day preceding and current row)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '5' DAY PRECEDING AND CURRENT ROW))");
+    exp("sum(sal) over (range between interval '1' second preceding\n"
+        + " and interval '1' second following)")
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND PRECEDING "
+            + "AND INTERVAL '1' SECOND FOLLOWING))");
+    exp("sum(sal) over (range between interval '1:03' hour preceding\n"
+        + " and interval '2' minute following)")
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1:03' HOUR PRECEDING "
+            + "AND INTERVAL '2' MINUTE FOLLOWING))");
+    exp("sum(sal) over (range between interval '5' day preceding\n"
+        + " and current row)")
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '5' DAY PRECEDING "
+            + "AND CURRENT ROW))");
     exp("sum(sal) over (range interval '5' day preceding)")
         .ok("(SUM(`SAL`) OVER (RANGE INTERVAL '5' DAY PRECEDING))");
     exp("sum(sal) over (range between unbounded preceding and current row)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW))");
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN UNBOUNDED PRECEDING "
+            + "AND CURRENT ROW))");
     exp("sum(sal) over (range unbounded preceding)")
         .ok("(SUM(`SAL`) OVER (RANGE UNBOUNDED PRECEDING))");
     exp("sum(sal) over (range between current row and unbounded preceding)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED PRECEDING))");
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW "
+            + "AND UNBOUNDED PRECEDING))");
     exp("sum(sal) over (range between current row and unbounded following)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING))");
-    exp("sum(sal) over (range between 6 preceding and interval '1:03' hour preceding)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN 6 PRECEDING AND INTERVAL '1:03' HOUR PRECEDING))");
-    exp("sum(sal) over (range between interval '1' second following and interval '5' day following)")
-        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND FOLLOWING AND INTERVAL '5' DAY FOLLOWING))");
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW "
+            + "AND UNBOUNDED FOLLOWING))");
+    exp("sum(sal) over (range between 6 preceding\n"
+        + " and interval '1:03' hour preceding)")
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN 6 PRECEDING "
+            + "AND INTERVAL '1:03' HOUR PRECEDING))");
+    exp("sum(sal) over (range between interval '1' second following\n"
+        + " and interval '5' day following)")
+        .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND FOLLOWING "
+            + "AND INTERVAL '5' DAY FOLLOWING))");
   }
 
   @Test public void testElementFunc() {
@@ -4676,8 +4746,8 @@ public class SqlParserTest {
         .ok("CAST(`A` AS ROW(`F0` INTEGER, `F1` VARCHAR NULL))");
     // test nested row type.
     exp("cast(a as row("
-            + "f0 row(ff0 int not null, ff1 varchar null) null, "
-            + "f1 timestamp not null))")
+        + "f0 row(ff0 int not null, ff1 varchar null) null, "
+        + "f1 timestamp not null))")
         .ok("CAST(`A` AS ROW("
             + "`F0` ROW(`FF0` INTEGER, `FF1` VARCHAR NULL) NULL, "
             + "`F1` TIMESTAMP))");
@@ -6480,7 +6550,7 @@ public class SqlParserTest {
     exp("interval '1-2' second(3) ^to^ minute")
         .fails(ANY);
 
-    // illegal qualfiers, including precision in end field
+    // illegal qualifiers, including precision in end field
     exp("interval '1' year ^to^ year(2)")
         .fails(ANY);
     exp("interval '1-2' year to month^(^2)")
@@ -6565,7 +6635,7 @@ public class SqlParserTest {
     exp("interval '1-2' second ^to^ second(2,6)")
         .fails(ANY);
 
-    // illegal qualfiers, including precision in start and end field
+    // illegal qualifiers, including precision in start and end field
     exp("interval '1' year(3) ^to^ year(2)")
         .fails(ANY);
     exp("interval '1-2' year(3) to month^(^2)")
@@ -6595,7 +6665,9 @@ public class SqlParserTest {
         .fails(ANY);
     exp("interval '1-2' month(3) ^to^ second(2,6)")
         .fails(ANY);
+  }
 
+  @Test public void testUnparseableIntervalQualifiers2() {
     exp("interval '1-2' day(3) ^to^ year(2)")
         .fails(ANY);
     exp("interval '1-2' day(3) ^to^ month(2)")
@@ -6758,9 +6830,11 @@ public class SqlParserTest {
     exp("(date1 - date2) HOUR > interval '1' HOUR")
         .ok("(((`DATE1` - `DATE2`) HOUR) > INTERVAL '1' HOUR)");
     exp("^(date1 + date2) second^")
-        .fails("(?s).*Illegal expression. Was expecting ..DATETIME - DATETIME. INTERVALQUALIFIER.*");
+        .fails("(?s).*Illegal expression. "
+            + "Was expecting ..DATETIME - DATETIME. INTERVALQUALIFIER.*");
     exp("^(date1,date2,date2) second^")
-        .fails("(?s).*Illegal expression. Was expecting ..DATETIME - DATETIME. INTERVALQUALIFIER.*");
+        .fails("(?s).*Illegal expression. "
+            + "Was expecting ..DATETIME - DATETIME. INTERVALQUALIFIER.*");
   }
 
   @Test public void testExtract() {
@@ -8176,11 +8250,11 @@ public class SqlParserTest {
 
   @Test public void testJsonValue() {
     exp("json_value('{\"foo\": \"100\"}', 'lax $.foo' "
-            + "returning integer)")
+        + "returning integer)")
         .ok("JSON_VALUE('{\"foo\": \"100\"}', 'lax $.foo' "
             + "RETURNING INTEGER NULL ON EMPTY NULL ON ERROR)");
     exp("json_value('{\"foo\": \"100\"}', 'lax $.foo' "
-            + "returning integer default 10 on empty error on error)")
+        + "returning integer default 10 on empty error on error)")
         .ok("JSON_VALUE('{\"foo\": \"100\"}', 'lax $.foo' "
             + "RETURNING INTEGER DEFAULT 10 ON EMPTY ERROR ON ERROR)");
   }
@@ -8223,7 +8297,7 @@ public class SqlParserTest {
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY EMPTY OBJECT ON ERROR)");
     exp("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON EMPTY "
-            + "EMPTY OBJECT ON ERROR)")
+        + "EMPTY OBJECT ON ERROR)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER EMPTY ARRAY ON EMPTY EMPTY OBJECT ON ERROR)");
   }
