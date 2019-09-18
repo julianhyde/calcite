@@ -849,7 +849,8 @@ public class SqlParserTest {
             + "FROM `T`\n"
             + "WHERE ((TRUE AND (TRUE OR TRUE)) OR FALSE)");
 
-    sql("select * from t where 1 and true").ok("SELECT *\n"
+    sql("select * from t where 1 and true")
+        .ok("SELECT *\n"
             + "FROM `T`\n"
             + "WHERE (1 AND TRUE)");
   }
@@ -932,7 +933,7 @@ public class SqlParserTest {
             + "WHERE (NOT (TRUE IS UNKNOWN))");
 
     sql("select * from t where x is unknown is not unknown is false is not false"
-            + " is true is not true is null is not null")
+        + " is true is not true is null is not null")
         .ok("SELECT *\n"
             + "FROM `T`\n"
             + "WHERE ((((((((`X` IS UNKNOWN) IS NOT UNKNOWN) IS FALSE) IS NOT FALSE) IS TRUE) IS NOT TRUE) IS NULL) IS NOT NULL)");
@@ -1047,13 +1048,13 @@ public class SqlParserTest {
             + "FROM `SALES`.`DEPTS`) AS `T`");
 
     sql("select t.r.\"EXPR$1\".\"EXPR$2\" "
-            + "from (select ((1,2),(3,4,5)) r from sales.depts) t")
+        + "from (select ((1,2),(3,4,5)) r from sales.depts) t")
         .ok("SELECT `T`.`R`.`EXPR$1`.`EXPR$2`\n"
             + "FROM (SELECT (ROW((ROW(1, 2)), (ROW(3, 4, 5)))) AS `R`\n"
             + "FROM `SALES`.`DEPTS`) AS `T`");
 
     sql("select t.r.\"EXPR$1\".\"EXPR$2\" "
-            + "from (select ((1,2),(3,4,5,6)) r from sales.depts) t")
+        + "from (select ((1,2),(3,4,5,6)) r from sales.depts) t")
         .ok("SELECT `T`.`R`.`EXPR$1`.`EXPR$2`\n"
             + "FROM (SELECT (ROW((ROW(1, 2)), (ROW(3, 4, 5, 6)))) AS `R`\n"
             + "FROM `SALES`.`DEPTS`) AS `T`");
@@ -1159,16 +1160,14 @@ public class SqlParserTest {
     final String expected = "SELECT *\n"
         + "FROM `EMP`,\n"
         + "`DEPT`";
-    sqlList("select * from emp, dept")
-         .ok(expected);
+    sqlList("select * from emp, dept").ok(expected);
   }
 
   @Test public void testStmtListWithSelectAndSemicolon() {
     final String expected = "SELECT *\n"
         + "FROM `EMP`,\n"
         + "`DEPT`";
-    sqlList("select * from emp, dept;")
-         .ok(expected);
+    sqlList("select * from emp, dept;").ok(expected);
   }
 
   @Test public void testStmtListWithTwoSelect() {
@@ -1193,7 +1192,7 @@ public class SqlParserTest {
         + "`DEPT`";
     final String expected1 = "DELETE FROM `EMP`";
     sqlList("select * from emp, dept; delete from emp")
-         .ok(expected, expected1);
+        .ok(expected, expected1);
   }
 
   @Test public void testStmtListWithSelectDeleteUpdate() {
@@ -1225,7 +1224,7 @@ public class SqlParserTest {
         + "WHERE (`NAME` LIKE 'toto;')";
     final String expected1 = "DELETE FROM `EMP`";
     sqlList("select * from emp where name like 'toto;'; delete from emp")
-         .ok(expected, expected1);
+        .ok(expected, expected1);
   }
 
   @Test public void testStmtListWithInsertSelectInsert() {
@@ -1881,7 +1880,7 @@ public class SqlParserTest {
 
   @Test public void testWithValues() {
     sql("with v(i,c) as (values (1, 'a'), (2, 'bb'))\n"
-            + "select c, i from v")
+        + "select c, i from v")
         .ok("WITH `V` (`I`, `C`) AS (VALUES (ROW(1, 'a')),\n"
             + "(ROW(2, 'bb'))) (SELECT `C`, `I`\n"
             + "FROM `V`)");
@@ -2579,23 +2578,23 @@ public class SqlParserTest {
 
   @Test public void testSchemaTableStar() {
     sql("select schem.emp.*, emp.empno * dept.deptno\n"
-            + "from schem.emp, dept")
+        + "from schem.emp, dept")
         .ok("SELECT `SCHEM`.`EMP`.*, (`EMP`.`EMPNO` * `DEPT`.`DEPTNO`)\n"
-                + "FROM `SCHEM`.`EMP`,\n"
-                + "`DEPT`");
+            + "FROM `SCHEM`.`EMP`,\n"
+            + "`DEPT`");
   }
 
   @Test public void testCatalogSchemaTableStar() {
     sql("select cat.schem.emp.* from cat.schem.emp")
         .ok("SELECT `CAT`.`SCHEM`.`EMP`.*\n"
-                + "FROM `CAT`.`SCHEM`.`EMP`");
+            + "FROM `CAT`.`SCHEM`.`EMP`");
   }
 
   @Test public void testAliasedStar() {
     // OK in parser; validator will give error
     sql("select emp.* as foo from emp")
         .ok("SELECT `EMP`.* AS `FOO`\n"
-                + "FROM `EMP`");
+            + "FROM `EMP`");
   }
 
   @Test public void testNotExists() {
@@ -2817,13 +2816,13 @@ public class SqlParserTest {
         .ok("SELECT 1\n"
             + "FROM `T`");
     sql("select 1 from t--this is a comment\n"
-            + "where a>b-- this is comment\n")
+        + "where a>b-- this is comment\n")
         .ok("SELECT 1\n"
             + "FROM `T`\n"
             + "WHERE (`A` > `B`)");
     sql("select 1 from t\n--select")
         .ok("SELECT 1\n"
-                  + "FROM `T`");
+            + "FROM `T`");
   }
 
   @Test public void testMultilineComment() {
@@ -2834,8 +2833,8 @@ public class SqlParserTest {
 
     // on several lines
     sql("select /* 1,\n"
-            + " 2, \n"
-            + " */ 3 from t")
+        + " 2, \n"
+        + " */ 3 from t")
         .ok("SELECT 3\n"
             + "FROM `T`");
 
@@ -2851,11 +2850,11 @@ public class SqlParserTest {
     // separating the <minus sign>s of a <simple comment introducer>".
 
     sql("values (- -1\n"
-            + ")")
+        + ")")
         .ok("VALUES (ROW(1))");
 
     sql("values (--1+\n"
-            + "2)")
+        + "2)")
         .ok("VALUES (ROW(2))");
 
     // end of multiline comment without start
@@ -2901,17 +2900,17 @@ public class SqlParserTest {
     }
 
     sql("values (1 + /* comment -- rest of line\n"
-            + " rest of comment */ 2)")
+        + " rest of comment */ 2)")
         .ok("VALUES (ROW((1 + 2)))");
 
     // multiline comment inside singleline comment
     sql("values -- rest of line /* a comment */ \n"
-            + "(1)")
+        + "(1)")
         .ok("VALUES (ROW(1))");
 
     // non-terminated multiline comment inside singleline comment
     sql("values -- rest of line /* a comment  \n"
-            + "(1)")
+        + "(1)")
         .ok("VALUES (ROW(1))");
 
     // even if comment abuts the tokens at either end, it becomes a space
@@ -3007,33 +3006,34 @@ public class SqlParserTest {
   }
 
   @Test public void testPrecedenceSetOps() {
-    sql("select * from a union "
-            + "select * from b intersect "
-            + "select * from c intersect "
-            + "select * from d except "
-            + "select * from e except "
-            + "select * from f union "
-            + "select * from g")
-        .ok("((((SELECT *\n"
-            + "FROM `A`\n"
-            + "UNION\n"
-            + "((SELECT *\n"
-            + "FROM `B`\n"
-            + "INTERSECT\n"
-            + "SELECT *\n"
-            + "FROM `C`)\n"
-            + "INTERSECT\n"
-            + "SELECT *\n"
-            + "FROM `D`))\n"
-            + "EXCEPT\n"
-            + "SELECT *\n"
-            + "FROM `E`)\n"
-            + "EXCEPT\n"
-            + "SELECT *\n"
-            + "FROM `F`)\n"
-            + "UNION\n"
-            + "SELECT *\n"
-            + "FROM `G`)");
+    final String sql = "select * from a union "
+        + "select * from b intersect "
+        + "select * from c intersect "
+        + "select * from d except "
+        + "select * from e except "
+        + "select * from f union "
+        + "select * from g";
+    final String expected = "((((SELECT *\n"
+        + "FROM `A`\n"
+        + "UNION\n"
+        + "((SELECT *\n"
+        + "FROM `B`\n"
+        + "INTERSECT\n"
+        + "SELECT *\n"
+        + "FROM `C`)\n"
+        + "INTERSECT\n"
+        + "SELECT *\n"
+        + "FROM `D`))\n"
+        + "EXCEPT\n"
+        + "SELECT *\n"
+        + "FROM `E`)\n"
+        + "EXCEPT\n"
+        + "SELECT *\n"
+        + "FROM `F`)\n"
+        + "UNION\n"
+        + "SELECT *\n"
+        + "FROM `G`)";
+    sql(sql).ok(expected);
   }
 
   @Test public void testQueryInFrom() {
@@ -3160,7 +3160,7 @@ public class SqlParserTest {
   @Test public void testSelectStreamDistinct() {
     sql("select stream distinct foo from bar")
         .ok("SELECT STREAM DISTINCT `FOO`\n"
-                + "FROM `BAR`");
+            + "FROM `BAR`");
   }
 
   @Test public void testWhere() {
@@ -3301,7 +3301,7 @@ public class SqlParserTest {
 
   @Test public void testCollectionTableWithColumnListParam() {
     sql("select * from table(dedup(cursor(select * from emps),"
-            + "row(empno, name)))")
+        + "row(empno, name)))")
         .ok("SELECT *\n"
             + "FROM TABLE(`DEDUP`((CURSOR ((SELECT *\n"
             + "FROM `EMPS`))), (ROW(`EMPNO`, `NAME`))))");
@@ -3681,8 +3681,8 @@ public class SqlParserTest {
   @Test public void testUpdate() {
     sql("update emps set empno = empno + 1, sal = sal - 1 where empno=12")
         .ok("UPDATE `EMPS` SET `EMPNO` = (`EMPNO` + 1)\n"
-                + ", `SAL` = (`SAL` - 1)\n"
-                + "WHERE (`EMPNO` = 12)");
+            + ", `SAL` = (`SAL` - 1)\n"
+            + "WHERE (`EMPNO` = 12)");
   }
 
   @Test public void testMergeSelectSource() {
@@ -3731,40 +3731,42 @@ public class SqlParserTest {
   }
 
   @Test public void testMergeTableRefSource() {
-    sql("merge into emps e "
-            + "using tempemps as t "
-            + "on e.empno = t.empno "
-            + "when matched then update "
-            + "set name = t.name, deptno = t.deptno, salary = t.salary * .1 "
-            + "when not matched then insert (name, dept, salary) "
-            + "values(t.name, 10, t.salary * .15)")
-        .ok("MERGE INTO `EMPS` AS `E`\n"
-            + "USING `TEMPEMPS` AS `T`\n"
-            + "ON (`E`.`EMPNO` = `T`.`EMPNO`)\n"
-            + "WHEN MATCHED THEN UPDATE SET `NAME` = `T`.`NAME`\n"
-            + ", `DEPTNO` = `T`.`DEPTNO`\n"
-            + ", `SALARY` = (`T`.`SALARY` * 0.1)\n"
-            + "WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) "
-            + "(VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))");
+    final String sql = "merge into emps e "
+        + "using tempemps as t "
+        + "on e.empno = t.empno "
+        + "when matched then update "
+        + "set name = t.name, deptno = t.deptno, salary = t.salary * .1 "
+        + "when not matched then insert (name, dept, salary) "
+        + "values(t.name, 10, t.salary * .15)";
+    final String expected = "MERGE INTO `EMPS` AS `E`\n"
+        + "USING `TEMPEMPS` AS `T`\n"
+        + "ON (`E`.`EMPNO` = `T`.`EMPNO`)\n"
+        + "WHEN MATCHED THEN UPDATE SET `NAME` = `T`.`NAME`\n"
+        + ", `DEPTNO` = `T`.`DEPTNO`\n"
+        + ", `SALARY` = (`T`.`SALARY` * 0.1)\n"
+        + "WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) "
+        + "(VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))";
+    sql(sql).ok(expected);
   }
 
   /** Same with testMergeTableRefSource but set with compound identifier. */
   @Test public void testMergeTableRefSource2() {
-    sql("merge into emps e "
-            + "using tempemps as t "
-            + "on e.empno = t.empno "
-            + "when matched then update "
-            + "set e.name = t.name, e.deptno = t.deptno, e.salary = t.salary * .1 "
-            + "when not matched then insert (name, dept, salary) "
-            + "values(t.name, 10, t.salary * .15)")
-        .ok("MERGE INTO `EMPS` AS `E`\n"
-            + "USING `TEMPEMPS` AS `T`\n"
-            + "ON (`E`.`EMPNO` = `T`.`EMPNO`)\n"
-            + "WHEN MATCHED THEN UPDATE SET `E`.`NAME` = `T`.`NAME`\n"
-            + ", `E`.`DEPTNO` = `T`.`DEPTNO`\n"
-            + ", `E`.`SALARY` = (`T`.`SALARY` * 0.1)\n"
-            + "WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) "
-            + "(VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))");
+    final String sql = "merge into emps e "
+        + "using tempemps as t "
+        + "on e.empno = t.empno "
+        + "when matched then update "
+        + "set e.name = t.name, e.deptno = t.deptno, e.salary = t.salary * .1 "
+        + "when not matched then insert (name, dept, salary) "
+        + "values(t.name, 10, t.salary * .15)";
+    final String expected = "MERGE INTO `EMPS` AS `E`\n"
+        + "USING `TEMPEMPS` AS `T`\n"
+        + "ON (`E`.`EMPNO` = `T`.`EMPNO`)\n"
+        + "WHEN MATCHED THEN UPDATE SET `E`.`NAME` = `T`.`NAME`\n"
+        + ", `E`.`DEPTNO` = `T`.`DEPTNO`\n"
+        + ", `E`.`SALARY` = (`T`.`SALARY` * 0.1)\n"
+        + "WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) "
+        + "(VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))";
+    sql(sql).ok(expected);
   }
 
   @Test public void testBitStringNotImplemented() {
@@ -4251,12 +4253,13 @@ public class SqlParserTest {
     // datetime.
     // Note: literal chain is not yet replaced with combined literal
     // since we are just parsing, and not validating the sql.
-    sql("select count(*) over w from emp window w as (\n"
-            + "  rows 'foo' 'bar'\n"
-            + "       'baz' preceding)")
-        .ok("SELECT (COUNT(*) OVER `W`)\n"
-            + "FROM `EMP`\n"
-            + "WINDOW `W` AS (ROWS 'foo'\n'bar'\n'baz' PRECEDING)");
+    final String sql = "select count(*) over w from emp window w as (\n"
+        + "  rows 'foo' 'bar'\n"
+        + "       'baz' preceding)";
+    final String expected = "SELECT (COUNT(*) OVER `W`)\n"
+        + "FROM `EMP`\n"
+        + "WINDOW `W` AS (ROWS 'foo'\n'bar'\n'baz' PRECEDING)";
+    sql(sql).ok(expected);
 
     // Partition clause out of place. Found after ORDER BY
     checkFails(
@@ -4599,8 +4602,8 @@ public class SqlParserTest {
         "CAST(`A` AS ROW(`F0` INTEGER, `F1` VARCHAR NULL))");
     // test nested row type.
     checkExp("cast(a as row("
-        + "f0 row(ff0 int not null, ff1 varchar null) null, "
-        + "f1 timestamp not null))",
+            + "f0 row(ff0 int not null, ff1 varchar null) null, "
+            + "f1 timestamp not null))",
         "CAST(`A` AS ROW("
             + "`F0` ROW(`FF0` INTEGER, `FF1` VARCHAR NULL) NULL, "
             + "`F1` TIMESTAMP))");
@@ -7392,7 +7395,7 @@ public class SqlParserTest {
     final String reason = "The parser has at least one new reserved keyword. "
         + "Are you sure it should be reserved? Difference:\n"
         + DiffTestCase.diffLines(ImmutableList.copyOf(getReservedKeywords()),
-            ImmutableList.copyOf(reservedKeywords));
+        ImmutableList.copyOf(reservedKeywords));
     assertThat(reason, reservedKeywords, is(getReservedKeywords()));
   }
 
@@ -7627,26 +7630,26 @@ public class SqlParserTest {
   @Test public void testSequence() {
     sql("select next value for my_schema.my_seq from t")
         .ok("SELECT (NEXT VALUE FOR `MY_SCHEMA`.`MY_SEQ`)\n"
-                + "FROM `T`");
+            + "FROM `T`");
     sql("select next value for my_schema.my_seq as s from t")
         .ok("SELECT (NEXT VALUE FOR `MY_SCHEMA`.`MY_SEQ`) AS `S`\n"
-                + "FROM `T`");
+            + "FROM `T`");
     sql("select next value for my_seq as s from t")
         .ok("SELECT (NEXT VALUE FOR `MY_SEQ`) AS `S`\n"
-                + "FROM `T`");
+            + "FROM `T`");
     sql("select 1 + next value for s + current value for s from t")
         .ok("SELECT ((1 + (NEXT VALUE FOR `S`)) + (CURRENT VALUE FOR `S`))\n"
-                + "FROM `T`");
+            + "FROM `T`");
     sql("select 1 from t where next value for my_seq < 10")
         .ok("SELECT 1\n"
-                + "FROM `T`\n"
-                + "WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)");
+            + "FROM `T`\n"
+            + "WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)");
     sql("select 1 from t\n"
         + "where next value for my_seq < 10 fetch next 3 rows only")
         .ok("SELECT 1\n"
-                + "FROM `T`\n"
-                + "WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)\n"
-                + "FETCH NEXT 3 ROWS ONLY");
+            + "FROM `T`\n"
+            + "WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)\n"
+            + "FETCH NEXT 3 ROWS ONLY");
     sql("insert into t values next value for my_seq, current value for my_seq")
         .ok("INSERT INTO `T`\n"
             + "VALUES (ROW((NEXT VALUE FOR `MY_SEQ`))),\n"
@@ -8560,9 +8563,9 @@ public class SqlParserTest {
     checkExp("json_type('{}')", "JSON_TYPE('{}')");
     checkExp("json_type(null)", "JSON_TYPE(NULL)");
     checkExp("json_type('[\"foo\",null]')",
-            "JSON_TYPE('[\"foo\",null]')");
+        "JSON_TYPE('[\"foo\",null]')");
     checkExp("json_type('{\"foo\": \"100\"}')",
-            "JSON_TYPE('{\"foo\": \"100\"}')");
+        "JSON_TYPE('{\"foo\": \"100\"}')");
   }
 
   @Test public void testJsonDepth() {
@@ -8570,36 +8573,36 @@ public class SqlParserTest {
     checkExp("json_depth('{}')", "JSON_DEPTH('{}')");
     checkExp("json_depth(null)", "JSON_DEPTH(NULL)");
     checkExp("json_depth('[\"foo\",null]')",
-            "JSON_DEPTH('[\"foo\",null]')");
+        "JSON_DEPTH('[\"foo\",null]')");
     checkExp("json_depth('{\"foo\": \"100\"}')",
-            "JSON_DEPTH('{\"foo\": \"100\"}')");
+        "JSON_DEPTH('{\"foo\": \"100\"}')");
   }
 
   @Test public void testJsonLength() {
     checkExp("json_length('{\"foo\": \"bar\"}')",
-            "JSON_LENGTH('{\"foo\": \"bar\"}')");
+        "JSON_LENGTH('{\"foo\": \"bar\"}')");
     checkExp("json_length('{\"foo\": \"bar\"}', 'lax $')",
-            "JSON_LENGTH('{\"foo\": \"bar\"}', 'lax $')");
+        "JSON_LENGTH('{\"foo\": \"bar\"}', 'lax $')");
     checkExp("json_length('{\"foo\": \"bar\"}', 'strict $')",
-            "JSON_LENGTH('{\"foo\": \"bar\"}', 'strict $')");
+        "JSON_LENGTH('{\"foo\": \"bar\"}', 'strict $')");
     checkExp("json_length('{\"foo\": \"bar\"}', 'invalid $')",
-            "JSON_LENGTH('{\"foo\": \"bar\"}', 'invalid $')");
+        "JSON_LENGTH('{\"foo\": \"bar\"}', 'invalid $')");
   }
 
   @Test public void testJsonKeys() {
     checkExp("json_keys('{\"foo\": \"bar\"}', 'lax $')",
-            "JSON_KEYS('{\"foo\": \"bar\"}', 'lax $')");
+        "JSON_KEYS('{\"foo\": \"bar\"}', 'lax $')");
     checkExp("json_keys('{\"foo\": \"bar\"}', 'strict $')",
-            "JSON_KEYS('{\"foo\": \"bar\"}', 'strict $')");
+        "JSON_KEYS('{\"foo\": \"bar\"}', 'strict $')");
     checkExp("json_keys('{\"foo\": \"bar\"}', 'invalid $')",
-            "JSON_KEYS('{\"foo\": \"bar\"}', 'invalid $')");
+        "JSON_KEYS('{\"foo\": \"bar\"}', 'invalid $')");
   }
 
   @Test public void testJsonRemove() {
     checkExp("json_remove('[\"a\", [\"b\", \"c\"], \"d\"]', '$')",
-            "JSON_REMOVE('[\"a\", [\"b\", \"c\"], \"d\"]', '$')");
+        "JSON_REMOVE('[\"a\", [\"b\", \"c\"], \"d\"]', '$')");
     checkExp("json_remove('[\"a\", [\"b\", \"c\"], \"d\"]', '$[1]', '$[0]')",
-            "JSON_REMOVE('[\"a\", [\"b\", \"c\"], \"d\"]', '$[1]', '$[0]')");
+        "JSON_REMOVE('[\"a\", [\"b\", \"c\"], \"d\"]', '$[1]', '$[0]')");
   }
 
   @Test public void testJsonObjectAgg() {
@@ -8632,9 +8635,9 @@ public class SqlParserTest {
 
   @Test public void testJsonPretty() {
     checkExp("json_pretty('foo')",
-            "JSON_PRETTY('foo')");
+        "JSON_PRETTY('foo')");
     checkExp("json_pretty(null)",
-            "JSON_PRETTY(NULL)");
+        "JSON_PRETTY(NULL)");
   }
 
   @Test public void testJsonStorageSize() {
