@@ -58,6 +58,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -610,23 +611,21 @@ public class SqlParserTest {
   }
 
   public SqlParser getSqlParser(String sql) {
-    return getSqlParser(new SourceStringReader(sql));
+    return getSqlParser(new SourceStringReader(sql), UnaryOperator.identity());
   }
 
-  protected SqlParser getSqlParser(Reader source) {
-    return SqlParser.create(source,
+  protected SqlParser getSqlParser(Reader source,
+      UnaryOperator<SqlParser.ConfigBuilder> transform) {
+    final SqlParser.ConfigBuilder configBuilder =
         SqlParser.configBuilder()
             .setParserFactory(parserImplFactory())
             .setQuoting(quoting)
             .setUnquotedCasing(unquotedCasing)
             .setQuotedCasing(quotedCasing)
-            .setConformance(conformance)
-            .build());
-  }
-
-  protected SqlParser getDialectSqlParser(String sql, SqlDialect dialect) {
-    return SqlParser.create(new SourceStringReader(sql),
-        dialect.configureParser(SqlParser.configBuilder()).build());
+            .setConformance(conformance);
+    final SqlParser.Config config =
+        transform.apply(configBuilder).build();
+    return SqlParser.create(source, config);
   }
 
   @Deprecated
@@ -8472,7 +8471,7 @@ public class SqlParserTest {
 
   @Test public void testParseWithReader() throws Exception {
     String query = "select * from dual";
-    SqlParser sqlParserReader = getSqlParser(new StringReader(query));
+    SqlParser sqlParserReader = getSqlParser(new StringReader(query), b -> b);
     SqlNode node1 = sqlParserReader.parseQuery();
     SqlParser sqlParserString = getSqlParser(query);
     SqlNode node2 = sqlParserString.parseQuery();
@@ -8481,35 +8480,35 @@ public class SqlParserTest {
 
   @Test public void testConfigureFromDialect() throws SqlParseException {
     // Calcite's default converts unquoted identifiers to upper case
-    checkDialect(SqlDialect.DatabaseProduct.CALCITE.getDialect(),
-        "select unquotedColumn from \"doubleQuotedTable\"",
-        is("SELECT \"UNQUOTEDCOLUMN\"\n"
-            + "FROM \"doubleQuotedTable\""));
+    sql("select unquotedColumn from \"doubleQuotedTable\"")
+        .withDialect(SqlDialect.DatabaseProduct.CALCITE.getDialect())
+        .ok("SELECT \"UNQUOTEDCOLUMN\"\n"
+            + "FROM \"doubleQuotedTable\"");
     // MySQL leaves unquoted identifiers unchanged
-    checkDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect(),
-        "select unquotedColumn from `doubleQuotedTable`",
-        is("SELECT `unquotedColumn`\n"
-            + "FROM `doubleQuotedTable`"));
+    sql("select unquotedColumn from `doubleQuotedTable`")
+        .withDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect())
+        .ok("SELECT `unquotedColumn`\n"
+            + "FROM `doubleQuotedTable`");
     // Oracle converts unquoted identifiers to upper case
-    checkDialect(SqlDialect.DatabaseProduct.ORACLE.getDialect(),
-        "select unquotedColumn from \"doubleQuotedTable\"",
-        is("SELECT \"UNQUOTEDCOLUMN\"\n"
-            + "FROM \"doubleQuotedTable\""));
+    sql("select unquotedColumn from \"doubleQuotedTable\"")
+        .withDialect(SqlDialect.DatabaseProduct.ORACLE.getDialect())
+        .ok("SELECT \"UNQUOTEDCOLUMN\"\n"
+            + "FROM \"doubleQuotedTable\"");
     // PostgreSQL converts unquoted identifiers to lower case
-    checkDialect(SqlDialect.DatabaseProduct.POSTGRESQL.getDialect(),
-        "select unquotedColumn from \"doubleQuotedTable\"",
-        is("SELECT \"unquotedcolumn\"\n"
-            + "FROM \"doubleQuotedTable\""));
+    sql("select unquotedColumn from \"doubleQuotedTable\"")
+        .withDialect(SqlDialect.DatabaseProduct.POSTGRESQL.getDialect())
+        .ok("SELECT \"unquotedcolumn\"\n"
+            + "FROM \"doubleQuotedTable\"");
     // Redshift converts all identifiers to lower case
-    checkDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect(),
-        "select unquotedColumn from \"doubleQuotedTable\"",
-        is("SELECT \"unquotedcolumn\"\n"
-            + "FROM \"doublequotedtable\""));
+    sql("select unquotedColumn from \"doubleQuotedTable\"")
+        .withDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect())
+        .ok("SELECT \"unquotedcolumn\"\n"
+            + "FROM \"doublequotedtable\"");
     // BigQuery leaves quoted and unquoted identifers unchanged
-    checkDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect(),
-        "select unquotedColumn from `doubleQuotedTable`",
-        is("SELECT unquotedColumn\n"
-            + "FROM doubleQuotedTable"));
+    sql("select unquotedColumn from `doubleQuotedTable`")
+        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .ok("SELECT unquotedColumn\n"
+            + "FROM doubleQuotedTable");
   }
 
   @Test public void testParenthesizedSubQueries() {
@@ -8524,14 +8523,6 @@ public class SqlParserTest {
     sql(sql2).ok(expected);
   }
 
-  protected void checkDialect(SqlDialect dialect, String sql,
-      Matcher<String> matcher) throws SqlParseException {
-    sql(sql).withDialect(dialect).ok(matcher);
-    final SqlParser parser = getDialectSqlParser(sql, dialect);
-    final SqlNode node = parser.parseStmt();
-    assertThat(linux(node.toSqlString(dialect).getSql()), matcher);
-  }
-
   //~ Inner Interfaces -------------------------------------------------------
 
   /**
@@ -8540,7 +8531,7 @@ public class SqlParserTest {
   protected interface Tester {
     void checkList(String sql, List<String> expected);
 
-    void check(String sql, String expected);
+    void check(String sql, SqlDialect dialect, String expected);
 
     void checkExp(String sql, String expected);
 
@@ -8559,9 +8550,10 @@ public class SqlParserTest {
   protected class TesterImpl implements Tester {
     private void check(
         SqlNode sqlNode,
+        SqlDialect dialect,
         String expected) {
       // no dialect, always parenthesize
-      final String actual = sqlNode.toSqlString(null, true).getSql();
+      final String actual = sqlNode.toSqlString(dialect, true).getSql();
       TestUtil.assertEqualsVerbose(expected, linux(actual));
     }
 
@@ -8573,21 +8565,23 @@ public class SqlParserTest {
 
       for (int i = 0; i < sqlNodeList.size(); i++) {
         SqlNode sqlNode = sqlNodeList.get(i);
-        check(sqlNode, expected.get(i));
+        check(sqlNode, null, expected.get(i));
       }
     }
 
-    public void check(
-        String sql,
-        String expected) {
-      final SqlNode sqlNode = parseStmtAndHandleEx(sql);
-      check(sqlNode, expected);
+    public void check(String sql, SqlDialect dialect, String expected) {
+      final SqlNode sqlNode = parseStmtAndHandleEx(sql,
+          dialect == null ? UnaryOperator.identity() : dialect::configureParser);
+      check(sqlNode, dialect, expected);
     }
 
-    protected SqlNode parseStmtAndHandleEx(String sql) {
+    protected SqlNode parseStmtAndHandleEx(String sql,
+        UnaryOperator<SqlParser.ConfigBuilder> transform) {
+      final SqlParser parser =
+          getSqlParser(new SourceStringReader(sql), transform);
       final SqlNode sqlNode;
       try {
-        sqlNode = getSqlParser(sql).parseStmt();
+        sqlNode = parser.parseStmt();
       } catch (SqlParseException e) {
         throw new RuntimeException("Error while parsing SQL: " + sql, e);
       }
@@ -8737,11 +8731,13 @@ public class SqlParserTest {
       checkList(sqlNodeList2, expected);
     }
 
-    @Override public void check(String sql, String expected) {
-      SqlNode sqlNode = parseStmtAndHandleEx(sql);
+    @Override public void check(String sql, SqlDialect dialect,
+        String expected) {
+      SqlNode sqlNode = parseStmtAndHandleEx(sql,
+          dialect == null ? UnaryOperator.identity() : dialect::configureParser);
 
-      // Unparse with no dialect, always parenthesize.
-      final String actual = sqlNode.toSqlString(null, true).getSql();
+      // Unparse with the given dialect, always parenthesize.
+      final String actual = sqlNode.toSqlString(dialect, true).getSql();
       assertEquals(expected, linux(actual));
 
       // Unparse again in Calcite dialect (which we can parse), and
@@ -8754,7 +8750,7 @@ public class SqlParserTest {
       final Quoting q = quoting;
       try {
         quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode2 = parseStmtAndHandleEx(sql1);
+        sqlNode2 = parseStmtAndHandleEx(sql1, b -> b);
       } finally {
         quoting = q;
       }
@@ -8764,10 +8760,10 @@ public class SqlParserTest {
       // Should be the same as we started with.
       assertEquals(sql1, sql2);
 
-      // Now unparse again in the null dialect.
+      // Now unparse again in the given dialect.
       // If the unparser is not including sufficient parens to override
       // precedence, the problem will show up here.
-      final String actual2 = sqlNode2.toSqlString(null, true).getSql();
+      final String actual2 = sqlNode2.toSqlString(dialect, true).getSql();
       assertEquals(expected, linux(actual2));
     }
 
@@ -8845,7 +8841,7 @@ public class SqlParserTest {
       if (expression) {
         getTester().checkExp(sql, expected);
       } else {
-        getTester().check(sql, expected);
+        getTester().check(sql, dialect, expected);
       }
       return this;
     }
