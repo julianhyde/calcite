@@ -33,6 +33,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * Utility to generate a SQL script from validator test.
@@ -148,7 +149,7 @@ public class SqlTestGen {
         }
 
         @Override public void checkRewrite(
-            SqlValidator validator,
+            UnaryOperator<SqlValidator> transform,
             String query,
             String expectedRewrite) {
         }

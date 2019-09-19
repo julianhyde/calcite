@@ -61,6 +61,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 
@@ -161,9 +162,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   public SqlNode parseAndValidate(SqlValidator validator, String sql) {
-    if (validator == null) {
-      validator = getValidator();
-    }
     SqlNode sqlNode;
     try {
       sqlNode = parseQuery(sql);
@@ -493,9 +491,10 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   public void checkRewrite(
-      SqlValidator validator,
+      UnaryOperator<SqlValidator> transform,
       String query,
       String expectedRewrite) {
+    final SqlValidator validator = transform.apply(getValidator());
     SqlNode rewrittenNode = parseAndValidate(validator, query);
     String actualRewrite =
         rewrittenNode.toSqlString(AnsiSqlDialect.DEFAULT, false).getSql();

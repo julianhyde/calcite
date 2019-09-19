@@ -38,6 +38,7 @@ import org.junit.runners.model.Statement;
 
 import java.nio.charset.Charset;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nonnull;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -96,12 +97,20 @@ public class SqlValidatorTestCase {
     return new SqlValidatorTester(SqlTestFactory.INSTANCE);
   }
 
+  /** Creates a test context with a SQL query. */
   public final Sql sql(String sql) {
     return new Sql(tester, sql, true, false);
   }
 
+  /** Creates a test context with a SQL expression. */
   public final Sql expr(String sql) {
     return new Sql(tester, sql, false, false);
+  }
+
+  /** Creates a test context with a SQL expression.
+   * If an error occurs, the error is expected to span the entire expression. */
+  public final Sql wholeExpr(String sql) {
+    return expr(sql).withWhole(true);
   }
 
   public final Sql winSql(String sql) {
@@ -151,21 +160,7 @@ public class SqlValidatorTestCase {
   public final void checkWholeExpFails(
       String sql,
       String expected) {
-    expr(sql).withWhole(true).fails(expected);
-  }
-
-  /**
-   * Checks that a SQL expression gives a particular error, and that the
-   * location of the error is the whole expression, with specified type coercion flag.
-   */
-  public final void checkWholeExpFails(
-      String sql,
-      String expected,
-      boolean typeCoercion) {
-    expr(sql)
-        .withWhole(true)
-        .withTypeCoercion(typeCoercion)
-        .fails(expected);
+    wholeExpr(sql).fails(expected);
   }
 
   @Deprecated
@@ -306,12 +301,12 @@ public class SqlValidatorTestCase {
     /**
      * Checks that a query gets rewritten to an expected form.
      *
-     * @param validator       validator to use; null for default
+     * @param transform       applies desired settings to validator
      * @param query           query to test
      * @param expectedRewrite expected SQL text after rewrite and unparse
      */
     void checkRewrite(
-        SqlValidator validator,
+        UnaryOperator<SqlValidator> transform,
         String query,
         String expectedRewrite);
 
@@ -351,6 +346,14 @@ public class SqlValidatorTestCase {
     private final String sql;
     private final boolean query;
     private final boolean whole;
+
+Sql checkQuery(String sql) {
+  return sql(sql).ok();
+}
+
+Sql checkQueryFails(String sql, String expected) {
+  return sql(sql).fails(expected);
+}
 
     /** Creates a Sql.
      *
@@ -396,6 +399,11 @@ public class SqlValidatorTestCase {
 
     Sql withTypeCoercion(boolean typeCoercion) {
       return tester(tester.enableTypeCoercion(typeCoercion));
+    }
+
+    Sql withWhole(boolean whole) {
+      Preconditions.checkArgument(sql.indexOf('^') < 0);
+      return new Sql(tester, sql, query, whole);
     }
 
     Sql ok() {
@@ -491,9 +499,12 @@ public class SqlValidatorTestCase {
       tester.checkIntervalConv(toSql(false), expected);
     }
 
-    public Sql withWhole(boolean whole) {
-      Preconditions.checkArgument(sql.indexOf('^') < 0);
-      return new Sql(tester, sql, query, whole);
+    public Sql checkResultType(String sql, String resultType) {
+      return sql(sql).type(resultType);
+    }
+
+    public Sql checkFails(String sql, String expected, boolean runtime) {
+      return sql(sql).fails(expected + runtime); // TODO
     }
   }
 
