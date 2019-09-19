@@ -1,0 +1,1090 @@
+# redshift.iq - Babel test for Redshift dialect of SQL
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to you under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+!use scott
+!set outputformat mysql
+
+# 1. Leader Node–Only Functions
+# The following SQL functions are leader-node only functions and are not
+# supported on the compute nodes:
+#
+# 1.1 System information functions
+# CURRENT_SCHEMA
+# CURRENT_SCHEMAS
+# HAS_DATABASE_PRIVILEGE
+# HAS_SCHEMA_PRIVILEGE
+# HAS_TABLE_PRIVILEGE
+
+# 1.2.1 Date functions
+# AGE
+# CURRENT_TIME
+# CURRENT_TIMESTAMP
+# LOCALTIME
+# ISFINITE
+# NOW
+
+# 1.2.2 String functions
+
+# ASCII
+select ascii('xyz');
+!ok
+
+# GET_BIT
+select get_bit(CAST('FFFF' as BINARY), 1);
+!ok
+
+# GET_BYTE
+select get_byte(CAST('FFFF' as BINARY), 1);
+!ok
+
+# SET_BIT
+select set_bit(CAST('FFFF' as BINARY), 1, 61);
+!ok
+
+# SET_BYTE
+select set_byte(CAST('FFFF' as BINARY), 1, 61);
+!ok
+
+# TO_ASCII
+select to_ascii(120);
+!ok
+
+# 2 Compute Node–Only Functions
+#
+# The following SQL functions must execute only on the compute nodes.
+#
+# LISTAGG
+# MEDIAN
+# PERCENTILE_CONT
+# PERCENTILE_DISC and APPROXIMATE PERCENTILE_DISC
+
+# 3 Aggregate Functions
+
+# APPROXIMATE PERCENTILE_DISC
+select approximate percentile_disc within group (order by sal) from emp group by deptno;
+!ok
+
+# AVG
+select avg(sal) from emp;
+!ok
+
+# COUNT
+select approximate count(distinct sal) from emp;
+!ok
+
+select count(*) from emp;
+!ok
+
+select count(sal) from emp;
+!ok
+
+select count(all sal) from emp;
+!ok
+
+select count(distinct sal) from emp;
+!ok
+
+# LISTAGG
+select listagg(empno) from emp group by deptno;
+!ok
+
+select listagg(empno) within group (order by sal) from emp group by deptno;
+!ok
+
+select listagg(empno, ',') from emp group by deptno;
+!ok
+
+# MAX
+select max(distinct sal) from emp;
+!ok
+
+select max(all sal) from emp;
+!ok
+
+select max(sal) from emp;
+!ok
+
+# MEDIAN
+select median(sal) from emp;
+!ok
+
+# MIN
+select min(distinct sal) from emp;
+!ok
+
+select min(all sal) from emp;
+!ok
+
+select min(sal) from emp;
+!ok
+
+# PERCENTILE_CONT
+select percentile_cont(0.6) within group (order by sal) from emp group by deptno;
+!ok
+
+# PERCENTILE_DISC
+select percentile_disc(0.6) within group (order by sal) from emp group by deptno;
+!ok
+
+# STDDEV_SAMP and STDDEV_POP
+select stddev_samp(sal) from emp;
+!ok
+
+select stddev_pop(sal) from emp;
+!ok
+
+# SUM
+select sum(sal) from emp;
+!ok
+
+select sum(distinct sal) from emp;
+!ok
+
+# VAR_SAMP and VAR_POP
+select var_samp(sal) from emp;
+!ok
+
+select var_samp(distinct sal) from emp;
+!ok
+
+select var_samp(all sal) from emp;
+!ok
+
+select var_pop(sal) from emp;
+!ok
+
+# 4 Bit-Wise Aggregate Functions
+
+# BIT_AND
+select bit_and(deptno) from emp;
+!ok
+
+# BIT_OR
+select bit_or(deptno) from emp;
+!ok
+
+# BOOL_AND operates on a single Boolean or integer column or expression
+select bool_and(deptno < 20) from emp;
+!ok
+
+select bool_and(deptno) from emp;
+!ok
+
+select bool_and(distinct deptno) from emp;
+!ok
+
+# BOOL_OR operates on a single Boolean or integer column or expression
+select bool_or(deptno < 20) from emp;
+!ok
+
+select bool_or(deptno) from emp;
+!ok
+
+# 5 Window and ranking functions
+
+# 5.1 Window functions:
+
+# AVG
+select empno, avg(sal) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# COUNT
+select empno, count(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# CUME_DIST
+select empno, cume_dist() over (order by sal rows unbounded preceding) from emp order by 1;
+!ok
+
+# FIRST_VALUE
+select empno, first_value(sal) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+select empno, first_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# LAG
+select empno, lag(sal) respect nulls over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+select empno, lag(sal, 2) respect nulls over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# LAST_VALUE
+select empno, last_value(sal) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+select empno, last_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# LEAD
+select empno, lead(sal, 2) ignore nulls over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# MAX
+select empno, max(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# MEDIAN
+select empno, median(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# MIN
+select empno, min(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# NTH_VALUE
+select empno, nth_value(sal, 2) ignore nulls over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# PERCENTILE_CONT
+select percentile_cont(0.6) within group (order by sal) over () from emp;
+!ok
+
+select percentile_cont(0.6) within group (order by sal) over (partition by deptno) from emp;
+!ok
+
+# PERCENTILE_DISC
+select percentile_disc(0.6) within group (order by sal) over () from emp;
+!ok
+
+select percentile_disc(0.6) within group (order by sal) over (partition by deptno) from emp;
+!ok
+
+# RATIO_TO_REPORT
+select ratio_to_report(sal) over () from emp;
+!ok
+
+select deptno, ratio_to_report(sal) over (partition by deptno) from emp;
+!ok
+
+# STDDEV_POP
+select empno, stddev_pop(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# STDDEV_SAMP (synonym for STDDEV)
+select empno, stddev_samp(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+select empno, stddev(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# SUM
+select empno, sum(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# VAR_POP
+select empno, var_pop(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# VAR_SAMP (synonym for VARIANCE)
+select empno, var_samp(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+select empno, variance(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!ok
+
+# 5.2 Ranking functions
+
+# DENSE_RANK
+select dense_rank() over () from emp;
+!ok
+
+select dense_rank() over (partition by deptno) from emp;
+!ok
+
+select dense_rank() over (partition by deptno order by sal) from emp;
+!ok
+
+# NTILE
+select ntile(4) over (order by sal desc) from emp;
+!ok
+
+# PERCENT_RANK
+select percent_rank() over () from emp;
+!ok
+
+select percent_rank() over (partition by deptno) from emp;
+!ok
+
+select percent_rank() over (partition by deptno order by sal) from emp;
+!ok
+
+# RANK
+select rank() over () from emp;
+!ok
+
+select rank() over (partition by deptno) from emp;
+!ok
+
+select rank() over (partition by deptno order by sal) from emp;
+!ok
+
+# ROW_NUMBER
+select row_number() over () from emp;
+!ok
+
+# 6 Conditional Expressions
+
+# CASE
+select case when deptno < 10 then 'x' else 'y' end from emp;
+!ok
+
+select case when deptno < 10 then 'x' end from emp;
+!ok
+
+select case deptno when 10 then 'x' when 20 then 'y' end from emp;
+!ok
+
+select case deptno when 10 then 'x' when 20 then 'y' else 'z' end from emp;
+!ok
+
+# COALESCE is a synonym for NVL
+select coalesce(1, 2, 3);
+!ok
+
+# DECODE
+select decode(deptno, 10, 'x', 20, 'y', 'z') from emp;
+!ok
+
+# GREATEST and LEAST
+select greatest(deptno) from emp;
+!ok
+
+select greatest(deptno, empno) from emp;
+!ok
+
+select greatest(deptno, empno, sal) from emp;
+!ok
+
+select least(deptno, empno) from emp;
+!ok
+
+# NVL
+select nvl(1, 2);
+!ok
+
+select nvl(1, 2, 3);
+!ok
+
+select nvl(comm, sal) from emp;
+!ok
+
+# NVL2
+select nvl2(comm, sal, sal + 10) from emp;
+!ok
+
+# NULLIF
+select nullif(comm, sal) from emp;
+!ok
+
+# 7 Date and Time Functions
+
+# 7.1 Deprecated leader-node only functions
+
+# The following date functions are deprecated because they execute only on
+# the leader node.
+
+# AGE. Use DATEDIFF Function instead.
+select age('2017-01-01','2011-06-24');
+!ok
+
+# CURRENT_TIME. Use GETDATE Function or SYSDATE instead.
+select current_time;
+!ok
+
+select current_time(2);
+!ok
+
+# CURRENT_TIMESTAMP. Use GETDATE Function or SYSDATE instead.
+select current_timestamp;
+!ok
+
+select current_timestamp(2);
+!ok
+
+# LOCALTIME. Use GETDATE Function or SYSDATE instead.
+select localtime;
+!ok
+
+select localtime(2);
+!ok
+
+# LOCALTIMESTAMP. Use GETDATE Function or SYSDATE instead.
+select localtimestamp;
+!ok
+
+# ISFINITE
+select isfinite(date '2002-09-17');
+!ok
+
+# NOW. Use GETDATE Function or SYSDATE instead.
+select now();
+!ok
+
+# 7.2 Date and Time functions
+
+# ADD_MONTHS ({date|timestamp}, integer) returns TIMESTAMP
+# Adds the specified number of months to a date or time stamp.
+select add_months;
+
+# AT TIME ZONE 'timezone' returns TIMESTAMP
+# Specifies which time zone to use with a TIMESTAMP or TIMESTAMPTZ expression.
+select at time tone 'utc';
+
+# CONVERT_TIMEZONE (['timezone',] 'timezone', timestamp) returns TIMESTAMP
+# Converts a time stamp from one time zone to another.
+select convert_timezone;
+
+# CURRENT_DATE returns DATE
+# Returns a date in the current session time zone (UTC by default) for the start
+# of the current transaction.
+select current_date;
+
+# DATE_CMP (date1, date2) returns INTEGER
+# Compares two dates and returns 0 if the dates are identical, 1 if date1 is
+# greater, and -1 if date2 is greater.
+select date_cmp;
+
+# DATE_CMP_TIMESTAMP (date, timestamp) returns INTEGER
+# Compares a date to a time and returns 0 if the values are identical, 1 if date
+# is greater and -1 if timestamp is greater.
+select date_cmp_timestamp;
+
+# DATE_CMP_TIMESTAMPTZ (date, timestamptz) returns INTEGER
+# Compares a date and a time stamp with time zone and returns 0 if the values
+# are identical, 1 if date is greater and -1 if timestamptz is greater.
+select date_cmp_timestamptz;
+
+# DATE_PART_YEAR (date) returns INTEGER
+# Extracts the year from a date.
+select date_part_year;
+
+# DATEADD (datepart, interval, {date|timestamp}) returns TIMESTAMP
+# Increments a date or time by a specified interval.
+select dateadd;
+
+# DATEDIFF (datepart, {date|time}, {date|timestamp}) returns BIGINT
+# Returns the difference between two dates or times for a given date part, such
+# as a day or month.
+select datediff;
+
+# DATE_PART (datepart, {date|time}) returns DOUBLE
+# Extracts a date part value from date or time.
+select date_part;
+
+# DATE_TRUNC ('datepart', timestamp) returns TIMESTAMP
+# Truncates a time stamp based on a date part.
+select date_trunc;
+
+# EXTRACT (datepart FROM {TIMESTAMP 'literal' | timestamp}) returns DOUBLE
+# Extracts a date part from a timestamp or literal.
+select extract;
+
+# GETDATE() returns TIMESTAMP
+# Returns the current date and time in the current session time zone (UTC by
+# default). The parentheses are required.
+select getdate();
+
+# INTERVAL_CMP (interval1, interval2) returns INTEGER
+# Compares two intervals and returns 0 if the intervals are equal, 1 if
+# interval1 is greater, and -1 if interval2 is greater.
+select interval_cmp;
+
+# LAST_DAY(date) returns DATE
+# Returns the date of the last day of the month that contains date.
+select last_day();
+
+# MONTHS_BETWEEN (date, date) returns FLOAT8
+# Returns the number of months between two dates.
+select months_between();
+
+# NEXT_DAY (date, day) returns DATE
+# Returns the date of the first instance of day that is later than date.
+select next_day;
+
+# SYSDATE returns TIMESTAMP
+# Returns the date and time in the current session time zone (UTC by default)
+# for the start of the current transaction.
+select sysdate;
+
+# TIMEOFDAY() returns VARCHAR
+# Returns the current weekday, date, and time in the current session time zone
+# (UTC by default) as a string value.
+select timeofday();
+
+# TIMESTAMP_CMP (timestamp1, timestamp2) returns INTEGER
+# Compares two timestamps and returns 0 if the timestamps are equal, 1 if
+# timestamp1 is greater, and -1 if timestamp2 is greater.
+select timestamp_cmp;
+
+# TIMESTAMP_CMP_DATE (timestamp, date) returns INTEGER
+# Compares a timestamp to a date and returns 0 if the values are equal, 1 if
+# timestamp is greater, and -1 if date is greater.
+seleecet timestamp_cmp_date;
+
+# TIMESTAMP_CMP_TIMESTAMPTZ (timestamp, timestamptz) returns INTEGER
+# Compares a timestamp with a time stamp with time zone and returns 0 if the
+# values are equal, 1 if timestamp is greater, and -1 if timestamptz is greater.
+select TIMESTAMP_CMP_TIMESTAMPTZ;
+
+# TIMESTAMPTZ_CMP (timestamptz1, timestamptz2) returns INTEGER
+# Compares two timestamp with time zone values and returns 0 if the values are
+# equal, 1 if timestamptz1 is greater, and -1 if timestamptz2 is greater.
+select TIMESTAMPTZ_CMP;
+
+# TIMESTAMPTZ_CMP_DATE (timestamptz, date) returns INTEGER
+# Compares the value of a time stamp with time zone and a date and returns 0 if
+# the values are equal, 1 if timestamptz is greater, and -1 if date is greater.
+select TIMESTAMP_CMP_DATE;
+
+# TIMESTAMPTZ_CMP_TIMESTAMP (timestamptz, timestamp) returns INTEGER
+# Compares a timestamp with time zone with a time stamp and returns 0 if the
+# values are equal, 1 if timestamptz is greater, and -1 if timestamp is greater.
+select timestamptz_cmp_timestamp;
+
+# TIMEZONE ('timezone', timestamp | timestamptz ) returns TIMESTAMP or TIMESTAMPTZ
+# Returns a time stamp or time stamp with time zone for the specified time zone
+# and time stamp value.
+select timezone;
+
+# TO_TIMESTAMP ('timestamp', 'format') returns TIMESTAMPTZ
+# Returns a time stamp with time zone for the specified time stamp and time zone
+# format.
+select to_timestamp;
+
+# TRUNC(timestamp) returns DATE
+# Truncates a time stamp and returns a date.
+select trunc;
+
+# 8 Math functions
+
+# ABS
+select abs(2);
+!ok
+
+select -abs(-pi());
+!ok
+
+# ACOS
+select acos(0);
+!ok
+
+# ASIN
+select asin(0);
+!ok
+
+# ATAN
+select atan(0);
+!ok
+
+# ATAN2
+select atan2(2,2) * 4 as pi;
+!ok
+
+# CBRT
+select cbrt(-8);
+!ok
+
+# CEILING (or CEIL)
+select ceiling(10.5);
+!ok
+
+select ceiling(-10.5);
+!ok
+
+select ceil(pi);
+!ok
+
+# CHECKSUM
+select checksum(comm) from emp;
+!ok
+
+# COS
+select cos(180);
+!ok
+
+# COT
+select cot(45);
+!ok
+
+# DEGREES
+select degrees(pi);
+!ok
+
+# DEXP
+select dexp(0);
+!ok
+
+# DLOG1 is a synonym for LN
+select dlog1(10);
+!ok
+
+# DLOG10
+select dlog10(100);
+!ok
+
+# EXP
+select exp(0);
+!ok
+
+# FLOOR
+select floor(10.5);
+!ok
+
+select floor(-10.5);
+!ok
+
+# LN
+select ln(1);
+!ok
+
+# LOG
+select log(1000);
+!ok
+
+# MOD
+select mod(-50, 17);
+!ok
+
+# PI
+select pi();
+!ok
+
+# POWER
+select power(2, 3);
+!ok
+
+select pow(-2, 3);
+!ok
+
+# RADIANS
+select radians(180);
+!ok
+
+# RANDOM
+select random();
+!ok
+
+# ROUND
+select round(pi());
+!ok
+
+select round(pi(), 2);
+!ok
+
+select round(-pi(), 2);
+!ok
+
+# SIN
+select sin(-90);
+!ok
+
+# SIGN
+select sign(23);
+!ok
+
+# SQRT
+select sqrt(225);
+!ok
+
+# TAN
+select tan(45);
+!ok
+
+# TO_HEX
+select to_hex(2147676847);
+!ok
+
+# TRUNC
+select trunc(111.86);
+!ok
+
+select trunc(-111.86, 1);
+!ok
+
+# 9 String functions
+
+# || (Concatenation) Operator
+select 'a' || 'b';
+!ok
+
+# BPCHARCMP
+select ename, dname, bpcharcmp(ename, dname) from emp join dept using (deptno);
+!ok
+
+# BTRIM
+select btrim('  abc ');
+!ok
+
+select btrim('xyzaxyzbxyzcxyz', 'xyz');
+!ok
+
+# BTTEXT_PATTERN_CMP is a synonym for BPCHARCMP
+select ename, dname, bttext_pattern_cmp(ename, dname) from emp join dept using (deptno);
+!ok
+
+# CHAR_LENGTH is a synonym for LEN
+select char_length('abc');
+!ok
+
+# CHARACTER_LENGTH is a synonym for LEN
+select character_length('abc');
+!ok
+
+# CHARINDEX
+select charindex('dog', 'fish');
+!ok
+
+select charindex('fish', 'dogfish');
+!ok
+
+# CHR
+select chr(65);
+!ok
+
+# CONCAT (Oracle Compatibility Function)
+select concat('a', 'b');
+!ok
+
+# CRC32
+-- returns 'f2726906'
+select crc32('Amazon Redshift');
+!ok
+
+# FUNC_SHA1
+select func_sha1('Amazon Redshift');
+!ok
+
+# INITCAP
+-- returns 'Nibh.Enim@Egestas.Ca'
+select initcap('nibh.enim@egestas.ca');
+!ok
+
+# LEFT and RIGHT
+-- returns 'Chica'
+select left('Chicago', 5);
+!ok
+
+-- returns 'icago'
+select right('Chicago', 5);
+!ok
+
+# LEN is a synonym for LENGTH
+select len('gth');
+!ok
+
+# LENGTH
+select length('ily');
+!ok
+
+-- returns 8
+select length('français');
+!ok
+
+# LOWER
+select lower('Manhattan');
+!ok
+
+# LPAD and RPAD
+select lpad('cat', 7);
+!ok
+
+-- returns 'eeriness'
+select rpad(lpad('rine', 6, 'e'), 8, 's');
+!ok
+
+select rpad('cat', 7);
+!ok
+
+# LTRIM
+-- returns 'kery'
+select ltrim('bakery', 'abc');
+!ok
+
+# MD5
+-- returns 'f7415e33f972c03abd4f3fed36748f7a'
+select md5('Amazon Redshift');
+!ok
+
+# OCTET_LENGTH
+-- returns 9
+select octet_length('français');
+!ok
+
+# POSITION is a synonym for STRPOS
+select position('fish', 'dogfish');
+!ok
+
+# QUOTE_IDENT
+-- returns '"ab cd"'
+select quote_ident('ab cd');
+!ok
+
+-- returns 'EMP'
+select quote_ident('EMP');
+!ok
+
+# QUOTE_LITERAL
+-- returns "'it''s a literal'"
+select quote_literal('it''s a literal');
+!ok
+
+# REGEXP_COUNT
+-- returns 8
+select regexp_count('abcdefghijklmnopqrstuvwxyz', '[a-z]{3}');
+!ok
+
+# REGEXP_INSTR ( source_string, pattern [, position [, occurrence] [, option
+# [, parameters ] ] ] ] )
+select regexp_instr('The Home Depot Center', '[cC]ent(er|re)$');
+!ok
+
+# REGEXP_REPLACE ( source_string, pattern [, replace_string [ , position ] ] )
+select regexp_replace('DonecFri@semperpretiumneque.com', '@.*\\.(org|gov|com)$');
+!ok
+
+# REGEXP_SUBSTR ( source_string, pattern [, position [, occurrence
+# [, parameters ] ] ] )
+select regexp_substr('Suspendisse.tristique@nonnisiAenean.edu','@[^.]*');
+!ok
+
+# REPEAT
+select repeat('ba', 3);
+!ok
+
+# REPLACE
+select replace('catching catfish', 'cat', 'dog');
+!ok
+
+# REPLICATE is a synonym for REPEAT
+select replicate('ba', 3);
+!ok
+
+# REVERSE
+select reverse('ab c');
+!ok
+
+# RTRIM
+-- returns 'baker'
+select rtrim('bakery', 'xyz');
+!ok
+
+# SPLIT_PART
+-- returns '03'
+select split_part('2008-03-05', '-', 2);
+!ok
+
+# STRPOS is a synonym for CHARINDEX and POSITION
+select strpos('fish', 'dogfish');
+!ok
+
+# STRTOL
+-- returns 2882343476
+select strtol('abcd1234',16);
+!ok
+
+-- returns 53
+select strtol('110101', 2);
+
+# SUBSTRING
+-- returns 'pill'
+select substring('caterpillar',6,4);
+!ok
+
+-- returns 'pillar'
+select substring('caterpillar',6,8);
+!ok
+
+-- returns 'pill'
+select substring('caterpillar' from 6 for 4);
+!ok
+
+# TEXTLEN is a synonym for LEN
+select textlen('abc');
+!ok
+
+# TRANSLATE ( expression, characters_to_replace, characters_to_substitute )
+-- returns 'most tin'
+select translate('mint tea', 'inea', 'osin');
+!ok
+
+# TRIM( [ BOTH ] ['characters' FROM ] string ] )
+-- returns 'dog'
+select trim('"' FROM '"dog"');
+!ok
+
+# UPPER
+select upper('Pop');
+!ok
+
+# 10 JSON Functions
+
+# IS_VALID_JSON
+select is_valid_json('{"a":2}');
+!ok
+
+# IS_VALID_JSON_ARRAY
+select is_valid_json_array;
+!ok
+
+# JSON_ARRAY_LENGTH
+select json_array_length;
+!ok
+
+# JSON_EXTRACT_ARRAY_ELEMENT_TEXT
+select json_extract_array_element_text;
+!ok
+
+# JSON_EXTRACT_PATH_TEXT
+select json_extract_path_text;
+!ok
+
+# 11 Data Type Formatting Functions
+
+# CAST and CONVERT
+select cast(stddev_samp(sal) as dec(14, 2)) from emp;
+!ok
+
+select convert;
+!ok
+
+# TO_CHAR
+select to_char;
+!ok
+
+# TO_DATE
+select to_date;
+!ok
+
+# TO_NUMBER
+select to_number;
+!ok
+
+# 12 System Administration Functions
+
+# CHANGE_QUERY_PRIORITY
+select change_query_priority;
+!ok
+
+# CHANGE_SESSION_PRIORITY
+select change_session_priority;
+!ok
+
+# CHANGE_USER_PRIORITY
+select change_user_priority;
+!ok
+
+# CURRENT_SETTING
+select current_setting;
+!ok
+
+# PG_CANCEL_BACKEND
+select pg_cancel_backend;
+!ok
+
+# PG_TERMINATE_BACKEND
+select pg_terminate_backend;
+!ok
+
+# SET_CONFIG
+select set_config;
+!ok
+
+# 13 System Information Functions
+
+# CURRENT_DATABASE
+select current_database();
+!ok
+
+# CURRENT_SCHEMA
+select current_schema();
+!ok
+
+# CURRENT_SCHEMAS
+select current_schemas(false);
+!ok
+
+# CURRENT_USER
+select current_user;
+!ok
+
+# CURRENT_USER_ID
+select current_user_id;
+!ok
+
+# HAS_DATABASE_PRIVILEGE
+select has_database_privilege('guest', 'tickit', 'temp');
+!ok
+
+# HAS_SCHEMA_PRIVILEGE
+select has_schema_privilege('guest', 'public', 'create');
+!ok
+
+# HAS_TABLE_PRIVILEGE
+select has_table_privilege('guest', 'listing', 'select');
+!ok
+
+# PG_BACKEND_PID
+select pg_backend_pid();
+!ok
+
+# PG_GET_COLS
+select pg_get_cols('sales_vw');
+!ok
+
+# PG_GET_LATE_BINDING_VIEW_COLS
+select pg_get_late_binding_view_cols();
+!ok
+
+# PG_LAST_COPY_COUNT
+select pg_last_copy_count;
+!ok
+
+# PG_LAST_COPY_ID
+select pg_last_copy_id;
+!ok
+
+# PG_LAST_UNLOAD_ID
+select pg_last_unload_id;
+!ok
+
+# PG_LAST_QUERY_ID
+select pg_last_query_id;
+!ok
+
+# PG_LAST_UNLOAD_COUNT
+select pg_last_unload_count;
+!ok
+
+# SESSION_USER
+select session_user;
+!ok
+
+# SLICE_NUM
+select slice_num;
+!ok
+
+# USER
+select user;
+!ok
+
+# VERSION
+select version;
+!ok
+
+# End redshift.iq
