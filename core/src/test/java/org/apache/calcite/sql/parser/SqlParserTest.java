@@ -28,10 +28,10 @@ import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.test.DiffTestCase;
-import org.apache.calcite.test.SqlValidatorTestCase;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.ConversionUtil;
 import org.apache.calcite.util.SourceStringReader;
@@ -8674,7 +8674,8 @@ public class SqlParserTest {
 
     protected void checkEx(String expectedMsgPattern, SqlParserUtil.StringAndPos sap,
         Throwable thrown) {
-      SqlValidatorTestCase.checkEx(thrown, expectedMsgPattern, sap);
+      SqlTests.checkEx(thrown, expectedMsgPattern, sap,
+          SqlTests.Stage.VALIDATE);
     }
   }
 

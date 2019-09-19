@@ -48,7 +48,6 @@ import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.test.CalciteAssert;
-import org.apache.calcite.test.SqlValidatorTestCase;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
@@ -126,7 +125,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       thrown = ex;
     }
 
-    SqlValidatorTestCase.checkEx(thrown, expectedMsgPattern, sap);
+    SqlTests.checkEx(thrown, expectedMsgPattern, sap, SqlTests.Stage.VALIDATE);
   }
 
   protected void checkParseEx(Throwable e, String expectedMsgPattern, String sql) {
