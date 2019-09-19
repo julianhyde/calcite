@@ -588,11 +588,11 @@ public class SqlParserTest {
   }
 
   protected Sql sql(String sql) {
-    return new Sql(sql);
+    return new Sql(sql, false, null);
   }
 
   protected Sql exp(String sql) {
-    return new Sql(sql, true);
+    return new Sql(sql, true, null);
   }
 
   /** Creates an instance of helper class {@link SqlList} to test parsing a
@@ -8526,6 +8526,7 @@ public class SqlParserTest {
 
   protected void checkDialect(SqlDialect dialect, String sql,
       Matcher<String> matcher) throws SqlParseException {
+    sql(sql).withDialect(dialect).ok(matcher);
     final SqlParser parser = getDialectSqlParser(sql, dialect);
     final SqlNode node = parser.parseStmt();
     assertThat(linux(node.toSqlString(dialect).getSql()), matcher);
@@ -8828,14 +8829,12 @@ public class SqlParserTest {
   protected class Sql {
     private final String sql;
     private final boolean expression;
+    private final SqlDialect dialect;
 
-    Sql(String sql) {
-      this(sql, false);
-    }
-
-    Sql(String sql, boolean expression) {
+    Sql(String sql, boolean expression, SqlDialect dialect) {
       this.sql = sql;
       this.expression = expression;
+      this.dialect = dialect;
     }
 
     public Sql same() {
@@ -8867,14 +8866,18 @@ public class SqlParserTest {
 
     /** Flags that this is an expression, not a whole query. */
     public Sql expression() {
-      return expression ? this : new Sql(sql, true);
+      return expression ? this : new Sql(sql, true, dialect);
     }
 
     /** Removes the carets from the SQL string. Useful if you want to run
      * a test once at a conformance level where it fails, then run it again
      * at a conformance level where it succeeds. */
     public Sql sansCarets() {
-      return new Sql(sql.replace("^", ""), expression);
+      return new Sql(sql.replace("^", ""), expression, dialect);
+    }
+
+    public Sql withDialect(SqlDialect dialect) {
+      return new Sql(sql, expression, dialect);
     }
   }
 
