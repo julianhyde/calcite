@@ -581,7 +581,7 @@ public class SqlParserTest {
     return new TesterImpl();
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   protected void check(
       String sql,
       String expected) {
@@ -628,30 +628,26 @@ public class SqlParserTest {
     return SqlParser.create(source, config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   protected void checkExp(
       String sql,
       String expected) {
     exp(sql).ok(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   protected void checkExpSame(String sql) {
     exp(sql).same();
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   protected void checkFails(
       String sql,
       String expectedMsgPattern) {
     sql(sql).fails(expectedMsgPattern);
   }
 
-  /**
-   * Tests that an expression throws an exception which matches the given
-   * pattern.
-   */
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   protected void checkExpFails0(
       String sql,
       String expectedMsgPattern) {

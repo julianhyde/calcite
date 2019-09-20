@@ -16,9 +16,13 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.test.AbstractSqlTester;
 import org.apache.calcite.sql.test.SqlTestFactory;
@@ -129,83 +133,80 @@ public class SqlValidatorTestCase {
     return winSql("select " + sql + " from emp");
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public void check(String sql) {
     sql(sql).ok();
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public void checkExp(String sql) {
     expr(sql).ok();
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public final void checkFails(
       String sql,
       String expected) {
     sql(sql).fails(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public final void checkExpFails(
       String sql,
       String expected) {
     expr(sql).fails(expected);
   }
 
-  /**
-   * Checks that a SQL expression gives a particular error, and that the
-   * location of the error is the whole expression.
-   */
+  @Deprecated // to be removed before 1.23
   public final void checkWholeExpFails(
       String sql,
       String expected) {
     wholeExpr(sql).fails(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public final void checkExpType(
       String sql,
       String expected) {
     expr(sql).columnType(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public final void checkColumnType(
       String sql,
       String expected) {
     sql(sql).columnType(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public final void checkResultType(
       String sql,
       String expected) {
     sql(sql).type(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public final void checkIntervalConv(
       String sql,
       String expected) {
     expr(sql).intervalConv(expected);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   protected final void assertExceptionIsThrown(
       String sql,
       String expectedMsgPattern) {
     sql(sql).fails(expectedMsgPattern);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public void checkCharset(
       String sql,
       Charset expectedCharset) {
     sql(sql).charset(expectedCharset);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 1.23
   public void checkCollation(
       String sql,
       String expectedCollationName,
@@ -301,14 +302,10 @@ public class SqlValidatorTestCase {
     /**
      * Checks that a query gets rewritten to an expected form.
      *
-     * @param transform       applies desired settings to validator
      * @param query           query to test
      * @param expectedRewrite expected SQL text after rewrite and unparse
      */
-    void checkRewrite(
-        UnaryOperator<SqlValidator> transform,
-        String query,
-        String expectedRewrite);
+    void checkRewrite(String query, String expectedRewrite);
 
     /**
      * Checks that a query returns one column of an expected type. For
@@ -347,14 +344,6 @@ public class SqlValidatorTestCase {
     private final boolean query;
     private final boolean whole;
 
-Sql checkQuery(String sql) {
-  return sql(sql).ok();
-}
-
-Sql checkQueryFails(String sql, String expected) {
-  return sql(sql).fails(expected);
-}
-
     /** Creates a Sql.
      *
      * @param tester Tester
@@ -370,12 +359,21 @@ Sql checkQueryFails(String sql, String expected) {
       this.whole = whole;
     }
 
+    @Deprecated // to be removed before 1.23
     Sql tester(SqlTester tester) {
-      return new Sql(tester, sql, query, whole);
+      return withTester(t -> tester);
+    }
+
+    Sql withTester(UnaryOperator<SqlTester> transform) {
+      return new Sql(transform.apply(tester), sql, query, whole);
     }
 
     public Sql sql(String sql) {
       return new Sql(tester, sql, true, false);
+    }
+
+    public Sql expr(String sql) {
+      return new Sql(tester, sql, false, false);
     }
 
     public String toSql(boolean withCaret) {
@@ -386,19 +384,23 @@ Sql checkQueryFails(String sql, String expected) {
     }
 
     Sql withExtendedCatalog() {
-      return tester(EXTENDED_CATALOG_TESTER);
+      return withTester(tester -> EXTENDED_CATALOG_TESTER);
     }
 
-    Sql withExtendedCatalog2003() {
-      return tester(EXTENDED_CATALOG_TESTER_2003);
+    public Sql withQuoting(Quoting quoting) {
+      return withTester(tester -> tester.withQuoting(quoting));
     }
 
-    Sql withExtendedCatalogLenient() {
-      return tester(EXTENDED_CATALOG_TESTER_LENIENT);
+    Sql withLex(Lex lex) {
+      return withTester(tester -> tester.withLex(lex));
+    }
+
+    Sql withConformance(SqlConformance conformance) {
+      return withTester(tester -> tester.withConformance(conformance));
     }
 
     Sql withTypeCoercion(boolean typeCoercion) {
-      return tester(tester.enableTypeCoercion(typeCoercion));
+      return withTester(tester -> tester.enableTypeCoercion(typeCoercion));
     }
 
     Sql withWhole(boolean whole) {
@@ -420,6 +422,10 @@ Sql checkQueryFails(String sql, String expected) {
       return this;
     }
 
+    /**
+     * Checks that a SQL expression fails, giving an {@code expected} error,
+     * if {@code b} is true, otherwise succeeds.
+     */
     Sql failsIf(boolean b, String expected) {
       if (b) {
         fails(expected);
@@ -499,20 +505,60 @@ Sql checkQueryFails(String sql, String expected) {
       tester.checkIntervalConv(toSql(false), expected);
     }
 
-    public Sql checkResultType(String sql, String resultType) {
-      return sql(sql).type(resultType);
+    public Sql withCaseSensitive(boolean caseSensitive) {
+      return withTester(tester -> tester.withCaseSensitive(caseSensitive));
     }
 
-    public Sql checkFails(String sql, String expected, boolean runtime) {
-      return sql(sql).fails(expected + runtime); // TODO
+    public Sql withOperatorTable(SqlOperatorTable operatorTable) {
+      return withTester(tester -> tester.withOperatorTable(operatorTable));
+    }
+
+    public Sql withUnquotedCasing(Casing casing) {
+      return withTester(tester -> tester.withUnquotedCasing(casing));
+    }
+
+    private SqlTester addTransform(SqlTester tester, UnaryOperator<SqlValidator> after) {
+      return this.tester.withValidatorTransform(transform ->
+          validator -> after.apply(transform.apply(validator)));
+    }
+
+    public Sql withValidatorIdentifierExpansion(boolean expansion) {
+      final UnaryOperator<SqlValidator> after = sqlValidator -> {
+        sqlValidator.setIdentifierExpansion(expansion);
+        return sqlValidator;
+      };
+      return withTester(tester -> addTransform(tester, after));
+    }
+
+    public Sql withValidatorCallRewrite(boolean rewrite) {
+      final UnaryOperator<SqlValidator> after = sqlValidator -> {
+        sqlValidator.setCallRewrite(rewrite);
+        return sqlValidator;
+      };
+      return withTester(tester -> addTransform(tester, after));
+    }
+
+    public Sql withValidatorColumnReferenceExpansion(boolean expansion) {
+      final UnaryOperator<SqlValidator> after = sqlValidator -> {
+        sqlValidator.setColumnReferenceExpansion(expansion);
+        return sqlValidator;
+      };
+      return withTester(tester -> addTransform(tester, after));
+    }
+
+    public Sql rewritesTo(String expected) {
+      tester.checkRewrite(toSql(false), expected);
+      return this;
     }
   }
 
   /**
    * Enables to configure {@link #tester} behavior on a per-test basis.
-   * {@code tester} object is created in the test object constructor, and there's no
-   * trivial way to override its features.
-   * <p>This JUnit rule enables post-process test object on a per test method basis</p>
+   * {@code tester} object is created in the test object constructor, and
+   * there's no trivial way to override its features.
+   *
+   * <p>This JUnit rule enables post-process test object on a per test method
+   * basis.
    */
   private static class TesterConfigurationRule implements MethodRule {
     @Override public Statement apply(Statement statement, FrameworkMethod frameworkMethod,

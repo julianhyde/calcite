@@ -61,6 +61,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
@@ -81,9 +82,12 @@ import static org.junit.Assert.fail;
  */
 public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   protected final SqlTestFactory factory;
+  protected final UnaryOperator<SqlValidator> validatorTransform;
 
-  public AbstractSqlTester(SqlTestFactory factory) {
-    this.factory = factory;
+  public AbstractSqlTester(SqlTestFactory factory,
+      UnaryOperator<SqlValidator> validatorTransform) {
+    this.factory = Objects.requireNonNull(factory);
+    this.validatorTransform = Objects.requireNonNull(validatorTransform);
   }
 
   public final SqlTestFactory getFactory() {
@@ -490,11 +494,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     assertThat(monotonicity, equalTo(expectedMonotonicity));
   }
 
-  public void checkRewrite(
-      UnaryOperator<SqlValidator> transform,
-      String query,
-      String expectedRewrite) {
-    final SqlValidator validator = transform.apply(getValidator());
+  public void checkRewrite(String query, String expectedRewrite) {
+    final SqlValidator validator = validatorTransform.apply(getValidator());
     SqlNode rewrittenNode = parseAndValidate(validator, query);
     String actualRewrite =
         rewrittenNode.toSqlString(AnsiSqlDialect.DEFAULT, false).getSql();
