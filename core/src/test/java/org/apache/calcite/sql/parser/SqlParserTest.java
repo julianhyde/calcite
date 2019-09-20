@@ -592,7 +592,7 @@ public class SqlParserTest {
     return new Sql(sql, false, null);
   }
 
-  protected Sql exp(String sql) {
+  protected Sql expr(String sql) {
     return new Sql(sql, true, null);
   }
 
@@ -632,12 +632,12 @@ public class SqlParserTest {
   protected void checkExp(
       String sql,
       String expected) {
-    exp(sql).ok(expected);
+    expr(sql).ok(expected);
   }
 
   @Deprecated // to be removed before 1.23
   protected void checkExpSame(String sql) {
-    exp(sql).same();
+    expr(sql).same();
   }
 
   @Deprecated // to be removed before 1.23
@@ -651,7 +651,7 @@ public class SqlParserTest {
   protected void checkExpFails0(
       String sql,
       String expectedMsgPattern) {
-    exp(sql).fails(expectedMsgPattern);
+    expr(sql).fails(expectedMsgPattern);
   }
 
   /** Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a
@@ -798,13 +798,13 @@ public class SqlParserTest {
   // jdbc syntax
   @Ignore
   @Test public void testEmbeddedCall() {
-    exp("{call foo(?, ?)}")
+    expr("{call foo(?, ?)}")
         .ok("foo");
   }
 
   @Ignore
   @Test public void testEmbeddedFunction() {
-    exp("{? = call bar (?, ?)}")
+    expr("{? = call bar (?, ?)}")
         .ok("foo");
   }
 
@@ -821,17 +821,17 @@ public class SqlParserTest {
   }
 
   @Test public void testEmbeddedDate() {
-    exp("{d '1998-10-22'}")
+    expr("{d '1998-10-22'}")
         .ok("DATE '1998-10-22'");
   }
 
   @Test public void testEmbeddedTime() {
-    exp("{t '16:22:34'}")
+    expr("{t '16:22:34'}")
         .ok("TIME '16:22:34'");
   }
 
   @Test public void testEmbeddedTimestamp() {
-    exp("{ts '1998-10-22 16:22:34'}")
+    expr("{ts '1998-10-22 16:22:34'}")
         .ok("TIMESTAMP '1998-10-22 16:22:34'");
   }
 
@@ -864,65 +864,65 @@ public class SqlParserTest {
   }
 
   @Test public void testLessThanAssociativity() {
-    exp("NOT a = b")
+    expr("NOT a = b")
         .ok("(NOT (`A` = `B`))");
 
     // comparison operators are left-associative
-    exp("x < y < z")
+    expr("x < y < z")
         .ok("((`X` < `Y`) < `Z`)");
-    exp("x < y <= z = a")
+    expr("x < y <= z = a")
         .ok("(((`X` < `Y`) <= `Z`) = `A`)");
-    exp("a = x < y <= z = a")
+    expr("a = x < y <= z = a")
         .ok("((((`A` = `X`) < `Y`) <= `Z`) = `A`)");
 
     // IS NULL has lower precedence than comparison
-    exp("a = x is null")
+    expr("a = x is null")
         .ok("((`A` = `X`) IS NULL)");
-    exp("a = x is not null")
+    expr("a = x is not null")
         .ok("((`A` = `X`) IS NOT NULL)");
 
     // BETWEEN, IN, LIKE have higher precedence than comparison
-    exp("a = x between y = b and z = c")
+    expr("a = x between y = b and z = c")
         .ok("((`A` = (`X` BETWEEN ASYMMETRIC (`Y` = `B`) AND `Z`)) = `C`)");
-    exp("a = x like y = b")
+    expr("a = x like y = b")
         .ok("((`A` = (`X` LIKE `Y`)) = `B`)");
-    exp("a = x not like y = b")
+    expr("a = x not like y = b")
         .ok("((`A` = (`X` NOT LIKE `Y`)) = `B`)");
-    exp("a = x similar to y = b")
+    expr("a = x similar to y = b")
         .ok("((`A` = (`X` SIMILAR TO `Y`)) = `B`)");
-    exp("a = x not similar to y = b")
+    expr("a = x not similar to y = b")
         .ok("((`A` = (`X` NOT SIMILAR TO `Y`)) = `B`)");
-    exp("a = x not in (y, z) = b")
+    expr("a = x not in (y, z) = b")
         .ok("((`A` = (`X` NOT IN (`Y`, `Z`))) = `B`)");
 
     // LIKE has higher precedence than IS NULL
-    exp("a like b is null")
+    expr("a like b is null")
         .ok("((`A` LIKE `B`) IS NULL)");
-    exp("a not like b is not null")
+    expr("a not like b is not null")
         .ok("((`A` NOT LIKE `B`) IS NOT NULL)");
 
     // = has higher precedence than NOT
-    exp("NOT a = b")
+    expr("NOT a = b")
         .ok("(NOT (`A` = `B`))");
-    exp("NOT a = NOT b")
+    expr("NOT a = NOT b")
         .ok("(NOT (`A` = (NOT `B`)))");
 
     // IS NULL has higher precedence than NOT
-    exp("NOT a IS NULL")
+    expr("NOT a IS NULL")
         .ok("(NOT (`A` IS NULL))");
-    exp("NOT a = b IS NOT NULL")
+    expr("NOT a = b IS NOT NULL")
         .ok("(NOT ((`A` = `B`) IS NOT NULL))");
 
     // NOT has higher precedence than AND, which  has higher precedence than OR
-    exp("NOT a AND NOT b")
+    expr("NOT a AND NOT b")
         .ok("((NOT `A`) AND (NOT `B`))");
-    exp("NOT a OR NOT b")
+    expr("NOT a OR NOT b")
         .ok("((NOT `A`) OR (NOT `B`))");
-    exp("NOT a = b AND NOT c = d OR NOT e = f")
+    expr("NOT a = b AND NOT c = d OR NOT e = f")
         .ok("(((NOT (`A` = `B`)) AND (NOT (`C` = `D`))) OR (NOT (`E` = `F`)))");
-    exp("NOT a = b OR NOT c = d AND NOT e = f")
+    expr("NOT a = b OR NOT c = d AND NOT e = f")
         .ok("((NOT (`A` = `B`)) OR ((NOT (`C` = `D`)) AND (NOT (`E` = `F`))))");
-    exp("NOT NOT a = b OR NOT NOT c = d")
+    expr("NOT NOT a = b OR NOT NOT c = d")
         .ok("((NOT (NOT (`A` = `B`))) OR (NOT (NOT (`C` = `D`))))");
   }
 
@@ -973,13 +973,13 @@ public class SqlParserTest {
   }
 
   @Test public void testEqualNotEqual() {
-    exp("'abc'=123")
+    expr("'abc'=123")
         .ok("('abc' = 123)");
-    exp("'abc'<>123")
+    expr("'abc'<>123")
         .ok("('abc' <> 123)");
-    exp("'abc'<>123='def'<>456")
+    expr("'abc'<>123='def'<>456")
         .ok("((('abc' <> 123) = 'def') <> 456)");
-    exp("'abc'<>123=('def'<>456)")
+    expr("'abc'<>123=('def'<>456)")
         .ok("(('abc' <> 123) = ('def' <> 456))");
   }
 
@@ -992,7 +992,7 @@ public class SqlParserTest {
     //   you that != is SQL's not-equals operator; those texts are false;
     //   it's one of those unstampoutable urban myths."
     // Therefore, we only support != with certain SQL conformance levels.
-    exp("'abc'^!=^123")
+    expr("'abc'^!=^123")
         .fails("Bang equal '!=' is not allowed under the current SQL conformance level");
   }
 
@@ -1156,7 +1156,7 @@ public class SqlParserTest {
   @Test public void testPeriod() {
     // We don't have a PERIOD constructor currently;
     // ROW constructor is sufficient for now.
-    exp("period (date '1969-01-05', interval '2-3' year to month)")
+    expr("period (date '1969-01-05', interval '2-3' year to month)")
         .ok("(ROW(DATE '1969-01-05', INTERVAL '2-3' YEAR TO MONTH))");
   }
 
@@ -1340,216 +1340,216 @@ public class SqlParserTest {
   }
 
   @Test public void testFloor() {
-    exp("floor(1.5)")
+    expr("floor(1.5)")
         .ok("FLOOR(1.5)");
-    exp("floor(x)")
+    expr("floor(x)")
         .ok("FLOOR(`X`)");
 
-    exp("floor(x to second)")
+    expr("floor(x to second)")
         .ok("FLOOR(`X` TO SECOND)");
-    exp("floor(x to epoch)")
+    expr("floor(x to epoch)")
         .ok("FLOOR(`X` TO EPOCH)");
-    exp("floor(x to minute)")
+    expr("floor(x to minute)")
         .ok("FLOOR(`X` TO MINUTE)");
-    exp("floor(x to hour)")
+    expr("floor(x to hour)")
         .ok("FLOOR(`X` TO HOUR)");
-    exp("floor(x to day)")
+    expr("floor(x to day)")
         .ok("FLOOR(`X` TO DAY)");
-    exp("floor(x to dow)")
+    expr("floor(x to dow)")
         .ok("FLOOR(`X` TO DOW)");
-    exp("floor(x to doy)")
+    expr("floor(x to doy)")
         .ok("FLOOR(`X` TO DOY)");
-    exp("floor(x to week)")
+    expr("floor(x to week)")
         .ok("FLOOR(`X` TO WEEK)");
-    exp("floor(x to month)")
+    expr("floor(x to month)")
         .ok("FLOOR(`X` TO MONTH)");
-    exp("floor(x to quarter)")
+    expr("floor(x to quarter)")
         .ok("FLOOR(`X` TO QUARTER)");
-    exp("floor(x to year)")
+    expr("floor(x to year)")
         .ok("FLOOR(`X` TO YEAR)");
-    exp("floor(x to decade)")
+    expr("floor(x to decade)")
         .ok("FLOOR(`X` TO DECADE)");
-    exp("floor(x to century)")
+    expr("floor(x to century)")
         .ok("FLOOR(`X` TO CENTURY)");
-    exp("floor(x to millennium)")
+    expr("floor(x to millennium)")
         .ok("FLOOR(`X` TO MILLENNIUM)");
 
-    exp("floor(x + interval '1:20' minute to second)")
+    expr("floor(x + interval '1:20' minute to second)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND))");
-    exp("floor(x + interval '1:20' minute to second to second)")
+    expr("floor(x + interval '1:20' minute to second to second)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO SECOND)");
-    exp("floor(x + interval '1:20' minute to second to epoch)")
+    expr("floor(x + interval '1:20' minute to second to epoch)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO EPOCH)");
-    exp("floor(x + interval '1:20' hour to minute)")
+    expr("floor(x + interval '1:20' hour to minute)")
         .ok("FLOOR((`X` + INTERVAL '1:20' HOUR TO MINUTE))");
-    exp("floor(x + interval '1:20' hour to minute to minute)")
+    expr("floor(x + interval '1:20' hour to minute to minute)")
         .ok("FLOOR((`X` + INTERVAL '1:20' HOUR TO MINUTE) TO MINUTE)");
-    exp("floor(x + interval '1:20' minute to second to hour)")
+    expr("floor(x + interval '1:20' minute to second to hour)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO HOUR)");
-    exp("floor(x + interval '1:20' minute to second to day)")
+    expr("floor(x + interval '1:20' minute to second to day)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DAY)");
-    exp("floor(x + interval '1:20' minute to second to dow)")
+    expr("floor(x + interval '1:20' minute to second to dow)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DOW)");
-    exp("floor(x + interval '1:20' minute to second to doy)")
+    expr("floor(x + interval '1:20' minute to second to doy)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DOY)");
-    exp("floor(x + interval '1:20' minute to second to week)")
+    expr("floor(x + interval '1:20' minute to second to week)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO WEEK)");
-    exp("floor(x + interval '1:20' minute to second to month)")
+    expr("floor(x + interval '1:20' minute to second to month)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO MONTH)");
-    exp("floor(x + interval '1:20' minute to second to quarter)")
+    expr("floor(x + interval '1:20' minute to second to quarter)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO QUARTER)");
-    exp("floor(x + interval '1:20' minute to second to year)")
+    expr("floor(x + interval '1:20' minute to second to year)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO YEAR)");
-    exp("floor(x + interval '1:20' minute to second to decade)")
+    expr("floor(x + interval '1:20' minute to second to decade)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DECADE)");
-    exp("floor(x + interval '1:20' minute to second to century)")
+    expr("floor(x + interval '1:20' minute to second to century)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO CENTURY)");
-    exp("floor(x + interval '1:20' minute to second to millennium)")
+    expr("floor(x + interval '1:20' minute to second to millennium)")
         .ok("FLOOR((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO MILLENNIUM)");
   }
 
   @Test public void testCeil() {
-    exp("ceil(3453.2)")
+    expr("ceil(3453.2)")
         .ok("CEIL(3453.2)");
-    exp("ceil(x)")
+    expr("ceil(x)")
         .ok("CEIL(`X`)");
-    exp("ceil(x to second)")
+    expr("ceil(x to second)")
         .ok("CEIL(`X` TO SECOND)");
-    exp("ceil(x to epoch)")
+    expr("ceil(x to epoch)")
         .ok("CEIL(`X` TO EPOCH)");
-    exp("ceil(x to minute)")
+    expr("ceil(x to minute)")
         .ok("CEIL(`X` TO MINUTE)");
-    exp("ceil(x to hour)")
+    expr("ceil(x to hour)")
         .ok("CEIL(`X` TO HOUR)");
-    exp("ceil(x to day)")
+    expr("ceil(x to day)")
         .ok("CEIL(`X` TO DAY)");
-    exp("ceil(x to dow)")
+    expr("ceil(x to dow)")
         .ok("CEIL(`X` TO DOW)");
-    exp("ceil(x to doy)")
+    expr("ceil(x to doy)")
         .ok("CEIL(`X` TO DOY)");
-    exp("ceil(x to week)")
+    expr("ceil(x to week)")
         .ok("CEIL(`X` TO WEEK)");
-    exp("ceil(x to month)")
+    expr("ceil(x to month)")
         .ok("CEIL(`X` TO MONTH)");
-    exp("ceil(x to quarter)")
+    expr("ceil(x to quarter)")
         .ok("CEIL(`X` TO QUARTER)");
-    exp("ceil(x to year)")
+    expr("ceil(x to year)")
         .ok("CEIL(`X` TO YEAR)");
-    exp("ceil(x to decade)")
+    expr("ceil(x to decade)")
         .ok("CEIL(`X` TO DECADE)");
-    exp("ceil(x to century)")
+    expr("ceil(x to century)")
         .ok("CEIL(`X` TO CENTURY)");
-    exp("ceil(x to millennium)")
+    expr("ceil(x to millennium)")
         .ok("CEIL(`X` TO MILLENNIUM)");
 
-    exp("ceil(x + interval '1:20' minute to second)")
+    expr("ceil(x + interval '1:20' minute to second)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND))");
-    exp("ceil(x + interval '1:20' minute to second to second)")
+    expr("ceil(x + interval '1:20' minute to second to second)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO SECOND)");
-    exp("ceil(x + interval '1:20' minute to second to epoch)")
+    expr("ceil(x + interval '1:20' minute to second to epoch)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO EPOCH)");
-    exp("ceil(x + interval '1:20' hour to minute)")
+    expr("ceil(x + interval '1:20' hour to minute)")
         .ok("CEIL((`X` + INTERVAL '1:20' HOUR TO MINUTE))");
-    exp("ceil(x + interval '1:20' hour to minute to minute)")
+    expr("ceil(x + interval '1:20' hour to minute to minute)")
         .ok("CEIL((`X` + INTERVAL '1:20' HOUR TO MINUTE) TO MINUTE)");
-    exp("ceil(x + interval '1:20' minute to second to hour)")
+    expr("ceil(x + interval '1:20' minute to second to hour)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO HOUR)");
-    exp("ceil(x + interval '1:20' minute to second to day)")
+    expr("ceil(x + interval '1:20' minute to second to day)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DAY)");
-    exp("ceil(x + interval '1:20' minute to second to dow)")
+    expr("ceil(x + interval '1:20' minute to second to dow)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DOW)");
-    exp("ceil(x + interval '1:20' minute to second to doy)")
+    expr("ceil(x + interval '1:20' minute to second to doy)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DOY)");
-    exp("ceil(x + interval '1:20' minute to second to week)")
+    expr("ceil(x + interval '1:20' minute to second to week)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO WEEK)");
-    exp("ceil(x + interval '1:20' minute to second to month)")
+    expr("ceil(x + interval '1:20' minute to second to month)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO MONTH)");
-    exp("ceil(x + interval '1:20' minute to second to quarter)")
+    expr("ceil(x + interval '1:20' minute to second to quarter)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO QUARTER)");
-    exp("ceil(x + interval '1:20' minute to second to year)")
+    expr("ceil(x + interval '1:20' minute to second to year)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO YEAR)");
-    exp("ceil(x + interval '1:20' minute to second to decade)")
+    expr("ceil(x + interval '1:20' minute to second to decade)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO DECADE)");
-    exp("ceil(x + interval '1:20' minute to second to century)")
+    expr("ceil(x + interval '1:20' minute to second to century)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO CENTURY)");
-    exp("ceil(x + interval '1:20' minute to second to millennium)")
+    expr("ceil(x + interval '1:20' minute to second to millennium)")
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO MILLENNIUM)");
   }
 
   @Test public void testCast() {
-    exp("cast(x as boolean)")
+    expr("cast(x as boolean)")
         .ok("CAST(`X` AS BOOLEAN)");
-    exp("cast(x as integer)")
+    expr("cast(x as integer)")
         .ok("CAST(`X` AS INTEGER)");
-    exp("cast(x as varchar(1))")
+    expr("cast(x as varchar(1))")
         .ok("CAST(`X` AS VARCHAR(1))");
-    exp("cast(x as date)")
+    expr("cast(x as date)")
         .ok("CAST(`X` AS DATE)");
-    exp("cast(x as time)")
+    expr("cast(x as time)")
         .ok("CAST(`X` AS TIME)");
-    exp("cast(x as time without time zone)")
+    expr("cast(x as time without time zone)")
         .ok("CAST(`X` AS TIME)");
-    exp("cast(x as time with local time zone)")
+    expr("cast(x as time with local time zone)")
         .ok("CAST(`X` AS TIME WITH LOCAL TIME ZONE)");
-    exp("cast(x as timestamp without time zone)")
+    expr("cast(x as timestamp without time zone)")
         .ok("CAST(`X` AS TIMESTAMP)");
-    exp("cast(x as timestamp with local time zone)")
+    expr("cast(x as timestamp with local time zone)")
         .ok("CAST(`X` AS TIMESTAMP WITH LOCAL TIME ZONE)");
-    exp("cast(x as time(0))")
+    expr("cast(x as time(0))")
         .ok("CAST(`X` AS TIME(0))");
-    exp("cast(x as time(0) without time zone)")
+    expr("cast(x as time(0) without time zone)")
         .ok("CAST(`X` AS TIME(0))");
-    exp("cast(x as time(0) with local time zone)")
+    expr("cast(x as time(0) with local time zone)")
         .ok("CAST(`X` AS TIME(0) WITH LOCAL TIME ZONE)");
-    exp("cast(x as timestamp(0))")
+    expr("cast(x as timestamp(0))")
         .ok("CAST(`X` AS TIMESTAMP(0))");
-    exp("cast(x as timestamp(0) without time zone)")
+    expr("cast(x as timestamp(0) without time zone)")
         .ok("CAST(`X` AS TIMESTAMP(0))");
-    exp("cast(x as timestamp(0) with local time zone)")
+    expr("cast(x as timestamp(0) with local time zone)")
         .ok("CAST(`X` AS TIMESTAMP(0) WITH LOCAL TIME ZONE)");
-    exp("cast(x as timestamp)")
+    expr("cast(x as timestamp)")
         .ok("CAST(`X` AS TIMESTAMP)");
-    exp("cast(x as decimal(1,1))")
+    expr("cast(x as decimal(1,1))")
         .ok("CAST(`X` AS DECIMAL(1, 1))");
-    exp("cast(x as char(1))")
+    expr("cast(x as char(1))")
         .ok("CAST(`X` AS CHAR(1))");
-    exp("cast(x as binary(1))")
+    expr("cast(x as binary(1))")
         .ok("CAST(`X` AS BINARY(1))");
-    exp("cast(x as varbinary(1))")
+    expr("cast(x as varbinary(1))")
         .ok("CAST(`X` AS VARBINARY(1))");
-    exp("cast(x as tinyint)")
+    expr("cast(x as tinyint)")
         .ok("CAST(`X` AS TINYINT)");
-    exp("cast(x as smallint)")
+    expr("cast(x as smallint)")
         .ok("CAST(`X` AS SMALLINT)");
-    exp("cast(x as bigint)")
+    expr("cast(x as bigint)")
         .ok("CAST(`X` AS BIGINT)");
-    exp("cast(x as real)")
+    expr("cast(x as real)")
         .ok("CAST(`X` AS REAL)");
-    exp("cast(x as double)")
+    expr("cast(x as double)")
         .ok("CAST(`X` AS DOUBLE)");
-    exp("cast(x as decimal)")
+    expr("cast(x as decimal)")
         .ok("CAST(`X` AS DECIMAL)");
-    exp("cast(x as decimal(0))")
+    expr("cast(x as decimal(0))")
         .ok("CAST(`X` AS DECIMAL(0))");
-    exp("cast(x as decimal(1,2))")
+    expr("cast(x as decimal(1,2))")
         .ok("CAST(`X` AS DECIMAL(1, 2))");
 
-    exp("cast('foo' as bar)")
+    expr("cast('foo' as bar)")
         .ok("CAST('foo' AS `BAR`)");
   }
 
   @Test public void testCastFails() {
-    exp("cast(x as time with ^time^ zone)")
+    expr("cast(x as time with ^time^ zone)")
         .fails("(?s).*Encountered \"time\" at .*");
-    exp("cast(x as time(0) with ^time^ zone)")
+    expr("cast(x as time(0) with ^time^ zone)")
         .fails("(?s).*Encountered \"time\" at .*");
-    exp("cast(x as timestamp with ^time^ zone)")
+    expr("cast(x as timestamp with ^time^ zone)")
         .fails("(?s).*Encountered \"time\" at .*");
-    exp("cast(x as timestamp(0) with ^time^ zone)")
+    expr("cast(x as timestamp(0) with ^time^ zone)")
         .fails("(?s).*Encountered \"time\" at .*");
-    exp("cast(x as varchar(10) ^with^ local time zone)")
+    expr("cast(x as varchar(10) ^with^ local time zone)")
         .fails("(?s).*Encountered \"with\" at line 1, column 23.\n.*");
-    exp("cast(x as varchar(10) ^without^ time zone)")
+    expr("cast(x as varchar(10) ^without^ time zone)")
         .fails("(?s).*Encountered \"without\" at line 1, column 23.\n.*");
   }
 
@@ -1652,17 +1652,17 @@ public class SqlParserTest {
   }
 
   @Test public void testArithmeticOperators() {
-    exp("1-2+3*4/5/6-7")
+    expr("1-2+3*4/5/6-7")
         .ok("(((1 - 2) + (((3 * 4) / 5) / 6)) - 7)");
-    exp("power(2,3)")
+    expr("power(2,3)")
         .ok("POWER(2, 3)");
-    exp("aBs(-2.3e-2)")
+    expr("aBs(-2.3e-2)")
         .ok("ABS(-2.3E-2)");
-    exp("MOD(5             ,\t\f\r\n2)")
+    expr("MOD(5             ,\t\f\r\n2)")
         .ok("MOD(5, 2)");
-    exp("ln(5.43  )")
+    expr("ln(5.43  )")
         .ok("LN(5.43)");
-    exp("log10(- -.2  )")
+    expr("log10(- -.2  )")
         .ok("LOG10(0.2)");
   }
 
@@ -1691,26 +1691,26 @@ public class SqlParserTest {
   }
 
   @Test public void testConcat() {
-    exp("'a' || 'b'").ok("('a' || 'b')");
+    expr("'a' || 'b'").ok("('a' || 'b')");
   }
 
   @Test public void testReverseSolidus() {
-    exp("'\\'").ok("'\\'");
+    expr("'\\'").ok("'\\'");
   }
 
   @Test public void testSubstring() {
-    exp("substring('a' \n  FROM \t  1)")
+    expr("substring('a' \n  FROM \t  1)")
         .ok("SUBSTRING('a' FROM 1)");
-    exp("substring('a' FROM 1 FOR 3)")
+    expr("substring('a' FROM 1 FOR 3)")
         .ok("SUBSTRING('a' FROM 1 FOR 3)");
-    exp("substring('a' FROM 'reg' FOR '\\')")
+    expr("substring('a' FROM 'reg' FOR '\\')")
         .ok("SUBSTRING('a' FROM 'reg' FOR '\\')");
 
-    exp("substring('a', 'reg', '\\')")
+    expr("substring('a', 'reg', '\\')")
         .ok("SUBSTRING('a' FROM 'reg' FOR '\\')");
-    exp("substring('a', 1, 2)")
+    expr("substring('a', 1, 2)")
         .ok("SUBSTRING('a' FROM 1 FOR 2)");
-    exp("substring('a' , 1)")
+    expr("substring('a' , 1)")
         .ok("SUBSTRING('a' FROM 1)");
   }
 
@@ -1718,7 +1718,7 @@ public class SqlParserTest {
     sql("select substring('Eggs and ham', 1, 3 + 2) || ' benedict' from emp")
         .ok("SELECT (SUBSTRING('Eggs and ham' FROM 1 FOR (3 + 2)) || ' benedict')\n"
             + "FROM `EMP`");
-    exp("log10(1)\r\n"
+    expr("log10(1)\r\n"
         + "+power(2, mod(\r\n"
         + "3\n"
         + "\t\t\f\n"
@@ -1728,32 +1728,32 @@ public class SqlParserTest {
   }
 
   @Test public void testFunctionWithDistinct() {
-    exp("count(DISTINCT 1)").ok("COUNT(DISTINCT 1)");
-    exp("count(ALL 1)").ok("COUNT(ALL 1)");
-    exp("count(1)").ok("COUNT(1)");
+    expr("count(DISTINCT 1)").ok("COUNT(DISTINCT 1)");
+    expr("count(ALL 1)").ok("COUNT(ALL 1)");
+    expr("count(1)").ok("COUNT(1)");
     sql("select count(1), count(distinct 2) from emp")
         .ok("SELECT COUNT(1), COUNT(DISTINCT 2)\n"
             + "FROM `EMP`");
   }
 
   @Test public void testFunctionCallWithDot() {
-    exp("foo(a,b).c")
+    expr("foo(a,b).c")
         .ok("(`FOO`(`A`, `B`).`C`)");
   }
 
   @Test public void testFunctionInFunction() {
-    exp("ln(power(2,2))")
+    expr("ln(power(2,2))")
         .ok("LN(POWER(2, 2))");
   }
 
   @Test public void testFunctionNamedArgument() {
-    exp("foo(x => 1)")
+    expr("foo(x => 1)")
         .ok("`FOO`(`X` => 1)");
-    exp("foo(x => 1, \"y\" => 'a', z => x <= y)")
+    expr("foo(x => 1, \"y\" => 'a', z => x <= y)")
         .ok("`FOO`(`X` => 1, `y` => 'a', `Z` => (`X` <= `Y`))");
-    exp("foo(x.y ^=>^ 1)")
+    expr("foo(x.y ^=>^ 1)")
         .fails("(?s).*Encountered \"=>\" at .*");
-    exp("foo(a => 1, x.y ^=>^ 2, c => 3)")
+    expr("foo(a => 1, x.y ^=>^ 2, c => 3)")
         .fails("(?s).*Encountered \"=>\" at .*");
   }
 
@@ -1772,11 +1772,11 @@ public class SqlParserTest {
         .ok("SELECT SUM(DISTINCT DEFAULT)\n"
             + "FROM `T`\n"
             + "GROUP BY `X`");
-    exp("foo(x ^+^ DEFAULT)")
+    expr("foo(x ^+^ DEFAULT)")
         .fails("(?s).*Encountered \"\\+ DEFAULT\" at .*");
-    exp("foo(0, x ^+^ DEFAULT + y)")
+    expr("foo(0, x ^+^ DEFAULT + y)")
         .fails("(?s).*Encountered \"\\+ DEFAULT\" at .*");
-    exp("foo(0, DEFAULT ^+^ y)")
+    expr("foo(0, DEFAULT ^+^ y)")
         .fails("(?s).*Encountered \"\\+\" at .*");
   }
 
@@ -2041,15 +2041,15 @@ public class SqlParserTest {
   }
 
   @Test public void testIdentifier() {
-    exp("ab").ok("`AB`");
-    exp("     \"a  \"\" b!c\"").ok("`a  \" b!c`");
-    exp("     ^`^a  \" b!c`")
+    expr("ab").ok("`AB`");
+    expr("     \"a  \"\" b!c\"").ok("`a  \" b!c`");
+    expr("     ^`^a  \" b!c`")
         .fails("(?s).*Encountered.*");
-    exp("\"x`y`z\"").ok("`x``y``z`");
-    exp("^`^x`y`z`")
+    expr("\"x`y`z\"").ok("`x``y``z`");
+    expr("^`^x`y`z`")
         .fails("(?s).*Encountered.*");
 
-    exp("myMap[field] + myArray[1 + 2]")
+    expr("myMap[field] + myArray[1 + 2]")
         .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
 
     getTester().checkNode("VALUES a", isQuoted(0, false));
@@ -2060,16 +2060,16 @@ public class SqlParserTest {
 
   @Test public void testBackTickIdentifier() {
     quoting = Quoting.BACK_TICK;
-    exp("ab").ok("`AB`");
-    exp("     `a  \" b!c`").ok("`a  \" b!c`");
-    exp("     ^\"^a  \"\" b!c\"")
+    expr("ab").ok("`AB`");
+    expr("     `a  \" b!c`").ok("`a  \" b!c`");
+    expr("     ^\"^a  \"\" b!c\"")
         .fails("(?s).*Encountered.*");
 
-    exp("^\"^x`y`z\"")
+    expr("^\"^x`y`z\"")
         .fails("(?s).*Encountered.*");
-    exp("`x``y``z`").ok("`x``y``z`");
+    expr("`x``y``z`").ok("`x``y``z`");
 
-    exp("myMap[field] + myArray[1 + 2]")
+    expr("myMap[field] + myArray[1 + 2]")
         .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
 
     getTester().checkNode("VALUES a", isQuoted(0, false));
@@ -2078,20 +2078,20 @@ public class SqlParserTest {
 
   @Test public void testBracketIdentifier() {
     quoting = Quoting.BRACKET;
-    exp("ab").ok("`AB`");
-    exp("     [a  \" b!c]").ok("`a  \" b!c`");
-    exp("     ^`^a  \" b!c`")
+    expr("ab").ok("`AB`");
+    expr("     [a  \" b!c]").ok("`a  \" b!c`");
+    expr("     ^`^a  \" b!c`")
         .fails("(?s).*Encountered.*");
-    exp("     ^\"^a  \"\" b!c\"")
-        .fails("(?s).*Encountered.*");
-
-    exp("[x`y`z]").ok("`x``y``z`");
-    exp("^\"^x`y`z\"")
-        .fails("(?s).*Encountered.*");
-    exp("^`^x``y``z`")
+    expr("     ^\"^a  \"\" b!c\"")
         .fails("(?s).*Encountered.*");
 
-    exp("[anything [even brackets]] is].[ok]")
+    expr("[x`y`z]").ok("`x``y``z`");
+    expr("^\"^x`y`z\"")
+        .fails("(?s).*Encountered.*");
+    expr("^`^x``y``z`")
+        .fails("(?s).*Encountered.*");
+
+    expr("[anything [even brackets]] is].[ok]")
         .ok("`anything [even brackets] is`.`ok`");
 
     // What would be a call to the 'item' function in DOUBLE_QUOTE and BACK_TICK
@@ -2631,39 +2631,39 @@ public class SqlParserTest {
   }
 
   @Test public void testLiteral() {
-    exp("'foo'").same();
-    exp("100").same();
+    expr("'foo'").same();
+    expr("100").same();
     sql("select 1 as uno, 'x' as x, null as n from emp")
         .ok("SELECT 1 AS `UNO`, 'x' AS `X`, NULL AS `N`\n"
             + "FROM `EMP`");
 
     // Even though it looks like a date, it's just a string.
-    exp("'2004-06-01'")
+    expr("'2004-06-01'")
         .ok("'2004-06-01'");
-    exp("-.25")
+    expr("-.25")
         .ok("-0.25");
-    exp("TIMESTAMP '2004-06-01 15:55:55'").same();
-    exp("TIMESTAMP '2004-06-01 15:55:55.900'").same();
-    exp("TIMESTAMP '2004-06-01 15:55:55.1234'")
+    expr("TIMESTAMP '2004-06-01 15:55:55'").same();
+    expr("TIMESTAMP '2004-06-01 15:55:55.900'").same();
+    expr("TIMESTAMP '2004-06-01 15:55:55.1234'")
         .ok("TIMESTAMP '2004-06-01 15:55:55.1234'");
-    exp("TIMESTAMP '2004-06-01 15:55:55.1236'")
+    expr("TIMESTAMP '2004-06-01 15:55:55.1236'")
         .ok("TIMESTAMP '2004-06-01 15:55:55.1236'");
-    exp("TIMESTAMP '2004-06-01 15:55:55.9999'")
+    expr("TIMESTAMP '2004-06-01 15:55:55.9999'")
         .ok("TIMESTAMP '2004-06-01 15:55:55.9999'");
-    exp("NULL").same();
+    expr("NULL").same();
   }
 
   @Test public void testContinuedLiteral() {
-    exp("'abba'\n'abba'")
+    expr("'abba'\n'abba'")
         .ok("'abba'\n'abba'");
-    exp("'abba'\n'0001'")
+    expr("'abba'\n'0001'")
         .ok("'abba'\n'0001'");
-    exp("N'yabba'\n'dabba'\n'doo'")
+    expr("N'yabba'\n'dabba'\n'doo'")
         .ok("_ISO-8859-1'yabba'\n'dabba'\n'doo'");
-    exp("_iso-8859-1'yabba'\n'dabba'\n'don''t'")
+    expr("_iso-8859-1'yabba'\n'dabba'\n'don''t'")
         .ok("_ISO-8859-1'yabba'\n'dabba'\n'don''t'");
 
-    exp("x'01aa'\n'03ff'")
+    expr("x'01aa'\n'03ff'")
         .ok("X'01AA'\n'03FF'");
 
     // a bad hexstring
@@ -3038,41 +3038,41 @@ public class SqlParserTest {
   // expressions
   @Test public void testParseNumber() {
     // Exacts
-    exp("1").ok("1");
-    exp("+1.").ok("1");
-    exp("-1").ok("-1");
-    exp("- -1").ok("1");
-    exp("1.0").ok("1.0");
-    exp("-3.2").ok("-3.2");
-    exp("1.").ok("1");
-    exp(".1").ok("0.1");
-    exp("2500000000").ok("2500000000");
-    exp("5000000000").ok("5000000000");
+    expr("1").ok("1");
+    expr("+1.").ok("1");
+    expr("-1").ok("-1");
+    expr("- -1").ok("1");
+    expr("1.0").ok("1.0");
+    expr("-3.2").ok("-3.2");
+    expr("1.").ok("1");
+    expr(".1").ok("0.1");
+    expr("2500000000").ok("2500000000");
+    expr("5000000000").ok("5000000000");
 
     // Approximates
-    exp("1e1").ok("1E1");
-    exp("+1e1").ok("1E1");
-    exp("1.1e1").ok("1.1E1");
-    exp("1.1e+1").ok("1.1E1");
-    exp("1.1e-1").ok("1.1E-1");
-    exp("+1.1e-1").ok("1.1E-1");
-    exp("1.E3").ok("1E3");
-    exp("1.e-3").ok("1E-3");
-    exp("1.e+3").ok("1E3");
-    exp(".5E3").ok("5E2");
-    exp("+.5e3").ok("5E2");
-    exp("-.5E3").ok("-5E2");
-    exp(".5e-32").ok("5E-33");
+    expr("1e1").ok("1E1");
+    expr("+1e1").ok("1E1");
+    expr("1.1e1").ok("1.1E1");
+    expr("1.1e+1").ok("1.1E1");
+    expr("1.1e-1").ok("1.1E-1");
+    expr("+1.1e-1").ok("1.1E-1");
+    expr("1.E3").ok("1E3");
+    expr("1.e-3").ok("1E-3");
+    expr("1.e+3").ok("1E3");
+    expr(".5E3").ok("5E2");
+    expr("+.5e3").ok("5E2");
+    expr("-.5E3").ok("-5E2");
+    expr(".5e-32").ok("5E-33");
 
     // Mix integer/decimals/approx
-    exp("3. + 2").ok("(3 + 2)");
-    exp("1++2+3").ok("((1 + 2) + 3)");
-    exp("1- -2").ok("(1 - -2)");
-    exp("1++2.3e-4++.5e-6++.7++8").ok("((((1 + 2.3E-4) + 5E-7) + 0.7) + 8)");
-    exp("1- -2.3e-4 - -.5e-6  -\n"
+    expr("3. + 2").ok("(3 + 2)");
+    expr("1++2+3").ok("((1 + 2) + 3)");
+    expr("1- -2").ok("(1 - -2)");
+    expr("1++2.3e-4++.5e-6++.7++8").ok("((((1 + 2.3E-4) + 5E-7) + 0.7) + 8)");
+    expr("1- -2.3e-4 - -.5e-6  -\n"
         + "-.7++8")
         .ok("((((1 - -2.3E-4) - -5E-7) - -0.7) + 8)");
-    exp("1+-2.*-3.e-1/-4")
+    expr("1+-2.*-3.e-1/-4")
         .ok("(1 + ((-2 * -3E-1) / -4))");
   }
 
@@ -3082,40 +3082,40 @@ public class SqlParserTest {
   }
 
   @Test public void testMinusPrefixInExpression() {
-    exp("-(1+2)")
+    expr("-(1+2)")
         .ok("(- (1 + 2))");
   }
 
   // operator precedence
   @Test public void testPrecedence0() {
-    exp("1 + 2 * 3 * 4 + 5")
+    expr("1 + 2 * 3 * 4 + 5")
         .ok("((1 + ((2 * 3) * 4)) + 5)");
   }
 
   @Test public void testPrecedence1() {
-    exp("1 + 2 * (3 * (4 + 5))")
+    expr("1 + 2 * (3 * (4 + 5))")
         .ok("(1 + (2 * (3 * (4 + 5))))");
   }
 
   @Test public void testPrecedence2() {
-    exp("- - 1").ok("1"); // special case for unary minus
+    expr("- - 1").ok("1"); // special case for unary minus
   }
 
   @Test public void testPrecedence2b() {
-    exp("not not 1").ok("(NOT (NOT 1))"); // two prefixes
+    expr("not not 1").ok("(NOT (NOT 1))"); // two prefixes
   }
 
   @Test public void testPrecedence3() {
-    exp("- 1 is null").ok("(-1 IS NULL)"); // prefix vs. postfix
+    expr("- 1 is null").ok("(-1 IS NULL)"); // prefix vs. postfix
   }
 
   @Test public void testPrecedence4() {
-    exp("1 - -2").ok("(1 - -2)"); // infix, prefix '-'
+    expr("1 - -2").ok("(1 - -2)"); // infix, prefix '-'
   }
 
   @Test public void testPrecedence5() {
-    exp("1++2").ok("(1 + 2)"); // infix, prefix '+'
-    exp("1+ +2").ok("(1 + 2)"); // infix, prefix '+'
+    expr("1++2").ok("(1 + 2)"); // infix, prefix '+'
+    expr("1+ +2").ok("(1 + 2)"); // infix, prefix '+'
   }
 
   @Test public void testPrecedenceSetOps() {
@@ -3160,13 +3160,13 @@ public class SqlParserTest {
   }
 
   @Test public void testQuotesInString() {
-    exp("'a''b'")
+    expr("'a''b'")
         .ok("'a''b'");
-    exp("'''x'")
+    expr("'''x'")
         .ok("'''x'");
-    exp("''")
+    expr("''")
         .ok("''");
-    exp("'Quoted strings aren''t \"hard\"'")
+    expr("'Quoted strings aren''t \"hard\"'")
         .ok("'Quoted strings aren''t \"hard\"'");
   }
 
@@ -3882,23 +3882,23 @@ public class SqlParserTest {
   }
 
   @Test public void testHexAndBinaryString() {
-    exp("x''=X'2'")
+    expr("x''=X'2'")
         .ok("(X'' = X'2')");
-    exp("x'fffff'=X''")
+    expr("x'fffff'=X''")
         .ok("(X'FFFFF' = X'')");
-    exp("x'1' \t\t\f\r \n"
+    expr("x'1' \t\t\f\r \n"
         + "'2'--hi this is a comment'FF'\r\r\t\f \n"
         + "'34'")
         .ok("X'1'\n'2'\n'34'");
-    exp("x'1' \t\t\f\r \n"
+    expr("x'1' \t\t\f\r \n"
         + "'000'--\n"
         + "'01'")
         .ok("X'1'\n'000'\n'01'");
-    exp("x'1234567890abcdef'=X'fFeEdDcCbBaA'")
+    expr("x'1234567890abcdef'=X'fFeEdDcCbBaA'")
         .ok("(X'1234567890ABCDEF' = X'FFEEDDCCBBAA')");
 
     // Check the inital zeroes don't get trimmed somehow
-    exp("x'001'=X'000102'")
+    expr("x'001'=X'000102'")
         .ok("(X'001' = X'000102')");
   }
 
@@ -3918,38 +3918,38 @@ public class SqlParserTest {
   }
 
   @Test public void testStringLiteral() {
-    exp("_latin1'hi'")
+    expr("_latin1'hi'")
         .ok("_LATIN1'hi'");
-    exp("N'is it a plane? no it''s superman!'")
+    expr("N'is it a plane? no it''s superman!'")
         .ok("_ISO-8859-1'is it a plane? no it''s superman!'");
-    exp("n'lowercase n'")
+    expr("n'lowercase n'")
         .ok("_ISO-8859-1'lowercase n'");
-    exp("'boring string'")
+    expr("'boring string'")
         .ok("'boring string'");
-    exp("_iSo-8859-1'bye'")
+    expr("_iSo-8859-1'bye'")
         .ok("_ISO-8859-1'bye'");
-    exp("'three' \n ' blind'\n' mice'")
+    expr("'three' \n ' blind'\n' mice'")
         .ok("'three'\n' blind'\n' mice'");
-    exp("'three' -- comment \n ' blind'\n' mice'")
+    expr("'three' -- comment \n ' blind'\n' mice'")
         .ok("'three'\n' blind'\n' mice'");
-    exp("N'bye' \t\r\f\f\n' bye'")
+    expr("N'bye' \t\r\f\f\n' bye'")
         .ok("_ISO-8859-1'bye'\n' bye'");
-    exp("_iso-8859-1'bye' \n\n--\n-- this is a comment\n' bye'")
+    expr("_iso-8859-1'bye' \n\n--\n-- this is a comment\n' bye'")
         .ok("_ISO-8859-1'bye'\n' bye'");
-    exp("_utf8'hi'")
+    expr("_utf8'hi'")
         .ok("_UTF8'hi'");
 
     // newline in string literal
-    exp("'foo\rbar'")
+    expr("'foo\rbar'")
         .ok("'foo\rbar'");
-    exp("'foo\nbar'")
+    expr("'foo\nbar'")
         .ok("'foo\nbar'");
 
     // prevent test infrastructure from converting \r\n to \n
     boolean[] linuxify = LINUXIFY.get();
     try {
       linuxify[0] = false;
-      exp("'foo\r\nbar'")
+      expr("'foo\r\nbar'")
           .ok("'foo\r\nbar'");
     } finally {
       linuxify[0] = true;
@@ -3978,50 +3978,50 @@ public class SqlParserTest {
         "'foo'\n"
             + "'bar'\n"
             + "'baz'";
-    exp("   'foo'\r'bar'")
+    expr("   'foo'\r'bar'")
         .ok(fooBar);
-    exp("   'foo'\r\n'bar'")
+    expr("   'foo'\r\n'bar'")
         .ok(fooBar);
-    exp("   'foo'\r\n\r\n'bar'  \n   'baz'")
+    expr("   'foo'\r\n\r\n'bar'  \n   'baz'")
         .ok(fooBarBaz);
-    exp("   'foo' /* a comment */ 'bar'")
+    expr("   'foo' /* a comment */ 'bar'")
         .ok(fooBar);
-    exp("   'foo' -- a comment\r\n 'bar'")
+    expr("   'foo' -- a comment\r\n 'bar'")
         .ok(fooBar);
 
     // String literals not separated by comment or newline are OK in
     // parser, should fail in validator.
-    exp("   'foo' 'bar'")
+    expr("   'foo' 'bar'")
         .ok(fooBar);
   }
 
   @Test public void testCaseExpression() {
     // implicit simple "ELSE NULL" case
-    exp("case \t col1 when 1 then 'one' end")
+    expr("case \t col1 when 1 then 'one' end")
         .ok("(CASE WHEN (`COL1` = 1) THEN 'one' ELSE NULL END)");
 
     // implicit searched "ELSE NULL" case
-    exp("case when nbr is false then 'one' end")
+    expr("case when nbr is false then 'one' end")
         .ok("(CASE WHEN (`NBR` IS FALSE) THEN 'one' ELSE NULL END)");
 
     // multiple WHENs
-    exp("case col1 when \n1.2 then 'one' when 2 then 'two' else 'three' end")
+    expr("case col1 when \n1.2 then 'one' when 2 then 'two' else 'three' end")
         .ok("(CASE WHEN (`COL1` = 1.2) THEN 'one' WHEN (`COL1` = 2) THEN 'two' ELSE 'three' END)");
 
     // sub-queries as case expression operands
-    exp("case (select * from emp) when 1 then 2 end")
+    expr("case (select * from emp) when 1 then 2 end")
         .ok("(CASE WHEN ((SELECT *\n"
             + "FROM `EMP`) = 1) THEN 2 ELSE NULL END)");
-    exp("case 1 when (select * from emp) then 2 end")
+    expr("case 1 when (select * from emp) then 2 end")
         .ok("(CASE WHEN (1 = (SELECT *\n"
             + "FROM `EMP`)) THEN 2 ELSE NULL END)");
-    exp("case 1 when 2 then (select * from emp) end")
+    expr("case 1 when 2 then (select * from emp) end")
         .ok("(CASE WHEN (1 = 2) THEN (SELECT *\n"
             + "FROM `EMP`) ELSE NULL END)");
-    exp("case 1 when 2 then 3 else (select * from emp) end")
+    expr("case 1 when 2 then 3 else (select * from emp) end")
         .ok("(CASE WHEN (1 = 2) THEN 3 ELSE (SELECT *\n"
             + "FROM `EMP`) END)");
-    exp("case x when 2, 4 then 3 else 4 end")
+    expr("case x when 2, 4 then 3 else 4 end")
         .ok("(CASE WHEN (`X` IN (2, 4)) THEN 3 ELSE 4 END)");
     // comma-list must not be empty
     sql("case x when 2, 4 then 3 when ^then^ 5 else 4 end")
@@ -4042,20 +4042,20 @@ public class SqlParserTest {
   }
 
   @Test public void testNullIf() {
-    exp("nullif(v1,v2)")
+    expr("nullif(v1,v2)")
         .ok("NULLIF(`V1`, `V2`)");
     if (isReserved("NULLIF")) {
-      exp("1 + ^nullif^ + 3")
+      expr("1 + ^nullif^ + 3")
           .fails("(?s)Encountered \"nullif \\+\" at line 1, column 5.*");
     }
   }
 
   @Test public void testCoalesce() {
-    exp("coalesce(v1)")
+    expr("coalesce(v1)")
         .ok("COALESCE(`V1`)");
-    exp("coalesce(v1,v2)")
+    expr("coalesce(v1,v2)")
         .ok("COALESCE(`V1`, `V2`)");
-    exp("coalesce(v1,v2,v3)")
+    expr("coalesce(v1,v2,v3)")
         .ok("COALESCE(`V1`, `V2`, `V3`)");
   }
 
@@ -4064,36 +4064,36 @@ public class SqlParserTest {
       return;
     }
 
-    exp("'string' collate latin1$sv_SE$mega_strength")
+    expr("'string' collate latin1$sv_SE$mega_strength")
         .ok("'string' COLLATE ISO-8859-1$sv_SE$mega_strength");
-    exp("'a long '\n'string' collate latin1$sv_SE$mega_strength")
+    expr("'a long '\n'string' collate latin1$sv_SE$mega_strength")
         .ok("'a long ' 'string' COLLATE ISO-8859-1$sv_SE$mega_strength");
-    exp("x collate iso-8859-6$ar_LB$1")
+    expr("x collate iso-8859-6$ar_LB$1")
         .ok("`X` COLLATE ISO-8859-6$ar_LB$1");
-    exp("x.y.z collate shift_jis$ja_JP$2")
+    expr("x.y.z collate shift_jis$ja_JP$2")
         .ok("`X`.`Y`.`Z` COLLATE SHIFT_JIS$ja_JP$2");
-    exp("'str1'='str2' collate latin1$sv_SE")
+    expr("'str1'='str2' collate latin1$sv_SE")
         .ok("('str1' = 'str2' COLLATE ISO-8859-1$sv_SE$primary)");
-    exp("'str1' collate latin1$sv_SE>'str2'")
+    expr("'str1' collate latin1$sv_SE>'str2'")
         .ok("('str1' COLLATE ISO-8859-1$sv_SE$primary > 'str2')");
-    exp("'str1' collate latin1$sv_SE<='str2' collate latin1$sv_FI")
+    expr("'str1' collate latin1$sv_SE<='str2' collate latin1$sv_FI")
         .ok("('str1' COLLATE ISO-8859-1$sv_SE$primary <= 'str2' COLLATE ISO-8859-1$sv_FI$primary)");
   }
 
   @Test public void testCharLength() {
-    exp("char_length('string')")
+    expr("char_length('string')")
         .ok("CHAR_LENGTH('string')");
-    exp("character_length('string')")
+    expr("character_length('string')")
         .ok("CHARACTER_LENGTH('string')");
   }
 
   @Test public void testPosition() {
-    exp("posiTion('mouse' in 'house')")
+    expr("posiTion('mouse' in 'house')")
         .ok("POSITION('mouse' IN 'house')");
   }
 
   @Test public void testReplace() {
-    exp("replace('x', 'y', 'z')")
+    expr("replace('x', 'y', 'z')")
         .ok("REPLACE('x', 'y', 'z')");
   }
 
@@ -4118,91 +4118,91 @@ public class SqlParserTest {
   // check date/time functions.
   @Test public void testTimeDate() {
     // CURRENT_TIME - returns time w/ timezone
-    exp("CURRENT_TIME(3)")
+    expr("CURRENT_TIME(3)")
         .ok("CURRENT_TIME(3)");
 
     // checkFails("SELECT CURRENT_TIME() FROM foo",
     //     "SELECT CURRENT_TIME() FROM `FOO`");
 
-    exp("CURRENT_TIME")
+    expr("CURRENT_TIME")
         .ok("CURRENT_TIME");
-    exp("CURRENT_TIME(x+y)")
+    expr("CURRENT_TIME(x+y)")
         .ok("CURRENT_TIME((`X` + `Y`))");
 
     // LOCALTIME returns time w/o TZ
-    exp("LOCALTIME(3)")
+    expr("LOCALTIME(3)")
         .ok("LOCALTIME(3)");
 
     // checkFails("SELECT LOCALTIME() FROM foo",
     //     "SELECT LOCALTIME() FROM `FOO`");
 
-    exp("LOCALTIME")
+    expr("LOCALTIME")
         .ok("LOCALTIME");
-    exp("LOCALTIME(x+y)")
+    expr("LOCALTIME(x+y)")
         .ok("LOCALTIME((`X` + `Y`))");
 
     // LOCALTIMESTAMP - returns timestamp w/o TZ
-    exp("LOCALTIMESTAMP(3)")
+    expr("LOCALTIMESTAMP(3)")
         .ok("LOCALTIMESTAMP(3)");
 
     // checkFails("SELECT LOCALTIMESTAMP() FROM foo",
     //     "SELECT LOCALTIMESTAMP() FROM `FOO`");
 
-    exp("LOCALTIMESTAMP")
+    expr("LOCALTIMESTAMP")
         .ok("LOCALTIMESTAMP");
-    exp("LOCALTIMESTAMP(x+y)")
+    expr("LOCALTIMESTAMP(x+y)")
         .ok("LOCALTIMESTAMP((`X` + `Y`))");
 
     // CURRENT_DATE - returns DATE
-    exp("CURRENT_DATE(3)")
+    expr("CURRENT_DATE(3)")
         .ok("CURRENT_DATE(3)");
 
     // checkFails("SELECT CURRENT_DATE() FROM foo",
     //     "SELECT CURRENT_DATE() FROM `FOO`");
-    exp("CURRENT_DATE")
+    expr("CURRENT_DATE")
         .ok("CURRENT_DATE");
 
     // checkFails("SELECT CURRENT_DATE(x+y) FROM foo",
     //     "CURRENT_DATE((`X` + `Y`))");
 
     // CURRENT_TIMESTAMP - returns timestamp w/ TZ
-    exp("CURRENT_TIMESTAMP(3)")
+    expr("CURRENT_TIMESTAMP(3)")
         .ok("CURRENT_TIMESTAMP(3)");
 
     // checkFails("SELECT CURRENT_TIMESTAMP() FROM foo",
     //     "SELECT CURRENT_TIMESTAMP() FROM `FOO`");
 
-    exp("CURRENT_TIMESTAMP")
+    expr("CURRENT_TIMESTAMP")
         .ok("CURRENT_TIMESTAMP");
-    exp("CURRENT_TIMESTAMP(x+y)")
+    expr("CURRENT_TIMESTAMP(x+y)")
         .ok("CURRENT_TIMESTAMP((`X` + `Y`))");
 
     // Date literals
-    exp("DATE '2004-12-01'")
+    expr("DATE '2004-12-01'")
         .ok("DATE '2004-12-01'");
 
     // Time literals
-    exp("TIME '12:01:01'")
+    expr("TIME '12:01:01'")
         .ok("TIME '12:01:01'");
-    exp("TIME '12:01:01.'")
+    expr("TIME '12:01:01.'")
         .ok("TIME '12:01:01'");
-    exp("TIME '12:01:01.000'")
+    expr("TIME '12:01:01.000'")
         .ok("TIME '12:01:01.000'");
-    exp("TIME '12:01:01.001'")
+    expr("TIME '12:01:01.001'")
         .ok("TIME '12:01:01.001'");
-    exp("TIME '12:01:01.01023456789'")
+    expr("TIME '12:01:01.01023456789'")
         .ok("TIME '12:01:01.01023456789'");
 
     // Timestamp literals
-    exp("TIMESTAMP '2004-12-01 12:01:01'")
+    expr("TIMESTAMP '2004-12-01 12:01:01'")
         .ok("TIMESTAMP '2004-12-01 12:01:01'");
-    exp("TIMESTAMP '2004-12-01 12:01:01.1'")
+    expr("TIMESTAMP '2004-12-01 12:01:01.1'")
         .ok("TIMESTAMP '2004-12-01 12:01:01.1'");
-    exp("TIMESTAMP '2004-12-01 12:01:01.'")
+    expr("TIMESTAMP '2004-12-01 12:01:01.'")
         .ok("TIMESTAMP '2004-12-01 12:01:01'");
-    exp("TIMESTAMP  '2004-12-01 12:01:01.010234567890'")
+    expr("TIMESTAMP  '2004-12-01 12:01:01.010234567890'")
         .ok("TIMESTAMP '2004-12-01 12:01:01.010234567890'");
-    exp("TIMESTAMP '2004-12-01 12:01:01.01023456789'").same();
+    expr("TIMESTAMP '2004-12-01 12:01:01.01023456789'").same();
 
     // Failures.
     sql("^DATE '12/21/99'^")
@@ -4221,32 +4221,32 @@ public class SqlParserTest {
   @Test public void testDateTimeCast() {
     //   checkExp("CAST(DATE '2001-12-21' AS CHARACTER VARYING)",
     // "CAST(2001-12-21)");
-    exp("CAST('2001-12-21' AS DATE)")
+    expr("CAST('2001-12-21' AS DATE)")
         .ok("CAST('2001-12-21' AS DATE)");
-    exp("CAST(12 AS DATE)")
+    expr("CAST(12 AS DATE)")
         .ok("CAST(12 AS DATE)");
     sql("CAST('2000-12-21' AS DATE ^NOT^ NULL)")
         .fails("(?s).*Encountered \"NOT\" at line 1, column 27.*");
     sql("CAST('foo' as ^1^)")
         .fails("(?s).*Encountered \"1\" at line 1, column 15.*");
-    exp("Cast(DATE '2004-12-21' AS VARCHAR(10))")
+    expr("Cast(DATE '2004-12-21' AS VARCHAR(10))")
         .ok("CAST(DATE '2004-12-21' AS VARCHAR(10))");
   }
 
   @Test public void testTrim() {
-    exp("trim('mustache' FROM 'beard')")
+    expr("trim('mustache' FROM 'beard')")
         .ok("TRIM(BOTH 'mustache' FROM 'beard')");
-    exp("trim('mustache')")
+    expr("trim('mustache')")
         .ok("TRIM(BOTH ' ' FROM 'mustache')");
-    exp("trim(TRAILING FROM 'mustache')")
+    expr("trim(TRAILING FROM 'mustache')")
         .ok("TRIM(TRAILING ' ' FROM 'mustache')");
-    exp("trim(bOth 'mustache' FROM 'beard')")
+    expr("trim(bOth 'mustache' FROM 'beard')")
         .ok("TRIM(BOTH 'mustache' FROM 'beard')");
-    exp("trim( lEaDing       'mustache' FROM 'beard')")
+    expr("trim( lEaDing       'mustache' FROM 'beard')")
         .ok("TRIM(LEADING 'mustache' FROM 'beard')");
-    exp("trim(\r\n\ttrailing\n  'mustache' FROM 'beard')")
+    expr("trim(\r\n\ttrailing\n  'mustache' FROM 'beard')")
         .ok("TRIM(TRAILING 'mustache' FROM 'beard')");
-    exp("trim (coalesce(cast(null as varchar(2)))||"
+    expr("trim (coalesce(cast(null as varchar(2)))||"
         + "' '||coalesce('junk ',''))")
         .ok("TRIM(BOTH ' ' FROM ((COALESCE(CAST(NULL AS VARCHAR(2))) || "
             + "' ') || COALESCE('junk ', '')))");
@@ -4256,73 +4256,73 @@ public class SqlParserTest {
   }
 
   @Test public void testConvertAndTranslate() {
-    exp("convert('abc' using conversion)")
+    expr("convert('abc' using conversion)")
         .ok("CONVERT('abc' USING `CONVERSION`)");
-    exp("translate('abc' using lazy_translation)")
+    expr("translate('abc' using lazy_translation)")
         .ok("TRANSLATE('abc' USING `LAZY_TRANSLATION`)");
   }
 
   @Test public void testTranslate3() {
-    exp("translate('aaabbbccc', 'ab', '+-')")
+    expr("translate('aaabbbccc', 'ab', '+-')")
         .ok("TRANSLATE('aaabbbccc', 'ab', '+-')");
   }
 
   @Test public void testOverlay() {
-    exp("overlay('ABCdef' placing 'abc' from 1)")
+    expr("overlay('ABCdef' placing 'abc' from 1)")
         .ok("OVERLAY('ABCdef' PLACING 'abc' FROM 1)");
-    exp("overlay('ABCdef' placing 'abc' from 1 for 3)")
+    expr("overlay('ABCdef' placing 'abc' from 1 for 3)")
         .ok("OVERLAY('ABCdef' PLACING 'abc' FROM 1 FOR 3)");
   }
 
   @Test public void testJdbcFunctionCall() {
-    exp("{fn apa(1,'1')}")
+    expr("{fn apa(1,'1')}")
         .ok("{fn APA(1, '1') }");
-    exp("{ Fn apa(log10(ln(1))+2)}")
+    expr("{ Fn apa(log10(ln(1))+2)}")
         .ok("{fn APA((LOG10(LN(1)) + 2)) }");
-    exp("{fN apa(*)}")
+    expr("{fN apa(*)}")
         .ok("{fn APA(*) }");
-    exp("{   FN\t\r\n apa()}")
+    expr("{   FN\t\r\n apa()}")
         .ok("{fn APA() }");
-    exp("{fn insert()}")
+    expr("{fn insert()}")
         .ok("{fn INSERT() }");
-    exp("{fn convert(foo, SQL_VARCHAR)}")
+    expr("{fn convert(foo, SQL_VARCHAR)}")
         .ok("{fn CONVERT(`FOO`, SQL_VARCHAR) }");
-    exp("{fn convert(log10(100), integer)}")
+    expr("{fn convert(log10(100), integer)}")
         .ok("{fn CONVERT(LOG10(100), SQL_INTEGER) }");
-    exp("{fn convert(1, SQL_INTERVAL_YEAR)}")
+    expr("{fn convert(1, SQL_INTERVAL_YEAR)}")
         .ok("{fn CONVERT(1, SQL_INTERVAL_YEAR) }");
-    exp("{fn convert(1, SQL_INTERVAL_YEAR_TO_MONTH)}")
+    expr("{fn convert(1, SQL_INTERVAL_YEAR_TO_MONTH)}")
         .ok("{fn CONVERT(1, SQL_INTERVAL_YEAR_TO_MONTH) }");
-    exp("{fn convert(1, ^sql_interval_year_to_day^)}")
+    expr("{fn convert(1, ^sql_interval_year_to_day^)}")
         .fails("(?s)Encountered \"sql_interval_year_to_day\" at line 1, column 16\\.\n.*");
-    exp("{fn convert(1, sql_interval_day)}")
+    expr("{fn convert(1, sql_interval_day)}")
         .ok("{fn CONVERT(1, SQL_INTERVAL_DAY) }");
-    exp("{fn convert(1, sql_interval_day_to_minute)}")
+    expr("{fn convert(1, sql_interval_day_to_minute)}")
         .ok("{fn CONVERT(1, SQL_INTERVAL_DAY_TO_MINUTE) }");
-    exp("{fn convert(^)^}")
+    expr("{fn convert(^)^}")
         .fails("(?s)Encountered \"\\)\" at.*");
-    exp("{fn convert(\"123\", SMALLINT^(^3)}")
+    expr("{fn convert(\"123\", SMALLINT^(^3)}")
         .fails("(?s)Encountered \"\\(\" at.*");
     // Regular types (without SQL_) are OK for regular types, but not for
     // intervals.
-    exp("{fn convert(1, INTEGER)}")
+    expr("{fn convert(1, INTEGER)}")
         .ok("{fn CONVERT(1, SQL_INTEGER) }");
-    exp("{fn convert(1, VARCHAR)}")
+    expr("{fn convert(1, VARCHAR)}")
         .ok("{fn CONVERT(1, SQL_VARCHAR) }");
-    exp("{fn convert(1, VARCHAR^(^5))}")
+    expr("{fn convert(1, VARCHAR^(^5))}")
         .fails("(?s)Encountered \"\\(\" at.*");
-    exp("{fn convert(1, ^INTERVAL^ YEAR TO MONTH)}")
+    expr("{fn convert(1, ^INTERVAL^ YEAR TO MONTH)}")
         .fails("(?s)Encountered \"INTERVAL\" at.*");
-    exp("{fn convert(1, ^INTERVAL^ YEAR)}")
+    expr("{fn convert(1, ^INTERVAL^ YEAR)}")
         .fails("(?s)Encountered \"INTERVAL\" at.*");
   }
 
   @Test public void testWindowReference() {
-    exp("sum(sal) over (w)")
+    expr("sum(sal) over (w)")
         .ok("(SUM(`SAL`) OVER (`W`))");
 
     // Only 1 window reference allowed
-    exp("sum(sal) over (w ^w1^ partition by deptno)")
+    expr("sum(sal) over (w ^w1^ partition by deptno)")
         .fails("(?s)Encountered \"w1\" at.*");
   }
 
@@ -4524,124 +4524,124 @@ public class SqlParserTest {
   }
 
   @Test public void testOver() {
-    exp("sum(sal) over ()")
+    expr("sum(sal) over ()")
         .ok("(SUM(`SAL`) OVER ())");
-    exp("sum(sal) over (partition by x, y)")
+    expr("sum(sal) over (partition by x, y)")
         .ok("(SUM(`SAL`) OVER (PARTITION BY `X`, `Y`))");
-    exp("sum(sal) over (order by x desc, y asc)")
+    expr("sum(sal) over (order by x desc, y asc)")
         .ok("(SUM(`SAL`) OVER (ORDER BY `X` DESC, `Y`))");
-    exp("sum(sal) over (rows 5 preceding)")
+    expr("sum(sal) over (rows 5 preceding)")
         .ok("(SUM(`SAL`) OVER (ROWS 5 PRECEDING))");
-    exp("sum(sal) over (range between interval '1' second preceding\n"
+    expr("sum(sal) over (range between interval '1' second preceding\n"
         + " and interval '1' second following)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND PRECEDING "
             + "AND INTERVAL '1' SECOND FOLLOWING))");
-    exp("sum(sal) over (range between interval '1:03' hour preceding\n"
+    expr("sum(sal) over (range between interval '1:03' hour preceding\n"
         + " and interval '2' minute following)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1:03' HOUR PRECEDING "
             + "AND INTERVAL '2' MINUTE FOLLOWING))");
-    exp("sum(sal) over (range between interval '5' day preceding\n"
+    expr("sum(sal) over (range between interval '5' day preceding\n"
         + " and current row)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '5' DAY PRECEDING "
             + "AND CURRENT ROW))");
-    exp("sum(sal) over (range interval '5' day preceding)")
+    expr("sum(sal) over (range interval '5' day preceding)")
         .ok("(SUM(`SAL`) OVER (RANGE INTERVAL '5' DAY PRECEDING))");
-    exp("sum(sal) over (range between unbounded preceding and current row)")
+    expr("sum(sal) over (range between unbounded preceding and current row)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN UNBOUNDED PRECEDING "
             + "AND CURRENT ROW))");
-    exp("sum(sal) over (range unbounded preceding)")
+    expr("sum(sal) over (range unbounded preceding)")
         .ok("(SUM(`SAL`) OVER (RANGE UNBOUNDED PRECEDING))");
-    exp("sum(sal) over (range between current row and unbounded preceding)")
+    expr("sum(sal) over (range between current row and unbounded preceding)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW "
             + "AND UNBOUNDED PRECEDING))");
-    exp("sum(sal) over (range between current row and unbounded following)")
+    expr("sum(sal) over (range between current row and unbounded following)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW "
             + "AND UNBOUNDED FOLLOWING))");
-    exp("sum(sal) over (range between 6 preceding\n"
+    expr("sum(sal) over (range between 6 preceding\n"
         + " and interval '1:03' hour preceding)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN 6 PRECEDING "
             + "AND INTERVAL '1:03' HOUR PRECEDING))");
-    exp("sum(sal) over (range between interval '1' second following\n"
+    expr("sum(sal) over (range between interval '1' second following\n"
         + " and interval '5' day following)")
         .ok("(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND FOLLOWING "
             + "AND INTERVAL '5' DAY FOLLOWING))");
   }
 
   @Test public void testElementFunc() {
-    exp("element(a)")
+    expr("element(a)")
         .ok("ELEMENT(`A`)");
   }
 
   @Test public void testCardinalityFunc() {
-    exp("cardinality(a)")
+    expr("cardinality(a)")
         .ok("CARDINALITY(`A`)");
   }
 
   @Test public void testMemberOf() {
-    exp("a member of b")
+    expr("a member of b")
         .ok("(`A` MEMBER OF `B`)");
-    exp("a member of multiset[b]")
+    expr("a member of multiset[b]")
         .ok("(`A` MEMBER OF (MULTISET[`B`]))");
   }
 
   @Test public void testSubMultisetrOf() {
-    exp("a submultiset of b")
+    expr("a submultiset of b")
         .ok("(`A` SUBMULTISET OF `B`)");
   }
 
   @Test public void testIsASet() {
-    exp("b is a set")
+    expr("b is a set")
         .ok("(`B` IS A SET)");
-    exp("a is a set")
+    expr("a is a set")
         .ok("(`A` IS A SET)");
   }
 
   @Test public void testMultiset() {
-    exp("multiset[1]")
+    expr("multiset[1]")
         .ok("(MULTISET[1])");
-    exp("multiset[1,2.3]")
+    expr("multiset[1,2.3]")
         .ok("(MULTISET[1, 2.3])");
-    exp("multiset[1,    '2']")
+    expr("multiset[1,    '2']")
         .ok("(MULTISET[1, '2'])");
-    exp("multiset[ROW(1,2)]")
+    expr("multiset[ROW(1,2)]")
         .ok("(MULTISET[(ROW(1, 2))])");
-    exp("multiset[ROW(1,2),ROW(3,4)]")
+    expr("multiset[ROW(1,2),ROW(3,4)]")
         .ok("(MULTISET[(ROW(1, 2)), (ROW(3, 4))])");
 
-    exp("multiset(select*from T)")
+    expr("multiset(select*from T)")
         .ok("(MULTISET ((SELECT *\n"
             + "FROM `T`)))");
   }
 
   @Test public void testMultisetUnion() {
-    exp("a multiset union b")
+    expr("a multiset union b")
         .ok("(`A` MULTISET UNION ALL `B`)");
-    exp("a multiset union all b")
+    expr("a multiset union all b")
         .ok("(`A` MULTISET UNION ALL `B`)");
-    exp("a multiset union distinct b")
+    expr("a multiset union distinct b")
         .ok("(`A` MULTISET UNION DISTINCT `B`)");
   }
 
   @Test public void testMultisetExcept() {
-    exp("a multiset EXCEPT b")
+    expr("a multiset EXCEPT b")
         .ok("(`A` MULTISET EXCEPT ALL `B`)");
-    exp("a multiset EXCEPT all b")
+    expr("a multiset EXCEPT all b")
         .ok("(`A` MULTISET EXCEPT ALL `B`)");
-    exp("a multiset EXCEPT distinct b")
+    expr("a multiset EXCEPT distinct b")
         .ok("(`A` MULTISET EXCEPT DISTINCT `B`)");
   }
 
   @Test public void testMultisetIntersect() {
-    exp("a multiset INTERSECT b")
+    expr("a multiset INTERSECT b")
         .ok("(`A` MULTISET INTERSECT ALL `B`)");
-    exp("a multiset INTERSECT all b")
+    expr("a multiset INTERSECT all b")
         .ok("(`A` MULTISET INTERSECT ALL `B`)");
-    exp("a multiset INTERSECT distinct b")
+    expr("a multiset INTERSECT distinct b")
         .ok("(`A` MULTISET INTERSECT DISTINCT `B`)");
   }
 
   @Test public void testMultisetMixed() {
-    exp("multiset[1] MULTISET union b")
+    expr("multiset[1] MULTISET union b")
         .ok("((MULTISET[1]) MULTISET UNION ALL `B`)");
     final String sql = "a MULTISET union b "
         + "multiset intersect c "
@@ -4650,115 +4650,115 @@ public class SqlParserTest {
     final String expected = "(((`A` MULTISET UNION ALL "
         + "(`B` MULTISET INTERSECT ALL `C`)) "
         + "MULTISET EXCEPT ALL `D`) MULTISET UNION ALL `E`)";
-    exp(sql).ok(expected);
+    expr(sql).ok(expected);
   }
 
   @Test public void testMapItem() {
-    exp("a['foo']")
+    expr("a['foo']")
         .ok("`A`['foo']");
-    exp("a['x' || 'y']")
+    expr("a['x' || 'y']")
         .ok("`A`[('x' || 'y')]");
-    exp("a['foo'] ['bar']")
+    expr("a['foo'] ['bar']")
         .ok("`A`['foo']['bar']");
-    exp("a['foo']['bar']")
+    expr("a['foo']['bar']")
         .ok("`A`['foo']['bar']");
   }
 
   @Test public void testMapItemPrecedence() {
-    exp("1 + a['foo'] * 3")
+    expr("1 + a['foo'] * 3")
         .ok("(1 + (`A`['foo'] * 3))");
-    exp("1 * a['foo'] + 3")
+    expr("1 * a['foo'] + 3")
         .ok("((1 * `A`['foo']) + 3)");
-    exp("a['foo']['bar']")
+    expr("a['foo']['bar']")
         .ok("`A`['foo']['bar']");
-    exp("a[b['foo' || 'bar']]")
+    expr("a[b['foo' || 'bar']]")
         .ok("`A`[`B`[('foo' || 'bar')]]");
   }
 
   @Test public void testArrayElement() {
-    exp("a[1]")
+    expr("a[1]")
         .ok("`A`[1]");
-    exp("a[b[1]]")
+    expr("a[b[1]]")
         .ok("`A`[`B`[1]]");
-    exp("a[b[1 + 2] + 3]")
+    expr("a[b[1 + 2] + 3]")
         .ok("`A`[(`B`[(1 + 2)] + 3)]");
   }
 
   @Test public void testArrayElementWithDot() {
-    exp("a[1+2].b.c[2].d")
+    expr("a[1+2].b.c[2].d")
         .ok("(((`A`[(1 + 2)].`B`).`C`)[2].`D`)");
-    exp("a[b[1]].c.f0[d[1]]")
+    expr("a[b[1]].c.f0[d[1]]")
         .ok("((`A`[`B`[1]].`C`).`F0`)[`D`[1]]");
   }
 
   @Test public void testArrayValueConstructor() {
-    exp("array[1, 2]").ok("(ARRAY[1, 2])");
-    exp("array [1, 2]").ok("(ARRAY[1, 2])"); // with space
+    expr("array[1, 2]").ok("(ARRAY[1, 2])");
+    expr("array [1, 2]").ok("(ARRAY[1, 2])"); // with space
 
     // parser allows empty array; validator will reject it
-    exp("array[]")
+    expr("array[]")
         .ok("(ARRAY[])");
-    exp("array[(1, 'a'), (2, 'b')]")
+    expr("array[(1, 'a'), (2, 'b')]")
         .ok("(ARRAY[(ROW(1, 'a')), (ROW(2, 'b'))])");
   }
 
   @Test public void testCastAsCollectionType() {
     // test array type.
-    exp("cast(a as int array)")
+    expr("cast(a as int array)")
         .ok("CAST(`A` AS INTEGER ARRAY)");
-    exp("cast(a as varchar(5) array)")
+    expr("cast(a as varchar(5) array)")
         .ok("CAST(`A` AS VARCHAR(5) ARRAY)");
-    exp("cast(a as int array array)")
+    expr("cast(a as int array array)")
         .ok("CAST(`A` AS INTEGER ARRAY ARRAY)");
-    exp("cast(a as varchar(5) array array)")
+    expr("cast(a as varchar(5) array array)")
         .ok("CAST(`A` AS VARCHAR(5) ARRAY ARRAY)");
-    exp("cast(a as int array^<^10>)")
+    expr("cast(a as int array^<^10>)")
         .fails("(?s).*Encountered \"<\" at line 1, column 20.\n.*");
     // test multiset type.
-    exp("cast(a as int multiset)")
+    expr("cast(a as int multiset)")
         .ok("CAST(`A` AS INTEGER MULTISET)");
-    exp("cast(a as varchar(5) multiset)")
+    expr("cast(a as varchar(5) multiset)")
         .ok("CAST(`A` AS VARCHAR(5) MULTISET)");
-    exp("cast(a as int multiset array)")
+    expr("cast(a as int multiset array)")
         .ok("CAST(`A` AS INTEGER MULTISET ARRAY)");
-    exp("cast(a as varchar(5) multiset array)")
+    expr("cast(a as varchar(5) multiset array)")
         .ok("CAST(`A` AS VARCHAR(5) MULTISET ARRAY)");
     // test row type nested in collection type.
-    exp("cast(a as row(f0 int array multiset, f1 varchar(5) array) array multiset)")
+    expr("cast(a as row(f0 int array multiset, f1 varchar(5) array) array multiset)")
         .ok("CAST(`A` AS "
             + "ROW(`F0` INTEGER ARRAY MULTISET, "
             + "`F1` VARCHAR(5) ARRAY) "
             + "ARRAY MULTISET)");
     // test UDT collection type.
-    exp("cast(a as MyUDT array multiset)")
+    expr("cast(a as MyUDT array multiset)")
         .ok("CAST(`A` AS `MYUDT` ARRAY MULTISET)");
   }
 
   @Test public void testCastAsRowType() {
-    exp("cast(a as row(f0 int, f1 varchar))")
+    expr("cast(a as row(f0 int, f1 varchar))")
         .ok("CAST(`A` AS ROW(`F0` INTEGER, `F1` VARCHAR))");
-    exp("cast(a as row(f0 int not null, f1 varchar null))")
+    expr("cast(a as row(f0 int not null, f1 varchar null))")
         .ok("CAST(`A` AS ROW(`F0` INTEGER, `F1` VARCHAR NULL))");
     // test nested row type.
-    exp("cast(a as row("
+    expr("cast(a as row("
         + "f0 row(ff0 int not null, ff1 varchar null) null, "
         + "f1 timestamp not null))")
         .ok("CAST(`A` AS ROW("
             + "`F0` ROW(`FF0` INTEGER, `FF1` VARCHAR NULL) NULL, "
             + "`F1` TIMESTAMP))");
     // test row type in collection data types.
-    exp("cast(a as row(f0 bigint not null, f1 decimal null) array)")
+    expr("cast(a as row(f0 bigint not null, f1 decimal null) array)")
         .ok("CAST(`A` AS ROW(`F0` BIGINT, `F1` DECIMAL NULL) ARRAY)");
-    exp("cast(a as row(f0 varchar not null, f1 timestamp null) multiset)")
+    expr("cast(a as row(f0 varchar not null, f1 timestamp null) multiset)")
         .ok("CAST(`A` AS ROW(`F0` VARCHAR, `F1` TIMESTAMP NULL) MULTISET)");
   }
 
   @Test public void testMapValueConstructor() {
-    exp("map[1, 'x', 2, 'y']")
+    expr("map[1, 'x', 2, 'y']")
         .ok("(MAP[1, 'x', 2, 'y'])");
-    exp("map [1, 'x', 2, 'y']")
+    expr("map [1, 'x', 2, 'y']")
         .ok("(MAP[1, 'x', 2, 'y'])");
-    exp("map[]")
+    expr("map[]")
         .ok("(MAP[])");
   }
 
@@ -4771,45 +4771,45 @@ public class SqlParserTest {
    */
   public void subTestIntervalYearPositive() {
     // default precision
-    exp("interval '1' year")
+    expr("interval '1' year")
         .ok("INTERVAL '1' YEAR");
-    exp("interval '99' year")
+    expr("interval '99' year")
         .ok("INTERVAL '99' YEAR");
 
     // explicit precision equal to default
-    exp("interval '1' year(2)")
+    expr("interval '1' year(2)")
         .ok("INTERVAL '1' YEAR(2)");
-    exp("interval '99' year(2)")
+    expr("interval '99' year(2)")
         .ok("INTERVAL '99' YEAR(2)");
 
     // max precision
-    exp("interval '2147483647' year(10)")
+    expr("interval '2147483647' year(10)")
         .ok("INTERVAL '2147483647' YEAR(10)");
 
     // min precision
-    exp("interval '0' year(1)")
+    expr("interval '0' year(1)")
         .ok("INTERVAL '0' YEAR(1)");
 
     // alternate precision
-    exp("interval '1234' year(4)")
+    expr("interval '1234' year(4)")
         .ok("INTERVAL '1234' YEAR(4)");
 
     // sign
-    exp("interval '+1' year")
+    expr("interval '+1' year")
         .ok("INTERVAL '+1' YEAR");
-    exp("interval '-1' year")
+    expr("interval '-1' year")
         .ok("INTERVAL '-1' YEAR");
-    exp("interval +'1' year")
+    expr("interval +'1' year")
         .ok("INTERVAL '1' YEAR");
-    exp("interval +'+1' year")
+    expr("interval +'+1' year")
         .ok("INTERVAL '+1' YEAR");
-    exp("interval +'-1' year")
+    expr("interval +'-1' year")
         .ok("INTERVAL '-1' YEAR");
-    exp("interval -'1' year")
+    expr("interval -'1' year")
         .ok("INTERVAL -'1' YEAR");
-    exp("interval -'+1' year")
+    expr("interval -'+1' year")
         .ok("INTERVAL -'+1' YEAR");
-    exp("interval -'-1' year")
+    expr("interval -'-1' year")
         .ok("INTERVAL -'-1' YEAR");
   }
 
@@ -4822,49 +4822,49 @@ public class SqlParserTest {
    */
   public void subTestIntervalYearToMonthPositive() {
     // default precision
-    exp("interval '1-2' year to month")
+    expr("interval '1-2' year to month")
         .ok("INTERVAL '1-2' YEAR TO MONTH");
-    exp("interval '99-11' year to month")
+    expr("interval '99-11' year to month")
         .ok("INTERVAL '99-11' YEAR TO MONTH");
-    exp("interval '99-0' year to month")
+    expr("interval '99-0' year to month")
         .ok("INTERVAL '99-0' YEAR TO MONTH");
 
     // explicit precision equal to default
-    exp("interval '1-2' year(2) to month")
+    expr("interval '1-2' year(2) to month")
         .ok("INTERVAL '1-2' YEAR(2) TO MONTH");
-    exp("interval '99-11' year(2) to month")
+    expr("interval '99-11' year(2) to month")
         .ok("INTERVAL '99-11' YEAR(2) TO MONTH");
-    exp("interval '99-0' year(2) to month")
+    expr("interval '99-0' year(2) to month")
         .ok("INTERVAL '99-0' YEAR(2) TO MONTH");
 
     // max precision
-    exp("interval '2147483647-11' year(10) to month")
+    expr("interval '2147483647-11' year(10) to month")
         .ok("INTERVAL '2147483647-11' YEAR(10) TO MONTH");
 
     // min precision
-    exp("interval '0-0' year(1) to month")
+    expr("interval '0-0' year(1) to month")
         .ok("INTERVAL '0-0' YEAR(1) TO MONTH");
 
     // alternate precision
-    exp("interval '2006-2' year(4) to month")
+    expr("interval '2006-2' year(4) to month")
         .ok("INTERVAL '2006-2' YEAR(4) TO MONTH");
 
     // sign
-    exp("interval '-1-2' year to month")
+    expr("interval '-1-2' year to month")
         .ok("INTERVAL '-1-2' YEAR TO MONTH");
-    exp("interval '+1-2' year to month")
+    expr("interval '+1-2' year to month")
         .ok("INTERVAL '+1-2' YEAR TO MONTH");
-    exp("interval +'1-2' year to month")
+    expr("interval +'1-2' year to month")
         .ok("INTERVAL '1-2' YEAR TO MONTH");
-    exp("interval +'-1-2' year to month")
+    expr("interval +'-1-2' year to month")
         .ok("INTERVAL '-1-2' YEAR TO MONTH");
-    exp("interval +'+1-2' year to month")
+    expr("interval +'+1-2' year to month")
         .ok("INTERVAL '+1-2' YEAR TO MONTH");
-    exp("interval -'1-2' year to month")
+    expr("interval -'1-2' year to month")
         .ok("INTERVAL -'1-2' YEAR TO MONTH");
-    exp("interval -'-1-2' year to month")
+    expr("interval -'-1-2' year to month")
         .ok("INTERVAL -'-1-2' YEAR TO MONTH");
-    exp("interval -'+1-2' year to month")
+    expr("interval -'+1-2' year to month")
         .ok("INTERVAL -'+1-2' YEAR TO MONTH");
   }
 
@@ -4877,45 +4877,45 @@ public class SqlParserTest {
    */
   public void subTestIntervalMonthPositive() {
     // default precision
-    exp("interval '1' month")
+    expr("interval '1' month")
         .ok("INTERVAL '1' MONTH");
-    exp("interval '99' month")
+    expr("interval '99' month")
         .ok("INTERVAL '99' MONTH");
 
     // explicit precision equal to default
-    exp("interval '1' month(2)")
+    expr("interval '1' month(2)")
         .ok("INTERVAL '1' MONTH(2)");
-    exp("interval '99' month(2)")
+    expr("interval '99' month(2)")
         .ok("INTERVAL '99' MONTH(2)");
 
     // max precision
-    exp("interval '2147483647' month(10)")
+    expr("interval '2147483647' month(10)")
         .ok("INTERVAL '2147483647' MONTH(10)");
 
     // min precision
-    exp("interval '0' month(1)")
+    expr("interval '0' month(1)")
         .ok("INTERVAL '0' MONTH(1)");
 
     // alternate precision
-    exp("interval '1234' month(4)")
+    expr("interval '1234' month(4)")
         .ok("INTERVAL '1234' MONTH(4)");
 
     // sign
-    exp("interval '+1' month")
+    expr("interval '+1' month")
         .ok("INTERVAL '+1' MONTH");
-    exp("interval '-1' month")
+    expr("interval '-1' month")
         .ok("INTERVAL '-1' MONTH");
-    exp("interval +'1' month")
+    expr("interval +'1' month")
         .ok("INTERVAL '1' MONTH");
-    exp("interval +'+1' month")
+    expr("interval +'+1' month")
         .ok("INTERVAL '+1' MONTH");
-    exp("interval +'-1' month")
+    expr("interval +'-1' month")
         .ok("INTERVAL '-1' MONTH");
-    exp("interval -'1' month")
+    expr("interval -'1' month")
         .ok("INTERVAL -'1' MONTH");
-    exp("interval -'+1' month")
+    expr("interval -'+1' month")
         .ok("INTERVAL -'+1' MONTH");
-    exp("interval -'-1' month")
+    expr("interval -'-1' month")
         .ok("INTERVAL -'-1' MONTH");
   }
 
@@ -4928,45 +4928,45 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayPositive() {
     // default precision
-    exp("interval '1' day")
+    expr("interval '1' day")
         .ok("INTERVAL '1' DAY");
-    exp("interval '99' day")
+    expr("interval '99' day")
         .ok("INTERVAL '99' DAY");
 
     // explicit precision equal to default
-    exp("interval '1' day(2)")
+    expr("interval '1' day(2)")
         .ok("INTERVAL '1' DAY(2)");
-    exp("interval '99' day(2)")
+    expr("interval '99' day(2)")
         .ok("INTERVAL '99' DAY(2)");
 
     // max precision
-    exp("interval '2147483647' day(10)")
+    expr("interval '2147483647' day(10)")
         .ok("INTERVAL '2147483647' DAY(10)");
 
     // min precision
-    exp("interval '0' day(1)")
+    expr("interval '0' day(1)")
         .ok("INTERVAL '0' DAY(1)");
 
     // alternate precision
-    exp("interval '1234' day(4)")
+    expr("interval '1234' day(4)")
         .ok("INTERVAL '1234' DAY(4)");
 
     // sign
-    exp("interval '+1' day")
+    expr("interval '+1' day")
         .ok("INTERVAL '+1' DAY");
-    exp("interval '-1' day")
+    expr("interval '-1' day")
         .ok("INTERVAL '-1' DAY");
-    exp("interval +'1' day")
+    expr("interval +'1' day")
         .ok("INTERVAL '1' DAY");
-    exp("interval +'+1' day")
+    expr("interval +'+1' day")
         .ok("INTERVAL '+1' DAY");
-    exp("interval +'-1' day")
+    expr("interval +'-1' day")
         .ok("INTERVAL '-1' DAY");
-    exp("interval -'1' day")
+    expr("interval -'1' day")
         .ok("INTERVAL -'1' DAY");
-    exp("interval -'+1' day")
+    expr("interval -'+1' day")
         .ok("INTERVAL -'+1' DAY");
-    exp("interval -'-1' day")
+    expr("interval -'-1' day")
         .ok("INTERVAL -'-1' DAY");
   }
 
@@ -4979,49 +4979,49 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayToHourPositive() {
     // default precision
-    exp("interval '1 2' day to hour")
+    expr("interval '1 2' day to hour")
         .ok("INTERVAL '1 2' DAY TO HOUR");
-    exp("interval '99 23' day to hour")
+    expr("interval '99 23' day to hour")
         .ok("INTERVAL '99 23' DAY TO HOUR");
-    exp("interval '99 0' day to hour")
+    expr("interval '99 0' day to hour")
         .ok("INTERVAL '99 0' DAY TO HOUR");
 
     // explicit precision equal to default
-    exp("interval '1 2' day(2) to hour")
+    expr("interval '1 2' day(2) to hour")
         .ok("INTERVAL '1 2' DAY(2) TO HOUR");
-    exp("interval '99 23' day(2) to hour")
+    expr("interval '99 23' day(2) to hour")
         .ok("INTERVAL '99 23' DAY(2) TO HOUR");
-    exp("interval '99 0' day(2) to hour")
+    expr("interval '99 0' day(2) to hour")
         .ok("INTERVAL '99 0' DAY(2) TO HOUR");
 
     // max precision
-    exp("interval '2147483647 23' day(10) to hour")
+    expr("interval '2147483647 23' day(10) to hour")
         .ok("INTERVAL '2147483647 23' DAY(10) TO HOUR");
 
     // min precision
-    exp("interval '0 0' day(1) to hour")
+    expr("interval '0 0' day(1) to hour")
         .ok("INTERVAL '0 0' DAY(1) TO HOUR");
 
     // alternate precision
-    exp("interval '2345 2' day(4) to hour")
+    expr("interval '2345 2' day(4) to hour")
         .ok("INTERVAL '2345 2' DAY(4) TO HOUR");
 
     // sign
-    exp("interval '-1 2' day to hour")
+    expr("interval '-1 2' day to hour")
         .ok("INTERVAL '-1 2' DAY TO HOUR");
-    exp("interval '+1 2' day to hour")
+    expr("interval '+1 2' day to hour")
         .ok("INTERVAL '+1 2' DAY TO HOUR");
-    exp("interval +'1 2' day to hour")
+    expr("interval +'1 2' day to hour")
         .ok("INTERVAL '1 2' DAY TO HOUR");
-    exp("interval +'-1 2' day to hour")
+    expr("interval +'-1 2' day to hour")
         .ok("INTERVAL '-1 2' DAY TO HOUR");
-    exp("interval +'+1 2' day to hour")
+    expr("interval +'+1 2' day to hour")
         .ok("INTERVAL '+1 2' DAY TO HOUR");
-    exp("interval -'1 2' day to hour")
+    expr("interval -'1 2' day to hour")
         .ok("INTERVAL -'1 2' DAY TO HOUR");
-    exp("interval -'-1 2' day to hour")
+    expr("interval -'-1 2' day to hour")
         .ok("INTERVAL -'-1 2' DAY TO HOUR");
-    exp("interval -'+1 2' day to hour")
+    expr("interval -'+1 2' day to hour")
         .ok("INTERVAL -'+1 2' DAY TO HOUR");
   }
 
@@ -5034,49 +5034,49 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayToMinutePositive() {
     // default precision
-    exp("interval '1 2:3' day to minute")
+    expr("interval '1 2:3' day to minute")
         .ok("INTERVAL '1 2:3' DAY TO MINUTE");
-    exp("interval '99 23:59' day to minute")
+    expr("interval '99 23:59' day to minute")
         .ok("INTERVAL '99 23:59' DAY TO MINUTE");
-    exp("interval '99 0:0' day to minute")
+    expr("interval '99 0:0' day to minute")
         .ok("INTERVAL '99 0:0' DAY TO MINUTE");
 
     // explicit precision equal to default
-    exp("interval '1 2:3' day(2) to minute")
+    expr("interval '1 2:3' day(2) to minute")
         .ok("INTERVAL '1 2:3' DAY(2) TO MINUTE");
-    exp("interval '99 23:59' day(2) to minute")
+    expr("interval '99 23:59' day(2) to minute")
         .ok("INTERVAL '99 23:59' DAY(2) TO MINUTE");
-    exp("interval '99 0:0' day(2) to minute")
+    expr("interval '99 0:0' day(2) to minute")
         .ok("INTERVAL '99 0:0' DAY(2) TO MINUTE");
 
     // max precision
-    exp("interval '2147483647 23:59' day(10) to minute")
+    expr("interval '2147483647 23:59' day(10) to minute")
         .ok("INTERVAL '2147483647 23:59' DAY(10) TO MINUTE");
 
     // min precision
-    exp("interval '0 0:0' day(1) to minute")
+    expr("interval '0 0:0' day(1) to minute")
         .ok("INTERVAL '0 0:0' DAY(1) TO MINUTE");
 
     // alternate precision
-    exp("interval '2345 6:7' day(4) to minute")
+    expr("interval '2345 6:7' day(4) to minute")
         .ok("INTERVAL '2345 6:7' DAY(4) TO MINUTE");
 
     // sign
-    exp("interval '-1 2:3' day to minute")
+    expr("interval '-1 2:3' day to minute")
         .ok("INTERVAL '-1 2:3' DAY TO MINUTE");
-    exp("interval '+1 2:3' day to minute")
+    expr("interval '+1 2:3' day to minute")
         .ok("INTERVAL '+1 2:3' DAY TO MINUTE");
-    exp("interval +'1 2:3' day to minute")
+    expr("interval +'1 2:3' day to minute")
         .ok("INTERVAL '1 2:3' DAY TO MINUTE");
-    exp("interval +'-1 2:3' day to minute")
+    expr("interval +'-1 2:3' day to minute")
         .ok("INTERVAL '-1 2:3' DAY TO MINUTE");
-    exp("interval +'+1 2:3' day to minute")
+    expr("interval +'+1 2:3' day to minute")
         .ok("INTERVAL '+1 2:3' DAY TO MINUTE");
-    exp("interval -'1 2:3' day to minute")
+    expr("interval -'1 2:3' day to minute")
         .ok("INTERVAL -'1 2:3' DAY TO MINUTE");
-    exp("interval -'-1 2:3' day to minute")
+    expr("interval -'-1 2:3' day to minute")
         .ok("INTERVAL -'-1 2:3' DAY TO MINUTE");
-    exp("interval -'+1 2:3' day to minute")
+    expr("interval -'+1 2:3' day to minute")
         .ok("INTERVAL -'+1 2:3' DAY TO MINUTE");
   }
 
@@ -5089,63 +5089,63 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayToSecondPositive() {
     // default precision
-    exp("interval '1 2:3:4' day to second")
+    expr("interval '1 2:3:4' day to second")
         .ok("INTERVAL '1 2:3:4' DAY TO SECOND");
-    exp("interval '99 23:59:59' day to second")
+    expr("interval '99 23:59:59' day to second")
         .ok("INTERVAL '99 23:59:59' DAY TO SECOND");
-    exp("interval '99 0:0:0' day to second")
+    expr("interval '99 0:0:0' day to second")
         .ok("INTERVAL '99 0:0:0' DAY TO SECOND");
-    exp("interval '99 23:59:59.999999' day to second")
+    expr("interval '99 23:59:59.999999' day to second")
         .ok("INTERVAL '99 23:59:59.999999' DAY TO SECOND");
-    exp("interval '99 0:0:0.0' day to second")
+    expr("interval '99 0:0:0.0' day to second")
         .ok("INTERVAL '99 0:0:0.0' DAY TO SECOND");
 
     // explicit precision equal to default
-    exp("interval '1 2:3:4' day(2) to second")
+    expr("interval '1 2:3:4' day(2) to second")
         .ok("INTERVAL '1 2:3:4' DAY(2) TO SECOND");
-    exp("interval '99 23:59:59' day(2) to second")
+    expr("interval '99 23:59:59' day(2) to second")
         .ok("INTERVAL '99 23:59:59' DAY(2) TO SECOND");
-    exp("interval '99 0:0:0' day(2) to second")
+    expr("interval '99 0:0:0' day(2) to second")
         .ok("INTERVAL '99 0:0:0' DAY(2) TO SECOND");
-    exp("interval '99 23:59:59.999999' day to second(6)")
+    expr("interval '99 23:59:59.999999' day to second(6)")
         .ok("INTERVAL '99 23:59:59.999999' DAY TO SECOND(6)");
-    exp("interval '99 0:0:0.0' day to second(6)")
+    expr("interval '99 0:0:0.0' day to second(6)")
         .ok("INTERVAL '99 0:0:0.0' DAY TO SECOND(6)");
 
     // max precision
-    exp("interval '2147483647 23:59:59' day(10) to second")
+    expr("interval '2147483647 23:59:59' day(10) to second")
         .ok("INTERVAL '2147483647 23:59:59' DAY(10) TO SECOND");
-    exp("interval '2147483647 23:59:59.999999999' day(10) to second(9)")
+    expr("interval '2147483647 23:59:59.999999999' day(10) to second(9)")
         .ok("INTERVAL '2147483647 23:59:59.999999999' DAY(10) TO SECOND(9)");
 
     // min precision
-    exp("interval '0 0:0:0' day(1) to second")
+    expr("interval '0 0:0:0' day(1) to second")
         .ok("INTERVAL '0 0:0:0' DAY(1) TO SECOND");
-    exp("interval '0 0:0:0.0' day(1) to second(1)")
+    expr("interval '0 0:0:0.0' day(1) to second(1)")
         .ok("INTERVAL '0 0:0:0.0' DAY(1) TO SECOND(1)");
 
     // alternate precision
-    exp("interval '2345 6:7:8' day(4) to second")
+    expr("interval '2345 6:7:8' day(4) to second")
         .ok("INTERVAL '2345 6:7:8' DAY(4) TO SECOND");
-    exp("interval '2345 6:7:8.9012' day(4) to second(4)")
+    expr("interval '2345 6:7:8.9012' day(4) to second(4)")
         .ok("INTERVAL '2345 6:7:8.9012' DAY(4) TO SECOND(4)");
 
     // sign
-    exp("interval '-1 2:3:4' day to second")
+    expr("interval '-1 2:3:4' day to second")
         .ok("INTERVAL '-1 2:3:4' DAY TO SECOND");
-    exp("interval '+1 2:3:4' day to second")
+    expr("interval '+1 2:3:4' day to second")
         .ok("INTERVAL '+1 2:3:4' DAY TO SECOND");
-    exp("interval +'1 2:3:4' day to second")
+    expr("interval +'1 2:3:4' day to second")
         .ok("INTERVAL '1 2:3:4' DAY TO SECOND");
-    exp("interval +'-1 2:3:4' day to second")
+    expr("interval +'-1 2:3:4' day to second")
         .ok("INTERVAL '-1 2:3:4' DAY TO SECOND");
-    exp("interval +'+1 2:3:4' day to second")
+    expr("interval +'+1 2:3:4' day to second")
         .ok("INTERVAL '+1 2:3:4' DAY TO SECOND");
-    exp("interval -'1 2:3:4' day to second")
+    expr("interval -'1 2:3:4' day to second")
         .ok("INTERVAL -'1 2:3:4' DAY TO SECOND");
-    exp("interval -'-1 2:3:4' day to second")
+    expr("interval -'-1 2:3:4' day to second")
         .ok("INTERVAL -'-1 2:3:4' DAY TO SECOND");
-    exp("interval -'+1 2:3:4' day to second")
+    expr("interval -'+1 2:3:4' day to second")
         .ok("INTERVAL -'+1 2:3:4' DAY TO SECOND");
   }
 
@@ -5158,45 +5158,45 @@ public class SqlParserTest {
    */
   public void subTestIntervalHourPositive() {
     // default precision
-    exp("interval '1' hour")
+    expr("interval '1' hour")
         .ok("INTERVAL '1' HOUR");
-    exp("interval '99' hour")
+    expr("interval '99' hour")
         .ok("INTERVAL '99' HOUR");
 
     // explicit precision equal to default
-    exp("interval '1' hour(2)")
+    expr("interval '1' hour(2)")
         .ok("INTERVAL '1' HOUR(2)");
-    exp("interval '99' hour(2)")
+    expr("interval '99' hour(2)")
         .ok("INTERVAL '99' HOUR(2)");
 
     // max precision
-    exp("interval '2147483647' hour(10)")
+    expr("interval '2147483647' hour(10)")
         .ok("INTERVAL '2147483647' HOUR(10)");
 
     // min precision
-    exp("interval '0' hour(1)")
+    expr("interval '0' hour(1)")
         .ok("INTERVAL '0' HOUR(1)");
 
     // alternate precision
-    exp("interval '1234' hour(4)")
+    expr("interval '1234' hour(4)")
         .ok("INTERVAL '1234' HOUR(4)");
 
     // sign
-    exp("interval '+1' hour")
+    expr("interval '+1' hour")
         .ok("INTERVAL '+1' HOUR");
-    exp("interval '-1' hour")
+    expr("interval '-1' hour")
         .ok("INTERVAL '-1' HOUR");
-    exp("interval +'1' hour")
+    expr("interval +'1' hour")
         .ok("INTERVAL '1' HOUR");
-    exp("interval +'+1' hour")
+    expr("interval +'+1' hour")
         .ok("INTERVAL '+1' HOUR");
-    exp("interval +'-1' hour")
+    expr("interval +'-1' hour")
         .ok("INTERVAL '-1' HOUR");
-    exp("interval -'1' hour")
+    expr("interval -'1' hour")
         .ok("INTERVAL -'1' HOUR");
-    exp("interval -'+1' hour")
+    expr("interval -'+1' hour")
         .ok("INTERVAL -'+1' HOUR");
-    exp("interval -'-1' hour")
+    expr("interval -'-1' hour")
         .ok("INTERVAL -'-1' HOUR");
   }
 
@@ -5209,49 +5209,49 @@ public class SqlParserTest {
    */
   public void subTestIntervalHourToMinutePositive() {
     // default precision
-    exp("interval '2:3' hour to minute")
+    expr("interval '2:3' hour to minute")
         .ok("INTERVAL '2:3' HOUR TO MINUTE");
-    exp("interval '23:59' hour to minute")
+    expr("interval '23:59' hour to minute")
         .ok("INTERVAL '23:59' HOUR TO MINUTE");
-    exp("interval '99:0' hour to minute")
+    expr("interval '99:0' hour to minute")
         .ok("INTERVAL '99:0' HOUR TO MINUTE");
 
     // explicit precision equal to default
-    exp("interval '2:3' hour(2) to minute")
+    expr("interval '2:3' hour(2) to minute")
         .ok("INTERVAL '2:3' HOUR(2) TO MINUTE");
-    exp("interval '23:59' hour(2) to minute")
+    expr("interval '23:59' hour(2) to minute")
         .ok("INTERVAL '23:59' HOUR(2) TO MINUTE");
-    exp("interval '99:0' hour(2) to minute")
+    expr("interval '99:0' hour(2) to minute")
         .ok("INTERVAL '99:0' HOUR(2) TO MINUTE");
 
     // max precision
-    exp("interval '2147483647:59' hour(10) to minute")
+    expr("interval '2147483647:59' hour(10) to minute")
         .ok("INTERVAL '2147483647:59' HOUR(10) TO MINUTE");
 
     // min precision
-    exp("interval '0:0' hour(1) to minute")
+    expr("interval '0:0' hour(1) to minute")
         .ok("INTERVAL '0:0' HOUR(1) TO MINUTE");
 
     // alternate precision
-    exp("interval '2345:7' hour(4) to minute")
+    expr("interval '2345:7' hour(4) to minute")
         .ok("INTERVAL '2345:7' HOUR(4) TO MINUTE");
 
     // sign
-    exp("interval '-1:3' hour to minute")
+    expr("interval '-1:3' hour to minute")
         .ok("INTERVAL '-1:3' HOUR TO MINUTE");
-    exp("interval '+1:3' hour to minute")
+    expr("interval '+1:3' hour to minute")
         .ok("INTERVAL '+1:3' HOUR TO MINUTE");
-    exp("interval +'2:3' hour to minute")
+    expr("interval +'2:3' hour to minute")
         .ok("INTERVAL '2:3' HOUR TO MINUTE");
-    exp("interval +'-2:3' hour to minute")
+    expr("interval +'-2:3' hour to minute")
         .ok("INTERVAL '-2:3' HOUR TO MINUTE");
-    exp("interval +'+2:3' hour to minute")
+    expr("interval +'+2:3' hour to minute")
         .ok("INTERVAL '+2:3' HOUR TO MINUTE");
-    exp("interval -'2:3' hour to minute")
+    expr("interval -'2:3' hour to minute")
         .ok("INTERVAL -'2:3' HOUR TO MINUTE");
-    exp("interval -'-2:3' hour to minute")
+    expr("interval -'-2:3' hour to minute")
         .ok("INTERVAL -'-2:3' HOUR TO MINUTE");
-    exp("interval -'+2:3' hour to minute")
+    expr("interval -'+2:3' hour to minute")
         .ok("INTERVAL -'+2:3' HOUR TO MINUTE");
   }
 
@@ -5264,63 +5264,63 @@ public class SqlParserTest {
    */
   public void subTestIntervalHourToSecondPositive() {
     // default precision
-    exp("interval '2:3:4' hour to second")
+    expr("interval '2:3:4' hour to second")
         .ok("INTERVAL '2:3:4' HOUR TO SECOND");
-    exp("interval '23:59:59' hour to second")
+    expr("interval '23:59:59' hour to second")
         .ok("INTERVAL '23:59:59' HOUR TO SECOND");
-    exp("interval '99:0:0' hour to second")
+    expr("interval '99:0:0' hour to second")
         .ok("INTERVAL '99:0:0' HOUR TO SECOND");
-    exp("interval '23:59:59.999999' hour to second")
+    expr("interval '23:59:59.999999' hour to second")
         .ok("INTERVAL '23:59:59.999999' HOUR TO SECOND");
-    exp("interval '99:0:0.0' hour to second")
+    expr("interval '99:0:0.0' hour to second")
         .ok("INTERVAL '99:0:0.0' HOUR TO SECOND");
 
     // explicit precision equal to default
-    exp("interval '2:3:4' hour(2) to second")
+    expr("interval '2:3:4' hour(2) to second")
         .ok("INTERVAL '2:3:4' HOUR(2) TO SECOND");
-    exp("interval '99:59:59' hour(2) to second")
+    expr("interval '99:59:59' hour(2) to second")
         .ok("INTERVAL '99:59:59' HOUR(2) TO SECOND");
-    exp("interval '99:0:0' hour(2) to second")
+    expr("interval '99:0:0' hour(2) to second")
         .ok("INTERVAL '99:0:0' HOUR(2) TO SECOND");
-    exp("interval '23:59:59.999999' hour to second(6)")
+    expr("interval '23:59:59.999999' hour to second(6)")
         .ok("INTERVAL '23:59:59.999999' HOUR TO SECOND(6)");
-    exp("interval '99:0:0.0' hour to second(6)")
+    expr("interval '99:0:0.0' hour to second(6)")
         .ok("INTERVAL '99:0:0.0' HOUR TO SECOND(6)");
 
     // max precision
-    exp("interval '2147483647:59:59' hour(10) to second")
+    expr("interval '2147483647:59:59' hour(10) to second")
         .ok("INTERVAL '2147483647:59:59' HOUR(10) TO SECOND");
-    exp("interval '2147483647:59:59.999999999' hour(10) to second(9)")
+    expr("interval '2147483647:59:59.999999999' hour(10) to second(9)")
         .ok("INTERVAL '2147483647:59:59.999999999' HOUR(10) TO SECOND(9)");
 
     // min precision
-    exp("interval '0:0:0' hour(1) to second")
+    expr("interval '0:0:0' hour(1) to second")
         .ok("INTERVAL '0:0:0' HOUR(1) TO SECOND");
-    exp("interval '0:0:0.0' hour(1) to second(1)")
+    expr("interval '0:0:0.0' hour(1) to second(1)")
         .ok("INTERVAL '0:0:0.0' HOUR(1) TO SECOND(1)");
 
     // alternate precision
-    exp("interval '2345:7:8' hour(4) to second")
+    expr("interval '2345:7:8' hour(4) to second")
         .ok("INTERVAL '2345:7:8' HOUR(4) TO SECOND");
-    exp("interval '2345:7:8.9012' hour(4) to second(4)")
+    expr("interval '2345:7:8.9012' hour(4) to second(4)")
         .ok("INTERVAL '2345:7:8.9012' HOUR(4) TO SECOND(4)");
 
     // sign
-    exp("interval '-2:3:4' hour to second")
+    expr("interval '-2:3:4' hour to second")
         .ok("INTERVAL '-2:3:4' HOUR TO SECOND");
-    exp("interval '+2:3:4' hour to second")
+    expr("interval '+2:3:4' hour to second")
         .ok("INTERVAL '+2:3:4' HOUR TO SECOND");
-    exp("interval +'2:3:4' hour to second")
+    expr("interval +'2:3:4' hour to second")
         .ok("INTERVAL '2:3:4' HOUR TO SECOND");
-    exp("interval +'-2:3:4' hour to second")
+    expr("interval +'-2:3:4' hour to second")
         .ok("INTERVAL '-2:3:4' HOUR TO SECOND");
-    exp("interval +'+2:3:4' hour to second")
+    expr("interval +'+2:3:4' hour to second")
         .ok("INTERVAL '+2:3:4' HOUR TO SECOND");
-    exp("interval -'2:3:4' hour to second")
+    expr("interval -'2:3:4' hour to second")
         .ok("INTERVAL -'2:3:4' HOUR TO SECOND");
-    exp("interval -'-2:3:4' hour to second")
+    expr("interval -'-2:3:4' hour to second")
         .ok("INTERVAL -'-2:3:4' HOUR TO SECOND");
-    exp("interval -'+2:3:4' hour to second")
+    expr("interval -'+2:3:4' hour to second")
         .ok("INTERVAL -'+2:3:4' HOUR TO SECOND");
   }
 
@@ -5333,45 +5333,45 @@ public class SqlParserTest {
    */
   public void subTestIntervalMinutePositive() {
     // default precision
-    exp("interval '1' minute")
+    expr("interval '1' minute")
         .ok("INTERVAL '1' MINUTE");
-    exp("interval '99' minute")
+    expr("interval '99' minute")
         .ok("INTERVAL '99' MINUTE");
 
     // explicit precision equal to default
-    exp("interval '1' minute(2)")
+    expr("interval '1' minute(2)")
         .ok("INTERVAL '1' MINUTE(2)");
-    exp("interval '99' minute(2)")
+    expr("interval '99' minute(2)")
         .ok("INTERVAL '99' MINUTE(2)");
 
     // max precision
-    exp("interval '2147483647' minute(10)")
+    expr("interval '2147483647' minute(10)")
         .ok("INTERVAL '2147483647' MINUTE(10)");
 
     // min precision
-    exp("interval '0' minute(1)")
+    expr("interval '0' minute(1)")
         .ok("INTERVAL '0' MINUTE(1)");
 
     // alternate precision
-    exp("interval '1234' minute(4)")
+    expr("interval '1234' minute(4)")
         .ok("INTERVAL '1234' MINUTE(4)");
 
     // sign
-    exp("interval '+1' minute")
+    expr("interval '+1' minute")
         .ok("INTERVAL '+1' MINUTE");
-    exp("interval '-1' minute")
+    expr("interval '-1' minute")
         .ok("INTERVAL '-1' MINUTE");
-    exp("interval +'1' minute")
+    expr("interval +'1' minute")
         .ok("INTERVAL '1' MINUTE");
-    exp("interval +'+1' minute")
+    expr("interval +'+1' minute")
         .ok("INTERVAL '+1' MINUTE");
-    exp("interval +'+1' minute")
+    expr("interval +'+1' minute")
         .ok("INTERVAL '+1' MINUTE");
-    exp("interval -'1' minute")
+    expr("interval -'1' minute")
         .ok("INTERVAL -'1' MINUTE");
-    exp("interval -'+1' minute")
+    expr("interval -'+1' minute")
         .ok("INTERVAL -'+1' MINUTE");
-    exp("interval -'-1' minute")
+    expr("interval -'-1' minute")
         .ok("INTERVAL -'-1' MINUTE");
   }
 
@@ -5384,63 +5384,63 @@ public class SqlParserTest {
    */
   public void subTestIntervalMinuteToSecondPositive() {
     // default precision
-    exp("interval '2:4' minute to second")
+    expr("interval '2:4' minute to second")
         .ok("INTERVAL '2:4' MINUTE TO SECOND");
-    exp("interval '59:59' minute to second")
+    expr("interval '59:59' minute to second")
         .ok("INTERVAL '59:59' MINUTE TO SECOND");
-    exp("interval '99:0' minute to second")
+    expr("interval '99:0' minute to second")
         .ok("INTERVAL '99:0' MINUTE TO SECOND");
-    exp("interval '59:59.999999' minute to second")
+    expr("interval '59:59.999999' minute to second")
         .ok("INTERVAL '59:59.999999' MINUTE TO SECOND");
-    exp("interval '99:0.0' minute to second")
+    expr("interval '99:0.0' minute to second")
         .ok("INTERVAL '99:0.0' MINUTE TO SECOND");
 
     // explicit precision equal to default
-    exp("interval '2:4' minute(2) to second")
+    expr("interval '2:4' minute(2) to second")
         .ok("INTERVAL '2:4' MINUTE(2) TO SECOND");
-    exp("interval '59:59' minute(2) to second")
+    expr("interval '59:59' minute(2) to second")
         .ok("INTERVAL '59:59' MINUTE(2) TO SECOND");
-    exp("interval '99:0' minute(2) to second")
+    expr("interval '99:0' minute(2) to second")
         .ok("INTERVAL '99:0' MINUTE(2) TO SECOND");
-    exp("interval '99:59.999999' minute to second(6)")
+    expr("interval '99:59.999999' minute to second(6)")
         .ok("INTERVAL '99:59.999999' MINUTE TO SECOND(6)");
-    exp("interval '99:0.0' minute to second(6)")
+    expr("interval '99:0.0' minute to second(6)")
         .ok("INTERVAL '99:0.0' MINUTE TO SECOND(6)");
 
     // max precision
-    exp("interval '2147483647:59' minute(10) to second")
+    expr("interval '2147483647:59' minute(10) to second")
         .ok("INTERVAL '2147483647:59' MINUTE(10) TO SECOND");
-    exp("interval '2147483647:59.999999999' minute(10) to second(9)")
+    expr("interval '2147483647:59.999999999' minute(10) to second(9)")
         .ok("INTERVAL '2147483647:59.999999999' MINUTE(10) TO SECOND(9)");
 
     // min precision
-    exp("interval '0:0' minute(1) to second")
+    expr("interval '0:0' minute(1) to second")
         .ok("INTERVAL '0:0' MINUTE(1) TO SECOND");
-    exp("interval '0:0.0' minute(1) to second(1)")
+    expr("interval '0:0.0' minute(1) to second(1)")
         .ok("INTERVAL '0:0.0' MINUTE(1) TO SECOND(1)");
 
     // alternate precision
-    exp("interval '2345:8' minute(4) to second")
+    expr("interval '2345:8' minute(4) to second")
         .ok("INTERVAL '2345:8' MINUTE(4) TO SECOND");
-    exp("interval '2345:7.8901' minute(4) to second(4)")
+    expr("interval '2345:7.8901' minute(4) to second(4)")
         .ok("INTERVAL '2345:7.8901' MINUTE(4) TO SECOND(4)");
 
     // sign
-    exp("interval '-3:4' minute to second")
+    expr("interval '-3:4' minute to second")
         .ok("INTERVAL '-3:4' MINUTE TO SECOND");
-    exp("interval '+3:4' minute to second")
+    expr("interval '+3:4' minute to second")
         .ok("INTERVAL '+3:4' MINUTE TO SECOND");
-    exp("interval +'3:4' minute to second")
+    expr("interval +'3:4' minute to second")
         .ok("INTERVAL '3:4' MINUTE TO SECOND");
-    exp("interval +'-3:4' minute to second")
+    expr("interval +'-3:4' minute to second")
         .ok("INTERVAL '-3:4' MINUTE TO SECOND");
-    exp("interval +'+3:4' minute to second")
+    expr("interval +'+3:4' minute to second")
         .ok("INTERVAL '+3:4' MINUTE TO SECOND");
-    exp("interval -'3:4' minute to second")
+    expr("interval -'3:4' minute to second")
         .ok("INTERVAL -'3:4' MINUTE TO SECOND");
-    exp("interval -'-3:4' minute to second")
+    expr("interval -'-3:4' minute to second")
         .ok("INTERVAL -'-3:4' MINUTE TO SECOND");
-    exp("interval -'+3:4' minute to second")
+    expr("interval -'+3:4' minute to second")
         .ok("INTERVAL -'+3:4' MINUTE TO SECOND");
   }
 
@@ -5453,55 +5453,55 @@ public class SqlParserTest {
    */
   public void subTestIntervalSecondPositive() {
     // default precision
-    exp("interval '1' second")
+    expr("interval '1' second")
         .ok("INTERVAL '1' SECOND");
-    exp("interval '99' second")
+    expr("interval '99' second")
         .ok("INTERVAL '99' SECOND");
 
     // explicit precision equal to default
-    exp("interval '1' second(2)")
+    expr("interval '1' second(2)")
         .ok("INTERVAL '1' SECOND(2)");
-    exp("interval '99' second(2)")
+    expr("interval '99' second(2)")
         .ok("INTERVAL '99' SECOND(2)");
-    exp("interval '1' second(2,6)")
+    expr("interval '1' second(2,6)")
         .ok("INTERVAL '1' SECOND(2, 6)");
-    exp("interval '99' second(2,6)")
+    expr("interval '99' second(2,6)")
         .ok("INTERVAL '99' SECOND(2, 6)");
 
     // max precision
-    exp("interval '2147483647' second(10)")
+    expr("interval '2147483647' second(10)")
         .ok("INTERVAL '2147483647' SECOND(10)");
-    exp("interval '2147483647.999999999' second(9,9)")
+    expr("interval '2147483647.999999999' second(9,9)")
         .ok("INTERVAL '2147483647.999999999' SECOND(9, 9)");
 
     // min precision
-    exp("interval '0' second(1)")
+    expr("interval '0' second(1)")
         .ok("INTERVAL '0' SECOND(1)");
-    exp("interval '0.0' second(1,1)")
+    expr("interval '0.0' second(1,1)")
         .ok("INTERVAL '0.0' SECOND(1, 1)");
 
     // alternate precision
-    exp("interval '1234' second(4)")
+    expr("interval '1234' second(4)")
         .ok("INTERVAL '1234' SECOND(4)");
-    exp("interval '1234.56789' second(4,5)")
+    expr("interval '1234.56789' second(4,5)")
         .ok("INTERVAL '1234.56789' SECOND(4, 5)");
 
     // sign
-    exp("interval '+1' second")
+    expr("interval '+1' second")
         .ok("INTERVAL '+1' SECOND");
-    exp("interval '-1' second")
+    expr("interval '-1' second")
         .ok("INTERVAL '-1' SECOND");
-    exp("interval +'1' second")
+    expr("interval +'1' second")
         .ok("INTERVAL '1' SECOND");
-    exp("interval +'+1' second")
+    expr("interval +'+1' second")
         .ok("INTERVAL '+1' SECOND");
-    exp("interval +'-1' second")
+    expr("interval +'-1' second")
         .ok("INTERVAL '-1' SECOND");
-    exp("interval -'1' second")
+    expr("interval -'1' second")
         .ok("INTERVAL -'1' SECOND");
-    exp("interval -'+1' second")
+    expr("interval -'+1' second")
         .ok("INTERVAL -'+1' SECOND");
-    exp("interval -'-1' second")
+    expr("interval -'-1' second")
         .ok("INTERVAL -'-1' SECOND");
   }
 
@@ -5514,46 +5514,46 @@ public class SqlParserTest {
    */
   public void subTestIntervalYearFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' YEAR")
+    expr("INTERVAL '-' YEAR")
         .ok("INTERVAL '-' YEAR");
-    exp("INTERVAL '1-2' YEAR")
+    expr("INTERVAL '1-2' YEAR")
         .ok("INTERVAL '1-2' YEAR");
-    exp("INTERVAL '1.2' YEAR")
+    expr("INTERVAL '1.2' YEAR")
         .ok("INTERVAL '1.2' YEAR");
-    exp("INTERVAL '1 2' YEAR")
+    expr("INTERVAL '1 2' YEAR")
         .ok("INTERVAL '1 2' YEAR");
-    exp("INTERVAL '1-2' YEAR(2)")
+    expr("INTERVAL '1-2' YEAR(2)")
         .ok("INTERVAL '1-2' YEAR(2)");
-    exp("INTERVAL 'bogus text' YEAR")
+    expr("INTERVAL 'bogus text' YEAR")
         .ok("INTERVAL 'bogus text' YEAR");
 
     // negative field values
-    exp("INTERVAL '--1' YEAR")
+    expr("INTERVAL '--1' YEAR")
         .ok("INTERVAL '--1' YEAR");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
-    exp("INTERVAL '100' YEAR")
+    expr("INTERVAL '100' YEAR")
         .ok("INTERVAL '100' YEAR");
-    exp("INTERVAL '100' YEAR(2)")
+    expr("INTERVAL '100' YEAR(2)")
         .ok("INTERVAL '100' YEAR(2)");
-    exp("INTERVAL '1000' YEAR(3)")
+    expr("INTERVAL '1000' YEAR(3)")
         .ok("INTERVAL '1000' YEAR(3)");
-    exp("INTERVAL '-1000' YEAR(3)")
+    expr("INTERVAL '-1000' YEAR(3)")
         .ok("INTERVAL '-1000' YEAR(3)");
-    exp("INTERVAL '2147483648' YEAR(10)")
+    expr("INTERVAL '2147483648' YEAR(10)")
         .ok("INTERVAL '2147483648' YEAR(10)");
-    exp("INTERVAL '-2147483648' YEAR(10)")
+    expr("INTERVAL '-2147483648' YEAR(10)")
         .ok("INTERVAL '-2147483648' YEAR(10)");
 
     // precision > maximum
-    exp("INTERVAL '1' YEAR(11)")
+    expr("INTERVAL '1' YEAR(11)")
         .ok("INTERVAL '1' YEAR(11)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0' YEAR(0)")
+    expr("INTERVAL '0' YEAR(0)")
         .ok("INTERVAL '0' YEAR(0)");
   }
 
@@ -5566,53 +5566,53 @@ public class SqlParserTest {
    */
   public void subTestIntervalYearToMonthFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' YEAR TO MONTH")
+    expr("INTERVAL '-' YEAR TO MONTH")
         .ok("INTERVAL '-' YEAR TO MONTH");
-    exp("INTERVAL '1' YEAR TO MONTH")
+    expr("INTERVAL '1' YEAR TO MONTH")
         .ok("INTERVAL '1' YEAR TO MONTH");
-    exp("INTERVAL '1:2' YEAR TO MONTH")
+    expr("INTERVAL '1:2' YEAR TO MONTH")
         .ok("INTERVAL '1:2' YEAR TO MONTH");
-    exp("INTERVAL '1.2' YEAR TO MONTH")
+    expr("INTERVAL '1.2' YEAR TO MONTH")
         .ok("INTERVAL '1.2' YEAR TO MONTH");
-    exp("INTERVAL '1 2' YEAR TO MONTH")
+    expr("INTERVAL '1 2' YEAR TO MONTH")
         .ok("INTERVAL '1 2' YEAR TO MONTH");
-    exp("INTERVAL '1:2' YEAR(2) TO MONTH")
+    expr("INTERVAL '1:2' YEAR(2) TO MONTH")
         .ok("INTERVAL '1:2' YEAR(2) TO MONTH");
-    exp("INTERVAL 'bogus text' YEAR TO MONTH")
+    expr("INTERVAL 'bogus text' YEAR TO MONTH")
         .ok("INTERVAL 'bogus text' YEAR TO MONTH");
 
     // negative field values
-    exp("INTERVAL '--1-2' YEAR TO MONTH")
+    expr("INTERVAL '--1-2' YEAR TO MONTH")
         .ok("INTERVAL '--1-2' YEAR TO MONTH");
-    exp("INTERVAL '1--2' YEAR TO MONTH")
+    expr("INTERVAL '1--2' YEAR TO MONTH")
         .ok("INTERVAL '1--2' YEAR TO MONTH");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100-0' YEAR TO MONTH")
+    expr("INTERVAL '100-0' YEAR TO MONTH")
         .ok("INTERVAL '100-0' YEAR TO MONTH");
-    exp("INTERVAL '100-0' YEAR(2) TO MONTH")
+    expr("INTERVAL '100-0' YEAR(2) TO MONTH")
         .ok("INTERVAL '100-0' YEAR(2) TO MONTH");
-    exp("INTERVAL '1000-0' YEAR(3) TO MONTH")
+    expr("INTERVAL '1000-0' YEAR(3) TO MONTH")
         .ok("INTERVAL '1000-0' YEAR(3) TO MONTH");
-    exp("INTERVAL '-1000-0' YEAR(3) TO MONTH")
+    expr("INTERVAL '-1000-0' YEAR(3) TO MONTH")
         .ok("INTERVAL '-1000-0' YEAR(3) TO MONTH");
-    exp("INTERVAL '2147483648-0' YEAR(10) TO MONTH")
+    expr("INTERVAL '2147483648-0' YEAR(10) TO MONTH")
         .ok("INTERVAL '2147483648-0' YEAR(10) TO MONTH");
-    exp("INTERVAL '-2147483648-0' YEAR(10) TO MONTH")
+    expr("INTERVAL '-2147483648-0' YEAR(10) TO MONTH")
         .ok("INTERVAL '-2147483648-0' YEAR(10) TO MONTH");
-    exp("INTERVAL '1-12' YEAR TO MONTH")
+    expr("INTERVAL '1-12' YEAR TO MONTH")
         .ok("INTERVAL '1-12' YEAR TO MONTH");
 
     // precision > maximum
-    exp("INTERVAL '1-1' YEAR(11) TO MONTH")
+    expr("INTERVAL '1-1' YEAR(11) TO MONTH")
         .ok("INTERVAL '1-1' YEAR(11) TO MONTH");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0-0' YEAR(0) TO MONTH")
+    expr("INTERVAL '0-0' YEAR(0) TO MONTH")
         .ok("INTERVAL '0-0' YEAR(0) TO MONTH");
   }
 
@@ -5625,46 +5625,46 @@ public class SqlParserTest {
    */
   public void subTestIntervalMonthFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' MONTH")
+    expr("INTERVAL '-' MONTH")
         .ok("INTERVAL '-' MONTH");
-    exp("INTERVAL '1-2' MONTH")
+    expr("INTERVAL '1-2' MONTH")
         .ok("INTERVAL '1-2' MONTH");
-    exp("INTERVAL '1.2' MONTH")
+    expr("INTERVAL '1.2' MONTH")
         .ok("INTERVAL '1.2' MONTH");
-    exp("INTERVAL '1 2' MONTH")
+    expr("INTERVAL '1 2' MONTH")
         .ok("INTERVAL '1 2' MONTH");
-    exp("INTERVAL '1-2' MONTH(2)")
+    expr("INTERVAL '1-2' MONTH(2)")
         .ok("INTERVAL '1-2' MONTH(2)");
-    exp("INTERVAL 'bogus text' MONTH")
+    expr("INTERVAL 'bogus text' MONTH")
         .ok("INTERVAL 'bogus text' MONTH");
 
     // negative field values
-    exp("INTERVAL '--1' MONTH")
+    expr("INTERVAL '--1' MONTH")
         .ok("INTERVAL '--1' MONTH");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
-    exp("INTERVAL '100' MONTH")
+    expr("INTERVAL '100' MONTH")
         .ok("INTERVAL '100' MONTH");
-    exp("INTERVAL '100' MONTH(2)")
+    expr("INTERVAL '100' MONTH(2)")
         .ok("INTERVAL '100' MONTH(2)");
-    exp("INTERVAL '1000' MONTH(3)")
+    expr("INTERVAL '1000' MONTH(3)")
         .ok("INTERVAL '1000' MONTH(3)");
-    exp("INTERVAL '-1000' MONTH(3)")
+    expr("INTERVAL '-1000' MONTH(3)")
         .ok("INTERVAL '-1000' MONTH(3)");
-    exp("INTERVAL '2147483648' MONTH(10)")
+    expr("INTERVAL '2147483648' MONTH(10)")
         .ok("INTERVAL '2147483648' MONTH(10)");
-    exp("INTERVAL '-2147483648' MONTH(10)")
+    expr("INTERVAL '-2147483648' MONTH(10)")
         .ok("INTERVAL '-2147483648' MONTH(10)");
 
     // precision > maximum
-    exp("INTERVAL '1' MONTH(11)")
+    expr("INTERVAL '1' MONTH(11)")
         .ok("INTERVAL '1' MONTH(11)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0' MONTH(0)")
+    expr("INTERVAL '0' MONTH(0)")
         .ok("INTERVAL '0' MONTH(0)");
   }
 
@@ -5677,48 +5677,48 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' DAY")
+    expr("INTERVAL '-' DAY")
         .ok("INTERVAL '-' DAY");
-    exp("INTERVAL '1-2' DAY")
+    expr("INTERVAL '1-2' DAY")
         .ok("INTERVAL '1-2' DAY");
-    exp("INTERVAL '1.2' DAY")
+    expr("INTERVAL '1.2' DAY")
         .ok("INTERVAL '1.2' DAY");
-    exp("INTERVAL '1 2' DAY")
+    expr("INTERVAL '1 2' DAY")
         .ok("INTERVAL '1 2' DAY");
-    exp("INTERVAL '1:2' DAY")
+    expr("INTERVAL '1:2' DAY")
         .ok("INTERVAL '1:2' DAY");
-    exp("INTERVAL '1-2' DAY(2)")
+    expr("INTERVAL '1-2' DAY(2)")
         .ok("INTERVAL '1-2' DAY(2)");
-    exp("INTERVAL 'bogus text' DAY")
+    expr("INTERVAL 'bogus text' DAY")
         .ok("INTERVAL 'bogus text' DAY");
 
     // negative field values
-    exp("INTERVAL '--1' DAY")
+    expr("INTERVAL '--1' DAY")
         .ok("INTERVAL '--1' DAY");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
-    exp("INTERVAL '100' DAY")
+    expr("INTERVAL '100' DAY")
         .ok("INTERVAL '100' DAY");
-    exp("INTERVAL '100' DAY(2)")
+    expr("INTERVAL '100' DAY(2)")
         .ok("INTERVAL '100' DAY(2)");
-    exp("INTERVAL '1000' DAY(3)")
+    expr("INTERVAL '1000' DAY(3)")
         .ok("INTERVAL '1000' DAY(3)");
-    exp("INTERVAL '-1000' DAY(3)")
+    expr("INTERVAL '-1000' DAY(3)")
         .ok("INTERVAL '-1000' DAY(3)");
-    exp("INTERVAL '2147483648' DAY(10)")
+    expr("INTERVAL '2147483648' DAY(10)")
         .ok("INTERVAL '2147483648' DAY(10)");
-    exp("INTERVAL '-2147483648' DAY(10)")
+    expr("INTERVAL '-2147483648' DAY(10)")
         .ok("INTERVAL '-2147483648' DAY(10)");
 
     // precision > maximum
-    exp("INTERVAL '1' DAY(11)")
+    expr("INTERVAL '1' DAY(11)")
         .ok("INTERVAL '1' DAY(11)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0' DAY(0)")
+    expr("INTERVAL '0' DAY(0)")
         .ok("INTERVAL '0' DAY(0)");
   }
 
@@ -5731,55 +5731,55 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayToHourFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' DAY TO HOUR")
+    expr("INTERVAL '-' DAY TO HOUR")
         .ok("INTERVAL '-' DAY TO HOUR");
-    exp("INTERVAL '1' DAY TO HOUR")
+    expr("INTERVAL '1' DAY TO HOUR")
         .ok("INTERVAL '1' DAY TO HOUR");
-    exp("INTERVAL '1:2' DAY TO HOUR")
+    expr("INTERVAL '1:2' DAY TO HOUR")
         .ok("INTERVAL '1:2' DAY TO HOUR");
-    exp("INTERVAL '1.2' DAY TO HOUR")
+    expr("INTERVAL '1.2' DAY TO HOUR")
         .ok("INTERVAL '1.2' DAY TO HOUR");
-    exp("INTERVAL '1 x' DAY TO HOUR")
+    expr("INTERVAL '1 x' DAY TO HOUR")
         .ok("INTERVAL '1 x' DAY TO HOUR");
-    exp("INTERVAL ' ' DAY TO HOUR")
+    expr("INTERVAL ' ' DAY TO HOUR")
         .ok("INTERVAL ' ' DAY TO HOUR");
-    exp("INTERVAL '1:2' DAY(2) TO HOUR")
+    expr("INTERVAL '1:2' DAY(2) TO HOUR")
         .ok("INTERVAL '1:2' DAY(2) TO HOUR");
-    exp("INTERVAL 'bogus text' DAY TO HOUR")
+    expr("INTERVAL 'bogus text' DAY TO HOUR")
         .ok("INTERVAL 'bogus text' DAY TO HOUR");
 
     // negative field values
-    exp("INTERVAL '--1 1' DAY TO HOUR")
+    expr("INTERVAL '--1 1' DAY TO HOUR")
         .ok("INTERVAL '--1 1' DAY TO HOUR");
-    exp("INTERVAL '1 -1' DAY TO HOUR")
+    expr("INTERVAL '1 -1' DAY TO HOUR")
         .ok("INTERVAL '1 -1' DAY TO HOUR");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100 0' DAY TO HOUR")
+    expr("INTERVAL '100 0' DAY TO HOUR")
         .ok("INTERVAL '100 0' DAY TO HOUR");
-    exp("INTERVAL '100 0' DAY(2) TO HOUR")
+    expr("INTERVAL '100 0' DAY(2) TO HOUR")
         .ok("INTERVAL '100 0' DAY(2) TO HOUR");
-    exp("INTERVAL '1000 0' DAY(3) TO HOUR")
+    expr("INTERVAL '1000 0' DAY(3) TO HOUR")
         .ok("INTERVAL '1000 0' DAY(3) TO HOUR");
-    exp("INTERVAL '-1000 0' DAY(3) TO HOUR")
+    expr("INTERVAL '-1000 0' DAY(3) TO HOUR")
         .ok("INTERVAL '-1000 0' DAY(3) TO HOUR");
-    exp("INTERVAL '2147483648 0' DAY(10) TO HOUR")
+    expr("INTERVAL '2147483648 0' DAY(10) TO HOUR")
         .ok("INTERVAL '2147483648 0' DAY(10) TO HOUR");
-    exp("INTERVAL '-2147483648 0' DAY(10) TO HOUR")
+    expr("INTERVAL '-2147483648 0' DAY(10) TO HOUR")
         .ok("INTERVAL '-2147483648 0' DAY(10) TO HOUR");
-    exp("INTERVAL '1 24' DAY TO HOUR")
+    expr("INTERVAL '1 24' DAY TO HOUR")
         .ok("INTERVAL '1 24' DAY TO HOUR");
 
     // precision > maximum
-    exp("INTERVAL '1 1' DAY(11) TO HOUR")
+    expr("INTERVAL '1 1' DAY(11) TO HOUR")
         .ok("INTERVAL '1 1' DAY(11) TO HOUR");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0 0' DAY(0) TO HOUR")
+    expr("INTERVAL '0 0' DAY(0) TO HOUR")
         .ok("INTERVAL '0 0' DAY(0) TO HOUR");
   }
 
@@ -5792,69 +5792,69 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayToMinuteFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL ' :' DAY TO MINUTE")
+    expr("INTERVAL ' :' DAY TO MINUTE")
         .ok("INTERVAL ' :' DAY TO MINUTE");
-    exp("INTERVAL '1' DAY TO MINUTE")
+    expr("INTERVAL '1' DAY TO MINUTE")
         .ok("INTERVAL '1' DAY TO MINUTE");
-    exp("INTERVAL '1 2' DAY TO MINUTE")
+    expr("INTERVAL '1 2' DAY TO MINUTE")
         .ok("INTERVAL '1 2' DAY TO MINUTE");
-    exp("INTERVAL '1:2' DAY TO MINUTE")
+    expr("INTERVAL '1:2' DAY TO MINUTE")
         .ok("INTERVAL '1:2' DAY TO MINUTE");
-    exp("INTERVAL '1.2' DAY TO MINUTE")
+    expr("INTERVAL '1.2' DAY TO MINUTE")
         .ok("INTERVAL '1.2' DAY TO MINUTE");
-    exp("INTERVAL 'x 1:1' DAY TO MINUTE")
+    expr("INTERVAL 'x 1:1' DAY TO MINUTE")
         .ok("INTERVAL 'x 1:1' DAY TO MINUTE");
-    exp("INTERVAL '1 x:1' DAY TO MINUTE")
+    expr("INTERVAL '1 x:1' DAY TO MINUTE")
         .ok("INTERVAL '1 x:1' DAY TO MINUTE");
-    exp("INTERVAL '1 1:x' DAY TO MINUTE")
+    expr("INTERVAL '1 1:x' DAY TO MINUTE")
         .ok("INTERVAL '1 1:x' DAY TO MINUTE");
-    exp("INTERVAL '1 1:2:3' DAY TO MINUTE")
+    expr("INTERVAL '1 1:2:3' DAY TO MINUTE")
         .ok("INTERVAL '1 1:2:3' DAY TO MINUTE");
-    exp("INTERVAL '1 1:1:1.2' DAY TO MINUTE")
+    expr("INTERVAL '1 1:1:1.2' DAY TO MINUTE")
         .ok("INTERVAL '1 1:1:1.2' DAY TO MINUTE");
-    exp("INTERVAL '1 1:2:3' DAY(2) TO MINUTE")
+    expr("INTERVAL '1 1:2:3' DAY(2) TO MINUTE")
         .ok("INTERVAL '1 1:2:3' DAY(2) TO MINUTE");
-    exp("INTERVAL '1 1' DAY(2) TO MINUTE")
+    expr("INTERVAL '1 1' DAY(2) TO MINUTE")
         .ok("INTERVAL '1 1' DAY(2) TO MINUTE");
-    exp("INTERVAL 'bogus text' DAY TO MINUTE")
+    expr("INTERVAL 'bogus text' DAY TO MINUTE")
         .ok("INTERVAL 'bogus text' DAY TO MINUTE");
 
     // negative field values
-    exp("INTERVAL '--1 1:1' DAY TO MINUTE")
+    expr("INTERVAL '--1 1:1' DAY TO MINUTE")
         .ok("INTERVAL '--1 1:1' DAY TO MINUTE");
-    exp("INTERVAL '1 -1:1' DAY TO MINUTE")
+    expr("INTERVAL '1 -1:1' DAY TO MINUTE")
         .ok("INTERVAL '1 -1:1' DAY TO MINUTE");
-    exp("INTERVAL '1 1:-1' DAY TO MINUTE")
+    expr("INTERVAL '1 1:-1' DAY TO MINUTE")
         .ok("INTERVAL '1 1:-1' DAY TO MINUTE");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100 0' DAY TO MINUTE")
+    expr("INTERVAL '100 0' DAY TO MINUTE")
         .ok("INTERVAL '100 0' DAY TO MINUTE");
-    exp("INTERVAL '100 0' DAY(2) TO MINUTE")
+    expr("INTERVAL '100 0' DAY(2) TO MINUTE")
         .ok("INTERVAL '100 0' DAY(2) TO MINUTE");
-    exp("INTERVAL '1000 0' DAY(3) TO MINUTE")
+    expr("INTERVAL '1000 0' DAY(3) TO MINUTE")
         .ok("INTERVAL '1000 0' DAY(3) TO MINUTE");
-    exp("INTERVAL '-1000 0' DAY(3) TO MINUTE")
+    expr("INTERVAL '-1000 0' DAY(3) TO MINUTE")
         .ok("INTERVAL '-1000 0' DAY(3) TO MINUTE");
-    exp("INTERVAL '2147483648 0' DAY(10) TO MINUTE")
+    expr("INTERVAL '2147483648 0' DAY(10) TO MINUTE")
         .ok("INTERVAL '2147483648 0' DAY(10) TO MINUTE");
-    exp("INTERVAL '-2147483648 0' DAY(10) TO MINUTE")
+    expr("INTERVAL '-2147483648 0' DAY(10) TO MINUTE")
         .ok("INTERVAL '-2147483648 0' DAY(10) TO MINUTE");
-    exp("INTERVAL '1 24:1' DAY TO MINUTE")
+    expr("INTERVAL '1 24:1' DAY TO MINUTE")
         .ok("INTERVAL '1 24:1' DAY TO MINUTE");
-    exp("INTERVAL '1 1:60' DAY TO MINUTE")
+    expr("INTERVAL '1 1:60' DAY TO MINUTE")
         .ok("INTERVAL '1 1:60' DAY TO MINUTE");
 
     // precision > maximum
-    exp("INTERVAL '1 1' DAY(11) TO MINUTE")
+    expr("INTERVAL '1 1' DAY(11) TO MINUTE")
         .ok("INTERVAL '1 1' DAY(11) TO MINUTE");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0 0' DAY(0) TO MINUTE")
+    expr("INTERVAL '0 0' DAY(0) TO MINUTE")
         .ok("INTERVAL '0 0' DAY(0) TO MINUTE");
   }
 
@@ -5867,85 +5867,85 @@ public class SqlParserTest {
    */
   public void subTestIntervalDayToSecondFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL ' ::' DAY TO SECOND")
+    expr("INTERVAL ' ::' DAY TO SECOND")
         .ok("INTERVAL ' ::' DAY TO SECOND");
-    exp("INTERVAL ' ::.' DAY TO SECOND")
+    expr("INTERVAL ' ::.' DAY TO SECOND")
         .ok("INTERVAL ' ::.' DAY TO SECOND");
-    exp("INTERVAL '1' DAY TO SECOND")
+    expr("INTERVAL '1' DAY TO SECOND")
         .ok("INTERVAL '1' DAY TO SECOND");
-    exp("INTERVAL '1 2' DAY TO SECOND")
+    expr("INTERVAL '1 2' DAY TO SECOND")
         .ok("INTERVAL '1 2' DAY TO SECOND");
-    exp("INTERVAL '1:2' DAY TO SECOND")
+    expr("INTERVAL '1:2' DAY TO SECOND")
         .ok("INTERVAL '1:2' DAY TO SECOND");
-    exp("INTERVAL '1.2' DAY TO SECOND")
+    expr("INTERVAL '1.2' DAY TO SECOND")
         .ok("INTERVAL '1.2' DAY TO SECOND");
-    exp("INTERVAL '1 1:2' DAY TO SECOND")
+    expr("INTERVAL '1 1:2' DAY TO SECOND")
         .ok("INTERVAL '1 1:2' DAY TO SECOND");
-    exp("INTERVAL '1 1:2:x' DAY TO SECOND")
+    expr("INTERVAL '1 1:2:x' DAY TO SECOND")
         .ok("INTERVAL '1 1:2:x' DAY TO SECOND");
-    exp("INTERVAL '1:2:3' DAY TO SECOND")
+    expr("INTERVAL '1:2:3' DAY TO SECOND")
         .ok("INTERVAL '1:2:3' DAY TO SECOND");
-    exp("INTERVAL '1:1:1.2' DAY TO SECOND")
+    expr("INTERVAL '1:1:1.2' DAY TO SECOND")
         .ok("INTERVAL '1:1:1.2' DAY TO SECOND");
-    exp("INTERVAL '1 1:2' DAY(2) TO SECOND")
+    expr("INTERVAL '1 1:2' DAY(2) TO SECOND")
         .ok("INTERVAL '1 1:2' DAY(2) TO SECOND");
-    exp("INTERVAL '1 1' DAY(2) TO SECOND")
+    expr("INTERVAL '1 1' DAY(2) TO SECOND")
         .ok("INTERVAL '1 1' DAY(2) TO SECOND");
-    exp("INTERVAL 'bogus text' DAY TO SECOND")
+    expr("INTERVAL 'bogus text' DAY TO SECOND")
         .ok("INTERVAL 'bogus text' DAY TO SECOND");
-    exp("INTERVAL '2345 6:7:8901' DAY TO SECOND(4)")
+    expr("INTERVAL '2345 6:7:8901' DAY TO SECOND(4)")
         .ok("INTERVAL '2345 6:7:8901' DAY TO SECOND(4)");
 
     // negative field values
-    exp("INTERVAL '--1 1:1:1' DAY TO SECOND")
+    expr("INTERVAL '--1 1:1:1' DAY TO SECOND")
         .ok("INTERVAL '--1 1:1:1' DAY TO SECOND");
-    exp("INTERVAL '1 -1:1:1' DAY TO SECOND")
+    expr("INTERVAL '1 -1:1:1' DAY TO SECOND")
         .ok("INTERVAL '1 -1:1:1' DAY TO SECOND");
-    exp("INTERVAL '1 1:-1:1' DAY TO SECOND")
+    expr("INTERVAL '1 1:-1:1' DAY TO SECOND")
         .ok("INTERVAL '1 1:-1:1' DAY TO SECOND");
-    exp("INTERVAL '1 1:1:-1' DAY TO SECOND")
+    expr("INTERVAL '1 1:1:-1' DAY TO SECOND")
         .ok("INTERVAL '1 1:1:-1' DAY TO SECOND");
-    exp("INTERVAL '1 1:1:1.-1' DAY TO SECOND")
+    expr("INTERVAL '1 1:1:1.-1' DAY TO SECOND")
         .ok("INTERVAL '1 1:1:1.-1' DAY TO SECOND");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100 0' DAY TO SECOND")
+    expr("INTERVAL '100 0' DAY TO SECOND")
         .ok("INTERVAL '100 0' DAY TO SECOND");
-    exp("INTERVAL '100 0' DAY(2) TO SECOND")
+    expr("INTERVAL '100 0' DAY(2) TO SECOND")
         .ok("INTERVAL '100 0' DAY(2) TO SECOND");
-    exp("INTERVAL '1000 0' DAY(3) TO SECOND")
+    expr("INTERVAL '1000 0' DAY(3) TO SECOND")
         .ok("INTERVAL '1000 0' DAY(3) TO SECOND");
-    exp("INTERVAL '-1000 0' DAY(3) TO SECOND")
+    expr("INTERVAL '-1000 0' DAY(3) TO SECOND")
         .ok("INTERVAL '-1000 0' DAY(3) TO SECOND");
-    exp("INTERVAL '2147483648 0' DAY(10) TO SECOND")
+    expr("INTERVAL '2147483648 0' DAY(10) TO SECOND")
         .ok("INTERVAL '2147483648 0' DAY(10) TO SECOND");
-    exp("INTERVAL '-2147483648 0' DAY(10) TO SECOND")
+    expr("INTERVAL '-2147483648 0' DAY(10) TO SECOND")
         .ok("INTERVAL '-2147483648 0' DAY(10) TO SECOND");
-    exp("INTERVAL '1 24:1:1' DAY TO SECOND")
+    expr("INTERVAL '1 24:1:1' DAY TO SECOND")
         .ok("INTERVAL '1 24:1:1' DAY TO SECOND");
-    exp("INTERVAL '1 1:60:1' DAY TO SECOND")
+    expr("INTERVAL '1 1:60:1' DAY TO SECOND")
         .ok("INTERVAL '1 1:60:1' DAY TO SECOND");
-    exp("INTERVAL '1 1:1:60' DAY TO SECOND")
+    expr("INTERVAL '1 1:1:60' DAY TO SECOND")
         .ok("INTERVAL '1 1:1:60' DAY TO SECOND");
-    exp("INTERVAL '1 1:1:1.0000001' DAY TO SECOND")
+    expr("INTERVAL '1 1:1:1.0000001' DAY TO SECOND")
         .ok("INTERVAL '1 1:1:1.0000001' DAY TO SECOND");
-    exp("INTERVAL '1 1:1:1.0001' DAY TO SECOND(3)")
+    expr("INTERVAL '1 1:1:1.0001' DAY TO SECOND(3)")
         .ok("INTERVAL '1 1:1:1.0001' DAY TO SECOND(3)");
 
     // precision > maximum
-    exp("INTERVAL '1 1' DAY(11) TO SECOND")
+    expr("INTERVAL '1 1' DAY(11) TO SECOND")
         .ok("INTERVAL '1 1' DAY(11) TO SECOND");
-    exp("INTERVAL '1 1' DAY TO SECOND(10)")
+    expr("INTERVAL '1 1' DAY TO SECOND(10)")
         .ok("INTERVAL '1 1' DAY TO SECOND(10)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0 0:0:0' DAY(0) TO SECOND")
+    expr("INTERVAL '0 0:0:0' DAY(0) TO SECOND")
         .ok("INTERVAL '0 0:0:0' DAY(0) TO SECOND");
-    exp("INTERVAL '0 0:0:0' DAY TO SECOND(0)")
+    expr("INTERVAL '0 0:0:0' DAY TO SECOND(0)")
         .ok("INTERVAL '0 0:0:0' DAY TO SECOND(0)");
   }
 
@@ -5958,52 +5958,52 @@ public class SqlParserTest {
    */
   public void subTestIntervalHourFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' HOUR")
+    expr("INTERVAL '-' HOUR")
         .ok("INTERVAL '-' HOUR");
-    exp("INTERVAL '1-2' HOUR")
+    expr("INTERVAL '1-2' HOUR")
         .ok("INTERVAL '1-2' HOUR");
-    exp("INTERVAL '1.2' HOUR")
+    expr("INTERVAL '1.2' HOUR")
         .ok("INTERVAL '1.2' HOUR");
-    exp("INTERVAL '1 2' HOUR")
+    expr("INTERVAL '1 2' HOUR")
         .ok("INTERVAL '1 2' HOUR");
-    exp("INTERVAL '1:2' HOUR")
+    expr("INTERVAL '1:2' HOUR")
         .ok("INTERVAL '1:2' HOUR");
-    exp("INTERVAL '1-2' HOUR(2)")
+    expr("INTERVAL '1-2' HOUR(2)")
         .ok("INTERVAL '1-2' HOUR(2)");
-    exp("INTERVAL 'bogus text' HOUR")
+    expr("INTERVAL 'bogus text' HOUR")
         .ok("INTERVAL 'bogus text' HOUR");
 
     // negative field values
-    exp("INTERVAL '--1' HOUR")
+    expr("INTERVAL '--1' HOUR")
         .ok("INTERVAL '--1' HOUR");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
-    exp("INTERVAL '100' HOUR")
+    expr("INTERVAL '100' HOUR")
         .ok("INTERVAL '100' HOUR");
-    exp("INTERVAL '100' HOUR(2)")
+    expr("INTERVAL '100' HOUR(2)")
         .ok("INTERVAL '100' HOUR(2)");
-    exp("INTERVAL '1000' HOUR(3)")
+    expr("INTERVAL '1000' HOUR(3)")
         .ok("INTERVAL '1000' HOUR(3)");
-    exp("INTERVAL '-1000' HOUR(3)")
+    expr("INTERVAL '-1000' HOUR(3)")
         .ok("INTERVAL '-1000' HOUR(3)");
-    exp("INTERVAL '2147483648' HOUR(10)")
+    expr("INTERVAL '2147483648' HOUR(10)")
         .ok("INTERVAL '2147483648' HOUR(10)");
-    exp("INTERVAL '-2147483648' HOUR(10)")
+    expr("INTERVAL '-2147483648' HOUR(10)")
         .ok("INTERVAL '-2147483648' HOUR(10)");
 
     // negative field values
-    exp("INTERVAL '--1' HOUR")
+    expr("INTERVAL '--1' HOUR")
         .ok("INTERVAL '--1' HOUR");
 
     // precision > maximum
-    exp("INTERVAL '1' HOUR(11)")
+    expr("INTERVAL '1' HOUR(11)")
         .ok("INTERVAL '1' HOUR(11)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0' HOUR(0)")
+    expr("INTERVAL '0' HOUR(0)")
         .ok("INTERVAL '0' HOUR(0)");
   }
 
@@ -6016,55 +6016,55 @@ public class SqlParserTest {
    */
   public void subTestIntervalHourToMinuteFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL ':' HOUR TO MINUTE")
+    expr("INTERVAL ':' HOUR TO MINUTE")
         .ok("INTERVAL ':' HOUR TO MINUTE");
-    exp("INTERVAL '1' HOUR TO MINUTE")
+    expr("INTERVAL '1' HOUR TO MINUTE")
         .ok("INTERVAL '1' HOUR TO MINUTE");
-    exp("INTERVAL '1:x' HOUR TO MINUTE")
+    expr("INTERVAL '1:x' HOUR TO MINUTE")
         .ok("INTERVAL '1:x' HOUR TO MINUTE");
-    exp("INTERVAL '1.2' HOUR TO MINUTE")
+    expr("INTERVAL '1.2' HOUR TO MINUTE")
         .ok("INTERVAL '1.2' HOUR TO MINUTE");
-    exp("INTERVAL '1 2' HOUR TO MINUTE")
+    expr("INTERVAL '1 2' HOUR TO MINUTE")
         .ok("INTERVAL '1 2' HOUR TO MINUTE");
-    exp("INTERVAL '1:2:3' HOUR TO MINUTE")
+    expr("INTERVAL '1:2:3' HOUR TO MINUTE")
         .ok("INTERVAL '1:2:3' HOUR TO MINUTE");
-    exp("INTERVAL '1 2' HOUR(2) TO MINUTE")
+    expr("INTERVAL '1 2' HOUR(2) TO MINUTE")
         .ok("INTERVAL '1 2' HOUR(2) TO MINUTE");
-    exp("INTERVAL 'bogus text' HOUR TO MINUTE")
+    expr("INTERVAL 'bogus text' HOUR TO MINUTE")
         .ok("INTERVAL 'bogus text' HOUR TO MINUTE");
 
     // negative field values
-    exp("INTERVAL '--1:1' HOUR TO MINUTE")
+    expr("INTERVAL '--1:1' HOUR TO MINUTE")
         .ok("INTERVAL '--1:1' HOUR TO MINUTE");
-    exp("INTERVAL '1:-1' HOUR TO MINUTE")
+    expr("INTERVAL '1:-1' HOUR TO MINUTE")
         .ok("INTERVAL '1:-1' HOUR TO MINUTE");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100:0' HOUR TO MINUTE")
+    expr("INTERVAL '100:0' HOUR TO MINUTE")
         .ok("INTERVAL '100:0' HOUR TO MINUTE");
-    exp("INTERVAL '100:0' HOUR(2) TO MINUTE")
+    expr("INTERVAL '100:0' HOUR(2) TO MINUTE")
         .ok("INTERVAL '100:0' HOUR(2) TO MINUTE");
-    exp("INTERVAL '1000:0' HOUR(3) TO MINUTE")
+    expr("INTERVAL '1000:0' HOUR(3) TO MINUTE")
         .ok("INTERVAL '1000:0' HOUR(3) TO MINUTE");
-    exp("INTERVAL '-1000:0' HOUR(3) TO MINUTE")
+    expr("INTERVAL '-1000:0' HOUR(3) TO MINUTE")
         .ok("INTERVAL '-1000:0' HOUR(3) TO MINUTE");
-    exp("INTERVAL '2147483648:0' HOUR(10) TO MINUTE")
+    expr("INTERVAL '2147483648:0' HOUR(10) TO MINUTE")
         .ok("INTERVAL '2147483648:0' HOUR(10) TO MINUTE");
-    exp("INTERVAL '-2147483648:0' HOUR(10) TO MINUTE")
+    expr("INTERVAL '-2147483648:0' HOUR(10) TO MINUTE")
         .ok("INTERVAL '-2147483648:0' HOUR(10) TO MINUTE");
-    exp("INTERVAL '1:24' HOUR TO MINUTE")
+    expr("INTERVAL '1:24' HOUR TO MINUTE")
         .ok("INTERVAL '1:24' HOUR TO MINUTE");
 
     // precision > maximum
-    exp("INTERVAL '1:1' HOUR(11) TO MINUTE")
+    expr("INTERVAL '1:1' HOUR(11) TO MINUTE")
         .ok("INTERVAL '1:1' HOUR(11) TO MINUTE");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0:0' HOUR(0) TO MINUTE")
+    expr("INTERVAL '0:0' HOUR(0) TO MINUTE")
         .ok("INTERVAL '0:0' HOUR(0) TO MINUTE");
   }
 
@@ -6077,81 +6077,81 @@ public class SqlParserTest {
    */
   public void subTestIntervalHourToSecondFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '::' HOUR TO SECOND")
+    expr("INTERVAL '::' HOUR TO SECOND")
         .ok("INTERVAL '::' HOUR TO SECOND");
-    exp("INTERVAL '::.' HOUR TO SECOND")
+    expr("INTERVAL '::.' HOUR TO SECOND")
         .ok("INTERVAL '::.' HOUR TO SECOND");
-    exp("INTERVAL '1' HOUR TO SECOND")
+    expr("INTERVAL '1' HOUR TO SECOND")
         .ok("INTERVAL '1' HOUR TO SECOND");
-    exp("INTERVAL '1 2' HOUR TO SECOND")
+    expr("INTERVAL '1 2' HOUR TO SECOND")
         .ok("INTERVAL '1 2' HOUR TO SECOND");
-    exp("INTERVAL '1:2' HOUR TO SECOND")
+    expr("INTERVAL '1:2' HOUR TO SECOND")
         .ok("INTERVAL '1:2' HOUR TO SECOND");
-    exp("INTERVAL '1.2' HOUR TO SECOND")
+    expr("INTERVAL '1.2' HOUR TO SECOND")
         .ok("INTERVAL '1.2' HOUR TO SECOND");
-    exp("INTERVAL '1 1:2' HOUR TO SECOND")
+    expr("INTERVAL '1 1:2' HOUR TO SECOND")
         .ok("INTERVAL '1 1:2' HOUR TO SECOND");
-    exp("INTERVAL '1:2:x' HOUR TO SECOND")
+    expr("INTERVAL '1:2:x' HOUR TO SECOND")
         .ok("INTERVAL '1:2:x' HOUR TO SECOND");
-    exp("INTERVAL '1:x:3' HOUR TO SECOND")
+    expr("INTERVAL '1:x:3' HOUR TO SECOND")
         .ok("INTERVAL '1:x:3' HOUR TO SECOND");
-    exp("INTERVAL '1:1:1.x' HOUR TO SECOND")
+    expr("INTERVAL '1:1:1.x' HOUR TO SECOND")
         .ok("INTERVAL '1:1:1.x' HOUR TO SECOND");
-    exp("INTERVAL '1 1:2' HOUR(2) TO SECOND")
+    expr("INTERVAL '1 1:2' HOUR(2) TO SECOND")
         .ok("INTERVAL '1 1:2' HOUR(2) TO SECOND");
-    exp("INTERVAL '1 1' HOUR(2) TO SECOND")
+    expr("INTERVAL '1 1' HOUR(2) TO SECOND")
         .ok("INTERVAL '1 1' HOUR(2) TO SECOND");
-    exp("INTERVAL 'bogus text' HOUR TO SECOND")
+    expr("INTERVAL 'bogus text' HOUR TO SECOND")
         .ok("INTERVAL 'bogus text' HOUR TO SECOND");
-    exp("INTERVAL '6:7:8901' HOUR TO SECOND(4)")
+    expr("INTERVAL '6:7:8901' HOUR TO SECOND(4)")
         .ok("INTERVAL '6:7:8901' HOUR TO SECOND(4)");
 
     // negative field values
-    exp("INTERVAL '--1:1:1' HOUR TO SECOND")
+    expr("INTERVAL '--1:1:1' HOUR TO SECOND")
         .ok("INTERVAL '--1:1:1' HOUR TO SECOND");
-    exp("INTERVAL '1:-1:1' HOUR TO SECOND")
+    expr("INTERVAL '1:-1:1' HOUR TO SECOND")
         .ok("INTERVAL '1:-1:1' HOUR TO SECOND");
-    exp("INTERVAL '1:1:-1' HOUR TO SECOND")
+    expr("INTERVAL '1:1:-1' HOUR TO SECOND")
         .ok("INTERVAL '1:1:-1' HOUR TO SECOND");
-    exp("INTERVAL '1:1:1.-1' HOUR TO SECOND")
+    expr("INTERVAL '1:1:1.-1' HOUR TO SECOND")
         .ok("INTERVAL '1:1:1.-1' HOUR TO SECOND");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100:0:0' HOUR TO SECOND")
+    expr("INTERVAL '100:0:0' HOUR TO SECOND")
         .ok("INTERVAL '100:0:0' HOUR TO SECOND");
-    exp("INTERVAL '100:0:0' HOUR(2) TO SECOND")
+    expr("INTERVAL '100:0:0' HOUR(2) TO SECOND")
         .ok("INTERVAL '100:0:0' HOUR(2) TO SECOND");
-    exp("INTERVAL '1000:0:0' HOUR(3) TO SECOND")
+    expr("INTERVAL '1000:0:0' HOUR(3) TO SECOND")
         .ok("INTERVAL '1000:0:0' HOUR(3) TO SECOND");
-    exp("INTERVAL '-1000:0:0' HOUR(3) TO SECOND")
+    expr("INTERVAL '-1000:0:0' HOUR(3) TO SECOND")
         .ok("INTERVAL '-1000:0:0' HOUR(3) TO SECOND");
-    exp("INTERVAL '2147483648:0:0' HOUR(10) TO SECOND")
+    expr("INTERVAL '2147483648:0:0' HOUR(10) TO SECOND")
         .ok("INTERVAL '2147483648:0:0' HOUR(10) TO SECOND");
-    exp("INTERVAL '-2147483648:0:0' HOUR(10) TO SECOND")
+    expr("INTERVAL '-2147483648:0:0' HOUR(10) TO SECOND")
         .ok("INTERVAL '-2147483648:0:0' HOUR(10) TO SECOND");
-    exp("INTERVAL '1:60:1' HOUR TO SECOND")
+    expr("INTERVAL '1:60:1' HOUR TO SECOND")
         .ok("INTERVAL '1:60:1' HOUR TO SECOND");
-    exp("INTERVAL '1:1:60' HOUR TO SECOND")
+    expr("INTERVAL '1:1:60' HOUR TO SECOND")
         .ok("INTERVAL '1:1:60' HOUR TO SECOND");
-    exp("INTERVAL '1:1:1.0000001' HOUR TO SECOND")
+    expr("INTERVAL '1:1:1.0000001' HOUR TO SECOND")
         .ok("INTERVAL '1:1:1.0000001' HOUR TO SECOND");
-    exp("INTERVAL '1:1:1.0001' HOUR TO SECOND(3)")
+    expr("INTERVAL '1:1:1.0001' HOUR TO SECOND(3)")
         .ok("INTERVAL '1:1:1.0001' HOUR TO SECOND(3)");
 
     // precision > maximum
-    exp("INTERVAL '1:1:1' HOUR(11) TO SECOND")
+    expr("INTERVAL '1:1:1' HOUR(11) TO SECOND")
         .ok("INTERVAL '1:1:1' HOUR(11) TO SECOND");
-    exp("INTERVAL '1:1:1' HOUR TO SECOND(10)")
+    expr("INTERVAL '1:1:1' HOUR TO SECOND(10)")
         .ok("INTERVAL '1:1:1' HOUR TO SECOND(10)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0:0:0' HOUR(0) TO SECOND")
+    expr("INTERVAL '0:0:0' HOUR(0) TO SECOND")
         .ok("INTERVAL '0:0:0' HOUR(0) TO SECOND");
-    exp("INTERVAL '0:0:0' HOUR TO SECOND(0)")
+    expr("INTERVAL '0:0:0' HOUR TO SECOND(0)")
         .ok("INTERVAL '0:0:0' HOUR TO SECOND(0)");
   }
 
@@ -6164,48 +6164,48 @@ public class SqlParserTest {
    */
   public void subTestIntervalMinuteFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL '-' MINUTE")
+    expr("INTERVAL '-' MINUTE")
         .ok("INTERVAL '-' MINUTE");
-    exp("INTERVAL '1-2' MINUTE")
+    expr("INTERVAL '1-2' MINUTE")
         .ok("INTERVAL '1-2' MINUTE");
-    exp("INTERVAL '1.2' MINUTE")
+    expr("INTERVAL '1.2' MINUTE")
         .ok("INTERVAL '1.2' MINUTE");
-    exp("INTERVAL '1 2' MINUTE")
+    expr("INTERVAL '1 2' MINUTE")
         .ok("INTERVAL '1 2' MINUTE");
-    exp("INTERVAL '1:2' MINUTE")
+    expr("INTERVAL '1:2' MINUTE")
         .ok("INTERVAL '1:2' MINUTE");
-    exp("INTERVAL '1-2' MINUTE(2)")
+    expr("INTERVAL '1-2' MINUTE(2)")
         .ok("INTERVAL '1-2' MINUTE(2)");
-    exp("INTERVAL 'bogus text' MINUTE")
+    expr("INTERVAL 'bogus text' MINUTE")
         .ok("INTERVAL 'bogus text' MINUTE");
 
     // negative field values
-    exp("INTERVAL '--1' MINUTE")
+    expr("INTERVAL '--1' MINUTE")
         .ok("INTERVAL '--1' MINUTE");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
-    exp("INTERVAL '100' MINUTE")
+    expr("INTERVAL '100' MINUTE")
         .ok("INTERVAL '100' MINUTE");
-    exp("INTERVAL '100' MINUTE(2)")
+    expr("INTERVAL '100' MINUTE(2)")
         .ok("INTERVAL '100' MINUTE(2)");
-    exp("INTERVAL '1000' MINUTE(3)")
+    expr("INTERVAL '1000' MINUTE(3)")
         .ok("INTERVAL '1000' MINUTE(3)");
-    exp("INTERVAL '-1000' MINUTE(3)")
+    expr("INTERVAL '-1000' MINUTE(3)")
         .ok("INTERVAL '-1000' MINUTE(3)");
-    exp("INTERVAL '2147483648' MINUTE(10)")
+    expr("INTERVAL '2147483648' MINUTE(10)")
         .ok("INTERVAL '2147483648' MINUTE(10)");
-    exp("INTERVAL '-2147483648' MINUTE(10)")
+    expr("INTERVAL '-2147483648' MINUTE(10)")
         .ok("INTERVAL '-2147483648' MINUTE(10)");
 
     // precision > maximum
-    exp("INTERVAL '1' MINUTE(11)")
+    expr("INTERVAL '1' MINUTE(11)")
         .ok("INTERVAL '1' MINUTE(11)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0' MINUTE(0)")
+    expr("INTERVAL '0' MINUTE(0)")
         .ok("INTERVAL '0' MINUTE(0)");
   }
 
@@ -6218,75 +6218,75 @@ public class SqlParserTest {
    */
   public void subTestIntervalMinuteToSecondFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL ':' MINUTE TO SECOND")
+    expr("INTERVAL ':' MINUTE TO SECOND")
         .ok("INTERVAL ':' MINUTE TO SECOND");
-    exp("INTERVAL ':.' MINUTE TO SECOND")
+    expr("INTERVAL ':.' MINUTE TO SECOND")
         .ok("INTERVAL ':.' MINUTE TO SECOND");
-    exp("INTERVAL '1' MINUTE TO SECOND")
+    expr("INTERVAL '1' MINUTE TO SECOND")
         .ok("INTERVAL '1' MINUTE TO SECOND");
-    exp("INTERVAL '1 2' MINUTE TO SECOND")
+    expr("INTERVAL '1 2' MINUTE TO SECOND")
         .ok("INTERVAL '1 2' MINUTE TO SECOND");
-    exp("INTERVAL '1.2' MINUTE TO SECOND")
+    expr("INTERVAL '1.2' MINUTE TO SECOND")
         .ok("INTERVAL '1.2' MINUTE TO SECOND");
-    exp("INTERVAL '1 1:2' MINUTE TO SECOND")
+    expr("INTERVAL '1 1:2' MINUTE TO SECOND")
         .ok("INTERVAL '1 1:2' MINUTE TO SECOND");
-    exp("INTERVAL '1:x' MINUTE TO SECOND")
+    expr("INTERVAL '1:x' MINUTE TO SECOND")
         .ok("INTERVAL '1:x' MINUTE TO SECOND");
-    exp("INTERVAL 'x:3' MINUTE TO SECOND")
+    expr("INTERVAL 'x:3' MINUTE TO SECOND")
         .ok("INTERVAL 'x:3' MINUTE TO SECOND");
-    exp("INTERVAL '1:1.x' MINUTE TO SECOND")
+    expr("INTERVAL '1:1.x' MINUTE TO SECOND")
         .ok("INTERVAL '1:1.x' MINUTE TO SECOND");
-    exp("INTERVAL '1 1:2' MINUTE(2) TO SECOND")
+    expr("INTERVAL '1 1:2' MINUTE(2) TO SECOND")
         .ok("INTERVAL '1 1:2' MINUTE(2) TO SECOND");
-    exp("INTERVAL '1 1' MINUTE(2) TO SECOND")
+    expr("INTERVAL '1 1' MINUTE(2) TO SECOND")
         .ok("INTERVAL '1 1' MINUTE(2) TO SECOND");
-    exp("INTERVAL 'bogus text' MINUTE TO SECOND")
+    expr("INTERVAL 'bogus text' MINUTE TO SECOND")
         .ok("INTERVAL 'bogus text' MINUTE TO SECOND");
-    exp("INTERVAL '7:8901' MINUTE TO SECOND(4)")
+    expr("INTERVAL '7:8901' MINUTE TO SECOND(4)")
         .ok("INTERVAL '7:8901' MINUTE TO SECOND(4)");
 
     // negative field values
-    exp("INTERVAL '--1:1' MINUTE TO SECOND")
+    expr("INTERVAL '--1:1' MINUTE TO SECOND")
         .ok("INTERVAL '--1:1' MINUTE TO SECOND");
-    exp("INTERVAL '1:-1' MINUTE TO SECOND")
+    expr("INTERVAL '1:-1' MINUTE TO SECOND")
         .ok("INTERVAL '1:-1' MINUTE TO SECOND");
-    exp("INTERVAL '1:1.-1' MINUTE TO SECOND")
+    expr("INTERVAL '1:1.-1' MINUTE TO SECOND")
         .ok("INTERVAL '1:1.-1' MINUTE TO SECOND");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
     //  plus >max value for mid/end fields
-    exp("INTERVAL '100:0' MINUTE TO SECOND")
+    expr("INTERVAL '100:0' MINUTE TO SECOND")
         .ok("INTERVAL '100:0' MINUTE TO SECOND");
-    exp("INTERVAL '100:0' MINUTE(2) TO SECOND")
+    expr("INTERVAL '100:0' MINUTE(2) TO SECOND")
         .ok("INTERVAL '100:0' MINUTE(2) TO SECOND");
-    exp("INTERVAL '1000:0' MINUTE(3) TO SECOND")
+    expr("INTERVAL '1000:0' MINUTE(3) TO SECOND")
         .ok("INTERVAL '1000:0' MINUTE(3) TO SECOND");
-    exp("INTERVAL '-1000:0' MINUTE(3) TO SECOND")
+    expr("INTERVAL '-1000:0' MINUTE(3) TO SECOND")
         .ok("INTERVAL '-1000:0' MINUTE(3) TO SECOND");
-    exp("INTERVAL '2147483648:0' MINUTE(10) TO SECOND")
+    expr("INTERVAL '2147483648:0' MINUTE(10) TO SECOND")
         .ok("INTERVAL '2147483648:0' MINUTE(10) TO SECOND");
-    exp("INTERVAL '-2147483648:0' MINUTE(10) TO SECOND")
+    expr("INTERVAL '-2147483648:0' MINUTE(10) TO SECOND")
         .ok("INTERVAL '-2147483648:0' MINUTE(10) TO SECOND");
-    exp("INTERVAL '1:60' MINUTE TO SECOND")
+    expr("INTERVAL '1:60' MINUTE TO SECOND")
         .ok("INTERVAL '1:60' MINUTE TO SECOND");
-    exp("INTERVAL '1:1.0000001' MINUTE TO SECOND")
+    expr("INTERVAL '1:1.0000001' MINUTE TO SECOND")
         .ok("INTERVAL '1:1.0000001' MINUTE TO SECOND");
-    exp("INTERVAL '1:1:1.0001' MINUTE TO SECOND(3)")
+    expr("INTERVAL '1:1:1.0001' MINUTE TO SECOND(3)")
         .ok("INTERVAL '1:1:1.0001' MINUTE TO SECOND(3)");
 
     // precision > maximum
-    exp("INTERVAL '1:1' MINUTE(11) TO SECOND")
+    expr("INTERVAL '1:1' MINUTE(11) TO SECOND")
         .ok("INTERVAL '1:1' MINUTE(11) TO SECOND");
-    exp("INTERVAL '1:1' MINUTE TO SECOND(10)")
+    expr("INTERVAL '1:1' MINUTE TO SECOND(10)")
         .ok("INTERVAL '1:1' MINUTE TO SECOND(10)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0:0' MINUTE(0) TO SECOND")
+    expr("INTERVAL '0:0' MINUTE(0) TO SECOND")
         .ok("INTERVAL '0:0' MINUTE(0) TO SECOND");
-    exp("INTERVAL '0:0' MINUTE TO SECOND(0)")
+    expr("INTERVAL '0:0' MINUTE TO SECOND(0)")
         .ok("INTERVAL '0:0' MINUTE TO SECOND(0)");
   }
 
@@ -6299,66 +6299,66 @@ public class SqlParserTest {
    */
   public void subTestIntervalSecondFailsValidation() {
     // Qualifier - field mismatches
-    exp("INTERVAL ':' SECOND")
+    expr("INTERVAL ':' SECOND")
         .ok("INTERVAL ':' SECOND");
-    exp("INTERVAL '.' SECOND")
+    expr("INTERVAL '.' SECOND")
         .ok("INTERVAL '.' SECOND");
-    exp("INTERVAL '1-2' SECOND")
+    expr("INTERVAL '1-2' SECOND")
         .ok("INTERVAL '1-2' SECOND");
-    exp("INTERVAL '1.x' SECOND")
+    expr("INTERVAL '1.x' SECOND")
         .ok("INTERVAL '1.x' SECOND");
-    exp("INTERVAL 'x.1' SECOND")
+    expr("INTERVAL 'x.1' SECOND")
         .ok("INTERVAL 'x.1' SECOND");
-    exp("INTERVAL '1 2' SECOND")
+    expr("INTERVAL '1 2' SECOND")
         .ok("INTERVAL '1 2' SECOND");
-    exp("INTERVAL '1:2' SECOND")
+    expr("INTERVAL '1:2' SECOND")
         .ok("INTERVAL '1:2' SECOND");
-    exp("INTERVAL '1-2' SECOND(2)")
+    expr("INTERVAL '1-2' SECOND(2)")
         .ok("INTERVAL '1-2' SECOND(2)");
-    exp("INTERVAL 'bogus text' SECOND")
+    expr("INTERVAL 'bogus text' SECOND")
         .ok("INTERVAL 'bogus text' SECOND");
 
     // negative field values
-    exp("INTERVAL '--1' SECOND")
+    expr("INTERVAL '--1' SECOND")
         .ok("INTERVAL '--1' SECOND");
-    exp("INTERVAL '1.-1' SECOND")
+    expr("INTERVAL '1.-1' SECOND")
         .ok("INTERVAL '1.-1' SECOND");
 
     // Field value out of range
     //  (default, explicit default, alt, neg alt, max, neg max)
-    exp("INTERVAL '100' SECOND")
+    expr("INTERVAL '100' SECOND")
         .ok("INTERVAL '100' SECOND");
-    exp("INTERVAL '100' SECOND(2)")
+    expr("INTERVAL '100' SECOND(2)")
         .ok("INTERVAL '100' SECOND(2)");
-    exp("INTERVAL '1000' SECOND(3)")
+    expr("INTERVAL '1000' SECOND(3)")
         .ok("INTERVAL '1000' SECOND(3)");
-    exp("INTERVAL '-1000' SECOND(3)")
+    expr("INTERVAL '-1000' SECOND(3)")
         .ok("INTERVAL '-1000' SECOND(3)");
-    exp("INTERVAL '2147483648' SECOND(10)")
+    expr("INTERVAL '2147483648' SECOND(10)")
         .ok("INTERVAL '2147483648' SECOND(10)");
-    exp("INTERVAL '-2147483648' SECOND(10)")
+    expr("INTERVAL '-2147483648' SECOND(10)")
         .ok("INTERVAL '-2147483648' SECOND(10)");
-    exp("INTERVAL '1.0000001' SECOND")
+    expr("INTERVAL '1.0000001' SECOND")
         .ok("INTERVAL '1.0000001' SECOND");
-    exp("INTERVAL '1.0000001' SECOND(2)")
+    expr("INTERVAL '1.0000001' SECOND(2)")
         .ok("INTERVAL '1.0000001' SECOND(2)");
-    exp("INTERVAL '1.0001' SECOND(2, 3)")
+    expr("INTERVAL '1.0001' SECOND(2, 3)")
         .ok("INTERVAL '1.0001' SECOND(2, 3)");
-    exp("INTERVAL '1.000000001' SECOND(2, 9)")
+    expr("INTERVAL '1.000000001' SECOND(2, 9)")
         .ok("INTERVAL '1.000000001' SECOND(2, 9)");
 
     // precision > maximum
-    exp("INTERVAL '1' SECOND(11)")
+    expr("INTERVAL '1' SECOND(11)")
         .ok("INTERVAL '1' SECOND(11)");
-    exp("INTERVAL '1.1' SECOND(1, 10)")
+    expr("INTERVAL '1.1' SECOND(1, 10)")
         .ok("INTERVAL '1.1' SECOND(1, 10)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    exp("INTERVAL '0' SECOND(0)")
+    expr("INTERVAL '0' SECOND(0)")
         .ok("INTERVAL '0' SECOND(0)");
-    exp("INTERVAL '0' SECOND(1, 0)")
+    expr("INTERVAL '0' SECOND(1, 0)")
         .ok("INTERVAL '0' SECOND(1, 0)");
   }
 
@@ -6408,7 +6408,7 @@ public class SqlParserTest {
 
   @Test public void testUnparseableIntervalQualifiers() {
     // No qualifier
-    exp("interval '1^'^")
+    expr("interval '1^'^")
         .fails("Encountered \"<EOF>\" at line 1, column 12\\.\n"
             + "Was expecting one of:\n"
             + "    \"DAY\" \\.\\.\\.\n"
@@ -6420,540 +6420,540 @@ public class SqlParserTest {
             + "    ");
 
     // illegal qualifiers, no precision in either field
-    exp("interval '1' year ^to^ year")
+    expr("interval '1' year ^to^ year")
         .fails("(?s)Encountered \"to year\" at line 1, column 19.\n"
             + "Was expecting one of:\n"
             + "    <EOF> \n"
             + "    \"\\(\" \\.\\.\\.\n"
             + "    \"\\.\" \\.\\.\\..*");
-    exp("interval '1-2' year ^to^ day")
+    expr("interval '1-2' year ^to^ day")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ hour")
+    expr("interval '1-2' year ^to^ hour")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ minute")
+    expr("interval '1-2' year ^to^ minute")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ second")
-        .fails(ANY);
-
-    exp("interval '1-2' month ^to^ year")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ month")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ day")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ hour")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ minute")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ second")
+    expr("interval '1-2' year ^to^ second")
         .fails(ANY);
 
-    exp("interval '1-2' day ^to^ year")
+    expr("interval '1-2' month ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' day ^to^ month")
+    expr("interval '1-2' month ^to^ month")
         .fails(ANY);
-    exp("interval '1-2' day ^to^ day")
+    expr("interval '1-2' month ^to^ day")
         .fails(ANY);
-
-    exp("interval '1-2' hour ^to^ year")
+    expr("interval '1-2' month ^to^ hour")
         .fails(ANY);
-    exp("interval '1-2' hour ^to^ month")
+    expr("interval '1-2' month ^to^ minute")
         .fails(ANY);
-    exp("interval '1-2' hour ^to^ day")
-        .fails(ANY);
-    exp("interval '1-2' hour ^to^ hour")
+    expr("interval '1-2' month ^to^ second")
         .fails(ANY);
 
-    exp("interval '1-2' minute ^to^ year")
+    expr("interval '1-2' day ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' minute ^to^ month")
+    expr("interval '1-2' day ^to^ month")
         .fails(ANY);
-    exp("interval '1-2' minute ^to^ day")
-        .fails(ANY);
-    exp("interval '1-2' minute ^to^ hour")
-        .fails(ANY);
-    exp("interval '1-2' minute ^to^ minute")
+    expr("interval '1-2' day ^to^ day")
         .fails(ANY);
 
-    exp("interval '1-2' second ^to^ year")
+    expr("interval '1-2' hour ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ month")
+    expr("interval '1-2' hour ^to^ month")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ day")
+    expr("interval '1-2' hour ^to^ day")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ hour")
+    expr("interval '1-2' hour ^to^ hour")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ minute")
+
+    expr("interval '1-2' minute ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ second")
+    expr("interval '1-2' minute ^to^ month")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ day")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ hour")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ minute")
+        .fails(ANY);
+
+    expr("interval '1-2' second ^to^ year")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ month")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ day")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ hour")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ minute")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ second")
         .fails(ANY);
 
     // illegal qualifiers, including precision in start field
-    exp("interval '1' year(3) ^to^ year")
+    expr("interval '1' year(3) ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ day")
+    expr("interval '1-2' year(3) ^to^ day")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ hour")
+    expr("interval '1-2' year(3) ^to^ hour")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ minute")
+    expr("interval '1-2' year(3) ^to^ minute")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ second")
-        .fails(ANY);
-
-    exp("interval '1-2' month(3) ^to^ year")
-        .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ month")
-        .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ day")
-        .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ hour")
-        .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ minute")
-        .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ second")
+    expr("interval '1-2' year(3) ^to^ second")
         .fails(ANY);
 
-    exp("interval '1-2' day(3) ^to^ year")
+    expr("interval '1-2' month(3) ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' day(3) ^to^ month")
+    expr("interval '1-2' month(3) ^to^ month")
         .fails(ANY);
-
-    exp("interval '1-2' hour(3) ^to^ year")
+    expr("interval '1-2' month(3) ^to^ day")
         .fails(ANY);
-    exp("interval '1-2' hour(3) ^to^ month")
+    expr("interval '1-2' month(3) ^to^ hour")
         .fails(ANY);
-    exp("interval '1-2' hour(3) ^to^ day")
+    expr("interval '1-2' month(3) ^to^ minute")
         .fails(ANY);
-
-    exp("interval '1-2' minute(3) ^to^ year")
-        .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ month")
-        .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ day")
-        .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ hour")
+    expr("interval '1-2' month(3) ^to^ second")
         .fails(ANY);
 
-    exp("interval '1-2' second(3) ^to^ year")
+    expr("interval '1-2' day(3) ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ month")
+    expr("interval '1-2' day(3) ^to^ month")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ day")
+
+    expr("interval '1-2' hour(3) ^to^ year")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ hour")
+    expr("interval '1-2' hour(3) ^to^ month")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ minute")
+    expr("interval '1-2' hour(3) ^to^ day")
+        .fails(ANY);
+
+    expr("interval '1-2' minute(3) ^to^ year")
+        .fails(ANY);
+    expr("interval '1-2' minute(3) ^to^ month")
+        .fails(ANY);
+    expr("interval '1-2' minute(3) ^to^ day")
+        .fails(ANY);
+    expr("interval '1-2' minute(3) ^to^ hour")
+        .fails(ANY);
+
+    expr("interval '1-2' second(3) ^to^ year")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ month")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ day")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ hour")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ minute")
         .fails(ANY);
 
     // illegal qualifiers, including precision in end field
-    exp("interval '1' year ^to^ year(2)")
+    expr("interval '1' year ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' year to month^(^2)")
+    expr("interval '1-2' year to month^(^2)")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ day(2)")
+    expr("interval '1-2' year ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ hour(2)")
+    expr("interval '1-2' year ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ minute(2)")
+    expr("interval '1-2' year ^to^ minute(2)")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ second(2)")
+    expr("interval '1-2' year ^to^ second(2)")
         .fails(ANY);
-    exp("interval '1-2' year ^to^ second(2,6)")
-        .fails(ANY);
-
-    exp("interval '1-2' month ^to^ year(2)")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ month(2)")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ day(2)")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ hour(2)")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ minute(2)")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ second(2)")
-        .fails(ANY);
-    exp("interval '1-2' month ^to^ second(2,6)")
+    expr("interval '1-2' year ^to^ second(2,6)")
         .fails(ANY);
 
-    exp("interval '1-2' day ^to^ year(2)")
+    expr("interval '1-2' month ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' day ^to^ month(2)")
+    expr("interval '1-2' month ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' day ^to^ day(2)")
+    expr("interval '1-2' month ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' day to hour^(^2)")
+    expr("interval '1-2' month ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' day to minute^(^2)")
+    expr("interval '1-2' month ^to^ minute(2)")
         .fails(ANY);
-    exp("interval '1-2' day to second(2^,^6)")
+    expr("interval '1-2' month ^to^ second(2)")
         .fails(ANY);
-
-    exp("interval '1-2' hour ^to^ year(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour ^to^ month(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour ^to^ day(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour ^to^ hour(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour to minute^(^2)")
-        .fails(ANY);
-    exp("interval '1-2' hour to second(2^,^6)")
+    expr("interval '1-2' month ^to^ second(2,6)")
         .fails(ANY);
 
-    exp("interval '1-2' minute ^to^ year(2)")
+    expr("interval '1-2' day ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' minute ^to^ month(2)")
+    expr("interval '1-2' day ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' minute ^to^ day(2)")
+    expr("interval '1-2' day ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' minute ^to^ hour(2)")
+    expr("interval '1-2' day to hour^(^2)")
         .fails(ANY);
-    exp("interval '1-2' minute ^to^ minute(2)")
+    expr("interval '1-2' day to minute^(^2)")
         .fails(ANY);
-    exp("interval '1-2' minute to second(2^,^6)")
+    expr("interval '1-2' day to second(2^,^6)")
         .fails(ANY);
 
-    exp("interval '1-2' second ^to^ year(2)")
+    expr("interval '1-2' hour ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ month(2)")
+    expr("interval '1-2' hour ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ day(2)")
+    expr("interval '1-2' hour ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ hour(2)")
+    expr("interval '1-2' hour ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ minute(2)")
+    expr("interval '1-2' hour to minute^(^2)")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ second(2)")
+    expr("interval '1-2' hour to second(2^,^6)")
         .fails(ANY);
-    exp("interval '1-2' second ^to^ second(2,6)")
+
+    expr("interval '1-2' minute ^to^ year(2)")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ month(2)")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ day(2)")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ hour(2)")
+        .fails(ANY);
+    expr("interval '1-2' minute ^to^ minute(2)")
+        .fails(ANY);
+    expr("interval '1-2' minute to second(2^,^6)")
+        .fails(ANY);
+
+    expr("interval '1-2' second ^to^ year(2)")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ month(2)")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ day(2)")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ hour(2)")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ minute(2)")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ second(2)")
+        .fails(ANY);
+    expr("interval '1-2' second ^to^ second(2,6)")
         .fails(ANY);
 
     // illegal qualifiers, including precision in start and end field
-    exp("interval '1' year(3) ^to^ year(2)")
+    expr("interval '1' year(3) ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' year(3) to month^(^2)")
+    expr("interval '1-2' year(3) to month^(^2)")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ day(2)")
+    expr("interval '1-2' year(3) ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ hour(2)")
+    expr("interval '1-2' year(3) ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ minute(2)")
+    expr("interval '1-2' year(3) ^to^ minute(2)")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ second(2)")
+    expr("interval '1-2' year(3) ^to^ second(2)")
         .fails(ANY);
-    exp("interval '1-2' year(3) ^to^ second(2,6)")
+    expr("interval '1-2' year(3) ^to^ second(2,6)")
         .fails(ANY);
 
-    exp("interval '1-2' month(3) ^to^ year(2)")
+    expr("interval '1-2' month(3) ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ month(2)")
+    expr("interval '1-2' month(3) ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ day(2)")
+    expr("interval '1-2' month(3) ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ hour(2)")
+    expr("interval '1-2' month(3) ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ minute(2)")
+    expr("interval '1-2' month(3) ^to^ minute(2)")
         .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ second(2)")
+    expr("interval '1-2' month(3) ^to^ second(2)")
         .fails(ANY);
-    exp("interval '1-2' month(3) ^to^ second(2,6)")
+    expr("interval '1-2' month(3) ^to^ second(2,6)")
         .fails(ANY);
   }
 
   @Test public void testUnparseableIntervalQualifiers2() {
-    exp("interval '1-2' day(3) ^to^ year(2)")
+    expr("interval '1-2' day(3) ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' day(3) ^to^ month(2)")
+    expr("interval '1-2' day(3) ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' day(3) ^to^ day(2)")
+    expr("interval '1-2' day(3) ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' day(3) to hour^(^2)")
+    expr("interval '1-2' day(3) to hour^(^2)")
         .fails(ANY);
-    exp("interval '1-2' day(3) to minute^(^2)")
+    expr("interval '1-2' day(3) to minute^(^2)")
         .fails(ANY);
-    exp("interval '1-2' day(3) to second(2^,^6)")
-        .fails(ANY);
-
-    exp("interval '1-2' hour(3) ^to^ year(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour(3) ^to^ month(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour(3) ^to^ day(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour(3) ^to^ hour(2)")
-        .fails(ANY);
-    exp("interval '1-2' hour(3) to minute^(^2)")
-        .fails(ANY);
-    exp("interval '1-2' hour(3) to second(2^,^6)")
+    expr("interval '1-2' day(3) to second(2^,^6)")
         .fails(ANY);
 
-    exp("interval '1-2' minute(3) ^to^ year(2)")
+    expr("interval '1-2' hour(3) ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ month(2)")
+    expr("interval '1-2' hour(3) ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ day(2)")
+    expr("interval '1-2' hour(3) ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ hour(2)")
+    expr("interval '1-2' hour(3) ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' minute(3) ^to^ minute(2)")
+    expr("interval '1-2' hour(3) to minute^(^2)")
         .fails(ANY);
-    exp("interval '1-2' minute(3) to second(2^,^6)")
+    expr("interval '1-2' hour(3) to second(2^,^6)")
         .fails(ANY);
 
-    exp("interval '1-2' second(3) ^to^ year(2)")
+    expr("interval '1-2' minute(3) ^to^ year(2)")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ month(2)")
+    expr("interval '1-2' minute(3) ^to^ month(2)")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ day(2)")
+    expr("interval '1-2' minute(3) ^to^ day(2)")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ hour(2)")
+    expr("interval '1-2' minute(3) ^to^ hour(2)")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ minute(2)")
+    expr("interval '1-2' minute(3) ^to^ minute(2)")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ second(2)")
+    expr("interval '1-2' minute(3) to second(2^,^6)")
         .fails(ANY);
-    exp("interval '1-2' second(3) ^to^ second(2,6)")
+
+    expr("interval '1-2' second(3) ^to^ year(2)")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ month(2)")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ day(2)")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ hour(2)")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ minute(2)")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ second(2)")
+        .fails(ANY);
+    expr("interval '1-2' second(3) ^to^ second(2,6)")
         .fails(ANY);
 
     // precision of -1 (< minimum allowed)
-    exp("INTERVAL '0' YEAR(^-^1)")
+    expr("INTERVAL '0' YEAR(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0-0' YEAR(^-^1) TO MONTH")
+    expr("INTERVAL '0-0' YEAR(^-^1) TO MONTH")
         .fails(ANY);
-    exp("INTERVAL '0' MONTH(^-^1)")
+    expr("INTERVAL '0' MONTH(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0' DAY(^-^1)")
+    expr("INTERVAL '0' DAY(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0 0' DAY(^-^1) TO HOUR")
+    expr("INTERVAL '0 0' DAY(^-^1) TO HOUR")
         .fails(ANY);
-    exp("INTERVAL '0 0' DAY(^-^1) TO MINUTE")
+    expr("INTERVAL '0 0' DAY(^-^1) TO MINUTE")
         .fails(ANY);
-    exp("INTERVAL '0 0:0:0' DAY(^-^1) TO SECOND")
+    expr("INTERVAL '0 0:0:0' DAY(^-^1) TO SECOND")
         .fails(ANY);
-    exp("INTERVAL '0 0:0:0' DAY TO SECOND(^-^1)")
+    expr("INTERVAL '0 0:0:0' DAY TO SECOND(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0' HOUR(^-^1)")
+    expr("INTERVAL '0' HOUR(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0:0' HOUR(^-^1) TO MINUTE")
+    expr("INTERVAL '0:0' HOUR(^-^1) TO MINUTE")
         .fails(ANY);
-    exp("INTERVAL '0:0:0' HOUR(^-^1) TO SECOND")
+    expr("INTERVAL '0:0:0' HOUR(^-^1) TO SECOND")
         .fails(ANY);
-    exp("INTERVAL '0:0:0' HOUR TO SECOND(^-^1)")
+    expr("INTERVAL '0:0:0' HOUR TO SECOND(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0' MINUTE(^-^1)")
+    expr("INTERVAL '0' MINUTE(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0:0' MINUTE(^-^1) TO SECOND")
+    expr("INTERVAL '0:0' MINUTE(^-^1) TO SECOND")
         .fails(ANY);
-    exp("INTERVAL '0:0' MINUTE TO SECOND(^-^1)")
+    expr("INTERVAL '0:0' MINUTE TO SECOND(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0' SECOND(^-^1)")
+    expr("INTERVAL '0' SECOND(^-^1)")
         .fails(ANY);
-    exp("INTERVAL '0' SECOND(1, ^-^1)")
+    expr("INTERVAL '0' SECOND(1, ^-^1)")
         .fails(ANY);
 
     // These may actually be legal per SQL2003, as the first field is
     // "more significant" than the last, but we do not support them
-    exp("interval '1' day(3) ^to^ day")
+    expr("interval '1' day(3) ^to^ day")
         .fails(ANY);
-    exp("interval '1' hour(3) ^to^ hour")
+    expr("interval '1' hour(3) ^to^ hour")
         .fails(ANY);
-    exp("interval '1' minute(3) ^to^ minute")
+    expr("interval '1' minute(3) ^to^ minute")
         .fails(ANY);
-    exp("interval '1' second(3) ^to^ second")
+    expr("interval '1' second(3) ^to^ second")
         .fails(ANY);
-    exp("interval '1' second(3,1) ^to^ second")
+    expr("interval '1' second(3,1) ^to^ second")
         .fails(ANY);
-    exp("interval '1' second(2,3) ^to^ second")
+    expr("interval '1' second(2,3) ^to^ second")
         .fails(ANY);
-    exp("interval '1' second(2,2) ^to^ second(3)")
+    expr("interval '1' second(2,2) ^to^ second(3)")
         .fails(ANY);
 
     // Invalid units
-    exp("INTERVAL '2' ^MILLENNIUM^")
+    expr("INTERVAL '2' ^MILLENNIUM^")
         .fails(ANY);
-    exp("INTERVAL '1-2' ^MILLENNIUM^ TO CENTURY")
+    expr("INTERVAL '1-2' ^MILLENNIUM^ TO CENTURY")
         .fails(ANY);
-    exp("INTERVAL '10' ^CENTURY^")
+    expr("INTERVAL '10' ^CENTURY^")
         .fails(ANY);
-    exp("INTERVAL '10' ^DECADE^")
+    expr("INTERVAL '10' ^DECADE^")
         .fails(ANY);
-    exp("INTERVAL '4' ^QUARTER^")
+    expr("INTERVAL '4' ^QUARTER^")
         .fails(ANY);
   }
 
   @Test public void testMiscIntervalQualifier() {
-    exp("interval '-' day")
+    expr("interval '-' day")
         .ok("INTERVAL '-' DAY");
 
-    exp("interval '1 2:3:4.567' day to hour ^to^ second")
+    expr("interval '1 2:3:4.567' day to hour ^to^ second")
         .fails("(?s)Encountered \"to\" at.*");
-    exp("interval '1:2' minute to second(2^,^ 2)")
+    expr("interval '1:2' minute to second(2^,^ 2)")
         .fails("(?s)Encountered \",\" at.*");
-    exp("interval '1:x' hour to minute")
+    expr("interval '1:x' hour to minute")
         .ok("INTERVAL '1:x' HOUR TO MINUTE");
-    exp("interval '1:x:2' hour to second")
+    expr("interval '1:x:2' hour to second")
         .ok("INTERVAL '1:x:2' HOUR TO SECOND");
   }
 
   @Test public void testIntervalOperators() {
-    exp("-interval '1' day")
+    expr("-interval '1' day")
         .ok("(- INTERVAL '1' DAY)");
-    exp("interval '1' day + interval '1' day")
+    expr("interval '1' day + interval '1' day")
         .ok("(INTERVAL '1' DAY + INTERVAL '1' DAY)");
-    exp("interval '1' day - interval '1:2:3' hour to second")
+    expr("interval '1' day - interval '1:2:3' hour to second")
         .ok("(INTERVAL '1' DAY - INTERVAL '1:2:3' HOUR TO SECOND)");
 
-    exp("interval -'1' day")
+    expr("interval -'1' day")
         .ok("INTERVAL -'1' DAY");
-    exp("interval '-1' day")
+    expr("interval '-1' day")
         .ok("INTERVAL '-1' DAY");
-    exp("interval 'wael was here^'^")
+    expr("interval 'wael was here^'^")
         .fails("(?s)Encountered \"<EOF>\".*");
 
     // ok in parser, not in validator
-    exp("interval 'wael was here' HOUR")
+    expr("interval 'wael was here' HOUR")
         .ok("INTERVAL 'wael was here' HOUR");
   }
 
   @Test public void testDateMinusDate() {
-    exp("(date1 - date2) HOUR")
+    expr("(date1 - date2) HOUR")
         .ok("((`DATE1` - `DATE2`) HOUR)");
-    exp("(date1 - date2) YEAR TO MONTH")
+    expr("(date1 - date2) YEAR TO MONTH")
         .ok("((`DATE1` - `DATE2`) YEAR TO MONTH)");
-    exp("(date1 - date2) HOUR > interval '1' HOUR")
+    expr("(date1 - date2) HOUR > interval '1' HOUR")
         .ok("(((`DATE1` - `DATE2`) HOUR) > INTERVAL '1' HOUR)");
-    exp("^(date1 + date2) second^")
+    expr("^(date1 + date2) second^")
         .fails("(?s).*Illegal expression. "
             + "Was expecting ..DATETIME - DATETIME. INTERVALQUALIFIER.*");
-    exp("^(date1,date2,date2) second^")
+    expr("^(date1,date2,date2) second^")
         .fails("(?s).*Illegal expression. "
             + "Was expecting ..DATETIME - DATETIME. INTERVALQUALIFIER.*");
   }
 
   @Test public void testExtract() {
-    exp("extract(year from x)")
+    expr("extract(year from x)")
         .ok("EXTRACT(YEAR FROM `X`)");
-    exp("extract(month from x)")
+    expr("extract(month from x)")
         .ok("EXTRACT(MONTH FROM `X`)");
-    exp("extract(day from x)")
+    expr("extract(day from x)")
         .ok("EXTRACT(DAY FROM `X`)");
-    exp("extract(hour from x)")
+    expr("extract(hour from x)")
         .ok("EXTRACT(HOUR FROM `X`)");
-    exp("extract(minute from x)")
+    expr("extract(minute from x)")
         .ok("EXTRACT(MINUTE FROM `X`)");
-    exp("extract(second from x)")
+    expr("extract(second from x)")
         .ok("EXTRACT(SECOND FROM `X`)");
-    exp("extract(dow from x)")
+    expr("extract(dow from x)")
         .ok("EXTRACT(DOW FROM `X`)");
-    exp("extract(doy from x)")
+    expr("extract(doy from x)")
         .ok("EXTRACT(DOY FROM `X`)");
-    exp("extract(week from x)")
+    expr("extract(week from x)")
         .ok("EXTRACT(WEEK FROM `X`)");
-    exp("extract(epoch from x)")
+    expr("extract(epoch from x)")
         .ok("EXTRACT(EPOCH FROM `X`)");
-    exp("extract(quarter from x)")
+    expr("extract(quarter from x)")
         .ok("EXTRACT(QUARTER FROM `X`)");
-    exp("extract(decade from x)")
+    expr("extract(decade from x)")
         .ok("EXTRACT(DECADE FROM `X`)");
-    exp("extract(century from x)")
+    expr("extract(century from x)")
         .ok("EXTRACT(CENTURY FROM `X`)");
-    exp("extract(millennium from x)")
+    expr("extract(millennium from x)")
         .ok("EXTRACT(MILLENNIUM FROM `X`)");
 
-    exp("extract(day ^to^ second from x)")
+    expr("extract(day ^to^ second from x)")
         .fails("(?s)Encountered \"to\".*");
   }
 
   @Test public void testGeometry() {
-    exp("cast(null as ^geometry^)")
+    expr("cast(null as ^geometry^)")
         .fails("Geo-spatial extensions and the GEOMETRY data type are not enabled");
     conformance = SqlConformanceEnum.LENIENT;
-    exp("cast(null as geometry)")
+    expr("cast(null as geometry)")
         .ok("CAST(NULL AS GEOMETRY)");
   }
 
   @Test public void testIntervalArithmetics() {
-    exp("TIME '23:59:59' - interval '1' hour ")
+    expr("TIME '23:59:59' - interval '1' hour ")
         .ok("(TIME '23:59:59' - INTERVAL '1' HOUR)");
-    exp("TIMESTAMP '2000-01-01 23:59:59.1' - interval '1' hour ")
+    expr("TIMESTAMP '2000-01-01 23:59:59.1' - interval '1' hour ")
         .ok("(TIMESTAMP '2000-01-01 23:59:59.1' - INTERVAL '1' HOUR)");
-    exp("DATE '2000-01-01' - interval '1' hour ")
+    expr("DATE '2000-01-01' - interval '1' hour ")
         .ok("(DATE '2000-01-01' - INTERVAL '1' HOUR)");
 
-    exp("TIME '23:59:59' + interval '1' hour ")
+    expr("TIME '23:59:59' + interval '1' hour ")
         .ok("(TIME '23:59:59' + INTERVAL '1' HOUR)");
-    exp("TIMESTAMP '2000-01-01 23:59:59.1' + interval '1' hour ")
+    expr("TIMESTAMP '2000-01-01 23:59:59.1' + interval '1' hour ")
         .ok("(TIMESTAMP '2000-01-01 23:59:59.1' + INTERVAL '1' HOUR)");
-    exp("DATE '2000-01-01' + interval '1' hour ")
+    expr("DATE '2000-01-01' + interval '1' hour ")
         .ok("(DATE '2000-01-01' + INTERVAL '1' HOUR)");
 
-    exp("interval '1' hour + TIME '23:59:59' ")
+    expr("interval '1' hour + TIME '23:59:59' ")
         .ok("(INTERVAL '1' HOUR + TIME '23:59:59')");
 
-    exp("interval '1' hour * 8")
+    expr("interval '1' hour * 8")
         .ok("(INTERVAL '1' HOUR * 8)");
-    exp("1 * interval '1' hour")
+    expr("1 * interval '1' hour")
         .ok("(1 * INTERVAL '1' HOUR)");
-    exp("interval '1' hour / 8")
+    expr("interval '1' hour / 8")
         .ok("(INTERVAL '1' HOUR / 8)");
   }
 
   @Test public void testIntervalCompare() {
-    exp("interval '1' hour = interval '1' second")
+    expr("interval '1' hour = interval '1' second")
         .ok("(INTERVAL '1' HOUR = INTERVAL '1' SECOND)");
-    exp("interval '1' hour <> interval '1' second")
+    expr("interval '1' hour <> interval '1' second")
         .ok("(INTERVAL '1' HOUR <> INTERVAL '1' SECOND)");
-    exp("interval '1' hour < interval '1' second")
+    expr("interval '1' hour < interval '1' second")
         .ok("(INTERVAL '1' HOUR < INTERVAL '1' SECOND)");
-    exp("interval '1' hour <= interval '1' second")
+    expr("interval '1' hour <= interval '1' second")
         .ok("(INTERVAL '1' HOUR <= INTERVAL '1' SECOND)");
-    exp("interval '1' hour > interval '1' second")
+    expr("interval '1' hour > interval '1' second")
         .ok("(INTERVAL '1' HOUR > INTERVAL '1' SECOND)");
-    exp("interval '1' hour >= interval '1' second")
+    expr("interval '1' hour >= interval '1' second")
         .ok("(INTERVAL '1' HOUR >= INTERVAL '1' SECOND)");
   }
 
   @Test public void testCastToInterval() {
-    exp("cast(x as interval year)")
+    expr("cast(x as interval year)")
         .ok("CAST(`X` AS INTERVAL YEAR)");
-    exp("cast(x as interval month)")
+    expr("cast(x as interval month)")
         .ok("CAST(`X` AS INTERVAL MONTH)");
-    exp("cast(x as interval year to month)")
+    expr("cast(x as interval year to month)")
         .ok("CAST(`X` AS INTERVAL YEAR TO MONTH)");
-    exp("cast(x as interval day)")
+    expr("cast(x as interval day)")
         .ok("CAST(`X` AS INTERVAL DAY)");
-    exp("cast(x as interval hour)")
+    expr("cast(x as interval hour)")
         .ok("CAST(`X` AS INTERVAL HOUR)");
-    exp("cast(x as interval minute)")
+    expr("cast(x as interval minute)")
         .ok("CAST(`X` AS INTERVAL MINUTE)");
-    exp("cast(x as interval second)")
+    expr("cast(x as interval second)")
         .ok("CAST(`X` AS INTERVAL SECOND)");
-    exp("cast(x as interval day to hour)")
+    expr("cast(x as interval day to hour)")
         .ok("CAST(`X` AS INTERVAL DAY TO HOUR)");
-    exp("cast(x as interval day to minute)")
+    expr("cast(x as interval day to minute)")
         .ok("CAST(`X` AS INTERVAL DAY TO MINUTE)");
-    exp("cast(x as interval day to second)")
+    expr("cast(x as interval day to second)")
         .ok("CAST(`X` AS INTERVAL DAY TO SECOND)");
-    exp("cast(x as interval hour to minute)")
+    expr("cast(x as interval hour to minute)")
         .ok("CAST(`X` AS INTERVAL HOUR TO MINUTE)");
-    exp("cast(x as interval hour to second)")
+    expr("cast(x as interval hour to second)")
         .ok("CAST(`X` AS INTERVAL HOUR TO SECOND)");
-    exp("cast(x as interval minute to second)")
+    expr("cast(x as interval minute to second)")
         .ok("CAST(`X` AS INTERVAL MINUTE TO SECOND)");
-    exp("cast(interval '3-2' year to month as CHAR(5))")
+    expr("cast(interval '3-2' year to month as CHAR(5))")
         .ok("CAST(INTERVAL '3-2' YEAR TO MONTH AS CHAR(5))");
   }
 
   @Test public void testCastToVarchar() {
-    exp("cast(x as varchar(5))")
+    expr("cast(x as varchar(5))")
         .ok("CAST(`X` AS VARCHAR(5))");
-    exp("cast(x as varchar)")
+    expr("cast(x as varchar)")
         .ok("CAST(`X` AS VARCHAR)");
-    exp("cast(x as varBINARY(5))")
+    expr("cast(x as varBINARY(5))")
         .ok("CAST(`X` AS VARBINARY(5))");
-    exp("cast(x as varbinary)")
+    expr("cast(x as varbinary)")
         .ok("CAST(`X` AS VARBINARY)");
   }
 
@@ -6980,16 +6980,16 @@ public class SqlParserTest {
     for (Map.Entry<String, List<String>> intervalGroup : tsi.entrySet()) {
       for (String function : functions) {
         for (String interval : intervalGroup.getValue()) {
-          exp(String.format(Locale.ROOT, function, interval, ""))
+          expr(String.format(Locale.ROOT, function, interval, ""))
               .ok(String.format(Locale.ROOT, function, intervalGroup.getKey(), "`")
                   .toUpperCase(Locale.ROOT));
         }
       }
     }
 
-    exp("timestampadd(^incorrect^, 1, current_timestamp)")
+    expr("timestampadd(^incorrect^, 1, current_timestamp)")
         .fails("(?s).*Was expecting one of.*");
-    exp("timestampdiff(^incorrect^, current_timestamp, current_timestamp)")
+    expr("timestampdiff(^incorrect^, current_timestamp, current_timestamp)")
         .fails("(?s).*Was expecting one of.*");
   }
 
@@ -7087,18 +7087,18 @@ public class SqlParserTest {
   }
 
   @Test public void testNewSpecification() {
-    exp("new udt()")
+    expr("new udt()")
         .ok("(NEW `UDT`())");
-    exp("new my.udt(1, 'hey')")
+    expr("new my.udt(1, 'hey')")
         .ok("(NEW `MY`.`UDT`(1, 'hey'))");
-    exp("new udt() is not null")
+    expr("new udt() is not null")
         .ok("((NEW `UDT`()) IS NOT NULL)");
-    exp("1 + new udt()")
+    expr("1 + new udt()")
         .ok("(1 + (NEW `UDT`()))");
   }
 
   @Test public void testMultisetCast() {
-    exp("cast(multiset[1] as double multiset)")
+    expr("cast(multiset[1] as double multiset)")
         .ok("CAST((MULTISET[1]) AS DOUBLE MULTISET)");
   }
 
@@ -7228,13 +7228,13 @@ public class SqlParserTest {
    * @see org.apache.calcite.test.SqlValidatorTest#testQuotedFunction()
    */
   @Test public void testQuotedFunction() {
-    exp("\"CAST\"(1 ^as^ double)")
+    expr("\"CAST\"(1 ^as^ double)")
         .fails("(?s).*Encountered \"as\" at .*");
-    exp("\"POSITION\"('b' ^in^ 'alphabet')")
+    expr("\"POSITION\"('b' ^in^ 'alphabet')")
         .fails("(?s).*Encountered \"in \\\\'alphabet\\\\'\" at .*");
-    exp("\"OVERLAY\"('a' ^PLAcing^ 'b' from 1)")
+    expr("\"OVERLAY\"('a' ^PLAcing^ 'b' from 1)")
         .fails("(?s).*Encountered \"PLAcing\" at.*");
-    exp("\"SUBSTRING\"('a' ^from^ 1)")
+    expr("\"SUBSTRING\"('a' ^from^ 1)")
         .fails("(?s).*Encountered \"from\" at .*");
   }
 
@@ -7308,27 +7308,27 @@ public class SqlParserTest {
   }
 
   @Test public void testIllegalUnicodeEscape() {
-    exp("U&'abc' UESCAPE '!!'")
+    expr("U&'abc' UESCAPE '!!'")
         .fails(".*must be exactly one character.*");
-    exp("U&'abc' UESCAPE ''")
+    expr("U&'abc' UESCAPE ''")
         .fails(".*must be exactly one character.*");
-    exp("U&'abc' UESCAPE '0'")
+    expr("U&'abc' UESCAPE '0'")
         .fails(".*hex digit.*");
-    exp("U&'abc' UESCAPE 'a'")
+    expr("U&'abc' UESCAPE 'a'")
         .fails(".*hex digit.*");
-    exp("U&'abc' UESCAPE 'F'")
+    expr("U&'abc' UESCAPE 'F'")
         .fails(".*hex digit.*");
-    exp("U&'abc' UESCAPE ' '")
+    expr("U&'abc' UESCAPE ' '")
         .fails(".*whitespace.*");
-    exp("U&'abc' UESCAPE '+'")
+    expr("U&'abc' UESCAPE '+'")
         .fails(".*plus sign.*");
-    exp("U&'abc' UESCAPE '\"'")
+    expr("U&'abc' UESCAPE '\"'")
         .fails(".*double quote.*");
-    exp("'abc' UESCAPE ^'!'^")
+    expr("'abc' UESCAPE ^'!'^")
         .fails(".*without Unicode literal introducer.*");
-    exp("^U&'\\0A'^")
+    expr("^U&'\\0A'^")
         .fails(".*is not exactly four hex digits.*");
-    exp("^U&'\\wxyz'^")
+    expr("^U&'\\wxyz'^")
         .fails(".*is not exactly four hex digits.*");
   }
 
@@ -8215,16 +8215,16 @@ public class SqlParserTest {
   }
 
   @Test public void testJsonValueExpressionOperator() {
-    exp("foo format json")
+    expr("foo format json")
         .ok("`FOO` FORMAT JSON");
     // Currently, encoding js not valid
-    exp("foo format json encoding utf8")
+    expr("foo format json encoding utf8")
         .ok("`FOO` FORMAT JSON");
-    exp("foo format json encoding utf16")
+    expr("foo format json encoding utf16")
         .ok("`FOO` FORMAT JSON");
-    exp("foo format json encoding utf32")
+    expr("foo format json encoding utf32")
         .ok("`FOO` FORMAT JSON");
-    exp("null format json")
+    expr("null format json")
         .ok("NULL FORMAT JSON");
     // Test case to eliminate choice conflict on token <FORMAT>
     sql("select foo format from tab")
@@ -8237,80 +8237,80 @@ public class SqlParserTest {
   }
 
   @Test public void testJsonExists() {
-    exp("json_exists('{\"foo\": \"bar\"}', 'lax $.foo')")
+    expr("json_exists('{\"foo\": \"bar\"}', 'lax $.foo')")
         .ok("JSON_EXISTS('{\"foo\": \"bar\"}', 'lax $.foo')");
-    exp("json_exists('{\"foo\": \"bar\"}', 'lax $.foo' error on error)")
+    expr("json_exists('{\"foo\": \"bar\"}', 'lax $.foo' error on error)")
         .ok("JSON_EXISTS('{\"foo\": \"bar\"}', 'lax $.foo' ERROR ON ERROR)");
   }
 
   @Test public void testJsonValue() {
-    exp("json_value('{\"foo\": \"100\"}', 'lax $.foo' "
+    expr("json_value('{\"foo\": \"100\"}', 'lax $.foo' "
         + "returning integer)")
         .ok("JSON_VALUE('{\"foo\": \"100\"}', 'lax $.foo' "
             + "RETURNING INTEGER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_value('{\"foo\": \"100\"}', 'lax $.foo' "
+    expr("json_value('{\"foo\": \"100\"}', 'lax $.foo' "
         + "returning integer default 10 on empty error on error)")
         .ok("JSON_VALUE('{\"foo\": \"100\"}', 'lax $.foo' "
             + "RETURNING INTEGER DEFAULT 10 ON EMPTY ERROR ON ERROR)");
   }
 
   @Test public void testJsonQuery() {
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' WITHOUT ARRAY WRAPPER)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' WITHOUT ARRAY WRAPPER)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' WITH WRAPPER)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' WITH WRAPPER)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITH UNCONDITIONAL ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' WITH UNCONDITIONAL WRAPPER)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' WITH UNCONDITIONAL WRAPPER)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITH UNCONDITIONAL ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' WITH CONDITIONAL WRAPPER)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' WITH CONDITIONAL WRAPPER)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITH CONDITIONAL ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' NULL ON EMPTY)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' NULL ON EMPTY)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' ERROR ON EMPTY)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' ERROR ON EMPTY)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER ERROR ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON EMPTY)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON EMPTY)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER EMPTY ARRAY ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY OBJECT ON EMPTY)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY OBJECT ON EMPTY)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER EMPTY OBJECT ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' NULL ON ERROR)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' NULL ON ERROR)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' ERROR ON ERROR)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' ERROR ON ERROR)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY ERROR ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON ERROR)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON ERROR)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY EMPTY ARRAY ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY OBJECT ON ERROR)")
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY OBJECT ON ERROR)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER NULL ON EMPTY EMPTY OBJECT ON ERROR)");
-    exp("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON EMPTY "
+    expr("json_query('{\"foo\": \"bar\"}', 'lax $' EMPTY ARRAY ON EMPTY "
         + "EMPTY OBJECT ON ERROR)")
         .ok("JSON_QUERY('{\"foo\": \"bar\"}', "
             + "'lax $' WITHOUT ARRAY WRAPPER EMPTY ARRAY ON EMPTY EMPTY OBJECT ON ERROR)");
   }
 
   @Test public void testJsonObject() {
-    exp("json_object('foo': 'bar')")
+    expr("json_object('foo': 'bar')")
         .ok("JSON_OBJECT(KEY 'foo' VALUE 'bar' NULL ON NULL)");
-    exp("json_object('foo': 'bar', 'foo2': 'bar2')")
+    expr("json_object('foo': 'bar', 'foo2': 'bar2')")
         .ok("JSON_OBJECT(KEY 'foo' VALUE 'bar', KEY 'foo2' VALUE 'bar2' NULL ON NULL)");
-    exp("json_object('foo' value 'bar')")
+    expr("json_object('foo' value 'bar')")
         .ok("JSON_OBJECT(KEY 'foo' VALUE 'bar' NULL ON NULL)");
-    exp("json_object(key 'foo' value 'bar')")
+    expr("json_object(key 'foo' value 'bar')")
         .ok("JSON_OBJECT(KEY 'foo' VALUE 'bar' NULL ON NULL)");
-    exp("json_object('foo': null)")
+    expr("json_object('foo': null)")
         .ok("JSON_OBJECT(KEY 'foo' VALUE NULL NULL ON NULL)");
-    exp("json_object('foo': null absent on null)")
+    expr("json_object('foo': null absent on null)")
         .ok("JSON_OBJECT(KEY 'foo' VALUE NULL ABSENT ON NULL)");
-    exp("json_object('foo': json_object('foo': 'bar') format json)")
+    expr("json_object('foo': json_object('foo': 'bar') format json)")
         .ok("JSON_OBJECT(KEY 'foo' VALUE "
             + "JSON_OBJECT(KEY 'foo' VALUE 'bar' NULL ON NULL) "
             + "FORMAT JSON NULL ON NULL)");
@@ -8324,118 +8324,118 @@ public class SqlParserTest {
     // You can see the generated codes that are located at method
     // SqlParserImpl#JsonObjectFunctionCall. Looking ahead fails
     // immediately after seeking the tokens <KEY> and <COLON>.
-    exp("json_object(key: value)")
+    expr("json_object(key: value)")
         .ok("JSON_OBJECT(KEY `KEY` VALUE `VALUE` NULL ON NULL)");
   }
 
   @Test public void testJsonType() {
-    exp("json_type('11.56')")
+    expr("json_type('11.56')")
         .ok("JSON_TYPE('11.56')");
-    exp("json_type('{}')")
+    expr("json_type('{}')")
         .ok("JSON_TYPE('{}')");
-    exp("json_type(null)")
+    expr("json_type(null)")
         .ok("JSON_TYPE(NULL)");
-    exp("json_type('[\"foo\",null]')")
+    expr("json_type('[\"foo\",null]')")
         .ok("JSON_TYPE('[\"foo\",null]')");
-    exp("json_type('{\"foo\": \"100\"}')")
+    expr("json_type('{\"foo\": \"100\"}')")
         .ok("JSON_TYPE('{\"foo\": \"100\"}')");
   }
 
   @Test public void testJsonDepth() {
-    exp("json_depth('11.56')")
+    expr("json_depth('11.56')")
         .ok("JSON_DEPTH('11.56')");
-    exp("json_depth('{}')")
+    expr("json_depth('{}')")
         .ok("JSON_DEPTH('{}')");
-    exp("json_depth(null)")
+    expr("json_depth(null)")
         .ok("JSON_DEPTH(NULL)");
-    exp("json_depth('[\"foo\",null]')")
+    expr("json_depth('[\"foo\",null]')")
         .ok("JSON_DEPTH('[\"foo\",null]')");
-    exp("json_depth('{\"foo\": \"100\"}')")
+    expr("json_depth('{\"foo\": \"100\"}')")
         .ok("JSON_DEPTH('{\"foo\": \"100\"}')");
   }
 
   @Test public void testJsonLength() {
-    exp("json_length('{\"foo\": \"bar\"}')")
+    expr("json_length('{\"foo\": \"bar\"}')")
         .ok("JSON_LENGTH('{\"foo\": \"bar\"}')");
-    exp("json_length('{\"foo\": \"bar\"}', 'lax $')")
+    expr("json_length('{\"foo\": \"bar\"}', 'lax $')")
         .ok("JSON_LENGTH('{\"foo\": \"bar\"}', 'lax $')");
-    exp("json_length('{\"foo\": \"bar\"}', 'strict $')")
+    expr("json_length('{\"foo\": \"bar\"}', 'strict $')")
         .ok("JSON_LENGTH('{\"foo\": \"bar\"}', 'strict $')");
-    exp("json_length('{\"foo\": \"bar\"}', 'invalid $')")
+    expr("json_length('{\"foo\": \"bar\"}', 'invalid $')")
         .ok("JSON_LENGTH('{\"foo\": \"bar\"}', 'invalid $')");
   }
 
   @Test public void testJsonKeys() {
-    exp("json_keys('{\"foo\": \"bar\"}', 'lax $')")
+    expr("json_keys('{\"foo\": \"bar\"}', 'lax $')")
         .ok("JSON_KEYS('{\"foo\": \"bar\"}', 'lax $')");
-    exp("json_keys('{\"foo\": \"bar\"}', 'strict $')")
+    expr("json_keys('{\"foo\": \"bar\"}', 'strict $')")
         .ok("JSON_KEYS('{\"foo\": \"bar\"}', 'strict $')");
-    exp("json_keys('{\"foo\": \"bar\"}', 'invalid $')")
+    expr("json_keys('{\"foo\": \"bar\"}', 'invalid $')")
         .ok("JSON_KEYS('{\"foo\": \"bar\"}', 'invalid $')");
   }
 
   @Test public void testJsonRemove() {
-    exp("json_remove('[\"a\", [\"b\", \"c\"], \"d\"]', '$')")
+    expr("json_remove('[\"a\", [\"b\", \"c\"], \"d\"]', '$')")
         .ok("JSON_REMOVE('[\"a\", [\"b\", \"c\"], \"d\"]', '$')");
-    exp("json_remove('[\"a\", [\"b\", \"c\"], \"d\"]', '$[1]', '$[0]')")
+    expr("json_remove('[\"a\", [\"b\", \"c\"], \"d\"]', '$[1]', '$[0]')")
         .ok("JSON_REMOVE('[\"a\", [\"b\", \"c\"], \"d\"]', '$[1]', '$[0]')");
   }
 
   @Test public void testJsonObjectAgg() {
-    exp("json_objectagg(k_column: v_column)")
+    expr("json_objectagg(k_column: v_column)")
         .ok("JSON_OBJECTAGG(KEY `K_COLUMN` VALUE `V_COLUMN` NULL ON NULL)");
-    exp("json_objectagg(k_column value v_column)")
+    expr("json_objectagg(k_column value v_column)")
         .ok("JSON_OBJECTAGG(KEY `K_COLUMN` VALUE `V_COLUMN` NULL ON NULL)");
-    exp("json_objectagg(key k_column value v_column)")
+    expr("json_objectagg(key k_column value v_column)")
         .ok("JSON_OBJECTAGG(KEY `K_COLUMN` VALUE `V_COLUMN` NULL ON NULL)");
-    exp("json_objectagg(k_column: null)")
+    expr("json_objectagg(k_column: null)")
         .ok("JSON_OBJECTAGG(KEY `K_COLUMN` VALUE NULL NULL ON NULL)");
-    exp("json_objectagg(k_column: null absent on null)")
+    expr("json_objectagg(k_column: null absent on null)")
         .ok("JSON_OBJECTAGG(KEY `K_COLUMN` VALUE NULL ABSENT ON NULL)");
-    exp("json_objectagg(k_column: json_object(k_column: v_column) format json)")
+    expr("json_objectagg(k_column: json_object(k_column: v_column) format json)")
         .ok("JSON_OBJECTAGG(KEY `K_COLUMN` VALUE "
             + "JSON_OBJECT(KEY `K_COLUMN` VALUE `V_COLUMN` NULL ON NULL) "
             + "FORMAT JSON NULL ON NULL)");
   }
 
   @Test public void testJsonArray() {
-    exp("json_array('foo')")
+    expr("json_array('foo')")
         .ok("JSON_ARRAY('foo' ABSENT ON NULL)");
-    exp("json_array(null)")
+    expr("json_array(null)")
         .ok("JSON_ARRAY(NULL ABSENT ON NULL)");
-    exp("json_array(null null on null)")
+    expr("json_array(null null on null)")
         .ok("JSON_ARRAY(NULL NULL ON NULL)");
-    exp("json_array(json_array('foo', 'bar') format json)")
+    expr("json_array(json_array('foo', 'bar') format json)")
         .ok("JSON_ARRAY(JSON_ARRAY('foo', 'bar' ABSENT ON NULL) FORMAT JSON ABSENT ON NULL)");
   }
 
   @Test public void testJsonPretty() {
-    exp("json_pretty('foo')")
+    expr("json_pretty('foo')")
         .ok("JSON_PRETTY('foo')");
-    exp("json_pretty(null)")
+    expr("json_pretty(null)")
         .ok("JSON_PRETTY(NULL)");
   }
 
   @Test public void testJsonStorageSize() {
-    exp("json_storage_size('foo')")
+    expr("json_storage_size('foo')")
         .ok("JSON_STORAGE_SIZE('foo')");
-    exp("json_storage_size(null)")
+    expr("json_storage_size(null)")
         .ok("JSON_STORAGE_SIZE(NULL)");
   }
 
   @Test public void testJsonArrayAgg1() {
-    exp("json_arrayagg(\"column\")")
+    expr("json_arrayagg(\"column\")")
         .ok("JSON_ARRAYAGG(`column` ABSENT ON NULL)");
-    exp("json_arrayagg(\"column\" null on null)")
+    expr("json_arrayagg(\"column\" null on null)")
         .ok("JSON_ARRAYAGG(`column` NULL ON NULL)");
-    exp("json_arrayagg(json_array(\"column\") format json)")
+    expr("json_arrayagg(json_array(\"column\") format json)")
         .ok("JSON_ARRAYAGG(JSON_ARRAY(`column` ABSENT ON NULL) FORMAT JSON ABSENT ON NULL)");
   }
 
   @Test public void testJsonArrayAgg2() {
-    exp("json_arrayagg(\"column\" order by \"column\")")
+    expr("json_arrayagg(\"column\" order by \"column\")")
         .ok("JSON_ARRAYAGG(`column` ABSENT ON NULL) WITHIN GROUP (ORDER BY `column`)");
-    exp("json_arrayagg(\"column\") within group (order by \"column\")")
+    expr("json_arrayagg(\"column\") within group (order by \"column\")")
         .ok("JSON_ARRAYAGG(`column` ABSENT ON NULL) WITHIN GROUP (ORDER BY `column`)");
     sql("^json_arrayagg(\"column\" order by \"column\") within group (order by \"column\")^")
         .fails("(?s).*Including both WITHIN GROUP\\(\\.\\.\\.\\) and inside ORDER BY "
@@ -8443,25 +8443,25 @@ public class SqlParserTest {
   }
 
   @Test public void testJsonPredicate() {
-    exp("'{}' is json")
+    expr("'{}' is json")
         .ok("('{}' IS JSON VALUE)");
-    exp("'{}' is json value")
+    expr("'{}' is json value")
         .ok("('{}' IS JSON VALUE)");
-    exp("'{}' is json object")
+    expr("'{}' is json object")
         .ok("('{}' IS JSON OBJECT)");
-    exp("'[]' is json array")
+    expr("'[]' is json array")
         .ok("('[]' IS JSON ARRAY)");
-    exp("'100' is json scalar")
+    expr("'100' is json scalar")
         .ok("('100' IS JSON SCALAR)");
-    exp("'{}' is not json")
+    expr("'{}' is not json")
         .ok("('{}' IS NOT JSON VALUE)");
-    exp("'{}' is not json value")
+    expr("'{}' is not json value")
         .ok("('{}' IS NOT JSON VALUE)");
-    exp("'{}' is not json object")
+    expr("'{}' is not json object")
         .ok("('{}' IS NOT JSON OBJECT)");
-    exp("'[]' is not json array")
+    expr("'[]' is not json array")
         .ok("('[]' IS NOT JSON ARRAY)");
-    exp("'100' is not json scalar")
+    expr("'100' is not json scalar")
         .ok("('100' IS NOT JSON SCALAR)");
   }
 
@@ -8906,12 +8906,12 @@ public class SqlParserTest {
     }
 
     public void checkExp(String sql, String expected) {
-      exp(sql.replace("$op", op).replace("$p", period))
+      expr(sql.replace("$op", op).replace("$p", period))
           .ok(expected.replace("$op", op.toUpperCase(Locale.ROOT)));
     }
 
     public void checkExpFails(String sql, String expected) {
-      exp(sql.replace("$op", op).replace("$p", period))
+      expr(sql.replace("$op", op).replace("$p", period))
           .fails(expected.replace("$op", op));
     }
   }
