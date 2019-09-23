@@ -160,7 +160,7 @@ public class RelBuilder {
   private final RexSimplify simplifier;
   private final Config config;
 
-  public RelBuilder(Context context, RelOptCluster cluster,
+  protected RelBuilder(Context context, RelOptCluster cluster,
       RelOptSchema relOptSchema) {
     this.cluster = cluster;
     this.relOptSchema = relOptSchema;

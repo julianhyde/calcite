@@ -203,7 +203,7 @@ public class QuerySqlStatisticProvider implements SqlStatisticProvider {
     return Frameworks.withPlanner(
         (cluster, relOptSchema, rootSchema) -> {
           final RelBuilder relBuilder =
-              new RelBuilder(Contexts.of(), cluster, relOptSchema);
+              RelBuilder.proto(Contexts.of()).create(cluster, relOptSchema);
           return action.apply(cluster, relOptSchema, relBuilder);
         });
   }
@@ -211,8 +211,10 @@ public class QuerySqlStatisticProvider implements SqlStatisticProvider {
   /** Performs an action with a {@link RelBuilder}.
    *
    * @param <R> Result type */
+  @FunctionalInterface
   private interface BuilderAction<R> {
-    R apply(RelOptCluster cluster, RelOptSchema relOptSchema, RelBuilder relBuilder);
+    R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+        RelBuilder relBuilder);
   }
 }
 
