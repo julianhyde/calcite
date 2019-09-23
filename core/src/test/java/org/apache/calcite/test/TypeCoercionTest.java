@@ -546,24 +546,24 @@ public class TypeCoercionTest extends SqlValidatorTestCase {
 
   /** Test cases for binary comparison expressions. */
   @Test public void testBinaryComparisonCoercion() {
-    checkExpType("'2' = 3", "BOOLEAN NOT NULL");
-    checkExpType("'2' > 3", "BOOLEAN NOT NULL");
-    checkExpType("'2' >= 3", "BOOLEAN NOT NULL");
-    checkExpType("'2' < 3", "BOOLEAN NOT NULL");
-    checkExpType("'2' <= 3", "BOOLEAN NOT NULL");
-    checkExpType("'2' is distinct from 3", "BOOLEAN NOT NULL");
-    checkExpType("'2' is not distinct from 3", "BOOLEAN NOT NULL");
+    expr("'2' = 3").columnType("BOOLEAN NOT NULL");
+    expr("'2' > 3").columnType("BOOLEAN NOT NULL");
+    expr("'2' >= 3").columnType("BOOLEAN NOT NULL");
+    expr("'2' < 3").columnType("BOOLEAN NOT NULL");
+    expr("'2' <= 3").columnType("BOOLEAN NOT NULL");
+    expr("'2' is distinct from 3").columnType("BOOLEAN NOT NULL");
+    expr("'2' is not distinct from 3").columnType("BOOLEAN NOT NULL");
     // NULL operand
-    checkExpType("'2' = null", "BOOLEAN");
-    checkExpType("'2' > null", "BOOLEAN");
-    checkExpType("'2' >= null", "BOOLEAN");
-    checkExpType("'2' < null", "BOOLEAN");
-    checkExpType("'2' <= null", "BOOLEAN");
-    checkExpType("'2' is distinct from null", "BOOLEAN NOT NULL");
-    checkExpType("'2' is not distinct from null", "BOOLEAN NOT NULL");
+    expr("'2' = null").columnType("BOOLEAN");
+    expr("'2' > null").columnType("BOOLEAN");
+    expr("'2' >= null").columnType("BOOLEAN");
+    expr("'2' < null").columnType("BOOLEAN");
+    expr("'2' <= null").columnType("BOOLEAN");
+    expr("'2' is distinct from null").columnType("BOOLEAN NOT NULL");
+    expr("'2' is not distinct from null").columnType("BOOLEAN NOT NULL");
     // BETWEEN operator
-    checkExpType("'2' between 1 and 3", "BOOLEAN NOT NULL");
-    checkExpType("NULL between 1 and 3", "BOOLEAN");
+    expr("'2' between 1 and 3").columnType("BOOLEAN NOT NULL");
+    expr("NULL between 1 and 3").columnType("BOOLEAN");
     sql("select '2019-09-23' between t1_date and t1_timestamp from t1")
         .columnType("BOOLEAN NOT NULL");
     sql("select t1_date between '2019-09-23' and t1_timestamp from t1")
