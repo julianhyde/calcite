@@ -18,7 +18,7 @@
 !use scott
 !set outputformat mysql
 
-# 1. Leader Node–Only Functions
+# 1 Leader Node–Only Functions
 # The following SQL functions are leader-node only functions and are not
 # supported on the compute nodes:
 #
@@ -440,136 +440,314 @@ select now();
 
 # ADD_MONTHS ({date|timestamp}, integer) returns TIMESTAMP
 # Adds the specified number of months to a date or time stamp.
-select add_months;
+# If the date you are adding to is the last day of the month, the result is
+# always the last day of the result month, regardless of the length of the month.
+
+select add_months('2008-03-31',1);
+!ok
+
+-- returns '2008-04-30'
+select add_months(date '2008-03-31',1);
+!ok
+
+-- returns '2008-05-31'
+select add_months(date '2008-04-30',1);
+!ok
+
+select add_months(date '2008-03-31',-1);
+!ok
+
+select add_months(timestamp '2008-03-31 12:23:34',1);
+!ok
 
 # AT TIME ZONE 'timezone' returns TIMESTAMP
 # Specifies which time zone to use with a TIMESTAMP or TIMESTAMPTZ expression.
-select at time tone 'utc';
+-- returns '2001-02-16 19:38:40-08'
+SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'MST';
+!ok
+
+-- returns '2001-02-16 18:38:40'
+SELECT TIMESTAMP WITH TIME ZONE '2001-02-16 20:38:40-05' AT TIME ZONE 'MST';
+!ok
 
 # CONVERT_TIMEZONE (['timezone',] 'timezone', timestamp) returns TIMESTAMP
 # Converts a time stamp from one time zone to another.
-select convert_timezone;
+-- returns '2008-03-05 09:25:29'
+select convert_timezone('EST', 'PST', '20080305 12:25:29');
+!ok
+
+-- returns '2013-02-01 03:00:00'
+select convert_timezone('America/New_York', '2013-02-01 08:00:00');
+!ok
+
+-- returns '2014-05-17 10:00:00'
+select CONVERT_TIMEZONE('GMT','GMT+2','2014-05-17 12:00:00');
+!ok
 
 # CURRENT_DATE returns DATE
 # Returns a date in the current session time zone (UTC by default) for the start
 # of the current transaction.
 select current_date;
+!ok
 
 # DATE_CMP (date1, date2) returns INTEGER
 # Compares two dates and returns 0 if the dates are identical, 1 if date1 is
 # greater, and -1 if date2 is greater.
-select date_cmp;
+-- returns -1
+select date_cmp('2008-01-01', '2008-01-04');
+!ok
+
+-- returns 0
+select date_cmp(date '2008-01-04', '2008-01-04');
+!ok
+
+-- returns 1
+select date_cmp(date '2008-01-05', date '2008-01-04');
+!ok
 
 # DATE_CMP_TIMESTAMP (date, timestamp) returns INTEGER
 # Compares a date to a time and returns 0 if the values are identical, 1 if date
 # is greater and -1 if timestamp is greater.
-select date_cmp_timestamp;
+-- returns -1
+select date_cmp_timestamp('2008-01-01', '2008-01-04 00:00:00');
+!ok
+
+-- returns 0
+select date_cmp_timestamp(date '2008-01-04', '2008-01-04 00:00:00');
+!ok
+
+-- I presume that this returns -1, but doc does not specify
+select date_cmp_timestamp(date '2008-01-04', '2008-01-04 01:23:45');
+!ok
+
+-- returns 1
+select date_cmp_timestamp(date '2008-01-05', timestamp '2008-01-04 00:00:00');
+!ok
 
 # DATE_CMP_TIMESTAMPTZ (date, timestamptz) returns INTEGER
 # Compares a date and a time stamp with time zone and returns 0 if the values
 # are identical, 1 if date is greater and -1 if timestamptz is greater.
-select date_cmp_timestamptz;
+-- returns -1
+select date_cmp_timestamptz('2008-01-01', '2008-01-04 00:00:00' at 'gmt');
+!ok
 
 # DATE_PART_YEAR (date) returns INTEGER
 # Extracts the year from a date.
-select date_part_year;
+-- returns 2008
+select date_part_year('2008-01-05');
+!ok
+
+select date_part_year(date '2008-01-05');
+!ok
 
 # DATEADD (datepart, interval, {date|timestamp}) returns TIMESTAMP
 # Increments a date or time by a specified interval.
-select dateadd;
+# The DATEADD(month, ...) and ADD_MONTHS functions handle dates that fall at the
+# ends of months differently.
+-- returns '2009-08-28 00:00:00'
+select dateadd(month,18,'2008-02-28');
+!ok
+
+-- returns '2004-05-30 00:00:00' (ADD_MONTHS would return '2004-05-31')
+select dateadd(month,1,'2004-04-30');
+!ok
+
+-- returns '2008-02-28 00:30:00' ('m' stands for minutes, not months)
+select dateadd(m,18,'2008-02-28');
+!ok
+
+-- returns '2017-02-28 00:00:00'
+select dateadd(month,12,'2016-02-29');
+!ok
+
+-- returns '2017-03-01 00:00:00'
+select dateadd(year, 1, '2016-02-29');
+!ok
 
 # DATEDIFF (datepart, {date|time}, {date|timestamp}) returns BIGINT
 # Returns the difference between two dates or times for a given date part, such
 # as a day or month.
-select datediff;
+-- returns 52
+select datediff(week,'2009-01-01','2009-12-31') as numweeks;
+!ok
+
+-- returns 40 or more
+select datediff(qtr, '1998-07-01', current_date);
+!ok
+
+select datediff(hours, '1998-07-01', current_date);
+!ok
+
+select datediff(day, '1998-07-01', current_date);
+!ok
 
 # DATE_PART (datepart, {date|time}) returns DOUBLE
 # Extracts a date part value from date or time.
-select date_part;
+-- returns 25
+select date_part(w, '2008-06-17 09:44:54');
+!ok
+
+-- returns 8
+select date_part(minute, '2009-01-01 02:08:01');
+!ok
 
 # DATE_TRUNC ('datepart', timestamp) returns TIMESTAMP
 # Truncates a time stamp based on a date part.
-select date_trunc;
+-- returns '2008-09-01'
+select date_trunc('week', '2008-09-07');
+!ok
+
+-- returns '2008-09-08'
+select date_trunc('week', '2008-09-08');
+!ok
+
+-- returns '2008-09-08'
+select date_trunc('week', '2008-09-09');
+!ok
 
 # EXTRACT (datepart FROM {TIMESTAMP 'literal' | timestamp}) returns DOUBLE
 # Extracts a date part from a timestamp or literal.
-select extract;
+-- returns 8
+select extract(minute from timestamp '2009-09-09 12:08:43');
+!ok
+
+-- returns 8
+select extract(minute from '2009-09-09 12:08:43');
+!ok
 
 # GETDATE() returns TIMESTAMP
 # Returns the current date and time in the current session time zone (UTC by
 # default). The parentheses are required.
 select getdate();
+!ok
 
 # INTERVAL_CMP (interval1, interval2) returns INTEGER
 # Compares two intervals and returns 0 if the intervals are equal, 1 if
 # interval1 is greater, and -1 if interval2 is greater.
-select interval_cmp;
+-- returns -1
+select interval_cmp('3 days','1 year');
+!ok
+
+-- returns 0
+select interval_cmp('7 days','1 week');
+!ok
+
+-- should this return 0 or 1?
+select interval_cmp('366 days','1 year');
+!ok
+
+-- should this return -1, 0 or 1?
+select interval_cmp('30 days','1 month');
+!ok
 
 # LAST_DAY(date) returns DATE
 # Returns the date of the last day of the month that contains date.
-select last_day();
+# Always returns DATE, even if argument is TIMESTAMP.
+-- returns '2004-01-31'
+select last_day(date '2004-01-25');
+!ok
+
+-- returns '2004-01-31'
+select last_day(timestamp '2004-01-25 12:23:45');
+!ok
 
 # MONTHS_BETWEEN (date, date) returns FLOAT8
 # Returns the number of months between two dates.
-select months_between();
+-- returns -2
+select months_between('1969-01-18', '1969-03-18') as months;
+!ok
 
 # NEXT_DAY (date, day) returns DATE
 # Returns the date of the first instance of day that is later than date.
-select next_day;
+-- returns '2014-08-26'
+select next_day('2014-08-20','Tuesday');
+!ok
+
+-- returns '2014-08-26'
+select next_day('2014-08-20','Tu');
+!ok
+
+-- not valid ('T' could be 'Tue' or 'Thu')
+select next_day('2014-08-20','T');
+!ok
+
+-- returns '2014-08-22'
+select next_day('2014-08-20','F');
+!ok
 
 # SYSDATE returns TIMESTAMP
 # Returns the date and time in the current session time zone (UTC by default)
 # for the start of the current transaction.
 select sysdate;
+!ok
 
 # TIMEOFDAY() returns VARCHAR
 # Returns the current weekday, date, and time in the current session time zone
 # (UTC by default) as a string value.
+-- returns something like 'Thu Sep 19 22:53:50.333525 2013 UTC'
 select timeofday();
+!ok
 
 # TIMESTAMP_CMP (timestamp1, timestamp2) returns INTEGER
 # Compares two timestamps and returns 0 if the timestamps are equal, 1 if
 # timestamp1 is greater, and -1 if timestamp2 is greater.
-select timestamp_cmp;
+-- returns -1
+select timestamp_cmp('2008-01-01 00:00:00', '2008-01-04 12:34:56');
+!ok
 
 # TIMESTAMP_CMP_DATE (timestamp, date) returns INTEGER
 # Compares a timestamp to a date and returns 0 if the values are equal, 1 if
 # timestamp is greater, and -1 if date is greater.
-seleecet timestamp_cmp_date;
+-- returns -1
+select timestamp_cmp_date('2008-01-01 00:00:00', '2008-01-04');
+!ok
 
 # TIMESTAMP_CMP_TIMESTAMPTZ (timestamp, timestamptz) returns INTEGER
 # Compares a timestamp with a time stamp with time zone and returns 0 if the
 # values are equal, 1 if timestamp is greater, and -1 if timestamptz is greater.
-select TIMESTAMP_CMP_TIMESTAMPTZ;
+-- returns -1
+select timestamp_cmp_timestamptz('2008-01-01 00:00:00', '2008-01-04 00:00:00');
+!ok
 
 # TIMESTAMPTZ_CMP (timestamptz1, timestamptz2) returns INTEGER
 # Compares two timestamp with time zone values and returns 0 if the values are
 # equal, 1 if timestamptz1 is greater, and -1 if timestamptz2 is greater.
 select TIMESTAMPTZ_CMP;
+-- returns -1
+select timestamptz_cmp('2008-01-01 00:00:00', '2008-01-04 00:00:00');
+!ok
 
 # TIMESTAMPTZ_CMP_DATE (timestamptz, date) returns INTEGER
 # Compares the value of a time stamp with time zone and a date and returns 0 if
 # the values are equal, 1 if timestamptz is greater, and -1 if date is greater.
-select TIMESTAMP_CMP_DATE;
+-- returns -1
+select timestamptz_cmp_date('2008-01-01 00:00:00', '2008-01-04');
+!ok
 
 # TIMESTAMPTZ_CMP_TIMESTAMP (timestamptz, timestamp) returns INTEGER
 # Compares a timestamp with time zone with a time stamp and returns 0 if the
 # values are equal, 1 if timestamptz is greater, and -1 if timestamp is greater.
-select timestamptz_cmp_timestamp;
+-- returns -1
+select timestamptz_cmp_timestamp('2008-01-01 00:00:00', '2008-01-04');
+!ok
 
 # TIMEZONE ('timezone', timestamp | timestamptz ) returns TIMESTAMP or TIMESTAMPTZ
 # Returns a time stamp or time stamp with time zone for the specified time zone
 # and time stamp value.
-select timezone;
+select timezone('Africa/Kampala', '2008-01-01 00:00:00');
+!ok
 
 # TO_TIMESTAMP ('timestamp', 'format') returns TIMESTAMPTZ
 # Returns a time stamp with time zone for the specified time stamp and time zone
 # format.
-select to_timestamp;
+select to_timestamp('05 Dec 2000', 'DD Mon YYYY');
+!ok
 
 # TRUNC(timestamp) returns DATE
 # Truncates a time stamp and returns a date.
-select trunc;
+-- returns '2011-07-21'
+select trunc(timestamp '2011-07-21 10:32:38.248109');
+!ok
 
 # 8 Math functions
 
@@ -792,7 +970,7 @@ select len('gth');
 select length('ily');
 !ok
 
--- returns 8
+-- returns 8 (cf OCTET_LENGTH)
 select length('français');
 !ok
 
@@ -822,7 +1000,7 @@ select md5('Amazon Redshift');
 !ok
 
 # OCTET_LENGTH
--- returns 9
+-- returns 9 (cf LENGTH)
 select octet_length('français');
 !ok
 
@@ -900,6 +1078,7 @@ select strtol('abcd1234',16);
 
 -- returns 53
 select strtol('110101', 2);
+!ok
 
 # SUBSTRING
 -- returns 'pill'
@@ -939,19 +1118,31 @@ select is_valid_json('{"a":2}');
 !ok
 
 # IS_VALID_JSON_ARRAY
-select is_valid_json_array;
+-- returns true
+select is_valid_json_array('[]');
 !ok
 
-# JSON_ARRAY_LENGTH
-select json_array_length;
+-- returns false
+select is_valid_json_array('{}');
 !ok
 
-# JSON_EXTRACT_ARRAY_ELEMENT_TEXT
-select json_extract_array_element_text;
+# JSON_ARRAY_LENGTH('json_array' [, null_if_invalid ] )
+-- returns 3
+select json_array_length('[2,3,[4,5]]');
 !ok
 
-# JSON_EXTRACT_PATH_TEXT
-select json_extract_path_text;
+-- returns null
+select json_array_length('[2,3', true);
+!ok
+
+# JSON_EXTRACT_ARRAY_ELEMENT_TEXT('json string', pos [, null_if_invalid ] )
+-- returns '113'
+select json_extract_array_element_text('[111,112,113]', 2);
+!ok
+
+# JSON_EXTRACT_PATH_TEXT('json_string', 'path_elem' [,'path_elem'[, ...] ] [, null_if_invalid ] )
+-- returns 'star'
+select json_extract_path_text('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}}','f4', 'f6');
 !ok
 
 # 11 Data Type Formatting Functions
@@ -960,49 +1151,68 @@ select json_extract_path_text;
 select cast(stddev_samp(sal) as dec(14, 2)) from emp;
 !ok
 
-select convert;
+select 123.456::decimal(8,4);
+!ok
+
+select convert(integer, comm) from emp;
+!ok
+
+select cast(comm as integer) from emp;
+!ok
+
+select comm::integer from emp;
 !ok
 
 # TO_CHAR
-select to_char;
+-- returns '23:15:59'
+select to_char(timestamp '2009-12-31 23:15:59','HH24:MI:SS');
+!ok
+
+-- returns '125.80-'
+select to_char(-125.8, '999D99S');
 !ok
 
 # TO_DATE
-select to_date;
+-- returns '2001-10-02'
+select to_date ('02 Oct 2001', 'DD Mon YYYY');
 !ok
 
 # TO_NUMBER
-select to_number;
-!ok
+-- returns -12454.8
+select to_number('12,454.8-', '99G999D9S');
+ok
 
 # 12 System Administration Functions
 
-# CHANGE_QUERY_PRIORITY
-select change_query_priority;
+# CHANGE_QUERY_PRIORITY(query_id, priority)
+select change_query_priority(1076, 'Critical');
 !ok
 
-# CHANGE_SESSION_PRIORITY
-select change_session_priority;
+# CHANGE_SESSION_PRIORITY(pid, priority)
+select change_session_priority(30311, 'Lowest');
 !ok
 
-# CHANGE_USER_PRIORITY
-select change_user_priority;
+# CHANGE_USER_PRIORITY(user_name, priority)
+-- returns 'Succeeded to change user priority. Changed user (analysis_user) priority to lowest.'
+select change_user_priority('analysis_user', 'lowest');
 !ok
 
-# CURRENT_SETTING
-select current_setting;
+# CURRENT_SETTING('parameter')
+-- returns 'unset'
+select current_setting('query_group');
 !ok
 
-# PG_CANCEL_BACKEND
-select pg_cancel_backend;
+# PG_CANCEL_BACKEND(pid)
+select pg_cancel_backend(802);
 !ok
 
-# PG_TERMINATE_BACKEND
-select pg_terminate_backend;
+# PG_TERMINATE_BACKEND(pid)
+select pg_terminate_backend(8585);
 !ok
 
-# SET_CONFIG
-select set_config;
+# SET_CONFIG('parameter', 'new_value' , is_local)
+-- returns 'test'
+select set_config('query_group', 'test', true);
 !ok
 
 # 13 System Information Functions
@@ -1015,7 +1225,7 @@ select current_database();
 select current_schema();
 !ok
 
-# CURRENT_SCHEMAS
+# CURRENT_SCHEMAS(include_implicit)
 select current_schemas(false);
 !ok
 
@@ -1027,15 +1237,15 @@ select current_user;
 select current_user_id;
 !ok
 
-# HAS_DATABASE_PRIVILEGE
+# HAS_DATABASE_PRIVILEGE( [ user, ] database, privilege)
 select has_database_privilege('guest', 'tickit', 'temp');
 !ok
 
-# HAS_SCHEMA_PRIVILEGE
+# HAS_SCHEMA_PRIVILEGE( [ user, ] schema, privilege)
 select has_schema_privilege('guest', 'public', 'create');
 !ok
 
-# HAS_TABLE_PRIVILEGE
+# HAS_TABLE_PRIVILEGE( [ user, ] table, privilege)
 select has_table_privilege('guest', 'listing', 'select');
 !ok
 
@@ -1076,15 +1286,20 @@ select session_user;
 !ok
 
 # SLICE_NUM
-select slice_num;
+# Returns an integer corresponding to the slice number in the cluster where the
+# data for a row is located.
+select slice_num();
 !ok
 
 # USER
+# Synonym for CURRENT_USER
 select user;
 !ok
 
 # VERSION
-select version;
+# Returns details about the currently installed release,
+# with specific Amazon Redshift version information at the end.
+select version();
 !ok
 
 # End redshift.iq
