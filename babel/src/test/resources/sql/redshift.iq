@@ -15,8 +15,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# The following functions have ordinary syntax and are not defined
+# in Calcite. Therefore we use '!explain-validated-on calcite'.
+#   get_bit
+#   get_byte
+#   set_bit
+#   set_byte
+#   to_ascii
+#   percentile_cont
+#   percentile_disc
+#   ratio_to_report
+#   percent_rank
+#   bool_and
+#   bool_or
+#   cume_dist
+#   isfinite
+#   now()
+#   date_cmp
+#   date_cmp_timestamp
+#   date_cmp_timestamptz
+#   date_part_year
+#   interval_cmp
+#   getdate()
+#   trunc
+#   to_hex
+#   random
+#   pow
+#   log
+#   dlog10
+#   dlog1
+#   checksum
+#   cbrt
+#   to_timestamp
+#   timezone
+#   bpcharcmp
+#   btrim
+#   charindex
+#   bttext_pattern_cmp
+#   crc32
+#   func_sha1
+
+# Bugs:
+# lenientAgg - aggregate functions not in operator table, viz
+#   median
+# approximate - keyword before aggregate functions, e.g. 'approximate avg(x)'
+# firstValueRespectNulls - RESPECT NULLS in FIRST_VALUE and LAST_VALUE
+# leadIgnoreNulls - allow IGNORE NULLS in LEAD, LAG, NTH_VALUE
+# other - NVL with more than 2 arguments;
+#   apply CONVERT_TIMEZONE to CHAR rather than TIMESTAMP last arg,
+#     or with only 2 args,
+#   apply DATEADD to CHAR rather than DATE
+#   apply CONVERT_TIMEZONE to CHAR rather than DATE
+# other - SYSDATE operator (no parens)
+# atTimeZone - AT TIME ZONE operator
+# dateAdd - "No match found for function signature DATEADD(<INTERVAL_YEAR_MONTH>,
+#   <NUMERIC>, <DATE>)" due to "month" argument;
+#   similarly DATEDIFF and DATE_PART;
+#   similarly 'm' and 'qtr' arguments
+# pi - Allow nilary built-in functions to be called with emtpy parens
+#
+# TODO:
+#  * Why does CONCAT not work?
+#
 !use scott
-!set outputformat mysql
+!set outputformat csv
 
 # 1 Leader Node–Only Functions
 # The following SQL functions are leader-node only functions and are not
@@ -41,27 +103,39 @@
 
 # ASCII
 select ascii('xyz');
+EXPR$0
+120
 !ok
 
 # GET_BIT
+!if (lenient) {
 select get_bit(CAST('FFFF' as BINARY), 1);
 !ok
+!}
 
 # GET_BYTE
+!if (lenient) {
 select get_byte(CAST('FFFF' as BINARY), 1);
 !ok
+!}
 
 # SET_BIT
+!if (lenient) {
 select set_bit(CAST('FFFF' as BINARY), 1, 61);
 !ok
+!}
 
 # SET_BYTE
+!if (lenient) {
 select set_byte(CAST('FFFF' as BINARY), 1, 61);
 !ok
+!}
 
 # TO_ASCII
+!if (lenient) {
 select to_ascii(120);
 !ok
+!}
 
 # 2 Compute Node–Only Functions
 #
@@ -75,321 +149,710 @@ select to_ascii(120);
 # 3 Aggregate Functions
 
 # APPROXIMATE PERCENTILE_DISC
-select approximate percentile_disc within group (order by sal) from emp group by deptno;
+!if (approximate) {
+select approximate percentile_disc(0.5) within group (order by sal) from emp group by deptno;
 !ok
+!}
 
 # AVG
 select avg(sal) from emp;
+EXPR$0
+2073.214285714286
 !ok
 
 # COUNT
+!if (approximate) {
 select approximate count(distinct sal) from emp;
 !ok
+!}
 
 select count(*) from emp;
+EXPR$0
+14
 !ok
 
 select count(sal) from emp;
+EXPR$0
+14
 !ok
 
 select count(all sal) from emp;
+EXPR$0
+14
 !ok
 
 select count(distinct sal) from emp;
+EXPR$0
+12
 !ok
 
 # LISTAGG
 select listagg(empno) from emp group by deptno;
+EXPR$0
+7369,7566,7788,7876,7902
+7499,7521,7654,7698,7844,7900
+7782,7839,7934
 !ok
 
 select listagg(empno) within group (order by sal) from emp group by deptno;
+EXPR$0
+7369,7876,7566,7788,7902
+7900,7521,7654,7844,7499,7698
+7934,7782,7839
 !ok
 
 select listagg(empno, ',') from emp group by deptno;
+EXPR$0
+7369,7566,7788,7876,7902
+7499,7521,7654,7698,7844,7900
+7782,7839,7934
 !ok
 
 # MAX
 select max(distinct sal) from emp;
+EXPR$0
+5000.00
 !ok
 
 select max(all sal) from emp;
+EXPR$0
+5000.00
 !ok
 
 select max(sal) from emp;
+EXPR$0
+5000.00
 !ok
 
 # MEDIAN
+!if (lenientAgg) {
 select median(sal) from emp;
 !ok
+!}
 
 # MIN
 select min(distinct sal) from emp;
+EXPR$0
+800.00
 !ok
 
 select min(all sal) from emp;
+EXPR$0
+800.00
 !ok
 
 select min(sal) from emp;
+EXPR$0
+800.00
 !ok
 
 # PERCENTILE_CONT
+!if (lenientAgg) {
 select percentile_cont(0.6) within group (order by sal) from emp group by deptno;
 !ok
+!}
 
 # PERCENTILE_DISC
+!if (lenientAgg) {
 select percentile_disc(0.6) within group (order by sal) from emp group by deptno;
 !ok
+!}
 
 # STDDEV_SAMP and STDDEV_POP
 select stddev_samp(sal) from emp;
+EXPR$0
+1182.503223516271873450023122131824493408203125
 !ok
 
 select stddev_pop(sal) from emp;
+EXPR$0
+1139.488618295281639802851714193820953369140625
 !ok
 
 # SUM
 select sum(sal) from emp;
+EXPR$0
+29025.00
 !ok
 
 select sum(distinct sal) from emp;
+EXPR$0
+24775.00
 !ok
 
 # VAR_SAMP and VAR_POP
 select var_samp(sal) from emp;
+EXPR$0
+1398313.873626374
 !ok
 
 select var_samp(distinct sal) from emp;
+EXPR$0
+1512779.356060606
 !ok
 
 select var_samp(all sal) from emp;
+EXPR$0
+1398313.873626374
 !ok
 
 select var_pop(sal) from emp;
+EXPR$0
+1298434.31122449
 !ok
 
 # 4 Bit-Wise Aggregate Functions
 
 # BIT_AND
 select bit_and(deptno) from emp;
+EXPR$0
+0
 !ok
 
 # BIT_OR
 select bit_or(deptno) from emp;
+EXPR$0
+30
 !ok
 
 # BOOL_AND operates on a single Boolean or integer column or expression
+!if (lenient) {
 select bool_and(deptno < 20) from emp;
 !ok
+!}
 
+!if (lenient) {
 select bool_and(deptno) from emp;
 !ok
+!}
 
+!if (lenient) {
 select bool_and(distinct deptno) from emp;
 !ok
+!}
 
 # BOOL_OR operates on a single Boolean or integer column or expression
+!if (lenient) {
 select bool_or(deptno < 20) from emp;
 !ok
+!}
 
+!if (lenient) {
 select bool_or(deptno) from emp;
 !ok
+!}
 
 # 5 Window and ranking functions
 
 # 5.1 Window functions:
 
 # AVG
-select empno, avg(sal) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, avg(sal) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, 2450.00
+7839, 3725.00
+7934, 2916.666666666667
 !ok
 
 # COUNT
-select empno, count(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, count(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, 0
+7839, 0
+7934, 0
 !ok
 
 # CUME_DIST
-select empno, cume_dist() over (order by sal rows unbounded preceding) from emp order by 1;
+!if (lenient) {
+select empno, cume_dist() over (order by sal rows unbounded preceding) from emp where deptno = 10 order by 1;
 !ok
+!}
 
 # FIRST_VALUE
-select empno, first_value(sal) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, first_value(sal) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, 2450.00
+7839, 2450.00
+7934, 2450.00
 !ok
 
-select empno, first_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp order by 1;
+!if (firstValueRespectNulls) {
+select empno, first_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
 !ok
+!}
 
 # LAG
-select empno, lag(sal) respect nulls over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, lag(sal) respect nulls over (order by empno) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, 2450.00
+7934, 5000.00
 !ok
 
-select empno, lag(sal, 2) respect nulls over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, lag(sal, 2) respect nulls over (order by empno) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, 2450.00
 !ok
 
 # LAST_VALUE
+!if (firstValueRespectNulls) {
 select empno, last_value(sal) over (order by empno rows unbounded preceding) from emp order by 1;
 !ok
+!}
 
+!if (firstValueRespectNulls) {
 select empno, last_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp order by 1;
 !ok
+!}
 
 # LEAD
-select empno, lead(sal, 2) ignore nulls over (order by empno rows unbounded preceding) from emp order by 1;
+!if (leadIgnoreNulls) {
+select empno, lead(sal, 2) ignore nulls over (order by empno) from emp order by 1;
 !ok
+!}
 
 # MAX
-select empno, max(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, max(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # MEDIAN
-select empno, median(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+!if (lenientAgg) {
+select empno, median(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
 !ok
+!}
 
 # MIN
-select empno, min(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, min(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # NTH_VALUE
+!if (leadIgnoreNulls) {
 select empno, nth_value(sal, 2) ignore nulls over (order by empno rows unbounded preceding) from emp order by 1;
 !ok
+!}
 
 # PERCENTILE_CONT
+!if (lenient) {
 select percentile_cont(0.6) within group (order by sal) over () from emp;
 !ok
+!}
 
+!if (lenient) {
 select percentile_cont(0.6) within group (order by sal) over (partition by deptno) from emp;
 !ok
+!}
 
 # PERCENTILE_DISC
+!if (lenient) {
 select percentile_disc(0.6) within group (order by sal) over () from emp;
 !ok
+!}
 
+!if (lenient) {
 select percentile_disc(0.6) within group (order by sal) over (partition by deptno) from emp;
 !ok
+!}
 
 # RATIO_TO_REPORT
-select ratio_to_report(sal) over () from emp;
+!if (lenient) {
+select ratio_to_report(sal) over () from emp where deptno = 10;
 !ok
+!}
 
+!if (lenient) {
 select deptno, ratio_to_report(sal) over (partition by deptno) from emp;
 !ok
+!}
 
 # STDDEV_POP
-select empno, stddev_pop(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, stddev_pop(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # STDDEV_SAMP (synonym for STDDEV)
-select empno, stddev_samp(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, stddev_samp(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
-select empno, stddev(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, stddev(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # SUM
-select empno, sum(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, sum(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # VAR_POP
-select empno, var_pop(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, var_pop(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # VAR_SAMP (synonym for VARIANCE)
-select empno, var_samp(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, var_samp(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
-select empno, variance(comm) over (order by empno rows unbounded preceding) from emp order by 1;
+select empno, variance(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+EMPNO, EXPR$1
+7782, null
+7839, null
+7934, null
 !ok
 
 # 5.2 Ranking functions
 
 # DENSE_RANK
-select dense_rank() over () from emp;
+select dense_rank() over () from emp where deptno = 10;
+EXPR$0
+3
+3
+3
 !ok
 
 select dense_rank() over (partition by deptno) from emp;
+EXPR$0
+3
+3
+3
+5
+5
+5
+5
+5
+6
+6
+6
+6
+6
+6
 !ok
 
 select dense_rank() over (partition by deptno order by sal) from emp;
+EXPR$0
+1
+1
+1
+2
+2
+2
+2
+3
+3
+3
+4
+4
+4
+5
 !ok
 
 # NTILE
 select ntile(4) over (order by sal desc) from emp;
+EXPR$0
+1
+1
+1
+1
+2
+2
+2
+3
+3
+3
+3
+4
+4
+4
 !ok
 
 # PERCENT_RANK
+!if (lenient) {
 select percent_rank() over () from emp;
 !ok
+!}
 
+!if (lenient) {
 select percent_rank() over (partition by deptno) from emp;
 !ok
+!}
 
+!if (lenient) {
 select percent_rank() over (partition by deptno order by sal) from emp;
 !ok
+!}
 
 # RANK
 select rank() over () from emp;
+EXPR$0
+14
+14
+14
+14
+14
+14
+14
+14
+14
+14
+14
+14
+14
+14
 !ok
 
 select rank() over (partition by deptno) from emp;
+EXPR$0
+3
+3
+3
+5
+5
+5
+5
+5
+6
+6
+6
+6
+6
+6
 !ok
 
 select rank() over (partition by deptno order by sal) from emp;
+EXPR$0
+1
+1
+1
+2
+2
+2
+2
+3
+3
+4
+4
+4
+5
+6
 !ok
 
 # ROW_NUMBER
 select row_number() over () from emp;
+EXPR$0
+1
+10
+11
+12
+13
+14
+2
+3
+4
+5
+6
+7
+8
+9
 !ok
 
 # 6 Conditional Expressions
 
 # CASE
-select case when deptno < 10 then 'x' else 'y' end from emp;
+select case when deptno < 20 then 'x' else 'y' end from emp;
+EXPR$0
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+x
+x
+x
 !ok
 
-select case when deptno < 10 then 'x' end from emp;
+select case when deptno < 20 then 'x' end from emp;
+EXPR$0
+null
+null
+null
+null
+null
+null
+null
+null
+null
+null
+null
+x
+x
+x
 !ok
 
 select case deptno when 10 then 'x' when 20 then 'y' end from emp;
+EXPR$0
+null
+null
+null
+null
+null
+null
+x
+x
+x
+y
+y
+y
+y
+y
 !ok
 
 select case deptno when 10 then 'x' when 20 then 'y' else 'z' end from emp;
+EXPR$0
+x
+x
+x
+y
+y
+y
+y
+y
+z
+z
+z
+z
+z
+z
 !ok
 
 # COALESCE is a synonym for NVL
 select coalesce(1, 2, 3);
+EXPR$0
+1
 !ok
 
 # DECODE
 select decode(deptno, 10, 'x', 20, 'y', 'z') from emp;
+EXPR$0
+x
+x
+x
+y
+y
+y
+y
+y
+z
+z
+z
+z
+z
+z
 !ok
 
 # GREATEST and LEAST
-select greatest(deptno) from emp;
+select greatest(deptno) from emp where deptno = 10;
+EXPR$0
+10
+10
+10
 !ok
 
-select greatest(deptno, empno) from emp;
+select greatest(deptno, empno) from emp where deptno = 10;
+EXPR$0
+7782
+7839
+7934
 !ok
 
-select greatest(deptno, empno, sal) from emp;
+select greatest(deptno, empno, sal) from emp where deptno = 10;
+EXPR$0
+7782
+7839
+7934
 !ok
 
-select least(deptno, empno) from emp;
+select least(deptno, empno) from emp where deptno = 10;
+EXPR$0
+10
+10
+10
 !ok
 
 # NVL
 select nvl(1, 2);
+EXPR$0
+1
 !ok
 
+!if (other) {
 select nvl(1, 2, 3);
 !ok
+!}
 
-select nvl(comm, sal) from emp;
+select nvl(comm, sal) from emp where deptno = 10;
+EXPR$0
+1300.00
+2450.00
+5000.00
 !ok
 
 # NVL2
-select nvl2(comm, sal, sal + 10) from emp;
+!if (lenient) {
+select nvl2(comm, sal, sal + 10) from emp where deptno = 10;
 !ok
+!}
 
 # NULLIF
 select nullif(comm, sal) from emp;
+EXPR$0
+0.00
+1400.00
+300.00
+500.00
+null
+null
+null
+null
+null
+null
+null
+null
+null
+null
 !ok
 
 # 7 Date and Time Functions
@@ -400,41 +863,54 @@ select nullif(comm, sal) from emp;
 # the leader node.
 
 # AGE. Use DATEDIFF Function instead.
+!if (lenient) {
 select age('2017-01-01','2011-06-24');
 !ok
+!}
 
 # CURRENT_TIME. Use GETDATE Function or SYSDATE instead.
 select current_time;
-!ok
+SELECT CURRENT_TIME AS CURRENT_TIME
+!explain-validated-on calcite
 
 select current_time(2);
-!ok
+SELECT CURRENT_TIME(2)
+!explain-validated-on calcite
 
 # CURRENT_TIMESTAMP. Use GETDATE Function or SYSDATE instead.
 select current_timestamp;
-!ok
+SELECT CURRENT_TIMESTAMP AS CURRENT_TIMESTAMP
+!explain-validated-on calcite
 
 select current_timestamp(2);
-!ok
+SELECT CURRENT_TIMESTAMP(2)
+!explain-validated-on calcite
 
 # LOCALTIME. Use GETDATE Function or SYSDATE instead.
 select localtime;
-!ok
+SELECT LOCALTIME AS LOCALTIME
+!explain-validated-on calcite
 
 select localtime(2);
-!ok
+SELECT LOCALTIME(2)
+!explain-validated-on calcite
 
 # LOCALTIMESTAMP. Use GETDATE Function or SYSDATE instead.
 select localtimestamp;
-!ok
+SELECT LOCALTIMESTAMP AS LOCALTIMESTAMP
+!explain-validated-on calcite
 
 # ISFINITE
+!if (lenient) {
 select isfinite(date '2002-09-17');
 !ok
+!}
 
 # NOW. Use GETDATE Function or SYSDATE instead.
+!if (lenient) {
 select now();
 !ok
+!}
 
 # 7.2 Date and Time functions
 
@@ -443,250 +919,382 @@ select now();
 # If the date you are adding to is the last day of the month, the result is
 # always the last day of the result month, regardless of the length of the month.
 
+!if (lenient) {
 select add_months('2008-03-31',1);
 !ok
+!}
 
+!if (lenient) {
 -- returns '2008-04-30'
 select add_months(date '2008-03-31',1);
 !ok
+!}
 
+!if (lenient) {
 -- returns '2008-05-31'
 select add_months(date '2008-04-30',1);
 !ok
+!}
 
+!if (lenient) {
 select add_months(date '2008-03-31',-1);
 !ok
+!}
 
+!if (lenient) {
 select add_months(timestamp '2008-03-31 12:23:34',1);
 !ok
+!}
 
 # AT TIME ZONE 'timezone' returns TIMESTAMP
 # Specifies which time zone to use with a TIMESTAMP or TIMESTAMPTZ expression.
+!if (atTimeZone) {
 -- returns '2001-02-16 19:38:40-08'
 SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'MST';
 !ok
+!}
 
+!if (atTimeZone) {
 -- returns '2001-02-16 18:38:40'
 SELECT TIMESTAMP WITH TIME ZONE '2001-02-16 20:38:40-05' AT TIME ZONE 'MST';
 !ok
+!}
 
 # CONVERT_TIMEZONE (['timezone',] 'timezone', timestamp) returns TIMESTAMP
 # Converts a time stamp from one time zone to another.
 -- returns '2008-03-05 09:25:29'
+select convert_timezone('EST', 'PST', timestamp '2008-03-05 12:25:29');
+!explain-validated-on calcite
+
+!if (other) {
+-- returns '2008-03-05 09:25:29'
 select convert_timezone('EST', 'PST', '20080305 12:25:29');
 !ok
+!}
 
+!if (other) {
 -- returns '2013-02-01 03:00:00'
 select convert_timezone('America/New_York', '2013-02-01 08:00:00');
 !ok
+!}
 
+!if (other) {
 -- returns '2014-05-17 10:00:00'
 select CONVERT_TIMEZONE('GMT','GMT+2','2014-05-17 12:00:00');
 !ok
+!}
 
 # CURRENT_DATE returns DATE
 # Returns a date in the current session time zone (UTC by default) for the start
 # of the current transaction.
 select current_date;
-!ok
+SELECT CURRENT_DATE AS CURRENT_DATE
+!explain-validated-on calcite
 
 # DATE_CMP (date1, date2) returns INTEGER
 # Compares two dates and returns 0 if the dates are identical, 1 if date1 is
 # greater, and -1 if date2 is greater.
+!if (lenient) {
 -- returns -1
 select date_cmp('2008-01-01', '2008-01-04');
 !ok
+!}
 
+!if (lenient) {
 -- returns 0
 select date_cmp(date '2008-01-04', '2008-01-04');
 !ok
+!}
 
+!if (lenient) {
 -- returns 1
 select date_cmp(date '2008-01-05', date '2008-01-04');
 !ok
+!}
 
 # DATE_CMP_TIMESTAMP (date, timestamp) returns INTEGER
 # Compares a date to a time and returns 0 if the values are identical, 1 if date
 # is greater and -1 if timestamp is greater.
+!if (lenient) {
 -- returns -1
 select date_cmp_timestamp('2008-01-01', '2008-01-04 00:00:00');
 !ok
+!}
 
+!if (lenient) {
 -- returns 0
 select date_cmp_timestamp(date '2008-01-04', '2008-01-04 00:00:00');
 !ok
+!}
 
+!if (lenient) {
 -- I presume that this returns -1, but doc does not specify
 select date_cmp_timestamp(date '2008-01-04', '2008-01-04 01:23:45');
 !ok
+!}
 
+!if (lenient) {
 -- returns 1
 select date_cmp_timestamp(date '2008-01-05', timestamp '2008-01-04 00:00:00');
 !ok
+!}
 
+!if (lenient) {
 # DATE_CMP_TIMESTAMPTZ (date, timestamptz) returns INTEGER
 # Compares a date and a time stamp with time zone and returns 0 if the values
 # are identical, 1 if date is greater and -1 if timestamptz is greater.
 -- returns -1
-select date_cmp_timestamptz('2008-01-01', '2008-01-04 00:00:00' at 'gmt');
+select date_cmp_timestamptz('2008-01-01', '2008-01-04 00:00:00' at time zone 'gmt');
 !ok
+!}
 
 # DATE_PART_YEAR (date) returns INTEGER
 # Extracts the year from a date.
+!if (lenient) {
 -- returns 2008
 select date_part_year('2008-01-05');
 !ok
+!}
 
+!if (lenient) {
 select date_part_year(date '2008-01-05');
 !ok
+!}
 
 # DATEADD (datepart, interval, {date|timestamp}) returns TIMESTAMP
 # Increments a date or time by a specified interval.
 # The DATEADD(month, ...) and ADD_MONTHS functions handle dates that fall at the
 # ends of months differently.
+!if (other) {
 -- returns '2009-08-28 00:00:00'
+select dateadd(month,18,date '2008-02-28');
+!ok
+!}
+
+!if (other) {
+-- as above, for uses char rather than date
 select dateadd(month,18,'2008-02-28');
 !ok
+!}
 
+!if (dateAdd) {
 -- returns '2004-05-30 00:00:00' (ADD_MONTHS would return '2004-05-31')
-select dateadd(month,1,'2004-04-30');
+select dateadd(month,1,date '2004-04-30');
 !ok
+!}
 
+!if (dateAdd) {
 -- returns '2008-02-28 00:30:00' ('m' stands for minutes, not months)
-select dateadd(m,18,'2008-02-28');
+select dateadd(m,18,date '2008-02-28');
 !ok
+!}
 
+!if (dateAdd) {
 -- returns '2017-02-28 00:00:00'
-select dateadd(month,12,'2016-02-29');
+select dateadd(month,12,date '2016-02-29');
 !ok
+!}
 
+!if (dateAdd) {
 -- returns '2017-03-01 00:00:00'
-select dateadd(year, 1, '2016-02-29');
+select dateadd(year, 1, date '2016-02-29');
 !ok
+!}
 
 # DATEDIFF (datepart, {date|time}, {date|timestamp}) returns BIGINT
 # Returns the difference between two dates or times for a given date part, such
 # as a day or month.
+!if (dateAdd) {
 -- returns 52
+select datediff(week,date '2009-01-01',date '2009-12-31') as numweeks;
+!ok
+!}
+
+!if (other) {
+-- as above but CHAR rather than DATE
 select datediff(week,'2009-01-01','2009-12-31') as numweeks;
 !ok
 
+select datediff(week,date '2009-01-01','2009-12-31') as numweeks;
+!ok
+
+select datediff(week,'2009-01-01',date '2009-12-31') as numweeks;
+!ok
+!}
+
+!if (dateAdd) {
 -- returns 40 or more
-select datediff(qtr, '1998-07-01', current_date);
+select datediff(qtr, date '1998-07-01', current_date);
 !ok
+!}
 
-select datediff(hours, '1998-07-01', current_date);
+!if (dateAdd) {
+select datediff(hours, date '1998-07-01', current_date);
 !ok
+!}
 
-select datediff(day, '1998-07-01', current_date);
+!if (dateAdd) {
+select datediff(day, date '1998-07-01', current_date);
 !ok
+!}
 
 # DATE_PART (datepart, {date|time}) returns DOUBLE
 # Extracts a date part value from date or time.
+!if (dateAdd) {
 -- returns 25
-select date_part(w, '2008-06-17 09:44:54');
+select date_part(w, timestamp '2008-06-17 09:44:54');
 !ok
+!}
 
--- returns 8
-select date_part(minute, '2009-01-01 02:08:01');
+!if (dateAdd) {
+select date_part(w, timestamp '2008-06-17 09:44:54');
 !ok
+!}
+
+!if (dateAdd) {
+-- returns 8
+select date_part(minute, timestamp '2009-01-01 02:08:01');
+!ok
+!}
+
+!if (dateAdd) {
+select date_part(minute, time '02:08:01');
+!ok
+!}
+
+!if (dateAdd) {
+select date_part(minute, date '2009-01-01');
+!ok
+!}
 
 # DATE_TRUNC ('datepart', timestamp) returns TIMESTAMP
 # Truncates a time stamp based on a date part.
 -- returns '2008-09-01'
+select date_trunc('week', date '2008-09-07');
+!explain-validated-on calcite
+
+!if (other) {
+-- as above, but CHAR rather than DATE
 select date_trunc('week', '2008-09-07');
 !ok
+!}
 
 -- returns '2008-09-08'
-select date_trunc('week', '2008-09-08');
+select date_trunc('week', date '2008-09-08');
 !ok
 
 -- returns '2008-09-08'
-select date_trunc('week', '2008-09-09');
+select date_trunc('week', date '2008-09-09');
 !ok
 
 # EXTRACT (datepart FROM {TIMESTAMP 'literal' | timestamp}) returns DOUBLE
 # Extracts a date part from a timestamp or literal.
 -- returns 8
 select extract(minute from timestamp '2009-09-09 12:08:43');
+EXPR$0
+8
 !ok
 
--- returns 8
+!if (other) {
+-- as above, but CHAR rather than TIMESTAMP
 select extract(minute from '2009-09-09 12:08:43');
 !ok
+!}
 
 # GETDATE() returns TIMESTAMP
 # Returns the current date and time in the current session time zone (UTC by
 # default). The parentheses are required.
+!if (lenient) {
 select getdate();
 !ok
+!}
 
 # INTERVAL_CMP (interval1, interval2) returns INTEGER
 # Compares two intervals and returns 0 if the intervals are equal, 1 if
 # interval1 is greater, and -1 if interval2 is greater.
+!if (lenient) {
 -- returns -1
+select interval_cmp(interval '3' days,interval '1');
+!ok
+!}
+
+!if (other) {
+-- as above but CHAR rather than INTERVAL
 select interval_cmp('3 days','1 year');
 !ok
+!}
 
+!if (lenient) {
 -- returns 0
 select interval_cmp('7 days','1 week');
 !ok
+!}
 
+!if (lenient) {
 -- should this return 0 or 1?
 select interval_cmp('366 days','1 year');
 !ok
+!}
 
+!if (lenient) {
 -- should this return -1, 0 or 1?
 select interval_cmp('30 days','1 month');
 !ok
+!}
 
 # LAST_DAY(date) returns DATE
 # Returns the date of the last day of the month that contains date.
 # Always returns DATE, even if argument is TIMESTAMP.
 -- returns '2004-01-31'
 select last_day(date '2004-01-25');
+EXPR$0
+2004-01-31
 !ok
 
 -- returns '2004-01-31'
 select last_day(timestamp '2004-01-25 12:23:45');
+EXPR$0
+2004-01-31
 !ok
 
 # MONTHS_BETWEEN (date, date) returns FLOAT8
 # Returns the number of months between two dates.
 -- returns -2
 select months_between('1969-01-18', '1969-03-18') as months;
-!ok
+!explain-validated-on calcite
 
 # NEXT_DAY (date, day) returns DATE
 # Returns the date of the first instance of day that is later than date.
 -- returns '2014-08-26'
 select next_day('2014-08-20','Tuesday');
-!ok
+!explain-validated-on calcite
 
 -- returns '2014-08-26'
 select next_day('2014-08-20','Tu');
-!ok
+!explain-validated-on calcite
 
 -- not valid ('T' could be 'Tue' or 'Thu')
 select next_day('2014-08-20','T');
-!ok
+!explain-validated-on calcite
 
 -- returns '2014-08-22'
 select next_day('2014-08-20','F');
-!ok
+!explain-validated-on calcite
 
 # SYSDATE returns TIMESTAMP
 # Returns the date and time in the current session time zone (UTC by default)
 # for the start of the current transaction.
+!if (other) {
 select sysdate;
 !ok
+!}
 
 # TIMEOFDAY() returns VARCHAR
 # Returns the current weekday, date, and time in the current session time zone
 # (UTC by default) as a string value.
 -- returns something like 'Thu Sep 19 22:53:50.333525 2013 UTC'
 select timeofday();
-!ok
+!explain-validated-on calcite
 
 # TIMESTAMP_CMP (timestamp1, timestamp2) returns INTEGER
 # Compares two timestamps and returns 0 if the timestamps are equal, 1 if
@@ -700,271 +1308,331 @@ select timestamp_cmp('2008-01-01 00:00:00', '2008-01-04 12:34:56');
 # timestamp is greater, and -1 if date is greater.
 -- returns -1
 select timestamp_cmp_date('2008-01-01 00:00:00', '2008-01-04');
-!ok
+!explain-validated-on calcite
 
 # TIMESTAMP_CMP_TIMESTAMPTZ (timestamp, timestamptz) returns INTEGER
 # Compares a timestamp with a time stamp with time zone and returns 0 if the
 # values are equal, 1 if timestamp is greater, and -1 if timestamptz is greater.
 -- returns -1
 select timestamp_cmp_timestamptz('2008-01-01 00:00:00', '2008-01-04 00:00:00');
-!ok
+!explain-validated-on calcite
 
 # TIMESTAMPTZ_CMP (timestamptz1, timestamptz2) returns INTEGER
 # Compares two timestamp with time zone values and returns 0 if the values are
 # equal, 1 if timestamptz1 is greater, and -1 if timestamptz2 is greater.
-select TIMESTAMPTZ_CMP;
 -- returns -1
 select timestamptz_cmp('2008-01-01 00:00:00', '2008-01-04 00:00:00');
-!ok
+!explain-validated-on calcite
 
 # TIMESTAMPTZ_CMP_DATE (timestamptz, date) returns INTEGER
 # Compares the value of a time stamp with time zone and a date and returns 0 if
 # the values are equal, 1 if timestamptz is greater, and -1 if date is greater.
 -- returns -1
 select timestamptz_cmp_date('2008-01-01 00:00:00', '2008-01-04');
-!ok
+!explain-validated-on calcite
 
 # TIMESTAMPTZ_CMP_TIMESTAMP (timestamptz, timestamp) returns INTEGER
 # Compares a timestamp with time zone with a time stamp and returns 0 if the
 # values are equal, 1 if timestamptz is greater, and -1 if timestamp is greater.
 -- returns -1
 select timestamptz_cmp_timestamp('2008-01-01 00:00:00', '2008-01-04');
-!ok
+!explain-validated-on calcite
 
 # TIMEZONE ('timezone', timestamp | timestamptz ) returns TIMESTAMP or TIMESTAMPTZ
 # Returns a time stamp or time stamp with time zone for the specified time zone
 # and time stamp value.
 select timezone('Africa/Kampala', '2008-01-01 00:00:00');
-!ok
+!explain-validated-on calcite
 
 # TO_TIMESTAMP ('timestamp', 'format') returns TIMESTAMPTZ
 # Returns a time stamp with time zone for the specified time stamp and time zone
 # format.
 select to_timestamp('05 Dec 2000', 'DD Mon YYYY');
-!ok
+!explain-validated-on calcite
 
 # TRUNC(timestamp) returns DATE
 # Truncates a time stamp and returns a date.
 -- returns '2011-07-21'
 select trunc(timestamp '2011-07-21 10:32:38.248109');
-!ok
+!explain-validated-on calcite
 
 # 8 Math functions
 
 # ABS
 select abs(2);
+EXPR$0
+2
 !ok
 
-select -abs(-pi());
+select -abs(-pi);
 !ok
 
 # ACOS
 select acos(0);
+EXPR$0
+1.5707963267948966
 !ok
 
 # ASIN
 select asin(0);
+EXPR$0
+0.0
 !ok
 
 # ATAN
 select atan(0);
+EXPR$0
+0.0
 !ok
 
 # ATAN2
 select atan2(2,2) * 4 as pi;
+PI
+3.141592653589793
 !ok
 
 # CBRT
 select cbrt(-8);
-!ok
+!explain-validated-on calcite
 
 # CEILING (or CEIL)
 select ceiling(10.5);
+EXPR$0
+11
 !ok
 
 select ceiling(-10.5);
+EXPR$0
+-10
 !ok
 
 select ceil(pi);
+EXPR$0
+4.0
 !ok
 
 # CHECKSUM
 select checksum(comm) from emp;
-!ok
+!explain-validated-on calcite
 
 # COS
 select cos(180);
+EXPR$0
+-0.5984600690578581
 !ok
 
 # COT
 select cot(45);
+EXPR$0
+0.6173696237835551
 !ok
 
 # DEGREES
 select degrees(pi);
+EXPR$0
+180.0
 !ok
 
 # DEXP
 select dexp(0);
-!ok
+!explain-validated-on calcite
 
 # DLOG1 is a synonym for LN
 select dlog1(10);
-!ok
+!explain-validated-on calcite
 
 # DLOG10
 select dlog10(100);
-!ok
+!explain-validated-on calcite
 
 # EXP
 select exp(0);
+EXPR$0
+1.0
 !ok
 
 # FLOOR
 select floor(10.5);
+EXPR$0
+10
 !ok
 
 select floor(-10.5);
+EXPR$0
+-11
 !ok
 
 # LN
 select ln(1);
+EXPR$0
+0.0
 !ok
 
 # LOG
 select log(1000);
-!ok
+!explain-validated-on calcite
 
 # MOD
 select mod(-50, 17);
+EXPR$0
+-16
 !ok
 
 # PI
+# In standard SQL you write 'pi', but for redshift you write 'pi()'
+!if (pi) {
 select pi();
 !ok
+!}
 
 # POWER
 select power(2, 3);
+EXPR$0
+8.0
 !ok
 
 select pow(-2, 3);
-!ok
+!explain-validated-on calcite
 
 # RADIANS
 select radians(180);
+EXPR$0
+3.141592653589793
 !ok
 
 # RANDOM
 select random();
-!ok
+!explain-validated-on calcite
 
 # ROUND
-select round(pi());
+select round(pi);
 !ok
 
-select round(pi(), 2);
+select round(pi, 2);
 !ok
 
-select round(-pi(), 2);
+select round(-pi, 2);
 !ok
 
 # SIN
 select sin(-90);
+EXPR$0
+-0.8939966636005579
 !ok
 
 # SIGN
 select sign(23);
+EXPR$0
+1
 !ok
 
 # SQRT
 select sqrt(225);
+EXPR$0
+15.0
 !ok
 
 # TAN
 select tan(45);
+EXPR$0
+1.6197751905438615
 !ok
 
 # TO_HEX
 select to_hex(2147676847);
-!ok
+!explain-validated-on calcite
 
 # TRUNC
 select trunc(111.86);
-!ok
+!explain-validated-on calcite
 
 select trunc(-111.86, 1);
-!ok
+!explain-validated-on calcite
 
 # 9 String functions
 
 # || (Concatenation) Operator
 select 'a' || 'b';
+EXPR$0
+ab
 !ok
 
 # BPCHARCMP
 select ename, dname, bpcharcmp(ename, dname) from emp join dept using (deptno);
-!ok
+!explain-validated-on calcite
 
 # BTRIM
 select btrim('  abc ');
-!ok
+!explain-validated-on calcite
 
 select btrim('xyzaxyzbxyzcxyz', 'xyz');
-!ok
+!explain-validated-on calcite
 
 # BTTEXT_PATTERN_CMP is a synonym for BPCHARCMP
 select ename, dname, bttext_pattern_cmp(ename, dname) from emp join dept using (deptno);
-!ok
+!explain-validated-on calcite
 
 # CHAR_LENGTH is a synonym for LEN
 select char_length('abc');
+EXPR$0
+3
 !ok
 
 # CHARACTER_LENGTH is a synonym for LEN
 select character_length('abc');
+EXPR$0
+3
 !ok
 
 # CHARINDEX
 select charindex('dog', 'fish');
-!ok
+!explain-validated-on calcite
 
 select charindex('fish', 'dogfish');
-!ok
+!explain-validated-on calcite
 
 # CHR
 select chr(65);
+EXPR$0
+A
 !ok
 
 # CONCAT (Oracle Compatibility Function)
 select concat('a', 'b');
-!ok
+!explain-validated-on calcite
 
 # CRC32
 -- returns 'f2726906'
 select crc32('Amazon Redshift');
-!ok
+!explain-validated-on calcite
 
 # FUNC_SHA1
 select func_sha1('Amazon Redshift');
-!ok
+!explain-validated-on calcite
 
 # INITCAP
 -- returns 'Nibh.Enim@Egestas.Ca'
 select initcap('nibh.enim@egestas.ca');
+EXPR$0
+Nibh.Enim@Egestas.Ca
 !ok
 
 # LEFT and RIGHT
 -- returns 'Chica'
 select left('Chicago', 5);
+EXPR$0
+Chica
 !ok
 
 -- returns 'icago'
 select right('Chicago', 5);
+EXPR$0
+icago
 !ok
 
 # LEN is a synonym for LENGTH
 select len('gth');
-!ok
+!explain-validated-on calcite
 
 # LENGTH
 select length('ily');
@@ -1180,7 +1848,7 @@ select to_date ('02 Oct 2001', 'DD Mon YYYY');
 # TO_NUMBER
 -- returns -12454.8
 select to_number('12,454.8-', '99G999D9S');
-ok
+!ok
 
 # 12 System Administration Functions
 

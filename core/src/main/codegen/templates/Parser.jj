@@ -1626,6 +1626,7 @@ SqlLiteral JoinType() :
 }
 {
     (
+    LOOKAHEAD(3)
         <JOIN> { joinType = JoinType.INNER; }
     |
         <INNER> <JOIN> { joinType = JoinType.INNER; }

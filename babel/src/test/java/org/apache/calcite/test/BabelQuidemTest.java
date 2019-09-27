@@ -41,7 +41,6 @@ import net.hydromatic.quidem.Command;
 import net.hydromatic.quidem.CommandHandler;
 import net.hydromatic.quidem.Quidem;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -58,7 +57,6 @@ import java.util.regex.Pattern;
  * Unit tests for the Babel SQL parser.
  */
 @RunWith(Parameterized.class)
-@Ignore
 public class BabelQuidemTest extends QuidemTest {
   /** Creates a BabelQuidemTest. Public per {@link Parameterized}. */
   @SuppressWarnings("WeakerAccess")
@@ -100,14 +98,88 @@ public class BabelQuidemTest extends QuidemTest {
         switch (name) {
         case "babel":
           return BabelTest.connect();
+        case "scott":
+          return CalciteAssert.that()
+              .with(CalciteAssert.Config.SCOTT)
+              .with(CalciteConnectionProperty.FUN, "standard,postgresql,oracle")
+              .with(CalciteConnectionProperty.PARSER_FACTORY,
+                  SqlBabelParserImpl.class.getName() + "#FACTORY")
+              .with(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP, true)
+              .connect();
+        default:
+          return super.connect(name, reference);
         }
-        return super.connect(name, reference);
       }
     };
   }
 
   @Override protected CommandHandler createCommandHandler() {
     return new BabelCommandHandler();
+  }
+
+  /** Base class for implementations of Command that have one piece of source
+   * code. */
+  abstract static class MySimpleCommand extends AbstractCommand {
+    protected final ImmutableList<String> lines;
+
+    MySimpleCommand(List<String> lines) {
+      this.lines = ImmutableList.copyOf(lines);
+    }
+  }
+
+  /** Command that executes a SQL statement and checks its result. */
+  abstract static class MyCheckResultCommand extends MySimpleCommand
+      implements Command.ResultChecker {
+    protected final boolean output;
+
+    MyCheckResultCommand(List<String> lines, boolean output) {
+      super(lines);
+      this.output = output;
+    }
+
+    @Override public String describe(Context x) {
+      return commandName() + " [sql: " + x.previousSqlCommand().sql + "]";
+    }
+
+    public void execute(Context x, boolean execute) throws Exception {
+      x.checkResult(execute, output, this);
+      x.echo(lines);
+    }
+
+    public void checkResultSet(Context x, Throwable resultSetException) {
+      if (resultSetException != null) {
+        x.stack(resultSetException, x.writer());
+      }
+    }
+  }
+
+  /** Command that executes a SQL statement and checks its result. */
+  static class MyOkCommand extends MyCheckResultCommand {
+    protected final ImmutableList<String> output;
+
+    MyOkCommand(List<String> lines, ImmutableList<String> output) {
+      super(lines, true);
+      this.output = output;
+    }
+
+    public List<String> getOutput(Context x) {
+      return output;
+    }
+  }
+
+  /** Command that executes a SQL statement and checks its result. */
+  static class CountCommand extends MyOkCommand {
+    private final int rowCount;
+
+    CountCommand(List<String> lines, ImmutableList<String> output, int rowCount) {
+      super(lines, output);
+      this.rowCount = rowCount;
+    }
+
+    @Override
+    public void checkResultSet(Context x, Throwable resultSetException) {
+      super.checkResultSet(x, resultSetException);
+    }
   }
 
   /** Command that prints the validated parse tree of a SQL statement. */
@@ -183,6 +255,16 @@ public class BabelQuidemTest extends QuidemTest {
             set.add(matcher.group(i + 1));
           }
           return new ExplainValidatedCommand(lines, content, set.build());
+        }
+      }
+      final String prefix2 = "count";
+      if (line.startsWith(prefix2)) {
+        final Pattern pattern =
+            Pattern.compile("count ([0-9])+");
+        final Matcher matcher = pattern.matcher(line);
+        if (matcher.matches()) {
+          final int rowCount = Integer.parseInt(matcher.group(1));
+          return new CountCommand(lines, ImmutableList.copyOf(content), rowCount);
         }
       }
       return null;
