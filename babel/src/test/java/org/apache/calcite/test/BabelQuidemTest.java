@@ -202,13 +202,6 @@ public class BabelQuidemTest extends QuidemTest {
             SqlParser.configBuilder()
                 .setParserFactory(SqlBabelParserImpl.FACTORY);
 
-        // use Babel conformance for validation
-        final Properties properties = new Properties();
-        properties.setProperty(CalciteConnectionProperty.CONFORMANCE.name(),
-            SqlConformanceEnum.BABEL.name());
-        final CalciteConnectionConfig connectionConfig =
-            new CalciteConnectionConfigImpl(properties);
-
         // extract named schema from connection and use it in planner
         final CalciteConnection calciteConnection =
             x.connection().unwrap(CalciteConnection.class);
@@ -221,7 +214,7 @@ public class BabelQuidemTest extends QuidemTest {
             Frameworks.newConfigBuilder()
                 .defaultSchema(schema)
                 .parserConfig(parserConfig.build())
-                .context(Contexts.of(connectionConfig));
+                .context(Contexts.of(calciteConnection.config()));
 
         // parse, validate and un-parse
         final Quidem.SqlCommand sqlCommand = x.previousSqlCommand();
