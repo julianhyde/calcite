@@ -15,28 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# The following functions have ordinary syntax and are not defined
-# in Calcite. Therefore we use '!explain-validated-on calcite'.
+# The following functions have ordinary syntax and are not defined in Calcite.
+# We call them using '!explain-validated-on calcite', which generates a plan;
+# if we tried to execute, using '!ok', the command would fail. Ideally we would
+# define each of these in Calcite's Redshift (or PostgreSQL) operator table,
+# and we could execute the functions.
 #   get_bit
 #   get_byte
 #   set_bit
 #   set_byte
 #   to_ascii
-#   percentile_cont
-#   percentile_disc
-#   ratio_to_report
-#   percent_rank
-#   bool_and
-#   bool_or
-#   cume_dist
 #   isfinite
 #   now()
 #   date_cmp
 #   date_cmp_timestamp
 #   date_cmp_timestamptz
 #   date_part_year
+#   date_trunc
 #   interval_cmp
 #   getdate()
+#   nvl2
+#   age
+#   add_months
 #   trunc
 #   to_hex
 #   random
@@ -54,26 +54,57 @@
 #   bttext_pattern_cmp
 #   crc32
 #   func_sha1
-
-# Bugs:
-# lenientAgg - aggregate functions not in operator table, viz
+#   convert_timezone
+#
+# The following functions work correctly, and can be executed, but we use
+# '!explain-validated-on' because the results of execution differ each time:
+#   current_date
+#   current_time
+#   current_timestamp
+#   localtime
+#   localtimestamp
+#
+# lenientAgg - aggregate functions not in operator table:
 #   median
+#   bool_and
+#   bool_or
+#   percentile_cont
+#   percentile_disc
+#   cume_dist
+#   percent_rank
+#   ratio_to_report
+#
 # approximate - keyword before aggregate functions, e.g. 'approximate avg(x)'
+#
+# atTimeZone - AT TIME ZONE operator
+#
 # firstValueRespectNulls - RESPECT NULLS in FIRST_VALUE and LAST_VALUE
+#
 # leadIgnoreNulls - allow IGNORE NULLS in LEAD, LAG, NTH_VALUE
-# other - NVL with more than 2 arguments;
-#   apply CONVERT_TIMEZONE to CHAR rather than TIMESTAMP last arg,
+#
+# nvlVarArgs - NVL with more than 2 arguments
+#
+# coerce - apply CONVERT_TIMEZONE to CHAR rather than TIMESTAMP last arg,
 #     or with only 2 args,
 #   apply DATEADD to CHAR rather than DATE
 #   apply CONVERT_TIMEZONE to CHAR rather than DATE
-# other - SYSDATE operator (no parens)
-# atTimeZone - AT TIME ZONE operator
+#
 # dateAdd - "No match found for function signature DATEADD(<INTERVAL_YEAR_MONTH>,
 #   <NUMERIC>, <DATE>)" due to "month" argument;
 #   similarly DATEDIFF and DATE_PART;
 #   similarly 'm' and 'qtr' arguments
-# pi - Allow nilary built-in functions to be called with emtpy parens
-# position - Non-ANSI position function
+#
+# sysdate - operator with no parens:
+#   SYSDATE
+#   CURRENT_USER_ID
+
+# emptyParens - Allow nilary built-in functions to be called with empty parens:
+#  PI
+#  CURRENT_SCHEMA
+#
+# position - Non-ANSI position function; similarly CONVERT
+#
+# pluralInterval - allow INTERVAL '2' DAYS as well as INTERVAL '2' DAY; [CALCITE-3383]
 #
 # TODO:
 #  * Why does CONCAT not work?
@@ -109,34 +140,29 @@ EXPR$0
 !ok
 
 # GET_BIT
-!if (lenient) {
 select get_bit(CAST('FFFF' as BINARY), 1);
-!ok
-!}
+SELECT "GET_BIT"(CAST('FFFF' AS BINARY), 1)
+!explain-validated-on calcite
 
 # GET_BYTE
-!if (lenient) {
 select get_byte(CAST('FFFF' as BINARY), 1);
-!ok
-!}
+SELECT "GET_BYTE"(CAST('FFFF' AS BINARY), 1)
+!explain-validated-on calcite
 
 # SET_BIT
-!if (lenient) {
 select set_bit(CAST('FFFF' as BINARY), 1, 61);
-!ok
-!}
+SELECT "SET_BIT"(CAST('FFFF' AS BINARY), 1, 61)
+!explain-validated-on calcite
 
 # SET_BYTE
-!if (lenient) {
 select set_byte(CAST('FFFF' as BINARY), 1, 61);
-!ok
-!}
+SELECT "SET_BYTE"(CAST('FFFF' AS BINARY), 1, 61)
+!explain-validated-on calcite
 
 # TO_ASCII
-!if (lenient) {
 select to_ascii(120);
-!ok
-!}
+SELECT "TO_ASCII"(120)
+!explain-validated-on calcite
 
 # 2 Compute Node–Only Functions
 #
@@ -317,28 +343,28 @@ EXPR$0
 !ok
 
 # BOOL_AND operates on a single Boolean or integer column or expression
-!if (lenient) {
+!if (lenientAgg) {
 select bool_and(deptno < 20) from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select bool_and(deptno) from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select bool_and(distinct deptno) from emp;
 !ok
 !}
 
 # BOOL_OR operates on a single Boolean or integer column or expression
-!if (lenient) {
+!if (lenientAgg) {
 select bool_or(deptno < 20) from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select bool_or(deptno) from emp;
 !ok
 !}
@@ -348,53 +374,68 @@ select bool_or(deptno) from emp;
 # 5.1 Window functions:
 
 # AVG
-select empno, avg(sal) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, avg(sal) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, 2450.00
-7839, 3725.00
-7934, 2916.666666666667
+7499, 1600.00
+7521, 1425.00
+7654, 1366.666666666667
+7698, 1737.50
+7844, 1690.00
+7900, 1566.666666666667
 !ok
 
 # COUNT
-select empno, count(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, count(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, 0
-7839, 0
-7934, 0
+7499, 1
+7521, 2
+7654, 3
+7698, 3
+7844, 4
+7900, 4
 !ok
 
 # CUME_DIST
-!if (lenient) {
-select empno, cume_dist() over (order by sal rows unbounded preceding) from emp where deptno = 10 order by 1;
+!if (lenientAgg) {
+select empno, cume_dist() over (order by sal rows unbounded preceding) from emp where deptno = 30 order by 1;
 !ok
 !}
 
 # FIRST_VALUE
-select empno, first_value(sal) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, first_value(sal) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, 2450.00
-7839, 2450.00
-7934, 2450.00
+7499, 1600.00
+7521, 1600.00
+7654, 1600.00
+7698, 1600.00
+7844, 1600.00
+7900, 1600.00
 !ok
 
 !if (firstValueRespectNulls) {
-select empno, first_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, first_value(sal respect nulls) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 !ok
 !}
 
 # LAG
-select empno, lag(sal) respect nulls over (order by empno) from emp where deptno = 10 order by 1;
+select empno, lag(sal) respect nulls over (order by empno) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, 2450.00
-7934, 5000.00
+7499, null
+7521, 1600.00
+7654, 1250.00
+7698, 1250.00
+7844, 2850.00
+7900, 1500.00
 !ok
 
-select empno, lag(sal, 2) respect nulls over (order by empno) from emp where deptno = 10 order by 1;
+select empno, lag(sal, 2) respect nulls over (order by empno) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, 2450.00
+7499, null
+7521, null
+7654, 1600.00
+7698, 1250.00
+7844, 1250.00
+7900, 2850.00
 !ok
 
 # LAST_VALUE
@@ -415,25 +456,31 @@ select empno, lead(sal, 2) ignore nulls over (order by empno) from emp order by 
 !}
 
 # MAX
-select empno, max(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, max(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, 300.00
+7521, 500.00
+7654, 1400.00
+7698, 1400.00
+7844, 1400.00
+7900, 1400.00
 !ok
 
 # MEDIAN
 !if (lenientAgg) {
-select empno, median(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, median(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 !ok
 !}
 
 # MIN
-select empno, min(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, min(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, 300.00
+7521, 300.00
+7654, 300.00
+7698, 300.00
+7844, 0.00
+7900, 0.00
 !ok
 
 # NTH_VALUE
@@ -443,100 +490,124 @@ select empno, nth_value(sal, 2) ignore nulls over (order by empno rows unbounded
 !}
 
 # PERCENTILE_CONT
-!if (lenient) {
+!if (lenientAgg) {
 select percentile_cont(0.6) within group (order by sal) over () from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select percentile_cont(0.6) within group (order by sal) over (partition by deptno) from emp;
 !ok
 !}
 
 # PERCENTILE_DISC
-!if (lenient) {
+!if (lenientAgg) {
 select percentile_disc(0.6) within group (order by sal) over () from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select percentile_disc(0.6) within group (order by sal) over (partition by deptno) from emp;
 !ok
 !}
 
 # RATIO_TO_REPORT
-!if (lenient) {
-select ratio_to_report(sal) over () from emp where deptno = 10;
+!if (lenientAgg) {
+select ratio_to_report(sal) over () from emp where deptno = 30;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select deptno, ratio_to_report(sal) over (partition by deptno) from emp;
 !ok
 !}
 
 # STDDEV_POP
-select empno, stddev_pop(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, stddev_pop(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, 0
+7521, 100
+7654, 478.42333648024424519462627358734607696533203125
+7698, 478.42333648024424519462627358734607696533203125
+7844, 522.0153254455275373402400873601436614990234375
+7900, 522.0153254455275373402400873601436614990234375
 !ok
 
 # STDDEV_SAMP (synonym for STDDEV)
-select empno, stddev_samp(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, stddev_samp(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, null
+7521, 141.421356237309510106570087373256683349609375
+7654, 585.9465277082316561063635163009166717529296875
+7698, 585.9465277082316561063635163009166717529296875
+7844, 602.7713773341707792496890760958194732666015625
+7900, 602.7713773341707792496890760958194732666015625
 !ok
 
-select empno, stddev(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, stddev(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, null
+7521, 141.421356237309510106570087373256683349609375
+7654, 585.9465277082316561063635163009166717529296875
+7698, 585.9465277082316561063635163009166717529296875
+7844, 602.7713773341707792496890760958194732666015625
+7900, 602.7713773341707792496890760958194732666015625
 !ok
 
 # SUM
-select empno, sum(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, sum(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, 300.00
+7521, 800.00
+7654, 2200.00
+7698, 2200.00
+7844, 2200.00
+7900, 2200.00
 !ok
 
 # VAR_POP
-select empno, var_pop(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, var_pop(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, 0.0000
+7521, 10000.0000
+7654, 228888.888888889
+7698, 228888.888888889
+7844, 272500.0000
+7900, 272500.0000
 !ok
 
 # VAR_SAMP (synonym for VARIANCE)
-select empno, var_samp(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, var_samp(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, null
+7521, 20000.0000
+7654, 343333.3333333335
+7698, 343333.3333333335
+7844, 363333.3333333333
+7900, 363333.3333333333
 !ok
 
-select empno, variance(comm) over (order by empno rows unbounded preceding) from emp where deptno = 10 order by 1;
+select empno, variance(comm) over (order by empno rows unbounded preceding) from emp where deptno = 30 order by 1;
 EMPNO, EXPR$1
-7782, null
-7839, null
-7934, null
+7499, null
+7521, 20000.0000
+7654, 343333.3333333335
+7698, 343333.3333333335
+7844, 363333.3333333333
+7900, 363333.3333333333
 !ok
 
 # 5.2 Ranking functions
 
 # DENSE_RANK
-select dense_rank() over () from emp where deptno = 10;
+select dense_rank() over () from emp where deptno = 30;
 EXPR$0
-3
-3
-3
+6
+6
+6
+6
+6
+6
 !ok
 
 select dense_rank() over (partition by deptno) from emp;
@@ -595,17 +666,17 @@ EXPR$0
 !ok
 
 # PERCENT_RANK
-!if (lenient) {
+!if (lenientAgg) {
 select percent_rank() over () from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select percent_rank() over (partition by deptno) from emp;
 !ok
 !}
 
-!if (lenient) {
+!if (lenientAgg) {
 select percent_rank() over (partition by deptno order by sal) from emp;
 !ok
 !}
@@ -785,32 +856,44 @@ z
 !ok
 
 # GREATEST and LEAST
-select greatest(deptno) from emp where deptno = 10;
+select greatest(deptno) from emp where deptno = 30;
 EXPR$0
-10
-10
-10
+30
+30
+30
+30
+30
+30
 !ok
 
-select greatest(deptno, empno) from emp where deptno = 10;
+select greatest(deptno, empno) from emp where deptno = 30;
 EXPR$0
-7782
-7839
-7934
+7499
+7521
+7654
+7698
+7844
+7900
 !ok
 
-select greatest(deptno, empno, sal) from emp where deptno = 10;
+select greatest(deptno, empno, sal) from emp where deptno = 30;
 EXPR$0
-7782
-7839
-7934
+7499
+7521
+7654
+7698
+7844
+7900
 !ok
 
-select least(deptno, empno) from emp where deptno = 10;
+select least(deptno, empno) from emp where deptno = 30;
 EXPR$0
-10
-10
-10
+30
+30
+30
+30
+30
+30
 !ok
 
 # NVL
@@ -819,23 +902,27 @@ EXPR$0
 1
 !ok
 
-!if (other) {
+!if (nvlVarArgs) {
 select nvl(1, 2, 3);
 !ok
 !}
 
-select nvl(comm, sal) from emp where deptno = 10;
+select nvl(comm, sal) from emp where deptno = 30;
 EXPR$0
-1300.00
-2450.00
-5000.00
+0.00
+1400.00
+2850.00
+300.00
+500.00
+950.00
 !ok
 
 # NVL2
-!if (lenient) {
-select nvl2(comm, sal, sal + 10) from emp where deptno = 10;
-!ok
-!}
+select nvl2(comm, sal, sal + 10) from emp where deptno = 30;
+SELECT "NVL2"("EMP"."COMM", "EMP"."SAL", "EMP"."SAL" + 10)
+FROM "scott"."EMP" AS "EMP"
+WHERE "EMP"."DEPTNO" = 30
+!explain-validated-on calcite
 
 # NULLIF
 select nullif(comm, sal) from emp;
@@ -864,10 +951,9 @@ null
 # the leader node.
 
 # AGE. Use DATEDIFF Function instead.
-!if (lenient) {
 select age('2017-01-01','2011-06-24');
-!ok
-!}
+SELECT "AGE"('2017-01-01', '2011-06-24')
+!explain-validated-on calcite
 
 # CURRENT_TIME. Use GETDATE Function or SYSDATE instead.
 select current_time;
@@ -902,16 +988,14 @@ SELECT LOCALTIMESTAMP AS LOCALTIMESTAMP
 !explain-validated-on calcite
 
 # ISFINITE
-!if (lenient) {
 select isfinite(date '2002-09-17');
-!ok
-!}
+SELECT "ISFINITE"(DATE '2002-09-17')
+!explain-validated-on calcite
 
 # NOW. Use GETDATE Function or SYSDATE instead.
-!if (lenient) {
 select now();
-!ok
-!}
+SELECT "NOW"()
+!explain-validated-on calcite
 
 # 7.2 Date and Time functions
 
@@ -920,32 +1004,27 @@ select now();
 # If the date you are adding to is the last day of the month, the result is
 # always the last day of the result month, regardless of the length of the month.
 
-!if (lenient) {
 select add_months('2008-03-31',1);
-!ok
-!}
+SELECT "ADD_MONTHS"('2008-03-31', 1)
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns '2008-04-30'
 select add_months(date '2008-03-31',1);
-!ok
-!}
+SELECT "ADD_MONTHS"(DATE '2008-03-31', 1)
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns '2008-05-31'
 select add_months(date '2008-04-30',1);
-!ok
-!}
+SELECT "ADD_MONTHS"(DATE '2008-04-30', 1)
+!explain-validated-on calcite
 
-!if (lenient) {
 select add_months(date '2008-03-31',-1);
-!ok
-!}
+SELECT "ADD_MONTHS"(DATE '2008-03-31', -1)
+!explain-validated-on calcite
 
-!if (lenient) {
 select add_months(timestamp '2008-03-31 12:23:34',1);
-!ok
-!}
+SELECT "ADD_MONTHS"(TIMESTAMP '2008-03-31 12:23:34', 1)
+!explain-validated-on calcite
 
 # AT TIME ZONE 'timezone' returns TIMESTAMP
 # Specifies which time zone to use with a TIMESTAMP or TIMESTAMPTZ expression.
@@ -968,19 +1047,19 @@ select convert_timezone('EST', 'PST', timestamp '2008-03-05 12:25:29');
 SELECT "CONVERT_TIMEZONE"('EST', 'PST', TIMESTAMP '2008-03-05 12:25:29')
 !explain-validated-on calcite
 
-!if (other) {
+!if (coerce) {
 -- returns '2008-03-05 09:25:29'
 select convert_timezone('EST', 'PST', '20080305 12:25:29');
 !ok
 !}
 
-!if (other) {
+!if (coerce) {
 -- returns '2013-02-01 03:00:00'
 select convert_timezone('America/New_York', '2013-02-01 08:00:00');
 !ok
 !}
 
-!if (other) {
+!if (coerce) {
 -- returns '2014-05-17 10:00:00'
 select CONVERT_TIMEZONE('GMT','GMT+2','2014-05-17 12:00:00');
 !ok
@@ -996,55 +1075,48 @@ SELECT CURRENT_DATE AS CURRENT_DATE
 # DATE_CMP (date1, date2) returns INTEGER
 # Compares two dates and returns 0 if the dates are identical, 1 if date1 is
 # greater, and -1 if date2 is greater.
-!if (lenient) {
 -- returns -1
 select date_cmp('2008-01-01', '2008-01-04');
-!ok
-!}
+SELECT "DATE_CMP"('2008-01-01', '2008-01-04')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns 0
 select date_cmp(date '2008-01-04', '2008-01-04');
-!ok
-!}
+SELECT "DATE_CMP"(DATE '2008-01-04', '2008-01-04')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns 1
 select date_cmp(date '2008-01-05', date '2008-01-04');
-!ok
-!}
+SELECT "DATE_CMP"(DATE '2008-01-05', DATE '2008-01-04')
+!explain-validated-on calcite
 
 # DATE_CMP_TIMESTAMP (date, timestamp) returns INTEGER
 # Compares a date to a time and returns 0 if the values are identical, 1 if date
 # is greater and -1 if timestamp is greater.
-!if (lenient) {
 -- returns -1
 select date_cmp_timestamp('2008-01-01', '2008-01-04 00:00:00');
-!ok
-!}
+SELECT "DATE_CMP_TIMESTAMP"('2008-01-01', '2008-01-04 00:00:00')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns 0
 select date_cmp_timestamp(date '2008-01-04', '2008-01-04 00:00:00');
-!ok
-!}
+SELECT "DATE_CMP_TIMESTAMP"(DATE '2008-01-04', '2008-01-04 00:00:00')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- I presume that this returns -1, but doc does not specify
 select date_cmp_timestamp(date '2008-01-04', '2008-01-04 01:23:45');
-!ok
-!}
+SELECT "DATE_CMP_TIMESTAMP"(DATE '2008-01-04', '2008-01-04 01:23:45')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns 1
 select date_cmp_timestamp(date '2008-01-05', timestamp '2008-01-04 00:00:00');
-!ok
-!}
+SELECT "DATE_CMP_TIMESTAMP"(DATE '2008-01-05', TIMESTAMP '2008-01-04 00:00:00')
+!explain-validated-on calcite
 
-!if (lenient) {
 # DATE_CMP_TIMESTAMPTZ (date, timestamptz) returns INTEGER
 # Compares a date and a time stamp with time zone and returns 0 if the values
 # are identical, 1 if date is greater and -1 if timestamptz is greater.
+!if (atTimeZone) {
 -- returns -1
 select date_cmp_timestamptz('2008-01-01', '2008-01-04 00:00:00' at time zone 'gmt');
 !ok
@@ -1052,28 +1124,26 @@ select date_cmp_timestamptz('2008-01-01', '2008-01-04 00:00:00' at time zone 'gm
 
 # DATE_PART_YEAR (date) returns INTEGER
 # Extracts the year from a date.
-!if (lenient) {
 -- returns 2008
 select date_part_year('2008-01-05');
-!ok
-!}
+SELECT "DATE_PART_YEAR"('2008-01-05')
+!explain-validated-on calcite
 
-!if (lenient) {
 select date_part_year(date '2008-01-05');
-!ok
-!}
+SELECT "DATE_PART_YEAR"(DATE '2008-01-05')
+!explain-validated-on calcite
 
 # DATEADD (datepart, interval, {date|timestamp}) returns TIMESTAMP
 # Increments a date or time by a specified interval.
 # The DATEADD(month, ...) and ADD_MONTHS functions handle dates that fall at the
 # ends of months differently.
-!if (other) {
+!if (dateAdd) {
 -- returns '2009-08-28 00:00:00'
 select dateadd(month,18,date '2008-02-28');
 !ok
 !}
 
-!if (other) {
+!if (dateAdd) {
 -- as above, for uses char rather than date
 select dateadd(month,18,'2008-02-28');
 !ok
@@ -1112,7 +1182,7 @@ select datediff(week,date '2009-01-01',date '2009-12-31') as numweeks;
 !ok
 !}
 
-!if (other) {
+!if (dateAdd) {
 -- as above but CHAR rather than DATE
 select datediff(week,'2009-01-01','2009-12-31') as numweeks;
 !ok
@@ -1176,18 +1246,19 @@ select date_trunc('week', date '2008-09-07');
 SELECT "DATE_TRUNC"('week', DATE '2008-09-07')
 !explain-validated-on calcite
 
-!if (other) {
 -- as above, but CHAR rather than DATE
 select date_trunc('week', '2008-09-07');
-!ok
-!}
+SELECT "DATE_TRUNC"('week', '2008-09-07')
+!explain-validated-on calcite
 
 -- returns '2008-09-08'
 select date_trunc('week', date '2008-09-08');
+SELECT "DATE_TRUNC"('week', DATE '2008-09-08')
 !explain-validated-on calcite
 
 -- returns '2008-09-08'
 select date_trunc('week', date '2008-09-09');
+SELECT "DATE_TRUNC"('week', DATE '2008-09-09')
 !explain-validated-on calcite
 
 # EXTRACT (datepart FROM {TIMESTAMP 'literal' | timestamp}) returns DOUBLE
@@ -1198,7 +1269,7 @@ EXPR$0
 8
 !ok
 
-!if (other) {
+!if (coerce) {
 -- as above, but CHAR rather than TIMESTAMP
 select extract(minute from '2009-09-09 12:08:43');
 !ok
@@ -1207,43 +1278,38 @@ select extract(minute from '2009-09-09 12:08:43');
 # GETDATE() returns TIMESTAMP
 # Returns the current date and time in the current session time zone (UTC by
 # default). The parentheses are required.
-!if (lenient) {
 select getdate();
-!ok
-!}
+SELECT "GETDATE"()
+!explain-validated-on calcite
 
 # INTERVAL_CMP (interval1, interval2) returns INTEGER
 # Compares two intervals and returns 0 if the intervals are equal, 1 if
 # interval1 is greater, and -1 if interval2 is greater.
-!if (lenient) {
+!if (pluralInterval) {
 -- returns -1
 select interval_cmp(interval '3' days,interval '1');
-!ok
+!explain-validated-on calcite
 !}
 
-!if (other) {
 -- as above but CHAR rather than INTERVAL
 select interval_cmp('3 days','1 year');
-!ok
-!}
+SELECT "INTERVAL_CMP"('3 days', '1 year')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- returns 0
 select interval_cmp('7 days','1 week');
-!ok
-!}
+SELECT "INTERVAL_CMP"('7 days', '1 week')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- should this return 0 or 1?
 select interval_cmp('366 days','1 year');
-!ok
-!}
+SELECT "INTERVAL_CMP"('366 days', '1 year')
+!explain-validated-on calcite
 
-!if (lenient) {
 -- should this return -1, 0 or 1?
 select interval_cmp('30 days','1 month');
-!ok
-!}
+SELECT "INTERVAL_CMP"('30 days', '1 month')
+!explain-validated-on calcite
 
 # LAST_DAY(date) returns DATE
 # Returns the date of the last day of the month that contains date.
@@ -1292,7 +1358,7 @@ SELECT "NEXT_DAY"('2014-08-20', 'F')
 # SYSDATE returns TIMESTAMP
 # Returns the date and time in the current session time zone (UTC by default)
 # for the start of the current transaction.
-!if (other) {
+!if (sysdate) {
 select sysdate;
 !ok
 !}
@@ -1310,6 +1376,7 @@ SELECT "TIMEOFDAY"()
 # timestamp1 is greater, and -1 if timestamp2 is greater.
 -- returns -1
 select timestamp_cmp('2008-01-01 00:00:00', '2008-01-04 12:34:56');
+SELECT "TIMESTAMP_CMP"('2008-01-01 00:00:00', '2008-01-04 12:34:56')
 !explain-validated-on calcite
 
 # TIMESTAMP_CMP_DATE (timestamp, date) returns INTEGER
@@ -1506,7 +1573,7 @@ EXPR$0
 
 # PI
 # In standard SQL you write 'pi', but for redshift you write 'pi()'
-!if (pi) {
+!if (emptyParens) {
 select pi();
 !ok
 !}
@@ -1687,10 +1754,12 @@ SELECT "LEN"('gth')
 
 # LENGTH
 select length('ily');
+SELECT "LENGTH"('ily')
 !explain-validated-on calcite
 
 -- returns 8 (cf OCTET_LENGTH)
 select length('français');
+SELECT "LENGTH"(u&'fran\00e7ais')
 !explain-validated-on calcite
 
 # LOWER
@@ -1701,18 +1770,22 @@ manhattan
 
 # LPAD and RPAD
 select lpad('cat', 7);
+SELECT "LPAD"('cat', 7)
 !explain-validated-on calcite
 
 -- returns 'eeriness'
 select rpad(lpad('rine', 6, 'e'), 8, 's');
+SELECT "RPAD"("LPAD"('rine', 6, 'e'), 8, 's')
 !explain-validated-on calcite
 
 select rpad('cat', 7);
+SELECT "RPAD"('cat', 7)
 !explain-validated-on calcite
 
 # LTRIM
 -- returns 'kery'
 select ltrim('bakery', 'abc');
+SELECT "LTRIM"('bakery', 'abc')
 !explain-validated-on calcite
 
 # MD5
@@ -1725,6 +1798,7 @@ f7415e33f972c03abd4f3fed36748f7a
 # OCTET_LENGTH
 -- returns 9 (cf LENGTH)
 select octet_length('français');
+SELECT "OCTET_LENGTH"(u&'fran\00e7ais')
 !explain-validated-on calcite
 
 # POSITION is a synonym for STRPOS
@@ -1736,295 +1810,390 @@ select position('fish', 'dogfish');
 # QUOTE_IDENT
 -- returns '"ab cd"'
 select quote_ident('ab cd');
+SELECT "QUOTE_IDENT"('ab cd')
 !explain-validated-on calcite
 
 -- returns 'EMP'
 select quote_ident('EMP');
+SELECT "QUOTE_IDENT"('EMP')
 !explain-validated-on calcite
 
 # QUOTE_LITERAL
 -- returns "'it''s a literal'"
 select quote_literal('it''s a literal');
+SELECT "QUOTE_LITERAL"('it''s a literal')
 !explain-validated-on calcite
 
 # REGEXP_COUNT
 -- returns 8
 select regexp_count('abcdefghijklmnopqrstuvwxyz', '[a-z]{3}');
+SELECT "REGEXP_COUNT"('abcdefghijklmnopqrstuvwxyz', '[a-z]{3}')
 !explain-validated-on calcite
 
 # REGEXP_INSTR ( source_string, pattern [, position [, occurrence] [, option
 # [, parameters ] ] ] ] )
 select regexp_instr('The Home Depot Center', '[cC]ent(er|re)$');
-!ok
+SELECT "REGEXP_INSTR"('The Home Depot Center', '[cC]ent(er|re)$')
+!explain-validated-on calcite
 
 # REGEXP_REPLACE ( source_string, pattern [, replace_string [ , position ] ] )
 select regexp_replace('DonecFri@semperpretiumneque.com', '@.*\\.(org|gov|com)$');
-!ok
+SELECT "REGEXP_REPLACE"('DonecFri@semperpretiumneque.com', '@.*\\.(org|gov|com)$')
+!explain-validated-on calcite
 
 # REGEXP_SUBSTR ( source_string, pattern [, position [, occurrence
 # [, parameters ] ] ] )
 select regexp_substr('Suspendisse.tristique@nonnisiAenean.edu','@[^.]*');
-!ok
+SELECT "REGEXP_SUBSTR"('Suspendisse.tristique@nonnisiAenean.edu', '@[^.]*')
+!explain-validated-on calcite
 
 # REPEAT
 select repeat('ba', 3);
+EXPR$0
+bababa
 !ok
 
 # REPLACE
 select replace('catching catfish', 'cat', 'dog');
+EXPR$0
+dogching dogfish
 !ok
 
 # REPLICATE is a synonym for REPEAT
 select replicate('ba', 3);
-!ok
+SELECT "REPLICATE"('ba', 3)
+!explain-validated-on calcite
 
 # REVERSE
 select reverse('ab c');
-!ok
+SELECT "REVERSE"('ab c')
+!explain-validated-on calcite
 
 # RTRIM
 -- returns 'baker'
 select rtrim('bakery', 'xyz');
-!ok
+SELECT "RTRIM"('bakery', 'xyz')
+!explain-validated-on calcite
 
 # SPLIT_PART
 -- returns '03'
 select split_part('2008-03-05', '-', 2);
-!ok
+SELECT "SPLIT_PART"('2008-03-05', '-', 2)
+!explain-validated-on calcite
 
 # STRPOS is a synonym for CHARINDEX and POSITION
 select strpos('fish', 'dogfish');
-!ok
+SELECT "STRPOS"('fish', 'dogfish')
+!explain-validated-on calcite
 
 # STRTOL
 -- returns 2882343476
 select strtol('abcd1234',16);
-!ok
+SELECT "STRTOL"('abcd1234', 16)
+!explain-validated-on calcite
 
 -- returns 53
 select strtol('110101', 2);
-!ok
+SELECT "STRTOL"('110101', 2)
+!explain-validated-on calcite
 
 # SUBSTRING
 -- returns 'pill'
 select substring('caterpillar',6,4);
+EXPR$0
+pill
 !ok
 
 -- returns 'pillar'
 select substring('caterpillar',6,8);
+EXPR$0
+pillar
 !ok
 
 -- returns 'pill'
 select substring('caterpillar' from 6 for 4);
+EXPR$0
+pill
 !ok
 
 # TEXTLEN is a synonym for LEN
 select textlen('abc');
-!ok
+SELECT "TEXTLEN"('abc')
+!explain-validated-on calcite
 
 # TRANSLATE ( expression, characters_to_replace, characters_to_substitute )
 -- returns 'most tin'
 select translate('mint tea', 'inea', 'osin');
+EXPR$0
+most tin
 !ok
 
 # TRIM( [ BOTH ] ['characters' FROM ] string ] )
 -- returns 'dog'
 select trim('"' FROM '"dog"');
+EXPR$0
+dog
 !ok
 
 # UPPER
 select upper('Pop');
+EXPR$0
+POP
 !ok
 
 # 10 JSON Functions
 
 # IS_VALID_JSON
 select is_valid_json('{"a":2}');
-!ok
+SELECT "IS_VALID_JSON"('{"a":2}')
+!explain-validated-on calcite
 
 # IS_VALID_JSON_ARRAY
 -- returns true
 select is_valid_json_array('[]');
-!ok
+SELECT "IS_VALID_JSON_ARRAY"('[]')
+!explain-validated-on calcite
 
 -- returns false
 select is_valid_json_array('{}');
-!ok
+SELECT "IS_VALID_JSON_ARRAY"('{}')
+!explain-validated-on calcite
 
 # JSON_ARRAY_LENGTH('json_array' [, null_if_invalid ] )
 -- returns 3
 select json_array_length('[2,3,[4,5]]');
-!ok
+SELECT "JSON_ARRAY_LENGTH"('[2,3,[4,5]]')
+!explain-validated-on calcite
 
 -- returns null
 select json_array_length('[2,3', true);
-!ok
+SELECT "JSON_ARRAY_LENGTH"('[2,3', TRUE)
+!explain-validated-on calcite
 
 # JSON_EXTRACT_ARRAY_ELEMENT_TEXT('json string', pos [, null_if_invalid ] )
 -- returns '113'
 select json_extract_array_element_text('[111,112,113]', 2);
-!ok
+SELECT "JSON_EXTRACT_ARRAY_ELEMENT_TEXT"('[111,112,113]', 2)
+!explain-validated-on calcite
 
 # JSON_EXTRACT_PATH_TEXT('json_string', 'path_elem' [,'path_elem'[, ...] ] [, null_if_invalid ] )
 -- returns 'star'
 select json_extract_path_text('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}}','f4', 'f6');
-!ok
+SELECT "JSON_EXTRACT_PATH_TEXT"('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}}', 'f4', 'f6')
+!explain-validated-on calcite
 
 # 11 Data Type Formatting Functions
 
 # CAST and CONVERT
 select cast(stddev_samp(sal) as dec(14, 2)) from emp;
+EXPR$0
+1182.503223516271873450023122131824493408203125
 !ok
 
 select 123.456::decimal(8,4);
+EXPR$0
+123.456
 !ok
 
+!if (position) {
 select convert(integer, comm) from emp;
 !ok
+!}
 
-select cast(comm as integer) from emp;
+select cast(comm as integer) from emp where deptno = 30 order by empno;
+EXPR$0
+300
+500
+1400
+null
+0
+null
 !ok
 
-select comm::integer from emp;
+select comm::integer from emp where deptno = 30 order by empno;
+EXPR$0
+300
+500
+1400
+null
+0
+null
 !ok
 
 # TO_CHAR
 -- returns '23:15:59'
 select to_char(timestamp '2009-12-31 23:15:59','HH24:MI:SS');
-!ok
+SELECT "TO_CHAR"(TIMESTAMP '2009-12-31 23:15:59', 'HH24:MI:SS')
+!explain-validated-on calcite
 
 -- returns '125.80-'
 select to_char(-125.8, '999D99S');
-!ok
+SELECT "TO_CHAR"(-125.8, '999D99S')
+!explain-validated-on calcite
 
 # TO_DATE
 -- returns '2001-10-02'
 select to_date ('02 Oct 2001', 'DD Mon YYYY');
-!ok
+SELECT "TO_DATE"('02 Oct 2001', 'DD Mon YYYY')
+!explain-validated-on calcite
 
 # TO_NUMBER
 -- returns -12454.8
 select to_number('12,454.8-', '99G999D9S');
-!ok
+SELECT "TO_NUMBER"('12,454.8-', '99G999D9S')
+!explain-validated-on calcite
 
 # 12 System Administration Functions
 
 # CHANGE_QUERY_PRIORITY(query_id, priority)
 select change_query_priority(1076, 'Critical');
-!ok
+SELECT "CHANGE_QUERY_PRIORITY"(1076, 'Critical')
+!explain-validated-on calcite
 
 # CHANGE_SESSION_PRIORITY(pid, priority)
 select change_session_priority(30311, 'Lowest');
-!ok
+SELECT "CHANGE_SESSION_PRIORITY"(30311, 'Lowest')
+!explain-validated-on calcite
 
 # CHANGE_USER_PRIORITY(user_name, priority)
 -- returns 'Succeeded to change user priority. Changed user (analysis_user) priority to lowest.'
 select change_user_priority('analysis_user', 'lowest');
-!ok
+SELECT "CHANGE_USER_PRIORITY"('analysis_user', 'lowest')
+!explain-validated-on calcite
 
 # CURRENT_SETTING('parameter')
 -- returns 'unset'
 select current_setting('query_group');
-!ok
+SELECT "CURRENT_SETTING"('query_group')
+!explain-validated-on calcite
 
 # PG_CANCEL_BACKEND(pid)
 select pg_cancel_backend(802);
-!ok
+SELECT "PG_CANCEL_BACKEND"(802)
+!explain-validated-on calcite
 
 # PG_TERMINATE_BACKEND(pid)
 select pg_terminate_backend(8585);
-!ok
+SELECT "PG_TERMINATE_BACKEND"(8585)
+!explain-validated-on calcite
 
 # SET_CONFIG('parameter', 'new_value' , is_local)
 -- returns 'test'
 select set_config('query_group', 'test', true);
-!ok
+SELECT "SET_CONFIG"('query_group', 'test', TRUE)
+!explain-validated-on calcite
 
 # 13 System Information Functions
 
 # CURRENT_DATABASE
+!if (emptyParens) {
 select current_database();
 !ok
+!}
 
 # CURRENT_SCHEMA
+!if (emptyParens) {
 select current_schema();
 !ok
+!}
 
 # CURRENT_SCHEMAS(include_implicit)
 select current_schemas(false);
-!ok
+SELECT "CURRENT_SCHEMAS"(FALSE)
+!explain-validated-on calcite
 
 # CURRENT_USER
 select current_user;
+CURRENT_USER
+sa
 !ok
 
 # CURRENT_USER_ID
+!if (sysdate) {
 select current_user_id;
 !ok
+!}
 
 # HAS_DATABASE_PRIVILEGE( [ user, ] database, privilege)
 select has_database_privilege('guest', 'tickit', 'temp');
-!ok
+SELECT "HAS_DATABASE_PRIVILEGE"('guest', 'tickit', 'temp')
+!explain-validated-on calcite
 
 # HAS_SCHEMA_PRIVILEGE( [ user, ] schema, privilege)
 select has_schema_privilege('guest', 'public', 'create');
-!ok
+SELECT "HAS_SCHEMA_PRIVILEGE"('guest', 'public', 'create')
+!explain-validated-on calcite
 
 # HAS_TABLE_PRIVILEGE( [ user, ] table, privilege)
 select has_table_privilege('guest', 'listing', 'select');
-!ok
+SELECT "HAS_TABLE_PRIVILEGE"('guest', 'listing', 'select')
+!explain-validated-on calcite
 
 # PG_BACKEND_PID
 select pg_backend_pid();
-!ok
+SELECT "PG_BACKEND_PID"()
+!explain-validated-on calcite
 
 # PG_GET_COLS
 select pg_get_cols('sales_vw');
-!ok
+SELECT "PG_GET_COLS"('sales_vw')
+!explain-validated-on calcite
 
 # PG_GET_LATE_BINDING_VIEW_COLS
 select pg_get_late_binding_view_cols();
-!ok
+SELECT "PG_GET_LATE_BINDING_VIEW_COLS"()
+!explain-validated-on calcite
 
 # PG_LAST_COPY_COUNT
-select pg_last_copy_count;
-!ok
+select pg_last_copy_count();
+SELECT "PG_LAST_COPY_COUNT"()
+!explain-validated-on calcite
 
 # PG_LAST_COPY_ID
-select pg_last_copy_id;
-!ok
+select pg_last_copy_id();
+SELECT "PG_LAST_COPY_ID"()
+!explain-validated-on calcite
 
 # PG_LAST_UNLOAD_ID
-select pg_last_unload_id;
-!ok
+select pg_last_unload_id();
+SELECT "PG_LAST_UNLOAD_ID"()
+!explain-validated-on calcite
 
 # PG_LAST_QUERY_ID
-select pg_last_query_id;
-!ok
+select pg_last_query_id();
+SELECT "PG_LAST_QUERY_ID"()
+!explain-validated-on calcite
 
 # PG_LAST_UNLOAD_COUNT
-select pg_last_unload_count;
-!ok
+select pg_last_unload_count();
+SELECT "PG_LAST_UNLOAD_COUNT"()
+!explain-validated-on calcite
 
 # SESSION_USER
 select session_user;
+SESSION_USER
+sa
 !ok
 
 # SLICE_NUM
 # Returns an integer corresponding to the slice number in the cluster where the
 # data for a row is located.
 select slice_num();
-!ok
+SELECT "SLICE_NUM"()
+!explain-validated-on calcite
 
 # USER
 # Synonym for CURRENT_USER
 select user;
+USER
+sa
 !ok
 
 # VERSION
 # Returns details about the currently installed release,
 # with specific Amazon Redshift version information at the end.
 select version();
-!ok
+SELECT "VERSION"()
+!explain-validated-on calcite
 
 # End redshift.iq
