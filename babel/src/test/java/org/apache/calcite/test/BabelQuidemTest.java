@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.materialize.MaterializationService;
@@ -29,7 +27,6 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 
@@ -48,7 +45,6 @@ import org.junit.runners.Parameterized;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -117,71 +113,6 @@ public class BabelQuidemTest extends QuidemTest {
     return new BabelCommandHandler();
   }
 
-  /** Base class for implementations of Command that have one piece of source
-   * code. */
-  abstract static class MySimpleCommand extends AbstractCommand {
-    protected final ImmutableList<String> lines;
-
-    MySimpleCommand(List<String> lines) {
-      this.lines = ImmutableList.copyOf(lines);
-    }
-  }
-
-  /** Command that executes a SQL statement and checks its result. */
-  abstract static class MyCheckResultCommand extends MySimpleCommand
-      implements Command.ResultChecker {
-    protected final boolean output;
-
-    MyCheckResultCommand(List<String> lines, boolean output) {
-      super(lines);
-      this.output = output;
-    }
-
-    @Override public String describe(Context x) {
-      return commandName() + " [sql: " + x.previousSqlCommand().sql + "]";
-    }
-
-    public void execute(Context x, boolean execute) throws Exception {
-      x.checkResult(execute, output, this);
-      x.echo(lines);
-    }
-
-    public void checkResultSet(Context x, Throwable resultSetException) {
-      if (resultSetException != null) {
-        x.stack(resultSetException, x.writer());
-      }
-    }
-  }
-
-  /** Command that executes a SQL statement and checks its result. */
-  static class MyOkCommand extends MyCheckResultCommand {
-    protected final ImmutableList<String> output;
-
-    MyOkCommand(List<String> lines, ImmutableList<String> output) {
-      super(lines, true);
-      this.output = output;
-    }
-
-    public List<String> getOutput(Context x) {
-      return output;
-    }
-  }
-
-  /** Command that executes a SQL statement and checks its result. */
-  static class CountCommand extends MyOkCommand {
-    private final int rowCount;
-
-    CountCommand(List<String> lines, ImmutableList<String> output, int rowCount) {
-      super(lines, output);
-      this.rowCount = rowCount;
-    }
-
-    @Override
-    public void checkResultSet(Context x, Throwable resultSetException) {
-      super.checkResultSet(x, resultSetException);
-    }
-  }
-
   /** Command that prints the validated parse tree of a SQL statement. */
   static class ExplainValidatedCommand extends AbstractCommand {
     private final ImmutableList<String> lines;
@@ -248,16 +179,6 @@ public class BabelQuidemTest extends QuidemTest {
             set.add(matcher.group(i + 1));
           }
           return new ExplainValidatedCommand(lines, content, set.build());
-        }
-      }
-      final String prefix2 = "count";
-      if (line.startsWith(prefix2)) {
-        final Pattern pattern =
-            Pattern.compile("count ([0-9])+");
-        final Matcher matcher = pattern.matcher(line);
-        if (matcher.matches()) {
-          final int rowCount = Integer.parseInt(matcher.group(1));
-          return new CountCommand(lines, ImmutableList.copyOf(content), rowCount);
         }
       }
       return null;
