@@ -55,7 +55,8 @@ public class BabelTest {
         propBuilder.set(CalciteConnectionProperty.FUN, libraryList);
   }
 
-  private static UnaryOperator<CalciteAssert.PropBuilder> useLenientOperatorLookup(boolean lenient) {
+  private static UnaryOperator<CalciteAssert.PropBuilder> useLenientOperatorLookup(
+      boolean lenient) {
     return propBuilder ->
         propBuilder.set(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP,
             Boolean.toString(lenient));
