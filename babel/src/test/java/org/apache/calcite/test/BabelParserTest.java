@@ -255,6 +255,29 @@ public class BabelParserTest extends SqlParserTest {
         + "FROM (VALUES (ROW(1, 2))) AS `TBL` (`X`, `Y`)";
     sql(sql).ok(expected);
   }
+
+  @Ignore("not implemented")
+  @Test public void testApproximateAggregate() {
+    final String sql = "select approximate sum(x) from t";
+    final String expected = "xx";
+    sql(sql).ok(expected);
+  }
+
+  @Test public void testFirstValueRespectNulls() {
+    final String sql = "select empno,\n"
+        + "  first_value(sal respect nulls)\n"
+        + "    over (order by empno rows unbounded preceding),\n"
+        + "  last_value(sal ignore nulls)\n"
+        + "    over (order by empno rows unbounded preceding)\n"
+        + "from emp";
+    final String expected = "SELECT `EMPNO`,"
+        + " (FIRST_VALUE(`SAL`) RESPECT NULLS "
+        + "OVER (ORDER BY `EMPNO` ROWS UNBOUNDED PRECEDING)),"
+        + " (LAST_VALUE(`SAL`) IGNORE NULLS "
+        + "OVER (ORDER BY `EMPNO` ROWS UNBOUNDED PRECEDING))\n"
+        + "FROM `EMP`";
+    sql(sql).ok(expected);
+  }
 }
 
 // End BabelParserTest.java

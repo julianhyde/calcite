@@ -234,6 +234,30 @@ public class ${parser.class} extends SqlAbstractParserImpl
         return SqlStdOperatorTable.EXTEND.createCall(
             Span.of(table, extendList).pos(), table, extendList);
     }
+
+    /** If the last element of an argument list is a "RESPECT NULLS" or
+     * "IGNORE NULLS", removes the argument and returns the corresponding
+     * operator; otherwise returns null. */
+    private SqlOperator popNullTreatment(List<SqlNode> args) {
+        if (!args.isEmpty()) {
+            final SqlNode arg = args.get(args.size() - 1);
+            if (arg instanceof SqlLiteral) {
+                final SqlLiteral literal = (SqlLiteral) arg;
+                if (literal.getTypeName() == SqlTypeName.SYMBOL) {
+                    final Enum value = literal.symbolValue(Enum.class);
+                    if (value == SqlKind.RESPECT_NULLS) {
+                        args.remove(args.size() - 1);
+                        return SqlStdOperatorTable.RESPECT_NULLS;
+                    }
+                    if (value == SqlKind.IGNORE_NULLS) {
+                        args.remove(args.size() - 1);
+                        return SqlStdOperatorTable.IGNORE_NULLS;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }
 
 PARSER_END(${parser.class})
@@ -838,6 +862,13 @@ List FunctionParameterList(
         }
         Arg(list, exprContext)
     )*
+    [
+        // Some dialects (Oracle, Redshift) allow "FIRST_VALUE(x RESPECT NULLS)"
+        // in addition to standard "FIRST_VALUE(x) RESPECT NULLS"
+        <RESPECT> <NULLS> { list.add(SqlLiteral.createSymbol(SqlKind.RESPECT_NULLS, getPos())); }
+    |
+        <IGNORE> <NULLS> { list.add(SqlLiteral.createSymbol(SqlKind.IGNORE_NULLS, getPos())); }
+    ]
     <RPAREN>
     {
         return list;
@@ -5939,6 +5970,7 @@ SqlNode NamedFunctionCall() :
     final SqlIdentifier qualifiedName;
     final Span s;
     final List<SqlNode> args;
+    SqlOperator nullTreatment = null;
     SqlCall call;
     final Span filterSpan;
     final SqlNode filter;
@@ -5971,10 +6003,14 @@ SqlNode NamedFunctionCall() :
         args = FunctionParameterList(ExprContext.ACCEPT_SUB_QUERY) {
             quantifier = (SqlLiteral) args.get(0);
             args.remove(0);
+            nullTreatment = popNullTreatment(args);
         }
     )
     {
         call = createCall(qualifiedName, s.end(this), funcType, quantifier, args);
+        if (nullTreatment != null) {
+            call = nullTreatment.createCall(call.getParserPosition(), call);
+        }
     }
     [
         LOOKAHEAD(2) call = nullTreatment(call)
