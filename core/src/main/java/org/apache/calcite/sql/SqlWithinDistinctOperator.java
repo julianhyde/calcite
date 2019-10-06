@@ -29,7 +29,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * An operator that applies a distinct operation before rows are included in an
  * aggregate function.
  *
- * <p>Operands are as follows:</p>
+ * <p>Operands are as follows:
  *
  * <ul>
  * <li>0: a call to an aggregate function ({@link SqlCall})
@@ -39,7 +39,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class SqlWithinDistinctOperator extends SqlBinaryOperator {
   public SqlWithinDistinctOperator() {
     super("WITHIN DISTINCT", SqlKind.WITHIN_DISTINCT, 100, true,
-        ReturnTypes.ARG0, null, OperandTypes.ANY_ANY);
+        ReturnTypes.ARG0, null, OperandTypes.ANY_IGNORE);
   }
 
   @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,

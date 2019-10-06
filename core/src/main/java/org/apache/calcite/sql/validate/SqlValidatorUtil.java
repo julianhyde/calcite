@@ -1394,7 +1394,7 @@ public class SqlValidatorUtil {
 
     FlatAggregate(SqlCall aggregateCall, @Nullable SqlCall filterCall,
         @Nullable SqlCall distinctCall, @Nullable SqlCall orderCall) {
-      this.aggregateCall = Objects.requireNonNull(aggregateCall);
+      this.aggregateCall = Objects.requireNonNull(aggregateCall, "aggregateCall");
       Preconditions.checkArgument(filterCall == null
           || filterCall.getKind() == SqlKind.FILTER);
       Preconditions.checkArgument(distinctCall == null
