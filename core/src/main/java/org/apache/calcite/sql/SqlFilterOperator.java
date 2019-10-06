@@ -25,6 +25,8 @@ import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
+import java.util.Objects;
+
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /**
@@ -79,9 +81,10 @@ public class SqlFilterOperator extends SqlBinaryOperator {
     validator.validateAggregateParams(aggCall, flat.filter,
         flat.distinctList, flat.orderList, scope);
 
-    final RelDataType type = validator.deriveType(scope, flat.filter);
+    final SqlNode filter = Objects.requireNonNull(flat.filter);
+    final RelDataType type = validator.deriveType(scope, filter);
     if (!SqlTypeUtil.inBooleanFamily(type)) {
-      throw validator.newValidationError(flat.filter,
+      throw validator.newValidationError(filter,
           RESOURCE.condMustBeBoolean("FILTER"));
     }
   }
@@ -113,10 +116,12 @@ public class SqlFilterOperator extends SqlBinaryOperator {
     validator1.setValidatedNodeType(call, ret);
     validator1.setValidatedNodeType(aggCall, ret);
     if (flat.distinctList != null) {
-      validator1.setValidatedNodeType(flat.distinctCall, ret);
+      validator1.setValidatedNodeType(
+          Objects.requireNonNull(flat.distinctCall), ret);
     }
     if (flat.orderList != null) {
-      validator1.setValidatedNodeType(flat.orderCall, ret);
+      validator1.setValidatedNodeType(
+          Objects.requireNonNull(flat.orderCall), ret);
     }
     return ret;
   }

@@ -23,6 +23,8 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
+import java.util.Objects;
+
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /**
@@ -66,10 +68,8 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
           RESOURCE.withinGroupNotAllowed(
               flat.aggregateCall.getOperator().getName()));
     }
-    for (SqlNode order : flat.orderList) {
-      RelDataType nodeType =
-          validator.deriveType(scope, order);
-      assert nodeType != null;
+    for (SqlNode order : Objects.requireNonNull(flat.orderList)) {
+      Objects.requireNonNull(validator.deriveType(scope, order));
     }
     validator.validateAggregateParams(flat.aggregateCall, flat.filter,
         flat.distinctList, flat.orderList, scope);

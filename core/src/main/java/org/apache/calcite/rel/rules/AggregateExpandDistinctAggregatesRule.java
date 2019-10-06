@@ -480,7 +480,7 @@ public final class AggregateExpandDistinctAggregatesRule
       final List<RexNode> nodes = new ArrayList<>(relBuilder.fields());
       final RexNode nodeZ = nodes.remove(nodes.size() - 1);
       for (Map.Entry<Pair<ImmutableBitSet, Integer>, Integer> entry : filters.entrySet()) {
-        final long v = groupValue(fullGroupSet, entry.getKey().left);
+        final long v = groupValue(fullGroupSet.asList(), entry.getKey().left);
         int distinctFilterArg = remap(fullGroupSet, entry.getKey().right);
         RexNode expr = relBuilder.equals(nodeZ, relBuilder.literal(v));
         if (distinctFilterArg > -1) {
@@ -536,11 +536,16 @@ public final class AggregateExpandDistinctAggregatesRule
     call.transformTo(relBuilder.build());
   }
 
-  private static long groupValue(ImmutableBitSet fullGroupSet,
+  /** Returns the value that "GROUPING(fullGroupSet)" will return for
+   * "groupSet".
+   *
+   * <p>It is important that {@code fullGroupSet} is not an
+   * {@link ImmutableBitSet}; the order of the bits matters. */
+  static long groupValue(Collection<Integer> fullGroupSet,
       ImmutableBitSet groupSet) {
     long v = 0;
-    long x = 1L << (fullGroupSet.cardinality() - 1);
-    assert fullGroupSet.contains(groupSet);
+    long x = 1L << (fullGroupSet.size() - 1);
+    assert ImmutableBitSet.of(fullGroupSet).contains(groupSet);
     for (int i : fullGroupSet) {
       if (!groupSet.get(i)) {
         v |= x;
@@ -550,7 +555,7 @@ public final class AggregateExpandDistinctAggregatesRule
     return v;
   }
 
-  private static ImmutableBitSet remap(ImmutableBitSet groupSet,
+  static ImmutableBitSet remap(ImmutableBitSet groupSet,
       ImmutableBitSet bitSet) {
     final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
     for (Integer bit : bitSet) {
@@ -559,7 +564,7 @@ public final class AggregateExpandDistinctAggregatesRule
     return builder.build();
   }
 
-  private static ImmutableList<ImmutableBitSet> remap(ImmutableBitSet groupSet,
+  static ImmutableList<ImmutableBitSet> remap(ImmutableBitSet groupSet,
       Iterable<ImmutableBitSet> bitSets) {
     final ImmutableList.Builder<ImmutableBitSet> builder =
         ImmutableList.builder();

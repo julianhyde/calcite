@@ -925,6 +925,9 @@ public abstract class RelOptUtil {
       if (aggregateCall.filterArg >= 0) {
         allFields.add(aggregateCall.filterArg);
       }
+      if (aggregateCall.distinctKeys != null) {
+        allFields.addAll(aggregateCall.distinctKeys.asList());
+      }
       allFields.addAll(RelCollations.ordinals(aggregateCall.collation));
     }
     return allFields;

@@ -23,13 +23,15 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
+import java.util.Objects;
+
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /**
  * An operator that applies a distinct operation before rows are included in an
  * aggregate function.
  *
- * <p>Operands are as follows:</p>
+ * <p>Operands are as follows:
  *
  * <ul>
  * <li>0: a call to an aggregate function ({@link SqlCall})
@@ -39,7 +41,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class SqlWithinDistinctOperator extends SqlBinaryOperator {
   public SqlWithinDistinctOperator() {
     super("WITHIN DISTINCT", SqlKind.WITHIN_DISTINCT, 100, true,
-        ReturnTypes.ARG0, null, OperandTypes.ANY_ANY);
+        ReturnTypes.ARG0, null, OperandTypes.ANY_IGNORE);
   }
 
   @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
@@ -53,7 +55,7 @@ public class SqlWithinDistinctOperator extends SqlBinaryOperator {
     writer.endList(orderFrame);
   }
 
-  public void validateCall(
+  @Override public void validateCall(
       SqlCall call,
       SqlValidator validator,
       SqlValidatorScope scope,
@@ -67,16 +69,14 @@ public class SqlWithinDistinctOperator extends SqlBinaryOperator {
           RESOURCE.withinDistinctNotAllowed(
               flat.aggregateCall.getOperator().getName()));
     }
-    for (SqlNode order : flat.distinctList) {
-      RelDataType nodeType =
-          validator.deriveType(scope, order);
-      assert nodeType != null;
+    for (SqlNode order : Objects.requireNonNull(flat.distinctList)) {
+      Objects.requireNonNull(validator.deriveType(scope, order));
     }
     validator.validateAggregateParams(flat.aggregateCall, flat.filter,
         flat.distinctList, flat.orderList, scope);
   }
 
-  public RelDataType deriveType(
+  @Override public RelDataType deriveType(
       SqlValidator validator,
       SqlValidatorScope scope,
       SqlCall call) {
