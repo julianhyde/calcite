@@ -168,19 +168,12 @@ public class AggregateReduceFunctionsRule
    * @param aggCallList List of aggregate calls
    */
   private boolean containsAvgStddevVarCall(List<AggregateCall> aggCallList) {
-    for (AggregateCall call : aggCallList) {
-      if (isReducible(call.getAggregation().getKind())) {
-        return true;
-      }
-    }
-    return false;
+    return aggCallList.stream().anyMatch(this::canReduce);
   }
 
-  /**
-   * Returns whether the aggregate call is a reducible function.
-   */
-  private boolean isReducible(final SqlKind kind) {
-    return functionsToReduce.contains(kind);
+  /** Returns whether this rule can reduce a given aggregate function call. */
+  public boolean canReduce(AggregateCall call) {
+    return functionsToReduce.contains(call.getAggregation().getKind());
   }
 
   /**
@@ -242,10 +235,10 @@ public class AggregateReduceFunctionsRule
       List<AggregateCall> newCalls,
       Map<AggregateCall, RexNode> aggCallMapping,
       List<RexNode> inputExprs) {
-    final SqlKind kind = oldCall.getAggregation().getKind();
-    if (isReducible(kind)) {
+    if (canReduce(oldCall)) {
       final Integer y;
       final Integer x;
+      final SqlKind kind = oldCall.getAggregation().getKind();
       switch (kind) {
       case SUM:
         // replace original SUM(x) with

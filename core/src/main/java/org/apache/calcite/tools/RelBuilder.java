@@ -3222,12 +3222,12 @@ public class RelBuilder {
     }
 
     /** Returns a copy of this AggCall that makes its input values unique by
-     * {@code orderKeys} before aggregating, as in SQL's
+     * {@code distinctKeys} before aggregating, as in SQL's
      * {@code WITHIN DISTINCT} clause. */
-    AggCall unique(Iterable<RexNode> distinctKeys);
+    AggCall unique(@Nullable Iterable<RexNode> distinctKeys);
 
     /** Returns a copy of this AggCall that makes its input values unique by
-     * {@code orderKeys} before aggregating, as in SQL's
+     * {@code distinctKeys} before aggregating, as in SQL's
      * {@code WITHIN DISTINCT} clause. */
     default AggCall unique(RexNode... distinctKeys) {
       return unique(ImmutableList.copyOf(distinctKeys));
@@ -3375,6 +3375,9 @@ public class RelBuilder {
       if (filter != null) {
         b.append(" FILTER (WHERE ").append(filter).append(')');
       }
+      if (distinctKeys != null) {
+        b.append(" WITHIN DISTINCT (").append(distinctKeys).append(')');
+      }
       return b.toString();
     }
 
@@ -3447,9 +3450,9 @@ public class RelBuilder {
       return sort(ImmutableList.copyOf(orderKeys));
     }
 
-    @Override public AggCall unique(Iterable<RexNode> distinctKeys) {
-      final ImmutableList<RexNode> distinctKeyList =
-          ImmutableList.copyOf(distinctKeys);
+    @Override public AggCall unique(@Nullable Iterable<RexNode> distinctKeys) {
+      final @Nullable ImmutableList<RexNode> distinctKeyList =
+          distinctKeys == null ? null : ImmutableList.copyOf(distinctKeys);
       return Objects.equals(distinctKeyList, this.distinctKeys)
           ? this
           : new AggCallImpl(aggFunction, distinct, approximate, ignoreNulls,
@@ -3538,7 +3541,7 @@ public class RelBuilder {
       throw new UnsupportedOperationException();
     }
 
-    @Override public AggCall unique(Iterable<RexNode> distinctKeys) {
+    @Override public AggCall unique(@Nullable Iterable<RexNode> distinctKeys) {
       throw new UnsupportedOperationException();
     }
 

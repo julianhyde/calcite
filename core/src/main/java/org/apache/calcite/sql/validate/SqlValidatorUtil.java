@@ -1245,8 +1245,9 @@ public class SqlValidatorUtil {
     return flattenRecurse(null, null, null, call);
   }
 
-  private static FlatAggregate flattenRecurse(SqlCall filterCall,
-      SqlCall distinctCall, SqlCall orderCall, SqlCall call) {
+  private static FlatAggregate flattenRecurse(@Nullable SqlCall filterCall,
+      @Nullable SqlCall distinctCall, @Nullable SqlCall orderCall,
+      SqlCall call) {
     switch (call.getKind()) {
     case FILTER:
       assert filterCall == null;
@@ -1385,16 +1386,17 @@ public class SqlValidatorUtil {
    * an aggregate function. */
   public static class FlatAggregate {
     public final SqlCall aggregateCall;
-    public final SqlCall filterCall;
-    public final SqlNode filter;
-    public final SqlCall distinctCall;
-    public final SqlNodeList distinctList;
-    public final SqlCall orderCall;
-    public final SqlNodeList orderList;
+    public final @Nullable SqlCall filterCall;
+    public final @Nullable SqlNode filter;
+    public final @Nullable SqlCall distinctCall;
+    public final @Nullable SqlNodeList distinctList;
+    public final @Nullable SqlCall orderCall;
+    public final @Nullable SqlNodeList orderList;
 
     FlatAggregate(SqlCall aggregateCall, @Nullable SqlCall filterCall,
         @Nullable SqlCall distinctCall, @Nullable SqlCall orderCall) {
-      this.aggregateCall = Objects.requireNonNull(aggregateCall);
+      this.aggregateCall =
+          Objects.requireNonNull(aggregateCall, "aggregateCall");
       Preconditions.checkArgument(filterCall == null
           || filterCall.getKind() == SqlKind.FILTER);
       Preconditions.checkArgument(distinctCall == null
