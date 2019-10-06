@@ -1005,6 +1005,9 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       if (aggCall.filterArg >= 0) {
         inputFieldsUsed.set(aggCall.filterArg);
       }
+      if (aggCall.distinctKeys != null) {
+        inputFieldsUsed.addAll(aggCall.distinctKeys);
+      }
       inputFieldsUsed.addAll(RelCollations.ordinals(aggCall.collation));
     }
 
@@ -1074,6 +1077,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         RelBuilder.AggCall newAggCall =
             relBuilder.aggregateCall(aggCall.getAggregation(), args)
                 .distinct(aggCall.isDistinct())
+                .unique(aggCall.distinctKeys == null ? null
+                    : relBuilder.fields(aggCall.distinctKeys))
                 .filter(filterArg)
                 .approximate(aggCall.isApproximate())
                 .sort(relBuilder.fields(aggCall.collation))

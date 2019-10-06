@@ -127,6 +127,8 @@ public class AggregateExtractProjectRule
           relBuilder.aggregateCall(aggCall.getAggregation(), args)
               .distinct(aggCall.isDistinct())
               .filter(filterArg)
+              .unique(aggCall.distinctKeys == null ? null
+                  : relBuilder.fields(aggCall.distinctKeys))
               .approximate(aggCall.isApproximate())
               .sort(relBuilder.fields(aggCall.collation))
               .as(aggCall.name));

@@ -62,7 +62,6 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.schema.ModifiableTable;
-import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
@@ -681,8 +680,11 @@ public class JdbcRules {
 
   /** Returns whether this JDBC data source can implement a given aggregate
    * function. */
-  private static boolean canImplement(SqlAggFunction aggregation, SqlDialect sqlDialect) {
-    return sqlDialect.supportsAggregateFunction(aggregation.getKind());
+  private static boolean canImplement(AggregateCall aggregateCall,
+      SqlDialect sqlDialect) {
+    return sqlDialect.supportsAggregateFunction(
+        aggregateCall.getAggregation().getKind())
+        && aggregateCall.distinctKeys == null;
   }
 
   /** Aggregate operator implemented in JDBC convention. */
@@ -700,9 +702,9 @@ public class JdbcRules {
       assert this.groupSets.size() == 1 : "Grouping sets not supported";
       final SqlDialect dialect = ((JdbcConvention) getConvention()).dialect;
       for (AggregateCall aggCall : aggCalls) {
-        if (!canImplement(aggCall.getAggregation(), dialect)) {
+        if (!canImplement(aggCall, dialect)) {
           throw new InvalidRelException("cannot implement aggregate function "
-              + aggCall.getAggregation());
+              + aggCall);
         }
       }
     }

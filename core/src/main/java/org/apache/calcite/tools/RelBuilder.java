@@ -2991,6 +2991,9 @@ public class RelBuilder {
       if (filter != null) {
         b.append(" FILTER (WHERE ").append(filter).append(')');
       }
+      if (distinctKeys != null) {
+        b.append(" WITHIN DISTINCT (").append(distinctKeys).append(')');
+      }
       return b.toString();
     }
 
@@ -3053,12 +3056,14 @@ public class RelBuilder {
     }
 
     public AggCall unique(Iterable<RexNode> distinctKeys) {
-      final ImmutableList<RexNode> distinctKeyList =
-          ImmutableList.copyOf(distinctKeys);
-      return Objects.equals(distinctKeyList, this.distinctKeys)
+      return Objects.equals(distinctKeys, this.distinctKeys)
           ? this
           : new AggCallImpl(aggFunction, distinct, approximate, ignoreNulls,
-              filter, alias, operands, distinctKeyList, orderKeys);
+              filter, alias, operands, copyOfOptional(distinctKeys), orderKeys);
+    }
+
+    private <E> ImmutableList<E> copyOfOptional(Iterable<E> list) {
+      return list == null ? null : ImmutableList.copyOf(list);
     }
 
     public AggCall approximate(boolean approximate) {

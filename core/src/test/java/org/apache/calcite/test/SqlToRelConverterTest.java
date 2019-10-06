@@ -3852,6 +3852,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "  (select c+1 from (values 3)) as bar(b1)\n"
         + "  on f1=b1\n"
         + ") as r(n) where c=n)";
+    sql(sql).ok();
   }
 
   @Test void testWithinDistinct1() {
