@@ -1061,6 +1061,10 @@ Note:
   it will rely on the supplied time zone to provide correct semantics.
 * GEOMETRY is allowed only in certain
   [conformance levels]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#allowGeometry--).
+* Interval literals may only use time units
+  YEAR, MONTH, DAY, HOUR, MINUTE and SECOND. In certain
+  [conformance levels]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#allowPluralTimeUnits--),
+  we also allow their plurals, YEARS, MONTHS, DAYS, HOURS, MINUTES and SECONDS.
 
 ### Non-scalar types
 
