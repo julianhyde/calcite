@@ -48,7 +48,6 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -596,11 +595,11 @@ public class SqlParserTest {
   }
 
   protected Sql sql(String sql) {
-    return new Sql(sql, false, null, parser -> {});
+    return new Sql(sql, false, null, parser -> { });
   }
 
   protected Sql expr(String sql) {
-    return new Sql(sql, true, null, parser -> {});
+    return new Sql(sql, true, null, parser -> { });
   }
 
   /** Creates an instance of helper class {@link SqlList} to test parsing a
@@ -6828,7 +6827,7 @@ public class SqlParserTest {
         .ok("INTERVAL '1:1' MINUTE TO SECOND");
   }
 
-  @NotNull private Consumer<List<? extends Throwable>> checkWarnings(
+  @Nonnull private Consumer<List<? extends Throwable>> checkWarnings(
       String... tokens) {
     final List<String> messages = new ArrayList<>();
     for (String token : tokens) {
@@ -8814,7 +8813,7 @@ public class SqlParserTest {
       final Quoting q = quoting;
       try {
         quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode2 = parseStmtAndHandleEx(sql1, b -> b, parser -> {});
+        sqlNode2 = parseStmtAndHandleEx(sql1, b -> b, parser -> { });
       } finally {
         quoting = q;
       }
