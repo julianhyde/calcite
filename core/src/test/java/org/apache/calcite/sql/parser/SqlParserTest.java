@@ -8844,11 +8844,12 @@ public class SqlParserTest {
           sqlNode.toSqlString(CalciteSqlDialect.DEFAULT, false).getSql();
 
       // Parse and unparse again.
+      // (Turn off parser checking, and use double-quotes.)
       SqlNode sqlNode2;
       final Quoting q = quoting;
       try {
         quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode2 = parseExpressionAndHandleEx(sql1, parserChecker);
+        sqlNode2 = parseExpressionAndHandleEx(sql1, parser -> { });
       } finally {
         quoting = q;
       }
