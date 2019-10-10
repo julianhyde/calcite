@@ -333,7 +333,11 @@ data: {
       "WRITE"
       "XML"
       "ZONE"
+    ]
 
+    # List of non-reserved keywords to add;
+    # items in this list become non-reserved
+    nonReservedKeywordsToAdd: [
       # not in core, added in babel
       "SEMI"
 
@@ -447,7 +451,6 @@ data: {
       "DATA"
 #     "DATE"
       "DAY"
-#     "DAYS" # not a keyword in Calcite
       "DEALLOCATE"
       "DEC"
       "DECIMAL"
@@ -526,7 +529,6 @@ data: {
 #     "HAVING"
       "HOLD"
       "HOUR"
-#     "HOURS" # not a keyword in Calcite
       "IDENTITY"
 #     "IF" # not a keyword in Calcite
       "IMMEDIATE"
@@ -595,7 +597,6 @@ data: {
       "MIN"
 #     "MINUS"
       "MINUTE"
-#     "MINUTES" # not a keyword in Calcite
       "MOD"
       "MODIFIES"
       "MODULE"
@@ -708,7 +709,6 @@ data: {
       "SCROLL"
       "SEARCH"
       "SECOND"
-#     "SECONDS" # not a keyword in Calcite
       "SECTION"
       "SEEK"
 #     "SELECT"
@@ -809,8 +809,12 @@ data: {
       "WORK"
       "WRITE"
       "YEAR"
-#     "YEARS" # not a keyword in Calcite
       "ZONE"
+    ]
+
+    # List of non-reserved keywords to remove;
+    # items in this list become reserved
+    nonReservedKeywordsToRemove: [
     ]
 
     # List of additional join types. Each is a method with no arguments.

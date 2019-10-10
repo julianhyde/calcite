@@ -339,6 +339,16 @@ data: {
       "ZONE"
     ]
 
+    # List of non-reserved keywords to add;
+    # items in this list become non-reserved
+    nonReservedKeywordsToAdd: [
+    ]
+
+    # List of non-reserved keywords to remove;
+    # items in this list become reserved
+    nonReservedKeywordsToRemove: [
+    ]
+
     # List of additional join types. Each is a method with no arguments.
     # Example: LeftSemiJoin()
     joinTypes: [

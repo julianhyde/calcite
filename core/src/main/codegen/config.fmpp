@@ -104,6 +104,7 @@ data: {
       "DATABASE"
       "DATETIME_INTERVAL_CODE"
       "DATETIME_INTERVAL_PRECISION"
+      "DAYS"
       "DECADE"
       "DEFAULTS"
       "DEFERRABLE"
@@ -144,6 +145,7 @@ data: {
       "GOTO"
       "GRANTED"
       "HIERARCHY"
+      "HOURS"
       "IGNORE"
       "IMMEDIATE"
       "IMMEDIATELY"
@@ -180,7 +182,9 @@ data: {
       "MICROSECOND"
       "MILLENNIUM"
       "MILLISECOND"
+      "MINUTES"
       "MINVALUE"
+      "MONTHS"
       "MORE_"
       "MUMPS"
       "NAME"
@@ -247,6 +251,7 @@ data: {
       "SCOPE_CATALOGS"
       "SCOPE_NAME"
       "SCOPE_SCHEMA"
+      "SECONDS"
       "SECTION"
       "SECURITY"
       "SELF"
@@ -352,7 +357,18 @@ data: {
       "WRAPPER"
       "WRITE"
       "XML"
+      "YEARS"
       "ZONE"
+    ]
+
+    # List of non-reserved keywords to add;
+    # items in this list become non-reserved
+    nonReservedKeywordsToAdd: [
+    ]
+
+    # List of non-reserved keywords to remove;
+    # items in this list become reserved
+    nonReservedKeywordsToRemove: [
     ]
 
     # List of additional join types. Each is a method with no arguments.
