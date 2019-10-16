@@ -22,11 +22,13 @@ import com.google.common.collect.HashMultiset;
 
 import java.util.Collection;
 import java.util.HashSet;
+
 /**
  * Interpreter node that implements a
  * {@link org.apache.calcite.rel.core.SetOp},
  * including {@link org.apache.calcite.rel.core.Minus},
- * {@link org.apache.calcite.rel.core.Union} and {@link org.apache.calcite.rel.core.Intersect}
+ * {@link org.apache.calcite.rel.core.Union} and
+ * {@link org.apache.calcite.rel.core.Intersect}.
  */
 public class SetOpNode implements Node {
   private final Source leftSource;
@@ -42,9 +44,16 @@ public class SetOpNode implements Node {
   }
 
   @Override public void run() throws InterruptedException {
-    Collection<Row> leftRows = setOp.all ? HashMultiset.create() : new HashSet<>();
-    Collection<Row> rightRows = setOp.all ? HashMultiset.create() : new HashSet<>();
-    Row row = null;
+    final Collection<Row> leftRows;
+    final Collection<Row> rightRows;
+    if (setOp.all) {
+      leftRows = HashMultiset.create();
+      rightRows = HashMultiset.create();
+    } else {
+      leftRows = new HashSet<>();
+      rightRows = new HashSet<>();
+    }
+    Row row;
     while ((row = leftSource.receive()) != null) {
       leftRows.add(row);
     }
@@ -53,14 +62,14 @@ public class SetOpNode implements Node {
     }
     switch (setOp.kind) {
     case INTERSECT:
-      for (Row leftRow: leftRows) {
+      for (Row leftRow : leftRows) {
         if (rightRows.remove(leftRow)) {
           sink.send(leftRow);
         }
       }
       break;
     case EXCEPT:
-      for (Row leftRow: leftRows) {
+      for (Row leftRow : leftRows) {
         if (!rightRows.remove(leftRow)) {
           sink.send(leftRow);
         }
@@ -68,7 +77,7 @@ public class SetOpNode implements Node {
       break;
     case UNION:
       leftRows.addAll(rightRows);
-      for (Row r: leftRows) {
+      for (Row r : leftRows) {
         sink.send(r);
       }
     }
