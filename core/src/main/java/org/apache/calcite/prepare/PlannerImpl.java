@@ -119,15 +119,20 @@ public class PlannerImpl implements Planner, ViewExpander {
 
   /** Gets a user defined config and appends default connection values */
   private CalciteConnectionConfig connConfig() {
-    CalciteConnectionConfig config = context.unwrap(CalciteConnectionConfig.class);
+    CalciteConnectionConfigImpl config =
+        context.unwrap(CalciteConnectionConfigImpl.class);
     if (config == null) {
       config = new CalciteConnectionConfigImpl(new Properties());
     }
-    return ((CalciteConnectionConfigImpl) config)
-        .set(CalciteConnectionProperty.CASE_SENSITIVE,
-            String.valueOf(parserConfig.caseSensitive()))
-        .set(CalciteConnectionProperty.CONFORMANCE,
-            String.valueOf(parserConfig.conformance()));
+    if (!config.isSet(CalciteConnectionProperty.CASE_SENSITIVE)) {
+      config = config.set(CalciteConnectionProperty.CASE_SENSITIVE,
+          String.valueOf(parserConfig.caseSensitive()));
+    }
+    if (!config.isSet(CalciteConnectionProperty.CONFORMANCE)) {
+      config = config.set(CalciteConnectionProperty.CONFORMANCE,
+          String.valueOf(parserConfig.conformance()));
+    }
+    return config;
   }
 
   /** Makes sure that the state is at least the given state. */

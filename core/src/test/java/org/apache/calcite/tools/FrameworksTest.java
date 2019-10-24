@@ -19,7 +19,6 @@ package org.apache.calcite.tools;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.CalciteSystemProperty;
@@ -86,8 +85,8 @@ import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -249,44 +248,68 @@ public class FrameworksTest {
     }
   }
 
-  /** Test for {@link CalciteConnectionConfigImpl#set} returns back a full
-   * copy of {@link CalciteConnectionConfig} */
-  @Test public void testConnectionConfigSetsFullCopy() {
-    CalciteConnectionConfig calciteConnectionConfig = new CalciteConnectionConfigImpl(
-        new Properties())
-            .set(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP,
-                Boolean.toString(true))
-            .set(CalciteConnectionProperty.CASE_SENSITIVE,
-                Boolean.toString(true));
+  /** Unit test for {@link CalciteConnectionConfigImpl#set}
+   * and {@link CalciteConnectionConfigImpl#isSet}. */
+  @Test public void testConnectionConfig() {
+    final CalciteConnectionProperty forceDecorrelate =
+        CalciteConnectionProperty.FORCE_DECORRELATE;
+    final CalciteConnectionProperty lenientOperatorLookup =
+        CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP;
+    final CalciteConnectionProperty caseSensitive =
+        CalciteConnectionProperty.CASE_SENSITIVE;
+    final CalciteConnectionProperty model = CalciteConnectionProperty.MODEL;
 
-    assertThat(calciteConnectionConfig.lenientOperatorLookup(), is(true));
-    assertThat(calciteConnectionConfig.caseSensitive(), is(true));
-    // retrieves default value despite not being set
-    assertNull(calciteConnectionConfig.schema());
-  }
-
-  /** Test for {@link CalciteConnectionConfigImpl#set} does not overrides
-   * previously stored values */
-  @Test public void testConnectionConfigOverride() {
-    Properties prop = new Properties();
-    prop.setProperty(CalciteConnectionProperty.FORCE_DECORRELATE.camelName(),
+    final Properties p = new Properties();
+    p.setProperty(forceDecorrelate.camelName(),
         Boolean.toString(false));
-    prop.setProperty(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP.camelName(),
+    p.setProperty(lenientOperatorLookup.camelName(),
         Boolean.toString(false));
-    CalciteConnectionConfig userConnectionConfig = new CalciteConnectionConfigImpl(prop);
 
-    CalciteConnectionConfig calciteConnectionConfig =
-        ((CalciteConnectionConfigImpl) userConnectionConfig)
-        .set(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP,
-            Boolean.toString(true))
-        .set(CalciteConnectionProperty.CASE_SENSITIVE,
-            Boolean.toString(true));
+    final CalciteConnectionConfigImpl c = new CalciteConnectionConfigImpl(p);
 
-    assertThat(calciteConnectionConfig.lenientOperatorLookup(), is(false));
-    assertThat(calciteConnectionConfig.caseSensitive(), is(true));
-    assertThat(calciteConnectionConfig.forceDecorrelate(), is(false));
-    // retrieves default value despite not being set
-    assertNull(calciteConnectionConfig.schema());
+    assertThat(c.lenientOperatorLookup(), is(false));
+    assertThat(c.isSet(lenientOperatorLookup), is(true));
+    assertThat(c.caseSensitive(), is(true));
+    assertThat(c.isSet(caseSensitive), is(false));
+    assertThat(c.forceDecorrelate(), is(false));
+    assertThat(c.isSet(forceDecorrelate), is(true));
+    assertThat(c.model(), nullValue());
+    assertThat(c.isSet(model), is(false));
+
+    final CalciteConnectionConfigImpl c2 = c
+        .set(lenientOperatorLookup, Boolean.toString(true))
+        .set(caseSensitive, Boolean.toString(true));
+
+    assertThat(c2.lenientOperatorLookup(), is(true));
+    assertThat(c2.isSet(lenientOperatorLookup), is(true));
+    assertThat("same value as for c", c2.caseSensitive(), is(true));
+    assertThat("set to the default value", c2.isSet(caseSensitive), is(true));
+    assertThat(c2.forceDecorrelate(), is(false));
+    assertThat(c2.isSet(forceDecorrelate), is(true));
+    assertThat(c2.model(), nullValue());
+    assertThat(c2.isSet(model), is(false));
+    assertThat("retrieves default because not set", c2.schema(), nullValue());
+
+    final CalciteConnectionConfigImpl c3 =
+        new CalciteConnectionConfigImpl(new Properties());
+    final CalciteConnectionConfigImpl c4 = c3
+        .set(lenientOperatorLookup, Boolean.toString(true))
+        .set(caseSensitive, Boolean.toString(true));
+    assertThat(c4.lenientOperatorLookup(), is(true));
+    assertThat(c4.isSet(lenientOperatorLookup), is(true));
+    assertThat(c4.caseSensitive(), is(true));
+    assertThat("set to the default value", c4.isSet(caseSensitive), is(true));
+    assertThat("different from c2", c4.forceDecorrelate(), is(true));
+    assertThat("different from c2", c4.isSet(forceDecorrelate), is(false));
+    assertThat(c4.model(), nullValue());
+    assertThat(c4.isSet(model), is(false));
+    assertThat("retrieves default because not set", c4.schema(), nullValue());
+
+    final CalciteConnectionConfigImpl c5 = c2.unset(lenientOperatorLookup);
+    assertThat(c5.isSet(lenientOperatorLookup), is(false));
+    assertThat(c5.lenientOperatorLookup(), is(false));
+    assertThat(c5.isSet(caseSensitive), is(true));
+    assertThat(c5.lenientOperatorLookup(), is(false));
   }
 
   /** Test case for
