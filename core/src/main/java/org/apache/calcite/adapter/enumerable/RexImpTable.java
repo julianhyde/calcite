@@ -156,6 +156,8 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ATAN2;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BIT_AND;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BIT_OR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BIT_XOR;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BOOL_AND;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BOOL_OR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CARDINALITY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CAST;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CBRT;
@@ -628,6 +630,8 @@ public class RexImpTable {
     aggMap.put(ANY_VALUE, minMax);
     aggMap.put(SOME, minMax);
     aggMap.put(EVERY, minMax);
+    aggMap.put(BOOL_AND, minMax);
+    aggMap.put(BOOL_OR, minMax);
     final Supplier<BitOpImplementor> bitop =
         constructorSupplier(BitOpImplementor.class);
     aggMap.put(BIT_AND, bitop);
@@ -1062,7 +1066,7 @@ public class RexImpTable {
         AggResetContext reset) {
       Expression acc = reset.accumulator().get(0);
       Primitive p = Primitive.of(acc.getType());
-      boolean isMin = MIN == info.aggregation();
+      boolean isMin = MIN == info.aggregation() || BOOL_AND == info.aggregation();
       Object inf = p == null ? null : (isMin ? p.max : p.min);
       reset.currentBlock().add(
           Expressions.statement(
@@ -1075,7 +1079,7 @@ public class RexImpTable {
       Expression acc = add.accumulator().get(0);
       Expression arg = add.arguments().get(0);
       SqlAggFunction aggregation = info.aggregation();
-      final Method method = (aggregation == MIN
+      final Method method = (aggregation == MIN || aggregation == BOOL_AND
           ? BuiltInMethod.LESSER
           : BuiltInMethod.GREATER).method;
       Expression next = Expressions.call(
