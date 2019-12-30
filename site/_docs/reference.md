@@ -2480,11 +2480,15 @@ semantics.
 | o p | TO_DATE(string, format)                      | Converts *string* to a date using the format *format*
 | o p | TO_TIMESTAMP(string, format)                 | Converts *string* to a timestamp using the format *format*
 | o p | TRANSLATE(expr, fromString, toString)        | Returns *expr* with all occurrences of each character in *fromString* replaced by its corresponding character in *toString*. Characters in *expr* that are not in *fromString* are not replaced
+<<<<<<< HEAD
 | b | UNIX_MICROS(timestamp)                         | Returns the number of microseconds since 1970-01-01 00:00:00
 | b | UNIX_MILLIS(timestamp)                         | Returns the number of milliseconds since 1970-01-01 00:00:00
 | b | UNIX_SECONDS(timestamp)                        | Returns the number of seconds since 1970-01-01 00:00:00
 | b | UNIX_DATE(date)                                | Returns the number of days since 1970-01-01
 | o | XMLTRANSFORM(xml, xslt)                        | Returns a string after applying xslt to supplied XML
+=======
+| o | XMLTRANSFORM(xml, xslt)                        | Returns a string after applying xslt to supplied xml.
+>>>>>>> 79f188025 ([CALCITE-3731] Add IF function for BigQuery, Hive and Spark Dialects)
 
 Note:
 
