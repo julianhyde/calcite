@@ -362,7 +362,7 @@ public class RexImpTable {
     defineMethod(SOUNDEX, BuiltInMethod.SOUNDEX.method, NullPolicy.STRICT);
     defineMethod(DIFFERENCE, BuiltInMethod.DIFFERENCE.method, NullPolicy.STRICT);
     defineMethod(REVERSE, BuiltInMethod.REVERSE.method, NullPolicy.STRICT);
-    defineMethod(IF, BuiltInMethod.IF.method, NullPolicy.STRICT);
+    defineMethod(IF, BuiltInMethod.IF.method, NullPolicy.NONE);
 
     map.put(TRIM, new TrimImplementor());
 
