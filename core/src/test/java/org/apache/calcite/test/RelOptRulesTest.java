@@ -3632,6 +3632,10 @@ class RelOptRulesTest extends RelOptTestBase {
     basePushAggThroughUnion();
   }
 
+  @Test void testPushBoolAndBoolOrThroughUnion() {
+    basePushAggThroughUnion();
+  }
+
   @Test void testPullFilterThroughAggregate() {
     final String sql = "select ename, sal, deptno from ("
         + "  select ename, sal, deptno"

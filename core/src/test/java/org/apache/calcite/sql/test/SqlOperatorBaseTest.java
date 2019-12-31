@@ -9159,6 +9159,8 @@ public abstract class SqlOperatorBaseTest {
     tester.checkAgg("bool_and(x)", values2, false, 0d);
     String[] values3 = {"true", "false", "false"};
     tester.checkAgg("bool_and(x)", values3, false, 0d);
+    String[] values4 = {"null"};
+    tester.checkAgg("bool_and(x)", values4, null, 0d);
   }
 
   @Test public void testBoolOrFunc() {
@@ -9188,6 +9190,8 @@ public abstract class SqlOperatorBaseTest {
     tester.checkAgg("bool_or(x)", values2, true, 0d);
     String[] values3 = {"false", "false", "false"};
     tester.checkAgg("bool_or(x)", values3, false, 0d);
+    String[] values4 = {"null"};
+    tester.checkAgg("bool_or(x)", values4, null, 0d);
   }
 
   @Test void testBitAndFunc() {
