@@ -308,6 +308,8 @@ public class RexSimplify {
       return simplifyUnaryMinus((RexCall) e, unknownAs);
     case PLUS_PREFIX:
       return simplifyUnaryPlus((RexCall) e, unknownAs);
+    case IF:
+      return simplifyIf((RexCall) e);
     default:
       if (e.getClass() == RexCall.class) {
         return simplifyGenericNode((RexCall) e);
@@ -2547,6 +2549,18 @@ public class RexSimplify {
     // nullable and not-nullable conditions, but a CAST might get in the way of
     // other rewrites.
     return removeNullabilityCast(simplifiedAnds);
+  }
+
+  private RexNode simplifyIf(RexCall e) {
+    final List<RexNode> operands = new ArrayList<>(e.operands);
+    simplifyList(operands, UNKNOWN);
+
+    if (operands.get(0) != null && operands.get(0).isAlwaysTrue()) {
+      return operands.get(1);
+    } else if (operands.get(0) != null && operands.get(0).isAlwaysFalse()) {
+      return operands.get(2);
+    }
+    return rexBuilder.makeCall(e.getType(), e.getOperator(), operands);
   }
 
   /**

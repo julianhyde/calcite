@@ -4560,6 +4560,29 @@ public abstract class SqlOperatorBaseTest {
     testerMysql.checkNull("reverse(cast(null as varchar(1)))");
   }
 
+  @Test void testIfFunc() {
+    final SqlTester testerBigQuery = tester(SqlLibrary.BIG_QUERY);
+    testerBigQuery.setFor(SqlLibraryOperators.IF);
+    testerBigQuery.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
+    testerBigQuery.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz", "CHAR(3) NOT NULL");
+    testerBigQuery.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')", "abc", "CHAR(3) NOT"
+        + " NULL");
+
+    final SqlTester testerHive = tester(SqlLibrary.HIVE);
+    testerHive.setFor(SqlLibraryOperators.IF);
+    testerHive.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
+    testerHive.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz", "CHAR(3) NOT NULL");
+    testerHive.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')", "abc", "CHAR(3) NOT "
+        + "NULL");
+
+    final SqlTester testerSpark = tester(SqlLibrary.SPARK);
+    testerSpark.setFor(SqlLibraryOperators.IF);
+    testerSpark.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
+    testerSpark.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz", "CHAR(3) NOT NULL");
+    testerSpark.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')", "abc", "CHAR(3) NOT "
+        + "NULL");
+  }
+
   @Test void testUpperFunc() {
     tester.setFor(SqlStdOperatorTable.UPPER);
     tester.checkString("upper('a')", "A", "CHAR(1) NOT NULL");
