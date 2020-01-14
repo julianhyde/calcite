@@ -2416,14 +2416,13 @@ To enable an operator table, set the
 [fun]({{ site.baseurl }}/docs/adapter.html#jdbc-connect-string-parameters)
 connect string parameter.
 
-The 'C' (compatibility) column contains value
-'b' for BigQuery ('fun=bigquery' in the connect string),
-'m' for MySQL ('fun=mysql' in the connect string),
-'o' for Oracle ('fun=oracle' in the connect string),
-'p' for PostgreSQL ('fun=postgresql' in the connect string).
-'b' for BigQuery ('fun=bigquery' in the connect string).
-'h' for Hive ('fun=hive' in the connect string).
-'s' for Spark ('fun=spark' in the connect string).
+The 'C' (compatibility) column contains value:
+* 'b' for Google BigQuery ('fun=bigquery' in the connect string),
+* 'h' for Apache Hive ('fun=hive' in the connect string),
+* 'm' for MySQL ('fun=mysql' in the connect string),
+* 'o' for Oracle ('fun=oracle' in the connect string),
+* 'p' for PostgreSQL ('fun=postgresql' in the connect string),
+* 's' for Apache Spark ('fun=spark' in the connect string).
 
 One operator name may correspond to multiple SQL dialects, but with different
 semantics.
