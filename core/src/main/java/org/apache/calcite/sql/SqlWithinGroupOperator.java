@@ -38,7 +38,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
 
   public SqlWithinGroupOperator() {
     super("WITHIN GROUP", SqlKind.WITHIN_GROUP, 100, true, ReturnTypes.ARG0,
-        null, OperandTypes.ANY_ANY);
+        null, OperandTypes.ANY_IGNORE);
   }
 
   @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {

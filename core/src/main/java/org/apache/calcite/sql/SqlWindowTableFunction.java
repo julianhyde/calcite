@@ -17,6 +17,7 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rel.type.RelRecordType;
@@ -34,7 +35,8 @@ import static org.apache.calcite.util.Static.RESOURCE;
 /**
  * Base class for table-valued function windowing operator (TUMBLE, HOP and SESSION).
  */
-public class SqlWindowTableFunction extends SqlFunction {
+public class SqlWindowTableFunction extends SqlFunction
+    implements SqlTableFunction {
   public SqlWindowTableFunction(String name) {
     super(name,
         SqlKind.OTHER_FUNCTION,
@@ -102,6 +104,10 @@ public class SqlWindowTableFunction extends SqlFunction {
    */
   @Override public boolean argumentMustBeScalar(int ordinal) {
     return ordinal != 0;
+  }
+
+  public RelDataType getRowType(RelDataTypeFactory typeFactory, List<SqlNode> operandList) {
+    throw new UnsupportedOperationException();
   }
 
   /**

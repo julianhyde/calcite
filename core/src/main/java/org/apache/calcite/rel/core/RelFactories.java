@@ -45,11 +45,17 @@ import org.apache.calcite.rel.logical.LogicalTableSpool;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.metadata.RelColumnMapping;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -62,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 /**
@@ -575,7 +582,7 @@ public class RelFactories {
   public interface TableFunctionScanFactory {
     /** Creates a {@link TableFunctionScan}. */
     RelNode createTableFunctionScan(RelOptCluster cluster,
-        List<RelNode> inputs, RexNode rexCall, Type elementType,
+        List<RelNode> inputs, RexCall call, Type elementType,
         Set<RelColumnMapping> columnMappings);
   }
 
@@ -587,10 +594,26 @@ public class RelFactories {
   private static class TableFunctionScanFactoryImpl
       implements TableFunctionScanFactory {
     @Override public RelNode createTableFunctionScan(RelOptCluster cluster,
-        List<RelNode> inputs, RexNode rexCall, Type elementType,
+        List<RelNode> inputs, RexCall call, Type elementType,
         Set<RelColumnMapping> columnMappings) {
-      return LogicalTableFunctionScan.create(cluster, inputs, rexCall,
-          elementType, rexCall.getType(), columnMappings);
+      final List<SqlNode> operands = call.operands.stream()
+          .map(e -> toSql(cluster.getRexBuilder(), e))
+          .collect(Collectors.toList());
+      final SqlTableFunction tableFunction =
+          (SqlTableFunction) call.getOperator();
+      final RelDataType rowType =
+          tableFunction.getRowType(cluster.getTypeFactory(), operands);
+      return LogicalTableFunctionScan.create(cluster, inputs, call,
+          elementType, rowType, columnMappings);
+    }
+
+    /** Converts a {@link RexNode} node to a {@link SqlLiteral}.
+     * If it is a literal, converts to a literal with the same value,
+     * otherwise to a literal with the default value of for that type. */
+    private SqlLiteral toSql(RexBuilder rexBuilder, RexNode node) {
+      return SqlImplementor.toSql((RexLiteral)
+          (node instanceof RexLiteral ? node
+              : rexBuilder.makeZeroLiteral(node.getType())));
     }
   }
 
