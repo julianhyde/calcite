@@ -22,6 +22,7 @@ import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlTableFunction;
+import org.apache.calcite.sql.SqlWindowTableFunction;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeName;
 
@@ -56,6 +57,11 @@ public class ProcedureNamespace extends AbstractNamespace {
     final SqlOperator operator = call.getOperator();
     final SqlCallBinding callBinding =
         new SqlCallBinding(validator, scope, call);
+    if (operator instanceof SqlWindowTableFunction) {
+      // TODO: make SqlWindowTableFunction implement SqlTableFunction,
+      // and remove this 'if'
+      return type;
+    }
     if (!(operator instanceof SqlTableFunction)) {
       throw new IllegalArgumentException("Argument must be a table function: "
           + operator.getNameAsId());

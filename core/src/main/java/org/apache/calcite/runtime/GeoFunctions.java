@@ -200,7 +200,7 @@ public class GeoFunctions {
     return ST_MakeEnvelope(xMin, yMin, xMax, yMax, NO_SRID);
   }
 
-  /**  Creates a line-string from the given POINTs (or MULTIPOINTs). */
+  /** Creates a line-string from the given POINTs (or MULTIPOINTs). */
   @Hints({"SqlKind:ST_MAKE_LINE"})
   public static Geom ST_MakeLine(Geom geom1, Geom geom2) {
     return makeLine(geom1, geom2);
@@ -229,26 +229,26 @@ public class GeoFunctions {
     return makeLine(geom1, geom2, geom3, geom4, geom5, geom6);
   }
 
-  /**  Alias for {@link #ST_Point(BigDecimal, BigDecimal)}. */
+  /** Alias for {@link #ST_Point(BigDecimal, BigDecimal)}. */
   @Hints({"SqlKind:ST_POINT"})
   public static Geom ST_MakePoint(BigDecimal x, BigDecimal y) {
     return ST_Point(x, y);
   }
 
-  /**  Alias for {@link #ST_Point(BigDecimal, BigDecimal, BigDecimal)}. */
+  /** Alias for {@link #ST_Point(BigDecimal, BigDecimal, BigDecimal)}. */
   @Hints({"SqlKind:ST_POINT3"})
   public static Geom ST_MakePoint(BigDecimal x, BigDecimal y, BigDecimal z) {
     return ST_Point(x, y, z);
   }
 
-  /**  Constructs a 2D point from coordinates. */
+  /** Constructs a 2D point from coordinates. */
   @Hints({"SqlKind:ST_POINT"})
   public static Geom ST_Point(BigDecimal x, BigDecimal y) {
     // NOTE: Combine the double and BigDecimal variants of this function
     return point(x.doubleValue(), y.doubleValue());
   }
 
-  /**  Constructs a 3D point from coordinates. */
+  /** Constructs a 3D point from coordinates. */
   @Hints({"SqlKind:ST_POINT3"})
   public static Geom ST_Point(BigDecimal x, BigDecimal y, BigDecimal z) {
     final Geometry g = new Point(x.doubleValue(), y.doubleValue(),
