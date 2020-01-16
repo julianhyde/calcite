@@ -51,11 +51,11 @@ import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.fun.SqlStdOperatorTables;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
@@ -696,10 +696,10 @@ public abstract class SqlToRelTestBase {
       final List<SqlOperatorTable> list = new ArrayList<>();
       list.add(operatorTable);
       if (conformance.allowGeometry()) {
-        list.add(SqlStdOperatorTables.spatialInstance());
+        list.add(SqlOperatorTables.spatialInstance());
       }
       final SqlValidator validator = new FarragoTestValidator(
-          SqlStdOperatorTables.chain(list),
+          SqlOperatorTables.chain(list),
           catalogReader,
           typeFactory,
           conformance);

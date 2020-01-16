@@ -29,7 +29,7 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.fun.SqlStdOperatorTables;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 
 import com.google.common.collect.ImmutableList;
 
@@ -202,7 +202,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
 
           SqlOperator hilbertOp() {
             for (SqlOperator op
-                : SqlStdOperatorTables.spatialInstance().getOperatorList()) {
+                : SqlOperatorTables.spatialInstance().getOperatorList()) {
               if (op.getKind() == SqlKind.HILBERT
                   && op.getOperandCountRange().isValidCount(2)) {
                 return op;
