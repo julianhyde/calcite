@@ -31,6 +31,8 @@ import java.util.List;
 /**
  * ChainedSqlOperatorTable implements the {@link SqlOperatorTable} interface by
  * chaining together any number of underlying operator table instances.
+ *
+ * <p>To create, call {@link SqlOperatorTables#chain}.
  */
 public class ChainedSqlOperatorTable implements SqlOperatorTable {
   //~ Instance fields --------------------------------------------------------
@@ -39,10 +41,13 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a table based on a given list.
-   */
+  @Deprecated
   public ChainedSqlOperatorTable(List<SqlOperatorTable> tableList) {
+    this(ImmutableList.copyOf(tableList));
+  }
+
+  /** Internal constructor; call {@link SqlOperatorTables#chain}. */
+  protected ChainedSqlOperatorTable(ImmutableList<SqlOperatorTable> tableList) {
     this.tableList = ImmutableList.copyOf(tableList);
   }
 

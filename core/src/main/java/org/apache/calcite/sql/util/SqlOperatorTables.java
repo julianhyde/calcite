@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.sql.fun;
+package org.apache.calcite.sql.util;
 
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -25,8 +25,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.runtime.GeoFunctions;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
-import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
+import org.apache.calcite.sql.fun.SqlGeoFunctions;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -37,10 +36,10 @@ import java.util.function.Supplier;
 /**
  * Utilities for {@link SqlOperatorTable}s.
  */
-public class SqlStdOperatorTables extends ReflectiveSqlOperatorTable {
+public class SqlOperatorTables extends ReflectiveSqlOperatorTable {
 
   private static final Supplier<SqlOperatorTable> SPATIAL =
-      Suppliers.memoize(SqlStdOperatorTables::createSpatial)::get;
+      Suppliers.memoize(SqlOperatorTables::createSpatial)::get;
 
   private static SqlOperatorTable createSpatial() {
     if (true) {

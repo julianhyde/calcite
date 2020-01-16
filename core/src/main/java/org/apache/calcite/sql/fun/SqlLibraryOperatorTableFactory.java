@@ -19,6 +19,7 @@ package org.apache.calcite.sql.fun;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.util.ListSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.util.Util;
 
 import com.google.common.cache.CacheBuilder;
@@ -82,7 +83,7 @@ public class SqlLibraryOperatorTableFactory {
         standard = true;
         break;
       case SPATIAL:
-        list.addAll(SqlStdOperatorTables.spatialInstance().getOperatorList());
+        list.addAll(SqlOperatorTables.spatialInstance().getOperatorList());
         break;
       default:
         custom = true;
@@ -111,7 +112,7 @@ public class SqlLibraryOperatorTableFactory {
     SqlOperatorTable operatorTable = new ListSqlOperatorTable(list.build());
     if (standard) {
       operatorTable =
-          SqlStdOperatorTables.chain(SqlStdOperatorTable.instance(),
+          SqlOperatorTables.chain(SqlStdOperatorTable.instance(),
               operatorTable);
     }
     return operatorTable;
