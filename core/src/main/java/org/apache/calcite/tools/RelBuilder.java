@@ -1371,8 +1371,9 @@ public class RelBuilder {
       fieldNameList.add(null);
     }
 
+    bloat:
     if (frame.rel instanceof Project
-        && shouldMergeProject()) {
+        && config.bloat() >= 0) {
       final Project project = (Project) frame.rel;
       // Populate field names. If the upper expression is an input ref and does
       // not have a recommended name, use the name of the underlying field.
@@ -1388,6 +1389,20 @@ public class RelBuilder {
       }
       final List<RexNode> newNodes =
           RelOptUtil.pushPastProject(nodeList, project);
+
+      final int bloat = config.bloat();
+      final int bottomCount = RexUtil.nodeCount(project.getProjects());
+      final int topCount = RexUtil.nodeCount(nodeList);
+      final int mergedCount = RexUtil.nodeCount(newNodes);
+      System.out.println("bottom " + bottomCount
+          + ", top " + topCount
+          + ", merged " + mergedCount
+          + ", difference " + (bottomCount + topCount - mergedCount));
+      if (mergedCount > bottomCount + topCount + bloat) {
+        // The merged expression is more complex than the input expressions.
+        // Do not merge.
+        break bloat;
+      }
 
       // Carefully build a list of fields, so that table aliases from the input
       // can be seen for fields that are based on a RexInputRef.
@@ -1492,6 +1507,7 @@ public class RelBuilder {
    * <p>The default implementation returns {@code true};
    * sub-classes may disable merge by overriding to return {@code false}. */
   @Experimental
+  @Deprecated
   protected boolean shouldMergeProject() {
     return true;
   }
@@ -3042,6 +3058,47 @@ public class RelBuilder {
 
     /** Sets {@link #dedupAggregateCalls}. */
     Config withDedupAggregateCalls(boolean dedupAggregateCalls);
+
+    /** Controls whether to merge projects.
+     *
+     * <p>Usually merging projects is beneficial, but occasionally the
+     * result is more complex than the original projects. Consider:
+     *
+     * <pre>
+     * P: Project(a+b+c AS x, d+e+f AS y, g+h+i AS z)  # complexity 15
+     * Q: Project(x*y*z AS p, x-y-z AS q)              # complexity 10
+     * R: Project((a+b+c)*(d+e+f)*(g+h+i) AS s,
+     *            (a+b+c)-(d+e+f)-(g+h+i) AS t)        # complexity 34
+     * </pre>
+     *
+     * The complexity of an expression is the number of nodes (leaves and
+     * operators). For example, {@code a+b+c} has complexity 5 (3 field
+     * references and 2 calls):
+     *
+     * <pre>
+     *       +
+     *      /  \
+     *     +    c
+     *    / \
+     *   a   b
+     * </pre>
+     *
+     * <p>The default value, 0, allows a merge if complexity of the
+     * result is less than or equal to the sum of the complexity of the
+     * originals.
+     *
+     * <p>A negative value never allows merges.
+     *
+     * A positive value, {@code bloat}, allows a merge if complexity of the
+     * result is less than or equal to the sum of the complexity of the
+     * originals plus {@code bloat}.
+     */
+    @ImmutableBeans.Property
+    @ImmutableBeans.IntDefault(0)
+    int bloat();
+
+    /** Sets {@link #bloat}. */
+    Config withBloat(int bloat);
 
     /** Whether to simplify expressions; default true. */
     @ImmutableBeans.Property

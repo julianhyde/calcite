@@ -469,6 +469,25 @@ public class RexUtil {
     return false;
   }
 
+  /** Returns the number of nodes (including leaves) in a list of
+   * expressions. */
+  public static int nodeCount(List<RexNode> nodes) {
+    int n = 0;
+    for (RexNode operand : nodes) {
+      n += nodeCount(operand);
+    }
+    return n;
+  }
+
+  /** Returns the number of nodes (including leaves) in a Rex tree. */
+  public static int nodeCount(RexNode node) {
+    int n = 1;
+    if (node instanceof RexCall) {
+      n += nodeCount(((RexCall) node).getOperands());
+    }
+    return n;
+  }
+
   /**
    * Walks over an expression and determines whether it is constant.
    */
