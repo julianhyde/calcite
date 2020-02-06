@@ -1394,10 +1394,6 @@ public class RelBuilder {
       final int bottomCount = RexUtil.nodeCount(project.getProjects());
       final int topCount = RexUtil.nodeCount(nodeList);
       final int mergedCount = RexUtil.nodeCount(newNodes);
-      System.out.println("bottom " + bottomCount
-          + ", top " + topCount
-          + ", merged " + mergedCount
-          + ", difference " + (bottomCount + topCount - mergedCount));
       if (mergedCount > bottomCount + topCount + bloat) {
         // The merged expression is more complex than the input expressions.
         // Do not merge.
