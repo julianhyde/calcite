@@ -773,7 +773,8 @@ public class RelBuilderTest {
                 b.call(SqlStdOperatorTable.PLUS, b.field("v"), b.field("v")))
         .build();
     // Complexity of bottom is 14; top is 3; merged is 29; difference is -12.
-    // So, we merge if bloat is 20, but not if it is -1, 0 or 10.
+    // So, we merge if bloat is 20 or 100 (the default),
+    // but not if it is -1, 0 or 10.
     final String expected = "LogicalProject($f0=[+"
         + "(CASE(=($7, 0), 'zero', =($7, 1), 'one', =($7, 2), 'two', 'other'),"
         + " CASE(=($7, 0), 'zero', =($7, 1), 'one', =($7, 2), 'two', 'other'))])\n"
@@ -782,7 +783,7 @@ public class RelBuilderTest {
         + "  LogicalProject(v=[CASE(=($7, 0), 'zero', =($7, 1), "
         + "'one', =($7, 2), 'two', 'other')])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n";
-    assertThat(f.apply(createBuilder(c -> c)), hasTree(expectedNeg));
+    assertThat(f.apply(createBuilder(c -> c)), hasTree(expected));
     assertThat(f.apply(createBuilder(c -> c.withBloat(0))),
         hasTree(expectedNeg));
     assertThat(f.apply(createBuilder(c -> c.withBloat(-1))),

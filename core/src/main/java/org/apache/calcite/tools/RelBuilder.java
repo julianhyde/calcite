@@ -3055,7 +3055,8 @@ public class RelBuilder {
     /** Sets {@link #dedupAggregateCalls}. */
     Config withDedupAggregateCalls(boolean dedupAggregateCalls);
 
-    /** Controls whether to merge projects.
+    /** Controls whether to merge two {@link Project} operators when inlining
+     * expressions causes complexity to increase.
      *
      * <p>Usually merging projects is beneficial, but occasionally the
      * result is more complex than the original projects. Consider:
@@ -3079,18 +3080,20 @@ public class RelBuilder {
      *   a   b
      * </pre>
      *
-     * <p>The default value, 0, allows a merge if complexity of the
-     * result is less than or equal to the sum of the complexity of the
-     * originals.
-     *
      * <p>A negative value never allows merges.
      *
-     * A positive value, {@code bloat}, allows a merge if complexity of the
-     * result is less than or equal to the sum of the complexity of the
+     * <p>A zero or positive value, {@code bloat}, allows a merge if complexity
+     * of the result is less than or equal to the sum of the complexity of the
      * originals plus {@code bloat}.
+     *
+     * <p>The default value, 100, allows a moderate increase in complexity but
+     * prevents cases where complexity would run away into the millions and run
+     * out of memory. Moderate complexity is OK; the implementation, say via
+     * {@link org.apache.calcite.adapter.enumerable.EnumerableCalc}, will often
+     * gather common sub-expressions and compute them only once.
      */
     @ImmutableBeans.Property
-    @ImmutableBeans.IntDefault(0)
+    @ImmutableBeans.IntDefault(100)
     int bloat();
 
     /** Sets {@link #bloat}. */
