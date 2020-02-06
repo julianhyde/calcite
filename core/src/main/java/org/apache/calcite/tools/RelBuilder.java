@@ -1388,13 +1388,9 @@ public class RelBuilder {
         }
       }
       final List<RexNode> newNodes =
-          RelOptUtil.pushPastProject(nodeList, project);
-
-      final int bloat = config.bloat();
-      final int bottomCount = RexUtil.nodeCount(project.getProjects());
-      final int topCount = RexUtil.nodeCount(nodeList);
-      final int mergedCount = RexUtil.nodeCount(newNodes);
-      if (mergedCount > bottomCount + topCount + bloat) {
+          RelOptUtil.pushPastProjectUnlessBloat(nodeList, project,
+              config.bloat());
+      if (newNodes == null) {
         // The merged expression is more complex than the input expressions.
         // Do not merge.
         break bloat;

@@ -471,7 +471,7 @@ public class RexUtil {
 
   /** Returns the number of nodes (including leaves) in a list of
    * expressions. */
-  public static int nodeCount(List<RexNode> nodes) {
+  public static int nodeCount(List<? extends RexNode> nodes) {
     int n = 0;
     for (RexNode operand : nodes) {
       n += nodeCount(operand);
