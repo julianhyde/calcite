@@ -470,20 +470,16 @@ public class RexUtil {
   }
 
   /** Returns the number of nodes (including leaves) in a list of
-   * expressions. */
+   * expressions.
+   *
+   * @see RexNode#nodeCount() */
   public static int nodeCount(List<? extends RexNode> nodes) {
-    int n = 0;
-    for (RexNode operand : nodes) {
-      n += nodeCount(operand);
-    }
-    return n;
+    return nodeCount(0, nodes);
   }
 
-  /** Returns the number of nodes (including leaves) in a Rex tree. */
-  public static int nodeCount(RexNode node) {
-    int n = 1;
-    if (node instanceof RexCall) {
-      n += nodeCount(((RexCall) node).getOperands());
+  static int nodeCount(int n, List<? extends RexNode> nodes) {
+    for (RexNode operand : nodes) {
+      n += operand.nodeCount();
     }
     return n;
   }
