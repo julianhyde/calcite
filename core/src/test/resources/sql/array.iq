@@ -1,0 +1,595 @@
+# array.iq - arrays
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to you under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Based on https://cloud.google.com/bigquery/docs/reference/standard-sql/arrays
+# with modifications to account for differences between BigQuery and Calcite
+# syntax.
+#
+# Differences with BigQuery:
+# * BigQuery allows '[1,2,3]' whereas Calcite requires 'ARRAY [1,2,3]'
+# * Bigquery allows types, 'ARRAY<INTEGER> [1,2,3]'
+# * BigQuery quotes literals using double-quote, "apple" rather than 'apple'
+# * Calcite does not have type INT64, FLOAT64
+# * BigQuery ARRAY_LENGTH function is LENGTH in Calcite
+# * BigQuery "FROM UNNEST ... AS n"
+#   maps to Calcite "UNNEST ... AS t (n)"
+# * BigQuery "FROM UNNEST ... AS n WITH OFFSET AS o"
+#   maps to Calcite "UNNEST ... WITH ORDINALITY AS t (n, o)"
+
+!use scott
+!set outputformat mysql
+
+SELECT ARRAY [1, 2, 3] as numbers;
+!ok
+
+SELECT ARRAY ['apple', 'pear', 'orange'] as fruit;
+!ok
+
+SELECT ARRAY [true, false, true] as booleans;
+!ok
+
+SELECT ARRAY [a, b, c]
+FROM
+  (SELECT 5 AS a,
+          37 AS b,
+          406 AS c);
+!ok
+
+SELECT ARRAY [a, b, c]
+FROM
+  (SELECT CAST(5 AS INT) AS a,
+          CAST(37 AS FLOAT) AS b,
+          406 AS c);
+!ok
+
+!if (false) {
+SELECT GENERATE_ARRAY(11, 33, 2) AS odds;
+
++--------------------------------------------------+
+| odds                                             |
++--------------------------------------------------+
+| [11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33] |
++--------------------------------------------------+
+!ok
+
+SELECT GENERATE_ARRAY(21, 14, -1) AS countdown;
+
++----------------------------------+
+| countdown                        |
++----------------------------------+
+| [21, 20, 19, 18, 17, 16, 15, 14] |
++----------------------------------+
+!ok
+
+SELECT
+  GENERATE_DATE_ARRAY('2017-11-21', '2017-12-31', INTERVAL 1 WEEK)
+    AS date_array;
+
++--------------------------------------------------------------------------+
+| date_array                                                               |
++--------------------------------------------------------------------------+
+| [2017-11-21, 2017-11-28, 2017-12-05, 2017-12-12, 2017-12-19, 2017-12-26] |
++--------------------------------------------------------------------------+
+!ok
+!}
+
+WITH sequences AS
+  (SELECT ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT ARRAY [5, 10] AS some_numbers)
+SELECT some_numbers,
+       LENGTH(some_numbers) AS len
+FROM sequences;
+
++--------------------+--------+
+| some_numbers       | len    |
++--------------------+--------+
+| [0, 1, 1, 2, 3, 5] | 6      |
+| [2, 4, 8, 16, 32]  | 5      |
+| [5, 10]            | 2      |
++--------------------+--------+
+!ok
+
+# Flatten using UNNEST
+SELECT *
+FROM UNNEST(ARRAY ['foo', 'bar', 'baz', 'qux', 'corge', 'garply', 'waldo', 'fred'])
+WITH ORDINALITY AS t (element, offset)
+ORDER BY offset;
+
++----------+--------+
+| element  | offset |
++----------+--------+
+| foo      | 0      |
+| bar      | 1      |
+| baz      | 2      |
+| qux      | 3      |
+| corge    | 4      |
+| garply   | 5      |
+| waldo    | 6      |
+| fred     | 7      |
++----------+--------+
+!ok
+
+# Flatten with CROSS JOIN
+WITH sequences AS
+  (SELECT 1 AS id, ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT 2 AS id, ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT 3 AS id, ARRAY [5, 10] AS some_numbers)
+SELECT id, flattened_numbers
+FROM sequences
+CROSS JOIN UNNEST(sequences.some_numbers) AS t (flattened_numbers);
+
++------+-------------------+
+| id   | flattened_numbers |
++------+-------------------+
+|    1 |                 0 |
+|    1 |                 1 |
+|    1 |                 1 |
+|    1 |                 2 |
+|    1 |                 3 |
+|    1 |                 5 |
+|    2 |                 2 |
+|    2 |                 4 |
+|    2 |                 8 |
+|    2 |                16 |
+|    2 |                32 |
+|    3 |                 5 |
+|    3 |                10 |
++------+-------------------+
+!ok
+
+# Same, using comma-join
+WITH sequences AS
+  (SELECT 1 AS id, ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT 2 AS id, ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT 3 AS id, ARRAY [5, 10] AS some_numbers)
+SELECT id, flattened_numbers
+FROM sequences, sequences.some_numbers AS t (flattened_numbers);
+
++------+-------------------+
+| id   | flattened_numbers |
++------+-------------------+
+|    1 |                 0 |
+|    1 |                 1 |
+|    1 |                 1 |
+|    1 |                 2 |
+|    1 |                 3 |
+|    1 |                 5 |
+|    2 |                 2 |
+|    2 |                 4 |
+|    2 |                 8 |
+|    2 |                16 |
+|    2 |                32 |
+|    3 |                 5 |
+|    3 |                10 |
++------+-------------------+
+!ok
+
+# Arrays within arrays
+WITH races AS (
+  SELECT '800M' AS race,
+    ARRAY [STRUCT('Rudisha' as name, ARRAY [23.4, 26.3, 26.4, 26.1] as splits),
+     STRUCT('Makhloufi' as name, ARRAY [24.5, 25.4, 26.6, 26.1] as splits),
+     STRUCT('Murphy' as name, ARRAY [23.9, 26.0, 27.0, 26.0] as splits),
+     STRUCT('Bosse' as name, ARRAY [23.6, 26.2, 26.5, 27.1] as splits),
+     STRUCT('Rotich' as name, ARRAY [24.7, 25.6, 26.9, 26.4] as splits),
+     STRUCT('Lewandowski' as name, ARRAY [25.0, 25.7, 26.3, 27.2] as splits),
+     STRUCT('Kipketer' as name, ARRAY [23.2, 26.1, 27.3, 29.4] as splits),
+     STRUCT('Berian' as name, ARRAY [23.7, 26.1, 27.0, 29.3] as splits)]
+       AS participants)
+SELECT
+  race,
+  participant
+FROM races r
+CROSS JOIN UNNEST(r.participants) as participant;
+
++------+---------------------------------------+
+| race | participant                           |
++------+---------------------------------------+
+| 800M | {Rudisha, [23.4, 26.3, 26.4, 26.1]}   |
+| 800M | {Makhloufi, [24.5, 25.4, 26.6, 26.1]} |
+| 800M | {Murphy, [23.9, 26, 27, 26]}          |
+| 800M | {Bosse, [23.6, 26.2, 26.5, 27.1]}     |
+| 800M | {Rotich, [24.7, 25.6, 26.9, 26.4]}    |
+| 800M | {Lewandowski, [25, 25.7, 26.3, 27.2]} |
+| 800M | {Kipketer, [23.2, 26.1, 27.3, 29.4]}  |
+| 800M | {Berian, [23.7, 26.1, 27, 29.3]}      |
++------+---------------------------------------+
+!ok
+
+# Fastest runner
+WITH races AS (
+  SELECT '800M' AS race,
+    ARRAY [STRUCT('Rudisha' as name, ARRAY [23.4, 26.3, 26.4, 26.1] as splits),
+     STRUCT('Makhloufi' as name, ARRAY [24.5, 25.4, 26.6, 26.1] as splits),
+     STRUCT('Murphy' as name, ARRAY [23.9, 26.0, 27.0, 26.0] as splits),
+     STRUCT('Bosse' as name, ARRAY [23.6, 26.2, 26.5, 27.1] as splits),
+     STRUCT('Rotich' as name, ARRAY [24.7, 25.6, 26.9, 26.4] as splits),
+     STRUCT('Lewandowski' as name, ARRAY [25.0, 25.7, 26.3, 27.2] as splits),
+     STRUCT('Kipketer' as name, ARRAY [23.2, 26.1, 27.3, 29.4] as splits),
+     STRUCT('Berian' as name, ARRAY [23.7, 26.1, 27.0, 29.3] as splits)]
+       AS participants)
+SELECT
+  race,
+  (SELECT name
+   FROM UNNEST(participants)
+   ORDER BY (
+     SELECT SUM(duration)
+     FROM UNNEST(splits) AS duration) ASC
+   LIMIT 1) AS fastest_racer
+FROM races;
+
++------+---------------+
+| race | fastest_racer |
++------+---------------+
+| 800M | Rudisha       |
++------+---------------+
+!ok
+
+# Fastest lap
+WITH races AS (
+ SELECT '800M' AS race,
+   ARRAY [STRUCT('Rudisha' as name, ARRAY [23.4, 26.3, 26.4, 26.1] as splits),
+    STRUCT('Makhloufi' as name, ARRAY [24.5, 25.4, 26.6, 26.1] as splits),
+    STRUCT('Murphy' as name, ARRAY [23.9, 26.0, 27.0, 26.0] as splits),
+    STRUCT('Bosse' as name, ARRAY [23.6, 26.2, 26.5, 27.1] as splits),
+    STRUCT('Rotich' as name, ARRAY [24.7, 25.6, 26.9, 26.4] as splits),
+    STRUCT('Lewandowski' as name, ARRAY [25.0, 25.7, 26.3, 27.2] as splits),
+    STRUCT('Kipketer' as name, ARRAY [23.2, 26.1, 27.3, 29.4] as splits),
+    STRUCT('Berian' as name, ARRAY [23.7, 26.1, 27.0, 29.3] as splits)]
+    AS participants)
+SELECT
+race,
+(SELECT name
+ FROM UNNEST(participants),
+   UNNEST(splits) AS duration
+ ORDER BY duration ASC LIMIT 1) AS runner_with_fastest_lap
+FROM races;
+
++------+-------------------------+
+| race | runner_with_fastest_lap |
++------+-------------------------+
+| 800M | Kipketer                |
++------+-------------------------+
+!ok
+
+# Same, using CROSS JOIN.
+WITH races AS (
+ SELECT '800M' AS race,
+   ARRAY [STRUCT('Rudisha' as name, ARRAY [23.4, 26.3, 26.4, 26.1] as splits),
+    STRUCT('Makhloufi' as name, ARRAY [24.5, 25.4, 26.6, 26.1] as splits),
+    STRUCT('Murphy' as name, ARRAY [23.9, 26.0, 27.0, 26.0] as splits),
+    STRUCT('Bosse' as name, ARRAY [23.6, 26.2, 26.5, 27.1] as splits),
+    STRUCT('Rotich' as name, ARRAY [24.7, 25.6, 26.9, 26.4] as splits),
+    STRUCT('Lewandowski' as name, ARRAY [25.0, 25.7, 26.3, 27.2] as splits),
+    STRUCT('Kipketer' as name, ARRAY [23.2, 26.1, 27.3, 29.4] as splits),
+    STRUCT('Berian' as name, ARRAY [23.7, 26.1, 27.0, 29.3] as splits)]
+    AS participants)
+SELECT
+race,
+(SELECT name
+ FROM UNNEST(participants)
+ CROSS JOIN UNNEST(splits) AS duration
+ ORDER BY duration ASC LIMIT 1) AS runner_with_fastest_lap
+FROM races;
+
++------+-------------------------+
+| race | runner_with_fastest_lap |
++------+-------------------------+
+| 800M | Kipketer                |
++------+-------------------------+
+!ok
+
+# LEFT JOIN to keep empty or null arrays
+WITH races AS (
+ SELECT '800M' AS race,
+   ARRAY [STRUCT('Rudisha' as name, ARRAY [23.4, 26.3, 26.4, 26.1] as splits),
+    STRUCT('Makhloufi' as name, ARRAY [24.5, 25.4, 26.6, 26.1] as splits),
+    STRUCT('Murphy' as name, ARRAY [23.9, 26.0, 27.0, 26.0] as splits),
+    STRUCT('Bosse' as name, ARRAY [23.6, 26.2, 26.5, 27.1] as splits),
+    STRUCT('Rotich' as name, ARRAY [24.7, 25.6, 26.9, 26.4] as splits),
+    STRUCT('Lewandowski' as name, ARRAY [25.0, 25.7, 26.3, 27.2] as splits),
+    STRUCT('Kipketer' as name, ARRAY [23.2, 26.1, 27.3, 29.4] as splits),
+    STRUCT('Berian' as name, ARRAY [23.7, 26.1, 27.0, 29.3] as splits),
+    STRUCT('Nathan' as name, ARRAY [] as splits),
+    STRUCT('David' as name, NULL as splits)]
+    AS participants)
+SELECT
+  name, sum(duration) AS finish_time
+FROM races, races.participants LEFT JOIN participants.splits duration
+GROUP BY name;
+
++-------------+--------------------+
+| name        | finish_time        |
++-------------+--------------------+
+| Murphy      | 102.9              |
+| Rudisha     | 102.19999999999999 |
+| David       | NULL               |
+| Rotich      | 103.6              |
+| Makhloufi   | 102.6              |
+| Berian      | 106.1              |
+| Bosse       | 103.4              |
+| Kipketer    | 106                |
+| Nathan      | NULL               |
+| Lewandowski | 104.2              |
++-------------+--------------------+
+!ok
+
+# Creating Arrays From Sub-queries
+WITH sequences AS
+  (SELECT ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+  UNION ALL SELECT ARRAY [2, 4, 8, 16, 32] AS some_numbers
+  UNION ALL SELECT ARRAY [5, 10] AS some_numbers)
+SELECT some_numbers,
+  ARRAY(SELECT x * 2
+        FROM UNNEST(some_numbers) AS x) AS doubled
+FROM sequences;
+
++--------------------+---------------------+
+| some_numbers       | doubled             |
++--------------------+---------------------+
+| [0, 1, 1, 2, 3, 5] | [0, 2, 2, 4, 6, 10] |
+| [2, 4, 8, 16, 32]  | [4, 8, 16, 32, 64]  |
+| [5, 10]            | [10, 20]            |
++--------------------+---------------------+
+!ok
+
+# Filtering Arrays
+WITH sequences AS
+  (SELECT ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT ARRAY [5, 10] AS some_numbers)
+SELECT
+  ARRAY(SELECT x * 2
+        FROM UNNEST(some_numbers) AS x
+        WHERE x < 5) AS doubled_less_than_five
+FROM sequences;
+
++------------------------+
+| doubled_less_than_five |
++------------------------+
+| [0, 2, 2, 4, 6]        |
+| [4, 8]                 |
+| []                     |
++------------------------+
+!ok
+
+# Distinct
+WITH sequences AS
+  (SELECT ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers)
+SELECT ARRAY(SELECT DISTINCT x
+             FROM UNNEST(some_numbers) AS x) AS unique_numbers
+FROM sequences;
+
++-----------------+
+| unique_numbers  |
++-----------------+
+| [0, 1, 2, 3, 5] |
++-----------------+
+!ok
+
+# IN
+WITH sequences AS
+  (SELECT ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT ARRAY [5, 10] AS some_numbers)
+SELECT
+   ARRAY(SELECT x
+         FROM UNNEST(some_numbers) AS x
+         WHERE 2 IN UNNEST(some_numbers)) AS contains_two
+FROM sequences;
+
++--------------------+
+| contains_two       |
++--------------------+
+| [0, 1, 1, 2, 3, 5] |
+| [2, 4, 8, 16, 32]  |
+| []                 |
++--------------------+
+!ok
+
+# Scanning Arrays
+SELECT 2 IN UNNEST(ARRAY [0, 1, 1, 2, 3, 5]) AS contains_value;
+
++----------------+
+| contains_value |
++----------------+
+| true           |
++----------------+
+!ok
+
+WITH sequences AS
+  (SELECT 1 AS id, ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT 2 AS id, ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT 3 AS id, ARRAY [5, 10] AS some_numbers)
+SELECT id AS matching_rows
+FROM sequences
+WHERE 2 IN UNNEST(sequences.some_numbers)
+ORDER BY matching_rows;
+
++---------------+
+| matching_rows |
++---------------+
+| 1             |
+| 2             |
++---------------+
+!ok
+
+# EXISTS
+WITH sequences AS
+  (SELECT 1 AS id, ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT 2 AS id, ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT 3 AS id, ARRAY [5, 10] AS some_numbers)
+SELECT id AS matching_rows FROM sequences
+WHERE EXISTS (SELECT *
+              FROM UNNEST(some_numbers) AS x
+              WHERE x > 5);
+
++---------------+
+| matching_rows |
++---------------+
+| 2             |
+| 3             |
++---------------+
+!ok
+
+WITH sequences AS
+  (SELECT 1 AS id, ARRAY [STRUCT(0 AS a, 1 AS b)] AS some_numbers
+   UNION ALL SELECT 2 AS id, ARRAY [STRUCT(2 AS a, 4 AS b)] AS some_numbers
+   UNION ALL SELECT 3 AS id, ARRAY [STRUCT(5 AS a, 3 AS b), STRUCT (7 AS a, 4 AS b)]
+     AS some_numbers)
+SELECT id AS matching_rows
+FROM sequences
+WHERE EXISTS (SELECT 1
+              FROM UNNEST(some_numbers)
+              WHERE b > 3);
+
++---------------+
+| matching_rows |
++---------------+
+| 2             |
+| 3             |
++---------------+
+!ok
+
+# ARRAY_AGG
+WITH fruits AS
+  (SELECT 'apple' AS fruit
+   UNION ALL SELECT 'pear' AS fruit
+   UNION ALL SELECT 'banana' AS fruit)
+SELECT ARRAY_AGG(fruit) AS fruit_basket
+FROM fruits;
+
++-----------------------+
+| fruit_basket          |
++-----------------------+
+| [apple, pear, banana] |
++-----------------------+
+!ok
+
+# ARRAY_AGG with ORDER BY
+WITH fruits AS
+  (SELECT 'apple' AS fruit
+   UNION ALL SELECT 'pear' AS fruit
+   UNION ALL SELECT 'banana' AS fruit)
+SELECT ARRAY_AGG(fruit ORDER BY fruit) AS fruit_basket
+FROM fruits;
+
++-----------------------+
+| fruit_basket          |
++-----------------------+
+| [apple, banana, pear] |
++-----------------------+
+!ok
+
+# Aggregate over array
+WITH sequences AS
+  (SELECT ARRAY [0, 1, 1, 2, 3, 5] AS some_numbers
+   UNION ALL SELECT ARRAY [2, 4, 8, 16, 32] AS some_numbers
+   UNION ALL SELECT ARRAY [5, 10] AS some_numbers)
+SELECT some_numbers,
+  (SELECT SUM(x)
+   FROM UNNEST(s.some_numbers) x) AS t (sums)
+FROM sequences s;
+
++--------------------+------+
+| some_numbers       | sums |
++--------------------+------+
+| [0, 1, 1, 2, 3, 5] | 12   |
+| [2, 4, 8, 16, 32]  | 62   |
+| [5, 10]            | 15   |
++--------------------+------+
+!ok
+
+# ARRAY_CONCAT_AGG
+WITH aggregate_example AS
+  (SELECT ARRAY [1,2] AS numbers
+   UNION ALL SELECT ARRAY [3,4] AS numbers
+   UNION ALL SELECT ARRAY [5, 6] AS numbers)
+SELECT ARRAY_CONCAT_AGG(numbers) AS count_to_six_agg
+FROM aggregate_example;
+
++--------------------------------------------------+
+| count_to_six_agg                                 |
++--------------------------------------------------+
+| [1, 2, 3, 4, 5, 6]                               |
++--------------------------------------------------+
+!ok
+
+# ARRAY_TO_STRING
+WITH greetings AS
+  (SELECT ARRAY ['Hello', 'World'] AS greeting)
+SELECT ARRAY_TO_STRING(greeting, ' ') AS greetings
+FROM greetings;
+
++-------------+
+| greetings   |
++-------------+
+| Hello World |
++-------------+
+!ok
+
+# ARRAY_TO_STRING with value for null
+SELECT
+  ARRAY_TO_STRING(arr, '.', 'N') AS non_empty_string,
+  ARRAY_TO_STRING(arr, '.', '') AS empty_string,
+  ARRAY_TO_STRING(arr, '.') AS omitted
+FROM (SELECT ARRAY ['a', NULL, 'b', NULL, 'c', NULL] AS arr);
+
++------------------+--------------+---------+
+| non_empty_string | empty_string | omitted |
++------------------+--------------+---------+
+| a.N.b.N.c.N      | a..b..c.     | a.b.c   |
++------------------+--------------+---------+
+!ok
+
+# ARRAY_CONCAT
+SELECT ARRAY_CONCAT(ARRAY [1, 2], ARRAY [3, 4], ARRAY [5, 6]) as count_to_six;
+
++--------------------------------------------------+
+| count_to_six                                     |
++--------------------------------------------------+
+| [1, 2, 3, 4, 5, 6]                               |
++--------------------------------------------------+
+!ok
+
+# Arrays of structs of arrays
+# (BigQuery does not support building arrays of arrays directly.)
+
+WITH points AS
+  (SELECT ARRAY [1, 5] as point
+   UNION ALL SELECT ARRAY [2, 8] as point
+   UNION ALL SELECT ARRAY [3, 7] as point
+   UNION ALL SELECT ARRAY [4, 1] as point
+   UNION ALL SELECT ARRAY [5, 7] as point)
+SELECT ARRAY(
+  SELECT STRUCT(point)
+  FROM points)
+  AS coordinates;
+
++-------------------+
+| coordinates       |
++-------------------+
+| [{point: [1,5]},  |
+|  {point: [2,8]},  |
+|  {point: [5,7]},  |
+|  {point: [3,7]},  |
+|  {point: [4,1]}]  |
++--------------------+
+!ok
+
+# End array.iq
