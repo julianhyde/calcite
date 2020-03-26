@@ -24,7 +24,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 /**
  * Specification of the window of rows over which a {@link RexOver} windowed
