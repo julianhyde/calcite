@@ -27,7 +27,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexFieldCollation;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlWindow;
@@ -694,12 +694,8 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
         Collections.emptyList(), // Operands for the aggregate function, empty here
         Collections.emptyList(), // No partition keys
         ImmutableList.copyOf(orderNodes), // order keys
-        RexWindowBound.create(
-            SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO),
-            null), // window with unbounded lower
-        RexWindowBound.create(
-            SqlWindow.createCurrentRow(SqlParserPos.ZERO),
-            null), // till current
+        RexWindowBounds.UNBOUNDED_PRECEDING,
+        RexWindowBounds.CURRENT_ROW,
         false, // Range-based
         true, // allow partial
         false, // not return null when count is zero

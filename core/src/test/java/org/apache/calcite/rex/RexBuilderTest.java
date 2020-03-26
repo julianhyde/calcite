@@ -623,10 +623,8 @@ public class RexBuilderTest {
         ImmutableList.of(
             new RexFieldCollation(
                 builder.makeInputRef(type, 2), ImmutableSet.of())),
-        RexWindowBound.create(
-            SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO), null),
-        RexWindowBound.create(
-            SqlWindow.createCurrentRow(SqlParserPos.ZERO), null),
+        RexWindowBounds.UNBOUNDED_PRECEDING,
+        RexWindowBounds.CURRENT_ROW,
         true, true, false, false, false);
     final RexNode copy = builder.copy(node);
     assertTrue(copy instanceof RexOver);

@@ -89,6 +89,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.schema.ModifiableView;
@@ -2000,8 +2001,8 @@ public class SqlToRelConverter {
       final RexShuttle visitor =
           new HistogramShuttle(
               partitionKeys.build(), orderKeys.build(),
-              RexWindowBound.create(window.getLowerBound(), lowerBound),
-              RexWindowBound.create(window.getUpperBound(), upperBound),
+              RexWindowBounds.create(window.getLowerBound(), lowerBound),
+              RexWindowBounds.create(window.getUpperBound(), upperBound),
               window,
               isDistinct,
               ignoreNulls);

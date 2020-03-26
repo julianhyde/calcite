@@ -18,7 +18,7 @@ package org.apache.calcite.sql;
 
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
@@ -241,8 +241,8 @@ public class SqlWindow extends SqlCall {
     }
     if (tmp.lowerBound instanceof SqlLiteral
         && tmp.upperBound instanceof SqlLiteral) {
-      int lowerKey = RexWindowBound.create(tmp.lowerBound, null).getOrderKey();
-      int upperKey = RexWindowBound.create(tmp.upperBound, null).getOrderKey();
+      int lowerKey = RexWindowBounds.create(tmp.lowerBound, null).getOrderKey();
+      int upperKey = RexWindowBounds.create(tmp.upperBound, null).getOrderKey();
       return lowerKey > -1 && lowerKey <= upperKey;
     }
     return false;
