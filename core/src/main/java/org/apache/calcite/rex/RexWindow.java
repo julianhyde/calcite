@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -53,13 +54,13 @@ public class RexWindow {
   RexWindow(
       List<RexNode> partitionKeys,
       List<RexFieldCollation> orderKeys,
-      @Nullable RexWindowBound lowerBound,
-      @Nullable RexWindowBound upperBound,
+      RexWindowBound lowerBound,
+      RexWindowBound upperBound,
       boolean isRows) {
     this.partitionKeys = ImmutableList.copyOf(partitionKeys);
     this.orderKeys = ImmutableList.copyOf(orderKeys);
-    this.lowerBound = lowerBound;
-    this.upperBound = upperBound;
+    this.lowerBound = Objects.requireNonNull(lowerBound);
+    this.upperBound = Objects.requireNonNull(upperBound);
     this.isRows = isRows;
     this.nodeCount = computeCodeCount();
     this.digest = computeDigest();

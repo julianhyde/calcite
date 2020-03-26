@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Factory for row expressions.
@@ -357,22 +358,18 @@ public class RexBuilder {
    * Creates a call to a windowed agg.
    */
   public RexNode makeOver(
-      RelDataType type,
-      SqlAggFunction operator,
-      List<RexNode> exprs,
-      List<RexNode> partitionKeys,
-      ImmutableList<RexFieldCollation> orderKeys,
-      RexWindowBound lowerBound,
-      RexWindowBound upperBound,
+      @Nonnull RelDataType type,
+      @Nonnull SqlAggFunction operator,
+      @Nonnull List<RexNode> exprs,
+      @Nonnull List<RexNode> partitionKeys,
+      @Nonnull ImmutableList<RexFieldCollation> orderKeys,
+      @Nonnull RexWindowBound lowerBound,
+      @Nonnull RexWindowBound upperBound,
       boolean physical,
       boolean allowPartial,
       boolean nullWhenCountZero,
       boolean distinct,
       boolean ignoreNulls) {
-    assert operator != null;
-    assert exprs != null;
-    assert partitionKeys != null;
-    assert orderKeys != null;
     final RexWindow window =
         makeWindow(
             partitionKeys,

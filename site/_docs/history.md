@@ -28,6 +28,12 @@ For a full list of releases, see
 Downloads are available on the
 [downloads page]({{ site.baseurl }}/downloads/).
 
+## <a href="https://github.com/apache/calcite/releases/tag/calcite-1.23.0">1.23.0</a> / under development
+{: #v1-23-0}
+
+Breaking changes:
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-3877">CALCITE-3877</a>] In `RexWindow`, make fields `upperBound` and `lowerBound` not-nullable
+
 ## <a href="https://github.com/apache/calcite/releases/tag/calcite-1.22.0">1.22.0</a> / 2020-03-05
 {: #v1-22-0}
 
