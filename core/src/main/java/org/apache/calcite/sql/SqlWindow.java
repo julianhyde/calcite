@@ -755,24 +755,17 @@ public class SqlWindow extends SqlCall {
 
   /**
    * Fill in missing bounds. Default bounds are "BETWEEN UNBOUNDED PRECEDING
-   * AND CURRENT ROW" when ORDER BY present and "BETWEEN UNBOUNDED PRECEDING
-   * AND UNBOUNDED FOLLOWING" when no ORDER BY present.
+   * AND CURRENT ROW".
    */
   public void populateBounds() {
     if (lowerBound == null && upperBound == null) {
-      setLowerBound(
-          SqlWindow.createUnboundedPreceding(getParserPosition()));
+      setLowerBound(SqlWindow.createUnboundedPreceding(pos));
     }
     if (lowerBound == null) {
-      setLowerBound(
-          SqlWindow.createCurrentRow(getParserPosition()));
+      setLowerBound(SqlWindow.createCurrentRow(pos));
     }
     if (upperBound == null) {
-      SqlParserPos pos = orderList.getParserPosition();
-      setUpperBound(
-          orderList.size() == 0
-              ? SqlWindow.createUnboundedFollowing(pos)
-              : SqlWindow.createCurrentRow(pos));
+      setUpperBound(SqlWindow.createCurrentRow(pos));
     }
   }
 

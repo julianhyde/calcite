@@ -495,10 +495,9 @@ public class RelWriterTest {
 
     assertThat(s,
         isLinux("LogicalProject(field0=[$0],"
-            + " field1=[COUNT($0) OVER (PARTITION BY $2 ORDER BY $1 NULLS LAST ROWS BETWEEN"
-            + " UNBOUNDED PRECEDING AND CURRENT ROW)],"
-            + " field2=[SUM($0) OVER (PARTITION BY $2 ORDER BY $1 NULLS LAST RANGE BETWEEN"
-            + " CURRENT ROW AND 1 FOLLOWING)])\n"
+            + " field1=[COUNT($0) OVER (PARTITION BY $2 ORDER BY $1 NULLS LAST)],"
+            + " field2=[SUM($0) OVER (PARTITION BY $2 ORDER BY $1 NULLS LAST "
+            + "RANGE BETWEEN CURRENT ROW AND 1 FOLLOWING)])\n"
             + "  LogicalTableScan(table=[[hr, emps]])\n"));
   }
 
@@ -698,8 +697,7 @@ public class RelWriterTest {
         SqlExplainLevel.EXPPLAN_ATTRIBUTES);
     String s = deserializeAndDumpToTextFormat(getSchema(rel), relJson);
     final String expected = ""
-        + "LogicalProject($f0=[COUNT() OVER (ORDER BY $7 NULLS LAST ROWS"
-        + " BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)])\n"
+        + "LogicalProject($f0=[COUNT() OVER (ORDER BY $7 NULLS LAST)])\n"
         + "  LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(s, isLinux(expected));
   }
@@ -711,8 +709,7 @@ public class RelWriterTest {
         SqlExplainLevel.EXPPLAN_ATTRIBUTES);
     String s = deserializeAndDumpToTextFormat(getSchema(rel), relJson);
     final String expected = ""
-        + "LogicalProject($f0=[COUNT() OVER"
-        + " (PARTITION BY $7 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)])\n"
+        + "LogicalProject($f0=[COUNT() OVER (PARTITION BY $7)])\n"
         + "  LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(s, isLinux(expected));
   }
