@@ -1954,7 +1954,7 @@ public class SqlToRelConverter {
     if (!aggCall.getOperator().allowsFraming()) {
       // If the operator does not allow framing, bracketing is implicitly
       // everything up to the current row.
-      sqlLowerBound =  SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
+      sqlLowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
       sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
       if (aggCall.getKind() == SqlKind.ROW_NUMBER) {
         // ROW_NUMBER() expects specific kind of framing.
@@ -1962,19 +1962,10 @@ public class SqlToRelConverter {
       }
     } else if (orderList.size() == 0) {
       // Without ORDER BY, there must be no bracketing.
-      sqlLowerBound =  SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
-      sqlUpperBound =  SqlWindow.createUnboundedFollowing(SqlParserPos.ZERO);
-      if (aggCall.getKind() == SqlKind.ROW_NUMBER) {
-        // ROW_NUMBER() expects specific kind of framing.
-        rows = true;
-        if (orderList.size() == 0) {
-          // ORDER BY is optional for ROW_NUMBER().
-          // (It is mandatory for other rank functions.)
-          sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
-        }
-      }
+      sqlLowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
+      sqlUpperBound = SqlWindow.createUnboundedFollowing(SqlParserPos.ZERO);
     } else if (sqlLowerBound == null && sqlUpperBound == null) {
-      sqlLowerBound =  SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
+      sqlLowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
       sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
     } else if (sqlUpperBound == null) {
       sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
