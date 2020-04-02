@@ -23,7 +23,9 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.ProjectToWindowRule;
@@ -33,6 +35,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlCall;
@@ -628,6 +631,47 @@ public class RelToSqlConverterTest {
     sql(query)
         .withPostgresql()
         .ok(expectedPostgresql);
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-3874">[CALCITE-3874]
+   * SqlImplementor builder uses wrong context for sub-selects</a>. */
+  @Test public void testFilterAggregateInvalidYieldsSqlWithInvalidFields() {
+    final Function<RelBuilder, RelNode> fn = b -> {
+      b.scan("EMP")
+          .scan("DEPT")
+          .join(JoinRelType.INNER,
+              b.equals(b.field(2, 0, "DEPTNO"), b.field(2, 1, "DEPTNO")))
+          .aggregate(b.groupKey("DNAME"), b.countStar("orders.count"))
+          .project(b.alias(b.field(0), "users.id"),
+              b.alias(b.field(1), "orders.count"),
+              b.alias(b.literal(2), "two"));
+      final Project project = (Project) b.peek();
+      final RexNode condition = b.equals(b.field(1), b.literal(1));
+      b.push(LogicalFilter.create(b.build(), condition));
+      final Filter filter = (Filter) b.peek();
+
+      // Change filter's input to its input's input.
+      // Filter's field names are now not the same as its input's field names.
+      filter.replaceInput(0, project.getInput());
+      assertThat(filter.getRowType().toString(),
+          is("RecordType(VARCHAR(14) users.id, BIGINT orders.count, INTEGER two)"));
+      assertThat(filter.getInput().getRowType().toString(),
+          is("RecordType(VARCHAR(14) DNAME, BIGINT orders.count)"));
+      b.project(b.alias(b.field(0), "users.id"),
+          b.alias(b.field(1), "orders.count"));
+      return b.build();
+    };
+
+    final String expectedMysql = "SELECT `t0`.`users.id`, `t0`.`orders.count`\n"
+        + "FROM (SELECT `DEPT`.`DNAME` AS `users.id`, COUNT(*) AS `orders.count`\n"
+        + "FROM `scott`.`EMP`\n"
+        + "INNER JOIN `scott`.`DEPT` ON `EMP`.`DEPTNO` = `DEPT`.`DEPTNO`\n"
+        + "GROUP BY `DEPT`.`DNAME`\n"
+        + "HAVING COUNT(*) = 1) AS `t0`";
+    relFn(fn)
+        .withMysql()
+        .ok(expectedMysql);
   }
 
   /** Test case for
