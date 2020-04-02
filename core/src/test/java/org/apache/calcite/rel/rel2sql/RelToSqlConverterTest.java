@@ -642,12 +642,10 @@ public class RelToSqlConverterTest {
           .scan("DEPT")
           .join(JoinRelType.INNER,
               b.equals(b.field(2, 0, "DEPTNO"), b.field(2, 1, "DEPTNO")))
-          .aggregate(b.groupKey("DNAME"), b.countStar("orders.count"))
-          .project(b.alias(b.field(0), "users.id"),
-              b.alias(b.field(1), "orders.count"),
-              b.alias(b.literal(2), "two"));
+          .aggregate(b.groupKey("DNAME"))
+          .project(b.alias(b.field(0), "id"), b.alias(b.literal(2), "two"));
       final Project project = (Project) b.peek();
-      final RexNode condition = b.equals(b.field(1), b.literal(1));
+      final RexNode condition = b.equals(b.field(0), b.literal("Music"));
       b.push(LogicalFilter.create(b.build(), condition));
       final Filter filter = (Filter) b.peek();
 
@@ -655,20 +653,19 @@ public class RelToSqlConverterTest {
       // Filter's field names are now not the same as its input's field names.
       filter.replaceInput(0, project.getInput());
       assertThat(filter.getRowType().toString(),
-          is("RecordType(VARCHAR(14) users.id, BIGINT orders.count, INTEGER two)"));
+          is("RecordType(VARCHAR(14) id, INTEGER two)"));
       assertThat(filter.getInput().getRowType().toString(),
-          is("RecordType(VARCHAR(14) DNAME, BIGINT orders.count)"));
-      b.project(b.alias(b.field(0), "users.id"),
-          b.alias(b.field(1), "orders.count"));
+          is("RecordType(VARCHAR(14) DNAME)"));
+      b.project(b.alias(b.field(0), "id"));
       return b.build();
     };
 
-    final String expectedMysql = "SELECT `t0`.`users.id`, `t0`.`orders.count`\n"
-        + "FROM (SELECT `DEPT`.`DNAME` AS `users.id`, COUNT(*) AS `orders.count`\n"
+    final String expectedMysql = "SELECT `t0`.`id`\n"
+        + "FROM (SELECT `DEPT`.`DNAME` AS `id`\n"
         + "FROM `scott`.`EMP`\n"
         + "INNER JOIN `scott`.`DEPT` ON `EMP`.`DEPTNO` = `DEPT`.`DEPTNO`\n"
         + "GROUP BY `DEPT`.`DNAME`\n"
-        + "HAVING COUNT(*) = 1) AS `t0`";
+        + "HAVING `DEPT`.`DNAME` = 'Music') AS `t0`";
     relFn(fn)
         .withMysql()
         .ok(expectedMysql);
