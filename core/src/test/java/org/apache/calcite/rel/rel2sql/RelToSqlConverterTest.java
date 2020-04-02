@@ -23,11 +23,10 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.ProjectToWindowRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.UnionMergeRule;
@@ -634,44 +633,6 @@ public class RelToSqlConverterTest {
   }
 
   /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-3874">[CALCITE-3874]
-   * SqlImplementor builder uses wrong context for sub-selects</a>. */
-  @Test public void testFilterAggregateInvalidYieldsSqlWithInvalidFields() {
-    final Function<RelBuilder, RelNode> fn = b -> {
-      b.scan("EMP")
-          .scan("DEPT")
-          .join(JoinRelType.INNER,
-              b.equals(b.field(2, 0, "DEPTNO"), b.field(2, 1, "DEPTNO")))
-          .aggregate(b.groupKey("DNAME"))
-          .project(b.alias(b.field(0), "id"), b.alias(b.literal(2), "two"));
-      final Project project = (Project) b.peek();
-      final RexNode condition = b.equals(b.field(0), b.literal("Music"));
-      b.push(LogicalFilter.create(b.build(), condition));
-      final Filter filter = (Filter) b.peek();
-
-      // Change filter's input to its input's input.
-      // Filter's field names are now not the same as its input's field names.
-      filter.replaceInput(0, project.getInput());
-      assertThat(filter.getRowType().toString(),
-          is("RecordType(VARCHAR(14) id, INTEGER two)"));
-      assertThat(filter.getInput().getRowType().toString(),
-          is("RecordType(VARCHAR(14) DNAME)"));
-      b.project(b.alias(b.field(0), "id"));
-      return b.build();
-    };
-
-    final String expectedMysql = "SELECT `t0`.`id`\n"
-        + "FROM (SELECT `DEPT`.`DNAME` AS `id`\n"
-        + "FROM `scott`.`EMP`\n"
-        + "INNER JOIN `scott`.`DEPT` ON `EMP`.`DEPTNO` = `DEPT`.`DEPTNO`\n"
-        + "GROUP BY `DEPT`.`DNAME`\n"
-        + "HAVING `DEPT`.`DNAME` = 'Music') AS `t0`";
-    relFn(fn)
-        .withMysql()
-        .ok(expectedMysql);
-  }
-
-  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2722">[CALCITE-2722]
    * SqlImplementor createLeftCall method throws StackOverflowError</a>. */
   @Test public void testStack() {
@@ -1051,6 +1012,44 @@ public class RelToSqlConverterTest {
         + "GROUP BY `DEPTNO`\n"
         + "HAVING COUNT(*) < 2) AS `t1`";
     assertThat(sql, isLinux(expectedSql));
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-3874">[CALCITE-3874]
+   * SqlImplementor builder uses wrong context for sub-selects</a>. */
+  @Test public void testFilterAggregateInvalidYieldsSqlWithInvalidFields() {
+    final Function<RelBuilder, RelNode> fn = b -> {
+      b.scan("EMP")
+          .scan("DEPT")
+          .join(JoinRelType.INNER,
+              b.equals(b.field(2, 0, "DEPTNO"), b.field(2, 1, "DEPTNO")))
+          .aggregate(b.groupKey("DNAME"))
+          .project(b.alias(b.field(0), "id"), b.alias(b.literal(2), "two"));
+      final LogicalProject project = (LogicalProject) b.peek();
+      final RexNode condition = b.equals(b.field(0), b.literal("Music"));
+      b.push(LogicalFilter.create(b.build(), condition));
+      final LogicalFilter filter = (LogicalFilter) b.peek();
+
+      // Change filter's input to its input's input.
+      // Filter's field names are now not the same as its input's field names.
+      filter.replaceInput(0, project.getInput());
+      assertThat(filter.getRowType().toString(),
+          is("RecordType(VARCHAR(14) id, INTEGER two)"));
+      assertThat(filter.getInput().getRowType().toString(),
+          is("RecordType(VARCHAR(14) DNAME)"));
+      b.project(b.alias(b.field(0), "id"));
+      return b.build();
+    };
+
+    final String expectedMysql = "SELECT `t0`.`id`\n"
+        + "FROM (SELECT `DEPT`.`DNAME` AS `id`\n"
+        + "FROM `scott`.`EMP`\n"
+        + "INNER JOIN `scott`.`DEPT` ON `EMP`.`DEPTNO` = `DEPT`.`DEPTNO`\n"
+        + "GROUP BY `DEPT`.`DNAME`\n"
+        + "HAVING `DEPT`.`DNAME` = 'Music') AS `t0`";
+    relFn(fn)
+        .withMysql()
+        .ok(expectedMysql);
   }
 
   @Test public void testHaving4() {
