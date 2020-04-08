@@ -21,6 +21,7 @@ import com.google.common.collect.Ordering;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -91,18 +92,18 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge>
   }
 
   public E addEdge(V vertex, V targetVertex) {
-    final VertexInfo<V, E> srcInfo = vertexMap.get(vertex);
-    if (srcInfo == null) {
+    final VertexInfo<V, E> info = vertexMap.get(vertex);
+    if (info == null) {
       throw new IllegalArgumentException("no vertex " + vertex);
     }
-    final VertexInfo<V, E> dstInfo = vertexMap.get(targetVertex);
-    if (dstInfo == null) {
+    final VertexInfo<V, E> targetInfo = vertexMap.get(targetVertex);
+    if (targetInfo == null) {
       throw new IllegalArgumentException("no vertex " + targetVertex);
     }
     final E edge = edgeFactory.createEdge(vertex, targetVertex);
     if (edges.add(edge)) {
-      srcInfo.outEdges.add(edge);
-      dstInfo.inEdges.add(edge);
+      info.outEdges.add(edge);
+      targetInfo.inEdges.add(edge);
       return edge;
     } else {
       return null;
@@ -154,44 +155,56 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge>
   }
 
   public void removeAllVertices(Collection<V> collection) {
-    if (collection.size() > vertexMap.size() / 2) {
-      removeMajorityVertices(collection);
+    // The point at which collection is large enough to make the 'majority'
+    // algorithm more efficient.
+    final float threshold = 0.35f;
+    final int thresholdSize = (int) (vertexMap.size() * threshold);
+    if (collection.size() > thresholdSize && !(collection instanceof Set)) {
+      // Convert collection to a set, so that collection.contains() is
+      // faster. If there are duplicates, collection.size() will get smaller.
+      collection = new HashSet<>(collection);
+    }
+    if (collection.size() > thresholdSize) {
+      removeMajorityVertices((Set<V>) collection);
     } else {
       removeMinorityVertices(collection);
     }
   }
 
+  /** Implementation of {@link #removeAllVertices(Collection)} that is efficient
+   * if {@code collection} is a small fraction of the set of vertices. */
   private void removeMinorityVertices(Collection<V> collection) {
     for (V v : collection) {
-      VertexInfo<V, E> curInfo = vertexMap.get(v);
-      if (curInfo == null) {
+      final VertexInfo<V, E> info = vertexMap.get(v);
+      if (info == null) {
         continue;
       }
 
       // remove all edges pointing to v
-      List<E> srcEdges = curInfo.inEdges;
-      for (E srcEdge : srcEdges) {
-        V srcNode = (V) srcEdge.source;
-        VertexInfo<V, E> info = vertexMap.get(srcNode);
-        info.outEdges.removeIf(e -> e.target.equals(v));
+      for (E edge : info.inEdges) {
+        final V source = (V) edge.source;
+        final VertexInfo<V, E> sourceInfo = vertexMap.get(source);
+        sourceInfo.outEdges.removeIf(e -> e.target.equals(v));
       }
 
       // remove all edges starting from v
-      List<E> dstEdges = curInfo.outEdges;
-      for (E dstEdge : dstEdges) {
-        V dstNode = (V) dstEdge.target;
-        VertexInfo<V, E> info = vertexMap.get(dstNode);
-        info.inEdges.removeIf(e -> e.source.equals(v));
+      for (E edge : info.outEdges) {
+        final V target = (V) edge.target;
+        final VertexInfo<V, E> targetInfo = vertexMap.get(target);
+        targetInfo.inEdges.removeIf(e -> e.source.equals(v));
       }
     }
     vertexMap.keySet().removeAll(collection);
   }
 
-  private void removeMajorityVertices(Collection<V> collection) {
-    vertexMap.keySet().removeAll(collection);
+  /** Implementation of {@link #removeAllVertices(Collection)} that is efficient
+   * if {@code vertexSet} is a large fraction of the set of vertices in the
+   * graph. */
+  private void removeMajorityVertices(Set<V> vertexSet) {
+    vertexMap.keySet().removeAll(vertexSet);
     for (VertexInfo<V, E> info : vertexMap.values()) {
-      info.outEdges.removeIf(e -> collection.contains(e.target));
-      info.inEdges.removeIf(e -> collection.contains(e.source));
+      info.outEdges.removeIf(e -> vertexSet.contains((V) e.target));
+      info.inEdges.removeIf(e -> vertexSet.contains((V) e.source));
     }
   }
 
@@ -220,7 +233,7 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge>
    * @param <E> Edge type
    */
   static class VertexInfo<V, E> {
-    public List<E> outEdges = new ArrayList<>();
-    public List<E> inEdges = new ArrayList<>();
+    final List<E> outEdges = new ArrayList<>();
+    final List<E> inEdges = new ArrayList<>();
   }
 }

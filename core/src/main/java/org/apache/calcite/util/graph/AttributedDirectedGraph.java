@@ -57,12 +57,12 @@ public class AttributedDirectedGraph<V, E extends DefaultEdge>
   }
 
   public E addEdge(V vertex, V targetVertex, Object... attributes) {
-    final VertexInfo<V, E> srcInfo = vertexMap.get(vertex);
-    if (srcInfo == null) {
+    final VertexInfo<V, E> info = vertexMap.get(vertex);
+    if (info == null) {
       throw new IllegalArgumentException("no vertex " + vertex);
     }
-    final VertexInfo<V, E> dstInfo = vertexMap.get(targetVertex);
-    if (dstInfo == null) {
+    final VertexInfo<V, E> targetInfo = vertexMap.get(targetVertex);
+    if (targetInfo == null) {
       throw new IllegalArgumentException("no vertex " + targetVertex);
     }
     @SuppressWarnings("unchecked")
@@ -70,8 +70,8 @@ public class AttributedDirectedGraph<V, E extends DefaultEdge>
         (AttributedEdgeFactory) this.edgeFactory;
     final E edge = f.createEdge(vertex, targetVertex, attributes);
     if (edges.add(edge)) {
-      srcInfo.outEdges.add(edge);
-      dstInfo.inEdges.add(edge);
+      info.outEdges.add(edge);
+      targetInfo.inEdges.add(edge);
       return edge;
     } else {
       return null;
@@ -99,7 +99,7 @@ public class AttributedDirectedGraph<V, E extends DefaultEdge>
       }
     }
 
-    // remove inedges
+    // remove in edges
     final List<E> inEdges = vertexMap.get(target).inEdges;
     int removeInCount = 0;
     for (int i = 0, size = inEdges.size(); i < size; i++) {
