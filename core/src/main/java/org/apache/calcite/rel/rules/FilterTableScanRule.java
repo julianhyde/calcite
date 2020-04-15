@@ -18,12 +18,11 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreter;
 import org.apache.calcite.interpreter.Bindables;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -49,7 +48,8 @@ import com.google.common.collect.ImmutableList;
  *
  * @see org.apache.calcite.rel.rules.ProjectTableScanRule
  */
-public abstract class FilterTableScanRule extends RelOptRule {
+public class FilterTableScanRule
+    extends RelOptNewRule<FilterTableScanRule.Config> {
   @SuppressWarnings("Guava")
   @Deprecated // to be removed before 2.0
   public static final com.google.common.base.Predicate<TableScan> PREDICATE =
@@ -57,46 +57,44 @@ public abstract class FilterTableScanRule extends RelOptRule {
 
   /** Rule that matches Filter on TableScan. */
   public static final FilterTableScanRule INSTANCE =
-      new FilterTableScanRule(
-          operand(Filter.class,
-              operandJ(TableScan.class, null, FilterTableScanRule::test,
-                  none())),
-          RelFactories.LOGICAL_BUILDER,
-          "FilterTableScanRule") {
-        public void onMatch(RelOptRuleCall call) {
-          final Filter filter = call.rel(0);
-          final TableScan scan = call.rel(1);
-          apply(call, filter, scan);
-        }
-      };
+      Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(TableScan.class)
+                      .predicate(FilterTableScanRule::test).noInputs()))
+          .as(Config.class)
+          .toRule();
 
   /** Rule that matches Filter on EnumerableInterpreter on TableScan. */
   public static final FilterTableScanRule INTERPRETER =
-      new FilterTableScanRule(
-          operand(Filter.class,
-              operand(EnumerableInterpreter.class,
-                  operandJ(TableScan.class, null, FilterTableScanRule::test,
-                      none()))),
-          RelFactories.LOGICAL_BUILDER,
-          "FilterTableScanRule:interpreter") {
-        public void onMatch(RelOptRuleCall call) {
-          final Filter filter = call.rel(0);
-          final TableScan scan = call.rel(2);
-          apply(call, filter, scan);
-        }
-      };
+      Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
+                      b2.operand(TableScan.class)
+                          .predicate(FilterTableScanRule::test).noInputs())))
+          .withDescription("FilterTableScanRule:interpreter")
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  @Deprecated // to be removed before 2.0
-  protected FilterTableScanRule(RelOptRuleOperand operand, String description) {
-    this(operand, RelFactories.LOGICAL_BUILDER, description);
+  /** Creates a FilterTableScanRule. */
+  protected FilterTableScanRule(Config config) {
+    super(config);
   }
 
-  /** Creates a FilterTableScanRule. */
+  @Deprecated // to be removed before 2.0
+  protected FilterTableScanRule(RelOptRuleOperand operand, String description) {
+    this(Config.EMPTY.as(Config.class));
+    throw new UnsupportedOperationException();
+  }
+
+  @Deprecated // to be removed before 2.0
   protected FilterTableScanRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    super(operand, relBuilderFactory, description);
+    this(Config.EMPTY.as(Config.class));
+    throw new UnsupportedOperationException();
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -107,6 +105,22 @@ public abstract class FilterTableScanRule extends RelOptRule {
     final RelOptTable table = scan.getTable();
     return table.unwrap(FilterableTable.class) != null
         || table.unwrap(ProjectableFilterableTable.class) != null;
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
+    if (call.rels.length == 2) {
+      // the ordinary variant
+      final Filter filter = call.rel(0);
+      final TableScan scan = call.rel(1);
+      apply(call, filter, scan);
+    } else if (call.rels.length == 3) {
+      // the variant with intervening EnumerableInterpreter
+      final Filter filter = call.rel(0);
+      final TableScan scan = call.rel(2);
+      apply(call, filter, scan);
+    } else {
+      throw new AssertionError();
+    }
   }
 
   protected void apply(RelOptRuleCall call, Filter filter, TableScan scan) {
@@ -129,5 +143,12 @@ public abstract class FilterTableScanRule extends RelOptRule {
     call.transformTo(
         Bindables.BindableTableScan.create(scan.getCluster(), scan.getTable(),
             filters.build(), projects));
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default FilterTableScanRule toRule() {
+      return new FilterTableScanRule(this);
+    }
   }
 }

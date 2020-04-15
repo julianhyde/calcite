@@ -17,7 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.config.CalciteSystemProperty;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -68,23 +68,36 @@ import static org.apache.calcite.util.mapping.Mappings.TargetMapping;
  *       e.g. {@code t0.c1 = t1.c1 and t1.c2 = t0.c3}
  * </ol>
  */
-public class MultiJoinOptimizeBushyRule extends RelOptRule implements TransformationRule {
+public class MultiJoinOptimizeBushyRule
+    extends RelOptNewRule<MultiJoinOptimizeBushyRule.Config>
+    implements TransformationRule {
   public static final MultiJoinOptimizeBushyRule INSTANCE =
-      new MultiJoinOptimizeBushyRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
   private final PrintWriter pw = CalciteSystemProperty.DEBUG.value()
       ? Util.printWriter(System.out)
       : null;
 
-  /** Creates an MultiJoinOptimizeBushyRule. */
+  /** Creates a MultiJoinOptimizeBushyRule. */
+  protected MultiJoinOptimizeBushyRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public MultiJoinOptimizeBushyRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(MultiJoin.class, any()), relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
   public MultiJoinOptimizeBushyRule(RelFactories.JoinFactory joinFactory,
       RelFactories.ProjectFactory projectFactory) {
-    this(RelBuilder.proto(joinFactory, projectFactory));
+    this(INSTANCE.config
+        .withRelBuilderFactory(RelBuilder.proto(joinFactory, projectFactory))
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -384,6 +397,13 @@ public class MultiJoinOptimizeBushyRule extends RelOptRule implements Transforma
           + ", leftFactor: " + leftFactor
           + ", rightFactor: " + rightFactor
           + ")";
+    }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default MultiJoinOptimizeBushyRule toRule() {
+      return new MultiJoinOptimizeBushyRule(this);
     }
   }
 }

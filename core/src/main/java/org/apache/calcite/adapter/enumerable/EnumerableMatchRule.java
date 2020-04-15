@@ -26,9 +26,14 @@ import org.apache.calcite.rel.logical.LogicalMatch;
  * {@link EnumerableMatch}.
  */
 public class EnumerableMatchRule extends ConverterRule {
-  EnumerableMatchRule() {
-    super(LogicalMatch.class, Convention.NONE, EnumerableConvention.INSTANCE,
-        "EnumerableMatchRule");
+  public static final EnumerableMatchRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalMatch.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableMatchRule")
+      .withRuleFactory(EnumerableMatchRule::new)
+      .toRule(EnumerableMatchRule.class);
+
+  protected EnumerableMatchRule(Config config) {
+    super(config);
   }
 
   @Override public RelNode convert(RelNode rel) {

@@ -16,11 +16,10 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -38,17 +37,23 @@ import com.google.common.collect.ImmutableList;
  * specific tasks, such as optimizing before calling an
  * {@link org.apache.calcite.interpreter.Interpreter}.
  */
-public class CalcSplitRule extends RelOptRule implements TransformationRule {
+public class CalcSplitRule
+    extends RelOptNewRule<CalcSplitRule.Config> implements TransformationRule {
   public static final CalcSplitRule INSTANCE =
-      new CalcSplitRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(Calc.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
-  /**
-   * Creates a CalcSplitRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates a CalcSplitRule. */
+  protected CalcSplitRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public CalcSplitRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(Calc.class, any()), relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -60,5 +65,12 @@ public class CalcSplitRule extends RelOptRule implements TransformationRule {
     relBuilder.filter(projectFilter.right);
     relBuilder.project(projectFilter.left, calc.getRowType().getFieldNames());
     call.transformTo(relBuilder.build());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default CalcSplitRule toRule() {
+      return new CalcSplitRule(this);
+    }
   }
 }

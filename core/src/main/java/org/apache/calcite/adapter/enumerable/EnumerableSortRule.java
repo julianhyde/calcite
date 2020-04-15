@@ -26,9 +26,16 @@ import org.apache.calcite.rel.core.Sort;
  * {@link EnumerableSort}.
  */
 class EnumerableSortRule extends ConverterRule {
-  EnumerableSortRule() {
-    super(Sort.class, Convention.NONE, EnumerableConvention.INSTANCE,
-        "EnumerableSortRule");
+  /** Singleton instance of EnumerableSortRule. */
+  static final EnumerableSortRule INSTANCE = Config.INSTANCE
+      .withConversion(Sort.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableSortRule")
+      .withRuleFactory(EnumerableSortRule::new)
+      .toRule(EnumerableSortRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableSortRule(Config config) {
+    super(config);
   }
 
   public RelNode convert(RelNode rel) {

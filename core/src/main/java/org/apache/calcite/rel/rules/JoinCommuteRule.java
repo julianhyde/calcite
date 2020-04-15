@@ -17,7 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -34,9 +34,9 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.ImmutableBeans;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 /**
  * Planner rule that permutes the inputs to a
@@ -48,36 +48,39 @@ import java.util.function.Predicate;
  * <p>To preserve the order of columns in the output row, the rule adds a
  * {@link org.apache.calcite.rel.core.Project}.
  */
-public class JoinCommuteRule extends RelOptRule implements TransformationRule {
+public class JoinCommuteRule
+    extends RelOptNewRule<JoinCommuteRule.Config>
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   /** Instance of the rule that only swaps inner joins. */
-  public static final JoinCommuteRule INSTANCE = new JoinCommuteRule(false);
+  public static final JoinCommuteRule INSTANCE =
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(LogicalJoin.class)
+          .withSwapOuter(false)
+          .toRule();
 
   /** Instance of the rule that swaps outer joins as well as inner joins. */
-  public static final JoinCommuteRule SWAP_OUTER = new JoinCommuteRule(true);
-
-  private final boolean swapOuter;
+  public static final JoinCommuteRule SWAP_OUTER =
+      INSTANCE.config
+          .withSwapOuter(true)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a JoinCommuteRule.
-   */
-  public JoinCommuteRule(Class<? extends Join> clazz,
-      RelBuilderFactory relBuilderFactory, boolean swapOuter) {
-    // FIXME Enable this rule for joins with system fields
-    super(
-        operandJ(clazz, null,
-            (Predicate<Join>) j -> j.getLeft().getId() != j.getRight().getId()
-                && j.getSystemFieldList().isEmpty(),
-            any()),
-        relBuilderFactory, null);
-    this.swapOuter = swapOuter;
+  /** Creates a JoinCommuteRule. */
+  protected JoinCommuteRule(Config config) {
+    super(config);
   }
 
-  private JoinCommuteRule(boolean swapOuter) {
-    this(LogicalJoin.class, RelFactories.LOGICAL_BUILDER, swapOuter);
+  @Deprecated
+  public JoinCommuteRule(Class<? extends Join> clazz,
+      RelBuilderFactory relBuilderFactory, boolean swapOuter) {
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(clazz)
+        .withSwapOuter(swapOuter));
   }
 
   @Deprecated // to be removed before 2.0
@@ -134,7 +137,7 @@ public class JoinCommuteRule extends RelOptRule implements TransformationRule {
     // swap.  This way, we will generate one semijoin for the original
     // join, and one for the swapped join, and no more.  This
     // doesn't prevent us from seeing any new combinations assuming
-    // that the planner tries the desired order (semijoins after swaps).
+    // that the planner tries the desired order (semi-joins after swaps).
     Join newJoin =
         join.copy(join.getTraitSet(), condition, join.getRight(),
             join.getLeft(), joinType.swap(), join.isSemiJoinDone());
@@ -145,16 +148,16 @@ public class JoinCommuteRule extends RelOptRule implements TransformationRule {
         .build();
   }
 
-  public boolean matches(RelOptRuleCall call) {
+  @Override public boolean matches(RelOptRuleCall call) {
     Join join = call.rel(0);
     // SEMI and ANTI join cannot be swapped.
     return join.getJoinType().projectsRight();
   }
 
-  public void onMatch(final RelOptRuleCall call) {
+  @Override public void onMatch(final RelOptRuleCall call) {
     Join join = call.rel(0);
 
-    final RelNode swapped = swap(join, this.swapOuter, call.builder());
+    final RelNode swapped = swap(join, config.isSwapOuter(), call.builder());
     if (swapped == null) {
       return;
     }
@@ -226,5 +229,32 @@ public class JoinCommuteRule extends RelOptRule implements TransformationRule {
           + ", leftFieldCount=" + leftFields.size()
           + ", rightFieldCount=" + rightFields.size());
     }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default JoinCommuteRule toRule() {
+      return new JoinCommuteRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Join> joinClass) {
+      return withOperandSupplier(b ->
+          b.operand(joinClass)
+              // FIXME Enable this rule for joins with system fields
+              .predicate(j ->
+                  j.getLeft().getId() != j.getRight().getId()
+                      && j.getSystemFieldList().isEmpty())
+              .anyInputs())
+          .as(Config.class);
+    }
+
+    /** Whether to swap outer joins. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(false)
+    boolean isSwapOuter();
+
+    /** Sets {@link #isSwapOuter()}. */
+    Config withSwapOuter(boolean swapOuter);
   }
 }

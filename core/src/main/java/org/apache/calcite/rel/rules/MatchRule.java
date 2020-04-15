@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalMatch;
@@ -26,20 +26,26 @@ import org.apache.calcite.rel.logical.LogicalMatch;
  * {@link LogicalMatch} to the result
  * of calling {@link LogicalMatch#copy}.
  */
-public class MatchRule extends RelOptRule implements TransformationRule {
+public class MatchRule extends RelOptNewRule<MatchRule.Config>
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final MatchRule INSTANCE = new MatchRule();
+  public static final MatchRule INSTANCE =
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(LogicalMatch.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  private MatchRule() {
-    super(operand(LogicalMatch.class, any()));
+  /** Creates a MatchRule. */
+  protected MatchRule(Config config) {
+    super(config);
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final LogicalMatch oldRel = call.rel(0);
     final RelNode match = LogicalMatch.create(oldRel.getCluster(),
         oldRel.getTraitSet(), oldRel.getInput(), oldRel.getRowType(),
@@ -49,5 +55,12 @@ public class MatchRule extends RelOptRule implements TransformationRule {
         oldRel.getPartitionKeys(), oldRel.getOrderKeys(),
         oldRel.getInterval());
     call.transformTo(match);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default MatchRule toRule() {
+      return new MatchRule(this);
+    }
   }
 }

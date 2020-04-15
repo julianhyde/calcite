@@ -20,10 +20,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.tools.RelBuilderFactory;
 
-import java.util.function.Predicate;
 
 /**
  * Rule to convert a relational expression from
@@ -31,18 +28,16 @@ import java.util.function.Predicate;
  * to {@link org.apache.calcite.interpreter.BindableConvention}.
  */
 public class NoneToBindableConverterRule extends ConverterRule {
-  public static final ConverterRule INSTANCE =
-      new NoneToBindableConverterRule(RelFactories.LOGICAL_BUILDER);
+  /** Singleton instance of NoneToBindableConverterRule. */
+  public static final NoneToBindableConverterRule INSTANCE = Config.INSTANCE
+      .withConversion(RelNode.class, Convention.NONE,
+          BindableConvention.INSTANCE, "NoneToBindableConverterRule")
+      .withRuleFactory(NoneToBindableConverterRule::new)
+      .toRule(NoneToBindableConverterRule.class);
 
-  /**
-   * Creates a NoneToBindableConverterRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
-  public NoneToBindableConverterRule(RelBuilderFactory relBuilderFactory) {
-    super(RelNode.class, (Predicate<RelNode>) r -> true, Convention.NONE,
-        BindableConvention.INSTANCE, relBuilderFactory,
-        "NoneToBindableConverterRule");
+  /** Called from the Config. */
+  protected NoneToBindableConverterRule(Config config) {
+    super(config);
   }
 
   @Override public RelNode convert(RelNode rel) {

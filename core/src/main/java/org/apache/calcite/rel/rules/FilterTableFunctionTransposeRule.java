@@ -17,11 +17,10 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalTableFunctionScan;
 import org.apache.calcite.rel.metadata.RelColumnMapping;
@@ -39,27 +38,33 @@ import java.util.Set;
  * a {@link org.apache.calcite.rel.logical.LogicalFilter}
  * past a {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan}.
  */
-public class FilterTableFunctionTransposeRule extends RelOptRule
+public class FilterTableFunctionTransposeRule
+    extends RelOptNewRule<FilterTableFunctionTransposeRule.Config>
     implements TransformationRule {
   public static final FilterTableFunctionTransposeRule INSTANCE =
-      new FilterTableFunctionTransposeRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalFilter.class).oneInput(b1 ->
+                  b1.operand(LogicalTableFunctionScan.class).anyInputs()))
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a FilterTableFunctionTransposeRule.
-   */
+  /** Creates a FilterTableFunctionTransposeRule. */
+  protected FilterTableFunctionTransposeRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public FilterTableFunctionTransposeRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(LogicalFilter.class,
-            operand(LogicalTableFunctionScan.class, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  // implement RelOptRule
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     LogicalFilter filter = call.rel(0);
     LogicalTableFunctionScan funcRel = call.rel(1);
     Set<RelColumnMapping> columnMappings = funcRel.getColumnMappings();
@@ -117,5 +122,12 @@ public class FilterTableFunctionTransposeRule extends RelOptRule
             funcRel.getCall(), funcRel.getElementType(), funcRel.getRowType(),
             columnMappings);
     call.transformTo(newFuncRel);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default FilterTableFunctionTransposeRule toRule() {
+      return new FilterTableFunctionTransposeRule(this);
+    }
   }
 }

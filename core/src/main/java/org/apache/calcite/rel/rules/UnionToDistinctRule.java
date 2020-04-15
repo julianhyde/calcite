@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Union;
@@ -32,36 +32,60 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * on top of a non-distinct {@link org.apache.calcite.rel.core.Union}
  * (<code>all</code> = <code>true</code>).
  */
-public class UnionToDistinctRule extends RelOptRule implements TransformationRule {
-  public static final UnionToDistinctRule INSTANCE =
-      new UnionToDistinctRule(LogicalUnion.class, RelFactories.LOGICAL_BUILDER);
+public class UnionToDistinctRule
+    extends RelOptNewRule<UnionToDistinctRule.Config>
+    implements TransformationRule {
+  public static final UnionToDistinctRule INSTANCE = Config.EMPTY
+      .as(Config.class)
+      .withOperandFor(LogicalUnion.class)
+      .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a UnionToDistinctRule.
-   */
-  public UnionToDistinctRule(Class<? extends Union> unionClazz,
+  /** Creates a UnionToDistinctRule. */
+  protected UnionToDistinctRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
+  public UnionToDistinctRule(Class<? extends Union> unionClass,
       RelBuilderFactory relBuilderFactory) {
-    super(
-        operandJ(unionClazz, null, union -> !union.all, any()),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withOperandFor(unionClass)
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
   public UnionToDistinctRule(Class<? extends Union> unionClazz,
       RelFactories.SetOpFactory setOpFactory) {
-    this(unionClazz, RelBuilder.proto(setOpFactory));
+    this(INSTANCE.config.withOperandFor(unionClazz)
+        .withRelBuilderFactory(RelBuilder.proto(setOpFactory))
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Union union = call.rel(0);
     final RelBuilder relBuilder = call.builder();
     relBuilder.pushAll(union.getInputs());
     relBuilder.union(true, union.getInputs().size());
     relBuilder.distinct();
     call.transformTo(relBuilder.build());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default UnionToDistinctRule toRule() {
+      return new UnionToDistinctRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Union> unionClass) {
+      return withOperandSupplier(b ->
+          b.operand(unionClass)
+              .predicate(union -> !union.all).anyInputs())
+          .as(Config.class);
+    }
   }
 }

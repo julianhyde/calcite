@@ -20,26 +20,23 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
-import org.apache.calcite.tools.RelBuilderFactory;
-
-import java.util.function.Predicate;
 
 /**
  * Implementation of nested loops over enumerable inputs.
  */
 public class EnumerableCorrelateRule extends ConverterRule {
-  /**
-   * Creates an EnumerableCorrelateRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
-  public EnumerableCorrelateRule(RelBuilderFactory relBuilderFactory) {
-    super(LogicalCorrelate.class, (Predicate<RelNode>) r -> true,
-        Convention.NONE, EnumerableConvention.INSTANCE, relBuilderFactory,
-        "EnumerableCorrelateRule");
+  public static final EnumerableCorrelateRule INSTANCE = Config.EMPTY
+      .as(Config.class)
+      .withConversion(LogicalCorrelate.class, r -> true, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableCorrelateRule")
+      .withRuleFactory(EnumerableCorrelateRule::new)
+      .toRule(EnumerableCorrelateRule.class);
+
+  protected EnumerableCorrelateRule(Config config) {
+    super(config);
   }
 
-  public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelNode rel) {
     final LogicalCorrelate c = (LogicalCorrelate) rel;
     return EnumerableCorrelate.create(
         convert(c.getLeft(), c.getLeft().getTraitSet()

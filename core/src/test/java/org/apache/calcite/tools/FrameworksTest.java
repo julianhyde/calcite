@@ -392,23 +392,24 @@ public class FrameworksTest {
     traitDefs.add(ConventionTraitDef.INSTANCE);
     traitDefs.add(RelDistributionTraitDef.INSTANCE);
     SqlParser.Config parserConfig =
-            SqlParser.configBuilder(SqlParser.Config.DEFAULT)
-                    .setCaseSensitive(false)
-                    .build();
-
-    final FrameworkConfig config = Frameworks.newConfigBuilder()
-            .parserConfig(parserConfig)
-            .defaultSchema(schema)
-            .traitDefs(traitDefs)
-            // define the rules you want to apply
-            .ruleSets(
-                    RuleSets.ofList(AbstractConverter.ExpandConversionRule.INSTANCE,
-                            ProjectTableScanRule.INSTANCE))
-            .programs(Programs.ofRules(Programs.RULE_SET))
+        SqlParser.configBuilder(SqlParser.Config.DEFAULT)
+            .setCaseSensitive(false)
             .build();
 
-    executeQuery(config, "select min(id) as mi, max(id) as ma from mytable where id=1 group by id",
-            CalciteSystemProperty.DEBUG.value());
+    final FrameworkConfig config = Frameworks.newConfigBuilder()
+        .parserConfig(parserConfig)
+        .defaultSchema(schema)
+        .traitDefs(traitDefs)
+        // define the rules you want to apply
+        .ruleSets(
+            RuleSets.ofList(AbstractConverter.ExpandConversionRule.INSTANCE,
+                ProjectTableScanRule.INSTANCE))
+        .programs(Programs.ofRules(Programs.RULE_SET))
+        .build();
+
+    final String sql = "select min(id) as mi, max(id) as ma\n"
+        + "from mytable where id=1 group by id";
+    executeQuery(config, sql, CalciteSystemProperty.DEBUG.value());
   }
 
   /** Test case for

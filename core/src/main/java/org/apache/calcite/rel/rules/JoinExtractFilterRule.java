@@ -17,7 +17,6 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -33,26 +32,39 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * <p>The constructor is parameterized to allow any sub-class of
  * {@link org.apache.calcite.rel.core.Join}, not just
- * {@link org.apache.calcite.rel.logical.LogicalJoin}.</p>
+ * {@link org.apache.calcite.rel.logical.LogicalJoin}.
  */
 public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
   //~ Static fields/initializers ---------------------------------------------
 
   /** The singleton. */
   public static final JoinExtractFilterRule INSTANCE =
-      new JoinExtractFilterRule(LogicalJoin.class,
-          RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(LogicalJoin.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a JoinExtractFilterRule.
-   */
-  public JoinExtractFilterRule(Class<? extends Join> clazz,
-      RelBuilderFactory relBuilderFactory) {
-    super(operand(clazz, any()), relBuilderFactory, null);
+  /** Creates a JoinExtractFilterRule. */
+  protected JoinExtractFilterRule(Config config) {
+    super(config);
   }
 
-  //~ Methods ----------------------------------------------------------------
+  @Deprecated
+  public JoinExtractFilterRule(Class<? extends Join> clazz,
+      RelBuilderFactory relBuilderFactory) {
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .withOperandSupplier(b ->
+            b.operand(clazz).anyInputs())
+        .as(Config.class));
+  }
 
+  /** Rule configuration. */
+  public interface Config extends AbstractJoinExtractFilterRule.Config {
+    @Override default JoinExtractFilterRule toRule() {
+      return new JoinExtractFilterRule(this);
+    }
+  }
 }

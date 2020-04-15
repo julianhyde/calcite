@@ -27,12 +27,19 @@ import org.apache.calcite.rel.logical.LogicalWindow;
  * an {@link org.apache.calcite.adapter.enumerable.EnumerableWindow}.
  */
 class EnumerableWindowRule extends ConverterRule {
-  EnumerableWindowRule() {
-    super(LogicalWindow.class, Convention.NONE, EnumerableConvention.INSTANCE,
-        "EnumerableWindowRule");
+  /** Singleton instance of EnumerableWindowRule. */
+  static final EnumerableWindowRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalWindow.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableWindowRule")
+      .withRuleFactory(EnumerableWindowRule::new)
+      .toRule(EnumerableWindowRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableWindowRule(Config config) {
+    super(config);
   }
 
-  public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelNode rel) {
     final LogicalWindow winAgg = (LogicalWindow) rel;
     final RelTraitSet traitSet =
         winAgg.getTraitSet().replace(EnumerableConvention.INSTANCE);

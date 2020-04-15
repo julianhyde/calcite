@@ -16,10 +16,9 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexProgram;
@@ -28,37 +27,44 @@ import org.apache.calcite.tools.RelBuilderFactory;
 /**
  * Rule to convert a
  * {@link org.apache.calcite.rel.logical.LogicalProject} to a
- * {@link org.apache.calcite.rel.logical.LogicalCalc}
+ * {@link org.apache.calcite.rel.logical.LogicalCalc}.
  *
  * <p>The rule does not fire if the child is a
  * {@link org.apache.calcite.rel.logical.LogicalProject},
  * {@link org.apache.calcite.rel.logical.LogicalFilter} or
  * {@link org.apache.calcite.rel.logical.LogicalCalc}. If it did, then the same
  * {@link org.apache.calcite.rel.logical.LogicalCalc} would be formed via
- * several transformation paths, which is a waste of effort.</p>
+ * several transformation paths, which is a waste of effort.
  *
  * @see FilterToCalcRule
  */
-public class ProjectToCalcRule extends RelOptRule implements TransformationRule {
+public class ProjectToCalcRule extends RelOptNewRule<ProjectToCalcRule.Config>
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   public static final ProjectToCalcRule INSTANCE =
-      new ProjectToCalcRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b ->
+              b.operand(LogicalProject.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a ProjectToCalcRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates a ProjectToCalcRule. */
+  protected ProjectToCalcRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public ProjectToCalcRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(LogicalProject.class, any()), relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final LogicalProject project = call.rel(0);
     final RelNode input = project.getInput();
     final RexProgram program =
@@ -70,5 +76,12 @@ public class ProjectToCalcRule extends RelOptRule implements TransformationRule 
             project.getCluster().getRexBuilder());
     final LogicalCalc calc = LogicalCalc.create(input, program);
     call.transformTo(calc);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default ProjectToCalcRule toRule() {
+      return new ProjectToCalcRule(this);
+    }
   }
 }

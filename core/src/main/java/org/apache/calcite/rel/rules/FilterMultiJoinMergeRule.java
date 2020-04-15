@@ -16,11 +16,9 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -36,38 +34,40 @@ import java.util.List;
  *
  * @see org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule
  */
-public class FilterMultiJoinMergeRule extends RelOptRule implements TransformationRule {
+public class FilterMultiJoinMergeRule
+    extends RelOptNewRule<FilterMultiJoinMergeRule.Config>
+    implements TransformationRule {
   public static final FilterMultiJoinMergeRule INSTANCE =
-      new FilterMultiJoinMergeRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.as(Config.class)
+          .withOperandFor(Filter.class, MultiJoin.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a FilterMultiJoinMergeRule that uses {@link Filter}
-   * of type {@link LogicalFilter}
-   * @param relBuilderFactory builder factory for relational expressions
-   */
-  public FilterMultiJoinMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(LogicalFilter.class, relBuilderFactory);
+  /** Creates a FilterMultiJoinMergeRule. */
+  protected FilterMultiJoinMergeRule(Config config) {
+    super(config);
   }
 
-  /**
-   * Creates a FilterMultiJoinMergeRule that uses a generic
-   * {@link Filter}
-   * @param filterClass filter class
-   * @param relBuilderFactory builder factory for relational expressions
-   */
+  @Deprecated
+  public FilterMultiJoinMergeRule(RelBuilderFactory relBuilderFactory) {
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
+  }
+
+  @Deprecated
   public FilterMultiJoinMergeRule(Class<? extends Filter> filterClass,
       RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(filterClass,
-          operand(MultiJoin.class, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(filterClass, MultiJoin.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     Filter filter = call.rel(0);
     MultiJoin multiJoin = call.rel(1);
 
@@ -92,5 +92,21 @@ public class FilterMultiJoinMergeRule extends RelOptRule implements Transformati
             RexUtil.composeConjunction(rexBuilder, filters, true));
 
     call.transformTo(newMultiJoin);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default FilterMultiJoinMergeRule toRule() {
+      return new FilterMultiJoinMergeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends MultiJoin> multiJoinClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(multiJoinClass).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

@@ -27,12 +27,19 @@ import org.apache.calcite.rel.logical.LogicalMinus;
  * {@link EnumerableMinus}.
  */
 class EnumerableMinusRule extends ConverterRule {
-  EnumerableMinusRule() {
-    super(LogicalMinus.class, Convention.NONE, EnumerableConvention.INSTANCE,
-        "EnumerableMinusRule");
+  /** Singleton instance of EnumerableMinusRule. */
+  static final EnumerableMinusRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalMinus.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableMinusRule")
+      .withRuleFactory(EnumerableMinusRule::new)
+      .toRule(EnumerableMinusRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableMinusRule(Config config) {
+    super(config);
   }
 
-  public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelNode rel) {
     final LogicalMinus minus = (LogicalMinus) rel;
     final EnumerableConvention out = EnumerableConvention.INSTANCE;
     final RelTraitSet traitSet =

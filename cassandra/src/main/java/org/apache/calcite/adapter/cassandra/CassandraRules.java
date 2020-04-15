@@ -19,9 +19,9 @@ package org.apache.calcite.adapter.cassandra;
 import org.apache.calcite.adapter.enumerable.EnumerableLimit;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
@@ -29,7 +29,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -88,19 +87,8 @@ public class CassandraRules {
   /** Base class for planner rules that convert a relational expression to
    * Cassandra calling convention. */
   abstract static class CassandraConverterRule extends ConverterRule {
-    protected final Convention out;
-
-    CassandraConverterRule(Class<? extends RelNode> clazz,
-        String description) {
-      this(clazz, r -> true, description);
-    }
-
-    <R extends RelNode> CassandraConverterRule(Class<R> clazz,
-        Predicate<? super R> predicate,
-        String description) {
-      super(clazz, predicate, Convention.NONE,
-          CassandraRel.CONVENTION, RelFactories.LOGICAL_BUILDER, description);
-      this.out = CassandraRel.CONVENTION;
+    CassandraConverterRule(Config config) {
+      super(config);
     }
   }
 
@@ -108,18 +96,26 @@ public class CassandraRules {
    * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalFilter} to a
    * {@link CassandraFilter}.
    */
-  private static class CassandraFilterRule extends RelOptRule {
+  private static class CassandraFilterRule
+      extends RelOptNewRule<CassandraFilterRule.Config> {
+    private static final CassandraFilterRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(LogicalFilter.class)
+                    .oneInput(b1 -> b1.operand(CassandraTableScan.class)
+                        .noInputs()))
+            .as(Config.class)
+            .toRule();
+
+    /** Creates a CassandraFilterRule. */
+    protected CassandraFilterRule(Config config) {
+      super(config);
+    }
+
     private static final Predicate<LogicalFilter> PREDICATE =
         // TODO: Check for an equality predicate on the partition key
         // Right now this just checks if we have a single top-level AND
         filter -> RelOptUtil.disjunctions(filter.getCondition()).size() == 1;
-
-    private static final CassandraFilterRule INSTANCE = new CassandraFilterRule();
-
-    private CassandraFilterRule() {
-      super(operand(LogicalFilter.class, operand(CassandraTableScan.class, none())),
-          "CassandraFilterRule");
-    }
 
     @Override public boolean matches(RelOptRuleCall call) {
       // Get the condition from the filter operation
@@ -200,7 +196,7 @@ public class CassandraRules {
     }
 
     /** @see org.apache.calcite.rel.convert.ConverterRule */
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       LogicalFilter filter = call.rel(0);
       CassandraTableScan scan = call.rel(1);
       if (filter.getTraitSet().contains(Convention.NONE)) {
@@ -223,6 +219,13 @@ public class CassandraRules {
           keyFields.right,
           scan.cassandraTable.getClusteringOrder());
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default CassandraFilterRule toRule() {
+        return new CassandraFilterRule(this);
+      }
+    }
   }
 
   /**
@@ -230,10 +233,14 @@ public class CassandraRules {
    * to a {@link CassandraProject}.
    */
   private static class CassandraProjectRule extends CassandraConverterRule {
-    private static final CassandraProjectRule INSTANCE = new CassandraProjectRule();
+    private static final CassandraProjectRule INSTANCE = Config.INSTANCE
+        .withConversion(LogicalProject.class, Convention.NONE,
+            CassandraRel.CONVENTION, "CassandraProjectRule")
+        .withRuleFactory(CassandraProjectRule::new)
+        .toRule(CassandraProjectRule.class);
 
-    private CassandraProjectRule() {
-      super(LogicalProject.class, "CassandraProjectRule");
+    protected CassandraProjectRule(Config config) {
+      super(config);
     }
 
     @Override public boolean matches(RelOptRuleCall call) {
@@ -247,7 +254,7 @@ public class CassandraRules {
       return true;
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
       return new CassandraProject(project.getCluster(), traitSet,
@@ -260,22 +267,30 @@ public class CassandraRules {
    * Rule to convert a {@link org.apache.calcite.rel.core.Sort} to a
    * {@link CassandraSort}.
    */
-  private static class CassandraSortRule extends RelOptRule {
+  private static class CassandraSortRule
+      extends RelOptNewRule<CassandraSortRule.Config> {
+    private static final CassandraSortRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(Sort.class)
+                    // Limits are handled by CassandraLimit
+                    .predicate(sort ->
+                        sort.offset == null && sort.fetch == null)
+                    .oneInput(b1 ->
+                        b1.operand(CassandraToEnumerableConverter.class)
+                            .oneInput(b2 ->
+                                b2.operand(CassandraFilter.class)
+                                    // We can only use implicit sorting within a
+                                    // single partition
+                                    .predicate(
+                                        CassandraFilter::isSinglePartition)
+                                    .anyInputs())))
+            .as(Config.class)
+            .toRule();
 
-    private static final RelOptRuleOperand CASSANDRA_OP =
-        operand(CassandraToEnumerableConverter.class,
-            operandJ(CassandraFilter.class, null,
-                // We can only use implicit sorting within a single partition
-                CassandraFilter::isSinglePartition, any()));
-
-    private static final CassandraSortRule INSTANCE = new CassandraSortRule();
-
-    private CassandraSortRule() {
-      super(
-          operandJ(Sort.class, null,
-              // Limits are handled by CassandraLimit
-              sort -> sort.offset == null && sort.fetch == null, CASSANDRA_OP),
-          "CassandraSortRule");
+    /** Creates a CassandraSortRule. */
+    protected CassandraSortRule(Config config) {
+      super(config);
     }
 
     public RelNode convert(Sort sort, CassandraFilter filter) {
@@ -287,7 +302,7 @@ public class CassandraRules {
           sort.getCollation());
     }
 
-    public boolean matches(RelOptRuleCall call) {
+    @Override public boolean matches(RelOptRuleCall call) {
       final Sort sort = call.rel(0);
       final CassandraFilter filter = call.rel(2);
       return collationsCompatible(sort.getCollation(), filter.getImplicitCollation());
@@ -354,12 +369,19 @@ public class CassandraRules {
     }
 
     /** @see org.apache.calcite.rel.convert.ConverterRule */
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       final Sort sort = call.rel(0);
       CassandraFilter filter = call.rel(2);
       final RelNode converted = convert(sort, filter);
       if (converted != null) {
         call.transformTo(converted);
+      }
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default CassandraSortRule toRule() {
+        return new CassandraSortRule(this);
       }
     }
   }
@@ -368,12 +390,21 @@ public class CassandraRules {
    * Rule to convert a {@link org.apache.calcite.adapter.enumerable.EnumerableLimit} to a
    * {@link CassandraLimit}.
    */
-  private static class CassandraLimitRule extends RelOptRule {
-    private static final CassandraLimitRule INSTANCE = new CassandraLimitRule();
+  private static class CassandraLimitRule
+      extends RelOptNewRule<CassandraLimitRule.Config> {
+    private static final CassandraLimitRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(EnumerableLimit.class)
+                    .oneInput(b1 ->
+                        b1.operand(CassandraToEnumerableConverter.class)
+                            .anyInputs()))
+            .as(Config.class)
+            .toRule();
 
-    private CassandraLimitRule() {
-      super(operand(EnumerableLimit.class, operand(CassandraToEnumerableConverter.class, any())),
-          "CassandraLimitRule");
+    /** Creates a CassandraLimitRule. */
+    protected CassandraLimitRule(Config config) {
+      super(config);
     }
 
     public RelNode convert(EnumerableLimit limit) {
@@ -384,11 +415,18 @@ public class CassandraRules {
     }
 
     /** @see org.apache.calcite.rel.convert.ConverterRule */
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       final EnumerableLimit limit = call.rel(0);
       final RelNode converted = convert(limit);
       if (converted != null) {
         call.transformTo(converted);
+      }
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default CassandraLimitRule toRule() {
+        return new CassandraLimitRule(this);
       }
     }
   }

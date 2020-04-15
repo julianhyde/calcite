@@ -17,7 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.Aggregate;
@@ -36,6 +36,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Optionality;
@@ -77,31 +78,40 @@ import java.util.stream.Stream;
  * the rule creates separate {@code Aggregate}s and combines using a
  * {@link org.apache.calcite.rel.core.Join}.
  */
-public final class AggregateExpandDistinctAggregatesRule extends RelOptRule
+public final class AggregateExpandDistinctAggregatesRule
+    extends RelOptNewRule<AggregateExpandDistinctAggregatesRule.Config>
     implements TransformationRule {
-  //~ Static fields/initializers ---------------------------------------------
-
   /** The default instance of the rule; operates only on logical expressions. */
   public static final AggregateExpandDistinctAggregatesRule INSTANCE =
-      new AggregateExpandDistinctAggregatesRule(LogicalAggregate.class, true,
-          RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b ->
+              b.operand(LogicalAggregate.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
   /** Instance of the rule that operates only on logical expressions and
    * generates a join. */
   public static final AggregateExpandDistinctAggregatesRule JOIN =
-      new AggregateExpandDistinctAggregatesRule(LogicalAggregate.class, false,
-          RelFactories.LOGICAL_BUILDER);
+      INSTANCE.config
+          .as(Config.class)
+          .withUsingGroupingSets(false)
+          .toRule();
 
-  public final boolean useGroupingSets;
+  /** Creates an AggregateExpandDistinctAggregatesRule. */
+  protected AggregateExpandDistinctAggregatesRule(Config config) {
+    super(config);
+  }
 
-  //~ Constructors -----------------------------------------------------------
-
+  @Deprecated
   public AggregateExpandDistinctAggregatesRule(
       Class<? extends Aggregate> clazz,
       boolean useGroupingSets,
       RelBuilderFactory relBuilderFactory) {
-    super(operand(clazz, any()), relBuilderFactory, null);
-    this.useGroupingSets = useGroupingSets;
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .withOperandSupplier(b ->
+            b.operand(clazz).anyInputs())
+        .as(Config.class)
+        .withUsingGroupingSets(useGroupingSets));
   }
 
   @Deprecated // to be removed before 2.0
@@ -121,7 +131,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     if (!aggregate.containsDistinctCall()) {
       return;
@@ -193,7 +203,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule
       return;
     }
 
-    if (useGroupingSets) {
+    if (((Config) config).isUsingGroupingSets()) {
       rewriteUsingGroupingSets(call, aggregate);
       return;
     }
@@ -898,5 +908,20 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule
         aggregate.copy(aggregate.getTraitSet(), relBuilder.build(),
             ImmutableBitSet.range(projects.size()), null, ImmutableList.of()));
     return relBuilder;
+  }
+
+       /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default AggregateExpandDistinctAggregatesRule toRule() {
+      return new AggregateExpandDistinctAggregatesRule(this);
+    }
+
+    /** Whether to use GROUPING SETS, default true. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(true)
+    boolean isUsingGroupingSets();
+
+    /** Sets {@link #isUsingGroupingSets()}. */
+    Config withUsingGroupingSets(boolean usingGroupingSets);
   }
 }

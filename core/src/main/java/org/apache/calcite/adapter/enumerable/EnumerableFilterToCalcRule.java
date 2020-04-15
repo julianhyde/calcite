@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
@@ -27,17 +27,27 @@ import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Variant of {@link org.apache.calcite.rel.rules.FilterToCalcRule} for
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
-public class EnumerableFilterToCalcRule extends RelOptRule {
-  /**
-   * Creates an EnumerableFilterToCalcRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
-  public EnumerableFilterToCalcRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(EnumerableFilter.class, any()), relBuilderFactory, null);
+public class EnumerableFilterToCalcRule
+    extends RelOptNewRule<EnumerableFilterToCalcRule.Config> {
+  public static final EnumerableFilterToCalcRule INSTANCE =
+      Config.EMPTY
+          .withOperandSupplier(b ->
+              b.operand(EnumerableFilter.class).anyInputs())
+          .as(Config.class)
+          .toRule();
+
+  /** Creates an EnumerableFilterToCalcRule. */
+  protected EnumerableFilterToCalcRule(Config config) {
+    super(config);
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Deprecated
+  public EnumerableFilterToCalcRule(RelBuilderFactory relBuilderFactory) {
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
     final EnumerableFilter filter = call.rel(0);
     final RelNode input = filter.getInput();
 
@@ -52,5 +62,12 @@ public class EnumerableFilterToCalcRule extends RelOptRule {
 
     final EnumerableCalc calc = EnumerableCalc.create(input, program);
     call.transformTo(calc);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default EnumerableFilterToCalcRule toRule() {
+      return new EnumerableFilterToCalcRule(this);
+    }
   }
 }

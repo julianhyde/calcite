@@ -96,7 +96,7 @@ class MutableRelTest {
         "Window",
         "select sal, avg(sal) over (partition by deptno) from emp",
         false,
-        ImmutableList.of(ProjectToWindowRule.PROJECT));
+        ImmutableList.of(ProjectToWindowRule.PROJECT.get()));
   }
 
   @Test void testConvertCollect() {
@@ -152,9 +152,9 @@ class MutableRelTest {
         true,
         ImmutableList.of(
             FilterProjectTransposeRule.INSTANCE,
-            FilterJoinRule.FILTER_ON_JOIN,
+            FilterJoinRule.FILTER_ON_JOIN.get(),
             ProjectMergeRule.INSTANCE,
-            SemiJoinRule.PROJECT));
+            SemiJoinRule.PROJECT.get()));
   }
 
   @Test void testConvertCorrelate() {

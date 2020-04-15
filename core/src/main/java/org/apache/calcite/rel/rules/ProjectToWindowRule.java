@@ -17,14 +17,13 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.logical.LogicalWindow;
 import org.apache.calcite.rex.RexBiVisitorImpl;
@@ -47,6 +46,7 @@ import org.apache.calcite.util.graph.DirectedGraph;
 import org.apache.calcite.util.graph.TopologicalOrderIterator;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -56,6 +56,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Planner rule that slices a
@@ -71,27 +72,31 @@ import java.util.Set;
  * <p>There is also a variant that matches
  * {@link org.apache.calcite.rel.core.Calc} rather than {@code Project}.
  */
-public abstract class ProjectToWindowRule extends RelOptRule implements TransformationRule {
+public abstract class ProjectToWindowRule
+    extends RelOptNewRule<ProjectToWindowRule.Config>
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final ProjectToWindowRule INSTANCE =
-      new CalcToWindowRule(RelFactories.LOGICAL_BUILDER);
+  public static final Supplier<CalcToWindowRule> INSTANCE =
+      Suppliers.memoize(() -> CalcToWindowRule.INSTANCE)::get;
 
-  public static final ProjectToWindowRule PROJECT =
-      new ProjectToLogicalProjectAndWindowRule(RelFactories.LOGICAL_BUILDER);
+  public static final Supplier<ProjectToLogicalProjectAndWindowRule> PROJECT =
+      Suppliers.memoize(() ->
+          ProjectToLogicalProjectAndWindowRule.INSTANCE)::get;
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a ProjectToWindowRule.
-   *
-   * @param operand           Root operand, must not be null
-   * @param description       Description, or null to guess description
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates a ProjectToWindowRule. */
+  protected ProjectToWindowRule(Config config) {
+    super(config);
+  }
+
+  @SuppressWarnings("unused")
+  @Deprecated
   public ProjectToWindowRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    super(operand, relBuilderFactory, description);
+    super(Config.EMPTY.as(Config.class));
+    throw new UnsupportedOperationException();
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -103,26 +108,41 @@ public abstract class ProjectToWindowRule extends RelOptRule implements Transfor
    * {@link org.apache.calcite.rel.logical.LogicalWindow} and {@code Calc}.
    */
   public static class CalcToWindowRule extends ProjectToWindowRule {
+    public static final CalcToWindowRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b ->
+                b.operand(Calc.class)
+                    .predicate(Calc::containsOver)
+                    .anyInputs())
+            .withDescription("ProjectToWindowRule")
+            .as(Config.class)
+            .toRule();
 
-    /**
-     * Creates a CalcToWindowRule.
-     *
-     * @param relBuilderFactory Builder for relational expressions
-     */
-    public CalcToWindowRule(RelBuilderFactory relBuilderFactory) {
-      super(
-          operandJ(Calc.class, null,
-              calc -> RexOver.containsOver(calc.getProgram()), any()),
-          relBuilderFactory, "ProjectToWindowRule");
+    /** Creates a CalcToWindowRule. */
+    protected CalcToWindowRule(Config config) {
+      super(config);
     }
 
-    public void onMatch(RelOptRuleCall call) {
-      Calc calc = call.rel(0);
-      assert RexOver.containsOver(calc.getProgram());
+    @Deprecated
+    public CalcToWindowRule(RelBuilderFactory relBuilderFactory) {
+      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+          .as(Config.class));
+    }
+
+    @Override public void onMatch(RelOptRuleCall call) {
+      final Calc calc = call.rel(0);
+      assert calc.containsOver();
       final CalcRelSplitter transform =
           new WindowedAggRelSplitter(calc, call.builder());
       RelNode newRel = transform.execute();
       call.transformTo(newRel);
+    }
+
+    /** Rule configuration. */
+    public interface Config extends ProjectToWindowRule.Config {
+      @Override default CalcToWindowRule toRule() {
+        return new CalcToWindowRule(this);
+      }
     }
   }
 
@@ -134,23 +154,31 @@ public abstract class ProjectToWindowRule extends RelOptRule implements Transfor
    */
   public static class ProjectToLogicalProjectAndWindowRule
       extends ProjectToWindowRule {
-    /**
-     * Creates a ProjectToWindowRule.
-     *
-     * @param relBuilderFactory Builder for relational expressions
-     */
+    public static final ProjectToLogicalProjectAndWindowRule INSTANCE =
+        CalcToWindowRule.Config.EMPTY
+            .withOperandSupplier(b ->
+                b.operand(Project.class)
+                    .predicate(Project::containsOver)
+                    .anyInputs())
+            .withDescription("ProjectToWindowRule:project")
+            .as(Config.class)
+            .toRule();
+
+    /** Creates a ProjectToLogicalProjectAndWindowRule. */
+    protected ProjectToLogicalProjectAndWindowRule(Config config) {
+      super(config);
+    }
+
+    @Deprecated
     public ProjectToLogicalProjectAndWindowRule(
         RelBuilderFactory relBuilderFactory) {
-      super(
-          operandJ(Project.class, null,
-              project -> RexOver.containsOver(project.getProjects(), null),
-              any()),
-          relBuilderFactory, "ProjectToWindowRule:project");
+      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+          .as(Config.class));
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
       Project project = call.rel(0);
-      assert RexOver.containsOver(project.getProjects(), null);
+      assert project.containsOver();
       final RelNode input = project.getInput();
       final RexProgram program =
           RexProgram.create(
@@ -185,6 +213,13 @@ public abstract class ProjectToWindowRule extends RelOptRule implements Transfor
       };
       RelNode newRel = transform.execute();
       call.transformTo(newRel);
+    }
+
+    /** Rule configuration. */
+    public interface Config extends ProjectToWindowRule.Config {
+      @Override default ProjectToLogicalProjectAndWindowRule toRule() {
+        return new ProjectToLogicalProjectAndWindowRule(this);
+      }
     }
   }
 
@@ -371,5 +406,10 @@ public abstract class ProjectToWindowRule extends RelOptRule implements Transfor
       assert graph.vertexSet().size() == exprs.size();
       return graph;
     }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override ProjectToWindowRule toRule();
   }
 }

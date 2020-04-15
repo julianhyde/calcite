@@ -16,25 +16,34 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rules.ProjectToCalcRule;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Variant of {@link org.apache.calcite.rel.rules.ProjectToCalcRule} for
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
-public class EnumerableProjectToCalcRule extends RelOptRule {
-  /**
-   * Creates an EnumerableProjectToCalcRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
-  public EnumerableProjectToCalcRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(EnumerableProject.class, any()), relBuilderFactory, null);
+public class EnumerableProjectToCalcRule extends ProjectToCalcRule {
+  public static final EnumerableProjectToCalcRule INSTANCE =
+      ProjectToCalcRule.INSTANCE.config
+          .withOperandSupplier(b ->
+              b.operand(EnumerableProject.class).anyInputs())
+          .as(Config.class)
+          .toRule();
+
+  /** Creates an EnumerableProjectToCalcRule. */
+  protected EnumerableProjectToCalcRule(Config config) {
+    super(config);
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Deprecated
+  public EnumerableProjectToCalcRule(RelBuilderFactory relBuilderFactory) {
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
     final EnumerableProject project = call.rel(0);
     final RelNode input = project.getInput();
     final RexProgram program =
@@ -45,5 +54,12 @@ public class EnumerableProjectToCalcRule extends RelOptRule {
             project.getCluster().getRexBuilder());
     final EnumerableCalc calc = EnumerableCalc.create(input, program);
     call.transformTo(calc);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends ProjectToCalcRule.Config {
+    @Override default EnumerableProjectToCalcRule toRule() {
+      return new EnumerableProjectToCalcRule(this);
+    }
   }
 }

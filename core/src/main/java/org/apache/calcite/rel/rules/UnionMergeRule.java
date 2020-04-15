@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
@@ -39,33 +39,43 @@ import org.apache.calcite.util.Util;
  * <p>Originally written for {@link Union} (hence the name),
  * but now also applies to {@link Intersect}.
  */
-public class UnionMergeRule extends RelOptRule implements TransformationRule {
+public class UnionMergeRule
+    extends RelOptNewRule<UnionMergeRule.Config>
+    implements TransformationRule {
   public static final UnionMergeRule INSTANCE =
-      new UnionMergeRule(LogicalUnion.class, "UnionMergeRule",
-          RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.withDescription("UnionMergeRule").as(Config.class)
+          .withOperandFor(LogicalUnion.class).toRule();
+
   public static final UnionMergeRule INTERSECT_INSTANCE =
-      new UnionMergeRule(LogicalIntersect.class, "IntersectMergeRule",
-          RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.withDescription("IntersectMergeRule").as(Config.class)
+          .withOperandFor(LogicalIntersect.class).toRule();
+
   public static final UnionMergeRule MINUS_INSTANCE =
-      new UnionMergeRule(LogicalMinus.class, "MinusMergeRule",
-          RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.withDescription("MinusMergeRule").as(Config.class)
+          .withOperandFor(LogicalMinus.class).toRule();
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a UnionMergeRule. */
-  public UnionMergeRule(Class<? extends SetOp> unionClazz, String description,
+  protected UnionMergeRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
+  public UnionMergeRule(Class<? extends SetOp> setOpClass, String description,
       RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(unionClazz,
-            operand(RelNode.class, any()),
-            operand(RelNode.class, any())),
-        relBuilderFactory, description);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .as(Config.class)
+        .withOperandFor(setOpClass));
   }
 
   @Deprecated // to be removed before 2.0
-  public UnionMergeRule(Class<? extends Union> unionClazz,
+  public UnionMergeRule(Class<? extends Union> setOpClass,
       RelFactories.SetOpFactory setOpFactory) {
-    this(unionClazz, null, RelBuilder.proto(setOpFactory));
+    this(INSTANCE.config.withRelBuilderFactory(RelBuilder.proto(setOpFactory))
+        .as(Config.class)
+        .withOperandFor(setOpClass));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -92,7 +102,7 @@ public class UnionMergeRule extends RelOptRule implements TransformationRule {
     return true;
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final SetOp topOp = call.rel(0);
     @SuppressWarnings("unchecked") final Class<? extends SetOp> setOpClass =
         (Class) operands.get(0).getMatchedClass();
@@ -160,5 +170,21 @@ public class UnionMergeRule extends RelOptRule implements TransformationRule {
       relBuilder.minus(topOp.all, n);
     }
     call.transformTo(relBuilder.build());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default UnionMergeRule toRule() {
+      return new UnionMergeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends RelNode> setOpClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(setOpClass).inputs(
+              b1 -> b1.operand(RelNode.class).anyInputs(),
+              b2 -> b2.operand(RelNode.class).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

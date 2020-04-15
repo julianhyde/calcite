@@ -17,11 +17,11 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalWindow;
@@ -46,27 +46,30 @@ import java.util.List;
  * a {@link org.apache.calcite.rel.logical.LogicalProject}
  * past a {@link org.apache.calcite.rel.logical.LogicalWindow}.
  */
-public class ProjectWindowTransposeRule extends RelOptRule implements TransformationRule {
-  /** The default instance of
-   * {@link org.apache.calcite.rel.rules.ProjectWindowTransposeRule}. */
+public class ProjectWindowTransposeRule
+    extends RelOptNewRule<ProjectWindowTransposeRule.Config>
+    implements TransformationRule {
+  /** The default instance of ProjectWindowTransposeRule. */
   public static final ProjectWindowTransposeRule INSTANCE =
-      new ProjectWindowTransposeRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(LogicalProject.class, LogicalWindow.class)
+          .toRule();
 
-  /**
-   * Creates ProjectWindowTransposeRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates a ProjectWindowTransposeRule. */
+  protected ProjectWindowTransposeRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public ProjectWindowTransposeRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(LogicalProject.class,
-            operand(LogicalWindow.class, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
-    final LogicalProject project = call.rel(0);
-    final LogicalWindow window = call.rel(1);
+    final Project project = call.rel(0);
+    final Window window = call.rel(1);
     final RelOptCluster cluster = window.getCluster();
     final List<RelDataTypeField> rowTypeWindowInput =
         window.getInput().getRowType().getFieldList();
@@ -176,7 +179,7 @@ public class ProjectWindowTransposeRule extends RelOptRule implements Transforma
     final List<RexNode> topProjExps =
         indexAdjustment.visitList(project.getProjects());
 
-    final LogicalProject newTopProj = project.copy(
+    final Project newTopProj = project.copy(
         newLogicalWindow.getTraitSet(),
         newLogicalWindow,
         topProjExps,
@@ -189,8 +192,8 @@ public class ProjectWindowTransposeRule extends RelOptRule implements Transforma
     }
   }
 
-  private ImmutableBitSet findReference(final LogicalProject project,
-      final LogicalWindow window) {
+  private ImmutableBitSet findReference(final Project project,
+      final Window window) {
     final int windowInputColumn = window.getInput().getRowType().getFieldCount();
     final ImmutableBitSet.Builder beReferred = ImmutableBitSet.builder();
 
@@ -235,6 +238,22 @@ public class ProjectWindowTransposeRule extends RelOptRule implements Transforma
       return beReferred.cardinality() + (initIndex - windowInputColumn);
     } else {
       return beReferred.get(0, initIndex).cardinality();
+    }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default ProjectWindowTransposeRule toRule() {
+      return new ProjectWindowTransposeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Project> projectClass,
+        Class<? extends Window> windowClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(windowClass).anyInputs()))
+          .as(Config.class);
     }
   }
 }

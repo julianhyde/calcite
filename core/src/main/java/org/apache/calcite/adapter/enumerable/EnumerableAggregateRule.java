@@ -28,12 +28,19 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
  * to an {@link EnumerableAggregate}.
  */
 class EnumerableAggregateRule extends ConverterRule {
-  EnumerableAggregateRule() {
-    super(LogicalAggregate.class, Convention.NONE,
-        EnumerableConvention.INSTANCE, "EnumerableAggregateRule");
+  /** Singleton instance of EnumerableAggregateRule. */
+  static final EnumerableAggregateRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalAggregate.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableAggregateRule")
+      .withRuleFactory(EnumerableAggregateRule::new)
+      .toRule(EnumerableAggregateRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableAggregateRule(Config config) {
+    super(config);
   }
 
-  public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelNode rel) {
     final LogicalAggregate agg = (LogicalAggregate) rel;
     final RelTraitSet traitSet = rel.getCluster()
         .traitSet().replace(EnumerableConvention.INSTANCE);
