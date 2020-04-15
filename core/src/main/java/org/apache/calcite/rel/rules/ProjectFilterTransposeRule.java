@@ -33,6 +33,7 @@ import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import com.google.common.collect.ImmutableList;
@@ -42,7 +43,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.calcite.util.ImmutableBeans;
 
 /**
  * Planner rule that pushes a {@link org.apache.calcite.rel.core.Project}
@@ -50,16 +50,18 @@ import org.apache.calcite.util.ImmutableBeans;
  */
 public class ProjectFilterTransposeRule extends RelOptNewRule
     implements TransformationRule {
-  private static RelOptRuleOperand makeOperand(
-      Class<? extends Project> logicalProjectClass,
-      Class<? extends Filter> logicalFilterClass) {
-    return operand(logicalProjectClass, operand(logicalFilterClass, any()));
+  private static Done makeOperand(OperandBuilder b,
+      Class<? extends Project> projectClass,
+      Class<? extends Filter> filterClass) {
+    return b.operand(projectClass)
+        .oneInput(b2 -> b2.operand(filterClass)
+            .anyInputs());
   }
 
   public static final ProjectFilterTransposeRule INSTANCE =
       ProjectFilterTransposeRule.Config.create()
-          .withOperandSupplier(() ->
-              makeOperand(LogicalProject.class, LogicalFilter.class))
+          .withOperandSupplier(b ->
+              makeOperand(b, LogicalProject.class, LogicalFilter.class))
           .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
           .as(Config.class)
           .withPreserveExprCondition(expr -> false)
@@ -99,7 +101,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
       RelBuilderFactory relBuilderFactory,
       PushProjector.ExprCondition preserveExprCondition) {
     this(ProjectFilterTransposeRule.Config.create()
-        .withOperandSupplier(() -> makeOperand(projectClass, filterClass))
+        .withOperandSupplier(b -> makeOperand(b, projectClass, filterClass))
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withPreserveExprCondition(preserveExprCondition));
@@ -110,7 +112,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
       PushProjector.ExprCondition preserveExprCondition, boolean wholeProject,
       boolean wholeFilter, RelBuilderFactory relBuilderFactory) {
     this(ProjectFilterTransposeRule.Config.create()
-        .withOperandSupplier(() -> operand)
+        .withOperandSupplier(b -> b.exactly(operand))
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withPreserveExprCondition(preserveExprCondition)

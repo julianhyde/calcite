@@ -16,10 +16,18 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBeans;
 
-import java.util.function.Supplier;
+import com.google.common.collect.ImmutableList;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 
 /**
  * Rule that is parameterized via a configuration.
@@ -30,7 +38,8 @@ public abstract class RelOptNewRule extends RelOptRule {
   protected final Config config;
 
   public RelOptNewRule(Config config) {
-    super(config.operandSupplier().get(), config.relBuilderFactory(), config.description());
+    super(OperandBuilderImpl.operand(config.operandSupplier()),
+        config.relBuilderFactory(), config.description());
     this.config = config;
   }
 
@@ -64,12 +73,153 @@ public abstract class RelOptNewRule extends RelOptRule {
 
     /** Sets {@link #description()}. */
     Config withDescription(String description);
-    @ImmutableBeans.Property
 
     /** Creates the operands for the rule instance. */
-    Supplier<RelOptRuleOperand> operandSupplier();
+    @ImmutableBeans.Property
+    OperandTransform operandSupplier();
 
     /** Sets {@link #operandSupplier()}. */
-    Config withOperandSupplier(Supplier<RelOptRuleOperand> supplier);
+    Config withOperandSupplier(OperandTransform transform);
+  }
+
+  /** Function that creates an operand. */
+  @FunctionalInterface
+  public interface OperandTransform extends Function<OperandBuilder, Done> {
+  }
+
+  /** Callback to create an operand. */
+  public interface OperandBuilder {
+    /** Starts building an operand by specifying its class.
+     * Call further methods on the returned {@link OperandDetailBuilder} to
+     * complete the operand. */
+    <R extends RelNode> OperandDetailBuilder<R> operand(Class<R> relClass);
+
+    /** Supplies an operand that has been built manually. */
+    Done exactly(RelOptRuleOperand operand);
+  }
+
+  /** Indicates that an operand is complete. */
+  public interface Done {
+  }
+
+  /** Add details about an operand, such as its inputs.
+   *
+   * @param <R> Type of relational expression */
+  public interface OperandDetailBuilder<R extends RelNode> {
+    /** Sets a trait of this operand. */
+    OperandDetailBuilderImpl<R> trait(@Nonnull RelTrait trait);
+
+    /** Sets the predicate of this operand. */
+    OperandDetailBuilderImpl<R> predicate(Predicate<? super R> predicate);
+
+    /** Indicates that this operand has a single input. */
+    Done oneInput(OperandTransform transform);
+
+    /** Indicates that this operand has several inputs. */
+    Done inputs(OperandTransform... transforms);
+
+    /** Indicates that this operand has several inputs, unordered. */
+    Done unorderedInputs(OperandTransform... transforms);
+
+    /** Indicates that this operand takes any number or type of inputs. */
+    Done anyInputs();
+
+    /** Indicates that this operand takes no inputs. */
+    Done noInputs();
+  }
+
+  /** Implementation of {@link OperandBuilder}. */
+  private static class OperandBuilderImpl implements OperandBuilder {
+    final List<RelOptRuleOperand> operands = new ArrayList<>();
+
+    static RelOptRuleOperand operand(OperandTransform transform) {
+      final OperandBuilderImpl b = new OperandBuilderImpl();
+      final Done done = transform.apply(b);
+      Objects.requireNonNull(done);
+      if (b.operands.size() != 1) {
+        throw new IllegalArgumentException("operand supplier must call one of "
+            + "the following methods: operand or exactly");
+      }
+      return b.operands.get(0);
+    }
+
+    public <R extends RelNode> OperandDetailBuilder<R> operand(Class<R> relClass) {
+      return new OperandDetailBuilderImpl<>(this, relClass);
+    }
+
+    public Done exactly(RelOptRuleOperand operand) {
+      operands.add(operand);
+      return DoneImpl.INSTANCE;
+    }
+  }
+
+  /** Implementation of {@link OperandDetailBuilder}.
+   *
+   * @param <R> Type of relational expression */
+  private static class OperandDetailBuilderImpl<R extends RelNode>
+      implements OperandDetailBuilder<R> {
+    private final OperandBuilderImpl parent;
+    private final Class<R> relClass;
+    final OperandBuilderImpl inputBuilder = new OperandBuilderImpl();
+    private RelTrait trait;
+    private Predicate<? super R> predicate = r -> true;
+
+    OperandDetailBuilderImpl(OperandBuilderImpl parent, Class<R> relClass) {
+      this.parent = Objects.requireNonNull(parent);
+      this.relClass = Objects.requireNonNull(relClass);
+    }
+
+    public OperandDetailBuilderImpl<R> trait(@Nonnull RelTrait trait) {
+      this.trait = Objects.requireNonNull(trait);
+      return this;
+    }
+
+    public OperandDetailBuilderImpl<R> predicate(Predicate<? super R> predicate) {
+      this.predicate = predicate;
+      return this;
+    }
+
+    /** Indicates that there are no more inputs. */
+    Done done(RelOptRuleOperandChildPolicy childPolicy) {
+      parent.operands.add(
+          new RelOptRuleOperand(relClass, trait, predicate, childPolicy,
+              ImmutableList.copyOf(inputBuilder.operands)));
+      return DoneImpl.INSTANCE;
+    }
+
+    public Done noInputs() {
+      return done(RelOptRuleOperandChildPolicy.LEAF);
+    }
+
+    public Done anyInputs() {
+      return done(RelOptRuleOperandChildPolicy.ANY);
+    }
+
+    public Done oneInput(OperandTransform transform) {
+      final Done done = transform.apply(inputBuilder);
+      Objects.requireNonNull(done);
+      return done(RelOptRuleOperandChildPolicy.SOME);
+    }
+
+    public Done inputs(OperandTransform... transforms) {
+      for (OperandTransform transform : transforms) {
+        final Done done = transform.apply(inputBuilder);
+        Objects.requireNonNull(done);
+      }
+      return done(RelOptRuleOperandChildPolicy.SOME);
+    }
+
+    public Done unorderedInputs(OperandTransform... transforms) {
+      for (OperandTransform transform : transforms) {
+        final Done done = transform.apply(inputBuilder);
+        Objects.requireNonNull(done);
+      }
+      return done(RelOptRuleOperandChildPolicy.UNORDERED);
+    }
+  }
+
+  /** Singleton instance of {@link Done}. */
+  private enum DoneImpl implements Done {
+    INSTANCE
   }
 }

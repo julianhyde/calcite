@@ -21,7 +21,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
@@ -98,7 +97,10 @@ public class DruidRules {
   public static final DruidProjectFilterTransposeRule PROJECT_FILTER_TRANSPOSE =
       DruidProjectFilterTransposeRule.Config.create()
           .withPreserveExprCondition(expr -> false)
-          .withOperandSupplier(DruidProjectFilterTransposeRule::operand)
+          .withOperandSupplier(b ->
+              b.operand(Project.class).oneInput(b2 ->
+                  b2.operand(Filter.class).oneInput(b3 ->
+                      b3.operand(DruidQuery.class).noInputs())))
           .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
           .as(DruidProjectFilterTransposeRule.Config.class)
           .toRule();
@@ -809,12 +811,6 @@ public class DruidRules {
 
     @Override public Config config() {
       return (Config) config;
-    }
-
-    static RelOptRuleOperand operand() {
-      return operand(Project.class,
-          operand(Filter.class,
-              operand(DruidQuery.class, none())));
     }
 
     /** Rule configuration. */
