@@ -25,9 +25,11 @@ import org.apache.calcite.adapter.pig.PigTable;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
-import org.apache.calcite.rel.rules.FilterJoinRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
@@ -247,13 +249,25 @@ class PigRelBuilderStyleTest extends AbstractPigTest {
     for (RelOptRule r : PigRules.ALL_PIG_OPT_RULES) {
       planner.addRule(r);
     }
-    planner.removeRule(FilterAggregateTransposeRule.INSTANCE);
-    planner.removeRule(FilterJoinRule.FILTER_ON_JOIN);
+    planner.removeRule(CoreRules.FILTER_AGGREGATE_TRANSPOSE);
+    planner.removeRule(CoreRules.FILTER_INTO_JOIN);
+    planner.addRule(CoreRules.FILTER_AGGREGATE_TRANSPOSE.config
+        .withRelBuilderFactory(builderFactory)
+        .as(FilterAggregateTransposeRule.Config.class)
+        .withOperandFor(PigFilter.class, PigAggregate.class)
+        .toRule());
     planner.addRule(
-        new FilterAggregateTransposeRule(PigFilter.class, builderFactory,
-            PigAggregate.class));
-    planner.addRule(
-        new FilterIntoJoinRule(true, builderFactory, TRUE_PREDICATE));
+        CoreRules.FILTER_INTO_JOIN.config
+            .withRelBuilderFactory(builderFactory)
+            .withOperandSupplier(b0 ->
+                b0.operand(Filter.class).oneInput(b1 ->
+                    b1.operand(Join.class).anyInputs()))
+            .withDescription("FilterJoinRule:filter")
+            .as(FilterIntoJoinRule.Config.class)
+            .withSmart(true)
+            .withPredicate(TRUE_PREDICATE)
+            .as(FilterIntoJoinRule.Config.class)
+            .toRule());
     planner.setRoot(root);
     return planner;
   }

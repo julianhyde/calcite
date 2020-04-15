@@ -23,6 +23,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptListener;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
@@ -35,8 +36,9 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.rules.ProjectRemoveRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.ImmutableBeans;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -64,7 +66,7 @@ import static org.apache.calcite.test.Matchers.isLinux;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -82,7 +84,7 @@ class VolcanoPlannerTest {
 
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -105,8 +107,8 @@ class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new GoodSingleRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(GoodSingleRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -136,10 +138,10 @@ class VolcanoPlannerTest {
     RelOptCluster cluster = newCluster(planner);
 
     // The rule that triggers the assert rule
-    planner.addRule(new PhysLeafRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
 
     // The rule asserting that the matched operands are different
-    planner.addRule(new AssertOperandsDifferentRule());
+    planner.addRule(AssertOperandsDifferentRule.INSTANCE);
 
     // Construct two children in the same set and a parent RelNode
     NoneLeafRel leftRel = new NoneLeafRel(cluster, "a");
@@ -163,17 +165,29 @@ class VolcanoPlannerTest {
    * A pattern that matches a three input union with third child matching for
    * a PhysLeafRel node.
    */
-  static class ThreeInputsUnionRule extends RelOptRule {
-    ThreeInputsUnionRule() {
-      super(
-          operand(EnumerableUnion.class,
-              some(
-                  operand(PhysBiRel.class, any()),
-                  operand(PhysBiRel.class, any()),
-                  operand(PhysLeafRel.class, any()))));
+  public static class ThreeInputsUnionRule
+      extends RelOptNewRule<ThreeInputsUnionRule.Config> {
+    static final ThreeInputsUnionRule INSTANCE = Config.EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(EnumerableUnion.class).inputs(
+                b1 -> b1.operand(PhysBiRel.class).anyInputs(),
+                b2 -> b2.operand(PhysBiRel.class).anyInputs(),
+                b3 -> b3.operand(PhysLeafRel.class).anyInputs()))
+        .as(Config.class)
+        .toRule();
+
+    ThreeInputsUnionRule(Config config) {
+      super(config);
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default ThreeInputsUnionRule toRule() {
+        return new ThreeInputsUnionRule(this);
+      }
     }
   }
 
@@ -183,11 +197,11 @@ class VolcanoPlannerTest {
     RelOptCluster cluster = newCluster(planner);
 
     // The trigger rule that generates PhysLeafRel from NoneLeafRel
-    planner.addRule(new PhysLeafRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
 
     // The rule with third child op matching PhysLeafRel, which should not be
     // matched at all
-    planner.addRule(new ThreeInputsUnionRule());
+    planner.addRule(ThreeInputsUnionRule.INSTANCE);
 
     // Construct a union with only two children
     NoneLeafRel leftRel = new NoneLeafRel(cluster, "b");
@@ -213,10 +227,10 @@ class VolcanoPlannerTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new GoodSingleRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(GoodSingleRule.INSTANCE);
     final List<String> buf = new ArrayList<>();
-    planner.addRule(new SubsetRule(buf));
+    planner.addRule(SubsetRule.config(buf).toRule());
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -265,11 +279,11 @@ class VolcanoPlannerTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new GoodSingleRule());
-    planner.addRule(new PhysSingleInputSetMergeRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(GoodSingleRule.INSTANCE);
+    planner.addRule(PhysSingleInputSetMergeRule.INSTANCE);
     final List<String> buf = new ArrayList<>();
-    planner.addRule(new PhysSingleSubsetRule(buf));
+    planner.addRule(PhysSingleSubsetRule.config(buf).toRule());
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel = new NoneLeafRel(cluster, "a");
@@ -294,8 +308,8 @@ class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new ReformedSingleRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(ReformedSingleRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -321,25 +335,14 @@ class VolcanoPlannerTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     if (useRule) {
-      planner.addRule(ProjectRemoveRule.INSTANCE);
+      planner.addRule(CoreRules.PROJECT_REMOVE);
     }
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new GoodSingleRule());
-    planner.addRule(new PhysProjectRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(GoodSingleRule.INSTANCE);
+    planner.addRule(PhysProjectRule.INSTANCE);
 
-    planner.addRule(
-        new ConverterRule(
-            RelNode.class,
-            PHYS_CALLING_CONVENTION,
-            EnumerableConvention.INSTANCE,
-            "PhysToIteratorRule") {
-          public RelNode convert(RelNode rel) {
-            return new PhysToIteratorConverter(
-                rel.getCluster(),
-                rel);
-          }
-        });
+    planner.addRule(PhysToIteratorRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     PhysLeafRel leafRel =
@@ -385,8 +388,8 @@ class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new ReformedRemoveSingleRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(ReformedRemoveSingleRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -419,9 +422,9 @@ class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
-    planner.addRule(new GoodSingleRule());
-    planner.addRule(new GoodRemoveSingleRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
+    planner.addRule(GoodSingleRule.INSTANCE);
+    planner.addRule(GoodRemoveSingleRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -487,7 +490,7 @@ class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -506,7 +509,7 @@ class VolcanoPlannerTest {
       if (ruleMatch == null) {
         break;
       }
-      assertFalse(ruleMatch.rels[0] == leafRel);
+      assertNotSame(ruleMatch.rels[0], leafRel);
     }
   }
 
@@ -522,7 +525,7 @@ class VolcanoPlannerTest {
 
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-    planner.addRule(new PhysLeafRule());
+    planner.addRule(PhysLeafRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     NoneLeafRel leafRel =
@@ -640,7 +643,7 @@ class VolcanoPlannerTest {
   //~ Inner Classes ----------------------------------------------------------
 
   /** Converter from PHYS to ENUMERABLE convention. */
-  class PhysToIteratorConverter extends ConverterImpl {
+  static class PhysToIteratorConverter extends ConverterImpl {
     PhysToIteratorConverter(
         RelOptCluster cluster,
         RelNode child) {
@@ -660,34 +663,61 @@ class VolcanoPlannerTest {
   }
 
   /** Rule that matches a {@link RelSubset}. */
-  private static class SubsetRule extends RelOptRule {
-    private final List<String> buf;
+  public static class SubsetRule extends RelOptNewRule<SubsetRule.Config> {
+    static Config config(List<String> buf) {
+      return Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(TestSingleRel.class).oneInput(b1 ->
+                  b1.operand(RelSubset.class).anyInputs()))
+          .as(Config.class)
+          .withBuf(buf);
+    }
 
-    SubsetRule(List<String> buf) {
-      super(operand(TestSingleRel.class, operand(RelSubset.class, any())));
-      this.buf = buf;
+    protected SubsetRule(Config config) {
+      super(config);
     }
 
     public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       // Do not transform to anything; just log the calls.
       TestSingleRel singleRel = call.rel(0);
       RelSubset childRel = call.rel(1);
       assertThat(call.rels.length, equalTo(2));
+      final List<String> buf = config.buf();
       buf.add(singleRel.getClass().getSimpleName() + ":"
           + childRel.getDigest());
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default SubsetRule toRule() {
+        return new SubsetRule(this);
+      }
+
+      @ImmutableBeans.Property
+      List<String> buf();
+
+      /** Sets {@link #buf()}. */
+      Config withBuf(List<String> buf);
+    }
   }
 
-  static class PhysSingleSubsetRule extends RelOptRule {
-    private final List<String> buf;
+  public static class PhysSingleSubsetRule
+      extends RelOptNewRule<PhysSingleSubsetRule.Config> {
+    static Config config(List<String> buf) {
+      return Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(PhysSingleRel.class).oneInput(b1 ->
+                  b1.operand(RelSubset.class).anyInputs()))
+          .as(Config.class)
+          .withBuf(buf);
+    }
 
-    PhysSingleSubsetRule(List<String> buf) {
-      super(operand(PhysSingleRel.class, operand(RelSubset.class, any())));
-      this.buf = buf;
+    protected PhysSingleSubsetRule(Config config) {
+      super(config);
     }
 
     @Override public Convention getOutConvention() {
@@ -697,20 +727,41 @@ class VolcanoPlannerTest {
     @Override public void onMatch(RelOptRuleCall call) {
       PhysSingleRel singleRel = call.rel(0);
       RelSubset subset = call.rel(1);
+      final List<String> buf = config.buf();
       buf.add(singleRel.getClass().getSimpleName() + ":"
           + subset.getDigest());
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default PhysSingleSubsetRule toRule() {
+        return new PhysSingleSubsetRule(this);
+      }
+
+      @ImmutableBeans.Property
+      List<String> buf();
+
+      /** Sets {@link #buf()}. */
+      Config withBuf(List<String> buf);
     }
   }
 
   /**
    * Create an artificial RelSet merge in the PhysSingleRel's input RelSet
    */
-  static class PhysSingleInputSetMergeRule extends RelOptRule {
+  public static class PhysSingleInputSetMergeRule
+      extends RelOptNewRule<PhysSingleInputSetMergeRule.Config> {
+    static final PhysSingleInputSetMergeRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(PhysSingleRel.class).oneInput(b1 ->
+                    b1.operand(PhysLeafRel.class)
+                        .trait(PHYS_CALLING_CONVENTION).anyInputs()))
+            .as(Config.class)
+            .toRule();
 
-    PhysSingleInputSetMergeRule() {
-      super(
-          operand(PhysSingleRel.class,
-          operand(PhysLeafRel.class, PHYS_CALLING_CONVENTION, any())));
+    protected PhysSingleInputSetMergeRule(Config config) {
+      super(config);
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
@@ -725,6 +776,13 @@ class VolcanoPlannerTest {
       // Merge into the old RelSet
       planner.ensureRegistered(newInput, input);
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default PhysSingleInputSetMergeRule toRule() {
+        return new PhysSingleInputSetMergeRule(this);
+      }
+    }
   }
 
   // NOTE: Previously, ReformedSingleRule didn't work because it explicitly
@@ -736,19 +794,25 @@ class VolcanoPlannerTest {
 
   /** Planner rule that matches a {@link NoneSingleRel} whose input is
    * a {@link PhysLeafRel} in a different subset. */
-  private static class ReformedSingleRule extends RelOptRule {
-    ReformedSingleRule() {
-      super(
-          operand(
-              NoneSingleRel.class,
-              operand(PhysLeafRel.class, any())));
+  public static class ReformedSingleRule
+      extends RelOptNewRule<ReformedSingleRule.Config> {
+    static final ReformedSingleRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(NoneSingleRel.class).oneInput(b1 ->
+                    b1.operand(PhysLeafRel.class).anyInputs()))
+            .as(Config.class)
+            .toRule();
+
+    protected ReformedSingleRule(Config config) {
+      super(config);
     }
 
     @Override public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       NoneSingleRel singleRel = call.rel(0);
       RelNode childRel = call.rel(1);
       RelNode physInput =
@@ -760,19 +824,34 @@ class VolcanoPlannerTest {
               singleRel.getCluster(),
               physInput));
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default ReformedSingleRule toRule() {
+        return new ReformedSingleRule(this);
+      }
+    }
   }
 
   /** Planner rule that converts a {@link LogicalProject} to PHYS convention. */
-  private static class PhysProjectRule extends RelOptRule {
-    PhysProjectRule() {
-      super(operand(LogicalProject.class, any()));
+  public static class PhysProjectRule
+      extends RelOptNewRule<PhysProjectRule.Config> {
+    static final PhysProjectRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b ->
+                b.operand(LogicalProject.class).anyInputs())
+            .as(Config.class)
+            .toRule();
+
+    PhysProjectRule(Config config) {
+      super(config);
     }
 
     @Override public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       final LogicalProject project = call.rel(0);
       RelNode childRel = project.getInput();
       call.transformTo(
@@ -780,22 +859,36 @@ class VolcanoPlannerTest {
               childRel.getCluster(),
               "b"));
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default PhysProjectRule toRule() {
+        return new PhysProjectRule(this);
+      }
+    }
   }
 
   /** Planner rule that successfully removes a {@link PhysSingleRel}. */
-  private static class GoodRemoveSingleRule extends RelOptRule {
-    GoodRemoveSingleRule() {
-      super(
-          operand(
-              PhysSingleRel.class,
-              operand(PhysLeafRel.class, any())));
+  public static class GoodRemoveSingleRule
+      extends RelOptNewRule<GoodRemoveSingleRule.Config> {
+    static final GoodRemoveSingleRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(PhysSingleRel.class).oneInput(b1 ->
+                    b1.operand(PhysLeafRel.class).anyInputs()))
+            .as(Config.class)
+            .toRule();
+
+
+    protected GoodRemoveSingleRule(Config config) {
+      super(config);
     }
 
     @Override public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       PhysSingleRel singleRel = call.rel(0);
       PhysLeafRel leafRel = call.rel(1);
       call.transformTo(
@@ -803,28 +896,48 @@ class VolcanoPlannerTest {
               singleRel.getCluster(),
               "c"));
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default GoodRemoveSingleRule toRule() {
+        return new GoodRemoveSingleRule(this);
+      }
+    }
   }
 
   /** Planner rule that removes a {@link NoneSingleRel}. */
-  private static class ReformedRemoveSingleRule extends RelOptRule {
-    ReformedRemoveSingleRule() {
-      super(
-          operand(
-              NoneSingleRel.class,
-              operand(PhysLeafRel.class, any())));
+  public static class ReformedRemoveSingleRule
+      extends RelOptNewRule<ReformedRemoveSingleRule.Config> {
+    static final ReformedRemoveSingleRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(NoneSingleRel.class).oneInput(b1 ->
+                    b1.operand(PhysLeafRel.class).anyInputs()))
+            .as(Config.class)
+            .toRule();
+
+    protected ReformedRemoveSingleRule(Config config) {
+      super(config);
     }
 
     public Convention getOutConvention() {
       return PHYS_CALLING_CONVENTION;
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       NoneSingleRel singleRel = call.rel(0);
       PhysLeafRel leafRel = call.rel(1);
       call.transformTo(
           new PhysLeafRel(
               singleRel.getCluster(),
               "c"));
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default ReformedRemoveSingleRule toRule() {
+        return new ReformedRemoveSingleRule(this);
+      }
     }
   }
 
@@ -866,6 +979,24 @@ class VolcanoPlannerTest {
 
     public void ruleProductionSucceeded(RuleProductionEvent event) {
       recordEvent(event);
+    }
+  }
+
+  private static class PhysToIteratorRule extends ConverterRule {
+    static final PhysToIteratorRule INSTANCE = Config.INSTANCE
+        .withConversion(RelNode.class, PlannerTests.PHYS_CALLING_CONVENTION,
+            EnumerableConvention.INSTANCE, "PhysToIteratorRule")
+        .withRuleFactory(PhysToIteratorRule::new)
+        .toRule(PhysToIteratorRule.class);
+
+    PhysToIteratorRule(Config config) {
+      super(config);
+    }
+
+    @Override public RelNode convert(RelNode rel) {
+      return new PhysToIteratorConverter(
+          rel.getCluster(),
+          rel);
     }
   }
 }

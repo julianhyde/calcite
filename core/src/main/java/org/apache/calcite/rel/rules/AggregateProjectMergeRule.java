@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -24,7 +24,6 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Aggregate.Group;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
@@ -51,22 +50,34 @@ import java.util.Set;
  *
  * <p>In some cases, this rule has the effect of trimming: the aggregate will
  * use fewer columns than the project did.
+ *
+ * @see CoreRules#AGGREGATE_PROJECT_MERGE
  */
-public class AggregateProjectMergeRule extends RelOptRule implements TransformationRule {
+public class AggregateProjectMergeRule
+    extends RelOptNewRule<AggregateProjectMergeRule.Config>
+    implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_PROJECT_MERGE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateProjectMergeRule INSTANCE =
-      new AggregateProjectMergeRule(Aggregate.class, Project.class, RelFactories.LOGICAL_BUILDER);
+      Config.DEFAULT.toRule();
 
+  /** Creates an AggregateProjectMergeRule. */
+  protected AggregateProjectMergeRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated // to be removed before 2.0
   public AggregateProjectMergeRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends Project> projectClass,
       RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(aggregateClass,
-            operand(projectClass, any())),
-        relBuilderFactory, null);
+    this(CoreRules.AGGREGATE_PROJECT_MERGE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(aggregateClass, projectClass));
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     final Project project = call.rel(1);
     RelNode x = apply(call, aggregate, project);
@@ -132,5 +143,23 @@ public class AggregateProjectMergeRule extends RelOptRule implements Transformat
     }
 
     return relBuilder.build();
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Aggregate.class, Project.class);
+
+    @Override default AggregateProjectMergeRule toRule() {
+      return new AggregateProjectMergeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
+        Class<? extends Project> projectClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass).oneInput(b1 ->
+              b1.operand(projectClass).anyInputs())).as(Config.class);
+    }
   }
 }

@@ -34,30 +34,30 @@ public abstract class MaterializedViewRules {
 
   /** Rule that matches {@link Project} on {@link Aggregate}. */
   public static final RelOptRule PROJECT_AGGREGATE =
-      MaterializedViewProjectAggregateRule.INSTANCE;
+      MaterializedViewProjectAggregateRule.Config.DEFAULT.toRule();
 
   /** Rule that matches {@link Aggregate}. */
   public static final RelOptRule AGGREGATE =
-      MaterializedViewOnlyAggregateRule.INSTANCE;
+      MaterializedViewOnlyAggregateRule.Config.DEFAULT.toRule();
 
   /** Rule that matches {@link Filter}. */
   public static final RelOptRule FILTER =
-      MaterializedViewOnlyFilterRule.INSTANCE;
+      MaterializedViewOnlyFilterRule.Config.DEFAULT.toRule();
 
   /** Rule that matches {@link Join}. */
   public static final RelOptRule JOIN =
-      MaterializedViewOnlyJoinRule.INSTANCE;
+      MaterializedViewOnlyJoinRule.Config.DEFAULT.toRule();
 
   /** Rule that matches {@link Project} on {@link Filter}. */
   public static final RelOptRule PROJECT_FILTER =
-      MaterializedViewProjectFilterRule.INSTANCE;
+      MaterializedViewProjectFilterRule.Config.DEFAULT.toRule();
 
   /** Rule that matches {@link Project} on {@link Join}. */
   public static final RelOptRule PROJECT_JOIN =
-      MaterializedViewProjectJoinRule.INSTANCE;
+      MaterializedViewProjectJoinRule.Config.DEFAULT.toRule();
 
   /** Rule that converts a {@link Filter} on a {@link TableScan}
    * to a {@link Filter} on a Materialized View. */
   public static final MaterializedViewFilterScanRule FILTER_SCAN =
-      MaterializedViewFilterScanRule.INSTANCE;
+      MaterializedViewFilterScanRule.Config.DEFAULT.toRule();
 }

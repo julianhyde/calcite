@@ -16,11 +16,10 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
@@ -51,23 +50,27 @@ import java.util.List;
  * <p>This rule only applies to "grand totals", that is, {@code GROUP BY ()}.
  * Any non-empty {@code GROUP BY} clause will return one row per group key
  * value, and each group will consist of at least one row.
+ *
+ * @see CoreRules#AGGREGATE_VALUES
  */
-public class AggregateValuesRule extends RelOptRule implements SubstitutionRule {
+public class AggregateValuesRule
+    extends RelOptNewRule<AggregateValuesRule.Config>
+    implements SubstitutionRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_VALUES}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateValuesRule INSTANCE =
-      new AggregateValuesRule(RelFactories.LOGICAL_BUILDER);
+      Config.DEFAULT.toRule();
 
-  /**
-   * Creates an AggregateValuesRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates an AggregateValuesRule. */
+  protected AggregateValuesRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated // to be removed before 2.0
   public AggregateValuesRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operandJ(Aggregate.class, null,
-            aggregate -> aggregate.getGroupCount() == 0,
-            operandJ(Values.class, null,
-                values -> values.getTuples().isEmpty(), none())),
-        relBuilderFactory, null);
+    this(Config.DEFAULT
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -105,5 +108,28 @@ public class AggregateValuesRule extends RelOptRule implements SubstitutionRule 
 
     // New plan is absolutely better than old plan.
     call.getPlanner().prune(aggregate);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Aggregate.class, Values.class);
+
+    @Override default AggregateValuesRule toRule() {
+      return new AggregateValuesRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
+        Class<? extends Values> valuesClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass)
+              .predicate(aggregate -> aggregate.getGroupCount() == 0)
+              .oneInput(b1 ->
+                  b1.operand(valuesClass)
+                      .predicate(values -> values.getTuples().isEmpty())
+                      .noInputs()))
+          .as(Config.class);
+    }
   }
 }

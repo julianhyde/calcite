@@ -24,16 +24,10 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalIntersect;
 import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.rel.rules.CalcMergeRule;
 import org.apache.calcite.rel.rules.CoerceInputsRule;
-import org.apache.calcite.rel.rules.FilterToCalcRule;
-import org.apache.calcite.rel.rules.ProjectRemoveRule;
-import org.apache.calcite.rel.rules.ProjectToCalcRule;
-import org.apache.calcite.rel.rules.ReduceExpressionsRule;
-import org.apache.calcite.rel.rules.UnionToDistinctRule;
+import org.apache.calcite.rel.rules.CoreRules;
 
 import com.google.common.collect.ImmutableList;
 
@@ -87,7 +81,7 @@ class HepPlannerTest extends RelOptTestBase {
     return DiffRepository.lookup(HepPlannerTest.class);
   }
 
-  @Test void testRuleClass() throws Exception {
+  @Test void testRuleClass() {
     // Verify that an entire class of rules can be applied.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -98,18 +92,23 @@ class HepPlannerTest extends RelOptTestBase {
             programBuilder.build());
 
     planner.addRule(
-        new CoerceInputsRule(LogicalUnion.class, false,
-            RelFactories.LOGICAL_BUILDER));
+        CoerceInputsRule.Config.DEFAULT
+            .withCoerceNames(false)
+            .withConsumerRelClass(LogicalUnion.class)
+            .toRule());
     planner.addRule(
-        new CoerceInputsRule(LogicalIntersect.class, false,
-            RelFactories.LOGICAL_BUILDER));
+        CoerceInputsRule.Config.DEFAULT
+            .withCoerceNames(false)
+            .withConsumerRelClass(LogicalIntersect.class)
+            .withDescription("CoerceInputsRule:Intersection") // TODO
+            .toRule());
 
     final String sql = "(select name from dept union select ename from emp)\n"
         + "intersect (select fname from customer.contact)";
     sql(sql).with(planner).check();
   }
 
-  @Test void testRuleDescription() throws Exception {
+  @Test void testRuleDescription() {
     // Verify that a rule can be applied via its description.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -119,7 +118,7 @@ class HepPlannerTest extends RelOptTestBase {
         new HepPlanner(
             programBuilder.build());
 
-    planner.addRule(FilterToCalcRule.INSTANCE);
+    planner.addRule(CoreRules.FILTER_TO_CALC);
 
     final String sql = "select name from sales.dept where deptno=12";
     sql(sql).with(planner).check();
@@ -170,39 +169,39 @@ class HepPlannerTest extends RelOptTestBase {
             + ", actual value is " + digest);
   }
 
-  @Test void testMatchLimitOneTopDown() throws Exception {
+  @Test void testMatchLimitOneTopDown() {
     // Verify that only the top union gets rewritten.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
     programBuilder.addMatchLimit(1);
-    programBuilder.addRuleInstance(UnionToDistinctRule.INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);
 
     sql(UNION_TREE).with(programBuilder.build()).check();
   }
 
-  @Test void testMatchLimitOneBottomUp() throws Exception {
+  @Test void testMatchLimitOneBottomUp() {
     // Verify that only the bottom union gets rewritten.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchLimit(1);
     programBuilder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
-    programBuilder.addRuleInstance(UnionToDistinctRule.INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);
 
     sql(UNION_TREE).with(programBuilder.build()).check();
   }
 
-  @Test void testMatchUntilFixpoint() throws Exception {
+  @Test void testMatchUntilFixpoint() {
     // Verify that both unions get rewritten.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchLimit(HepProgram.MATCH_UNTIL_FIXPOINT);
-    programBuilder.addRuleInstance(UnionToDistinctRule.INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);
 
     sql(UNION_TREE).with(programBuilder.build()).check();
   }
 
-  @Test void testReplaceCommonSubexpression() throws Exception {
+  @Test void testReplaceCommonSubexpression() {
     // Note that here it may look like the rule is firing
     // twice, but actually it's only firing once on the
     // common sub-expression.  The purpose of this test
@@ -212,7 +211,7 @@ class HepPlannerTest extends RelOptTestBase {
 
     final String sql = "select d1.deptno from (select * from dept) d1,\n"
         + "(select * from dept) d2";
-    sql(sql).withRule(ProjectRemoveRule.INSTANCE).check();
+    sql(sql).withRule(CoreRules.PROJECT_REMOVE).check();
   }
 
   /** Tests that if two relational expressions are equivalent, the planner
@@ -223,7 +222,7 @@ class HepPlannerTest extends RelOptTestBase {
     // occurs twice, but it's a common sub-expression, so the rule should only
     // apply once.
     HepProgramBuilder programBuilder = HepProgram.builder();
-    programBuilder.addRuleInstance(FilterToCalcRule.INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);
 
     final HepTestListener listener = new HepTestListener(0);
     HepPlanner planner = new HepPlanner(programBuilder.build());
@@ -239,7 +238,7 @@ class HepPlannerTest extends RelOptTestBase {
     assertThat(listener.getApplyTimes() == 1, is(true));
   }
 
-  @Test void testSubprogram() throws Exception {
+  @Test void testSubprogram() {
     // Verify that subprogram gets re-executed until fixpoint.
     // In this case, the first time through we limit it to generate
     // only one calc; the second time through it will generate
@@ -247,9 +246,9 @@ class HepPlannerTest extends RelOptTestBase {
     HepProgramBuilder subprogramBuilder = HepProgram.builder();
     subprogramBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
     subprogramBuilder.addMatchLimit(1);
-    subprogramBuilder.addRuleInstance(ProjectToCalcRule.INSTANCE);
-    subprogramBuilder.addRuleInstance(FilterToCalcRule.INSTANCE);
-    subprogramBuilder.addRuleInstance(CalcMergeRule.INSTANCE);
+    subprogramBuilder.addRuleInstance(CoreRules.PROJECT_TO_CALC);
+    subprogramBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);
+    subprogramBuilder.addRuleInstance(CoreRules.CALC_MERGE);
 
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addSubprogram(subprogramBuilder.build());
@@ -259,27 +258,27 @@ class HepPlannerTest extends RelOptTestBase {
     sql(sql).with(programBuilder.build()).check();
   }
 
-  @Test void testGroup() throws Exception {
+  @Test void testGroup() {
     // Verify simultaneous application of a group of rules.
     // Intentionally add them in the wrong order to make sure
     // that order doesn't matter within the group.
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addGroupBegin();
-    programBuilder.addRuleInstance(CalcMergeRule.INSTANCE);
-    programBuilder.addRuleInstance(ProjectToCalcRule.INSTANCE);
-    programBuilder.addRuleInstance(FilterToCalcRule.INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.CALC_MERGE);
+    programBuilder.addRuleInstance(CoreRules.PROJECT_TO_CALC);
+    programBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);
     programBuilder.addGroupEnd();
 
     final String sql = "select upper(name) from dept where deptno=20";
     sql(sql).with(programBuilder.build()).check();
   }
 
-  @Test void testGC() throws Exception {
+  @Test void testGC() {
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
-    programBuilder.addRuleInstance(CalcMergeRule.INSTANCE);
-    programBuilder.addRuleInstance(ProjectToCalcRule.INSTANCE);
-    programBuilder.addRuleInstance(FilterToCalcRule.INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.CALC_MERGE);
+    programBuilder.addRuleInstance(CoreRules.PROJECT_TO_CALC);
+    programBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);
 
     HepPlanner planner = new HepPlanner(programBuilder.build());
     planner.setRoot(
@@ -313,7 +312,7 @@ class HepPlannerTest extends RelOptTestBase {
     assertThat(applyTimes2, is(87L));
   }
 
-  @Test void testMaterialization() throws Exception {
+  @Test void testMaterialization() {
     HepPlanner planner = new HepPlanner(HepProgram.builder().build());
     RelNode tableRel = tester.convertSqlToRel("select * from dept").rel;
     RelNode queryRel = tableRel;
@@ -329,8 +328,8 @@ class HepPlannerTest extends RelOptTestBase {
   private long checkRuleApplyCount(HepMatchOrder matchOrder) {
     final HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchOrder(matchOrder);
-    programBuilder.addRuleInstance(ReduceExpressionsRule.FILTER_INSTANCE);
-    programBuilder.addRuleInstance(ReduceExpressionsRule.PROJECT_INSTANCE);
+    programBuilder.addRuleInstance(CoreRules.FILTER_REDUCE_EXPRESSIONS);
+    programBuilder.addRuleInstance(CoreRules.PROJECT_REDUCE_EXPRESSIONS);
 
     final HepTestListener listener = new HepTestListener(0);
     HepPlanner planner = new HepPlanner(programBuilder.build());
@@ -341,7 +340,7 @@ class HepPlannerTest extends RelOptTestBase {
   }
 
   /** Listener for HepPlannerTest; counts how many times rules fire. */
-  private class HepTestListener implements RelOptListener {
+  private static class HepTestListener implements RelOptListener {
     private long applyTimes;
 
     HepTestListener(long applyTimes) {

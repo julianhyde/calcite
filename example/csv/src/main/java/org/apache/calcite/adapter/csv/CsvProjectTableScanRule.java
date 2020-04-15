@@ -16,13 +16,11 @@
  */
 package org.apache.calcite.adapter.csv;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.List;
 
@@ -30,22 +28,19 @@ import java.util.List;
  * Planner rule that projects from a {@link CsvTableScan} scan just the columns
  * needed to satisfy a projection. If the projection's expressions are trivial,
  * the projection is removed.
+ *
+ * @see CsvRules#PROJECT_SCAN
  */
-public class CsvProjectTableScanRule extends RelOptRule {
+public class CsvProjectTableScanRule
+    extends RelOptNewRule<CsvProjectTableScanRule.Config> {
+  /** @deprecated Use {@link CsvRules#PROJECT_SCAN}. */
+  @Deprecated // to be removed before 1.25
   public static final CsvProjectTableScanRule INSTANCE =
-      new CsvProjectTableScanRule(RelFactories.LOGICAL_BUILDER);
+      Config.DEFAULT.toRule();
 
-  /**
-   * Creates a CsvProjectTableScanRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
-  public CsvProjectTableScanRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(LogicalProject.class,
-            operand(CsvTableScan.class, none())),
-        relBuilderFactory,
-        "CsvProjectTableScanRule");
+  /** Creates a CsvProjectTableScanRule. */
+  protected CsvProjectTableScanRule(Config config) {
+    super(config);
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -75,5 +70,18 @@ public class CsvProjectTableScanRule extends RelOptRule {
       }
     }
     return fields;
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(LogicalProject.class).oneInput(b1 ->
+                b1.operand(CsvTableScan.class).noInputs()))
+        .as(Config.class);
+
+    @Override default CsvProjectTableScanRule toRule() {
+      return new CsvProjectTableScanRule(this);
+    }
   }
 }

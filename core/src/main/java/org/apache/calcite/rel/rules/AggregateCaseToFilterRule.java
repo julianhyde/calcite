@@ -17,13 +17,12 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -61,17 +60,28 @@ import javax.annotation.Nullable;
  *   <code>SELECT SUM(salary) FILTER (WHERE gender = 'F')<br>
  *   FROM Emp</code>
  * </blockquote>
+ *
+ * @see CoreRules#AGGREGATE_CASE_TO_FILTER
  */
-public class AggregateCaseToFilterRule extends RelOptRule
+public class AggregateCaseToFilterRule
+    extends RelOptNewRule<AggregateCaseToFilterRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_CASE_TO_FILTER}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateCaseToFilterRule INSTANCE =
-      new AggregateCaseToFilterRule(RelFactories.LOGICAL_BUILDER, null);
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateCaseToFilterRule. */
+  protected AggregateCaseToFilterRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated // to be removed before 2.0
   protected AggregateCaseToFilterRule(RelBuilderFactory relBuilderFactory,
       String description) {
-    super(operand(Aggregate.class, operand(Project.class, any())),
-        relBuilderFactory, description);
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .as(Config.class));
   }
 
   @Override public boolean matches(final RelOptRuleCall call) {
@@ -264,5 +274,18 @@ public class AggregateCaseToFilterRule extends RelOptRule
   private static boolean isIntLiteral(final RexNode rexNode) {
     return rexNode instanceof RexLiteral
         && SqlTypeName.INT_TYPES.contains(rexNode.getType().getSqlTypeName());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Aggregate.class).oneInput(b1 ->
+                b1.operand(Project.class).anyInputs()))
+        .as(Config.class);
+
+    @Override default AggregateCaseToFilterRule toRule() {
+      return new AggregateCaseToFilterRule(this);
+    }
   }
 }

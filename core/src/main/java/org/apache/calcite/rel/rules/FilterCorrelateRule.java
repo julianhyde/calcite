@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -37,28 +37,31 @@ import java.util.List;
 /**
  * Planner rule that pushes a {@link Filter} above a {@link Correlate} into the
  * inputs of the Correlate.
+ *
+ * @see CoreRules#FILTER_CORRELATE
  */
-public class FilterCorrelateRule extends RelOptRule implements TransformationRule {
+public class FilterCorrelateRule
+    extends RelOptNewRule<FilterCorrelateRule.Config>
+    implements TransformationRule {
 
+  /** @deprecated Use {@link CoreRules#FILTER_CORRELATE}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterCorrelateRule INSTANCE =
-      new FilterCorrelateRule(RelFactories.LOGICAL_BUILDER);
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a FilterCorrelateRule.
-   */
-  public FilterCorrelateRule(RelBuilderFactory builderFactory) {
-    super(
-        operand(Filter.class,
-            operand(Correlate.class, RelOptRule.any())),
-        builderFactory, "FilterCorrelateRule");
+  /** Creates a FilterCorrelateRule. */
+  protected FilterCorrelateRule(Config config) {
+    super(config);
   }
 
-  /**
-   * Creates a FilterCorrelateRule with an explicit root operand and
-   * factories.
-   */
+  @Deprecated // to be removed before 2.0
+  public FilterCorrelateRule(RelBuilderFactory relBuilderFactory) {
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
+  }
+
   @Deprecated // to be removed before 2.0
   public FilterCorrelateRule(RelFactories.FilterFactory filterFactory,
       RelFactories.ProjectFactory projectFactory) {
@@ -67,7 +70,7 @@ public class FilterCorrelateRule extends RelOptRule implements TransformationRul
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Filter filter = call.rel(0);
     final Correlate corr = call.rel(1);
 
@@ -126,5 +129,24 @@ public class FilterCorrelateRule extends RelOptRule implements TransformationRul
             RelOptUtil.getFieldTypeList(relBuilder.peek().getRowType())));
 
     call.transformTo(relBuilder.build());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class, Correlate.class);
+
+    @Override default FilterCorrelateRule toRule() {
+      return new FilterCorrelateRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends Correlate> correlateClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(correlateClass).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

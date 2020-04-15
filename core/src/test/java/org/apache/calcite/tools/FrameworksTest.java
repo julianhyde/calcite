@@ -41,7 +41,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalTableModify;
-import org.apache.calcite.rel.rules.ProjectTableScanRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -392,23 +392,24 @@ public class FrameworksTest {
     traitDefs.add(ConventionTraitDef.INSTANCE);
     traitDefs.add(RelDistributionTraitDef.INSTANCE);
     SqlParser.Config parserConfig =
-            SqlParser.configBuilder(SqlParser.Config.DEFAULT)
-                    .setCaseSensitive(false)
-                    .build();
-
-    final FrameworkConfig config = Frameworks.newConfigBuilder()
-            .parserConfig(parserConfig)
-            .defaultSchema(schema)
-            .traitDefs(traitDefs)
-            // define the rules you want to apply
-            .ruleSets(
-                    RuleSets.ofList(AbstractConverter.ExpandConversionRule.INSTANCE,
-                            ProjectTableScanRule.INSTANCE))
-            .programs(Programs.ofRules(Programs.RULE_SET))
+        SqlParser.configBuilder(SqlParser.Config.DEFAULT)
+            .setCaseSensitive(false)
             .build();
 
-    executeQuery(config, "select min(id) as mi, max(id) as ma from mytable where id=1 group by id",
-            CalciteSystemProperty.DEBUG.value());
+    final FrameworkConfig config = Frameworks.newConfigBuilder()
+        .parserConfig(parserConfig)
+        .defaultSchema(schema)
+        .traitDefs(traitDefs)
+        // define the rules you want to apply
+        .ruleSets(
+            RuleSets.ofList(AbstractConverter.ExpandConversionRule.INSTANCE,
+                CoreRules.PROJECT_TABLE_SCAN))
+        .programs(Programs.ofRules(Programs.RULE_SET))
+        .build();
+
+    final String sql = "select min(id) as mi, max(id) as ma\n"
+        + "from mytable where id=1 group by id";
+    executeQuery(config, sql, CalciteSystemProperty.DEBUG.value());
   }
 
   /** Test case for

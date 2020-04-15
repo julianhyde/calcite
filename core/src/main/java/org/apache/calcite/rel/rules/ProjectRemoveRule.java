@@ -16,11 +16,10 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -34,28 +33,32 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see CalcRemoveRule
  * @see ProjectMergeRule
+ * @see CoreRules#PROJECT_REMOVE
  */
-public class ProjectRemoveRule extends RelOptRule implements SubstitutionRule {
+public class ProjectRemoveRule
+    extends RelOptNewRule<ProjectRemoveRule.Config>
+    implements SubstitutionRule {
+  /** @deprecated Use {@link CoreRules#PROJECT_REMOVE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectRemoveRule INSTANCE =
-      new ProjectRemoveRule(RelFactories.LOGICAL_BUILDER);
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a ProjectRemoveRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates a ProjectRemoveRule. */
+  protected ProjectRemoveRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated // to be removed before 2.0
   public ProjectRemoveRule(RelBuilderFactory relBuilderFactory) {
-    // Create a specialized operand to detect non-matches early. This keeps
-    // the rule queue short.
-    super(operandJ(Project.class, null, ProjectRemoveRule::isTrivial, any()),
-        relBuilderFactory, null);
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     Project project = call.rel(0);
     assert isTrivial(project);
     RelNode stripped = project.getInput();
@@ -85,5 +88,21 @@ public class ProjectRemoveRule extends RelOptRule implements SubstitutionRule {
 
   @Override public boolean autoPruneOld() {
     return true;
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(Project.class)
+                // Use a predicate to detect non-matches early.
+                // This keeps the rule queue short.
+                .predicate(ProjectRemoveRule::isTrivial)
+                .anyInputs())
+        .as(Config.class);
+
+    @Override default ProjectRemoveRule toRule() {
+      return new ProjectRemoveRule(this);
+    }
   }
 }
