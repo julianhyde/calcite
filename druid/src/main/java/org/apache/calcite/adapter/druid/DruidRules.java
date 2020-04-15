@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
@@ -51,6 +52,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
@@ -94,7 +96,12 @@ public class DruidRules {
   public static final DruidProjectSortTransposeRule PROJECT_SORT_TRANSPOSE =
       new DruidProjectSortTransposeRule(RelFactories.LOGICAL_BUILDER);
   public static final DruidProjectFilterTransposeRule PROJECT_FILTER_TRANSPOSE =
-      new DruidProjectFilterTransposeRule(RelFactories.LOGICAL_BUILDER);
+      DruidProjectFilterTransposeRule.Config.create()
+          .withPreserveExprCondition(expr -> false)
+          .withOperandSupplier(DruidProjectFilterTransposeRule::operand)
+          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+          .as(DruidProjectFilterTransposeRule.Config.class)
+          .toRule();
   public static final DruidFilterProjectTransposeRule FILTER_PROJECT_TRANSPOSE =
       new DruidFilterProjectTransposeRule(RelFactories.LOGICAL_BUILDER);
   public static final DruidAggregateFilterTransposeRule AGGREGATE_FILTER_TRANSPOSE =
@@ -786,19 +793,39 @@ public class DruidRules {
    */
   public static class DruidProjectFilterTransposeRule
       extends ProjectFilterTransposeRule {
+    /** Creates a DruidProjectFilterTransposeRule. */
+    private DruidProjectFilterTransposeRule(Config config) {
+      super(config);
+    }
 
-    /**
-     * Creates a DruidProjectFilterTransposeRule.
-     *
-     * @param relBuilderFactory Builder for relational expressions
-     */
+    @SuppressWarnings("unchecked")
+    @Deprecated
     public DruidProjectFilterTransposeRule(
         RelBuilderFactory relBuilderFactory) {
-      super(
-          operand(Project.class,
-              operand(Filter.class,
-                  operand(DruidQuery.class, none()))),
-          expr -> false, false, false, relBuilderFactory);
+      this(PROJECT_FILTER_TRANSPOSE.config()
+          .withRelBuilderFactory(relBuilderFactory)
+          .as(Config.class));
+    }
+
+    @Override public Config config() {
+      return (Config) config;
+    }
+
+    static RelOptRuleOperand operand() {
+      return operand(Project.class,
+          operand(Filter.class,
+              operand(DruidQuery.class, none())));
+    }
+
+    /** Rule configuration. */
+    public interface Config extends ProjectFilterTransposeRule.Config {
+      @Override default DruidProjectFilterTransposeRule toRule() {
+        return new DruidProjectFilterTransposeRule(this);
+      }
+
+      static Config create() {
+        return ImmutableBeans.create(Config.class);
+      }
     }
   }
 
