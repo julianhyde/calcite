@@ -59,7 +59,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
   }
 
   public static final ProjectFilterTransposeRule INSTANCE =
-      ProjectFilterTransposeRule.Config.create()
+      Config.EMPTY.as(Config.class)
           .withOperandSupplier(b ->
               makeOperand(b, LogicalProject.class, LogicalFilter.class))
           .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
@@ -100,7 +100,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
       Class<? extends Filter> filterClass,
       RelBuilderFactory relBuilderFactory,
       PushProjector.ExprCondition preserveExprCondition) {
-    this(ProjectFilterTransposeRule.Config.create()
+    this(Config.EMPTY.as(Config.class)
         .withOperandSupplier(b -> makeOperand(b, projectClass, filterClass))
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
@@ -111,7 +111,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
   protected ProjectFilterTransposeRule(RelOptRuleOperand operand,
       PushProjector.ExprCondition preserveExprCondition, boolean wholeProject,
       boolean wholeFilter, RelBuilderFactory relBuilderFactory) {
-    this(ProjectFilterTransposeRule.Config.create()
+    this(Config.EMPTY.as(Config.class)
         .withOperandSupplier(b -> b.exactly(operand))
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
@@ -272,10 +272,6 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
   public interface Config extends RelOptNewRule.Config {
     @Override default ProjectFilterTransposeRule toRule() {
       return new ProjectFilterTransposeRule(this);
-    }
-
-    static Config create() {
-      return ImmutableBeans.create(Config.class);
     }
 
     /** Expressions that should be preserved in the projection. */

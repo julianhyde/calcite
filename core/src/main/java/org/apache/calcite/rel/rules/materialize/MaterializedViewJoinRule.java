@@ -47,12 +47,24 @@ import java.util.Set;
 public abstract class MaterializedViewJoinRule extends MaterializedViewRule {
 
   /** Creates a MaterializedViewJoinRule. */
+  MaterializedViewJoinRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   protected MaterializedViewJoinRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    super(operand, relBuilderFactory, description, generateUnionRewriting,
-        unionRewritingPullProgram, fastBailOut);
+    this(Config.EMPTY
+        .as(Config.class)
+        .withOperandSupplier(b -> b.exactly(operand))
+        .withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .as(MaterializedViewRule.Config.class)
+        .withGenerateUnionRewriting(generateUnionRewriting)
+        .withUnionRewritingPullProgram(unionRewritingPullProgram)
+        .withFastBailOut(fastBailOut));
   }
 
   @Override protected boolean isValidPlan(Project topProject, RelNode node,
@@ -81,7 +93,7 @@ public abstract class MaterializedViewJoinRule extends MaterializedViewRule {
     // ((A JOIN B) JOIN D) JOIN C
     // But not at:
     // (((A JOIN B) JOIN D) JOIN C) JOIN E
-    if (fastBailOut) {
+    if (config().fastBailOut()) {
       for (RelNode joinInput : node.getInputs()) {
         if (mq.getTableReferences(joinInput).containsAll(viewTableRefs)) {
           return null;
@@ -158,8 +170,9 @@ public abstract class MaterializedViewJoinRule extends MaterializedViewRule {
     // the planner strategy.
     RelNode newNode = node;
     RelNode target = node;
-    if (unionRewritingPullProgram != null) {
-      final HepPlanner tmpPlanner = new HepPlanner(unionRewritingPullProgram);
+    if (config().unionRewritingPullProgram() != null) {
+      final HepPlanner tmpPlanner =
+          new HepPlanner(config().unionRewritingPullProgram());
       tmpPlanner.setRoot(newNode);
       newNode = tmpPlanner.findBestExp();
       target = newNode.getInput(0);
@@ -198,7 +211,7 @@ public abstract class MaterializedViewJoinRule extends MaterializedViewRule {
         .push(target)
         .filter(simplify.simplifyUnknownAsFalse(queryCompensationPred))
         .build();
-    if (unionRewritingPullProgram != null) {
+    if (config().unionRewritingPullProgram() != null) {
       rewrittenPlan = newNode.copy(
           newNode.getTraitSet(), ImmutableList.of(rewrittenPlan));
     }

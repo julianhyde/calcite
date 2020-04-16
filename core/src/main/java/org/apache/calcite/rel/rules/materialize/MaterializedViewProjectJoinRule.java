@@ -27,23 +27,46 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewProjectJoinRule extends MaterializedViewJoinRule {
 
   public static final MaterializedViewProjectJoinRule INSTANCE =
-      new MaterializedViewProjectJoinRule(RelFactories.LOGICAL_BUILDER,
-          true, null, true);
+      Config.EMPTY.as(Config.class)
+          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+          .withOperandSupplier(b ->
+              b.operand(Project.class).oneInput(b2 ->
+                  b2.operand(Join.class).anyInputs()))
+          .withDescription("MaterializedViewJoinRule(Project-Join)")
+          .as(MaterializedViewProjectFilterRule.Config.class)
+          .withGenerateUnionRewriting(true)
+          .withUnionRewritingPullProgram(null)
+          .withFastBailOut(true)
+          .as(Config.class)
+          .toRule();
 
+  private MaterializedViewProjectJoinRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public MaterializedViewProjectJoinRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    super(
-        operand(Project.class,
-            operand(Join.class, any())),
-        relBuilderFactory,
-        "MaterializedViewJoinRule(Project-Join)",
-        generateUnionRewriting, unionRewritingPullProgram, fastBailOut);
+    this(INSTANCE.config()
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withGenerateUnionRewriting(generateUnionRewriting)
+        .withUnionRewritingPullProgram(unionRewritingPullProgram)
+        .withFastBailOut(fastBailOut)
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Project project = call.rel(0);
     final Join join = call.rel(1);
     perform(call, project, join);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends MaterializedViewJoinRule.Config {
+    default MaterializedViewProjectJoinRule toRule() {
+      return new MaterializedViewProjectJoinRule(this);
+    }
   }
 }

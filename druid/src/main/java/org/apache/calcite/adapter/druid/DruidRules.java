@@ -18,6 +18,7 @@ package org.apache.calcite.adapter.druid;
 
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -51,7 +52,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
-import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
@@ -95,7 +95,8 @@ public class DruidRules {
   public static final DruidProjectSortTransposeRule PROJECT_SORT_TRANSPOSE =
       new DruidProjectSortTransposeRule(RelFactories.LOGICAL_BUILDER);
   public static final DruidProjectFilterTransposeRule PROJECT_FILTER_TRANSPOSE =
-      DruidProjectFilterTransposeRule.Config.create()
+      RelOptNewRule.Config.EMPTY
+          .as(DruidProjectFilterTransposeRule.Config.class)
           .withPreserveExprCondition(expr -> false)
           .withOperandSupplier(b ->
               b.operand(Project.class).oneInput(b2 ->
@@ -817,10 +818,6 @@ public class DruidRules {
     public interface Config extends ProjectFilterTransposeRule.Config {
       @Override default DruidProjectFilterTransposeRule toRule() {
         return new DruidProjectFilterTransposeRule(this);
-      }
-
-      static Config create() {
-        return ImmutableBeans.create(Config.class);
       }
     }
   }

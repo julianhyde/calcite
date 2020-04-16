@@ -26,21 +26,42 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewOnlyJoinRule extends MaterializedViewJoinRule {
 
   public static final MaterializedViewOnlyJoinRule INSTANCE =
-      new MaterializedViewOnlyJoinRule(RelFactories.LOGICAL_BUILDER,
-          true, null, true);
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(Join.class).anyInputs())
+          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+          .withDescription("MaterializedViewJoinRule(Join)")
+          .as(MaterializedViewRule.Config.class)
+          .withGenerateUnionRewriting(true)
+          .withUnionRewritingPullProgram(null)
+          .withFastBailOut(true)
+          .as(MaterializedViewOnlyJoinRule.Config.class)
+          .toRule();
 
+  MaterializedViewOnlyJoinRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public MaterializedViewOnlyJoinRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    super(
-        operand(Join.class, any()),
-        relBuilderFactory,
-        "MaterializedViewJoinRule(Join)",
-        generateUnionRewriting, unionRewritingPullProgram, fastBailOut);
+    this(INSTANCE.config()
+        .withGenerateUnionRewriting(generateUnionRewriting)
+        .withUnionRewritingPullProgram(unionRewritingPullProgram)
+        .withFastBailOut(fastBailOut)
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(MaterializedViewOnlyJoinRule.Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Join join = call.rel(0);
     perform(call, null, join);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends MaterializedViewRule.Config {
+    @Override default MaterializedViewOnlyJoinRule toRule() {
+      return new MaterializedViewOnlyJoinRule(this);
+    }
   }
 }

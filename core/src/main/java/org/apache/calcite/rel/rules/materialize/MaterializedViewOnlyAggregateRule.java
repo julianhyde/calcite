@@ -25,21 +25,35 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Rule that matches Aggregate. */
-public class MaterializedViewOnlyAggregateRule extends MaterializedViewAggregateRule {
+public class MaterializedViewOnlyAggregateRule
+    extends MaterializedViewAggregateRule {
 
   public static final MaterializedViewOnlyAggregateRule INSTANCE =
-      new MaterializedViewOnlyAggregateRule(RelFactories.LOGICAL_BUILDER,
-          true, null);
+      makeConfig(RelFactories.LOGICAL_BUILDER)
+          .withOperandSupplier(b -> b.operand(Aggregate.class).anyInputs())
+          .withDescription("MaterializedViewAggregateRule(Aggregate)")
+          .as(MaterializedViewRule.Config.class)
+          .withGenerateUnionRewriting(true)
+          .withUnionRewritingPullProgram(null)
+          .withFastBailOut(false)
+          .as(MaterializedViewOnlyAggregateRule.Config.class)
+          .toRule();
 
-  public MaterializedViewOnlyAggregateRule(RelBuilderFactory relBuilderFactory,
-      boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
-    super(
-        operand(Aggregate.class, any()),
-        relBuilderFactory,
-        "MaterializedViewAggregateRule(Aggregate)",
-        generateUnionRewriting, unionRewritingPullProgram);
+  private MaterializedViewOnlyAggregateRule(Config config) {
+    super(config);
   }
 
+  @Deprecated
+  public MaterializedViewOnlyAggregateRule(RelBuilderFactory relBuilderFactory,
+      boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
+    this(INSTANCE.config()
+        .withGenerateUnionRewriting(generateUnionRewriting)
+        .withUnionRewritingPullProgram(unionRewritingPullProgram)
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
+  }
+
+  @Deprecated
   public MaterializedViewOnlyAggregateRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
@@ -47,19 +61,30 @@ public class MaterializedViewOnlyAggregateRule extends MaterializedViewAggregate
       RelOptRule filterAggregateTransposeRule,
       RelOptRule aggregateProjectPullUpConstantsRule,
       RelOptRule projectMergeRule) {
-    super(
-        operand(Aggregate.class, any()),
-        relBuilderFactory,
-        "MaterializedViewAggregateRule(Aggregate)",
-        generateUnionRewriting, unionRewritingPullProgram,
-        filterProjectTransposeRule,
-        filterAggregateTransposeRule,
-        aggregateProjectPullUpConstantsRule,
-        projectMergeRule);
+    this(INSTANCE.config()
+        .withGenerateUnionRewriting(generateUnionRewriting)
+        .withUnionRewritingPullProgram(unionRewritingPullProgram)
+        .withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .withOperandSupplier(b -> b.exactly(operand))
+        .as(Config.class)
+        .withFilterProjectTransposeRule(filterProjectTransposeRule)
+        .withFilterAggregateTransposeRule(filterAggregateTransposeRule)
+        .withAggregateProjectPullUpConstantsRule(
+            aggregateProjectPullUpConstantsRule)
+        .withProjectMergeRule(projectMergeRule)
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     perform(call, null, aggregate);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends MaterializedViewAggregateRule.Config {
+    @Override default MaterializedViewOnlyAggregateRule toRule() {
+      return new MaterializedViewOnlyAggregateRule(this);
+    }
   }
 }

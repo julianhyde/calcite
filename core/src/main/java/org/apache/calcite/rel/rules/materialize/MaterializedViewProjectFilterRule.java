@@ -27,23 +27,46 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewProjectFilterRule extends MaterializedViewJoinRule {
 
   public static final MaterializedViewProjectFilterRule INSTANCE =
-      new MaterializedViewProjectFilterRule(RelFactories.LOGICAL_BUILDER,
-          true, null, true);
+      Config.EMPTY.as(Config.class)
+          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+          .withOperandSupplier(b ->
+              b.operand(Project.class).oneInput(b2 ->
+                  b2.operand(Filter.class).anyInputs()))
+          .withDescription("MaterializedViewJoinRule(Project-Filter)")
+          .as(Config.class)
+          .withGenerateUnionRewriting(true)
+          .withUnionRewritingPullProgram(null)
+          .withFastBailOut(true)
+          .as(Config.class)
+          .toRule();
 
+  private MaterializedViewProjectFilterRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public MaterializedViewProjectFilterRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    super(
-        operand(Project.class,
-            operand(Filter.class, any())),
-        relBuilderFactory,
-        "MaterializedViewJoinRule(Project-Filter)",
-        generateUnionRewriting, unionRewritingPullProgram, fastBailOut);
+    this(INSTANCE.config()
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withGenerateUnionRewriting(generateUnionRewriting)
+        .withUnionRewritingPullProgram(unionRewritingPullProgram)
+        .withFastBailOut(fastBailOut)
+        .as(Config.class));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Project project = call.rel(0);
     final Filter filter = call.rel(1);
     perform(call, project, filter);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends MaterializedViewJoinRule.Config {
+    default MaterializedViewProjectFilterRule toRule() {
+      return new MaterializedViewProjectFilterRule(this);
+    }
   }
 }
