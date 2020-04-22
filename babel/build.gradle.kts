@@ -23,6 +23,7 @@ plugins {
 
 dependencies {
     api(project(":core"))
+    api(project(":server"))
 
     implementation("com.google.guava:guava")
     implementation("org.apache.calcite.avatica:avatica-core")
