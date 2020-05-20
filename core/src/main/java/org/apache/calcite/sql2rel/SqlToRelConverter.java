@@ -2614,6 +2614,9 @@ public class SqlToRelConverter {
         (Join) RelFactories.DEFAULT_JOIN_FACTORY.createJoin(leftRel, rightRel,
             ImmutableList.of(), joinCond, ImmutableSet.of(), joinType, false);
 
+    if (!config.isPushJoinCondition()) {
+      return originalJoin;
+    }
     RelNode node = RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
     // If join conditions are pushed down, update the leaves.
     if (node instanceof Project) {
@@ -5845,6 +5848,10 @@ public class SqlToRelConverter {
      * {@link org.apache.calcite.rex.RexSubQuery}. */
     boolean isExpand();
 
+    /** Returns whether to push join conditions, usually as Project operators.
+     * Default is true. */
+    boolean isPushJoinCondition();
+
     /** Returns the {@code inSubQueryThreshold} option,
      * default {@link #DEFAULT_IN_SUB_QUERY_THRESHOLD}. Controls the list size
      * threshold under which {@link #convertInToOr} is used. Lists of this size
@@ -5872,6 +5879,7 @@ public class SqlToRelConverter {
     private boolean createValuesRel = true;
     private boolean explain;
     private boolean expand = true;
+    private boolean pushJoinCondition = true;
     private int inSubQueryThreshold = DEFAULT_IN_SUB_QUERY_THRESHOLD;
     private RelBuilderFactory relBuilderFactory = RelFactories.LOGICAL_BUILDER;
     private HintStrategyTable hintStrategyTable = HintStrategyTable.EMPTY;
@@ -5885,6 +5893,7 @@ public class SqlToRelConverter {
       this.createValuesRel = config.isCreateValuesRel();
       this.explain = config.isExplain();
       this.expand = config.isExpand();
+      this.pushJoinCondition = config.isPushJoinCondition();
       this.inSubQueryThreshold = config.getInSubQueryThreshold();
       this.relBuilderFactory = config.getRelBuilderFactory();
       this.hintStrategyTable = config.getHintStrategyTable();
@@ -5916,6 +5925,11 @@ public class SqlToRelConverter {
       return this;
     }
 
+    public ConfigBuilder withPushJoinCondition(boolean pushJoinCondition) {
+      this.pushJoinCondition = pushJoinCondition;
+      return this;
+    }
+
     @Deprecated // to be removed before 2.0
     public ConfigBuilder withInSubqueryThreshold(int inSubQueryThreshold) {
       return withInSubQueryThreshold(inSubQueryThreshold);
@@ -5941,7 +5955,7 @@ public class SqlToRelConverter {
     /** Builds a {@link Config}. */
     public Config build() {
       return new ConfigImpl(decorrelationEnabled,
-          trimUnusedFields, createValuesRel, explain, expand,
+          trimUnusedFields, createValuesRel, explain, expand, pushJoinCondition,
           inSubQueryThreshold, relBuilderFactory, hintStrategyTable);
     }
   }
@@ -5954,13 +5968,14 @@ public class SqlToRelConverter {
     private final boolean createValuesRel;
     private final boolean explain;
     private final boolean expand;
+    private final boolean pushJoinCondition;
     private final int inSubQueryThreshold;
     private final RelBuilderFactory relBuilderFactory;
     private final HintStrategyTable hintStrategyTable;
 
     private ConfigImpl(boolean decorrelationEnabled,
         boolean trimUnusedFields, boolean createValuesRel, boolean explain,
-        boolean expand, int inSubQueryThreshold,
+        boolean expand, boolean pushJoinCondition, int inSubQueryThreshold,
         RelBuilderFactory relBuilderFactory,
         HintStrategyTable hintStrategyTable) {
       this.decorrelationEnabled = decorrelationEnabled;
@@ -5968,6 +5983,7 @@ public class SqlToRelConverter {
       this.createValuesRel = createValuesRel;
       this.explain = explain;
       this.expand = expand;
+      this.pushJoinCondition = pushJoinCondition;
       this.inSubQueryThreshold = inSubQueryThreshold;
       this.relBuilderFactory = relBuilderFactory;
       this.hintStrategyTable = hintStrategyTable;
@@ -6010,6 +6026,10 @@ public class SqlToRelConverter {
 
     public boolean isExpand() {
       return expand;
+    }
+
+    public boolean isPushJoinCondition() {
+      return pushJoinCondition;
     }
 
     public int getInSubQueryThreshold() {
