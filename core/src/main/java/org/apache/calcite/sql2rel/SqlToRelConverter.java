@@ -2610,14 +2610,17 @@ public class SqlToRelConverter {
       return corr;
     }
 
-    final Join originalJoin =
-        (Join) RelFactories.DEFAULT_JOIN_FACTORY.createJoin(leftRel, rightRel,
-            ImmutableList.of(), joinCond, ImmutableSet.of(), joinType, false);
+    final RelNode originalJoin =
+        relBuilder.push(leftRel)
+            .push(rightRel)
+            .join(joinType, joinCond)
+            .build();
 
-    if (!config.isPushJoinCondition()) {
+    if (!(config.isPushJoinCondition() && originalJoin instanceof Join)) {
       return originalJoin;
     }
-    RelNode node = RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
+    RelNode node =
+        RelOptUtil.pushDownJoinConditions((Join) originalJoin, relBuilder);
     // If join conditions are pushed down, update the leaves.
     if (node instanceof Project) {
       final Join newJoin = (Join) node.getInputs().get(0);
