@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import javax.annotation.Nonnull;
 
 /** Utilities for creating immutable beans. */
 public class ImmutableBeans {
@@ -44,6 +45,19 @@ public class ImmutableBeans {
 
   /** Creates an immutable bean that implements a given interface. */
   public static <T> T create(Class<T> beanClass) {
+    return create_(beanClass, ImmutableMap.of());
+  }
+
+  /** Creates a bean of a given class whose contents are the same as this bean.
+   *
+   * <p>You typically use this to downcast a bean to a sub-class. */
+  public static <T> T copy(Class<T> beanClass, @Nonnull Object o) {
+    final BeanImpl<?> bean = (BeanImpl) Proxy.getInvocationHandler(o);
+    return create_(beanClass, bean.map);
+  }
+
+  private static <T> T create_(Class<T> beanClass,
+      ImmutableMap<String, Object> valueMap) {
     if (!beanClass.isInterface()) {
       throw new IllegalArgumentException("must be interface");
     }
@@ -144,7 +158,8 @@ public class ImmutableBeans {
       }
       switch (mode) {
       case WITH:
-        if (method.getReturnType() != beanClass) {
+        if (method.getReturnType() != beanClass
+            && method.getReturnType() != method.getDeclaringClass()) {
           throw new IllegalArgumentException("method '" + methodName
               + "' should return the bean class '" + beanClass
               + "', actually returns '" + method.getReturnType() + "'");
@@ -245,7 +260,7 @@ public class ImmutableBeans {
             // Strictly, a bean should not equal a Map but it's convenient
             || args[0] instanceof Map
             && bean.map.equals(args[0]));
-    return makeBean(beanClass, handlers.build(), ImmutableMap.of());
+    return makeBean(beanClass, handlers.build(), valueMap);
   }
 
   /** Looks for an annotation by class name.
