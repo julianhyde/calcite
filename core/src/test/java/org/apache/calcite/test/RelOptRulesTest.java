@@ -58,7 +58,6 @@ import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.AggregateCaseToFilterRule;
 import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
@@ -3956,10 +3955,7 @@ class RelOptRulesTest extends RelOptTestBase {
     HepProgram pre = new HepProgramBuilder()
         .addRuleInstance(AggregateProjectMergeRule.INSTANCE)
         .build();
-    final AggregateExtractProjectRule rule =
-        new AggregateExtractProjectRule(Aggregate.class, LogicalTableScan.class,
-            RelFactories.LOGICAL_BUILDER);
-    sql(sql).withPre(pre).withRule(rule).check();
+    sql(sql).withPre(pre).withRule(AggregateExtractProjectRule.SCAN).check();
   }
 
   @Test void testAggregateExtractProjectRuleWithGroupingSets() {
@@ -3969,12 +3965,8 @@ class RelOptRulesTest extends RelOptTestBase {
     HepProgram pre = new HepProgramBuilder()
         .addRuleInstance(AggregateProjectMergeRule.INSTANCE)
         .build();
-    final AggregateExtractProjectRule rule =
-        new AggregateExtractProjectRule(Aggregate.class, LogicalTableScan.class,
-            RelFactories.LOGICAL_BUILDER);
-    sql(sql).withPre(pre).withRule(rule).check();
+    sql(sql).withPre(pre).withRule(AggregateExtractProjectRule.SCAN).check();
   }
-
 
   /** Test with column used in both grouping set and argument to aggregate
    * function. */
@@ -3985,10 +3977,7 @@ class RelOptRulesTest extends RelOptTestBase {
     HepProgram pre = new HepProgramBuilder()
         .addRuleInstance(AggregateProjectMergeRule.INSTANCE)
         .build();
-    final AggregateExtractProjectRule rule =
-        new AggregateExtractProjectRule(Aggregate.class, LogicalTableScan.class,
-            RelFactories.LOGICAL_BUILDER);
-    sql(sql).withPre(pre).withRule(rule).check();
+    sql(sql).withPre(pre).withRule(AggregateExtractProjectRule.SCAN).check();
   }
 
   @Test void testAggregateExtractProjectRuleWithFilter() {
@@ -6549,27 +6538,30 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   @Test void testReduceAverageWithNoReduceSum() {
-    final EnumSet<SqlKind> functionsToReduce = EnumSet.of(SqlKind.AVG);
-    final RelOptRule rule = new AggregateReduceFunctionsRule(LogicalAggregate.class,
-        RelFactories.LOGICAL_BUILDER, functionsToReduce);
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+        .withOperandFor(LogicalAggregate.class)
+        .withFunctionsToReduce(EnumSet.of(SqlKind.AVG))
+        .toRule();
     final String sql = "select name, max(name), avg(deptno), min(name)\n"
         + "from sales.dept group by name";
     sql(sql).withRule(rule).check();
   }
 
   @Test void testNoReduceAverage() {
-    final EnumSet<SqlKind> functionsToReduce = EnumSet.noneOf(SqlKind.class);
-    final RelOptRule rule = new AggregateReduceFunctionsRule(LogicalAggregate.class,
-        RelFactories.LOGICAL_BUILDER, functionsToReduce);
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+        .withOperandFor(LogicalAggregate.class)
+        .withFunctionsToReduce(EnumSet.noneOf(SqlKind.class))
+        .toRule();
     String sql = "select name, max(name), avg(deptno), min(name)"
         + " from sales.dept group by name";
     sql(sql).withRule(rule).checkUnchanged();
   }
 
   @Test void testNoReduceSum() {
-    final EnumSet<SqlKind> functionsToReduce = EnumSet.noneOf(SqlKind.class);
-    final RelOptRule rule = new AggregateReduceFunctionsRule(LogicalAggregate.class,
-        RelFactories.LOGICAL_BUILDER, functionsToReduce);
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+        .withOperandFor(LogicalAggregate.class)
+        .withFunctionsToReduce(EnumSet.noneOf(SqlKind.class))
+        .toRule();
     String sql = "select name, sum(deptno)"
             + " from sales.dept group by name";
     sql(sql).withRule(rule).checkUnchanged();
@@ -6578,9 +6570,10 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testReduceAverageAndVarWithNoReduceStddev() {
     // configure rule to reduce AVG and VAR_POP functions
     // other functions like SUM, STDDEV won't be reduced
-    final EnumSet<SqlKind> functionsToReduce = EnumSet.of(SqlKind.AVG, SqlKind.VAR_POP);
-    final RelOptRule rule = new AggregateReduceFunctionsRule(LogicalAggregate.class,
-        RelFactories.LOGICAL_BUILDER, functionsToReduce);
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+        .withOperandFor(LogicalAggregate.class)
+        .withFunctionsToReduce(EnumSet.of(SqlKind.AVG, SqlKind.VAR_POP))
+        .toRule();
     final String sql = "select name, stddev_pop(deptno), avg(deptno),"
         + " var_pop(deptno)\n"
         + "from sales.dept group by name";
@@ -6590,9 +6583,10 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testReduceAverageAndSumWithNoReduceStddevAndVar() {
     // configure rule to reduce AVG and SUM functions
     // other functions like VAR_POP, STDDEV_POP won't be reduced
-    final EnumSet<SqlKind> functionsToReduce = EnumSet.of(SqlKind.AVG, SqlKind.SUM);
-    final RelOptRule rule = new AggregateReduceFunctionsRule(LogicalAggregate.class,
-        RelFactories.LOGICAL_BUILDER, functionsToReduce);
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+        .withOperandFor(LogicalAggregate.class)
+        .withFunctionsToReduce(EnumSet.of(SqlKind.AVG, SqlKind.SUM))
+        .toRule();
     final String sql = "select name, stddev_pop(deptno), avg(deptno),"
         + " var_pop(deptno)\n"
         + "from sales.dept group by name";
@@ -6601,10 +6595,12 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testReduceAllAggregateFunctions() {
     // configure rule to reduce all used functions
-    final EnumSet<SqlKind> functionsToReduce = EnumSet.of(SqlKind.AVG, SqlKind.SUM,
-        SqlKind.STDDEV_POP, SqlKind.STDDEV_SAMP, SqlKind.VAR_POP, SqlKind.VAR_SAMP);
-    final RelOptRule rule = new AggregateReduceFunctionsRule(LogicalAggregate.class,
-        RelFactories.LOGICAL_BUILDER, functionsToReduce);
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+        .withOperandFor(LogicalAggregate.class)
+        .withFunctionsToReduce(
+            EnumSet.of(SqlKind.AVG, SqlKind.SUM, SqlKind.STDDEV_POP,
+                SqlKind.STDDEV_SAMP, SqlKind.VAR_POP, SqlKind.VAR_SAMP))
+        .toRule();
     final String sql = "select name, stddev_pop(deptno), avg(deptno),"
         + " stddev_samp(deptno), var_pop(deptno), var_samp(deptno)\n"
         + "from sales.dept group by name";

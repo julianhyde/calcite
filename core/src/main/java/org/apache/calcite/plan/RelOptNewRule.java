@@ -17,6 +17,7 @@
 package org.apache.calcite.plan;
 
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBeans;
 
@@ -35,7 +36,7 @@ import javax.annotation.Nonnull;
  * <p>Temporary.
  */
 public abstract class RelOptNewRule extends RelOptRule {
-  protected final Config config;
+  public final Config config;
 
   public RelOptNewRule(Config config) {
     super(OperandBuilderImpl.operand(config.operandSupplier()),
@@ -50,7 +51,8 @@ public abstract class RelOptNewRule extends RelOptRule {
   /** Rule configuration. */
   public interface Config {
     /** Empty configuration. */
-    RelOptNewRule.Config EMPTY = ImmutableBeans.create(Config.class);
+    RelOptNewRule.Config EMPTY = ImmutableBeans.create(Config.class)
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER);
 
     /** Creates a rule that uses this configuration. Sub-class must override. */
     default RelOptRule toRule() {
@@ -110,10 +112,10 @@ public abstract class RelOptNewRule extends RelOptRule {
    * @param <R> Type of relational expression */
   public interface OperandDetailBuilder<R extends RelNode> {
     /** Sets a trait of this operand. */
-    OperandDetailBuilderImpl<R> trait(@Nonnull RelTrait trait);
+    OperandDetailBuilder<R> trait(@Nonnull RelTrait trait);
 
     /** Sets the predicate of this operand. */
-    OperandDetailBuilderImpl<R> predicate(Predicate<? super R> predicate);
+    OperandDetailBuilder<R> predicate(Predicate<? super R> predicate);
 
     /** Indicates that this operand has a single input. */
     Done oneInput(OperandTransform transform);

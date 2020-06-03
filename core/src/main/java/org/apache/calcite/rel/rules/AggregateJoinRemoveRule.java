@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -24,7 +24,6 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.tools.RelBuilder;
@@ -56,23 +55,28 @@ import java.util.Set;
  *
  * <blockquote>
  * <pre>select distinct s.product_id from sales as s</pre></blockquote>
- *
  */
-public class AggregateJoinRemoveRule extends RelOptRule implements TransformationRule {
+public class AggregateJoinRemoveRule extends RelOptNewRule
+    implements TransformationRule {
   public static final AggregateJoinRemoveRule INSTANCE =
-      new AggregateJoinRemoveRule(LogicalAggregate.class, LogicalJoin.class,
-          RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(LogicalAggregate.class, LogicalJoin.class)
+          .toRule();
 
   /** Creates an AggregateJoinRemoveRule. */
+  protected AggregateJoinRemoveRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public AggregateJoinRemoveRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(aggregateClass,
-            operandJ(joinClass, null,
-                join -> join.getJoinType() == JoinRelType.LEFT
-                    || join.getJoinType() == JoinRelType.RIGHT, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(aggregateClass, joinClass));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -120,5 +124,25 @@ public class AggregateJoinRemoveRule extends RelOptRule implements Transformatio
           .build();
     }
     call.transformTo(node);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default AggregateJoinRemoveRule toRule() {
+      return new AggregateJoinRemoveRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
+        Class<? extends Join> joinClass) {
+      return withOperandSupplier(b ->
+          b.operand(aggregateClass).oneInput(b2 ->
+              b2.operand(joinClass)
+                  .predicate(join ->
+                      join.getJoinType() == JoinRelType.LEFT
+                          || join.getJoinType() == JoinRelType.RIGHT)
+                  .anyInputs()))
+          .as(Config.class);
+    }
   }
 }

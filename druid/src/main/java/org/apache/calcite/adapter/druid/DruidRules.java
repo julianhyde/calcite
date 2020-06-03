@@ -27,12 +27,15 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
 import org.apache.calcite.rel.rules.AggregateFilterTransposeRule;
+import org.apache.calcite.rel.rules.AggregateJoinJoinRemoveRule;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
@@ -95,15 +98,9 @@ public class DruidRules {
   public static final DruidProjectSortTransposeRule PROJECT_SORT_TRANSPOSE =
       new DruidProjectSortTransposeRule(RelFactories.LOGICAL_BUILDER);
   public static final DruidProjectFilterTransposeRule PROJECT_FILTER_TRANSPOSE =
-      RelOptNewRule.Config.EMPTY
+      ProjectFilterTransposeRule.INSTANCE.config
           .as(DruidProjectFilterTransposeRule.Config.class)
-          .withPreserveExprCondition(expr -> false)
-          .withOperandSupplier(b ->
-              b.operand(Project.class).oneInput(b2 ->
-                  b2.operand(Filter.class).oneInput(b3 ->
-                      b3.operand(DruidQuery.class).noInputs())))
-          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .as(DruidProjectFilterTransposeRule.Config.class)
+          .withOperandFor(Project.class, Filter.class)
           .toRule();
   public static final DruidFilterProjectTransposeRule FILTER_PROJECT_TRANSPOSE =
       new DruidFilterProjectTransposeRule(RelFactories.LOGICAL_BUILDER);
@@ -818,6 +815,15 @@ public class DruidRules {
     public interface Config extends ProjectFilterTransposeRule.Config {
       @Override default DruidProjectFilterTransposeRule toRule() {
         return new DruidProjectFilterTransposeRule(this);
+      }
+
+      @Override default Config withOperandFor(Class<? extends Project> projectClass,
+          Class<? extends Filter> filterClass) {
+        return withOperandSupplier(b ->
+            b.operand(Project.class).oneInput(b2 ->
+                b2.operand(Filter.class).oneInput(b3 ->
+                    b3.operand(DruidQuery.class).noInputs())))
+            .as(Config.class);
       }
     }
   }

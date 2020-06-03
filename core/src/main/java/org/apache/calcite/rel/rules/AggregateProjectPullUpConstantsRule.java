@@ -16,13 +16,12 @@
  */
 package org.apache.calcite.rel.rules;
 
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPredicateList;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -57,43 +56,45 @@ import java.util.TreeMap;
  * reduced aggregate. If those constants are not used, another rule will remove
  * them from the project.
  */
-public class AggregateProjectPullUpConstantsRule extends RelOptRule
+public class AggregateProjectPullUpConstantsRule extends RelOptNewRule
     implements TransformationRule {
-  //~ Static fields/initializers ---------------------------------------------
-
   /** The singleton. */
   public static final AggregateProjectPullUpConstantsRule INSTANCE =
-      new AggregateProjectPullUpConstantsRule(LogicalAggregate.class,
-          LogicalProject.class, RelFactories.LOGICAL_BUILDER,
-          "AggregateProjectPullUpConstantsRule");
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(LogicalAggregate.class, LogicalProject.class)
+          .toRule();
 
   /** More general instance that matches any relational expression. */
   public static final AggregateProjectPullUpConstantsRule INSTANCE2 =
-      new AggregateProjectPullUpConstantsRule(LogicalAggregate.class,
-          RelNode.class, RelFactories.LOGICAL_BUILDER,
-          "AggregatePullUpConstantsRule");
+      INSTANCE.config()
+          .withOperandFor(LogicalAggregate.class, RelNode.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates an AggregateProjectPullUpConstantsRule.
-   *
-   * @param aggregateClass Aggregate class
-   * @param inputClass Input class, such as {@link LogicalProject}
-   * @param relBuilderFactory Builder for relational expressions
-   * @param description Description, or null to guess description
-   */
+  /** Creates an AggregateProjectPullUpConstantsRule. */
+  protected AggregateProjectPullUpConstantsRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public AggregateProjectPullUpConstantsRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends RelNode> inputClass,
       RelBuilderFactory relBuilderFactory, String description) {
-    super(
-        operandJ(aggregateClass, null, Aggregate::isSimple,
-            operand(inputClass, any())),
-        relBuilderFactory, description);
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .as(Config.class)
+        .withOperandFor(aggregateClass, inputClass));
   }
 
   //~ Methods ----------------------------------------------------------------
+
+  @Override public Config config() {
+    return (Config) config;
+  }
 
   public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
@@ -189,4 +190,26 @@ public class AggregateProjectPullUpConstantsRule extends RelOptRule
     call.transformTo(relBuilder.build());
   }
 
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default AggregateProjectPullUpConstantsRule toRule() {
+      return new AggregateProjectPullUpConstantsRule(this);
+    }
+
+    /** Defines an operand tree for the given classes.
+     *
+     * @param aggregateClass Aggregate class
+     * @param inputClass Input class, such as {@link LogicalProject}
+     */
+    default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
+        Class<? extends RelNode> inputClass) {
+      return withOperandSupplier(b ->
+          b.operand(aggregateClass)
+              .predicate(Aggregate::isSimple)
+              .oneInput(b2 ->
+                  b2.operand(inputClass).anyInputs()))
+          .as(Config.class);
+    }
+  }
 }

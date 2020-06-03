@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -151,15 +152,23 @@ public class Bindables {
 
   /** Rule that converts a {@link org.apache.calcite.rel.core.TableScan}
    * to bindable convention. */
-  public static class BindableTableScanRule extends RelOptRule {
+  public static class BindableTableScanRule extends RelOptNewRule {
+    public static final BindableTableScanRule INSTANCE =
+        Config.EMPTY
+          .withOperandSupplier(b ->
+              b.operand(LogicalTableScan.class).noInputs())
+          .as(Config.class)
+          .toRule();
 
-    /**
-     * Creates a BindableTableScanRule.
-     *
-     * @param relBuilderFactory Builder for relational expressions
-     */
+    /** Creates a BindableTableScanRule. */
+    protected BindableTableScanRule(Config config) {
+      super(config);
+    }
+
+    @Deprecated
     public BindableTableScanRule(RelBuilderFactory relBuilderFactory) {
-      super(operand(LogicalTableScan.class, none()), relBuilderFactory, null);
+      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+          .as(Config.class));
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
@@ -168,6 +177,13 @@ public class Bindables {
       if (BindableTableScan.canHandle(table)) {
         call.transformTo(
             BindableTableScan.create(scan.getCluster(), table));
+      }
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default BindableTableScanRule toRule() {
+        return new BindableTableScanRule(this);
       }
     }
   }
