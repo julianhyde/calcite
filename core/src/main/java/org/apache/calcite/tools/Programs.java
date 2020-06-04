@@ -107,10 +107,10 @@ public class Programs {
               ? JoinAssociateRule.INSTANCE
               : ProjectMergeRule.INSTANCE,
           AggregateStarTableRule.INSTANCE,
-          AggregateStarTableRule.INSTANCE2,
+          AggregateStarTableRule.INSTANCE2.get(),
           FilterTableScanRule.INSTANCE,
           FilterProjectTransposeRule.INSTANCE,
-          FilterJoinRule.FILTER_ON_JOIN,
+          FilterJoinRule.FILTER_ON_JOIN.get(),
           AggregateExpandDistinctAggregatesRule.INSTANCE,
           AggregateReduceFunctionsRule.INSTANCE,
           FilterAggregateTransposeRule.INSTANCE,
@@ -205,7 +205,7 @@ public class Programs {
       } else {
         // Create a program that gathers together joins as a MultiJoin.
         final HepProgram hep = new HepProgramBuilder()
-            .addRuleInstance(FilterJoinRule.FILTER_ON_JOIN)
+            .addRuleInstance(FilterJoinRule.FILTER_ON_JOIN.get())
             .addMatchOrder(HepMatchOrder.BOTTOM_UP)
             .addRuleInstance(JoinToMultiJoinRule.INSTANCE)
             .build();

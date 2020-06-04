@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
@@ -32,6 +32,7 @@ import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.ImmutableBeans;
 
 import java.util.Collections;
 import java.util.function.Predicate;
@@ -41,7 +42,8 @@ import java.util.function.Predicate;
  * a {@link org.apache.calcite.rel.core.Filter}
  * past a {@link org.apache.calcite.rel.core.Project}.
  */
-public class FilterProjectTransposeRule extends RelOptRule implements TransformationRule {
+public class FilterProjectTransposeRule extends RelOptNewRule
+    implements TransformationRule {
   /** The default instance of
    * {@link org.apache.calcite.rel.rules.FilterProjectTransposeRule}.
    *
@@ -51,13 +53,21 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
    * {@link org.apache.calcite.rel.core.Correlate} from being de-correlated.
    */
   public static final FilterProjectTransposeRule INSTANCE =
-      new FilterProjectTransposeRule(Filter.class, Project.class, true, true,
-          RelFactories.LOGICAL_BUILDER);
-
-  private final boolean copyFilter;
-  private final boolean copyProject;
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(Filter.class,
+              f -> !RexUtil.containsCorrelation(f.getCondition()),
+              Project.class, p -> true)
+          .withCopyFilter(true)
+          .withCopyProject(true)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
+
+  /** Creates a FilterProjectTransposeRule. */
+  protected FilterProjectTransposeRule(Config config) {
+    super(config);
+  }
 
   /**
    * Creates a FilterProjectTransposeRule.
@@ -69,15 +79,20 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
    * filter (since in some cases it can prevent a
    * {@link org.apache.calcite.rel.core.Correlate} from being de-correlated).
    */
+  @Deprecated
   public FilterProjectTransposeRule(
       Class<? extends Filter> filterClass,
       Class<? extends Project> projectClass,
       boolean copyFilter, boolean copyProject,
       RelBuilderFactory relBuilderFactory) {
-    this(filterClass,
-        filter -> !RexUtil.containsCorrelation(filter.getCondition()),
-        projectClass, project -> true,
-        copyFilter, copyProject, relBuilderFactory);
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(filterClass,
+            f -> !RexUtil.containsCorrelation(f.getCondition()),
+            projectClass, project -> true)
+        .withCopyFilter(copyFilter)
+        .withCopyProject(copyProject));
   }
 
   /**
@@ -92,6 +107,7 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
    * and/or the Project (using {@code projectPredicate} allows making the rule
    * more restrictive.
    */
+  @Deprecated
   public <F extends Filter, P extends Project> FilterProjectTransposeRule(
       Class<F> filterClass,
       Predicate<? super F> filterPredicate,
@@ -99,10 +115,16 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
       Predicate<? super P> projectPredicate,
       boolean copyFilter, boolean copyProject,
       RelBuilderFactory relBuilderFactory) {
-    this(
-        operandJ(filterClass, null, filterPredicate,
-            operandJ(projectClass, null, projectPredicate, any())),
-        copyFilter, copyProject, relBuilderFactory);
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .withOperandSupplier(b ->
+            b.operand(filterClass).predicate(filterPredicate)
+                .oneInput(b2 ->
+                    b2.operand(projectClass).predicate(projectPredicate)
+                        .anyInputs()))
+            .as(Config.class)
+            .withCopyFilter(copyFilter)
+            .withCopyProject(copyProject));
   }
 
   @Deprecated // to be removed before 2.0
@@ -111,26 +133,42 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
       RelFactories.FilterFactory filterFactory,
       Class<? extends Project> projectClass,
       RelFactories.ProjectFactory projectFactory) {
-    this(filterClass, filter -> !RexUtil.containsCorrelation(filter.getCondition()),
-        projectClass, project -> true,
-        filterFactory == null,
-        projectFactory == null,
-        RelBuilder.proto(filterFactory, projectFactory));
+    this(INSTANCE.config
+        .withRelBuilderFactory(RelBuilder.proto(filterFactory, projectFactory))
+        .withOperandSupplier(b ->
+            b.operand(filterClass)
+                .predicate(filter ->
+                    !RexUtil.containsCorrelation(filter.getCondition()))
+                .oneInput(b2 ->
+                    b2.operand(projectClass)
+                        .predicate(project -> true)
+                        .anyInputs()))
+        .as(Config.class)
+        .withCopyFilter(filterFactory == null)
+        .withCopyProject(projectFactory == null));
   }
 
+  @Deprecated
   protected FilterProjectTransposeRule(
       RelOptRuleOperand operand,
       boolean copyFilter,
       boolean copyProject,
       RelBuilderFactory relBuilderFactory) {
-    super(operand, relBuilderFactory, null);
-    this.copyFilter = copyFilter;
-    this.copyProject = copyProject;
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .withOperandSupplier(b -> b.exactly(operand))
+        .as(Config.class)
+        .withCopyFilter(copyFilter)
+        .withCopyProject(copyProject));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public Config config() {
+    return (Config) config;
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
     final Filter filter = call.rel(0);
     final Project project = call.rel(1);
 
@@ -149,7 +187,7 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
 
     final RelBuilder relBuilder = call.builder();
     RelNode newFilterRel;
-    if (copyFilter) {
+    if (config().isCopyFilter()) {
       final RelNode input = project.getInput();
       final RelTraitSet traitSet = filter.getTraitSet()
           .replaceIfs(RelCollationTraitDef.INSTANCE,
@@ -166,7 +204,7 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
     }
 
     RelNode newProjRel =
-        copyProject
+        config().isCopyProject()
             ? project.copy(project.getTraitSet(), newFilterRel,
                 project.getProjects(), project.getRowType())
             : relBuilder.push(newFilterRel)
@@ -174,5 +212,50 @@ public class FilterProjectTransposeRule extends RelOptRule implements Transforma
                 .build();
 
     call.transformTo(newProjRel);
+  }
+
+  /** Rule configuration.
+   *
+   * <p>If {@code copyFilter} is true, creates the same kind of Filter as
+   * matched in the rule, otherwise it creates a Filter using the RelBuilder
+   * obtained by the {@code relBuilderFactory}.
+   * Similarly for {@code copyProject}.
+   *
+   * <p>Defining predicates for the Filter (using {@code filterPredicate})
+   * and/or the Project (using {@code projectPredicate} allows making the rule
+   * more restrictive. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default FilterProjectTransposeRule toRule() {
+      return new FilterProjectTransposeRule(this);
+    }
+
+    /** Whether to create a {@link Filter} of the same convention as the
+     * matched Filter. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(true)
+    boolean isCopyFilter();
+
+    /** Sets {@link #isCopyFilter()}. */
+    Config withCopyFilter(boolean copyFilter);
+
+    /** Whether to create a {@link Project} of the same convention as the
+     * matched Project. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(true)
+    boolean isCopyProject();
+
+    /** Sets {@link #isCopyProject()}. */
+    Config withCopyProject(boolean copyProject);
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Predicate<Filter> filterPredicate,
+        Class<? extends Project> projectClass,
+        Predicate<Project> projectPredicate) {
+      return withOperandSupplier(b ->
+          b.operand(filterClass).predicate(filterPredicate).oneInput(b2 ->
+              b2.operand(projectClass).predicate(projectPredicate).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

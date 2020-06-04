@@ -88,7 +88,7 @@ public abstract class MaterializedViewRule extends RelOptNewRule {
 
   //~ Constructors -----------------------------------------------------------
 
-  /** Creates a AbstractMaterializedViewRule. */
+  /** Creates a MaterializedViewRule. */
   MaterializedViewRule(Config config) {
     super(config);
   }

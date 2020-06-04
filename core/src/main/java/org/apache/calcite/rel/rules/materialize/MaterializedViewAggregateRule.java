@@ -128,14 +128,28 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
     return Config.EMPTY
         .as(Config.class)
         .withFilterProjectTransposeRule(
-            new FilterProjectTransposeRule(Filter.class, Project.class, true,
-                true, relBuilderFactory))
+            FilterProjectTransposeRule.INSTANCE.config
+                .withRelBuilderFactory(relBuilderFactory)
+                .as(FilterProjectTransposeRule.Config.class)
+                .withOperandFor(Filter.class, filter ->
+                        !RexUtil.containsCorrelation(filter.getCondition()),
+                    Project.class, project -> true)
+                .withCopyFilter(true)
+                .withCopyProject(true)
+                .toRule())
         .withFilterAggregateTransposeRule(
-            new FilterAggregateTransposeRule(Filter.class, relBuilderFactory,
-                Aggregate.class))
+            FilterAggregateTransposeRule.INSTANCE.config
+                .withRelBuilderFactory(relBuilderFactory)
+                .as(FilterAggregateTransposeRule.Config.class)
+                .withOperandFor(Filter.class, Aggregate.class)
+                .toRule())
         .withAggregateProjectPullUpConstantsRule(
-            new AggregateProjectPullUpConstantsRule(Aggregate.class,
-                Filter.class, relBuilderFactory, "AggFilterPullUpConstants"))
+            AggregateProjectPullUpConstantsRule.INSTANCE.config
+                .withRelBuilderFactory(relBuilderFactory)
+                .withDescription("AggFilterPullUpConstants")
+                .as(AggregateProjectPullUpConstantsRule.Config.class)
+                .withOperandFor(Aggregate.class, Filter.class)
+                .toRule())
         .withProjectMergeRule(
             new ProjectMergeRule(true, ProjectMergeRule.DEFAULT_BLOAT,
                 relBuilderFactory))

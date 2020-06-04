@@ -17,11 +17,10 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalIntersect;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.tools.RelBuilder;
@@ -66,21 +65,32 @@ import java.math.BigDecimal;
  *
  * @see org.apache.calcite.rel.rules.UnionToDistinctRule
  */
-public class IntersectToDistinctRule extends RelOptRule implements TransformationRule {
+public class IntersectToDistinctRule extends RelOptNewRule
+    implements TransformationRule {
   public static final IntersectToDistinctRule INSTANCE =
-          new IntersectToDistinctRule(LogicalIntersect.class, RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(LogicalIntersect.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates an IntersectToDistinctRule. */
-  public IntersectToDistinctRule(Class<? extends Intersect> intersectClazz,
+  protected IntersectToDistinctRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
+  public IntersectToDistinctRule(Class<? extends Intersect> intersectClass,
       RelBuilderFactory relBuilderFactory) {
-    super(operand(intersectClazz, any()), relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(intersectClass));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Intersect intersect = call.rel(0);
     if (intersect.all) {
       return; // nothing we can do
@@ -122,5 +132,18 @@ public class IntersectToDistinctRule extends RelOptRule implements Transformatio
     // R3 on all attributes + count(c) as cnt
     // finally add a project to project out the last column
     call.transformTo(relBuilder.build());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default IntersectToDistinctRule toRule() {
+      return new IntersectToDistinctRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Intersect> intersectClass) {
+      return withOperandSupplier(b -> b.operand(intersectClass).anyInputs())
+          .as(Config.class);
+    }
   }
 }

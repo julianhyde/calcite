@@ -240,12 +240,30 @@ public class RelDecorrelator implements ReflectiveVisitor {
         .addRuleInstance(new AdjustProjectForCountAggregateRule(false, f))
         .addRuleInstance(new AdjustProjectForCountAggregateRule(true, f))
         .addRuleInstance(
-            new FilterJoinRule.FilterIntoJoinRule(true, f,
-                FilterJoinRule.TRUE_PREDICATE))
+            FilterJoinRule.FilterIntoJoinRule.Config.EMPTY
+                .withRelBuilderFactory(f)
+                .withOperandSupplier(b ->
+                    b.operand(Filter.class).oneInput(b2 ->
+                        b2.operand(Join.class).anyInputs()))
+                .withDescription("FilterJoinRule:filter")
+                .as(FilterJoinRule.FilterIntoJoinRule.Config.class)
+                .withSmart(true)
+                .withPredicate(FilterJoinRule.TRUE_PREDICATE)
+                .as(FilterJoinRule.FilterIntoJoinRule.Config.class)
+                .toRule())
         .addRuleInstance(
-            new FilterProjectTransposeRule(Filter.class, Project.class, true,
-                true, f))
-        .addRuleInstance(new FilterCorrelateRule(f))
+            FilterProjectTransposeRule.INSTANCE.config
+                .withRelBuilderFactory(f)
+                .as(FilterProjectTransposeRule.Config.class)
+                .withOperandFor(Filter.class, filter ->
+                        !RexUtil.containsCorrelation(filter.getCondition()),
+                    Project.class, project -> true)
+                .withCopyFilter(true)
+                .withCopyProject(true)
+                .toRule())
+        .addRuleInstance(FilterCorrelateRule.INSTANCE.config
+            .withRelBuilderFactory(f)
+            .toRule())
         .build();
 
     HepPlanner planner = createPlanner(program);

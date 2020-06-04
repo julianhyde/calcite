@@ -59,6 +59,7 @@ import org.apache.calcite.rel.rules.ProjectWindowTransposeRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.ReduceExpressionsRule;
 import org.apache.calcite.rel.rules.SemiJoinRule;
+import org.apache.calcite.rel.rules.SortExchangeRemoveConstantKeysRule;
 import org.apache.calcite.rel.rules.SortJoinTransposeRule;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
 import org.apache.calcite.rel.rules.SortRemoveConstantKeysRule;
@@ -116,14 +117,14 @@ public class RelOptRules {
 
   static final List<RelOptRule> BASE_RULES = ImmutableList.of(
       AggregateStarTableRule.INSTANCE,
-      AggregateStarTableRule.INSTANCE2,
+      AggregateStarTableRule.INSTANCE2.get(),
       CalciteSystemProperty.COMMUTE.value()
           ? JoinAssociateRule.INSTANCE
           : ProjectMergeRule.INSTANCE,
       FilterTableScanRule.INSTANCE,
       ProjectFilterTransposeRule.INSTANCE,
       FilterProjectTransposeRule.INSTANCE,
-      FilterJoinRule.FILTER_ON_JOIN,
+      FilterJoinRule.FILTER_ON_JOIN.get(),
       JoinPushExpressionsRule.INSTANCE,
       AggregateExpandDistinctAggregatesRule.INSTANCE,
       AggregateCaseToFilterRule.INSTANCE,
@@ -139,7 +140,7 @@ public class RelOptRules {
       SortRemoveConstantKeysRule.INSTANCE,
       SortUnionTransposeRule.INSTANCE,
       ExchangeRemoveConstantKeysRule.EXCHANGE_INSTANCE,
-      ExchangeRemoveConstantKeysRule.SORT_EXCHANGE_INSTANCE);
+      SortExchangeRemoveConstantKeysRule.INSTANCE);
 
   static final List<RelOptRule> ABSTRACT_RULES = ImmutableList.of(
       AggregateProjectPullUpConstantsRule.INSTANCE2,
@@ -163,8 +164,8 @@ public class RelOptRules {
       IntersectToDistinctRule.INSTANCE);
 
   static final List<RelOptRule> ABSTRACT_RELATIONAL_RULES = ImmutableList.of(
-      FilterJoinRule.FILTER_ON_JOIN,
-      FilterJoinRule.JOIN,
+      FilterJoinRule.FILTER_ON_JOIN.get(),
+      FilterJoinRule.JOIN.get(),
       AbstractConverter.ExpandConversionRule.INSTANCE,
       JoinCommuteRule.INSTANCE,
       SemiJoinRule.PROJECT,

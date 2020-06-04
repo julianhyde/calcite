@@ -16,10 +16,10 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
@@ -36,30 +36,33 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see FilterMergeRule
  */
-public class FilterCalcMergeRule extends RelOptRule implements TransformationRule {
+public class FilterCalcMergeRule extends RelOptNewRule
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   public static final FilterCalcMergeRule INSTANCE =
-      new FilterCalcMergeRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(Filter.class, LogicalCalc.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a FilterCalcMergeRule.
-   *
-   * @param relBuilderFactory Builder for relational expressions
-   */
+  /** Creates a FilterCalcMergeRule. */
+  protected FilterCalcMergeRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public FilterCalcMergeRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(
-            Filter.class,
-            operand(LogicalCalc.class, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final LogicalFilter filter = call.rel(0);
     final LogicalCalc calc = call.rel(1);
 
@@ -90,5 +93,21 @@ public class FilterCalcMergeRule extends RelOptRule implements TransformationRul
     final LogicalCalc newCalc =
         LogicalCalc.create(calc.getInput(), mergedProgram);
     call.transformTo(newCalc);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default FilterCalcMergeRule toRule() {
+      return new FilterCalcMergeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends Calc> calcClass) {
+      return withOperandSupplier(b ->
+          b.operand(filterClass).oneInput(b2 ->
+              b2.operand(calcClass).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

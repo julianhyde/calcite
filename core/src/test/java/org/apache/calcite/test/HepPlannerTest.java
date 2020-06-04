@@ -24,7 +24,6 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalIntersect;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.rules.CalcMergeRule;
@@ -98,11 +97,16 @@ class HepPlannerTest extends RelOptTestBase {
             programBuilder.build());
 
     planner.addRule(
-        new CoerceInputsRule(LogicalUnion.class, false,
-            RelFactories.LOGICAL_BUILDER));
+        CoerceInputsRule.INSTANCE.config()
+            .withCoerceNames(false)
+            .withConsumerRelClass(LogicalUnion.class)
+            .toRule());
     planner.addRule(
-        new CoerceInputsRule(LogicalIntersect.class, false,
-            RelFactories.LOGICAL_BUILDER));
+        CoerceInputsRule.INSTANCE.config()
+            .withCoerceNames(false)
+            .withConsumerRelClass(LogicalIntersect.class)
+            .withDescription("CoerceInputsRule:Intersection") // TODO
+            .toRule());
 
     final String sql = "(select name from dept union select ename from emp)\n"
         + "intersect (select fname from customer.contact)";

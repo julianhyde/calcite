@@ -17,7 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
@@ -44,37 +44,43 @@ import java.util.List;
  *
  * @see org.apache.calcite.rel.rules.AggregateFilterTransposeRule
  */
-public class FilterAggregateTransposeRule extends RelOptRule implements TransformationRule {
-
+public class FilterAggregateTransposeRule extends RelOptNewRule
+    implements TransformationRule {
   /** The default instance of
    * {@link FilterAggregateTransposeRule}.
    *
    * <p>It matches any kind of agg. or filter */
   public static final FilterAggregateTransposeRule INSTANCE =
-      new FilterAggregateTransposeRule(Filter.class,
-          RelFactories.LOGICAL_BUILDER, Aggregate.class);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(Filter.class, Aggregate.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a FilterAggregateTransposeRule.
-   *
-   * <p>If {@code filterFactory} is null, creates the same kind of filter as
-   * matched in the rule. Similarly {@code aggregateFactory}.</p>
-   */
-  public FilterAggregateTransposeRule(
-      Class<? extends Filter> filterClass,
-      RelBuilderFactory builderFactory,
-      Class<? extends Aggregate> aggregateClass) {
-    this(
-        operand(filterClass,
-            operand(aggregateClass, any())),
-        builderFactory);
+  /** Creates a FilterAggregateTransposeRule. */
+  protected FilterAggregateTransposeRule(Config config) {
+    super(config);
   }
 
+  @Deprecated
+  public FilterAggregateTransposeRule(
+      Class<? extends Filter> filterClass,
+      RelBuilderFactory relBuilderFactory,
+      Class<? extends Aggregate> aggregateClass) {
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(filterClass, aggregateClass));
+  }
+
+  @Deprecated
   protected FilterAggregateTransposeRule(RelOptRuleOperand operand,
-      RelBuilderFactory builderFactory) {
-    super(operand, builderFactory, null);
+      RelBuilderFactory relBuilderFactory) {
+    this(INSTANCE.config
+        .withRelBuilderFactory(relBuilderFactory)
+        .withOperandSupplier(b -> b.exactly(operand))
+        .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
@@ -149,5 +155,21 @@ public class FilterAggregateTransposeRule extends RelOptRule implements Transfor
       }
     }
     return true;
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default FilterAggregateTransposeRule toRule() {
+      return new FilterAggregateTransposeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends Aggregate> aggregateClass) {
+      return withOperandSupplier(b ->
+          b.operand(filterClass).oneInput(b2 ->
+              b2.operand(aggregateClass).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

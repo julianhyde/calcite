@@ -152,7 +152,7 @@ class MutableRelTest {
         true,
         ImmutableList.of(
             FilterProjectTransposeRule.INSTANCE,
-            FilterJoinRule.FILTER_ON_JOIN,
+            FilterJoinRule.FILTER_ON_JOIN.get(),
             ProjectMergeRule.INSTANCE,
             SemiJoinRule.PROJECT));
   }

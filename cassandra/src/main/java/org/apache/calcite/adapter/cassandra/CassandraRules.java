@@ -398,14 +398,14 @@ public class CassandraRules {
    */
   private static class CassandraLimitRule extends RelOptNewRule {
     private static final CassandraLimitRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(EnumerableLimit.class)
-                  .oneInput(b2 ->
-                      b2.operand(CassandraToEnumerableConverter.class)
-                          .anyInputs()))
-          .as(Config.class)
-          .toRule();
+        Config.EMPTY
+            .withOperandSupplier(b ->
+                b.operand(EnumerableLimit.class)
+                    .oneInput(b2 ->
+                        b2.operand(CassandraToEnumerableConverter.class)
+                            .anyInputs()))
+            .as(Config.class)
+            .toRule();
 
     /** Creates a CassandraLimitRule. */
     protected CassandraLimitRule(Config config) {

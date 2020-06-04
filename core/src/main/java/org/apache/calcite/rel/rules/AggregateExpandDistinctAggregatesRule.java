@@ -206,7 +206,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptNewRule
       return;
     }
 
-    if (config().useGroupingSets()) {
+    if (config().isUsingGroupingSets()) {
       rewriteUsingGroupingSets(call, aggregate);
       return;
     }
@@ -922,9 +922,9 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptNewRule
     /** Whether to use GROUPING SETS, default true. */
     @ImmutableBeans.Property
     @ImmutableBeans.BooleanDefault(true)
-    boolean useGroupingSets();
+    boolean isUsingGroupingSets();
 
-    /** Sets {@link #useGroupingSets()}. */
+    /** Sets {@link #isUsingGroupingSets()}. */
     Config withUsingGroupingSets(boolean usingGroupingSets);
   }
 }

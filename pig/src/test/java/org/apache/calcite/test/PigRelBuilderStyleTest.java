@@ -25,6 +25,8 @@ import org.apache.calcite.adapter.pig.PigTable;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterJoinRule;
@@ -248,12 +250,24 @@ class PigRelBuilderStyleTest extends AbstractPigTest {
       planner.addRule(r);
     }
     planner.removeRule(FilterAggregateTransposeRule.INSTANCE);
-    planner.removeRule(FilterJoinRule.FILTER_ON_JOIN);
+    planner.removeRule(FilterJoinRule.FILTER_ON_JOIN.get());
+    planner.addRule(FilterAggregateTransposeRule.INSTANCE.config
+        .withRelBuilderFactory(builderFactory)
+        .as(FilterAggregateTransposeRule.Config.class)
+        .withOperandFor(PigFilter.class, PigAggregate.class)
+        .toRule());
     planner.addRule(
-        new FilterAggregateTransposeRule(PigFilter.class, builderFactory,
-            PigAggregate.class));
-    planner.addRule(
-        new FilterIntoJoinRule(true, builderFactory, TRUE_PREDICATE));
+        FilterJoinRule.FILTER_ON_JOIN.get().config
+            .withRelBuilderFactory(builderFactory)
+            .withOperandSupplier(b ->
+                b.operand(Filter.class).oneInput(b2 ->
+                    b2.operand(Join.class).anyInputs()))
+            .withDescription("FilterJoinRule:filter")
+            .as(FilterIntoJoinRule.Config.class)
+            .withSmart(true)
+            .withPredicate(TRUE_PREDICATE)
+            .as(FilterIntoJoinRule.Config.class)
+            .toRule());
     planner.setRoot(root);
     return planner;
   }

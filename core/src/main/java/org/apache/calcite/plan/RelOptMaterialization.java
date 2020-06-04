@@ -273,7 +273,7 @@ public class RelOptMaterialization {
         ImmutableList.of(
             JoinProjectTransposeRule.RIGHT_PROJECT,
             JoinProjectTransposeRule.LEFT_PROJECT,
-            FilterJoinRule.FilterIntoJoinRule.FILTER_ON_JOIN,
+            FilterJoinRule.FilterIntoJoinRule.FILTER_ON_JOIN.get(),
             ProjectRemoveRule.INSTANCE,
             ProjectMergeRule.INSTANCE),
         false,

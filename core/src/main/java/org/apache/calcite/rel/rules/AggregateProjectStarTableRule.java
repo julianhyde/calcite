@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -26,7 +25,7 @@ import org.apache.calcite.schema.impl.StarTable;
 /** Variant of {@link AggregateStarTableRule} that accepts a {@link Project}
  * between the {@link Aggregate} and its {@link StarTable.StarTableScan}
  * input. */
-class AggregateProjectStarTableRule extends AggregateStarTableRule {
+public class AggregateProjectStarTableRule extends AggregateStarTableRule {
   public static final AggregateProjectStarTableRule INSTANCE =
       Config.EMPTY.as(Config.class)
           .withOperandFor(Aggregate.class, Project.class,

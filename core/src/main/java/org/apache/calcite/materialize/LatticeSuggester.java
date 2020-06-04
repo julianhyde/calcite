@@ -77,8 +77,8 @@ public class LatticeSuggester {
 
   private static final HepProgram PROGRAM =
       new HepProgramBuilder()
-          .addRuleInstance(FilterJoinRule.FILTER_ON_JOIN)
-          .addRuleInstance(FilterJoinRule.JOIN)
+          .addRuleInstance(FilterJoinRule.FILTER_ON_JOIN.get())
+          .addRuleInstance(FilterJoinRule.JOIN.get())
           .build();
 
   /** Lattices, indexed by digest. Uses LinkedHashMap for determinacy. */
