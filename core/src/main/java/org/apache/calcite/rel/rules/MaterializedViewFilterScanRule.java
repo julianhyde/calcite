@@ -18,8 +18,8 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptMaterializations;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.SubstitutionVisitor;
@@ -28,7 +28,6 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -39,11 +38,15 @@ import java.util.List;
  * Planner rule that converts
  * a {@link org.apache.calcite.rel.core.Filter}
  * on a {@link org.apache.calcite.rel.core.TableScan}
- * to a {@link org.apache.calcite.rel.core.Filter} on Materialized View
+ * to a {@link org.apache.calcite.rel.core.Filter} on a Materialized View.
  */
-public class MaterializedViewFilterScanRule extends RelOptRule implements TransformationRule {
+public class MaterializedViewFilterScanRule extends RelOptNewRule
+    implements TransformationRule {
   public static final MaterializedViewFilterScanRule INSTANCE =
-      new MaterializedViewFilterScanRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(Filter.class, TableScan.class)
+          .toRule();
 
   private final HepProgram program = new HepProgramBuilder()
       .addRuleInstance(FilterProjectTransposeRule.INSTANCE)
@@ -53,14 +56,19 @@ public class MaterializedViewFilterScanRule extends RelOptRule implements Transf
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a MaterializedViewFilterScanRule. */
+  protected MaterializedViewFilterScanRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public MaterializedViewFilterScanRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(Filter.class, operand(TableScan.class, null, none())),
-        relBuilderFactory, "MaterializedViewFilterScanRule");
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Filter filter = call.rel(0);
     final TableScan scan = call.rel(1);
     apply(call, filter, scan);
@@ -72,7 +80,7 @@ public class MaterializedViewFilterScanRule extends RelOptRule implements Transf
         planner.getMaterializations();
     if (!materializations.isEmpty()) {
       RelNode root = filter.copy(filter.getTraitSet(),
-          Collections.singletonList((RelNode) scan));
+          Collections.singletonList(scan));
       List<RelOptMaterialization> applicableMaterializations =
           RelOptMaterializations.getApplicableMaterializations(root, materializations);
       for (RelOptMaterialization materialization : applicableMaterializations) {
@@ -90,6 +98,22 @@ public class MaterializedViewFilterScanRule extends RelOptRule implements Transf
           }
         }
       }
+    }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default MaterializedViewFilterScanRule toRule() {
+      return new MaterializedViewFilterScanRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends TableScan> scanClass) {
+      return withOperandSupplier(b ->
+          b.operand(filterClass).oneInput(b2 ->
+              b2.operand(scanClass).noInputs()))
+          .as(Config.class);
     }
   }
 }

@@ -17,13 +17,13 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
 
 import java.util.function.Predicate;
+
 
 /**
  * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalProject} to an
@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 class EnumerableProjectRule extends ConverterRule {
   EnumerableProjectRule() {
     super(LogicalProject.class,
-        (Predicate<LogicalProject>) RelOptUtil::notContainsWindowedAgg,
+        (Predicate<LogicalProject>) p -> !p.containsOver(),
         Convention.NONE, EnumerableConvention.INSTANCE,
         RelFactories.LOGICAL_BUILDER, "EnumerableProjectRule");
   }

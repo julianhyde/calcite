@@ -17,7 +17,6 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.RelFactories;
@@ -32,7 +31,7 @@ import java.util.function.Predicate;
 class EnumerableFilterRule extends ConverterRule {
   EnumerableFilterRule() {
     super(LogicalFilter.class,
-        (Predicate<LogicalFilter>) RelOptUtil::notContainsWindowedAgg,
+        (Predicate<LogicalFilter>) f -> !f.containsOver(),
         Convention.NONE, EnumerableConvention.INSTANCE,
         RelFactories.LOGICAL_BUILDER, "EnumerableFilterRule");
   }

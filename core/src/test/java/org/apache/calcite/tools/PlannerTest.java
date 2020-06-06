@@ -113,7 +113,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * Unit tests for {@link Planner}.
  */
-public class PlannerTest {
+class PlannerTest {
   private void checkParseAndConvert(String query,
       String queryFromParseTree, String expectedRelExpr) throws Exception {
     Planner planner = getPlanner(null);
@@ -138,7 +138,7 @@ public class PlannerTest {
         + "    LogicalTableScan(table=[[hr, emps]])\n");
   }
 
-  @Test void testParseIdentiferMaxLengthWithDefault() {
+  @Test void testParseIdentifierMaxLengthWithDefault() {
     Assertions.assertThrows(SqlParseException.class, () -> {
       Planner planner = getPlanner(null, SqlParser.configBuilder().build());
       planner.parse("select name as "
@@ -146,7 +146,7 @@ public class PlannerTest {
     });
   }
 
-  @Test void testParseIdentiferMaxLengthWithIncreased() throws Exception {
+  @Test void testParseIdentifierMaxLengthWithIncreased() throws Exception {
     Planner planner = getPlanner(null,
         SqlParser.configBuilder().setIdentifierMaxLength(512).build());
     planner.parse("select name as "
@@ -176,7 +176,7 @@ public class PlannerTest {
             SqlExplainLevel.EXPPLAN_ATTRIBUTES));
   }
 
-  @Test void testParseFails() throws SqlParseException {
+  @Test void testParseFails() {
     Planner planner = getPlanner(null);
     try {
       SqlNode parse =
@@ -502,7 +502,7 @@ public class PlannerTest {
       + " [rel#17:EnumerableUnion.ENUMERABLE.[](input#0=RelSubset#26,input#1=RelSubset#19,all=true)]"
       + " has lower cost {4.0 rows, 4.0 cpu, 0.0 io}"
       + " than best cost {5.0 rows, 5.0 cpu, 0.0 io} of subset [rel#15:Subset#5.ENUMERABLE.[]]")
-  @Test void trimEmptyUnion32viaRelBuidler() throws Exception {
+  @Test void trimEmptyUnion32viaRelBuidler() {
     RelBuilder relBuilder = RelBuilder.create(RelBuilderTest.config().build());
 
     // This somehow blows up (see trimEmptyUnion32, the second case)
@@ -692,8 +692,7 @@ public class PlannerTest {
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_WINDOW_RULE,
-            EnumerableRules.ENUMERABLE_SORT_RULE,
-            ProjectToWindowRule.PROJECT);
+            EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRule.PROJECT.get());
     Planner planner = getPlanner(null,
         SqlParser.configBuilder().setLex(Lex.JAVA).build(),
         Programs.of(ruleSet));
@@ -803,7 +802,7 @@ public class PlannerTest {
   }
 
   /** Unit test that calls {@link Planner#transform} twice with
-   *  rule name conflicts */
+   * rule name conflicts */
   @Test void testPlanTransformWithRuleNameConflicts() throws Exception {
     // Create two dummy rules with identical rules.
     RelOptRule rule1 = new RelOptRule(
@@ -911,24 +910,20 @@ public class PlannerTest {
             + "  MockJdbcTableScan(table=[[hr, emps]])\n"));
   }
 
-  @Test void testPlan5WayJoin()
-      throws Exception {
+  @Test void testPlan5WayJoin() throws Exception {
     checkJoinNWay(5); // LoptOptimizeJoinRule disabled; takes about .4s
   }
 
-  @Test void testPlan9WayJoin()
-      throws Exception {
+  @Test void testPlan9WayJoin() throws Exception {
     checkJoinNWay(9); // LoptOptimizeJoinRule enabled; takes about 0.04s
   }
 
-  @Test void testPlan35WayJoin()
-      throws Exception {
+  @Test void testPlan35WayJoin() throws Exception {
     checkJoinNWay(35); // takes about 2s
   }
 
   @Tag("slow")
-  @Test void testPlan60WayJoin()
-      throws Exception {
+  @Test void testPlan60WayJoin() throws Exception {
     checkJoinNWay(60); // takes about 15s
   }
 
@@ -1316,7 +1311,7 @@ public class PlannerTest {
 
   /** User-defined aggregate function. */
   public static class MyCountAggFunction extends SqlAggFunction {
-    public MyCountAggFunction() {
+    MyCountAggFunction() {
       super("MY_COUNT", null, SqlKind.OTHER_FUNCTION, ReturnTypes.BIGINT, null,
           OperandTypes.ANY, SqlFunctionCategory.NUMERIC, false, false,
           Optionality.FORBIDDEN);
@@ -1383,11 +1378,14 @@ public class PlannerTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-648">[CALCITE-648]
    * Update ProjectMergeRule description for new naming convention</a>. */
-  @Test void testMergeProjectForceMode() throws Exception {
+  @Test void testMergeProjectForceMode() {
     RuleSet ruleSet =
         RuleSets.ofList(
-            new ProjectMergeRule(true, ProjectMergeRule.DEFAULT_BLOAT,
-                RelBuilder.proto(RelFactories.DEFAULT_PROJECT_FACTORY)));
+            ProjectMergeRule.INSTANCE.config
+                .withRelBuilderFactory(
+                    RelBuilder.proto(RelFactories.DEFAULT_PROJECT_FACTORY))
+                .as(ProjectMergeRule.Config.class)
+                .toRule());
     Planner planner = getPlanner(null, Programs.of(ruleSet));
     planner.close();
   }
@@ -1396,7 +1394,7 @@ public class PlannerTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3376">[CALCITE-3376]
    * VolcanoPlanner CannotPlanException: best rel is null even though there is
    * an option with non-infinite cost</a>. */
-  @Test void testCorrelatedJoinWithIdenticalInputs() throws Exception {
+  @Test void testCorrelatedJoinWithIdenticalInputs() {
     final RelBuilder builder = RelBuilder.create(RelBuilderTest.config().build());
     final RuleSet ruleSet =
         RuleSets.ofList(

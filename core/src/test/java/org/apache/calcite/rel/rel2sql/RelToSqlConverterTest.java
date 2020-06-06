@@ -2788,7 +2788,7 @@ class RelToSqlConverterTest {
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ProjectToWindowRule.class);
     HepPlanner hepPlanner = new HepPlanner(builder.build());
-    RuleSet rules = RuleSets.ofList(ProjectToWindowRule.PROJECT);
+    RuleSet rules = RuleSets.ofList(ProjectToWindowRule.PROJECT.get());
 
     sql(query0).optimize(rules, hepPlanner).ok(expected0);
     sql(query1).optimize(rules, hepPlanner).ok(expected1);

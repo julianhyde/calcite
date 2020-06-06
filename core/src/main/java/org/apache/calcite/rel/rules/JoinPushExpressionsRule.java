@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -35,21 +35,34 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * "emp.deptno + 1". The resulting join condition is a simple combination
  * of AND, equals, and input fields, plus the remaining non-equal conditions.
  */
-public class JoinPushExpressionsRule extends RelOptRule implements TransformationRule {
-
+public class JoinPushExpressionsRule extends RelOptNewRule
+    implements TransformationRule {
   public static final JoinPushExpressionsRule INSTANCE =
-      new JoinPushExpressionsRule(Join.class, RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(Join.class)
+          .as(Config.class)
+          .toRule();
 
   /** Creates a JoinPushExpressionsRule. */
-  public JoinPushExpressionsRule(Class<? extends Join> clazz,
-      RelBuilderFactory relBuilderFactory) {
-    super(operand(clazz, any()), relBuilderFactory, null);
+  protected JoinPushExpressionsRule(Config config) {
+    super(config);
   }
 
   @Deprecated // to be removed before 2.0
-  public JoinPushExpressionsRule(Class<? extends Join> clazz,
+  public JoinPushExpressionsRule(Class<? extends Join> joinClass,
+      RelBuilderFactory relBuilderFactory) {
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(joinClass));
+  }
+
+  @Deprecated // to be removed before 2.0
+  public JoinPushExpressionsRule(Class<? extends Join> joinClass,
       RelFactories.ProjectFactory projectFactory) {
-    this(clazz, RelBuilder.proto(projectFactory));
+    this(INSTANCE.config.withRelBuilderFactory(RelBuilder.proto(projectFactory))
+        .as(Config.class)
+        .withOperandFor(joinClass));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -67,5 +80,18 @@ public class JoinPushExpressionsRule extends RelOptRule implements Transformatio
     }
 
     call.transformTo(newJoin);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default JoinPushExpressionsRule toRule() {
+      return new JoinPushExpressionsRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Join> joinClass) {
+      return withOperandSupplier(b -> b.operand(joinClass).anyInputs())
+          .as(Config.class);
+    }
   }
 }

@@ -28,7 +28,6 @@ import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -126,8 +125,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
     final RelNode input = filter.getInput();
     final RexNode origFilter = filter.getCondition();
 
-    if ((origProject != null)
-        && RexOver.containsOver(origProject.getProjects(), null)) {
+    if (origProject != null && origProject.containsOver()) {
       // Cannot push project through filter if project contains a windowed
       // aggregate -- it will affect row counts. Abort this rule
       // invocation; pushdown will be considered after the windowed

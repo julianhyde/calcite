@@ -28,7 +28,6 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -172,7 +171,7 @@ public class FilterProjectTransposeRule extends RelOptNewRule
     final Filter filter = call.rel(0);
     final Project project = call.rel(1);
 
-    if (RexOver.containsOver(project.getProjects(), null)) {
+    if (project.containsOver()) {
       // In general a filter cannot be pushed below a windowing calculation.
       // Applying the filter before the aggregation function changes
       // the results of the windowing invocation.

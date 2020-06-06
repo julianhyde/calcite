@@ -96,7 +96,7 @@ class MutableRelTest {
         "Window",
         "select sal, avg(sal) over (partition by deptno) from emp",
         false,
-        ImmutableList.of(ProjectToWindowRule.PROJECT));
+        ImmutableList.of(ProjectToWindowRule.PROJECT.get()));
   }
 
   @Test void testConvertCollect() {

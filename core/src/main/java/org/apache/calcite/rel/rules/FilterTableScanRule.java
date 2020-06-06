@@ -107,23 +107,19 @@ public class FilterTableScanRule extends RelOptNewRule {
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
-    final Filter filter;
-    final TableScan scan;
-    switch (call.rels.length) {
-    case 2:
+    if (call.rels.length == 2) {
       // the ordinary variant
-      filter = call.rel(0);
-      scan = call.rel(1);
-      break;
-    case 3:
+      final Filter filter = call.rel(0);
+      final TableScan scan = call.rel(1);
+      apply(call, filter, scan);
+    } else if (call.rels.length == 3) {
       // the variant with intervening EnumerableInterpreter
-      filter = call.rel(0);
-      scan = call.rel(2);
-      break;
-    default:
+      final Filter filter = call.rel(0);
+      final TableScan scan = call.rel(2);
+      apply(call, filter, scan);
+    } else {
       throw new AssertionError();
     }
-    apply(call, filter, scan);
   }
 
   protected void apply(RelOptRuleCall call, Filter filter, TableScan scan) {

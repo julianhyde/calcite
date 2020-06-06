@@ -52,12 +52,14 @@ public abstract class RelOptNewRule extends RelOptRule {
   public interface Config {
     /** Empty configuration. */
     RelOptNewRule.Config EMPTY = ImmutableBeans.create(Config.class)
-        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER);
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        .withOperandSupplier(b -> {
+          throw new IllegalArgumentException("Rules must have at least one "
+              + "operand. Call Config.withOperandSupplier to specify them.");
+        });
 
     /** Creates a rule that uses this configuration. Sub-class must override. */
-    default RelOptRule toRule() {
-      throw new UnsupportedOperationException();
-    }
+    RelOptRule toRule();
 
     /** Casts this configuration to another type, usually a sub-class. */
     default <T> T as(Class<T> class_) {

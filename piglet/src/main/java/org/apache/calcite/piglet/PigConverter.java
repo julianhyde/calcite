@@ -63,7 +63,7 @@ public class PigConverter extends PigServer {
   // Basic transformation and implementation rules to optimize for Pig-translated logical plans
   private static final List<RelOptRule> PIG_RULES =
       ImmutableList.of(
-          ProjectToWindowRule.PROJECT,
+          ProjectToWindowRule.PROJECT.get(),
           PigToSqlAggregateRule.INSTANCE,
           EnumerableRules.ENUMERABLE_VALUES_RULE,
           EnumerableRules.ENUMERABLE_JOIN_RULE,

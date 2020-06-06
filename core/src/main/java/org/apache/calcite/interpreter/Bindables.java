@@ -28,7 +28,6 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelCollation;
@@ -298,7 +297,7 @@ public class Bindables {
      */
     public BindableFilterRule(RelBuilderFactory relBuilderFactory) {
       super(LogicalFilter.class,
-          (Predicate<LogicalFilter>) RelOptUtil::notContainsWindowedAgg,
+          (Predicate<LogicalFilter>) f -> !f.containsOver(),
           Convention.NONE, BindableConvention.INSTANCE, relBuilderFactory,
           "BindableFilterRule");
     }
@@ -365,7 +364,7 @@ public class Bindables {
      */
     public BindableProjectRule(RelBuilderFactory relBuilderFactory) {
       super(LogicalProject.class,
-          (Predicate<LogicalProject>) RelOptUtil::notContainsWindowedAgg,
+          (Predicate<LogicalProject>) p -> !p.containsOver(),
           Convention.NONE, BindableConvention.INSTANCE, relBuilderFactory,
           "BindableProjectRule");
     }

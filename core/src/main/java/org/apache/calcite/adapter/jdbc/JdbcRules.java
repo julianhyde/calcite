@@ -58,7 +58,6 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexMultisetUtil;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
@@ -515,8 +514,7 @@ public class JdbcRules {
     public JdbcProjectRule(final JdbcConvention out,
         RelBuilderFactory relBuilderFactory) {
       super(Project.class, (Predicate<Project>) project ->
-              (out.dialect.supportsWindowFunctions()
-                  || !RexOver.containsOver(project.getProjects(), null))
+              (out.dialect.supportsWindowFunctions() || !project.containsOver())
                   && !userDefinedFunctionInProject(project),
           Convention.NONE, out, relBuilderFactory, "JdbcProjectRule");
     }

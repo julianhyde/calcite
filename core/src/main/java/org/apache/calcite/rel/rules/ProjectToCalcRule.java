@@ -38,7 +38,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see FilterToCalcRule
  */
-public class ProjectToCalcRule extends RelOptNewRule {
+public class ProjectToCalcRule extends RelOptNewRule
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   public static final ProjectToCalcRule INSTANCE =

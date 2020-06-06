@@ -18,12 +18,11 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreter;
 import org.apache.calcite.interpreter.Bindables;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
@@ -51,7 +50,7 @@ import java.util.stream.Collectors;
  *
  * @see FilterTableScanRule
  */
-public abstract class ProjectTableScanRule extends RelOptRule {
+public class ProjectTableScanRule extends RelOptNewRule {
   @SuppressWarnings("Guava")
   @Deprecated // to be removed before 2.0
   public static final com.google.common.base.Predicate<TableScan> PREDICATE =
@@ -59,41 +58,42 @@ public abstract class ProjectTableScanRule extends RelOptRule {
 
   /** Rule that matches Project on TableScan. */
   public static final ProjectTableScanRule INSTANCE =
-      new ProjectTableScanRule(
-          operand(Project.class,
-              operandJ(TableScan.class, null, ProjectTableScanRule::test,
-                  none())),
-          RelFactories.LOGICAL_BUILDER,
-          "ProjectScanRule") {
-        @Override public void onMatch(RelOptRuleCall call) {
-          final Project project = call.rel(0);
-          final TableScan scan = call.rel(1);
-          apply(call, project, scan);
-        }
-      };
+      Config.EMPTY
+          .withOperandSupplier(b ->
+              b.operand(Project.class).oneInput(b2 ->
+                  b2.operand(TableScan.class)
+                      .predicate(ProjectTableScanRule::test)
+                      .noInputs()))
+          .as(Config.class)
+          .toRule();
 
   /** Rule that matches Project on EnumerableInterpreter on TableScan. */
   public static final ProjectTableScanRule INTERPRETER =
-      new ProjectTableScanRule(
-          operand(Project.class,
-              operand(EnumerableInterpreter.class,
-                  operandJ(TableScan.class, null, ProjectTableScanRule::test,
-                      none()))),
-          RelFactories.LOGICAL_BUILDER,
-          "ProjectScanRule:interpreter") {
-        @Override public void onMatch(RelOptRuleCall call) {
-          final Project project = call.rel(0);
-          final TableScan scan = call.rel(2);
-          apply(call, project, scan);
-        }
-      };
+      Config.EMPTY
+          .withOperandSupplier(b ->
+              b.operand(Project.class).oneInput(b2 ->
+                  b2.operand(EnumerableInterpreter.class).oneInput(b3 ->
+                      b3.operand(TableScan.class)
+                          .predicate(ProjectTableScanRule::test)
+                          .noInputs())))
+          .withDescription("ProjectTableScanRule:interpreter")
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a ProjectTableScanRule. */
+  protected ProjectTableScanRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public ProjectTableScanRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    super(operand, relBuilderFactory, description);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .withOperandSupplier(b -> b.exactly(operand))
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -102,6 +102,22 @@ public abstract class ProjectTableScanRule extends RelOptRule {
     // We can only push projects into a ProjectableFilterableTable.
     final RelOptTable table = scan.getTable();
     return table.unwrap(ProjectableFilterableTable.class) != null;
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
+    if (call.rels.length == 2) {
+      // the ordinary variant
+      final Project project = call.rel(0);
+      final TableScan scan = call.rel(1);
+      apply(call, project, scan);
+    } else if (call.rels.length == 3) {
+      // the variant with intervening EnumerableInterpreter
+      final Project project = call.rel(0);
+      final TableScan scan = call.rel(2);
+      apply(call, project, scan);
+    } else {
+      throw new AssertionError();
+    }
   }
 
   protected void apply(RelOptRuleCall call, Project project, TableScan scan) {
@@ -126,7 +142,7 @@ public abstract class ProjectTableScanRule extends RelOptRule {
           (Bindables.BindableTableScan) scan;
       filtersPushDown = bindableScan.filters;
       projectsPushDown = selectedColumns.stream()
-          .map(col -> bindableScan.projects.get(col))
+          .map(bindableScan.projects::get)
           .collect(Collectors.toList());
     } else {
       filtersPushDown = ImmutableList.of();
@@ -147,6 +163,13 @@ public abstract class ProjectTableScanRule extends RelOptRule {
               .push(newScan)
               .project(newProjectRexNodes)
               .build());
+    }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default ProjectTableScanRule toRule() {
+      return new ProjectTableScanRule(this);
     }
   }
 }

@@ -16,14 +16,13 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -53,23 +52,27 @@ import java.util.stream.Collectors;
  *
  * <blockquote>
  * <pre>select s.product_id from sales as s</pre></blockquote>
- *
  */
-public class ProjectJoinRemoveRule extends RelOptRule implements SubstitutionRule {
+public class ProjectJoinRemoveRule extends RelOptNewRule
+    implements SubstitutionRule {
   public static final ProjectJoinRemoveRule INSTANCE =
-      new ProjectJoinRemoveRule(LogicalProject.class,
-          LogicalJoin.class, RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(LogicalProject.class, LogicalJoin.class)
+          .toRule();
 
   /** Creates a ProjectJoinRemoveRule. */
+  protected ProjectJoinRemoveRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public ProjectJoinRemoveRule(
       Class<? extends Project> projectClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(projectClass,
-            operandJ(joinClass, null,
-                join -> join.getJoinType() == JoinRelType.LEFT
-                    || join.getJoinType() == JoinRelType.RIGHT, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class)
+        .withOperandFor(projectClass, joinClass));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -99,7 +102,7 @@ public class ProjectJoinRemoveRule extends RelOptRule implements SubstitutionRul
 
     final List<Integer> joinKeys = isLeftJoin ? rightKeys : leftKeys;
     final ImmutableBitSet.Builder columns = ImmutableBitSet.builder();
-    joinKeys.forEach(key -> columns.set(key));
+    joinKeys.forEach(columns::set);
 
     final RelMetadataQuery mq = call.getMetadataQuery();
     if (!mq.areColumnsUnique(isLeftJoin ? join.getRight() : join.getLeft(),
@@ -121,5 +124,23 @@ public class ProjectJoinRemoveRule extends RelOptRule implements SubstitutionRul
           project.getRowType());
     }
     call.transformTo(node);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default ProjectJoinRemoveRule toRule() {
+      return new ProjectJoinRemoveRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Project> projectClass,
+        Class<? extends Join> joinClass) {
+      return withOperandSupplier(b ->
+          b.operand(projectClass).oneInput(b2 ->
+              b2.operand(joinClass).predicate(join ->
+                  join.getJoinType() == JoinRelType.LEFT
+                      || join.getJoinType() == JoinRelType.RIGHT).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

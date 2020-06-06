@@ -18,9 +18,8 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -66,28 +65,34 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * rule is optionally applied, in order to support the situation in which we
  * would like to push down decimal operations to an external database.
  */
-public class ReduceDecimalsRule extends RelOptRule implements TransformationRule {
+public class ReduceDecimalsRule extends RelOptNewRule
+    implements TransformationRule {
   public static final ReduceDecimalsRule INSTANCE =
-      new ReduceDecimalsRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(LogicalCalc.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a ReduceDecimalsRule.
-   */
+  /** Creates a ReduceDecimalsRule. */
+  protected ReduceDecimalsRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public ReduceDecimalsRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(LogicalCalc.class, any()), relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  // implement RelOptRule
-  public Convention getOutConvention() {
+  @Override public Convention getOutConvention() {
     return Convention.NONE;
   }
 
-  // implement RelOptRule
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     LogicalCalc calc = call.rel(0);
 
     // Expand decimals in every expression in this program. If no
@@ -121,12 +126,12 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
    * A shuttle which converts decimal expressions to expressions based on
    * longs.
    */
-  public class DecimalShuttle extends RexShuttle {
+  public static class DecimalShuttle extends RexShuttle {
     private final Map<Pair<RexNode, String>, RexNode> irreducible;
     private final Map<Pair<RexNode, String>, RexNode> results;
     private final ExpanderMap expanderMap;
 
-    public DecimalShuttle(RexBuilder rexBuilder) {
+    DecimalShuttle(RexBuilder rexBuilder) {
       irreducible = new HashMap<>();
       results = new HashMap<>();
       expanderMap = new ExpanderMap(rexBuilder);
@@ -209,9 +214,9 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
   }
 
   /**
-   * Maps a RexCall to a RexExpander
+   * Maps a RexCall to a RexExpander.
    */
-  private class ExpanderMap {
+  private static class ExpanderMap {
     private final Map<SqlOperator, RexExpander> map;
     private RexExpander defaultExpander;
 
@@ -260,7 +265,7 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
       defaultExpander = new CastArgAsDoubleExpander(rexBuilder);
     }
 
-    public RexExpander getExpander(RexCall call) {
+    RexExpander getExpander(RexCall call) {
       RexExpander expander = map.get(call.getOperator());
       return (expander != null) ? expander : defaultExpander;
     }
@@ -282,28 +287,28 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
    * <p>To avoid the lengthy coding of RexNode expressions, this base class
    * provides succinct methods for building expressions used in rewrites.
    */
-  public abstract class RexExpander {
+  public abstract static class RexExpander {
     /**
      * Factory for constructing new relational expressions
      */
-    RexBuilder builder;
+    final RexBuilder builder;
 
     /**
      * Type for the internal representation of decimals. This type is a
      * non-nullable type and requires extra work to make it nullable.
      */
-    RelDataType int8;
+    final RelDataType int8;
 
     /**
      * Type for doubles. This type is a non-nullable type and requires extra
      * work to make it nullable.
      */
-    RelDataType real8;
+    final RelDataType real8;
 
     /**
      * Constructs a RexExpander
      */
-    public RexExpander(RexBuilder builder) {
+    RexExpander(RexBuilder builder) {
       this.builder = builder;
       int8 = builder.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
       real8 = builder.getTypeFactory().createSqlType(SqlTypeName.DOUBLE);
@@ -712,9 +717,9 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
   }
 
   /**
-   * Expands a decimal cast expression
+   * Expands a decimal cast expression.
    */
-  private class CastExpander extends RexExpander {
+  private static class CastExpander extends RexExpander {
     private CastExpander(RexBuilder builder) {
       super(builder);
     }
@@ -810,9 +815,9 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
   }
 
   /**
-   * Expands a decimal arithmetic expression
+   * Expands a decimal arithmetic expression.
    */
-  private class BinaryArithmeticExpander extends RexExpander {
+  private static class BinaryArithmeticExpander extends RexExpander {
     RelDataType typeA;
     RelDataType typeB;
     int scaleA;
@@ -822,8 +827,7 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
       super(builder);
     }
 
-    // implement RexExpander
-    public RexNode expand(RexCall call) {
+    @Override public RexNode expand(RexCall call) {
       List<RexNode> operands = call.operands;
       assert operands.size() == 2;
       RelDataType typeA = operands.get(0).getType();
@@ -1004,7 +1008,7 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
    *     value / (10 ^ scale)
    * </pre></blockquote>
    */
-  private class FloorExpander extends RexExpander {
+  private static class FloorExpander extends RexExpander {
     private FloorExpander(RexBuilder rexBuilder) {
       super(rexBuilder);
     }
@@ -1053,7 +1057,7 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
    *     value / (10 ^ scale)
    * </pre></blockquote>
    */
-  private class CeilExpander extends RexExpander {
+  private static class CeilExpander extends RexExpander {
     private CeilExpander(RexBuilder rexBuilder) {
       super(rexBuilder);
     }
@@ -1104,7 +1108,7 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
    *
    * <p>Note: a decimal type is returned iff arguments have decimals.
    */
-  private class CaseExpander extends RexExpander {
+  private static class CaseExpander extends RexExpander {
     private CaseExpander(RexBuilder rexBuilder) {
       super(rexBuilder);
     }
@@ -1141,12 +1145,12 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
    * If the output is decimal, the output is reinterpreted from the integer
    * representation into a decimal.
    */
-  private class PassThroughExpander extends RexExpander {
+  private static class PassThroughExpander extends RexExpander {
     private PassThroughExpander(RexBuilder builder) {
       super(builder);
     }
 
-    public boolean canExpand(RexCall call) {
+    @Override public boolean canExpand(RexCall call) {
       return RexUtil.requiresDecimalExpansion(call, false);
     }
 
@@ -1174,9 +1178,9 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
   }
 
   /**
-   * An expander which casts decimal arguments as doubles
+   * An expander that casts decimal arguments as doubles
    */
-  private class CastArgAsDoubleExpander extends CastArgAsTypeExpander {
+  private static class CastArgAsDoubleExpander extends CastArgAsTypeExpander {
     private CastArgAsDoubleExpander(RexBuilder builder) {
       super(builder);
     }
@@ -1194,16 +1198,16 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
   }
 
   /**
-   * An expander which casts decimal arguments as another type
+   * An expander that casts decimal arguments as another type
    */
-  private abstract class CastArgAsTypeExpander extends RexExpander {
+  private abstract static class CastArgAsTypeExpander extends RexExpander {
     private CastArgAsTypeExpander(RexBuilder builder) {
       super(builder);
     }
 
     public abstract RelDataType getArgType(RexCall call, int ordinal);
 
-    public RexNode expand(RexCall call) {
+    @Override public RexNode expand(RexCall call) {
       ImmutableList.Builder<RexNode> opBuilder = ImmutableList.builder();
 
       for (Ord<RexNode> operand : Ord.zip(call.operands)) {
@@ -1230,23 +1234,25 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
   }
 
   /**
-   * This expander simplifies reinterpret calls. Consider (1.0+1)*1. The inner
+   * An expander that simplifies reinterpret calls.
+   *
+   * <p>Consider (1.0+1)*1. The inner
    * operation encodes a decimal (Reinterpret(...)) which the outer operation
    * immediately decodes: (Reinterpret(Reinterpret(...))). Arithmetic overflow
    * is handled by underlying integer operations, so we don't have to consider
    * it. Simply remove the nested Reinterpret.
    */
-  private class ReinterpretExpander extends RexExpander {
+  private static class ReinterpretExpander extends RexExpander {
     private ReinterpretExpander(RexBuilder builder) {
       super(builder);
     }
 
-    public boolean canExpand(RexCall call) {
+    @Override public boolean canExpand(RexCall call) {
       return call.isA(SqlKind.REINTERPRET)
           && call.operands.get(0).isA(SqlKind.REINTERPRET);
     }
 
-    public RexNode expand(RexCall call) {
+    @Override public RexNode expand(RexCall call) {
       List<RexNode> operands = call.operands;
       RexCall subCall = (RexCall) operands.get(0);
       RexNode innerValue = subCall.operands.get(0);
@@ -1310,6 +1316,13 @@ public class ReduceDecimalsRule extends RelOptRule implements TransformationRule
         return false;
       }
       return true;
+    }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default ReduceDecimalsRule toRule() {
+      return new ReduceDecimalsRule(this);
     }
   }
 }

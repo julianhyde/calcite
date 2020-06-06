@@ -158,7 +158,7 @@ public class RelOptRules {
       UnionMergeRule.INSTANCE,
       UnionMergeRule.INTERSECT_INSTANCE,
       UnionMergeRule.MINUS_INSTANCE,
-      ProjectToWindowRule.PROJECT,
+      ProjectToWindowRule.ProjectToLogicalProjectAndWindowRule.INSTANCE,
       FilterMergeRule.INSTANCE,
       DateRangeRules.FILTER_INSTANCE,
       IntersectToDistinctRule.INSTANCE);
@@ -180,11 +180,9 @@ public class RelOptRules {
       SortRemoveRule.INSTANCE);
 
   static final List<RelOptRule> CONSTANT_REDUCTION_RULES = ImmutableList.of(
-      ReduceExpressionsRule.PROJECT_INSTANCE,
-      ReduceExpressionsRule.FILTER_INSTANCE,
-      ReduceExpressionsRule.CALC_INSTANCE,
-      ReduceExpressionsRule.WINDOW_INSTANCE,
-      ReduceExpressionsRule.JOIN_INSTANCE,
+      ReduceExpressionsRule.PROJECT_INSTANCE.get(),
+      ReduceExpressionsRule.FILTER_INSTANCE.get(), ReduceExpressionsRule.CALC_INSTANCE.get(),
+      ReduceExpressionsRule.WINDOW_INSTANCE.get(), ReduceExpressionsRule.JOIN_INSTANCE.get(),
       ValuesReduceRule.FILTER_INSTANCE,
       ValuesReduceRule.PROJECT_FILTER_INSTANCE,
       ValuesReduceRule.PROJECT_INSTANCE,

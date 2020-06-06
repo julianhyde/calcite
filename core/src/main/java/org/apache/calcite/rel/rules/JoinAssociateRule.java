@@ -17,13 +17,12 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexPermuteInputsShuttle;
@@ -46,29 +45,33 @@ import java.util.List;
  *
  * @see JoinCommuteRule
  */
-public class JoinAssociateRule extends RelOptRule implements TransformationRule {
+public class JoinAssociateRule extends RelOptNewRule
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   /** The singleton. */
   public static final JoinAssociateRule INSTANCE =
-      new JoinAssociateRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .as(Config.class)
+          .withOperandFor(Join.class, RelSubset.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a JoinAssociateRule.
-   */
+  /** Creates a JoinAssociateRule. */
+  protected JoinAssociateRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public JoinAssociateRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(Join.class,
-            operand(Join.class, any()),
-            operand(RelSubset.class, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(final RelOptRuleCall call) {
+  @Override public void onMatch(final RelOptRuleCall call) {
     final Join topJoin = call.rel(0);
     final Join bottomJoin = call.rel(1);
     final RelNode relA = bottomJoin.getLeft();
@@ -152,5 +155,22 @@ public class JoinAssociateRule extends RelOptRule implements TransformationRule 
             newBottomJoin, JoinRelType.INNER, false);
 
     call.transformTo(newTopJoin);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default JoinAssociateRule toRule() {
+      return new JoinAssociateRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Join> joinClass,
+        Class<? extends RelSubset> relSubsetClass) {
+      return withOperandSupplier(b ->
+          b.operand(joinClass).inputs(
+              b2 -> b2.operand(joinClass).anyInputs(),
+              b3 -> b3.operand(relSubsetClass).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

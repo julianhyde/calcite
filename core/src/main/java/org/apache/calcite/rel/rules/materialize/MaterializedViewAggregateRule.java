@@ -151,8 +151,10 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
                 .withOperandFor(Aggregate.class, Filter.class)
                 .toRule())
         .withProjectMergeRule(
-            new ProjectMergeRule(true, ProjectMergeRule.DEFAULT_BLOAT,
-                relBuilderFactory))
+            ProjectMergeRule.INSTANCE.config
+                .withRelBuilderFactory(relBuilderFactory)
+                .as(ProjectMergeRule.Config.class)
+                .toRule())
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class);
   }

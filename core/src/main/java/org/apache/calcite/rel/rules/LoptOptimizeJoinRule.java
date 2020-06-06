@@ -17,7 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -65,20 +65,33 @@ import java.util.TreeSet;
  * {@link org.apache.calcite.rel.logical.LogicalProject}
  * ({@link MultiJoin}).
  */
-public class LoptOptimizeJoinRule extends RelOptRule implements TransformationRule {
+public class LoptOptimizeJoinRule extends RelOptNewRule
+    implements TransformationRule {
   public static final LoptOptimizeJoinRule INSTANCE =
-      new LoptOptimizeJoinRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
-  /** Creates a LoptOptimizeJoinRule. */
+  /** Creates an LoptOptimizeJoinRule. */
+  protected LoptOptimizeJoinRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public LoptOptimizeJoinRule(RelBuilderFactory relBuilderFactory) {
-    super(operand(MultiJoin.class, any()), relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
   public LoptOptimizeJoinRule(RelFactories.JoinFactory joinFactory,
       RelFactories.ProjectFactory projectFactory,
       RelFactories.FilterFactory filterFactory) {
-    this(RelBuilder.proto(joinFactory, projectFactory, filterFactory));
+    this(
+        INSTANCE.config.withRelBuilderFactory(
+        RelBuilder.proto(joinFactory, projectFactory, filterFactory))
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -292,11 +305,9 @@ public class LoptOptimizeJoinRule extends RelOptRule implements TransformationRu
     // part of a self-join.  Restrict each factor to at most one
     // self-join.
     final List<RelOptTable> repeatedTables = new ArrayList<>();
-    final TreeSet<Integer> sortedFactors = new TreeSet<>();
-    sortedFactors.addAll(simpleFactors.keySet());
     final Map<Integer, Integer> selfJoinPairs = new HashMap<>();
     Integer [] factors =
-        sortedFactors.toArray(new Integer[0]);
+        new TreeSet<>(simpleFactors.keySet()).toArray(new Integer[0]);
     for (int i = 0; i < factors.length; i++) {
       if (repeatedTables.contains(simpleFactors.get(factors[i]))) {
         continue;
@@ -1637,8 +1648,7 @@ public class LoptOptimizeJoinRule extends RelOptRule implements TransformationRu
 
     for (int i = 0; i < nCurrFields; i++) {
       projects.add(
-          Pair.of(
-              (RexNode) rexBuilder.makeInputRef(currFields.get(i).getType(), i),
+          Pair.of(rexBuilder.makeInputRef(currFields.get(i).getType(), i),
               currFields.get(i).getName()));
     }
     for (int i = 0; i < nNewFields; i++) {
@@ -2061,5 +2071,12 @@ public class LoptOptimizeJoinRule extends RelOptRule implements TransformationRu
     // it's ok if there are nulls in the unique key.
     return RelMdUtil.areColumnsDefinitelyUniqueWhenNullsFiltered(mq, leftRel,
         joinInfo.leftSet());
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default LoptOptimizeJoinRule toRule() {
+      return new LoptOptimizeJoinRule(this);
+    }
   }
 }
