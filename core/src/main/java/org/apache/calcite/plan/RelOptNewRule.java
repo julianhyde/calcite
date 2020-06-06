@@ -35,16 +35,26 @@ import javax.annotation.Nonnull;
  *
  * <p>Temporary.
  */
-public abstract class RelOptNewRule extends RelOptRule {
-  public final Config config;
+public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
+    extends RelOptRule {
+  public final C config;
 
-  public RelOptNewRule(Config config) {
+  public RelOptNewRule(C config) {
     super(OperandBuilderImpl.operand(config.operandSupplier()),
         config.relBuilderFactory(), config.description());
     this.config = config;
   }
 
-  public Config config() {
+  /** Returns the configuration of this rule, cast to its most exact type.
+   *
+   * <p>Any given implementation will have the following text:
+   * <blockquote><pre>
+   *   &#64;Override public Config config() {
+   *     return (Config) config;
+   *   }
+   * </pre></blockquote>
+   */
+  public C config() {
     return config;
   }
 

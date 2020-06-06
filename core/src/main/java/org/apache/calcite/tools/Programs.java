@@ -100,8 +100,8 @@ public class Programs {
           EnumerableRules.ENUMERABLE_VALUES_RULE,
           EnumerableRules.ENUMERABLE_WINDOW_RULE,
           EnumerableRules.ENUMERABLE_MATCH_RULE,
-          SemiJoinRule.PROJECT,
-          SemiJoinRule.JOIN,
+          SemiJoinRule.PROJECT.get(),
+          SemiJoinRule.JOIN.get(),
           MatchRule.INSTANCE,
           CalciteSystemProperty.COMMUTE.value()
               ? JoinAssociateRule.INSTANCE

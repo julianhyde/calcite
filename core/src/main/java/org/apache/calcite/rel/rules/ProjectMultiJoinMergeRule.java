@@ -17,6 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptNewRule;
+import org.apache.calcite.plan.RelOptNewerRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.Project;
@@ -32,7 +33,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see org.apache.calcite.rel.rules.FilterMultiJoinMergeRule
  */
-public class ProjectMultiJoinMergeRule extends RelOptNewRule
+public class ProjectMultiJoinMergeRule extends RelOptNewerRule<ProjectMultiJoinMergeRule.Config>
     implements TransformationRule {
   public static final ProjectMultiJoinMergeRule INSTANCE =
       Config.EMPTY

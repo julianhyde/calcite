@@ -154,7 +154,7 @@ class MutableRelTest {
             FilterProjectTransposeRule.INSTANCE,
             FilterJoinRule.FILTER_ON_JOIN.get(),
             ProjectMergeRule.INSTANCE,
-            SemiJoinRule.PROJECT));
+            SemiJoinRule.PROJECT.get()));
   }
 
   @Test void testConvertCorrelate() {

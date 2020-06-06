@@ -19,6 +19,7 @@ package org.apache.calcite.adapter.enumerable;
 import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexProgram;
@@ -44,6 +45,10 @@ public class EnumerableFilterToCalcRule extends RelOptNewRule {
   public EnumerableFilterToCalcRule(RelBuilderFactory relBuilderFactory) {
     this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
+  }
+
+  @Override public ProjectMultiJoinMergeRule.Config config() {
+    return (ProjectMultiJoinMergeRule.Config) config;
   }
 
   @Override public void onMatch(RelOptRuleCall call) {

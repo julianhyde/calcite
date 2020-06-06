@@ -64,6 +64,7 @@ import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.logical.LogicalWindow;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -168,6 +169,10 @@ public class Bindables {
     public BindableTableScanRule(RelBuilderFactory relBuilderFactory) {
       this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
+    }
+
+    @Override public ProjectMultiJoinMergeRule.Config config() {
+      return (ProjectMultiJoinMergeRule.Config) config;
     }
 
     @Override public void onMatch(RelOptRuleCall call) {

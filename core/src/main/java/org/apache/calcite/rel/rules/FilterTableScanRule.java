@@ -98,6 +98,10 @@ public class FilterTableScanRule extends RelOptNewRule {
 
   //~ Methods ----------------------------------------------------------------
 
+  @Override public Config config() {
+    return (Config) config;
+  }
+
   public static boolean test(TableScan scan) {
     // We can only push filters into a FilterableTable or
     // ProjectableFilterableTable.

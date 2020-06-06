@@ -16,13 +16,12 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
@@ -49,27 +48,34 @@ import java.util.List;
  * first or second conversion is applied depends on which operands actually
  * participate in the semi-join.</p>
  */
-public class SemiJoinJoinTransposeRule extends RelOptRule implements TransformationRule {
+public class SemiJoinJoinTransposeRule extends RelOptNewRule
+    implements TransformationRule {
   public static final SemiJoinJoinTransposeRule INSTANCE =
-      new SemiJoinJoinTransposeRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.as(Config.class)
+          .withOperandFor(LogicalJoin.class, Join.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Creates a SemiJoinJoinTransposeRule.
-   */
+  /** Creates a SemiJoinJoinTransposeRule. */
+  protected SemiJoinJoinTransposeRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public SemiJoinJoinTransposeRule(RelBuilderFactory relBuilderFactory) {
-    super(
-        operandJ(LogicalJoin.class, null, Join::isSemiJoin,
-            some(operand(Join.class, any()))),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  // implement RelOptRule
-  public void onMatch(RelOptRuleCall call) {
-    LogicalJoin semiJoin = call.rel(0);
+  @Override public Config config() {
+    return (Config) config;
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
+    final Join semiJoin = call.rel(0);
     final Join join = call.rel(1);
     if (join.isSemiJoin()) {
       return;
@@ -79,11 +85,11 @@ public class SemiJoinJoinTransposeRule extends RelOptRule implements Transformat
     // X is the left child of the join below the semi-join
     // Y is the right child of the join below the semi-join
     // Z is the right child of the semi-join
-    int nFieldsX = join.getLeft().getRowType().getFieldList().size();
-    int nFieldsY = join.getRight().getRowType().getFieldList().size();
-    int nFieldsZ = semiJoin.getRight().getRowType().getFieldList().size();
-    int nTotalFields = nFieldsX + nFieldsY + nFieldsZ;
-    List<RelDataTypeField> fields = new ArrayList<>();
+    final int nFieldsX = join.getLeft().getRowType().getFieldList().size();
+    final int nFieldsY = join.getRight().getRowType().getFieldList().size();
+    final int nFieldsZ = semiJoin.getRight().getRowType().getFieldList().size();
+    final int nTotalFields = nFieldsX + nFieldsY + nFieldsZ;
+    final List<RelDataTypeField> fields = new ArrayList<>();
 
     // create a list of fields for the full join result; note that
     // we can't simply use the fields from the semi-join because the
@@ -112,7 +118,7 @@ public class SemiJoinJoinTransposeRule extends RelOptRule implements Transformat
     assert (nKeysFromX == 0) || (nKeysFromX == leftKeys.size());
 
     // need to convert the semi-join condition and possibly the keys
-    RexNode newSemiJoinFilter;
+    final RexNode newSemiJoinFilter;
     int[] adjustments = new int[nTotalFields];
     if (nKeysFromX > 0) {
       // (X, Y, Z) --> (X, Z, Y)
@@ -151,13 +157,13 @@ public class SemiJoinJoinTransposeRule extends RelOptRule implements Transformat
     }
 
     // create the new join
-    RelNode leftSemiJoinOp;
+    final RelNode leftSemiJoinOp;
     if (nKeysFromX > 0) {
       leftSemiJoinOp = join.getLeft();
     } else {
       leftSemiJoinOp = join.getRight();
     }
-    LogicalJoin newSemiJoin =
+    final LogicalJoin newSemiJoin =
         LogicalJoin.create(leftSemiJoinOp,
             semiJoin.getRight(),
             // No need to copy the hints, the framework would try to do that.
@@ -166,26 +172,26 @@ public class SemiJoinJoinTransposeRule extends RelOptRule implements Transformat
             ImmutableSet.of(),
             JoinRelType.SEMI);
 
-    RelNode leftJoinRel;
-    RelNode rightJoinRel;
+    final RelNode left;
+    final RelNode right;
     if (nKeysFromX > 0) {
-      leftJoinRel = newSemiJoin;
-      rightJoinRel = join.getRight();
+      left = newSemiJoin;
+      right = join.getRight();
     } else {
-      leftJoinRel = join.getLeft();
-      rightJoinRel = newSemiJoin;
+      left = join.getLeft();
+      right = newSemiJoin;
     }
 
-    RelNode newJoinRel =
+    final RelNode newJoin =
         join.copy(
             join.getTraitSet(),
             join.getCondition(),
-            leftJoinRel,
-            rightJoinRel,
+            left,
+            right,
             join.getJoinType(),
             join.isSemiJoinDone());
 
-    call.transformTo(newJoinRel);
+    call.transformTo(newJoin);
   }
 
   /**
@@ -218,6 +224,22 @@ public class SemiJoinJoinTransposeRule extends RelOptRule implements Transformat
         i < (nFieldsX + nFieldsY + nFieldsZ);
         i++) {
       adjustments[i] = adjustZ;
+    }
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default SemiJoinJoinTransposeRule toRule() {
+      return new SemiJoinJoinTransposeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Join> joinClass,
+        Class<? extends Join> join2Class) {
+      return withOperandSupplier(b ->
+          b.operand(joinClass).predicate(Join::isSemiJoin).inputs(b2 ->
+              b2.operand(join2Class).anyInputs()))
+          .as(Config.class);
     }
   }
 }

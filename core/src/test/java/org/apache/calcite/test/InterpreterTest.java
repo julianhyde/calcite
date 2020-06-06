@@ -409,7 +409,7 @@ class InterpreterTest {
     SqlNode validate = planner.validate(planner.parse(sql));
     RelNode convert = planner.rel(validate).rel;
     final HepProgram program = new HepProgramBuilder()
-        .addRuleInstance(SemiJoinRule.PROJECT)
+        .addRuleInstance(SemiJoinRule.PROJECT.get())
         .build();
     final HepPlanner hepPlanner = new HepPlanner(program);
     hepPlanner.setRoot(convert);

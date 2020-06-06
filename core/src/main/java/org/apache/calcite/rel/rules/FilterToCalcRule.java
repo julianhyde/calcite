@@ -67,6 +67,10 @@ public class FilterToCalcRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
+  @Override public Config config() {
+    return (Config) config;
+  }
+
   @Override public void onMatch(RelOptRuleCall call) {
     final LogicalFilter filter = call.rel(0);
     final RelNode rel = filter.getInput();

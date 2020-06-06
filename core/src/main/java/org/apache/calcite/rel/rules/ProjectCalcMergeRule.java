@@ -18,6 +18,7 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptNewRule;
+import org.apache.calcite.plan.RelOptNewerRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.Project;
@@ -43,7 +44,7 @@ import org.apache.calcite.util.Pair;
  *
  * @see FilterCalcMergeRule
  */
-public class ProjectCalcMergeRule extends RelOptNewRule
+public class ProjectCalcMergeRule extends RelOptNewerRule<ProjectCalcMergeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 

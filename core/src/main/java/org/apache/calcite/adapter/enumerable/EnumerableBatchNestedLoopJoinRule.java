@@ -88,7 +88,7 @@ public class EnumerableBatchNestedLoopJoinRule extends RelOptNewRule {
   }
 
   @Override public Config config() {
-    return (Config) super.config();
+    return (Config) config;
   }
 
   @Override public void onMatch(RelOptRuleCall call) {

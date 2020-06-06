@@ -128,6 +128,10 @@ public abstract class ProjectToWindowRule extends RelOptNewRule
           .as(Config.class));
     }
 
+    @Override public Config config() {
+      return (Config) config;
+    }
+
     @Override public void onMatch(RelOptRuleCall call) {
       final Calc calc = call.rel(0);
       assert calc.containsOver();
@@ -173,6 +177,10 @@ public abstract class ProjectToWindowRule extends RelOptNewRule
         RelBuilderFactory relBuilderFactory) {
       this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
+    }
+
+    @Override public Config config() {
+      return (Config) config;
     }
 
     @Override public void onMatch(RelOptRuleCall call) {

@@ -55,6 +55,10 @@ public class CalcSplitRule extends RelOptNewRule implements TransformationRule {
         .as(Config.class));
   }
 
+  @Override public ProjectMultiJoinMergeRule.Config config() {
+    return (ProjectMultiJoinMergeRule.Config) config;
+  }
+
   @Override public void onMatch(RelOptRuleCall call) {
     final Calc calc = call.rel(0);
     final Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> projectFilter =

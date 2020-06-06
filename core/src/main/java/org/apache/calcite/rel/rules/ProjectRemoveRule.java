@@ -62,6 +62,10 @@ public class ProjectRemoveRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
+  @Override public ProjectMultiJoinMergeRule.Config config() {
+    return (ProjectMultiJoinMergeRule.Config) config;
+  }
+
   @Override public void onMatch(RelOptRuleCall call) {
     Project project = call.rel(0);
     assert isTrivial(project);

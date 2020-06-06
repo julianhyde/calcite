@@ -63,6 +63,10 @@ public final class FilterRemoveIsNotDistinctFromRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
+  @Override public Config config() {
+    return (Config) config;
+  }
+
   @Override public void onMatch(RelOptRuleCall call) {
     Filter oldFilter = call.rel(0);
     RexNode oldFilterCond = oldFilter.getCondition();

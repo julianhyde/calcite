@@ -16,10 +16,9 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -33,21 +32,43 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * <p>It should only be enabled if all SemiJoins in the plan are advisory; that
  * is, they can be safely dropped without affecting the semantics of the query.
  */
-public class SemiJoinRemoveRule extends RelOptRule implements TransformationRule {
+public class SemiJoinRemoveRule extends RelOptNewRule
+    implements TransformationRule {
   public static final SemiJoinRemoveRule INSTANCE =
-      new SemiJoinRemoveRule(RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.as(Config.class)
+          .withOperandFor(LogicalJoin.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a SemiJoinRemoveRule. */
+  protected SemiJoinRemoveRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public SemiJoinRemoveRule(RelBuilderFactory relBuilderFactory) {
-    super(operandJ(LogicalJoin.class, null, Join::isSemiJoin, any()),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     call.transformTo(call.rel(0).getInput(0));
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default SemiJoinRemoveRule toRule() {
+      return new SemiJoinRemoveRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Join> joinClass) {
+      return withOperandSupplier(b ->
+          b.operand(joinClass).predicate(Join::isSemiJoin).anyInputs())
+          .as(Config.class);
+    }
   }
 }

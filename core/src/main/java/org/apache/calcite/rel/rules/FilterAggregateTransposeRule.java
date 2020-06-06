@@ -94,7 +94,11 @@ public class FilterAggregateTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public Config config() {
+    return (Config) config;
+  }
+
+  @Override public void onMatch(RelOptRuleCall call) {
     final Filter filterRel = call.rel(0);
     final Aggregate aggRel = call.rel(1);
 
