@@ -156,7 +156,8 @@ public abstract class DateRangeRules {
   /** Rule that converts EXTRACT, FLOOR and CEIL in a {@link Filter} into a date
    * range. */
   @SuppressWarnings("WeakerAccess")
-  public static class FilterDateRangeRule extends RelOptNewRule
+  public static class FilterDateRangeRule
+      extends RelOptNewRule<FilterDateRangeRule.Config>
       implements TransformationRule {
     public static final FilterDateRangeRule INSTANCE =
         Config.EMPTY

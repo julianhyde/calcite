@@ -34,7 +34,8 @@ import java.util.List;
  *
  * @see org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule
  */
-public class FilterMultiJoinMergeRule extends RelOptNewRule
+public class FilterMultiJoinMergeRule
+    extends RelOptNewRule<FilterMultiJoinMergeRule.Config>
     implements TransformationRule {
   public static final FilterMultiJoinMergeRule INSTANCE =
       Config.EMPTY.as(Config.class)
@@ -65,10 +66,6 @@ public class FilterMultiJoinMergeRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   @Override public void onMatch(RelOptRuleCall call) {
     Filter filter = call.rel(0);
@@ -106,9 +103,9 @@ public class FilterMultiJoinMergeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Class<? extends MultiJoin> multiJoinClass) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).oneInput(b2 ->
-              b2.operand(multiJoinClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(multiJoinClass).anyInputs()))
           .as(Config.class);
     }
   }

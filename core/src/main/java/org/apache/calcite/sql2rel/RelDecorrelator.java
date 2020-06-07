@@ -242,9 +242,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
         .addRuleInstance(
             FilterJoinRule.FilterIntoJoinRule.Config.EMPTY
                 .withRelBuilderFactory(f)
-                .withOperandSupplier(b ->
-                    b.operand(Filter.class).oneInput(b2 ->
-                        b2.operand(Join.class).anyInputs()))
+                .withOperandSupplier(b0 ->
+                    b0.operand(Filter.class).oneInput(b1 ->
+                        b1.operand(Join.class).anyInputs()))
                 .withDescription("FilterJoinRule:filter")
                 .as(FilterJoinRule.FilterIntoJoinRule.Config.class)
                 .withSmart(true)

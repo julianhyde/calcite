@@ -26,15 +26,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Rule that matches Project on Aggregate. */
 public class MaterializedViewProjectAggregateRule
-    extends MaterializedViewAggregateRule {
+    extends MaterializedViewAggregateRule<MaterializedViewProjectAggregateRule.Config> {
 
   public static final MaterializedViewProjectAggregateRule INSTANCE =
       makeConfig(RelFactories.LOGICAL_BUILDER)
           .withGenerateUnionRewriting(true)
           .withUnionRewritingPullProgram(null)
-          .withOperandSupplier(b ->
-              b.operand(Project.class).oneInput(b2 ->
-                  b2.operand(Aggregate.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Project.class).oneInput(b1 ->
+                  b1.operand(Aggregate.class).anyInputs()))
           .withDescription("MaterializedViewAggregateRule(Project-Aggregate)")
           .as(Config.class)
           .toRule();
@@ -46,7 +46,7 @@ public class MaterializedViewProjectAggregateRule
   @Deprecated
   public MaterializedViewProjectAggregateRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withRelBuilderFactory(relBuilderFactory)
@@ -60,7 +60,7 @@ public class MaterializedViewProjectAggregateRule
       RelOptRule filterAggregateTransposeRule,
       RelOptRule aggregateProjectPullUpConstantsRule,
       RelOptRule projectMergeRule) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withRelBuilderFactory(relBuilderFactory)

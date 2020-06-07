@@ -24,7 +24,8 @@ package org.apache.calcite.plan;
  */
 
 // TODO: obsolete this?
-public abstract class CommonRelSubExprRule extends RelOptNewRule {
+public abstract class CommonRelSubExprRule
+    extends RelOptNewRule<CommonRelSubExprRule.Config> {
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a CommonRelSubExprRule. */

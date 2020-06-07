@@ -45,7 +45,8 @@ import java.util.Objects;
  * or all the aggregate functions are splittable,
  * and the underlying relational expression is already distinct.
  */
-public class AggregateRemoveRule extends RelOptNewRule
+public class AggregateRemoveRule
+    extends RelOptNewRule<AggregateRemoveRule.Config>
     implements SubstitutionRule {
   public static final AggregateRemoveRule INSTANCE =
       Config.EMPTY

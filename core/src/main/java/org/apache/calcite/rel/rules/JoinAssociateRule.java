@@ -45,7 +45,8 @@ import java.util.List;
  *
  * @see JoinCommuteRule
  */
-public class JoinAssociateRule extends RelOptNewRule
+public class JoinAssociateRule
+    extends RelOptNewRule<JoinAssociateRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -166,10 +167,10 @@ public class JoinAssociateRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Join> joinClass,
         Class<? extends RelSubset> relSubsetClass) {
-      return withOperandSupplier(b ->
-          b.operand(joinClass).inputs(
-              b2 -> b2.operand(joinClass).anyInputs(),
-              b3 -> b3.operand(relSubsetClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(joinClass).inputs(
+              b1 -> b1.operand(joinClass).anyInputs(),
+              b2 -> b2.operand(relSubsetClass).anyInputs()))
           .as(Config.class);
     }
   }

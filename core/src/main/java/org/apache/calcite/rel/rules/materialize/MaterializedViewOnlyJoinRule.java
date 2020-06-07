@@ -23,7 +23,8 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Rule that matches Join. */
-public class MaterializedViewOnlyJoinRule extends MaterializedViewJoinRule {
+public class MaterializedViewOnlyJoinRule
+    extends MaterializedViewJoinRule<MaterializedViewJoinRule.Config> {
 
   public static final MaterializedViewOnlyJoinRule INSTANCE =
       Config.EMPTY
@@ -45,7 +46,7 @@ public class MaterializedViewOnlyJoinRule extends MaterializedViewJoinRule {
   public MaterializedViewOnlyJoinRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withFastBailOut(fastBailOut)

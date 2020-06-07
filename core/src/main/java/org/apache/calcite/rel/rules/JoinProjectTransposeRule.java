@@ -56,35 +56,36 @@ import java.util.List;
  * {@link org.apache.calcite.rel.logical.LogicalProject} doesn't originate from
  * a null generating input in an outer join.
  */
-public class JoinProjectTransposeRule extends RelOptNewRule
+public class JoinProjectTransposeRule
+    extends RelOptNewRule<JoinProjectTransposeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   public static final JoinProjectTransposeRule BOTH_PROJECT =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalJoin.class).inputs(
-                  b2 -> b2.operand(LogicalProject.class).anyInputs(),
-                  b3 -> b3.operand(LogicalProject.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalJoin.class).inputs(
+                  b1 -> b1.operand(LogicalProject.class).anyInputs(),
+                  b2 -> b2.operand(LogicalProject.class).anyInputs()))
           .withDescription("JoinProjectTransposeRule(Project-Project)")
           .as(Config.class)
           .toRule();
 
   public static final JoinProjectTransposeRule LEFT_PROJECT =
       BOTH_PROJECT.config
-          .withOperandSupplier(b ->
-              b.operand(LogicalJoin.class).inputs(
-                  b2 -> b2.operand(LogicalProject.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalJoin.class).inputs(
+                  b1 -> b1.operand(LogicalProject.class).anyInputs()))
           .withDescription("JoinProjectTransposeRule(Project-Other)")
           .as(Config.class)
           .toRule();
 
   public static final JoinProjectTransposeRule RIGHT_PROJECT =
       BOTH_PROJECT.config
-          .withOperandSupplier(b ->
-              b.operand(LogicalJoin.class).inputs(
-                  b2 -> b2.operand(RelNode.class).anyInputs(),
-                  b3 -> b3.operand(LogicalProject.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalJoin.class).inputs(
+                  b1 -> b1.operand(RelNode.class).anyInputs(),
+                  b2 -> b2.operand(LogicalProject.class).anyInputs()))
           .withDescription("JoinProjectTransposeRule(Other-Project)")
           .as(Config.class)
           .toRule();
@@ -162,10 +163,6 @@ public class JoinProjectTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     final Join join = call.rel(0);
     final JoinRelType joinType = join.getJoinType();
@@ -177,7 +174,7 @@ public class JoinProjectTransposeRule extends RelOptNewRule
 
     // If 1) the rule works on outer joins, or
     //    2) input's projection doesn't generate nulls
-    final boolean includeOuter = config().isIncludeOuter();
+    final boolean includeOuter = config.isIncludeOuter();
     if (hasLeftChild(call)
         && (includeOuter || !joinType.generatesNullsOnLeft())) {
       leftProject = call.rel(1);
@@ -434,8 +431,7 @@ public class JoinProjectTransposeRule extends RelOptNewRule
         final RelDataTypeField field = childFields.get(i);
         projects.add(
             Pair.of(
-                (RexNode) rexBuilder.makeInputRef(
-                    field.getType(),
+                rexBuilder.makeInputRef(field.getType(),
                     i + adjustmentAmount),
                 field.getName()));
       }

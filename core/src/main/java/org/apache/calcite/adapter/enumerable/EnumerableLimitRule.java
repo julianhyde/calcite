@@ -27,7 +27,8 @@ import org.apache.calcite.rel.core.Sort;
  * {@link EnumerableLimit}
  * on top of a "pure" {@code Sort} that has no offset or fetch.
  */
-public class EnumerableLimitRule extends RelOptNewRule {
+public class EnumerableLimitRule
+    extends RelOptNewRule<EnumerableLimitRule.Config> {
   public static final EnumerableLimitRule INSTANCE =
       Config.EMPTY
           .withOperandSupplier(b -> b.operand(Sort.class).anyInputs())
@@ -41,11 +42,7 @@ public class EnumerableLimitRule extends RelOptNewRule {
 
   @Deprecated
   EnumerableLimitRule() {
-    this(INSTANCE.config());
-  }
-
-  @Override public Config config() {
-    return (Config) config;
+    this(INSTANCE.config);
   }
 
   @Override public void onMatch(RelOptRuleCall call) {

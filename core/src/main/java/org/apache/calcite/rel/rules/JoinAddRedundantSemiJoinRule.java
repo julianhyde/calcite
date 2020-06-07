@@ -37,7 +37,8 @@ import com.google.common.collect.ImmutableSet;
  * {@link org.apache.calcite.rel.core.Join}, not just
  * {@link org.apache.calcite.rel.logical.LogicalJoin}.
  */
-public class JoinAddRedundantSemiJoinRule extends RelOptNewRule
+public class JoinAddRedundantSemiJoinRule
+    extends RelOptNewRule<JoinAddRedundantSemiJoinRule.Config>
     implements TransformationRule {
   public static final JoinAddRedundantSemiJoinRule INSTANCE =
       Config.EMPTY
@@ -62,17 +63,13 @@ public class JoinAddRedundantSemiJoinRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     Join origJoinRel = call.rel(0);
     if (origJoinRel.isSemiJoinDone()) {
       return;
     }
 
-    // can't process outer joins using semijoins
+    // can't process outer joins using semi-joins
     if (origJoinRel.getJoinType() != JoinRelType.INNER) {
       return;
     }

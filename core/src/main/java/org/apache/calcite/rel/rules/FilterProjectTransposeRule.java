@@ -41,7 +41,8 @@ import java.util.function.Predicate;
  * a {@link org.apache.calcite.rel.core.Filter}
  * past a {@link org.apache.calcite.rel.core.Project}.
  */
-public class FilterProjectTransposeRule extends RelOptNewRule
+public class FilterProjectTransposeRule
+    extends RelOptNewRule<FilterProjectTransposeRule.Config>
     implements TransformationRule {
   /** The default instance of
    * {@link org.apache.calcite.rel.rules.FilterProjectTransposeRule}.
@@ -116,10 +117,10 @@ public class FilterProjectTransposeRule extends RelOptNewRule
       RelBuilderFactory relBuilderFactory) {
     this(INSTANCE.config
         .withRelBuilderFactory(relBuilderFactory)
-        .withOperandSupplier(b ->
-            b.operand(filterClass).predicate(filterPredicate)
-                .oneInput(b2 ->
-                    b2.operand(projectClass).predicate(projectPredicate)
+        .withOperandSupplier(b0 ->
+            b0.operand(filterClass).predicate(filterPredicate)
+                .oneInput(b1 ->
+                    b1.operand(projectClass).predicate(projectPredicate)
                         .anyInputs()))
             .as(Config.class)
             .withCopyFilter(copyFilter)
@@ -134,8 +135,8 @@ public class FilterProjectTransposeRule extends RelOptNewRule
       RelFactories.ProjectFactory projectFactory) {
     this(INSTANCE.config
         .withRelBuilderFactory(RelBuilder.proto(filterFactory, projectFactory))
-        .withOperandSupplier(b ->
-            b.operand(filterClass)
+        .withOperandSupplier(b0 ->
+            b0.operand(filterClass)
                 .predicate(filter ->
                     !RexUtil.containsCorrelation(filter.getCondition()))
                 .oneInput(b2 ->
@@ -163,10 +164,6 @@ public class FilterProjectTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     final Filter filter = call.rel(0);
     final Project project = call.rel(1);
@@ -186,7 +183,7 @@ public class FilterProjectTransposeRule extends RelOptNewRule
 
     final RelBuilder relBuilder = call.builder();
     RelNode newFilterRel;
-    if (config().isCopyFilter()) {
+    if (config.isCopyFilter()) {
       final RelNode input = project.getInput();
       final RelTraitSet traitSet = filter.getTraitSet()
           .replaceIfs(RelCollationTraitDef.INSTANCE,
@@ -202,15 +199,15 @@ public class FilterProjectTransposeRule extends RelOptNewRule
           relBuilder.push(project.getInput()).filter(newCondition).build();
     }
 
-    RelNode newProjRel =
-        config().isCopyProject()
+    RelNode newProject =
+        config.isCopyProject()
             ? project.copy(project.getTraitSet(), newFilterRel,
                 project.getProjects(), project.getRowType())
             : relBuilder.push(newFilterRel)
                 .project(project.getProjects(), project.getRowType().getFieldNames())
                 .build();
 
-    call.transformTo(newProjRel);
+    call.transformTo(newProject);
   }
 
   /** Rule configuration.
@@ -251,9 +248,9 @@ public class FilterProjectTransposeRule extends RelOptNewRule
         Predicate<Filter> filterPredicate,
         Class<? extends Project> projectClass,
         Predicate<Project> projectPredicate) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).predicate(filterPredicate).oneInput(b2 ->
-              b2.operand(projectClass).predicate(projectPredicate).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).predicate(filterPredicate).oneInput(b1 ->
+              b1.operand(projectClass).predicate(projectPredicate).anyInputs()))
           .as(Config.class);
     }
   }

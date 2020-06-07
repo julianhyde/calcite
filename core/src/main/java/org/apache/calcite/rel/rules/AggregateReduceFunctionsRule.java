@@ -95,7 +95,8 @@ import javax.annotation.Nonnull;
  * forms like {@code COUNT(x)}, the rule gathers common sub-expressions as it
  * goes.
  */
-public class AggregateReduceFunctionsRule extends RelOptNewRule
+public class AggregateReduceFunctionsRule
+    extends RelOptNewRule<AggregateReduceFunctionsRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -152,10 +153,6 @@ public class AggregateReduceFunctionsRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   @Override public boolean matches(RelOptRuleCall call) {
     if (!super.matches(call)) {

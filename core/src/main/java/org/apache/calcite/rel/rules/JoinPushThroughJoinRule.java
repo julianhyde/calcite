@@ -44,7 +44,7 @@ import java.util.List;
  *
  * <p>Thus, {@code (A join B) join C} becomes {@code (A join C) join B}. The
  * advantage of applying this rule is that it may be possible to apply
- * conditions earlier. For instance,</p>
+ * conditions earlier. For instance,
  *
  * <blockquote>
  * <pre>(sales as s join product_class as pc on true)
@@ -62,7 +62,8 @@ import java.util.List;
  * <p>Before the rule, one join has two conditions and the other has none
  * ({@code ON TRUE}). After the rule, each join has one condition.</p>
  */
-public class JoinPushThroughJoinRule extends RelOptNewRule
+public class JoinPushThroughJoinRule
+    extends RelOptNewRule<JoinPushThroughJoinRule.Config>
     implements TransformationRule {
   /** Instance of the rule that works on logical joins only, and pushes to the
    * right. */
@@ -107,12 +108,8 @@ public class JoinPushThroughJoinRule extends RelOptNewRule
         .withRight(right));
   }
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
-    if (config().isRight()) {
+    if (config.isRight()) {
       onMatchRight(call);
     } else {
       onMatchLeft(call);
@@ -356,10 +353,10 @@ public class JoinPushThroughJoinRule extends RelOptNewRule
 
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Join> joinClass) {
-      return withOperandSupplier(b ->
-              b.operand(joinClass).inputs(
-                  b2 -> b2.operand(joinClass).anyInputs(),
-                  b3 -> b3.operand(RelNode.class)
+      return withOperandSupplier(b0 ->
+              b0.operand(joinClass).inputs(
+                  b1 -> b1.operand(joinClass).anyInputs(),
+                  b2 -> b2.operand(RelNode.class)
                       .predicate(n -> !n.isEnforcer()).anyInputs()))
           .as(Config.class);
     }

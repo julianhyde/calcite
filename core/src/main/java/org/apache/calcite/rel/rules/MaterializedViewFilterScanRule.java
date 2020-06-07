@@ -40,7 +40,8 @@ import java.util.List;
  * on a {@link org.apache.calcite.rel.core.TableScan}
  * to a {@link org.apache.calcite.rel.core.Filter} on a Materialized View.
  */
-public class MaterializedViewFilterScanRule extends RelOptNewRule
+public class MaterializedViewFilterScanRule
+    extends RelOptNewRule<MaterializedViewFilterScanRule.Config>
     implements TransformationRule {
   public static final MaterializedViewFilterScanRule INSTANCE =
       Config.EMPTY
@@ -110,9 +111,9 @@ public class MaterializedViewFilterScanRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Class<? extends TableScan> scanClass) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).oneInput(b2 ->
-              b2.operand(scanClass).noInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(scanClass).noInputs()))
           .as(Config.class);
     }
   }

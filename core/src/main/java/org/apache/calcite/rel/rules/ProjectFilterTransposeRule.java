@@ -46,7 +46,8 @@ import java.util.Set;
  * Planner rule that pushes a {@link org.apache.calcite.rel.core.Project}
  * past a {@link org.apache.calcite.rel.core.Filter}.
  */
-public class ProjectFilterTransposeRule extends RelOptNewRule
+public class ProjectFilterTransposeRule
+    extends RelOptNewRule<ProjectFilterTransposeRule.Config>
     implements TransformationRule {
   public static final ProjectFilterTransposeRule INSTANCE =
       Config.EMPTY.as(Config.class)
@@ -59,7 +60,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
   /** Instance that pushes down project and filter expressions whole, not field
    * references. */
   public static final ProjectFilterTransposeRule EXPRESSION_INSTANCE =
-      INSTANCE.config()
+      INSTANCE.config
           .withWholeProject(true)
           .withWholeFilter(true)
           .toRule();
@@ -67,7 +68,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
   /** Instance that pushes down project expressions whole, but pushes down
    * field references for filters. */
   public static final ProjectFilterTransposeRule PROJECT_EXPRESSION_INSTANCE =
-      INSTANCE.config()
+      INSTANCE.config
           .withWholeProject(true)
           .withWholeFilter(false)
           .toRule();
@@ -107,12 +108,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
-  // implement RelOptRule
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Project origProject;
     final Filter filter;
     if (call.rels.length >= 2) {
@@ -160,18 +156,18 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
     final RelBuilder builder = call.builder();
     final RelNode topProject;
     if (origProject != null
-        && (config().isWholeProject() || config().isWholeFilter())) {
+        && (config.isWholeProject() || config.isWholeFilter())) {
       builder.push(input);
 
       final Set<RexNode> set = new LinkedHashSet<>();
       final RelOptUtil.InputFinder refCollector = new RelOptUtil.InputFinder();
 
-      if (config().isWholeFilter()) {
+      if (config.isWholeFilter()) {
         set.add(filter.getCondition());
       } else {
         filter.getCondition().accept(refCollector);
       }
-      if (config().isWholeProject()) {
+      if (config.isWholeProject()) {
         set.addAll(origProject.getProjects());
       } else {
         refCollector.visitEach(origProject.getProjects());
@@ -198,7 +194,7 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
       // references. The effect is similar to RelFieldTrimmer.
       final PushProjector pushProjector =
           new PushProjector(origProject, origFilter, input,
-              config().preserveExprCondition(), builder);
+              config.preserveExprCondition(), builder);
       topProject = pushProjector.convertProject(null);
     }
 
@@ -286,9 +282,9 @@ public class ProjectFilterTransposeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<? extends Filter> filterClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(filterClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(filterClass).anyInputs()))
           .as(Config.class);
     }
   }

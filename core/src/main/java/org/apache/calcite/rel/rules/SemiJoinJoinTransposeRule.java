@@ -48,7 +48,8 @@ import java.util.List;
  * first or second conversion is applied depends on which operands actually
  * participate in the semi-join.</p>
  */
-public class SemiJoinJoinTransposeRule extends RelOptNewRule
+public class SemiJoinJoinTransposeRule
+    extends RelOptNewRule<SemiJoinJoinTransposeRule.Config>
     implements TransformationRule {
   public static final SemiJoinJoinTransposeRule INSTANCE =
       Config.EMPTY.as(Config.class)
@@ -69,10 +70,6 @@ public class SemiJoinJoinTransposeRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Join semiJoin = call.rel(0);
@@ -236,9 +233,9 @@ public class SemiJoinJoinTransposeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Join> joinClass,
         Class<? extends Join> join2Class) {
-      return withOperandSupplier(b ->
-          b.operand(joinClass).predicate(Join::isSemiJoin).inputs(b2 ->
-              b2.operand(join2Class).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(joinClass).predicate(Join::isSemiJoin).inputs(b1 ->
+              b1.operand(join2Class).anyInputs()))
           .as(Config.class);
     }
   }

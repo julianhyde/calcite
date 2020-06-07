@@ -18,6 +18,7 @@ package org.apache.calcite.adapter.druid;
 
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -86,8 +87,7 @@ public class DruidRules {
       new DruidAggregateRule(RelFactories.LOGICAL_BUILDER);
   public static final DruidAggregateProjectRule AGGREGATE_PROJECT =
       new DruidAggregateProjectRule(RelFactories.LOGICAL_BUILDER);
-  public static final DruidSortRule SORT =
-      new DruidSortRule(RelFactories.LOGICAL_BUILDER);
+  public static final DruidSortRule SORT = DruidSortRule.INSTANCE;
   public static final DruidSortProjectTransposeRule SORT_PROJECT_TRANSPOSE =
       new DruidSortProjectTransposeRule(RelFactories.LOGICAL_BUILDER);
   @Deprecated // to be removed before 1.25
@@ -747,16 +747,18 @@ public class DruidRules {
    * Rule to push a {@link org.apache.calcite.rel.core.Sort}
    * into a {@link DruidQuery}.
    */
-  public static class DruidSortRule extends RelOptRule {
+  public static class DruidSortRule
+      extends RelOptNewRule<DruidSortRule.Config> {
+    public static final DruidSortRule INSTANCE = Config.EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Sort.class).oneInput(b1 ->
+                b1.operand(DruidQuery.class).noInputs()))
+        .as(Config.class)
+        .toRule();
 
-    /**
-     * Creates a DruidSortRule.
-     *
-     * @param relBuilderFactory Builder for relational expressions
-     */
-    public DruidSortRule(RelBuilderFactory relBuilderFactory) {
-      super(operand(Sort.class, operand(DruidQuery.class, none())),
-          relBuilderFactory, null);
+    /** Creates a DruidSortRule. */
+    protected DruidSortRule(Config config) {
+      super(config);
     }
 
     public void onMatch(RelOptRuleCall call) {
@@ -780,6 +782,13 @@ public class DruidRules {
           .copy(sort.getTraitSet(), ImmutableList.of(Util.last(query.rels)));
       call.transformTo(DruidQuery.extendQuery(query, newSort));
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default DruidSortRule toRule() {
+        return new DruidSortRule(this);
+      }
+    }
   }
 
   /**
@@ -798,13 +807,9 @@ public class DruidRules {
     @Deprecated
     public DruidProjectFilterTransposeRule(
         RelBuilderFactory relBuilderFactory) {
-      this(PROJECT_FILTER_TRANSPOSE.config()
+      this(PROJECT_FILTER_TRANSPOSE.config
           .withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
-    }
-
-    @Override public Config config() {
-      return (Config) config;
     }
 
     /** Rule configuration. */
@@ -815,10 +820,10 @@ public class DruidRules {
 
       @Override default Config withOperandFor(Class<? extends Project> projectClass,
           Class<? extends Filter> filterClass) {
-        return withOperandSupplier(b ->
-            b.operand(Project.class).oneInput(b2 ->
-                b2.operand(Filter.class).oneInput(b3 ->
-                    b3.operand(DruidQuery.class).noInputs())))
+        return withOperandSupplier(b0 ->
+            b0.operand(Project.class).oneInput(b1 ->
+                b1.operand(Filter.class).oneInput(b2 ->
+                    b2.operand(DruidQuery.class).noInputs())))
             .as(Config.class);
       }
     }

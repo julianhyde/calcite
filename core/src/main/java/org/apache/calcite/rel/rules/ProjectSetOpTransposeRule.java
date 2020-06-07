@@ -39,13 +39,14 @@ import java.util.List;
  * only the {@link RexInputRef}s referenced in the original
  * {@code LogicalProject}.
  */
-public class ProjectSetOpTransposeRule extends RelOptNewRule
+public class ProjectSetOpTransposeRule
+    extends RelOptNewRule<ProjectSetOpTransposeRule.Config>
     implements TransformationRule {
   public static final ProjectSetOpTransposeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalProject.class).oneInput(b2 ->
-                  b2.operand(SetOp.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalProject.class).oneInput(b1 ->
+                  b1.operand(SetOp.class).anyInputs()))
           .as(Config.class)
           .withPreserveExprCondition(expr -> !(expr instanceof RexOver))
           .toRule();
@@ -68,10 +69,6 @@ public class ProjectSetOpTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     final LogicalProject origProject = call.rel(0);
     final SetOp setOp = call.rel(1);
@@ -84,7 +81,7 @@ public class ProjectSetOpTransposeRule extends RelOptNewRule
     // locate all fields referenced in the projection
     final PushProjector pushProjector =
         new PushProjector(origProject, null, setOp,
-            config().preserveExprCondition(), call.builder());
+            config.preserveExprCondition(), call.builder());
     pushProjector.locateAllRefs();
 
     final List<RelNode> newSetOpInputs = new ArrayList<>();
@@ -92,7 +89,7 @@ public class ProjectSetOpTransposeRule extends RelOptNewRule
 
     final RelNode node;
     if (origProject.containsOver()) {
-      // should not push over past setop but can push its operand down.
+      // should not push over past set-op but can push its operand down.
       for (RelNode input : setOp.getInputs()) {
         Project p = pushProjector.createProjectRefsAndExprs(input, true, false);
         // make sure that it is not a trivial project to avoid infinite loop.
@@ -105,7 +102,7 @@ public class ProjectSetOpTransposeRule extends RelOptNewRule
           setOp.copy(setOp.getTraitSet(), newSetOpInputs);
       node = pushProjector.createNewProject(newSetOp, adjustments);
     } else {
-      // push some expressions below the setop; this
+      // push some expressions below the set-op; this
       // is different from pushing below a join, where we decompose
       // to try to keep expensive expressions above the join,
       // because UNION ALL does not have any filtering effect,

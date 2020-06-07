@@ -36,7 +36,8 @@ import java.util.List;
  * another {@link org.apache.calcite.rel.core.Project},
  * provided the projects aren't projecting identical sets of input references.
  */
-public class ProjectMergeRule extends RelOptNewRule
+public class ProjectMergeRule
+    extends RelOptNewRule<ProjectMergeRule.Config>
     implements TransformationRule {
   public static final ProjectMergeRule INSTANCE =
       Config.EMPTY
@@ -81,10 +82,6 @@ public class ProjectMergeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public boolean matches(RelOptRuleCall call) {
     final Project topProject = call.rel(0);
     final Project bottomProject = call.rel(1);
@@ -121,7 +118,7 @@ public class ProjectMergeRule extends RelOptNewRule
 
     // If we're not in force mode and the two projects reference identical
     // inputs, then return and let ProjectRemoveRule replace the projects.
-    if (!config().force()) {
+    if (!config.force()) {
       if (RexUtil.isIdentity(topProject.getProjects(),
           topProject.getInput().getRowType())) {
         return;
@@ -130,14 +127,14 @@ public class ProjectMergeRule extends RelOptNewRule
 
     final List<RexNode> newProjects =
         RelOptUtil.pushPastProjectUnlessBloat(topProject.getProjects(),
-            bottomProject, config().bloat());
+            bottomProject, config.bloat());
     if (newProjects == null) {
       // Merged projects are significantly more complex. Do not merge.
       return;
     }
     final RelNode input = bottomProject.getInput();
     if (RexUtil.isIdentity(newProjects, input.getRowType())) {
-      if (config().force()
+      if (config.force()
           || input.getRowType().getFieldNames()
               .equals(topProject.getRowType().getFieldNames())) {
         call.transformTo(input);
@@ -176,9 +173,9 @@ public class ProjectMergeRule extends RelOptNewRule
 
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(projectClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(projectClass).anyInputs()))
           .as(Config.class);
     }
   }

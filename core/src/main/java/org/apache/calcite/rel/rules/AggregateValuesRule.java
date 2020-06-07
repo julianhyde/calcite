@@ -51,7 +51,8 @@ import java.util.List;
  * Any non-empty {@code GROUP BY} clause will return one row per group key
  * value, and each group will consist of at least one row.
  */
-public class AggregateValuesRule extends RelOptNewRule
+public class AggregateValuesRule
+    extends RelOptNewRule<AggregateValuesRule.Config>
     implements SubstitutionRule {
   public static final AggregateValuesRule INSTANCE =
       Config.EMPTY
@@ -117,11 +118,11 @@ public class AggregateValuesRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends Values> valuesClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass)
               .predicate(aggregate -> aggregate.getGroupCount() == 0)
-              .oneInput(b2 ->
-                  b2.operand(valuesClass)
+              .oneInput(b1 ->
+                  b1.operand(valuesClass)
                       .predicate(values -> values.getTuples().isEmpty())
                       .noInputs()))
           .as(Config.class);

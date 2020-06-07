@@ -39,7 +39,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * {@link org.apache.calcite.rel.core.Union}s
  * still have only two inputs.
  */
-public class AggregateUnionAggregateRule extends RelOptNewRule
+public class AggregateUnionAggregateRule
+    extends RelOptNewRule<AggregateUnionAggregateRule.Config>
     implements TransformationRule {
   /** Instance that matches an {@code Aggregate} as the left input of
    * {@code Union}. */
@@ -176,13 +177,13 @@ public class AggregateUnionAggregateRule extends RelOptNewRule
         Class<? extends Union> unionClass,
         Class<? extends RelNode> firstUnionInputClass,
         Class<? extends RelNode> secondUnionInputClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass)
               .predicate(Aggregate::isSimple)
-              .oneInput(b2 ->
-                  b2.operand(unionClass).inputs(
-                      b3 -> b3.operand(firstUnionInputClass).anyInputs(),
-                      b4 -> b4.operand(secondUnionInputClass).anyInputs())))
+              .oneInput(b1 ->
+                  b1.operand(unionClass).inputs(
+                      b2 -> b2.operand(firstUnionInputClass).anyInputs(),
+                      b3 -> b3.operand(secondUnionInputClass).anyInputs())))
           .as(Config.class);
     }
   }

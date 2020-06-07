@@ -67,13 +67,13 @@ public class AggregateProjectStarTableRule extends AggregateStarTableRule {
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends Project> projectClass,
         Class<StarTable.StarTableScan> scanClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass)
               .predicate(Aggregate::isSimple)
-              .oneInput(b2 ->
-                  b2.operand(projectClass)
-                      .oneInput(b3 ->
-                          b3.operand(scanClass).noInputs())))
+              .oneInput(b1 ->
+                  b1.operand(projectClass)
+                      .oneInput(b2 ->
+                          b2.operand(scanClass).noInputs())))
           .as(Config.class);
     }
   }

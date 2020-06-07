@@ -259,9 +259,9 @@ class PigRelBuilderStyleTest extends AbstractPigTest {
     planner.addRule(
         FilterJoinRule.FILTER_ON_JOIN.get().config
             .withRelBuilderFactory(builderFactory)
-            .withOperandSupplier(b ->
-                b.operand(Filter.class).oneInput(b2 ->
-                    b2.operand(Join.class).anyInputs()))
+            .withOperandSupplier(b0 ->
+                b0.operand(Filter.class).oneInput(b1 ->
+                    b1.operand(Join.class).anyInputs()))
             .withDescription("FilterJoinRule:filter")
             .as(FilterIntoJoinRule.Config.class)
             .withSmart(true)

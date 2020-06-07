@@ -56,7 +56,8 @@ import java.util.TreeMap;
  * reduced aggregate. If those constants are not used, another rule will remove
  * them from the project.
  */
-public class AggregateProjectPullUpConstantsRule extends RelOptNewRule
+public class AggregateProjectPullUpConstantsRule
+    extends RelOptNewRule<AggregateProjectPullUpConstantsRule.Config>
     implements TransformationRule {
   /** The singleton. */
   public static final AggregateProjectPullUpConstantsRule INSTANCE =
@@ -67,7 +68,7 @@ public class AggregateProjectPullUpConstantsRule extends RelOptNewRule
 
   /** More general instance that matches any relational expression. */
   public static final AggregateProjectPullUpConstantsRule INSTANCE2 =
-      INSTANCE.config()
+      INSTANCE.config
           .withOperandFor(LogicalAggregate.class, RelNode.class)
           .toRule();
 
@@ -91,10 +92,6 @@ public class AggregateProjectPullUpConstantsRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
@@ -204,11 +201,11 @@ public class AggregateProjectPullUpConstantsRule extends RelOptNewRule
      */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends RelNode> inputClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass)
               .predicate(Aggregate::isSimple)
-              .oneInput(b2 ->
-                  b2.operand(inputClass).anyInputs()))
+              .oneInput(b1 ->
+                  b1.operand(inputClass).anyInputs()))
           .as(Config.class);
     }
   }

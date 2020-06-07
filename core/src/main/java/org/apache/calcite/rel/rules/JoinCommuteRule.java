@@ -48,7 +48,8 @@ import java.util.List;
  * <p>To preserve the order of columns in the output row, the rule adds a
  * {@link org.apache.calcite.rel.core.Project}.
  */
-public class JoinCommuteRule extends RelOptNewRule
+public class JoinCommuteRule
+    extends RelOptNewRule<JoinCommuteRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -62,7 +63,7 @@ public class JoinCommuteRule extends RelOptNewRule
 
   /** Instance of the rule that swaps outer joins as well as inner joins. */
   public static final JoinCommuteRule SWAP_OUTER =
-      INSTANCE.config()
+      INSTANCE.config
           .withSwapOuter(true)
           .toRule();
 
@@ -95,10 +96,6 @@ public class JoinCommuteRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   @Deprecated // to be removed before 2.0
   public static RelNode swap(Join join) {
@@ -140,7 +137,7 @@ public class JoinCommuteRule extends RelOptNewRule
     // swap.  This way, we will generate one semijoin for the original
     // join, and one for the swapped join, and no more.  This
     // doesn't prevent us from seeing any new combinations assuming
-    // that the planner tries the desired order (semijoins after swaps).
+    // that the planner tries the desired order (semi-joins after swaps).
     Join newJoin =
         join.copy(join.getTraitSet(), condition, join.getRight(),
             join.getLeft(), joinType.swap(), join.isSemiJoinDone());
@@ -160,7 +157,7 @@ public class JoinCommuteRule extends RelOptNewRule
   public void onMatch(final RelOptRuleCall call) {
     Join join = call.rel(0);
 
-    final RelNode swapped = swap(join, config().isSwapOuter(), call.builder());
+    final RelNode swapped = swap(join, config.isSwapOuter(), call.builder());
     if (swapped == null) {
       return;
     }

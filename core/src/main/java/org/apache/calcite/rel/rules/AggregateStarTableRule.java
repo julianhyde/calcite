@@ -61,7 +61,8 @@ import java.util.function.Supplier;
  *
  * @see AggregateProjectStarTableRule
  */
-public class AggregateStarTableRule extends RelOptNewRule
+public class AggregateStarTableRule
+    extends RelOptNewRule<AggregateStarTableRule.Config>
     implements TransformationRule {
   public static final AggregateStarTableRule INSTANCE =
       Config.EMPTY
@@ -263,11 +264,11 @@ public class AggregateStarTableRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<StarTable.StarTableScan> scanClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass)
               .predicate(Aggregate::isSimple)
-              .oneInput(b2 ->
-                  b2.operand(scanClass).noInputs()))
+              .oneInput(b1 ->
+                  b1.operand(scanClass).noInputs()))
           .as(Config.class);
     }
   }

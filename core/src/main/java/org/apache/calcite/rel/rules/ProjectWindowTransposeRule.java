@@ -46,7 +46,8 @@ import java.util.List;
  * a {@link org.apache.calcite.rel.logical.LogicalProject}
  * past a {@link org.apache.calcite.rel.logical.LogicalWindow}.
  */
-public class ProjectWindowTransposeRule extends RelOptNewRule
+public class ProjectWindowTransposeRule
+    extends RelOptNewRule<ProjectWindowTransposeRule.Config>
     implements TransformationRule {
   /** The default instance of ProjectWindowTransposeRule. */
   public static final ProjectWindowTransposeRule INSTANCE =
@@ -249,9 +250,9 @@ public class ProjectWindowTransposeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<? extends Window> windowClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(windowClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(windowClass).anyInputs()))
           .as(Config.class);
     }
   }

@@ -24,14 +24,15 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Rule that matches Project on Filter. */
-public class MaterializedViewProjectFilterRule extends MaterializedViewJoinRule {
+public class MaterializedViewProjectFilterRule
+    extends MaterializedViewJoinRule<MaterializedViewProjectFilterRule.Config> {
 
   public static final MaterializedViewProjectFilterRule INSTANCE =
       Config.EMPTY.as(Config.class)
           .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .withOperandSupplier(b ->
-              b.operand(Project.class).oneInput(b2 ->
-                  b2.operand(Filter.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Project.class).oneInput(b1 ->
+                  b1.operand(Filter.class).anyInputs()))
           .withDescription("MaterializedViewJoinRule(Project-Filter)")
           .as(Config.class)
           .withGenerateUnionRewriting(true)
@@ -48,7 +49,7 @@ public class MaterializedViewProjectFilterRule extends MaterializedViewJoinRule 
   public MaterializedViewProjectFilterRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withGenerateUnionRewriting(generateUnionRewriting)

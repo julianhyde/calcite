@@ -65,7 +65,8 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * rule is optionally applied, in order to support the situation in which we
  * would like to push down decimal operations to an external database.
  */
-public class ReduceDecimalsRule extends RelOptNewRule
+public class ReduceDecimalsRule
+    extends RelOptNewRule<ReduceDecimalsRule.Config>
     implements TransformationRule {
   public static final ReduceDecimalsRule INSTANCE =
       Config.EMPTY

@@ -29,9 +29,9 @@ public class MaterializedViewProjectJoinRule extends MaterializedViewJoinRule {
   public static final MaterializedViewProjectJoinRule INSTANCE =
       Config.EMPTY.as(Config.class)
           .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .withOperandSupplier(b ->
-              b.operand(Project.class).oneInput(b2 ->
-                  b2.operand(Join.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Project.class).oneInput(b1 ->
+                  b1.operand(Join.class).anyInputs()))
           .withDescription("MaterializedViewJoinRule(Project-Join)")
           .as(MaterializedViewProjectFilterRule.Config.class)
           .withGenerateUnionRewriting(true)
@@ -48,7 +48,7 @@ public class MaterializedViewProjectJoinRule extends MaterializedViewJoinRule {
   public MaterializedViewProjectJoinRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withGenerateUnionRewriting(generateUnionRewriting)

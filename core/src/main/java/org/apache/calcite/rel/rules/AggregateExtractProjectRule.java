@@ -49,7 +49,8 @@ import java.util.List;
  * <p>To prevent cycles, this rule will not extract a {@code Project} if the
  * {@code Aggregate}s input is already a {@code Project}.
  */
-public class AggregateExtractProjectRule extends RelOptNewRule
+public class AggregateExtractProjectRule
+    extends RelOptNewRule<AggregateExtractProjectRule.Config>
     implements TransformationRule {
   public static final AggregateExtractProjectRule SCAN =
       Config.EMPTY
@@ -149,9 +150,9 @@ public class AggregateExtractProjectRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends RelNode> inputClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass).oneInput(b2 ->
-              b2.operand(inputClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass).oneInput(b1 ->
+              b1.operand(inputClass)
                   // Predicate prevents matching against an Aggregate whose
                   // input is already a Project. Prevents this rule firing
                   // repeatedly.

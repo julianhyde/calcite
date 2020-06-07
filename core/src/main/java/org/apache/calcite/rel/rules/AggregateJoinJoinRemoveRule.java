@@ -64,7 +64,8 @@ import java.util.Set;
  * left join product_class pc
  *   on s.product_id = pc.product_id</pre></blockquote>
  */
-public class AggregateJoinJoinRemoveRule extends RelOptNewRule
+public class AggregateJoinJoinRemoveRule
+    extends RelOptNewRule<AggregateJoinJoinRemoveRule.Config>
     implements TransformationRule {
   public static final AggregateJoinJoinRemoveRule INSTANCE =
       Config.EMPTY
@@ -166,10 +167,10 @@ public class AggregateJoinJoinRemoveRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends Join> joinClass) {
-      return withOperandSupplier(b -> b.operand(aggregateClass)
-          .oneInput(b2 -> b2.operand(joinClass)
+      return withOperandSupplier(b0 -> b0.operand(aggregateClass)
+          .oneInput(b1 -> b1.operand(joinClass)
               .predicate(join -> join.getJoinType() == JoinRelType.LEFT)
-              .inputs(b3 -> b3.operand(joinClass)
+              .inputs(b2 -> b2.operand(joinClass)
                   .predicate(join -> join.getJoinType() == JoinRelType.LEFT)
                   .anyInputs()))).as(Config.class);
     }

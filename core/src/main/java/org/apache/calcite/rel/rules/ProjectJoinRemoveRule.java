@@ -53,7 +53,8 @@ import java.util.stream.Collectors;
  * <blockquote>
  * <pre>select s.product_id from sales as s</pre></blockquote>
  */
-public class ProjectJoinRemoveRule extends RelOptNewRule
+public class ProjectJoinRemoveRule
+    extends RelOptNewRule<ProjectJoinRemoveRule.Config>
     implements SubstitutionRule {
   public static final ProjectJoinRemoveRule INSTANCE =
       Config.EMPTY
@@ -135,9 +136,9 @@ public class ProjectJoinRemoveRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<? extends Join> joinClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(joinClass).predicate(join ->
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(joinClass).predicate(join ->
                   join.getJoinType() == JoinRelType.LEFT
                       || join.getJoinType() == JoinRelType.RIGHT).anyInputs()))
           .as(Config.class);

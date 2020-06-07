@@ -54,13 +54,14 @@ import java.util.List;
  *
  * @see org.apache.calcite.rel.rules.FilterAggregateTransposeRule
  */
-public class AggregateFilterTransposeRule extends RelOptNewRule
+public class AggregateFilterTransposeRule
+    extends RelOptNewRule<AggregateFilterTransposeRule.Config>
     implements TransformationRule {
   public static final AggregateFilterTransposeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Aggregate.class).oneInput(b2 ->
-                  b2.operand(Filter.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Aggregate.class).oneInput(b1 ->
+                  b1.operand(Filter.class).anyInputs()))
           .as(Config.class)
           .toRule();
 

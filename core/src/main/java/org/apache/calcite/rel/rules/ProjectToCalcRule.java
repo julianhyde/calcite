@@ -38,7 +38,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see FilterToCalcRule
  */
-public class ProjectToCalcRule extends RelOptNewRule
+public class ProjectToCalcRule extends RelOptNewRule<ProjectToCalcRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 

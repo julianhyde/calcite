@@ -92,8 +92,11 @@ import java.util.stream.Collectors;
  * <li>Removal of redundant casts, which occurs when the argument into the cast
  * is the same as the type of the resulting cast expression
  * </ul>
+ *
+ * @param <C> Configuration type
  */
-public abstract class ReduceExpressionsRule extends RelOptNewRule
+public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Config>
+    extends RelOptNewRule<C>
     implements SubstitutionRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -145,7 +148,8 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
    * If the condition is a constant, the filter is removed (if TRUE) or replaced with
    * an empty {@link org.apache.calcite.rel.core.Values} (if FALSE or NULL).
    */
-  public static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
+  public static class FilterReduceExpressionsRule
+      extends ReduceExpressionsRule<FilterReduceExpressionsRule.Config> {
     public static final FilterReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)
@@ -189,7 +193,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
       final RelOptPredicateList predicates =
           mq.getPulledUpPredicates(filter.getInput());
       if (reduceExpressions(filter, expList, predicates, true,
-          config().matchNullability())) {
+          config.matchNullability())) {
         assert expList.size() == 1;
         newConditionExp = expList.get(0);
         reduced = true;
@@ -302,7 +306,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
   /** Rule that reduces constants inside a
    * {@link org.apache.calcite.rel.core.Project}. */
   public static class ProjectReduceExpressionsRule
-      extends ReduceExpressionsRule {
+      extends ReduceExpressionsRule<ProjectReduceExpressionsRule.Config> {
     public static final ProjectReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)
@@ -343,7 +347,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
       final List<RexNode> expList =
           Lists.newArrayList(project.getProjects());
       if (reduceExpressions(project, expList, predicates, false,
-          config().matchNullability())) {
+          config.matchNullability())) {
         assert !project.getProjects().equals(expList)
             : "Reduced expressions should be different from original expressions";
         call.transformTo(
@@ -368,7 +372,8 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
   /**
    * Rule that reduces constants inside a {@link org.apache.calcite.rel.core.Join}.
    */
-  public static class JoinReduceExpressionsRule extends ReduceExpressionsRule {
+  public static class JoinReduceExpressionsRule
+      extends ReduceExpressionsRule<JoinReduceExpressionsRule.Config> {
     public static final JoinReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(false)
@@ -416,7 +421,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
           leftPredicates.union(rexBuilder,
               rightPredicates.shift(rexBuilder, fieldCount));
       if (!reduceExpressions(join, expList, predicates, true,
-          config().matchNullability())) {
+          config.matchNullability())) {
         return;
       }
       call.transformTo(
@@ -443,7 +448,8 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
   /**
    * Rule that reduces constants inside a {@link org.apache.calcite.rel.core.Calc}.
    */
-  public static class CalcReduceExpressionsRule extends ReduceExpressionsRule {
+  public static class CalcReduceExpressionsRule
+      extends ReduceExpressionsRule<CalcReduceExpressionsRule.Config> {
     public static final CalcReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)
@@ -495,7 +501,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
       }
       final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
       if (reduceExpressions(calc, expandedExprList, predicates, false,
-          config().matchNullability())) {
+          config.matchNullability())) {
         final RexProgramBuilder builder =
             new RexProgramBuilder(
                 calc.getInput().getRowType(),
@@ -569,7 +575,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
   /** Rule that reduces constants inside a
    * {@link org.apache.calcite.rel.core.Window}. */
   public static class WindowReduceExpressionsRule
-      extends ReduceExpressionsRule {
+      extends ReduceExpressionsRule<WindowReduceExpressionsRule.Config> {
 
     public static final WindowReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
@@ -663,30 +669,11 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a ReduceExpressionsRule. */
-  protected ReduceExpressionsRule(Config config) {
+  protected ReduceExpressionsRule(C config) {
     super(config);
   }
 
-  @SuppressWarnings("unused")
-  @Deprecated
-  protected ReduceExpressionsRule(Class<? extends RelNode> clazz,
-      boolean matchNullability, RelBuilderFactory relBuilderFactory,
-      String description) {
-    this(Config.EMPTY.as(Config.class));
-    throw new AssertionError();
-  }
-
-  @Deprecated // to be removed before 2.0
-  protected ReduceExpressionsRule(Class<? extends RelNode> clazz,
-      RelBuilderFactory relBuilderFactory, String description) {
-    this(clazz, true, relBuilderFactory, description);
-  }
-
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   /**
    * Reduces a list of expressions.
@@ -1210,7 +1197,7 @@ public abstract class ReduceExpressionsRule extends RelOptNewRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
-    @Override ReduceExpressionsRule toRule();
+    @Override ReduceExpressionsRule<?> toRule();
 
     /** Whether to add a CAST when a nullable expression
      * reduces to a NOT NULL literal. */

@@ -86,7 +86,7 @@ class HepPlannerTest extends RelOptTestBase {
     return DiffRepository.lookup(HepPlannerTest.class);
   }
 
-  @Test void testRuleClass() throws Exception {
+  @Test void testRuleClass() {
     // Verify that an entire class of rules can be applied.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -97,12 +97,12 @@ class HepPlannerTest extends RelOptTestBase {
             programBuilder.build());
 
     planner.addRule(
-        CoerceInputsRule.INSTANCE.config()
+        CoerceInputsRule.INSTANCE.config
             .withCoerceNames(false)
             .withConsumerRelClass(LogicalUnion.class)
             .toRule());
     planner.addRule(
-        CoerceInputsRule.INSTANCE.config()
+        CoerceInputsRule.INSTANCE.config
             .withCoerceNames(false)
             .withConsumerRelClass(LogicalIntersect.class)
             .withDescription("CoerceInputsRule:Intersection") // TODO
@@ -113,7 +113,7 @@ class HepPlannerTest extends RelOptTestBase {
     sql(sql).with(planner).check();
   }
 
-  @Test void testRuleDescription() throws Exception {
+  @Test void testRuleDescription() {
     // Verify that a rule can be applied via its description.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -172,7 +172,7 @@ class HepPlannerTest extends RelOptTestBase {
             + ", actual value is " + digest);
   }
 
-  @Test void testMatchLimitOneTopDown() throws Exception {
+  @Test void testMatchLimitOneTopDown() {
     // Verify that only the top union gets rewritten.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -183,7 +183,7 @@ class HepPlannerTest extends RelOptTestBase {
     sql(UNION_TREE).with(programBuilder.build()).check();
   }
 
-  @Test void testMatchLimitOneBottomUp() throws Exception {
+  @Test void testMatchLimitOneBottomUp() {
     // Verify that only the bottom union gets rewritten.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -194,7 +194,7 @@ class HepPlannerTest extends RelOptTestBase {
     sql(UNION_TREE).with(programBuilder.build()).check();
   }
 
-  @Test void testMatchUntilFixpoint() throws Exception {
+  @Test void testMatchUntilFixpoint() {
     // Verify that both unions get rewritten.
 
     HepProgramBuilder programBuilder = HepProgram.builder();
@@ -204,7 +204,7 @@ class HepPlannerTest extends RelOptTestBase {
     sql(UNION_TREE).with(programBuilder.build()).check();
   }
 
-  @Test void testReplaceCommonSubexpression() throws Exception {
+  @Test void testReplaceCommonSubexpression() {
     // Note that here it may look like the rule is firing
     // twice, but actually it's only firing once on the
     // common sub-expression.  The purpose of this test
@@ -241,7 +241,7 @@ class HepPlannerTest extends RelOptTestBase {
     assertThat(listener.getApplyTimes() == 1, is(true));
   }
 
-  @Test void testSubprogram() throws Exception {
+  @Test void testSubprogram() {
     // Verify that subprogram gets re-executed until fixpoint.
     // In this case, the first time through we limit it to generate
     // only one calc; the second time through it will generate
@@ -261,7 +261,7 @@ class HepPlannerTest extends RelOptTestBase {
     sql(sql).with(programBuilder.build()).check();
   }
 
-  @Test void testGroup() throws Exception {
+  @Test void testGroup() {
     // Verify simultaneous application of a group of rules.
     // Intentionally add them in the wrong order to make sure
     // that order doesn't matter within the group.
@@ -276,7 +276,7 @@ class HepPlannerTest extends RelOptTestBase {
     sql(sql).with(programBuilder.build()).check();
   }
 
-  @Test void testGC() throws Exception {
+  @Test void testGC() {
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
     programBuilder.addRuleInstance(CalcMergeRule.INSTANCE);
@@ -315,7 +315,7 @@ class HepPlannerTest extends RelOptTestBase {
     assertThat(applyTimes2, is(87L));
   }
 
-  @Test void testMaterialization() throws Exception {
+  @Test void testMaterialization() {
     HepPlanner planner = new HepPlanner(HepProgram.builder().build());
     RelNode tableRel = tester.convertSqlToRel("select * from dept").rel;
     RelNode queryRel = tableRel;
@@ -343,7 +343,7 @@ class HepPlannerTest extends RelOptTestBase {
   }
 
   /** Listener for HepPlannerTest; counts how many times rules fire. */
-  private class HepTestListener implements RelOptListener {
+  private static class HepTestListener implements RelOptListener {
     private long applyTimes;
 
     HepTestListener(long applyTimes) {

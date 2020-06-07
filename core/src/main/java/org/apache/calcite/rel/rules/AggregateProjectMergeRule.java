@@ -51,7 +51,8 @@ import java.util.Set;
  * <p>In some cases, this rule has the effect of trimming: the aggregate will
  * use fewer columns than the project did.
  */
-public class AggregateProjectMergeRule extends RelOptNewRule
+public class AggregateProjectMergeRule
+    extends RelOptNewRule<AggregateProjectMergeRule.Config>
     implements TransformationRule {
   public static final AggregateProjectMergeRule INSTANCE =
       Config.EMPTY
@@ -152,9 +153,9 @@ public class AggregateProjectMergeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends Project> projectClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass).oneInput(b2 ->
-              b2.operand(projectClass).anyInputs())).as(Config.class);
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass).oneInput(b1 ->
+              b1.operand(projectClass).anyInputs())).as(Config.class);
     }
   }
 }

@@ -56,7 +56,8 @@ import java.util.Set;
  * <blockquote>
  * <pre>select distinct s.product_id from sales as s</pre></blockquote>
  */
-public class AggregateJoinRemoveRule extends RelOptNewRule
+public class AggregateJoinRemoveRule
+    extends RelOptNewRule<AggregateJoinRemoveRule.Config>
     implements TransformationRule {
   public static final AggregateJoinRemoveRule INSTANCE =
       Config.EMPTY
@@ -135,9 +136,9 @@ public class AggregateJoinRemoveRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends Join> joinClass) {
-      return withOperandSupplier(b ->
-          b.operand(aggregateClass).oneInput(b2 ->
-              b2.operand(joinClass)
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass).oneInput(b1 ->
+              b1.operand(joinClass)
                   .predicate(join ->
                       join.getJoinType() == JoinRelType.LEFT
                           || join.getJoinType() == JoinRelType.RIGHT)

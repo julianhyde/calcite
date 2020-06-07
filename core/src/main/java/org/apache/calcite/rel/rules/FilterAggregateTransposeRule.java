@@ -44,7 +44,8 @@ import java.util.List;
  *
  * @see org.apache.calcite.rel.rules.AggregateFilterTransposeRule
  */
-public class FilterAggregateTransposeRule extends RelOptNewRule
+public class FilterAggregateTransposeRule
+    extends RelOptNewRule<FilterAggregateTransposeRule.Config>
     implements TransformationRule {
   /** The default instance of
    * {@link FilterAggregateTransposeRule}.
@@ -93,10 +94,6 @@ public class FilterAggregateTransposeRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Filter filterRel = call.rel(0);
@@ -170,9 +167,9 @@ public class FilterAggregateTransposeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Class<? extends Aggregate> aggregateClass) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).oneInput(b2 ->
-              b2.operand(aggregateClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(aggregateClass).anyInputs()))
           .as(Config.class);
     }
   }

@@ -78,7 +78,8 @@ import java.util.stream.Stream;
  * the rule creates separate {@code Aggregate}s and combines using a
  * {@link org.apache.calcite.rel.core.Join}.
  */
-public final class AggregateExpandDistinctAggregatesRule extends RelOptNewRule
+public final class AggregateExpandDistinctAggregatesRule
+    extends RelOptNewRule<AggregateExpandDistinctAggregatesRule.Config>
     implements TransformationRule {
   /** The default instance of the rule; operates only on logical expressions. */
   public static final AggregateExpandDistinctAggregatesRule INSTANCE =
@@ -129,10 +130,6 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
@@ -206,7 +203,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptNewRule
       return;
     }
 
-    if (config().isUsingGroupingSets()) {
+    if (((Config) config).isUsingGroupingSets()) {
       rewriteUsingGroupingSets(call, aggregate);
       return;
     }

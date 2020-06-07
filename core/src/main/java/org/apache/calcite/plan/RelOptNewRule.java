@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
@@ -34,6 +35,8 @@ import javax.annotation.Nonnull;
  * Rule that is parameterized via a configuration.
  *
  * <p>Temporary.
+ *
+ * @param <C> Configuration type
  */
 public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
     extends RelOptRule {
@@ -43,19 +46,6 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
     super(OperandBuilderImpl.operand(config.operandSupplier()),
         config.relBuilderFactory(), config.description());
     this.config = config;
-  }
-
-  /** Returns the configuration of this rule, cast to its most exact type.
-   *
-   * <p>Any given implementation will have the following text:
-   * <blockquote><pre>
-   *   &#64;Override public Config config() {
-   *     return (Config) config;
-   *   }
-   * </pre></blockquote>
-   */
-  public C config() {
-    return config;
   }
 
   /** Rule configuration. */
@@ -238,5 +228,14 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
   /** Singleton instance of {@link Done}. */
   private enum DoneImpl implements Done {
     INSTANCE
+  }
+
+  /** Callback interface that helps you avoid creating sub-classes of
+   * {@link RelOptNewRule} that differ only in implementations of
+   * {@link #onMatch(RelOptRuleCall)} method.
+   *
+   * @param <R> Rule type */
+  public interface MatchHandler<R extends RelOptRule>
+      extends BiConsumer<R, RelOptRuleCall> {
   }
 }

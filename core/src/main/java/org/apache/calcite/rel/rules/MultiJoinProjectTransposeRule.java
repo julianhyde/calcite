@@ -61,12 +61,12 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 
   public static final MultiJoinProjectTransposeRule MULTI_BOTH_PROJECT =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalJoin.class).inputs(
-                  b2 -> b2.operand(LogicalProject.class)
-                      .oneInput(b3 -> b3.operand(MultiJoin.class).anyInputs()),
-                  b4 -> b4.operand(LogicalProject.class)
-                      .oneInput(b5 -> b5.operand(MultiJoin.class).anyInputs())))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalJoin.class).inputs(
+                  b1 -> b1.operand(LogicalProject.class)
+                      .oneInput(b2 -> b2.operand(MultiJoin.class).anyInputs()),
+                  b3 -> b3.operand(LogicalProject.class)
+                      .oneInput(b4 -> b4.operand(MultiJoin.class).anyInputs())))
           .withDescription(
               "MultiJoinProjectTransposeRule: with two LogicalProject children")
           .as(Config.class)
@@ -74,10 +74,10 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 
   public static final MultiJoinProjectTransposeRule MULTI_LEFT_PROJECT =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalJoin.class).inputs(
-                  b2 -> b2.operand(LogicalProject.class)
-                      .oneInput(b3 -> b3.operand(MultiJoin.class).anyInputs())))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalJoin.class).inputs(
+                  b1 -> b1.operand(LogicalProject.class)
+                      .oneInput(b2 -> b2.operand(MultiJoin.class).anyInputs())))
           .withDescription(
               "MultiJoinProjectTransposeRule: with LogicalProject on left")
           .as(Config.class)
@@ -85,11 +85,11 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 
   public static final MultiJoinProjectTransposeRule MULTI_RIGHT_PROJECT =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalJoin.class).inputs(
-                  b2 -> b2.operand(RelNode.class).anyInputs(),
-                  b3 -> b3.operand(LogicalProject.class)
-                      .oneInput(b4 -> b4.operand(MultiJoin.class).anyInputs())))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalJoin.class).inputs(
+                  b1 -> b1.operand(RelNode.class).anyInputs(),
+                  b2 -> b2.operand(LogicalProject.class)
+                      .oneInput(b3 -> b3.operand(MultiJoin.class).anyInputs())))
           .withDescription(
               "MultiJoinProjectTransposeRule: with LogicalProject on right")
           .as(Config.class)

@@ -21,7 +21,6 @@ import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.SubstitutionVisitor;
 import org.apache.calcite.plan.hep.HepProgram;
@@ -48,7 +47,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -83,33 +81,17 @@ import java.util.Set;
  * followed by {@link org.apache.calcite.rel.core.Aggregate} or an
  * {@link org.apache.calcite.rel.core.Aggregate} to a scan (and possibly
  * other operations) over a materialized view.
+ *
+ * @param <C> Configuration type
  */
-public abstract class MaterializedViewRule extends RelOptNewRule {
+public abstract class MaterializedViewRule<C extends MaterializedViewRule.Config>
+    extends RelOptNewRule<C> {
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a MaterializedViewRule. */
-  MaterializedViewRule(Config config) {
+  MaterializedViewRule(C config) {
     super(config);
-  }
-
-  @Deprecated
-  protected MaterializedViewRule(RelOptRuleOperand operand,
-      RelBuilderFactory relBuilderFactory, String description,
-      boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
-      boolean fastBailOut) {
-    this(Config.EMPTY
-        .withOperandSupplier(b -> b.exactly(operand))
-        .withRelBuilderFactory(relBuilderFactory)
-        .withDescription(description)
-        .as(MaterializedViewRule.Config.class)
-        .withGenerateUnionRewriting(generateUnionRewriting)
-        .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withFastBailOut(fastBailOut));
-  }
-
-  @Override public Config config() {
-    return (Config) config;
   }
 
   @Override public boolean matches(RelOptRuleCall call) {
@@ -371,7 +353,7 @@ public abstract class MaterializedViewRule extends RelOptNewRule {
               computeCompensationPredicates(rexBuilder, simplify,
                   currQEC, queryPreds, queryBasedVEC, viewPreds,
                   queryToViewTableMapping);
-          if (compensationPreds == null && config().generateUnionRewriting()) {
+          if (compensationPreds == null && config.generateUnionRewriting()) {
             // Attempt partial rewriting using union operator. This rewriting
             // will read some data from the view and the rest of the data from
             // the query computation. The resulting predicates are expressed

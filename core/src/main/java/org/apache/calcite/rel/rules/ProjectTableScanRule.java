@@ -50,7 +50,8 @@ import java.util.stream.Collectors;
  *
  * @see FilterTableScanRule
  */
-public class ProjectTableScanRule extends RelOptNewRule {
+public class ProjectTableScanRule
+    extends RelOptNewRule<ProjectTableScanRule.Config> {
   @SuppressWarnings("Guava")
   @Deprecated // to be removed before 2.0
   public static final com.google.common.base.Predicate<TableScan> PREDICATE =
@@ -59,9 +60,9 @@ public class ProjectTableScanRule extends RelOptNewRule {
   /** Rule that matches Project on TableScan. */
   public static final ProjectTableScanRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Project.class).oneInput(b2 ->
-                  b2.operand(TableScan.class)
+          .withOperandSupplier(b0 ->
+              b0.operand(Project.class).oneInput(b1 ->
+                  b1.operand(TableScan.class)
                       .predicate(ProjectTableScanRule::test)
                       .noInputs()))
           .as(Config.class)
@@ -70,10 +71,10 @@ public class ProjectTableScanRule extends RelOptNewRule {
   /** Rule that matches Project on EnumerableInterpreter on TableScan. */
   public static final ProjectTableScanRule INTERPRETER =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Project.class).oneInput(b2 ->
-                  b2.operand(EnumerableInterpreter.class).oneInput(b3 ->
-                      b3.operand(TableScan.class)
+          .withOperandSupplier(b0 ->
+              b0.operand(Project.class).oneInput(b1 ->
+                  b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
+                      b2.operand(TableScan.class)
                           .predicate(ProjectTableScanRule::test)
                           .noInputs())))
           .withDescription("ProjectTableScanRule:interpreter")

@@ -38,7 +38,8 @@ import java.util.List;
  * Planner rule that pushes a {@link Filter} above a {@link Correlate} into the
  * inputs of the Correlate.
  */
-public class FilterCorrelateRule extends RelOptNewRule
+public class FilterCorrelateRule
+    extends RelOptNewRule<FilterCorrelateRule.Config>
     implements TransformationRule {
   public static final FilterCorrelateRule INSTANCE =
       Config.EMPTY
@@ -140,9 +141,9 @@ public class FilterCorrelateRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Class<? extends Correlate> correlateClass) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).oneInput(b2 ->
-              b2.operand(correlateClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(correlateClass).anyInputs()))
           .as(Config.class);
     }
   }

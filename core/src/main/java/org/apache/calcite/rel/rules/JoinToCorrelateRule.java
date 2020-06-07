@@ -56,7 +56,8 @@ import org.apache.calcite.util.ImmutableBitSet;
  * <p>would require emitting a NULL emp row if a certain department contained no
  * employees, and Correlator cannot do that.</p>
  */
-public class JoinToCorrelateRule extends RelOptNewRule
+public class JoinToCorrelateRule
+    extends RelOptNewRule<JoinToCorrelateRule.Config>
     implements TransformationRule {
 
   //~ Static fields/initializers ---------------------------------------------

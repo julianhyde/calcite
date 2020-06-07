@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.geode.rel;
 
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
@@ -41,10 +42,10 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
 /**
- * Rules and relational operators for {@link GeodeRel#CONVENTION} calling convention.
+ * Rules and relational operators for {@link GeodeRel#CONVENTION}
+ * calling convention.
  */
 public class GeodeRules {
 
@@ -184,15 +185,22 @@ public class GeodeRules {
    * Rule to convert the Limit in {@link org.apache.calcite.rel.core.Sort} to a
    * {@link GeodeSort}.
    */
-  private static class GeodeSortLimitRule extends RelOptRule {
+  public static class GeodeSortLimitRule
+      extends RelOptNewRule<GeodeSortLimitRule.Config> {
 
     private static final GeodeSortLimitRule INSTANCE =
-        new GeodeSortLimitRule(
-            // OQL doesn't support for offsets (e.g. LIMIT 10 OFFSET 500)
-            sort -> sort.offset == null);
+        Config.EMPTY
+            .withOperandSupplier(b ->
+                b.operand(Sort.class)
+                    // OQL doesn't support offsets (e.g. LIMIT 10 OFFSET 500)
+                    .predicate(sort -> sort.offset == null)
+                    .anyInputs())
+            .as(Config.class)
+            .toRule();
 
-    GeodeSortLimitRule(Predicate<Sort> predicate) {
-      super(operandJ(Sort.class, null, predicate, any()), "GeodeSortLimitRule");
+    /** Creates a GeodeSortLimitRule. */
+    protected GeodeSortLimitRule(Config config) {
+      super(config);
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
@@ -208,19 +216,33 @@ public class GeodeRules {
 
       call.transformTo(geodeSort);
     }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default GeodeSortLimitRule toRule() {
+        return new GeodeSortLimitRule(this);
+      }
+    }
   }
 
   /**
    * Rule to convert a {@link LogicalFilter} to a
    * {@link GeodeFilter}.
    */
-  private static class GeodeFilterRule extends RelOptRule {
+  public static class GeodeFilterRule
+      extends RelOptNewRule<GeodeFilterRule.Config> {
 
-    private static final GeodeFilterRule INSTANCE = new GeodeFilterRule();
+    private static final GeodeFilterRule INSTANCE =
+        Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(LogicalFilter.class).oneInput(b1 ->
+                    b1.operand(GeodeTableScan.class).noInputs()))
+            .as(Config.class)
+            .toRule();
 
-    private GeodeFilterRule() {
-      super(operand(LogicalFilter.class, operand(GeodeTableScan.class, none())),
-          "GeodeFilterRule");
+    /** Creates a GeodeFilterRule. */
+    protected GeodeFilterRule(Config config) {
+      super(config);
     }
 
     @Override public boolean matches(RelOptRuleCall call) {
@@ -347,6 +369,13 @@ public class GeodeRules {
           traitSet,
           convert(filter.getInput(), GeodeRel.CONVENTION),
           filter.getCondition());
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default GeodeFilterRule toRule() {
+        return new GeodeFilterRule(this);
+      }
     }
   }
 

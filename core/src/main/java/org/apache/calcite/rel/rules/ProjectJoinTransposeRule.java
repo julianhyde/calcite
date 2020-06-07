@@ -41,7 +41,8 @@ import java.util.List;
  * by splitting the projection into a projection on top of each child of
  * the join.
  */
-public class ProjectJoinTransposeRule extends RelOptNewRule
+public class ProjectJoinTransposeRule
+    extends RelOptNewRule<ProjectJoinTransposeRule.Config>
     implements TransformationRule {
   /**
    * A instance for ProjectJoinTransposeRule that pushes a
@@ -78,10 +79,6 @@ public class ProjectJoinTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     final Project origProject = call.rel(0);
     final Join join = call.rel(1);
@@ -109,7 +106,7 @@ public class ProjectJoinTransposeRule extends RelOptNewRule
             origProject,
             joinFilter,
             join,
-            config().preserveExprCondition(),
+            config.preserveExprCondition(),
             call.builder());
     if (pushProjector.locateAllRefs()) {
       return;
@@ -132,17 +129,17 @@ public class ProjectJoinTransposeRule extends RelOptNewRule
     RexNode newJoinFilter = null;
     int[] adjustments = pushProjector.getAdjustments();
     if (joinFilter != null) {
-      List<RelDataTypeField> projJoinFieldList = new ArrayList<>();
-      projJoinFieldList.addAll(
+      List<RelDataTypeField> projectJoinFieldList = new ArrayList<>();
+      projectJoinFieldList.addAll(
           join.getSystemFieldList());
-      projJoinFieldList.addAll(
+      projectJoinFieldList.addAll(
           leftProject.getRowType().getFieldList());
-      projJoinFieldList.addAll(
+      projectJoinFieldList.addAll(
           rightProject.getRowType().getFieldList());
       newJoinFilter =
           pushProjector.convertRefsAndExprs(
               joinFilter,
-              projJoinFieldList,
+              projectJoinFieldList,
               adjustments);
     }
 
@@ -180,9 +177,9 @@ public class ProjectJoinTransposeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<? extends Join> joinClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(joinClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(joinClass).anyInputs()))
           .as(Config.class);
     }
   }

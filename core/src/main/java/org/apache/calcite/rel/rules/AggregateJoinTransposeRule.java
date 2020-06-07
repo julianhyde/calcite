@@ -62,7 +62,8 @@ import java.util.TreeMap;
  * {@link org.apache.calcite.rel.core.Aggregate}
  * past a {@link org.apache.calcite.rel.core.Join}.
  */
-public class AggregateJoinTransposeRule extends RelOptNewRule
+public class AggregateJoinTransposeRule
+    extends RelOptNewRule<AggregateJoinTransposeRule.Config>
     implements TransformationRule {
   public static final AggregateJoinTransposeRule INSTANCE =
       Config.EMPTY
@@ -131,10 +132,6 @@ public class AggregateJoinTransposeRule extends RelOptNewRule
     this(aggregateClass, joinClass,
         RelBuilder.proto(aggregateFactory, joinFactory, projectFactory),
         allowFunctions);
-  }
-
-  @Override public Config config() {
-    return (Config) config;
   }
 
   private static boolean isAggregateSupported(Aggregate aggregate,
@@ -227,7 +224,7 @@ public class AggregateJoinTransposeRule extends RelOptNewRule
       final ImmutableBitSet belowAggregateKey =
           belowAggregateKeyNotShifted.shift(-offset);
       final boolean unique;
-      if (!config().isAllowFunctions()) {
+      if (!config.isAllowFunctions()) {
         assert aggregate.getAggCallList().isEmpty();
         // If there are no functions, it doesn't matter as much whether we
         // aggregate the inputs before the join, because there will not be
@@ -481,11 +478,11 @@ public class AggregateJoinTransposeRule extends RelOptNewRule
     default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
         Class<? extends Join> joinClass, boolean allowFunctions) {
       return withAllowFunctions(allowFunctions)
-          .withOperandSupplier(b ->
-              b.operand(aggregateClass)
+          .withOperandSupplier(b0 ->
+              b0.operand(aggregateClass)
                   .predicate(agg -> isAggregateSupported(agg, allowFunctions))
-              .oneInput(b2 ->
-                  b2.operand(joinClass).anyInputs()))
+              .oneInput(b1 ->
+                  b1.operand(joinClass).anyInputs()))
           .as(Config.class);
     }
   }

@@ -72,7 +72,8 @@ import java.util.function.Supplier;
  * <p>There is also a variant that matches
  * {@link org.apache.calcite.rel.core.Calc} rather than {@code Project}.
  */
-public abstract class ProjectToWindowRule extends RelOptNewRule
+public abstract class ProjectToWindowRule
+    extends RelOptNewRule<ProjectToWindowRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -128,10 +129,6 @@ public abstract class ProjectToWindowRule extends RelOptNewRule
           .as(Config.class));
     }
 
-    @Override public Config config() {
-      return (Config) config;
-    }
-
     @Override public void onMatch(RelOptRuleCall call) {
       final Calc calc = call.rel(0);
       assert calc.containsOver();
@@ -177,10 +174,6 @@ public abstract class ProjectToWindowRule extends RelOptNewRule
         RelBuilderFactory relBuilderFactory) {
       this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
-    }
-
-    @Override public Config config() {
-      return (Config) config;
     }
 
     @Override public void onMatch(RelOptRuleCall call) {

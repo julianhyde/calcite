@@ -42,7 +42,8 @@ import java.util.Set;
 /** Planner rule that converts a
  * {@link org.apache.calcite.rel.logical.LogicalJoin} into an
  * {@link org.apache.calcite.adapter.enumerable.EnumerableBatchNestedLoopJoin}. */
-public class EnumerableBatchNestedLoopJoinRule extends RelOptNewRule {
+public class EnumerableBatchNestedLoopJoinRule
+    extends RelOptNewRule<EnumerableBatchNestedLoopJoinRule.Config> {
   public static final EnumerableBatchNestedLoopJoinRule INSTANCE =
       Config.EMPTY
           .withOperandSupplier(b -> b.operand(LogicalJoin.class).anyInputs())
@@ -87,10 +88,6 @@ public class EnumerableBatchNestedLoopJoinRule extends RelOptNewRule {
         || joinType == JoinRelType.SEMI;
   }
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     final Join join = call.rel(0);
     final int leftFieldCount = join.getLeft().getRowType().getFieldCount();
@@ -101,7 +98,7 @@ public class EnumerableBatchNestedLoopJoinRule extends RelOptNewRule {
     final Set<CorrelationId> correlationIds = new HashSet<>();
     final ArrayList<RexNode> corrVar = new ArrayList<>();
 
-    final int batchSize = config().batchSize();
+    final int batchSize = config.batchSize();
     for (int i = 0; i < batchSize; i++) {
       CorrelationId correlationId = cluster.createCorrel();
       correlationIds.add(correlationId);

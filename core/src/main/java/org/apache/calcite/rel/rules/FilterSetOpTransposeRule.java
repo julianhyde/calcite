@@ -37,13 +37,14 @@ import java.util.List;
  * Planner rule that pushes a {@link org.apache.calcite.rel.core.Filter}
  * past a {@link org.apache.calcite.rel.core.SetOp}.
  */
-public class FilterSetOpTransposeRule extends RelOptNewRule
+public class FilterSetOpTransposeRule
+    extends RelOptNewRule<FilterSetOpTransposeRule.Config>
     implements TransformationRule {
   public static final FilterSetOpTransposeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Filter.class).oneInput(b2 ->
-                  b2.operand(SetOp.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(SetOp.class).anyInputs()))
           .as(Config.class)
           .toRule();
 

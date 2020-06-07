@@ -38,7 +38,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * returns them in a {@link org.apache.calcite.plan.RelOptPredicateList}
  * and applies them appropriately.
  */
-public class JoinPushTransitivePredicatesRule extends RelOptNewRule
+public class JoinPushTransitivePredicatesRule
+    extends RelOptNewRule<JoinPushTransitivePredicatesRule.Config>
     implements TransformationRule {
   /** The singleton. */
   public static final JoinPushTransitivePredicatesRule INSTANCE =

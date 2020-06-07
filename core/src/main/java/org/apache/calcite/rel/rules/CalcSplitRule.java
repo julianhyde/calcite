@@ -37,7 +37,8 @@ import com.google.common.collect.ImmutableList;
  * specific tasks, such as optimizing before calling an
  * {@link org.apache.calcite.interpreter.Interpreter}.
  */
-public class CalcSplitRule extends RelOptNewRule implements TransformationRule {
+public class CalcSplitRule
+    extends RelOptNewRule<CalcSplitRule.Config> implements TransformationRule {
   public static final CalcSplitRule INSTANCE =
       Config.EMPTY
           .withOperandSupplier(b -> b.operand(Calc.class).anyInputs())
@@ -53,10 +54,6 @@ public class CalcSplitRule extends RelOptNewRule implements TransformationRule {
   public CalcSplitRule(RelBuilderFactory relBuilderFactory) {
     this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
-  }
-
-  @Override public ProjectMultiJoinMergeRule.Config config() {
-    return (ProjectMultiJoinMergeRule.Config) config;
   }
 
   @Override public void onMatch(RelOptRuleCall call) {

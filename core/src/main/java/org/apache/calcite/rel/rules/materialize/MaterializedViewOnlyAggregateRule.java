@@ -26,7 +26,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Rule that matches Aggregate. */
 public class MaterializedViewOnlyAggregateRule
-    extends MaterializedViewAggregateRule {
+    extends MaterializedViewAggregateRule<MaterializedViewOnlyAggregateRule.Config> {
 
   public static final MaterializedViewOnlyAggregateRule INSTANCE =
       makeConfig(RelFactories.LOGICAL_BUILDER)
@@ -46,7 +46,7 @@ public class MaterializedViewOnlyAggregateRule
   @Deprecated
   public MaterializedViewOnlyAggregateRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withRelBuilderFactory(relBuilderFactory)
@@ -61,7 +61,7 @@ public class MaterializedViewOnlyAggregateRule
       RelOptRule filterAggregateTransposeRule,
       RelOptRule aggregateProjectPullUpConstantsRule,
       RelOptRule projectMergeRule) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withRelBuilderFactory(relBuilderFactory)

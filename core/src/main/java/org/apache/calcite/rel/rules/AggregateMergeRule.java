@@ -45,14 +45,15 @@ import java.util.Objects;
  * MAX of MAX becomes MAX; MIN of MIN becomes MIN. AVG of AVG would not
  * match, nor would COUNT of COUNT.
  */
-public class AggregateMergeRule extends RelOptNewRule
+public class AggregateMergeRule
+    extends RelOptNewRule<AggregateMergeRule.Config>
     implements TransformationRule {
   public static final AggregateMergeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Aggregate.class)
-                  .oneInput(b2 ->
-                      b2.operand(Aggregate.class)
+          .withOperandSupplier(b0 ->
+              b0.operand(Aggregate.class)
+                  .oneInput(b1 ->
+                      b1.operand(Aggregate.class)
                           .predicate(Aggregate::isSimple)
                       .anyInputs()))
           .as(Config.class)

@@ -48,7 +48,8 @@ import com.google.common.collect.ImmutableList;
  *
  * @see org.apache.calcite.rel.rules.ProjectTableScanRule
  */
-public class FilterTableScanRule extends RelOptNewRule {
+public class FilterTableScanRule
+    extends RelOptNewRule<FilterTableScanRule.Config> {
   @SuppressWarnings("Guava")
   @Deprecated // to be removed before 2.0
   public static final com.google.common.base.Predicate<TableScan> PREDICATE =
@@ -57,9 +58,9 @@ public class FilterTableScanRule extends RelOptNewRule {
   /** Rule that matches Filter on TableScan. */
   public static final FilterTableScanRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Filter.class).oneInput(b2 ->
-                  b2.operand(TableScan.class)
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(TableScan.class)
                       .predicate(FilterTableScanRule::test).noInputs()))
           .as(Config.class)
           .toRule();
@@ -67,10 +68,10 @@ public class FilterTableScanRule extends RelOptNewRule {
   /** Rule that matches Filter on EnumerableInterpreter on TableScan. */
   public static final FilterTableScanRule INTERPRETER =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Filter.class).oneInput(b2 ->
-                  b2.operand(EnumerableInterpreter.class).oneInput(b3 ->
-                      b3.operand(TableScan.class)
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
+                      b2.operand(TableScan.class)
                           .predicate(FilterTableScanRule::test).noInputs())))
           .withDescription("FilterTableScanRule:interpreter")
           .as(Config.class)
@@ -97,10 +98,6 @@ public class FilterTableScanRule extends RelOptNewRule {
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   public static boolean test(TableScan scan) {
     // We can only push filters into a FilterableTable or

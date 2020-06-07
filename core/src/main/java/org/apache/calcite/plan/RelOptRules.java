@@ -59,7 +59,6 @@ import org.apache.calcite.rel.rules.ProjectWindowTransposeRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.ReduceExpressionsRule;
 import org.apache.calcite.rel.rules.SemiJoinRule;
-import org.apache.calcite.rel.rules.SortExchangeRemoveConstantKeysRule;
 import org.apache.calcite.rel.rules.SortJoinTransposeRule;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
 import org.apache.calcite.rel.rules.SortRemoveConstantKeysRule;
@@ -140,7 +139,7 @@ public class RelOptRules {
       SortRemoveConstantKeysRule.INSTANCE,
       SortUnionTransposeRule.INSTANCE,
       ExchangeRemoveConstantKeysRule.EXCHANGE_INSTANCE,
-      SortExchangeRemoveConstantKeysRule.INSTANCE);
+      ExchangeRemoveConstantKeysRule.SORT_EXCHANGE_INSTANCE);
 
   static final List<RelOptRule> ABSTRACT_RULES = ImmutableList.of(
       AggregateProjectPullUpConstantsRule.INSTANCE2,

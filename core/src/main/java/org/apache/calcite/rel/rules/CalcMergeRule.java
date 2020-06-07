@@ -34,14 +34,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * {@link org.apache.calcite.rel.logical.LogicalCalc}, but expressed in terms of
  * the lower {@link org.apache.calcite.rel.logical.LogicalCalc}'s inputs.
  */
-public class CalcMergeRule extends RelOptNewRule implements TransformationRule {
+public class CalcMergeRule extends RelOptNewRule<CalcMergeRule.Config>
+    implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
   public static final CalcMergeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Calc.class).oneInput(b2 ->
-                  b2.operand(Calc.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Calc.class).oneInput(b1 ->
+                  b1.operand(Calc.class).anyInputs()))
           .as(Config.class)
           .toRule();
 

@@ -33,7 +33,8 @@ import java.util.List;
  * assist operator implementations which impose requirements on their input
  * types.
  */
-public class CoerceInputsRule extends RelOptNewRule
+public class CoerceInputsRule
+    extends RelOptNewRule<CoerceInputsRule.Config>
     implements TransformationRule {
   public static final CoerceInputsRule INSTANCE =
       Config.EMPTY
@@ -53,7 +54,7 @@ public class CoerceInputsRule extends RelOptNewRule
   public CoerceInputsRule(
       Class<? extends RelNode> consumerRelClass,
       boolean coerceNames) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withCoerceNames(coerceNames)
         .withOperandFor(consumerRelClass));
   }
@@ -61,7 +62,7 @@ public class CoerceInputsRule extends RelOptNewRule
   @Deprecated
   public CoerceInputsRule(Class<? extends RelNode> consumerRelClass,
       boolean coerceNames, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config()
+    this(INSTANCE.config
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withCoerceNames(coerceNames)
@@ -70,17 +71,13 @@ public class CoerceInputsRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public Convention getOutConvention() {
     return Convention.NONE;
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
     RelNode consumerRel = call.rel(0);
-    if (consumerRel.getClass() != config().consumerRelClass()) {
+    if (consumerRel.getClass() != config.consumerRelClass()) {
       // require exact match on type
       return;
     }
@@ -94,7 +91,7 @@ public class CoerceInputsRule extends RelOptNewRule
           RelOptUtil.createCastRel(
               input,
               expectedType,
-              config().isCoerceNames());
+              config.isCoerceNames());
       if (newInput != input) {
         newInputs.set(i, newInput);
         coerce = true;
@@ -102,7 +99,7 @@ public class CoerceInputsRule extends RelOptNewRule
       assert RelOptUtil.areRowTypesEqual(
           newInputs.get(i).getRowType(),
           expectedType,
-          config().isCoerceNames());
+          config.isCoerceNames());
     }
     if (!coerce) {
       return;

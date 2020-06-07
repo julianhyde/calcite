@@ -28,7 +28,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * Planner rule that combines two
  * {@link org.apache.calcite.rel.logical.LogicalFilter}s.
  */
-public class FilterMergeRule extends RelOptNewRule
+public class FilterMergeRule extends RelOptNewRule<FilterMergeRule.Config>
     implements SubstitutionRule {
   public static final FilterMergeRule INSTANCE =
       Config.EMPTY
@@ -76,9 +76,9 @@ public class FilterMergeRule extends RelOptNewRule
 
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).oneInput(b2 ->
-              b2.operand(filterClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(filterClass).anyInputs()))
           .as(Config.class);
     }
   }

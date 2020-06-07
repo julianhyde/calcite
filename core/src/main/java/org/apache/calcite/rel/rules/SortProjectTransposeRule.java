@@ -17,7 +17,7 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
@@ -27,7 +27,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexCall;
@@ -52,18 +51,26 @@ import java.util.Objects;
  *
  * @see org.apache.calcite.rel.rules.ProjectSortTransposeRule
  */
-public class SortProjectTransposeRule extends RelOptRule implements TransformationRule {
+public class SortProjectTransposeRule
+    extends RelOptNewRule<SortProjectTransposeRule.Config>
+    implements TransformationRule {
   public static final SortProjectTransposeRule INSTANCE =
-      new SortProjectTransposeRule(Sort.class, LogicalProject.class,
-          RelFactories.LOGICAL_BUILDER, null);
+      Config.EMPTY.as(Config.class)
+          .withOperandFor(Sort.class, LogicalProject.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
+
+  /** Creates a SortProjectTransposeRule. */
+  protected SortProjectTransposeRule(Config config) {
+    super(config);
+  }
 
   @Deprecated // to be removed before 2.0
   public SortProjectTransposeRule(
       Class<? extends Sort> sortClass,
       Class<? extends Project> projectClass) {
-    this(sortClass, projectClass, RelFactories.LOGICAL_BUILDER, null);
+    this(INSTANCE.config.withOperandFor(sortClass, projectClass));
   }
 
   @Deprecated // to be removed before 2.0
@@ -71,31 +78,36 @@ public class SortProjectTransposeRule extends RelOptRule implements Transformati
       Class<? extends Sort> sortClass,
       Class<? extends Project> projectClass,
       String description) {
-    this(sortClass, projectClass, RelFactories.LOGICAL_BUILDER, description);
+    this(INSTANCE.config.withDescription(description)
+        .as(Config.class)
+        .withOperandFor(sortClass, projectClass));
   }
 
-  /** Creates a SortProjectTransposeRule. */
+  @Deprecated
   public SortProjectTransposeRule(
       Class<? extends Sort> sortClass,
       Class<? extends Project> projectClass,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(
-        operand(sortClass,
-            operandJ(projectClass, null,
-                p -> !p.containsOver(),
-                any())),
-        relBuilderFactory, description);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .as(Config.class)
+        .withOperandFor(sortClass, projectClass));
   }
 
-  /** Creates a SortProjectTransposeRule with an operand. */
+  @Deprecated
   protected SortProjectTransposeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    super(operand, relBuilderFactory, description);
+    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+        .withDescription(description)
+        .withOperandSupplier(b -> b.exactly(operand))
+        .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
   protected SortProjectTransposeRule(RelOptRuleOperand operand) {
-    super(operand);
+    this(INSTANCE.config
+        .withOperandSupplier(b -> b.exactly(operand))
+        .as(Config.class));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -153,10 +165,26 @@ public class SortProjectTransposeRule extends RelOptRule implements Transformati
         && sort.fetch == null
         && cluster.getPlanner().getRelTraitDefs()
             .contains(RelCollationTraitDef.INSTANCE)) {
-      equiv = ImmutableMap.of((RelNode) newSort, project.getInput());
+      equiv = ImmutableMap.of(newSort, project.getInput());
     } else {
       equiv = ImmutableMap.of();
     }
     call.transformTo(newProject, equiv);
+  }
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default SortProjectTransposeRule toRule() {
+      return new SortProjectTransposeRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Sort> sortClass,
+        Class<? extends Project> projectClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(sortClass).oneInput(b1 ->
+              b1.operand(projectClass)
+                  .predicate(p -> !p.containsOver()).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

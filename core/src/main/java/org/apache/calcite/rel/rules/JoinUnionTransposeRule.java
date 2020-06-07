@@ -33,7 +33,8 @@ import java.util.List;
  * {@link org.apache.calcite.rel.core.Join}
  * past a non-distinct {@link org.apache.calcite.rel.core.Union}.
  */
-public class JoinUnionTransposeRule extends RelOptNewRule
+public class JoinUnionTransposeRule
+    extends RelOptNewRule<JoinUnionTransposeRule.Config>
     implements TransformationRule {
   public static final JoinUnionTransposeRule LEFT_UNION =
       Config.EMPTY.withDescription("JoinUnionTransposeRule(Union-Other)")
@@ -133,10 +134,10 @@ public class JoinUnionTransposeRule extends RelOptNewRule
           left ? unionClass : RelNode.class;
       final Class<? extends RelNode> rightClass =
           left ? RelNode.class : unionClass;
-      return withOperandSupplier(b ->
-          b.operand(joinClass).inputs(
-              b2 -> b2.operand(leftClass).anyInputs(),
-              b3 -> b3.operand(rightClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(joinClass).inputs(
+              b1 -> b1.operand(leftClass).anyInputs(),
+              b2 -> b2.operand(rightClass).anyInputs()))
           .as(Config.class);
     }
   }

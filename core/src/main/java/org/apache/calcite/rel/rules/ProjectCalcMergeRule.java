@@ -18,7 +18,6 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptNewRule;
-import org.apache.calcite.plan.RelOptNewerRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.Project;
@@ -44,7 +43,8 @@ import org.apache.calcite.util.Pair;
  *
  * @see FilterCalcMergeRule
  */
-public class ProjectCalcMergeRule extends RelOptNewerRule<ProjectCalcMergeRule.Config>
+public class ProjectCalcMergeRule
+    extends RelOptNewRule<ProjectCalcMergeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -124,9 +124,9 @@ public class ProjectCalcMergeRule extends RelOptNewerRule<ProjectCalcMergeRule.C
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<? extends Calc> calcClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(calcClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(calcClass).anyInputs()))
           .as(Config.class);
     }
   }

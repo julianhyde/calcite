@@ -34,7 +34,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * @see CalcRemoveRule
  * @see ProjectMergeRule
  */
-public class ProjectRemoveRule extends RelOptNewRule
+public class ProjectRemoveRule
+    extends RelOptNewRule<ProjectRemoveRule.Config>
     implements SubstitutionRule {
   public static final ProjectRemoveRule INSTANCE =
       Config.EMPTY
@@ -61,10 +62,6 @@ public class ProjectRemoveRule extends RelOptNewRule
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  @Override public ProjectMultiJoinMergeRule.Config config() {
-    return (ProjectMultiJoinMergeRule.Config) config;
-  }
 
   @Override public void onMatch(RelOptRuleCall call) {
     Project project = call.rel(0);

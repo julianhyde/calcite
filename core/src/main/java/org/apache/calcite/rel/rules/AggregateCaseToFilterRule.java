@@ -61,13 +61,14 @@ import javax.annotation.Nullable;
  *   FROM Emp</code>
  * </blockquote>
  */
-public class AggregateCaseToFilterRule extends RelOptNewRule
+public class AggregateCaseToFilterRule
+    extends RelOptNewRule<AggregateCaseToFilterRule.Config>
     implements TransformationRule {
   public static final AggregateCaseToFilterRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Aggregate.class).oneInput(b2 ->
-                  b2.operand(Project.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Aggregate.class).oneInput(b1 ->
+                  b1.operand(Project.class).anyInputs()))
           .as(Config.class)
           .toRule();
 

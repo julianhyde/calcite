@@ -18,10 +18,8 @@ package org.apache.calcite.rel.rules.materialize;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
-import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
@@ -76,8 +74,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Materialized view rewriting for aggregate */
-public abstract class MaterializedViewAggregateRule extends MaterializedViewRule {
+/** Materialized view rewriting for aggregate.
+ *
+ * @param <C> Configuration type
+ */
+public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAggregateRule.Config>
+    extends MaterializedViewRule<C> {
 
   protected static final ImmutableList<TimeUnitRange> SUPPORTED_DATE_TIME_ROLLUP_UNITS =
       ImmutableList.of(TimeUnitRange.YEAR, TimeUnitRange.QUARTER, TimeUnitRange.MONTH,
@@ -85,43 +87,8 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
           TimeUnitRange.SECOND, TimeUnitRange.MILLISECOND, TimeUnitRange.MICROSECOND);
 
   /** Creates a MaterializedViewAggregateRule. */
-  MaterializedViewAggregateRule(Config config) {
+  MaterializedViewAggregateRule(C config) {
     super(config);
-  }
-
-  @Deprecated
-  protected MaterializedViewAggregateRule(RelOptRuleOperand operand,
-      RelBuilderFactory relBuilderFactory, String description,
-      boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
-    this(makeConfig(relBuilderFactory)
-        .withGenerateUnionRewriting(generateUnionRewriting)
-        .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withOperandSupplier(b -> b.exactly(operand))
-        .withDescription(description)
-        .as(Config.class));
-  }
-
-  @Deprecated
-  protected MaterializedViewAggregateRule(RelOptRuleOperand operand,
-      RelBuilderFactory relBuilderFactory, String description,
-      boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
-      RelOptRule filterProjectTransposeRule,
-      RelOptRule filterAggregateTransposeRule,
-      RelOptRule aggregateProjectPullUpConstantsRule,
-      RelOptRule projectMergeRule) {
-    this(makeConfig(relBuilderFactory)
-        .as(Config.class)
-        .withFilterProjectTransposeRule(filterProjectTransposeRule)
-        .withFilterAggregateTransposeRule(filterAggregateTransposeRule)
-        .withAggregateProjectPullUpConstantsRule(
-            aggregateProjectPullUpConstantsRule)
-        .withProjectMergeRule(projectMergeRule)
-        .withGenerateUnionRewriting(generateUnionRewriting)
-        .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withFastBailOut(false)
-        .withOperandSupplier(b -> b.exactly(operand))
-        .withDescription(description)
-        .as(Config.class));
   }
 
   protected static Config makeConfig(RelBuilderFactory relBuilderFactory) {
@@ -157,10 +124,6 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
                 .toRule())
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class);
-  }
-
-  @Override public Config config() {
-    return (Config) config;
   }
 
   @Override protected boolean isValidPlan(Project topProject, RelNode node,
@@ -313,9 +276,9 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
     // depending on the planner strategy.
     RelNode newAggregateInput = aggregate.getInput(0);
     RelNode target = aggregate.getInput(0);
-    if (config().unionRewritingPullProgram() != null) {
+    if (config.unionRewritingPullProgram() != null) {
       final HepPlanner tmpPlanner =
-          new HepPlanner(config().unionRewritingPullProgram());
+          new HepPlanner(config.unionRewritingPullProgram());
       tmpPlanner.setRoot(newAggregateInput);
       newAggregateInput = tmpPlanner.findBestExp();
       target = newAggregateInput.getInput(0);
@@ -353,7 +316,7 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
         .push(target)
         .filter(simplify.simplifyUnknownAsFalse(queryCompensationPred))
         .build();
-    if (config().unionRewritingPullProgram() != null) {
+    if (config.unionRewritingPullProgram() != null) {
       return aggregate.copy(aggregate.getTraitSet(),
           ImmutableList.of(
               newAggregateInput.copy(newAggregateInput.getTraitSet(),
@@ -937,12 +900,12 @@ public abstract class MaterializedViewAggregateRule extends MaterializedViewRule
     // filter is added.
     HepProgramBuilder pushFiltersProgram = new HepProgramBuilder();
     if (topViewProject != null) {
-      pushFiltersProgram.addRuleInstance(config().filterProjectTransposeRule());
+      pushFiltersProgram.addRuleInstance(config.filterProjectTransposeRule());
     }
     pushFiltersProgram
-        .addRuleInstance(config().filterAggregateTransposeRule())
-        .addRuleInstance(config().aggregateProjectPullUpConstantsRule())
-        .addRuleInstance(config().projectMergeRule());
+        .addRuleInstance(config.filterAggregateTransposeRule())
+        .addRuleInstance(config.aggregateProjectPullUpConstantsRule())
+        .addRuleInstance(config.projectMergeRule());
     final HepPlanner tmpPlanner = new HepPlanner(pushFiltersProgram.build());
     // Now that the planner is created, push the node
     RelNode topNode = builder

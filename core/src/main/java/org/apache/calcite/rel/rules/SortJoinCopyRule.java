@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -24,7 +24,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalSort;
@@ -48,21 +47,28 @@ import java.util.List;
  * sorted inputs; and allowing the sort to be performed on a possibly smaller
  * result.
  */
-public class SortJoinCopyRule extends RelOptRule implements TransformationRule {
+public class SortJoinCopyRule
+    extends RelOptNewRule<SortJoinCopyRule.Config>
+    implements TransformationRule {
 
   public static final SortJoinCopyRule INSTANCE =
-      new SortJoinCopyRule(LogicalSort.class,
-          LogicalJoin.class, RelFactories.LOGICAL_BUILDER);
+      Config.EMPTY.as(Config.class)
+          .withOperandFor(LogicalSort.class, LogicalJoin.class)
+          .toRule();
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a SortJoinCopyRule. */
+  protected SortJoinCopyRule(Config config) {
+    super(config);
+  }
+
+  @Deprecated
   public SortJoinCopyRule(Class<? extends Sort> sortClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    super(
-        operand(sortClass,
-            operand(joinClass, any())),
-        relBuilderFactory, null);
+    this(INSTANCE.config.withOperandFor(sortClass, joinClass)
+        .withRelBuilderFactory(relBuilderFactory)
+        .as(Config.class));
   }
 
   //~ Methods -----------------------------------------------------------------
@@ -161,5 +167,21 @@ public class SortJoinCopyRule extends RelOptRule implements TransformationRule {
         sort.fetch);
 
     call.transformTo(sortCopy);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default SortJoinCopyRule toRule() {
+      return new SortJoinCopyRule(this);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Sort> sortClass,
+        Class<? extends Join> joinClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(sortClass).oneInput(b1 ->
+              b1.operand(joinClass).anyInputs()))
+          .as(Config.class);
+    }
   }
 }

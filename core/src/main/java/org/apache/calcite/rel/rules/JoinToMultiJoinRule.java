@@ -101,7 +101,8 @@ import java.util.Map;
  * @see org.apache.calcite.rel.rules.FilterMultiJoinMergeRule
  * @see org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule
  */
-public class JoinToMultiJoinRule extends RelOptNewRule
+public class JoinToMultiJoinRule
+    extends RelOptNewRule<JoinToMultiJoinRule.Config>
     implements TransformationRule {
   public static final JoinToMultiJoinRule INSTANCE =
       Config.EMPTY
@@ -584,10 +585,10 @@ public class JoinToMultiJoinRule extends RelOptNewRule
 
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Join> joinClass) {
-      return withOperandSupplier(b ->
-          b.operand(joinClass).inputs(
-              b2 -> b2.operand(RelNode.class).anyInputs(),
-              b3 -> b3.operand(RelNode.class).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(joinClass).inputs(
+              b1 -> b1.operand(RelNode.class).anyInputs(),
+              b2 -> b2.operand(RelNode.class).anyInputs()))
           .as(Config.class);
     }
   }

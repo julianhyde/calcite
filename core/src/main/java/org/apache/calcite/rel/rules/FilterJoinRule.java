@@ -18,7 +18,6 @@ package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
@@ -48,8 +47,11 @@ import static org.apache.calcite.plan.RelOptUtil.conjunctions;
 /**
  * Planner rule that pushes filters above and
  * within a join node into the join node and/or its children nodes.
+ *
+ * @param <C> Configuration type
  */
-public abstract class FilterJoinRule extends RelOptNewRule
+public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
+    extends RelOptNewRule<C>
     implements TransformationRule {
   /** Predicate that always returns true. With this predicate, every filter
    * will be pushed into the ON clause. */
@@ -57,82 +59,30 @@ public abstract class FilterJoinRule extends RelOptNewRule
 
   /** Rule that pushes predicates from a Filter into the Join below them. */
   public static final Supplier<FilterIntoJoinRule> FILTER_ON_JOIN =
-      Suppliers.memoize(() ->
-          Config.EMPTY
-              .withOperandSupplier(b ->
-                  b.operand(Filter.class).oneInput(b2 ->
-                      b2.operand(Join.class).anyInputs()))
-              .as(FilterIntoJoinRule.Config.class)
-              .withSmart(true)
-              .withPredicate(TRUE_PREDICATE)
-              .as(FilterIntoJoinRule.Config.class)
-              .toRule())::get;
+      Suppliers.memoize(() -> FilterIntoJoinRule.INSTANCE)::get;
 
   /** Dumber version of {@link #FILTER_ON_JOIN}. Not intended for production
    * use, but keeps some tests working for which {@code FILTER_ON_JOIN} is too
    * smart. */
   public static final Supplier<FilterIntoJoinRule> DUMB_FILTER_ON_JOIN =
       Suppliers.memoize(() ->
-          FILTER_ON_JOIN.get().config()
+          FILTER_ON_JOIN.get().config
               .withSmart(false)
               .as(FilterIntoJoinRule.Config.class)
               .toRule())::get;
 
   /** Rule that pushes predicates in a Join into the inputs to the join. */
   public static final Supplier<JoinConditionPushRule> JOIN =
-      Suppliers.memoize(() ->
-          Config.EMPTY
-              .withOperandSupplier(b ->
-                  b.operand(Join.class).anyInputs())
-              .as(JoinConditionPushRule.Config.class)
-              .withSmart(true)
-              .withPredicate(TRUE_PREDICATE)
-              .as(JoinConditionPushRule.Config.class)
-              .toRule())::get;
+      Suppliers.memoize(() -> JoinConditionPushRule.INSTANCE)::get;
 
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a FilterJoinRule. */
-  protected FilterJoinRule(Config config) {
+  protected FilterJoinRule(C config) {
     super(config);
   }
 
-  @Deprecated
-  protected FilterJoinRule(RelOptRuleOperand operand, String id,
-      boolean smart, RelBuilderFactory relBuilderFactory, Predicate predicate) {
-    // config does not know which sub-class to create
-    this(Config.EMPTY.as(Config.class));
-    throw new UnsupportedOperationException();
-  }
-
-  @Deprecated // to be removed before 2.0
-  protected FilterJoinRule(RelOptRuleOperand operand, String id,
-      boolean smart, RelFactories.FilterFactory filterFactory,
-      RelFactories.ProjectFactory projectFactory) {
-    // config does not know which sub-class to create
-    this(Config.EMPTY.as(Config.class));
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Creates a FilterJoinRule with an explicit root operand and
-   * factories.
-   */
-  @Deprecated // to be removed before 2.0
-  protected FilterJoinRule(RelOptRuleOperand operand, String id,
-      boolean smart, RelFactories.FilterFactory filterFactory,
-      RelFactories.ProjectFactory projectFactory,
-      Predicate predicate) {
-    // config does not know which sub-class to create
-    this(Config.EMPTY.as(Config.class));
-    throw new UnsupportedOperationException();
-  }
-
   //~ Methods ----------------------------------------------------------------
-
-  @Override public Config config() {
-    return (Config) config;
-  }
 
   protected void perform(RelOptRuleCall call, Filter filter,
       Join join) {
@@ -157,7 +107,7 @@ public abstract class FilterJoinRule extends RelOptNewRule
 
     // Simplify Outer Joins
     JoinRelType joinType = join.getJoinType();
-    if (config().isSmart()
+    if (config.isSmart()
         && !origAboveFilters.isEmpty()
         && join.getJoinType() != JoinRelType.INNER) {
       joinType = RelOptUtil.simplifyJoin(join, origAboveFilters, joinType);
@@ -341,7 +291,7 @@ public abstract class FilterJoinRule extends RelOptNewRule
     while (filterIter.hasNext()) {
       RexNode exp = filterIter.next();
       // Do not pull up filter conditions for semi/anti join.
-      if (!config().getPredicate().apply(join, joinType, exp)
+      if (!config.getPredicate().apply(join, joinType, exp)
           && joinType.projectsRight()) {
         aboveFilters.add(exp);
         filterIter.remove();
@@ -350,7 +300,18 @@ public abstract class FilterJoinRule extends RelOptNewRule
   }
 
   /** Rule that pushes parts of the join condition to its inputs. */
-  public static class JoinConditionPushRule extends FilterJoinRule {
+  public static class JoinConditionPushRule
+      extends FilterJoinRule<JoinConditionPushRule.Config> {
+    public static final JoinConditionPushRule INSTANCE =
+        FilterJoinRule.Config.EMPTY
+            .withOperandSupplier(b ->
+                b.operand(Join.class).anyInputs())
+            .as(JoinConditionPushRule.Config.class)
+            .withSmart(true)
+            .withPredicate(TRUE_PREDICATE)
+            .as(JoinConditionPushRule.Config.class)
+            .toRule();
+
     /** Creates a JoinConditionPushRule. */
     protected JoinConditionPushRule(Config config) {
       super(config);
@@ -391,7 +352,19 @@ public abstract class FilterJoinRule extends RelOptNewRule
 
   /** Rule that tries to push filter expressions into a join
    * condition and into the inputs of the join. */
-  public static class FilterIntoJoinRule extends FilterJoinRule {
+  public static class FilterIntoJoinRule
+      extends FilterJoinRule<FilterIntoJoinRule.Config> {
+    public static final FilterIntoJoinRule INSTANCE =
+        FilterJoinRule.Config.EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(Filter.class).oneInput(b1 ->
+                    b1.operand(Join.class).anyInputs()))
+            .as(FilterIntoJoinRule.Config.class)
+            .withSmart(true)
+            .withPredicate(TRUE_PREDICATE)
+            .as(FilterIntoJoinRule.Config.class)
+            .toRule();
+
     /** Creates a FilterIntoJoinRule. */
     protected FilterIntoJoinRule(Config config) {
       super(config);
@@ -402,9 +375,9 @@ public abstract class FilterJoinRule extends RelOptNewRule
         RelBuilderFactory relBuilderFactory, Predicate predicate) {
       this(Config.EMPTY
           .withRelBuilderFactory(relBuilderFactory)
-          .withOperandSupplier(b ->
-              b.operand(Filter.class).oneInput(b2 ->
-                  b2.operand(Join.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(Join.class).anyInputs()))
           .withDescription("FilterJoinRule:filter")
           .as(Config.class)
           .withSmart(smart)
@@ -420,9 +393,9 @@ public abstract class FilterJoinRule extends RelOptNewRule
       this(Config.EMPTY
           .withRelBuilderFactory(
               RelBuilder.proto(filterFactory, projectFactory))
-          .withOperandSupplier(b ->
-              b.operand(Filter.class).oneInput(b2 ->
-                  b2.operand(Join.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(Join.class).anyInputs()))
           .withDescription("FilterJoinRule:filter")
           .as(Config.class)
           .withSmart(smart)

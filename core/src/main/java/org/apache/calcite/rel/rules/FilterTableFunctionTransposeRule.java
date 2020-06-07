@@ -38,13 +38,14 @@ import java.util.Set;
  * a {@link org.apache.calcite.rel.logical.LogicalFilter}
  * past a {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan}.
  */
-public class FilterTableFunctionTransposeRule extends RelOptNewRule
+public class FilterTableFunctionTransposeRule
+    extends RelOptNewRule<FilterTableFunctionTransposeRule.Config>
     implements TransformationRule {
   public static final FilterTableFunctionTransposeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalFilter.class).oneInput(b2 ->
-                  b2.operand(LogicalTableFunctionScan.class).anyInputs()))
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalFilter.class).oneInput(b1 ->
+                  b1.operand(LogicalTableFunctionScan.class).anyInputs()))
           .as(Config.class)
           .toRule();
 

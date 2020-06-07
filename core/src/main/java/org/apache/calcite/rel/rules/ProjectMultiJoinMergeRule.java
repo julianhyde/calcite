@@ -17,7 +17,6 @@
 package org.apache.calcite.rel.rules;
 
 import org.apache.calcite.plan.RelOptNewRule;
-import org.apache.calcite.plan.RelOptNewerRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.Project;
@@ -33,7 +32,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see org.apache.calcite.rel.rules.FilterMultiJoinMergeRule
  */
-public class ProjectMultiJoinMergeRule extends RelOptNewerRule<ProjectMultiJoinMergeRule.Config>
+public class ProjectMultiJoinMergeRule
+    extends RelOptNewRule<ProjectMultiJoinMergeRule.Config>
     implements TransformationRule {
   public static final ProjectMultiJoinMergeRule INSTANCE =
       Config.EMPTY
@@ -101,9 +101,9 @@ public class ProjectMultiJoinMergeRule extends RelOptNewerRule<ProjectMultiJoinM
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<MultiJoin> multiJoinClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(multiJoinClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(multiJoinClass).anyInputs()))
           .as(Config.class);
     }
   }

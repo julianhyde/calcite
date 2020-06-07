@@ -36,7 +36,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see FilterMergeRule
  */
-public class FilterCalcMergeRule extends RelOptNewRule
+public class FilterCalcMergeRule
+    extends RelOptNewRule<FilterCalcMergeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -104,9 +105,9 @@ public class FilterCalcMergeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Class<? extends Calc> calcClass) {
-      return withOperandSupplier(b ->
-          b.operand(filterClass).oneInput(b2 ->
-              b2.operand(calcClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(calcClass).anyInputs()))
           .as(Config.class);
     }
   }

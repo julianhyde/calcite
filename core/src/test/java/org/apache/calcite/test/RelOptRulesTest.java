@@ -116,7 +116,6 @@ import org.apache.calcite.rel.rules.SemiJoinJoinTransposeRule;
 import org.apache.calcite.rel.rules.SemiJoinProjectTransposeRule;
 import org.apache.calcite.rel.rules.SemiJoinRemoveRule;
 import org.apache.calcite.rel.rules.SemiJoinRule;
-import org.apache.calcite.rel.rules.SortExchangeRemoveConstantKeysRule;
 import org.apache.calcite.rel.rules.SortJoinCopyRule;
 import org.apache.calcite.rel.rules.SortJoinTransposeRule;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
@@ -309,7 +308,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testFilterProjectTransposeRule() {
     List<RelOptRule> rules = Arrays.asList(
         FilterProjectTransposeRule.INSTANCE, // default: copyFilter=true, copyProject=true
-        FilterProjectTransposeRule.INSTANCE.config()
+        FilterProjectTransposeRule.INSTANCE.config
             .withOperandFor(Filter.class,
                 filter -> !RexUtil.containsCorrelation(filter.getCondition()),
                 Project.class, project -> true)
@@ -845,11 +844,18 @@ class RelOptRulesTest extends RelOptTestBase {
             .build();
     final FilterJoinRule.Predicate predicate =
         (join, joinType, exp) -> joinType != JoinRelType.INNER;
-    final FilterJoinRule join =
-        new FilterJoinRule.JoinConditionPushRule(RelBuilder.proto(), predicate);
-    final FilterJoinRule filterOnJoin =
-        new FilterJoinRule.FilterIntoJoinRule(true, RelBuilder.proto(),
-            predicate);
+    final FilterJoinRule.JoinConditionPushRule join =
+        FilterJoinRule.JoinConditionPushRule.INSTANCE.config
+            .withPredicate(predicate)
+            .withDescription("FilterJoinRule:no-filter")
+            .as(FilterJoinRule.JoinConditionPushRule.Config.class)
+            .toRule();
+    final FilterJoinRule.FilterIntoJoinRule filterOnJoin =
+        FilterJoinRule.FilterIntoJoinRule.INSTANCE.config
+            .withSmart(true)
+            .withPredicate(predicate)
+            .as(FilterJoinRule.FilterIntoJoinRule.Config.class)
+            .toRule();
     final HepProgram program =
         HepProgram.builder()
             .addGroupBegin()
@@ -1717,7 +1723,7 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testProjectCorrelateTransposeDynamic() {
     ProjectCorrelateTransposeRule customPCTrans =
-        ProjectCorrelateTransposeRule.INSTANCE.config()
+        ProjectCorrelateTransposeRule.INSTANCE.config
             .withPreserveExprCondition(skipItem)
             .toRule();
 
@@ -1826,7 +1832,9 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testProjectCorrelateTransposeWithExprCond() {
     ProjectCorrelateTransposeRule customPCTrans =
-        new ProjectCorrelateTransposeRule(skipItem, RelFactories.LOGICAL_BUILDER);
+        ProjectCorrelateTransposeRule.INSTANCE.config
+            .withPreserveExprCondition(skipItem)
+            .toRule();
 
     final String sql = "select t1.name, t2.ename\n"
         + "from DEPT_NESTED as t1,\n"
@@ -1853,8 +1861,9 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testProjectCorrelateTranspose() {
     ProjectCorrelateTransposeRule customPCTrans =
-        new ProjectCorrelateTransposeRule(expr -> true,
-            RelFactories.LOGICAL_BUILDER);
+        ProjectCorrelateTransposeRule.INSTANCE.config
+            .withPreserveExprCondition(expr -> true)
+            .toRule();
     final String sql = "select t1.name, t2.ename\n"
         + "from DEPT_NESTED as t1,\n"
         + "unnest(t1.employees) as t2";
@@ -1908,10 +1917,10 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  WHERE e.deptno = d.twiceDeptno)";
     final FilterProjectTransposeRule filterProjectTransposeRule =
         FilterProjectTransposeRule.INSTANCE.config
-            .withOperandSupplier(b ->
-                b.operand(Filter.class).predicate(filter -> true)
-                    .oneInput(b2 ->
-                        b2.operand(Project.class).predicate(project -> true)
+            .withOperandSupplier(b0 ->
+                b0.operand(Filter.class).predicate(filter -> true)
+                    .oneInput(b1 ->
+                        b1.operand(Project.class).predicate(project -> true)
                             .anyInputs()))
             .as(FilterProjectTransposeRule.Config.class)
             .withCopyFilter(true)
@@ -2978,7 +2987,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
-  private void checkReduceNullableToNotNull(ReduceExpressionsRule rule) {
+  private void checkReduceNullableToNotNull(ReduceExpressionsRule<?> rule) {
     final String sql = "select\n"
         + "  empno + case when 'a' = 'a' then 1 else null end as newcol\n"
         + "from emp";
@@ -2996,9 +3005,11 @@ class RelOptRulesTest extends RelOptTestBase {
   /** Test case that reduces a nullable expression to a NOT NULL literal. */
   @Test void testReduceNullableToNotNull2() {
     final ReduceExpressionsRule.ProjectReduceExpressionsRule rule =
-        new ReduceExpressionsRule.ProjectReduceExpressionsRule(
-            LogicalProject.class, false,
-            RelFactories.LOGICAL_BUILDER);
+        ReduceExpressionsRule.ProjectReduceExpressionsRule.INSTANCE.config
+            .withOperandFor(LogicalProject.class)
+            .withMatchNullability(false)
+            .as(ReduceExpressionsRule.ProjectReduceExpressionsRule.Config.class)
+            .toRule();
     checkReduceNullableToNotNull(rule);
   }
 
@@ -3988,10 +3999,10 @@ class RelOptRulesTest extends RelOptTestBase {
     // AggregateProjectMergeRule does not merges Project with Filter.
     // Force match Aggregate on top of Project once explicitly in unit test.
     final AggregateExtractProjectRule rule =
-        AggregateExtractProjectRule.SCAN.config()
-            .withOperandSupplier(b ->
-                b.operand(Aggregate.class).oneInput(b2 ->
-                    b2.operand(Project.class)
+        AggregateExtractProjectRule.SCAN.config
+            .withOperandSupplier(b0 ->
+                b0.operand(Aggregate.class).oneInput(b1 ->
+                    b1.operand(Project.class)
                         .predicate(new Predicate<Project>() {
                           int matchCount = 0;
 
@@ -6159,7 +6170,7 @@ class RelOptRulesTest extends RelOptTestBase {
             FilterProjectTransposeRule.INSTANCE,
             FilterMergeRule.INSTANCE,
             ProjectMergeRule.INSTANCE,
-            ProjectFilterTransposeRule.INSTANCE.config()
+            ProjectFilterTransposeRule.INSTANCE.config
                 .withOperandFor(Project.class, Filter.class)
                 .withPreserveExprCondition(exprCondition)
                 .toRule(),
@@ -6525,7 +6536,7 @@ class RelOptRulesTest extends RelOptTestBase {
 
     HepProgram hepProgram = new HepProgramBuilder()
         .addRuleInstance(ExchangeRemoveConstantKeysRule.EXCHANGE_INSTANCE)
-        .addRuleInstance(SortExchangeRemoveConstantKeysRule.INSTANCE)
+        .addRuleInstance(ExchangeRemoveConstantKeysRule.SORT_EXCHANGE_INSTANCE)
         .build();
 
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
@@ -6536,7 +6547,7 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   @Test void testReduceAverageWithNoReduceSum() {
-    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config
         .withOperandFor(LogicalAggregate.class)
         .withFunctionsToReduce(EnumSet.of(SqlKind.AVG))
         .toRule();
@@ -6546,7 +6557,7 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   @Test void testNoReduceAverage() {
-    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config
         .withOperandFor(LogicalAggregate.class)
         .withFunctionsToReduce(EnumSet.noneOf(SqlKind.class))
         .toRule();
@@ -6556,7 +6567,7 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   @Test void testNoReduceSum() {
-    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config
         .withOperandFor(LogicalAggregate.class)
         .withFunctionsToReduce(EnumSet.noneOf(SqlKind.class))
         .toRule();
@@ -6568,7 +6579,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testReduceAverageAndVarWithNoReduceStddev() {
     // configure rule to reduce AVG and VAR_POP functions
     // other functions like SUM, STDDEV won't be reduced
-    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config
         .withOperandFor(LogicalAggregate.class)
         .withFunctionsToReduce(EnumSet.of(SqlKind.AVG, SqlKind.VAR_POP))
         .toRule();
@@ -6581,7 +6592,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testReduceAverageAndSumWithNoReduceStddevAndVar() {
     // configure rule to reduce AVG and SUM functions
     // other functions like VAR_POP, STDDEV_POP won't be reduced
-    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config
         .withOperandFor(LogicalAggregate.class)
         .withFunctionsToReduce(EnumSet.of(SqlKind.AVG, SqlKind.SUM))
         .toRule();
@@ -6593,7 +6604,7 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testReduceAllAggregateFunctions() {
     // configure rule to reduce all used functions
-    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config()
+    final RelOptRule rule = AggregateReduceFunctionsRule.INSTANCE.config
         .withOperandFor(LogicalAggregate.class)
         .withFunctionsToReduce(
             EnumSet.of(SqlKind.AVG, SqlKind.SUM, SqlKind.STDDEV_POP,
@@ -6658,12 +6669,12 @@ class RelOptRulesTest extends RelOptTestBase {
         .build();
 
     final FilterMultiJoinMergeRule filterMultiJoinMergeRule =
-        FilterMultiJoinMergeRule.INSTANCE.config()
+        FilterMultiJoinMergeRule.INSTANCE.config
             .withOperandFor(MyFilter.class, MultiJoin.class)
             .toRule();
 
     final ProjectMultiJoinMergeRule projectMultiJoinMergeRule =
-        ProjectMultiJoinMergeRule.INSTANCE.config()
+        ProjectMultiJoinMergeRule.INSTANCE.config
             .withOperandFor(MyProject.class, MultiJoin.class)
             .toRule();
 
@@ -7021,8 +7032,10 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testProjectJoinTransposeItem() {
     ProjectJoinTransposeRule projectJoinTransposeRule =
-        new ProjectJoinTransposeRule(Project.class, Join.class, skipItem, RelFactories
-          .LOGICAL_BUILDER);
+        ProjectJoinTransposeRule.INSTANCE.config
+            .withOperandFor(Project.class, Join.class)
+            .withPreserveExprCondition(skipItem)
+            .toRule();
 
     String query = "select t1.c_nationkey[0], t2.c_nationkey[0] "
         + "from sales.customer as t1 left outer join sales.customer as t2 "

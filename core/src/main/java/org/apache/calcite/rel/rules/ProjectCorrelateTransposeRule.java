@@ -45,7 +45,8 @@ import java.util.Map;
  * Planner rules that pushes a {@link Project} under {@link Correlate} to apply
  * on Correlate's left and right child.
  */
-public class ProjectCorrelateTransposeRule extends RelOptNewRule
+public class ProjectCorrelateTransposeRule
+    extends RelOptNewRule<ProjectCorrelateTransposeRule.Config>
     implements TransformationRule {
   public static final ProjectCorrelateTransposeRule INSTANCE =
       Config.EMPTY
@@ -72,10 +73,6 @@ public class ProjectCorrelateTransposeRule extends RelOptNewRule
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Config config() {
-    return (Config) config;
-  }
-
   @Override public void onMatch(RelOptRuleCall call) {
     final Project origProject = call.rel(0);
     final Correlate correlate = call.rel(1);
@@ -86,7 +83,7 @@ public class ProjectCorrelateTransposeRule extends RelOptNewRule
     // special expressions, no point in proceeding any further
     final PushProjector pushProjector =
         new PushProjector(origProject, call.builder().literal(true), correlate,
-            config().preserveExprCondition(), call.builder());
+            config.preserveExprCondition(), call.builder());
     if (pushProjector.locateAllRefs()) {
       return;
     }
@@ -225,9 +222,9 @@ public class ProjectCorrelateTransposeRule extends RelOptNewRule
     /** Defines an operand tree for the given classes. */
     default Config withOperandFor(Class<? extends Project> projectClass,
         Class<? extends Correlate> correlateClass) {
-      return withOperandSupplier(b ->
-          b.operand(projectClass).oneInput(b2 ->
-              b2.operand(correlateClass).anyInputs()))
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(correlateClass).anyInputs()))
           .as(Config.class);
     }
   }
