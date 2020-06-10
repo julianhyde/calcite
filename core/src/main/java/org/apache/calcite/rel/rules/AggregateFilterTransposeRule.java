@@ -59,10 +59,8 @@ public class AggregateFilterTransposeRule
     implements TransformationRule {
   public static final AggregateFilterTransposeRule INSTANCE =
       Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Aggregate.class).oneInput(b1 ->
-                  b1.operand(Filter.class).anyInputs()))
           .as(Config.class)
+          .withOperandFor(Aggregate.class, Filter.class)
           .toRule();
 
   /** Creates an AggregateFilterTransposeRule. */
@@ -166,6 +164,26 @@ public class AggregateFilterTransposeRule
   public interface Config extends RelOptNewRule.Config {
     @Override default AggregateFilterTransposeRule toRule() {
       return new AggregateFilterTransposeRule(this);
+    }
+
+    /** Defines an operand tree for the given 2 classes. */
+    default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
+        Class<? extends Filter> filterClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass).oneInput(b1 ->
+              b1.operand(filterClass).anyInputs()))
+          .as(Config.class);
+    }
+
+    /** Defines an operand tree for the given 3 classes. */
+    default Config withOperandFor(Class<? extends Aggregate> aggregateClass,
+        Class<? extends Filter> filterClass,
+        Class<? extends RelNode> relClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(aggregateClass).oneInput(b1 ->
+              b1.operand(filterClass).oneInput(b2 ->
+                  b2.operand(relClass).anyInputs())))
+          .as(Config.class);
     }
   }
 }

@@ -164,12 +164,23 @@ public class FilterAggregateTransposeRule
       return new FilterAggregateTransposeRule(this);
     }
 
-    /** Defines an operand tree for the given classes. */
+    /** Defines an operand tree for the given 2 classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Class<? extends Aggregate> aggregateClass) {
       return withOperandSupplier(b0 ->
           b0.operand(filterClass).oneInput(b1 ->
               b1.operand(aggregateClass).anyInputs()))
+          .as(Config.class);
+    }
+
+    /** Defines an operand tree for the given 3 classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends Aggregate> aggregateClass,
+        Class<? extends RelNode> relClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(aggregateClass).oneInput(b2 ->
+                  b2.operand(relClass).anyInputs())))
           .as(Config.class);
     }
   }

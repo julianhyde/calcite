@@ -23,6 +23,7 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -51,7 +52,6 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
@@ -153,7 +153,6 @@ import org.apache.calcite.test.catalog.MockCatalogReader;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -6798,15 +6797,17 @@ class RelOptRulesTest extends RelOptTestBase {
 
   /**
    * Rule to transform {@link LogicalFilter} into
-   * custom MyFilter
+   * custom MyFilter.
    */
-  private static class MyFilterRule extends RelOptRule {
-    static final MyFilterRule INSTANCE =
-        new MyFilterRule(LogicalFilter.class, RelFactories.LOGICAL_BUILDER);
+  public static class MyFilterRule extends RelOptNewRule<MyFilterRule.Config> {
+    static final MyFilterRule INSTANCE = Config.EMPTY
+        .withOperandSupplier(b ->
+            b.operand(LogicalFilter.class).anyInputs())
+        .as(Config.class)
+        .toRule();
 
-    private MyFilterRule(Class<? extends Filter> clazz,
-        RelBuilderFactory relBuilderFactory) {
-      super(RelOptRule.operand(clazz, RelOptRule.any()), relBuilderFactory, null);
+    protected MyFilterRule(Config config) {
+      super(config);
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
@@ -6815,6 +6816,13 @@ class RelOptRulesTest extends RelOptTestBase {
       final MyFilter myFilter = new MyFilter(input.getCluster(), input.getTraitSet(), input,
           logicalFilter.getCondition());
       call.transformTo(myFilter);
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default MyFilterRule toRule() {
+        return new MyFilterRule(this);
+      }
     }
   }
 
@@ -6842,15 +6850,17 @@ class RelOptRulesTest extends RelOptTestBase {
 
   /**
    * Rule to transform {@link LogicalProject} into custom
-   * MyProject
+   * MyProject.
    */
-  private static class MyProjectRule extends RelOptRule {
-    static final MyProjectRule INSTANCE =
-        new MyProjectRule(LogicalProject.class, RelFactories.LOGICAL_BUILDER);
+  public static class MyProjectRule
+      extends RelOptNewRule<MyProjectRule.Config> {
+    static final MyProjectRule INSTANCE = Config.EMPTY
+        .withOperandSupplier(b -> b.operand(LogicalProject.class).anyInputs())
+        .as(Config.class)
+        .toRule();
 
-    private MyProjectRule(Class<? extends Project> clazz,
-        RelBuilderFactory relBuilderFactory) {
-      super(RelOptRule.operand(clazz, RelOptRule.any()), relBuilderFactory, null);
+    protected MyProjectRule(Config config) {
+      super(config);
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
@@ -6859,6 +6869,13 @@ class RelOptRulesTest extends RelOptTestBase {
       final MyProject myProject = new MyProject(input.getCluster(), input.getTraitSet(), input,
           logicalProject.getChildExps(), logicalProject.getRowType());
       call.transformTo(myProject);
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default MyProjectRule toRule() {
+        return new MyProjectRule(this);
+      }
     }
   }
 

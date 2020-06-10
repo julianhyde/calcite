@@ -94,7 +94,7 @@ public class AggregateRemoveRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     final RelNode input = aggregate.getInput();
     final RelMetadataQuery mq = call.getMetadataQuery();

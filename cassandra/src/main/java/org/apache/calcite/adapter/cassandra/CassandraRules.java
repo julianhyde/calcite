@@ -208,7 +208,7 @@ public class CassandraRules {
     }
 
     /** @see org.apache.calcite.rel.convert.ConverterRule */
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       LogicalFilter filter = call.rel(0);
       CassandraTableScan scan = call.rel(1);
       if (filter.getTraitSet().contains(Convention.NONE)) {

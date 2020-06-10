@@ -353,7 +353,7 @@ public class GeodeRules {
       return false;
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       LogicalFilter filter = call.rel(0);
       GeodeTableScan scan = call.rel(1);
       if (filter.getTraitSet().contains(Convention.NONE)) {

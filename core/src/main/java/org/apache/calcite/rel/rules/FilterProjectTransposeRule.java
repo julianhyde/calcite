@@ -243,7 +243,7 @@ public class FilterProjectTransposeRule
     /** Sets {@link #isCopyProject()}. */
     Config withCopyProject(boolean copyProject);
 
-    /** Defines an operand tree for the given classes. */
+    /** Defines an operand tree for the given 2 classes. */
     default Config withOperandFor(Class<? extends Filter> filterClass,
         Predicate<Filter> filterPredicate,
         Class<? extends Project> projectClass,
@@ -251,6 +251,17 @@ public class FilterProjectTransposeRule
       return withOperandSupplier(b0 ->
           b0.operand(filterClass).predicate(filterPredicate).oneInput(b1 ->
               b1.operand(projectClass).predicate(projectPredicate).anyInputs()))
+          .as(Config.class);
+    }
+
+    /** Defines an operand tree for the given 3 classes. */
+    default Config withOperandFor(Class<? extends Filter> filterClass,
+        Class<? extends Project> projectClass,
+        Class<? extends RelNode> relClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(filterClass).oneInput(b1 ->
+              b1.operand(projectClass).oneInput(b2 ->
+                  b2.operand(relClass).anyInputs())))
           .as(Config.class);
     }
   }

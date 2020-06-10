@@ -76,7 +76,7 @@ public class AggregateProjectMergeRule
         .withOperandFor(aggregateClass, projectClass));
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     final Project project = call.rel(1);
     RelNode x = apply(call, aggregate, project);

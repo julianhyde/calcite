@@ -102,7 +102,7 @@ public class UnionMergeRule
     return true;
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final SetOp topOp = call.rel(0);
     @SuppressWarnings("unchecked") final Class<? extends SetOp> setOpClass =
         (Class) operands.get(0).getMatchedClass();

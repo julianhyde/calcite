@@ -43,7 +43,7 @@ public class EnumerableProjectToCalcRule extends ProjectToCalcRule {
         .as(Config.class));
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final EnumerableProject project = call.rel(0);
     final RelNode input = project.getInput();
     final RexProgram program =

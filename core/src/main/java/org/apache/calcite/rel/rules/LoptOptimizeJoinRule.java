@@ -97,7 +97,7 @@ public class LoptOptimizeJoinRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final MultiJoin multiJoinRel = call.rel(0);
     final LoptMultiJoin multiJoin = new LoptMultiJoin(multiJoinRel);
     final RelMetadataQuery mq = call.getMetadataQuery();

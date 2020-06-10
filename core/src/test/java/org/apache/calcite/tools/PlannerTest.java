@@ -28,6 +28,7 @@ import org.apache.calcite.adapter.jdbc.JdbcRules;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRule;
@@ -98,7 +99,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.calcite.plan.RelOptRule.operand;
 import static org.apache.calcite.test.RelMetadataTest.sortsAs;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -805,30 +805,8 @@ class PlannerTest {
    * rule name conflicts */
   @Test void testPlanTransformWithRuleNameConflicts() throws Exception {
     // Create two dummy rules with identical rules.
-    RelOptRule rule1 = new RelOptRule(
-        operand(LogicalProject.class,
-            operand(LogicalFilter.class, RelOptRule.any())),
-        "MYRULE") {
-      @Override public boolean matches(RelOptRuleCall call) {
-        return false;
-      }
-
-      public void onMatch(RelOptRuleCall call) {
-      }
-    };
-
-    RelOptRule rule2 = new RelOptRule(
-        operand(LogicalFilter.class,
-            operand(LogicalProject.class, RelOptRule.any())),
-        "MYRULE") {
-
-      @Override public boolean matches(RelOptRuleCall call) {
-        return false;
-      }
-
-      public void onMatch(RelOptRuleCall call) {
-      }
-    };
+    RelOptRule rule1 = MyProjectFilterRule.config("MYRULE").toRule();
+    RelOptRule rule2 = MyFilterProjectRule.config("MYRULE").toRule();
 
     RuleSet ruleSet1 =
         RuleSets.ofList(
@@ -1192,6 +1170,67 @@ class PlannerTest {
         .replace(EnumerableConvention.INSTANCE);
     RelNode transform = planner.transform(0, traitSet, convert);
     assertThat(toString(transform), containsString(expected));
+  }
+
+  public static class MyProjectFilterRule
+      extends RelOptNewRule<MyProjectFilterRule.Config> {
+    static Config config(String description) {
+      return Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalProject.class).oneInput(b1 ->
+                  b1.operand(LogicalFilter.class).anyInputs()))
+          .withDescription(description)
+          .as(Config.class);
+    }
+
+    protected MyProjectFilterRule(Config config) {
+      super(config);
+    }
+
+
+    @Override public boolean matches(RelOptRuleCall call) {
+      return false;
+    }
+
+    @Override public void onMatch(RelOptRuleCall call) {
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default MyProjectFilterRule toRule() {
+        return new MyProjectFilterRule(this);
+      }
+    }
+  }
+
+  public static class MyFilterProjectRule
+      extends RelOptNewRule<MyFilterProjectRule.Config> {
+    static Config config(String description) {
+      return Config.EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(LogicalFilter.class).oneInput(b1 ->
+                  b1.operand(LogicalProject.class).anyInputs()))
+          .withDescription(description)
+          .as(Config.class);
+    }
+
+    protected MyFilterProjectRule(Config config) {
+      super(config);
+    }
+
+    @Override public boolean matches(RelOptRuleCall call) {
+      return false;
+    }
+
+    @Override public void onMatch(RelOptRuleCall call) {
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default MyFilterProjectRule toRule() {
+        return new MyFilterProjectRule(this);
+      }
+    }
   }
 
   /**

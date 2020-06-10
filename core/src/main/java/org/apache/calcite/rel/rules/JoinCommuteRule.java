@@ -148,13 +148,13 @@ public class JoinCommuteRule
         .build();
   }
 
-  public boolean matches(RelOptRuleCall call) {
+  @Override public boolean matches(RelOptRuleCall call) {
     Join join = call.rel(0);
     // SEMI and ANTI join cannot be swapped.
     return join.getJoinType().projectsRight();
   }
 
-  public void onMatch(final RelOptRuleCall call) {
+  @Override public void onMatch(final RelOptRuleCall call) {
     Join join = call.rel(0);
 
     final RelNode swapped = swap(join, config.isSwapOuter(), call.builder());

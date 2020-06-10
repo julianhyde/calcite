@@ -163,7 +163,7 @@ public class AggregateJoinTransposeRule
     return join.getJoinType() == JoinRelType.INNER || aggregate.getAggCallList().isEmpty();
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     final Join join = call.rel(1);
     final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();

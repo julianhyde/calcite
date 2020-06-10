@@ -84,7 +84,7 @@ public class AggregateMergeRule
     return splitter != null;
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate topAgg = call.rel(0);
     final Aggregate bottomAgg = call.rel(1);
     if (topAgg.getGroupCount() > bottomAgg.getGroupCount()) {

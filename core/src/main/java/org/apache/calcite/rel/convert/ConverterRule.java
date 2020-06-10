@@ -97,7 +97,7 @@ public abstract class ConverterRule extends RelOptRule {
 
   //~ Methods ----------------------------------------------------------------
 
-  public Convention getOutConvention() {
+  @Override public Convention getOutConvention() {
     return (Convention) outTrait;
   }
 
@@ -138,7 +138,7 @@ public abstract class ConverterRule extends RelOptRule {
     return false;
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     RelNode rel = call.rel(0);
     if (rel.getTraitSet().contains(inTrait)) {
       final RelNode converted = convert(rel);

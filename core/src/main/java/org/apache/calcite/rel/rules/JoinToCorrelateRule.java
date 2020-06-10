@@ -99,12 +99,12 @@ public class JoinToCorrelateRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public boolean matches(RelOptRuleCall call) {
+  @Override public boolean matches(RelOptRuleCall call) {
     Join join = call.rel(0);
     return !join.getJoinType().generatesNullsOnLeft();
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     assert matches(call);
     final Join join = call.rel(0);
     RelNode right = join.getRight();

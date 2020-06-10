@@ -162,7 +162,7 @@ public class AggregateReduceFunctionsRule
     return containsAvgStddevVarCall(oldAggRel.getAggCallList());
   }
 
-  public void onMatch(RelOptRuleCall ruleCall) {
+  @Override public void onMatch(RelOptRuleCall ruleCall) {
     Aggregate oldAggRel = (Aggregate) ruleCall.rels[0];
     reduceAggs(ruleCall, oldAggRel);
   }

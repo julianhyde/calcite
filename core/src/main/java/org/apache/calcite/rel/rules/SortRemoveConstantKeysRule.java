@@ -16,14 +16,13 @@
  */
 package org.apache.calcite.rel.rules;
 
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPredicateList;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexBuilder;
@@ -38,15 +37,18 @@ import java.util.stream.Collectors;
  *
  * <p>Requires {@link RelCollationTraitDef}.
  */
-public class SortRemoveConstantKeysRule extends RelOptRule
+public class SortRemoveConstantKeysRule
+    extends RelOptNewRule<SortRemoveConstantKeysRule.Config>
     implements SubstitutionRule {
   public static final SortRemoveConstantKeysRule INSTANCE =
-      new SortRemoveConstantKeysRule();
+      Config.EMPTY
+          .withOperandSupplier(b -> b.operand(Sort.class).anyInputs())
+          .as(Config.class)
+          .toRule();
 
-  private SortRemoveConstantKeysRule() {
-    super(
-        operand(Sort.class, any()),
-        RelFactories.LOGICAL_BUILDER, "SortRemoveConstantKeysRule");
+  /** Creates a SortRemoveConstantKeysRule. */
+  protected SortRemoveConstantKeysRule(Config config) {
+    super(config);
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -81,5 +83,12 @@ public class SortRemoveConstantKeysRule extends RelOptRule
         sort.copy(sort.getTraitSet(), input, RelCollations.of(collationsList));
     call.transformTo(result);
     call.getPlanner().prune(sort);
+  }
+
+  /** Rule configuration. */
+  public interface Config extends RelOptNewRule.Config {
+    @Override default SortRemoveConstantKeysRule toRule() {
+      return new SortRemoveConstantKeysRule(this);
+    }
   }
 }

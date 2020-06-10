@@ -22,8 +22,8 @@ import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
@@ -501,14 +501,19 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
   //~ Inner Class ------------------------------------------------------------
 
   /** A Mock rule to validate the hint. */
-  private static class MockJoinRule extends RelOptRule {
-    public static final MockJoinRule INSTANCE = new MockJoinRule();
+  public static class MockJoinRule extends RelOptNewRule<MockJoinRule.Config> {
+    public static final MockJoinRule INSTANCE = Config.EMPTY
+        .withOperandSupplier(b ->
+            b.operand(LogicalJoin.class).anyInputs())
+        .withDescription("MockJoinRule")
+        .as(Config.class)
+        .toRule();
 
-    MockJoinRule() {
-      super(operand(LogicalJoin.class, any()), "MockJoinRule");
+    MockJoinRule(Config config) {
+      super(config);
     }
 
-    public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(RelOptRuleCall call) {
       LogicalJoin join = call.rel(0);
       assertThat(1, is(join.getHints().size()));
       call.transformTo(
@@ -518,6 +523,13 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
               join.getCondition(),
               join.getVariablesSet(),
               join.getJoinType()));
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelOptNewRule.Config {
+      @Override default MockJoinRule toRule() {
+        return new MockJoinRule(this);
+      }
     }
   }
 
@@ -565,8 +577,8 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
 
   /** A visitor to validate a hintable node has specific hint. **/
   private static class ValidateHintVisitor extends RelVisitor {
-    private RelHint expectedHint;
-    private Class<?> clazz;
+    private final RelHint expectedHint;
+    private final Class<?> clazz;
 
     /**
      * Creates the validate visitor.
@@ -594,9 +606,9 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
 
   /** Sql test tool. */
   private static class Sql {
-    private String sql;
-    private Tester tester;
-    private List<String> hintsCollect;
+    private final String sql;
+    private final Tester tester;
+    private final List<String> hintsCollect;
 
     Sql(String sql, Tester tester) {
       this.sql = sql;

@@ -287,5 +287,16 @@ public class ProjectFilterTransposeRule
               b1.operand(filterClass).anyInputs()))
           .as(Config.class);
     }
+
+    /** Defines an operand tree for the given 3 classes. */
+    default Config withOperandFor(Class<? extends Project> projectClass,
+        Class<? extends Filter> filterClass,
+        Class<? extends RelNode> inputClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(projectClass).oneInput(b1 ->
+              b1.operand(filterClass).oneInput(b2 ->
+                  b2.operand(inputClass).anyInputs())))
+          .as(Config.class);
+    }
   }
 }

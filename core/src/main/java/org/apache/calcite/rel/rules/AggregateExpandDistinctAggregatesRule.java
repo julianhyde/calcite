@@ -131,7 +131,7 @@ public final class AggregateExpandDistinctAggregatesRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);
     if (!aggregate.containsDistinctCall()) {
       return;

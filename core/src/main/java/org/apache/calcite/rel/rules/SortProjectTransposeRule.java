@@ -112,7 +112,7 @@ public class SortProjectTransposeRule
 
   //~ Methods ----------------------------------------------------------------
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Sort sort = call.rel(0);
     final Project project = call.rel(1);
     final RelOptCluster cluster = project.getCluster();
@@ -184,6 +184,19 @@ public class SortProjectTransposeRule
           b0.operand(sortClass).oneInput(b1 ->
               b1.operand(projectClass)
                   .predicate(p -> !p.containsOver()).anyInputs()))
+          .as(Config.class);
+    }
+
+    /** Defines an operand tree for the given classes. */
+    default Config withOperandFor(Class<? extends Sort> sortClass,
+        Class<? extends Project> projectClass,
+        Class<? extends RelNode> inputClass) {
+      return withOperandSupplier(b0 ->
+          b0.operand(sortClass).oneInput(b1 ->
+              b1.operand(projectClass)
+                  .predicate(p -> !p.containsOver())
+                  .oneInput(b2 ->
+                      b2.operand(inputClass).anyInputs())))
           .as(Config.class);
     }
   }

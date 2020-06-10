@@ -128,7 +128,7 @@ public class AggregateUnionAggregateRule
     }
   }
 
-  public void onMatch(RelOptRuleCall call) {
+  @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate topAggRel = call.rel(0);
     final Union union = call.rel(1);
 
