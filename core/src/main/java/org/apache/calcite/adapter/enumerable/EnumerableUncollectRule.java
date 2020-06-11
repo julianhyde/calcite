@@ -27,9 +27,16 @@ import org.apache.calcite.rel.core.Uncollect;
  * {@link EnumerableUncollect}.
  */
 class EnumerableUncollectRule extends ConverterRule {
-  EnumerableUncollectRule() {
-    super(Uncollect.class, Convention.NONE, EnumerableConvention.INSTANCE,
-        "EnumerableUncollectRule");
+  /** Singleton instance of EnumerableUncollectRule. */
+  static final EnumerableUncollectRule INSTANCE = Config.INSTANCE
+      .withConversion(Uncollect.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableUncollectRule")
+      .withRuleFactory(EnumerableUncollectRule::new)
+      .toRule(EnumerableUncollectRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableUncollectRule(Config config) {
+    super(config);
   }
 
   public RelNode convert(RelNode rel) {

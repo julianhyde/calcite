@@ -26,14 +26,16 @@ import org.apache.calcite.rel.logical.LogicalRepeatUnion;
  * Rule to convert a {@link LogicalRepeatUnion} into an {@link EnumerableRepeatUnion}.
  */
 public class EnumerableRepeatUnionRule extends ConverterRule {
+  /** Singleton instance of EnumerableRepeatUnionRule. */
+  static final EnumerableRepeatUnionRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalRepeatUnion.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableRepeatUnionRule")
+      .withRuleFactory(EnumerableRepeatUnionRule::new)
+      .toRule(EnumerableRepeatUnionRule.class);
 
-  EnumerableRepeatUnionRule() {
-    super(
-        LogicalRepeatUnion.class,
-        Convention.NONE,
-        EnumerableConvention.INSTANCE,
-        "EnumerableRepeatUnionRule");
-
+  /** Called from the Config. */
+  protected EnumerableRepeatUnionRule(Config config) {
+    super(config);
   }
 
   @Override public RelNode convert(RelNode rel) {

@@ -31,9 +31,16 @@ import org.apache.calcite.util.ImmutableIntList;
  * to an {@link EnumerableSortedAggregate}.
  */
 class EnumerableSortedAggregateRule extends ConverterRule {
-  EnumerableSortedAggregateRule() {
-    super(LogicalAggregate.class, Convention.NONE,
-        EnumerableConvention.INSTANCE, "EnumerableSortedAggregateRule");
+  /** Singleton instance of EnumerableSortedAggregateRule. */
+  static final EnumerableSortedAggregateRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalAggregate.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableSortedAggregateRule")
+      .withRuleFactory(EnumerableSortedAggregateRule::new)
+      .toRule(EnumerableSortedAggregateRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableSortedAggregateRule(Config config) {
+    super(config);
   }
 
   public RelNode convert(RelNode rel) {

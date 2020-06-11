@@ -42,11 +42,16 @@ import java.util.List;
  * @see EnumerableJoinRule
  */
 class EnumerableMergeJoinRule extends ConverterRule {
-  EnumerableMergeJoinRule() {
-    super(LogicalJoin.class,
-        Convention.NONE,
-        EnumerableConvention.INSTANCE,
-        "EnumerableMergeJoinRule");
+  /** Singleton instance of EnumerableMergeJoinRule. */
+  static final EnumerableMergeJoinRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalJoin.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableMergeJoinRule")
+      .withRuleFactory(EnumerableMergeJoinRule::new)
+      .toRule(EnumerableMergeJoinRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableMergeJoinRule(Config config) {
+    super(config);
   }
 
   @Override public RelNode convert(RelNode rel) {

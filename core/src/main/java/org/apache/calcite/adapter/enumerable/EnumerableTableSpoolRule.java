@@ -31,12 +31,16 @@ import org.apache.calcite.rel.logical.LogicalTableSpool;
  */
 @Experimental
 public class EnumerableTableSpoolRule extends ConverterRule {
+  /** Singleton instance of EnumerableTableSpoolRule. */
+  static final EnumerableTableSpoolRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalTableSpool.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableTableSpoolRule")
+      .withRuleFactory(EnumerableTableSpoolRule::new)
+      .toRule(EnumerableTableSpoolRule.class);
 
-  EnumerableTableSpoolRule() {
-    super(LogicalTableSpool.class,
-        Convention.NONE,
-        EnumerableConvention.INSTANCE,
-        "EnumerableTableSpoolRule");
+  /** Called from the Config. */
+  protected EnumerableTableSpoolRule(Config config) {
+    super(config);
   }
 
   @Override public RelNode convert(RelNode rel) {

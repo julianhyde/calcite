@@ -30,15 +30,12 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterImpl;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.Bindable;
-import org.apache.calcite.tools.RelBuilderFactory;
 
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 /**
  * Relational expression that converts an enumerable input to interpretable
@@ -86,19 +83,16 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
    * Rule that converts any enumerable relational expression to bindable.
    */
   public static class EnumerableToBindableConverterRule extends ConverterRule {
-    public static final EnumerableToBindableConverterRule INSTANCE =
-        new EnumerableToBindableConverterRule(RelFactories.LOGICAL_BUILDER);
+    public static final EnumerableToBindableConverterRule INSTANCE = Config.EMPTY
+        .as(Config.class)
+        .withConversion(EnumerableRel.class,
+            EnumerableConvention.INSTANCE, BindableConvention.INSTANCE,
+            "EnumerableToBindableConverterRule")
+        .withRuleFactory(EnumerableToBindableConverterRule::new)
+        .toRule(EnumerableToBindableConverterRule.class);
 
-    /**
-     * Creates an EnumerableToBindableConverterRule.
-     *
-     * @param relBuilderFactory Builder for relational expressions
-     */
-    public EnumerableToBindableConverterRule(
-        RelBuilderFactory relBuilderFactory) {
-      super(EnumerableRel.class, (Predicate<RelNode>) r -> true,
-          EnumerableConvention.INSTANCE, BindableConvention.INSTANCE,
-          relBuilderFactory, "EnumerableToBindableConverterRule");
+    protected EnumerableToBindableConverterRule(Config config) {
+      super(config);
     }
 
     @Override public RelNode convert(RelNode rel) {

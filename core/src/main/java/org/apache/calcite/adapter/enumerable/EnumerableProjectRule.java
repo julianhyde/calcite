@@ -19,10 +19,7 @@ package org.apache.calcite.adapter.enumerable;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
-
-import java.util.function.Predicate;
 
 
 /**
@@ -30,14 +27,19 @@ import java.util.function.Predicate;
  * {@link EnumerableProject}.
  */
 class EnumerableProjectRule extends ConverterRule {
-  EnumerableProjectRule() {
-    super(LogicalProject.class,
-        (Predicate<LogicalProject>) p -> !p.containsOver(),
-        Convention.NONE, EnumerableConvention.INSTANCE,
-        RelFactories.LOGICAL_BUILDER, "EnumerableProjectRule");
+  static final EnumerableProjectRule INSTANCE = Config.EMPTY
+      .as(Config.class)
+      .withConversion(LogicalProject.class, p -> !p.containsOver(),
+          Convention.NONE, EnumerableConvention.INSTANCE,
+          "EnumerableProjectRule")
+      .withRuleFactory(EnumerableProjectRule::new)
+      .toRule(EnumerableProjectRule.class);
+
+  protected EnumerableProjectRule(Config config) {
+    super(config);
   }
 
-  public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelNode rel) {
     final LogicalProject project = (LogicalProject) rel;
     return EnumerableProject.create(
         convert(project.getInput(),

@@ -31,9 +31,16 @@ import java.util.List;
  * {@link EnumerableUnion}.
  */
 class EnumerableUnionRule extends ConverterRule {
-  EnumerableUnionRule() {
-    super(LogicalUnion.class, Convention.NONE, EnumerableConvention.INSTANCE,
-        "EnumerableUnionRule");
+  /** Singleton instance of EnumerableUnionRule. */
+  static final EnumerableUnionRule INSTANCE = Config.INSTANCE
+      .withConversion(LogicalUnion.class, Convention.NONE,
+          EnumerableConvention.INSTANCE, "EnumerableUnionRule")
+      .withRuleFactory(EnumerableUnionRule::new)
+      .toRule(EnumerableUnionRule.class);
+
+  /** Called from the Config. */
+  protected EnumerableUnionRule(Config config) {
+    super(config);
   }
 
   public RelNode convert(RelNode rel) {

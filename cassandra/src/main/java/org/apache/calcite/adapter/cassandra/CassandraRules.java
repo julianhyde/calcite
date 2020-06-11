@@ -29,7 +29,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -88,19 +87,10 @@ public class CassandraRules {
   /** Base class for planner rules that convert a relational expression to
    * Cassandra calling convention. */
   abstract static class CassandraConverterRule extends ConverterRule {
-    protected final Convention out;
+    protected final Convention out = CassandraRel.CONVENTION;
 
-    CassandraConverterRule(Class<? extends RelNode> clazz,
-        String description) {
-      this(clazz, r -> true, description);
-    }
-
-    <R extends RelNode> CassandraConverterRule(Class<R> clazz,
-        Predicate<? super R> predicate,
-        String description) {
-      super(clazz, predicate, Convention.NONE,
-          CassandraRel.CONVENTION, RelFactories.LOGICAL_BUILDER, description);
-      this.out = CassandraRel.CONVENTION;
+    CassandraConverterRule(Config config) {
+      super(config);
     }
   }
 
@@ -245,10 +235,15 @@ public class CassandraRules {
    * to a {@link CassandraProject}.
    */
   private static class CassandraProjectRule extends CassandraConverterRule {
-    private static final CassandraProjectRule INSTANCE = new CassandraProjectRule();
+    private static final CassandraProjectRule INSTANCE = Config.EMPTY
+        .as(Config.class)
+        .withConversion(LogicalProject.class, Convention.NONE,
+            CassandraRel.CONVENTION, "CassandraProjectRule")
+        .withRuleFactory(CassandraProjectRule::new)
+        .toRule(CassandraProjectRule.class);
 
-    private CassandraProjectRule() {
-      super(LogicalProject.class, "CassandraProjectRule");
+    protected CassandraProjectRule(Config config) {
+      super(config);
     }
 
     @Override public boolean matches(RelOptRuleCall call) {
