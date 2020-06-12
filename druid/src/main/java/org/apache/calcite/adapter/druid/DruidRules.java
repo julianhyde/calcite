@@ -35,7 +35,6 @@ import org.apache.calcite.rel.rules.AggregateFilterTransposeRule;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
-import org.apache.calcite.rel.rules.ProjectSortTransposeRule;
 import org.apache.calcite.rel.rules.SortProjectTransposeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -124,8 +123,8 @@ public class DruidRules {
    * {@link org.apache.calcite.rel.core.Sort}. Useful if after pushing Sort,
    * we could not push it inside DruidQuery. */
   @Deprecated // to be removed before 1.25
-  public static final ProjectSortTransposeRule PROJECT_SORT_TRANSPOSE =
-      ProjectSortTransposeRule.INSTANCE.config
+  public static final RelOptRule PROJECT_SORT_TRANSPOSE =
+      org.apache.calcite.rel.rules.ProjectSortTransposeRule.INSTANCE.config
           .withOperandFor(Project.class, Sort.class, DruidQuery.class)
           .toRule();
 
