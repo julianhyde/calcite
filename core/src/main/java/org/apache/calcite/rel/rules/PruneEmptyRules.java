@@ -477,7 +477,7 @@ public abstract class PruneEmptyRules {
 
   /** Configuration for rule that prunes a join it its left input is
    * empty. */
-  private interface JoinLeftEmptyRuleConfig extends PruneEmptyRule.Config {
+  public interface JoinLeftEmptyRuleConfig extends PruneEmptyRule.Config {
     @Override default PruneEmptyRule toRule() {
       return new PruneEmptyRule(this) {
         @Override public void onMatch(RelOptRuleCall call) {
@@ -495,7 +495,7 @@ public abstract class PruneEmptyRules {
 
   /** Configuration for rule that prunes a join it its right input is
    * empty. */
-  private interface JoinRightEmptyRuleConfig extends PruneEmptyRule.Config {
+  public interface JoinRightEmptyRuleConfig extends PruneEmptyRule.Config {
     @Override default PruneEmptyRule toRule() {
       return new PruneEmptyRule(this) {
         @Override public void onMatch(RelOptRuleCall call) {
