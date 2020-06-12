@@ -53,6 +53,7 @@ include(
     "example:function",
     "file",
     "geode",
+    "innodb",
     "kafka",
     "linq4j",
     "mongodb",
