@@ -26,8 +26,7 @@ import org.apache.calcite.rel.logical.LogicalValues;
  * relational expression
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
 public class EnumerableValuesRule extends ConverterRule {
-  public static final EnumerableValuesRule INSTANCE = Config.EMPTY
-      .as(Config.class)
+  public static final EnumerableValuesRule INSTANCE = Config.INSTANCE
       .withConversion(LogicalValues.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableValuesRule")
       .withRuleFactory(EnumerableValuesRule::new)

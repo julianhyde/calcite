@@ -51,8 +51,7 @@ public class PigRules {
    * {@link PigFilter}.
    */
   private static class PigFilterRule extends ConverterRule {
-    private static final PigFilterRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    private static final PigFilterRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalFilter.class, Convention.NONE,
             PigRel.CONVENTION, "PigFilterRule")
         .withRuleFactory(PigFilterRule::new)
@@ -75,8 +74,7 @@ public class PigRules {
    * to a {@link PigTableScan}.
    */
   private static class PigTableScanRule extends ConverterRule {
-    private static final PigTableScanRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    private static final PigTableScanRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalTableScan.class, Convention.NONE,
             PigRel.CONVENTION, "PigTableScanRule")
         .withRuleFactory(PigTableScanRule::new)
@@ -100,8 +98,7 @@ public class PigRules {
    * a {@link PigProject}.
    */
   private static class PigProjectRule extends ConverterRule {
-    private static final PigProjectRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    private static final PigProjectRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalProject.class, Convention.NONE,
             PigRel.CONVENTION, "PigProjectRule")
         .withRuleFactory(PigProjectRule::new)
@@ -111,7 +108,7 @@ public class PigRules {
       super(config);
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(PigRel.CONVENTION);
       return new PigProject(project.getCluster(), traitSet, project.getInput(),
@@ -124,8 +121,7 @@ public class PigRules {
    * {@link PigAggregate}.
    */
   private static class PigAggregateRule extends ConverterRule {
-    private static final PigAggregateRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    private static final PigAggregateRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalAggregate.class, Convention.NONE,
             PigRel.CONVENTION, "PigAggregateRule")
         .withRuleFactory(PigAggregateRule::new)
@@ -148,8 +144,7 @@ public class PigRules {
    * a {@link PigJoin}.
    */
   private static class PigJoinRule extends ConverterRule {
-    private static final PigJoinRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    private static final PigJoinRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalJoin.class, Convention.NONE,
             PigRel.CONVENTION, "PigJoinRule")
         .withRuleFactory(PigJoinRule::new)

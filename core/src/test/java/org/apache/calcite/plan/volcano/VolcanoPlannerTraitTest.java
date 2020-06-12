@@ -104,11 +104,9 @@ class VolcanoPlannerTraitTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
-    planner.addRule(new PhysToIteratorConverterRule());
+    planner.addRule(PhysToIteratorConverterRule.INSTANCE);
     planner.addRule(
-        new AltTraitConverterRule(
-            ALT_TRAIT,
-            ALT_TRAIT2,
+        AltTraitConverterRule.create(ALT_TRAIT, ALT_TRAIT2,
             "AltToAlt2ConverterRule"));
     planner.addRule(PhysLeafRule.INSTANCE);
     planner.addRule(IterSingleRule.INSTANCE);
@@ -159,7 +157,7 @@ class VolcanoPlannerTraitTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
-    planner.addRule(new PhysToIteratorConverterRule());
+    planner.addRule(PhysToIteratorConverterRule.INSTANCE);
     planner.addRule(PhysLeafRule.INSTANCE);
     planner.addRule(IterSingleRule.INSTANCE);
     planner.addRule(IterSinglePhysMergeRule.INSTANCE);
@@ -192,11 +190,9 @@ class VolcanoPlannerTraitTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
-    planner.addRule(new PhysToIteratorConverterRule());
+    planner.addRule(PhysToIteratorConverterRule.INSTANCE);
     planner.addRule(
-        new AltTraitConverterRule(
-            ALT_TRAIT,
-            ALT_TRAIT2,
+        AltTraitConverterRule.create(ALT_TRAIT, ALT_TRAIT2,
             "AltToAlt2ConverterRule"));
     planner.addRule(PhysLeafRule.INSTANCE);
     planner.addRule(IterSingleRule2.INSTANCE);
@@ -687,22 +683,22 @@ class VolcanoPlannerTraitTest {
 
   /** Planner rule that converts between {@link AltTrait}s. */
   private static class AltTraitConverterRule extends ConverterRule {
-    private final RelTrait toTrait;
-
-    private AltTraitConverterRule(
-        AltTrait fromTrait,
-        AltTrait toTrait,
+    static AltTraitConverterRule create(AltTrait fromTrait, AltTrait toTrait,
         String description) {
-      super(
-          RelNode.class,
-          fromTrait,
-          toTrait,
-          description);
-
-      this.toTrait = toTrait;
+      return Config.INSTANCE
+          .withConversion(RelNode.class, fromTrait, toTrait, description)
+          .withRuleFactory(AltTraitConverterRule::new)
+          .toRule(AltTraitConverterRule.class);
     }
 
-    public RelNode convert(RelNode rel) {
+    private final RelTrait toTrait;
+
+    AltTraitConverterRule(Config config) {
+      super(config);
+      this.toTrait = config.outTrait();
+    }
+
+    @Override public RelNode convert(RelNode rel) {
       return new AltTraitConverter(
           rel.getCluster(),
           rel,
@@ -741,15 +737,17 @@ class VolcanoPlannerTraitTest {
 
   /** Planner rule that converts from PHYS to ENUMERABLE convention. */
   private static class PhysToIteratorConverterRule extends ConverterRule {
-    PhysToIteratorConverterRule() {
-      super(
-          RelNode.class,
-          PHYS_CALLING_CONVENTION,
-          EnumerableConvention.INSTANCE,
-          "PhysToIteratorRule");
+    static final PhysToIteratorConverterRule INSTANCE = Config.INSTANCE
+        .withConversion(RelNode.class, PHYS_CALLING_CONVENTION,
+            EnumerableConvention.INSTANCE, "PhysToIteratorRule")
+        .withRuleFactory(PhysToIteratorConverterRule::new)
+        .toRule(PhysToIteratorConverterRule.class);
+
+    PhysToIteratorConverterRule(Config config) {
+      super(config);
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       return new PhysToIteratorConverter(
           rel.getCluster(),
           rel);

@@ -26,8 +26,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * {@link CassandraRel#CONVENTION} to {@link EnumerableConvention}.
  */
 public class CassandraToEnumerableConverterRule extends ConverterRule {
-  public static final CassandraToEnumerableConverterRule INSTANCE = Config.EMPTY
-      .as(Config.class)
+  public static final CassandraToEnumerableConverterRule INSTANCE = Config.INSTANCE
       .withConversion(RelNode.class, CassandraRel.CONVENTION,
           EnumerableConvention.INSTANCE, "CassandraToEnumerableConverterRule")
       .withRuleFactory(CassandraToEnumerableConverterRule::new)

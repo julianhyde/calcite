@@ -43,7 +43,7 @@ class EnumerableUnionRule extends ConverterRule {
     super(config);
   }
 
-  public RelNode convert(RelNode rel) {
+  @Override public RelNode convert(RelNode rel) {
     final LogicalUnion union = (LogicalUnion) rel;
     final EnumerableConvention out = EnumerableConvention.INSTANCE;
     final RelTraitSet traitSet = rel.getCluster().traitSet().replace(out);

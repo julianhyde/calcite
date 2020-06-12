@@ -83,8 +83,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
    * Rule that converts any enumerable relational expression to bindable.
    */
   public static class EnumerableToBindableConverterRule extends ConverterRule {
-    public static final EnumerableToBindableConverterRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    public static final EnumerableToBindableConverterRule INSTANCE = Config.INSTANCE
         .withConversion(EnumerableRel.class,
             EnumerableConvention.INSTANCE, BindableConvention.INSTANCE,
             "EnumerableToBindableConverterRule")

@@ -26,8 +26,7 @@ import org.apache.calcite.rel.logical.LogicalMatch;
  * {@link EnumerableMatch}.
  */
 public class EnumerableMatchRule extends ConverterRule {
-  public static final EnumerableMatchRule INSTANCE = Config.EMPTY
-      .as(Config.class)
+  public static final EnumerableMatchRule INSTANCE = Config.INSTANCE
       .withConversion(LogicalMatch.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableMatchRule")
       .withRuleFactory(EnumerableMatchRule::new)

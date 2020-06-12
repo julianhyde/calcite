@@ -342,18 +342,7 @@ class VolcanoPlannerTest {
     planner.addRule(GoodSingleRule.INSTANCE);
     planner.addRule(PhysProjectRule.INSTANCE);
 
-    planner.addRule(
-        new ConverterRule(
-            RelNode.class,
-            PHYS_CALLING_CONVENTION,
-            EnumerableConvention.INSTANCE,
-            "PhysToIteratorRule") {
-          public RelNode convert(RelNode rel) {
-            return new PhysToIteratorConverter(
-                rel.getCluster(),
-                rel);
-          }
-        });
+    planner.addRule(PhysToIteratorRule.INSTANCE);
 
     RelOptCluster cluster = newCluster(planner);
     PhysLeafRel leafRel =
@@ -654,7 +643,7 @@ class VolcanoPlannerTest {
   //~ Inner Classes ----------------------------------------------------------
 
   /** Converter from PHYS to ENUMERABLE convention. */
-  class PhysToIteratorConverter extends ConverterImpl {
+  static class PhysToIteratorConverter extends ConverterImpl {
     PhysToIteratorConverter(
         RelOptCluster cluster,
         RelNode child) {
@@ -990,6 +979,24 @@ class VolcanoPlannerTest {
 
     public void ruleProductionSucceeded(RuleProductionEvent event) {
       recordEvent(event);
+    }
+  }
+
+  private static class PhysToIteratorRule extends ConverterRule {
+    static final PhysToIteratorRule INSTANCE = Config.INSTANCE
+        .withConversion(RelNode.class, PlannerTests.PHYS_CALLING_CONVENTION,
+            EnumerableConvention.INSTANCE, "PhysToIteratorRule")
+        .withRuleFactory(PhysToIteratorRule::new)
+        .toRule(PhysToIteratorRule.class);
+
+    PhysToIteratorRule(Config config) {
+      super(config);
+    }
+
+    @Override public RelNode convert(RelNode rel) {
+      return new PhysToIteratorConverter(
+          rel.getCluster(),
+          rel);
     }
   }
 }

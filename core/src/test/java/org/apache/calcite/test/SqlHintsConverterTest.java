@@ -396,7 +396,7 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
         .build();
     // Validate Volcano planner.
     RuleSet ruleSet = RuleSets.ofList(
-        new MockEnumerableJoinRule(hint), // Rule to validate the hint.
+        MockEnumerableJoinRule.create(hint), // Rule to validate the hint.
         FilterProjectTransposeRule.INSTANCE,
         FilterMergeRule.INSTANCE,
         ProjectMergeRule.INSTANCE,
@@ -536,16 +536,20 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
   /** A Mock rule to validate the hint.
    * This rule also converts the rel to EnumerableConvention. */
   private static class MockEnumerableJoinRule extends ConverterRule {
-    private final RelHint expectedHint;
+    static MockEnumerableJoinRule create(RelHint hint) {
+      return Config.INSTANCE
+          .withConversion(LogicalJoin.class, Convention.NONE,
+              EnumerableConvention.INSTANCE, "MockEnumerableJoinRule")
+          .withRuleFactory(c -> new MockEnumerableJoinRule(c, hint))
+          .toRule(MockEnumerableJoinRule.class);
+    }
 
-    MockEnumerableJoinRule(RelHint hint) {
-      super(
-          LogicalJoin.class,
-          Convention.NONE,
-          EnumerableConvention.INSTANCE,
-          "MockEnumerableJoinRule");
+    MockEnumerableJoinRule(Config config, RelHint hint) {
+      super(config);
       this.expectedHint = hint;
     }
+
+    private final RelHint expectedHint;
 
     @Override public RelNode convert(RelNode rel) {
       LogicalJoin join = (LogicalJoin) rel;

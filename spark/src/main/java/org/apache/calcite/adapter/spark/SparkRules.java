@@ -93,19 +93,20 @@ public abstract class SparkRules {
         FilterToCalcRule.INSTANCE,
         EnumerableToSparkConverterRule.INSTANCE,
         SparkToEnumerableConverterRule.INSTANCE,
-        SPARK_VALUES_RULE,
-        SPARK_CALC_RULE);
+        SparkValuesRule.INSTANCE,
+        SparkCalcRule.INSTANCE);
   }
 
   /** Planner rule that converts from enumerable to Spark convention. */
   static class EnumerableToSparkConverterRule extends ConverterRule {
-    public static final EnumerableToSparkConverterRule INSTANCE =
-        new EnumerableToSparkConverterRule();
+    static final EnumerableToSparkConverterRule INSTANCE = Config.INSTANCE
+        .withConversion(RelNode.class, EnumerableConvention.INSTANCE,
+            SparkRel.CONVENTION, "EnumerableToSparkConverterRule")
+        .withRuleFactory(EnumerableToSparkConverterRule::new)
+        .toRule(EnumerableToSparkConverterRule.class);
 
-    private EnumerableToSparkConverterRule() {
-      super(
-          RelNode.class, EnumerableConvention.INSTANCE, SparkRel.CONVENTION,
-          "EnumerableToSparkConverterRule");
+    EnumerableToSparkConverterRule(Config config) {
+      super(config);
     }
 
     @Override public RelNode convert(RelNode rel) {
@@ -116,13 +117,14 @@ public abstract class SparkRules {
 
   /** Planner rule that converts from Spark to enumerable convention. */
   static class SparkToEnumerableConverterRule extends ConverterRule {
-    public static final SparkToEnumerableConverterRule INSTANCE =
-        new SparkToEnumerableConverterRule();
+    static final SparkToEnumerableConverterRule INSTANCE = Config.INSTANCE
+        .withConversion(RelNode.class, SparkRel.CONVENTION,
+            EnumerableConvention.INSTANCE, "SparkToEnumerableConverterRule")
+        .withRuleFactory(SparkToEnumerableConverterRule::new)
+        .toRule(SparkToEnumerableConverterRule.class);
 
-    private SparkToEnumerableConverterRule() {
-      super(
-          RelNode.class, SparkRel.CONVENTION, EnumerableConvention.INSTANCE,
-          "SparkToEnumerableConverterRule");
+    SparkToEnumerableConverterRule(Config config) {
+      super(config);
     }
 
     @Override public RelNode convert(RelNode rel) {
@@ -131,14 +133,20 @@ public abstract class SparkRules {
     }
   }
 
+  @Deprecated
   public static final SparkValuesRule SPARK_VALUES_RULE =
-      new SparkValuesRule();
+      SparkValuesRule.INSTANCE;
 
   /** Planner rule that implements VALUES operator in Spark convention. */
   public static class SparkValuesRule extends ConverterRule {
-    private SparkValuesRule() {
-      super(LogicalValues.class, Convention.NONE, SparkRel.CONVENTION,
-          "SparkValuesRule");
+    static final SparkValuesRule INSTANCE = Config.INSTANCE
+        .withConversion(LogicalValues.class, Convention.NONE,
+            SparkRel.CONVENTION, "SparkValuesRule")
+        .withRuleFactory(SparkValuesRule::new)
+        .toRule(SparkValuesRule.class);
+
+    SparkValuesRule(Config config) {
+      super(config);
     }
 
     @Override public RelNode convert(RelNode rel) {
@@ -211,24 +219,26 @@ public abstract class SparkRules {
     }
   }
 
+  @Deprecated
   public static final SparkCalcRule SPARK_CALC_RULE =
-      new SparkCalcRule();
+      SparkCalcRule.INSTANCE;
 
   /**
    * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalCalc} to an
    * {@link org.apache.calcite.adapter.spark.SparkRules.SparkCalc}.
    */
-  private static class SparkCalcRule
-      extends ConverterRule {
-    private SparkCalcRule() {
-      super(
-          LogicalCalc.class,
-          Convention.NONE,
-          SparkRel.CONVENTION,
-          "SparkCalcRule");
+  private static class SparkCalcRule extends ConverterRule {
+    static final SparkCalcRule INSTANCE = Config.INSTANCE
+        .withConversion(LogicalCalc.class, Convention.NONE, SparkRel.CONVENTION,
+            "SparkCalcRule")
+        .withRuleFactory(SparkCalcRule::new)
+        .toRule(SparkCalcRule.class);
+
+    SparkCalcRule(Config config) {
+      super(config);
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       final LogicalCalc calc = (LogicalCalc) rel;
 
       // If there's a multiset, let FarragoMultisetSplitter work on it

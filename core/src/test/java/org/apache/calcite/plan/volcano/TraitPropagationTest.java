@@ -284,13 +284,16 @@ class TraitPropagationTest {
 
   /** Rule for PhysSort */
   private static class PhysSortRule extends ConverterRule {
-    static final PhysSortRule INSTANCE = new PhysSortRule();
+    static final PhysSortRule INSTANCE = Config.INSTANCE
+        .withConversion(Sort.class, Convention.NONE, PHYSICAL, "PhysSortRule")
+        .withRuleFactory(PhysSortRule::new)
+        .toRule(PhysSortRule.class);
 
-    PhysSortRule() {
-      super(Sort.class, Convention.NONE, PHYSICAL, "PhysSortRule");
+    PhysSortRule(Config config) {
+      super(config);
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       final Sort sort = (Sort) rel;
       final RelNode input = convert(sort.getInput(),
           rel.getCluster().traitSetOf(PHYSICAL));

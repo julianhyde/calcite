@@ -26,8 +26,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * an {@link org.apache.calcite.adapter.enumerable.EnumerableInterpreter}.
  */
 public class EnumerableInterpreterRule extends ConverterRule {
-  public static final EnumerableInterpreterRule INSTANCE = Config.EMPTY
-      .as(Config.class)
+  public static final EnumerableInterpreterRule INSTANCE = Config.INSTANCE
       .withConversion(RelNode.class, BindableConvention.INSTANCE,
           EnumerableConvention.INSTANCE, "EnumerableInterpreterRule")
       .withRuleFactory(EnumerableInterpreterRule::new)

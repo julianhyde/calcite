@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 
 /**
  * A <code>RelOptRule</code> transforms an expression into another. It has a
@@ -121,6 +122,7 @@ public abstract class RelOptRule {
    * @return Operand that matches a relational expression that has no
    *   children
    */
+  @Deprecated
   public static <R extends RelNode> RelOptRuleOperand operand(
       Class<R> clazz,
       RelOptRuleOperandChildren operandList) {
@@ -139,6 +141,7 @@ public abstract class RelOptRule {
    * @return Operand that matches a relational expression that has no
    *   children
    */
+  @Deprecated
   public static <R extends RelNode> RelOptRuleOperand operand(
       Class<R> clazz,
       RelTrait trait,
@@ -159,6 +162,7 @@ public abstract class RelOptRule {
    * @return Operand that matches a relational expression that has a
    *   particular trait and predicate
    */
+  @Deprecated
   public static <R extends RelNode> RelOptRuleOperand operandJ(
       Class<R> clazz,
       RelTrait trait,
@@ -192,6 +196,7 @@ public abstract class RelOptRule {
    * @param <R> Class of relational expression to match
    * @return Operand
    */
+  @Deprecated
   public static <R extends RelNode> RelOptRuleOperand operandJ(
       Class<R> clazz,
       RelTrait trait,
@@ -232,6 +237,7 @@ public abstract class RelOptRule {
    * @return Operand that matches a relational expression with a given
    *   list of children
    */
+  @Deprecated
   public static <R extends RelNode> RelOptRuleOperand operand(
       Class<R> clazz,
       RelOptRuleOperand first,
@@ -246,6 +252,7 @@ public abstract class RelOptRule {
    * @param trait    Trait to match, or null to match any trait
    * @param predicate Predicate to apply to relational expression
    */
+  @Deprecated
   protected static <R extends RelNode> ConverterRelOptRuleOperand
       convertOperand(Class<R> clazz, Predicate<? super R> predicate,
       RelTrait trait) {
@@ -273,6 +280,7 @@ public abstract class RelOptRule {
    * @return List of child operands that matches child relational
    *   expressions in the order
    */
+  @Deprecated
   public static RelOptRuleOperandChildren some(
       RelOptRuleOperand first,
       RelOptRuleOperand... rest) {
@@ -307,6 +315,7 @@ public abstract class RelOptRule {
    * @return List of child operands that matches child relational
    *   expressions in any order
    */
+  @Deprecated
   public static RelOptRuleOperandChildren unordered(
       RelOptRuleOperand first,
       RelOptRuleOperand... rest) {
@@ -320,6 +329,7 @@ public abstract class RelOptRule {
    *
    * @return Empty list of child operands
    */
+  @Deprecated
   public static RelOptRuleOperandChildren none() {
     return RelOptRuleOperandChildren.LEAF_CHILDREN;
   }
@@ -447,10 +457,11 @@ public abstract class RelOptRule {
    * @param that Another rule
    * @return Whether this rule is equal to another rule
    */
-  protected boolean equals(RelOptRule that) {
+  protected boolean equals(@Nonnull RelOptRule that) {
     // Include operands and class in the equality criteria just in case
     // they have chosen a poor description.
-    return this == that || this.getClass() == that.getClass()
+    return this == that
+        || this.getClass() == that.getClass()
         && this.description.equals(that.description)
         && this.operand.equals(that.operand);
   }
@@ -640,7 +651,7 @@ public abstract class RelOptRule {
   /**
    * Operand to an instance of the converter rule.
    */
-  private static class ConverterRelOptRuleOperand extends RelOptRuleOperand {
+  protected static class ConverterRelOptRuleOperand extends RelOptRuleOperand {
     <R extends RelNode> ConverterRelOptRuleOperand(Class<R> clazz, RelTrait in,
         Predicate<? super R> predicate) {
       super(clazz, in, predicate, RelOptRuleOperandChildPolicy.ANY,

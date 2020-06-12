@@ -247,11 +247,8 @@ public class JdbcRules {
 
   /** Abstract base class for rule that converts to JDBC. */
   abstract static class JdbcConverterRule extends ConverterRule {
-    protected final JdbcConvention out;
-
     protected JdbcConverterRule(Config config) {
       super(config);
-      out = (JdbcConvention) config.outTrait();
     }
   }
 
@@ -259,8 +256,7 @@ public class JdbcRules {
   public static class JdbcJoinRule extends JdbcConverterRule {
     /** Creates a JdbcJoinRule. */
     public static JdbcJoinRule create(JdbcConvention out) {
-      return ConverterRule.Config.EMPTY
-          .as(ConverterRule.Config.class)
+      return Config.INSTANCE
           .withConversion(Join.class, Convention.NONE, out, "JdbcJoinRule")
           .withRuleFactory(JdbcJoinRule::new)
           .toRule(JdbcJoinRule.class);

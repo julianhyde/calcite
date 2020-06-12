@@ -41,6 +41,7 @@ public abstract class ConverterRule
 
   private final RelTrait inTrait;
   private final RelTrait outTrait;
+  protected final Convention out;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -52,6 +53,11 @@ public abstract class ConverterRule
 
     // Source and target traits must have same type
     assert inTrait.getTraitDef() == outTrait.getTraitDef();
+
+    // Most sub-classes are concerned with converting one convention to
+    // another, and for them, the "out" field is a convenient short-cut.
+    this.out = outTrait instanceof Convention ? (Convention) outTrait
+        : null;
   }
 
   /**
@@ -65,7 +71,7 @@ public abstract class ConverterRule
   @Deprecated
   public ConverterRule(Class<? extends RelNode> clazz, RelTrait in,
       RelTrait out, String descriptionPrefix) {
-    this(Config.EMPTY.as(Config.class)
+    this(Config.INSTANCE
         .withConversion(clazz, in, out, descriptionPrefix));
   }
 
@@ -74,7 +80,7 @@ public abstract class ConverterRule
   public <R extends RelNode> ConverterRule(Class<R> clazz,
       com.google.common.base.Predicate<? super R> predicate,
       RelTrait in, RelTrait out, String descriptionPrefix) {
-    this(Config.EMPTY.as(Config.class)
+    this(Config.INSTANCE
         .withConversion(clazz, (Predicate<? super R>) predicate::apply,
             in, out, descriptionPrefix));
   }
@@ -191,7 +197,7 @@ public abstract class ConverterRule
       return withInTrait(in)
           .withOutTrait(out)
           .withOperandSupplier(b ->
-              b.exactly(convertOperand(clazz, predicate, in)))
+              b.operand(clazz).predicate(predicate).convert(in))
           .withDescription(createDescription(descriptionPrefix, in, out))
           .as(Config.class);
     }

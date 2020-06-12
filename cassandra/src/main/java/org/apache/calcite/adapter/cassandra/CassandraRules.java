@@ -87,8 +87,6 @@ public class CassandraRules {
   /** Base class for planner rules that convert a relational expression to
    * Cassandra calling convention. */
   abstract static class CassandraConverterRule extends ConverterRule {
-    protected final Convention out = CassandraRel.CONVENTION;
-
     CassandraConverterRule(Config config) {
       super(config);
     }
@@ -235,8 +233,7 @@ public class CassandraRules {
    * to a {@link CassandraProject}.
    */
   private static class CassandraProjectRule extends CassandraConverterRule {
-    private static final CassandraProjectRule INSTANCE = Config.EMPTY
-        .as(Config.class)
+    private static final CassandraProjectRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalProject.class, Convention.NONE,
             CassandraRel.CONVENTION, "CassandraProjectRule")
         .withRuleFactory(CassandraProjectRule::new)
@@ -257,7 +254,7 @@ public class CassandraRules {
       return true;
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
       return new CassandraProject(project.getCluster(), traitSet,
@@ -305,7 +302,7 @@ public class CassandraRules {
           sort.getCollation());
     }
 
-    public boolean matches(RelOptRuleCall call) {
+    @Override public boolean matches(RelOptRuleCall call) {
       final Sort sort = call.rel(0);
       final CassandraFilter filter = call.rel(2);
       return collationsCompatible(sort.getCollation(), filter.getImplicitCollation());

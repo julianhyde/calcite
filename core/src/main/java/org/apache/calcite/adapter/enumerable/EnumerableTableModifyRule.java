@@ -28,8 +28,7 @@ import org.apache.calcite.schema.ModifiableTable;
  * relational expression
  * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
 public class EnumerableTableModifyRule extends ConverterRule {
-  public static final EnumerableTableModifyRule INSTANCE = Config.EMPTY
-      .as(Config.class)
+  public static final EnumerableTableModifyRule INSTANCE = Config.INSTANCE
       .withConversion(LogicalTableModify.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableTableModificationRule")
       .withRuleFactory(EnumerableTableModifyRule::new)

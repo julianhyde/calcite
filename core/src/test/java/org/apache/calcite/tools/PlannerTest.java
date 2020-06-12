@@ -867,7 +867,7 @@ class PlannerTest {
 
     JdbcConvention out = new JdbcConvention(null, null, "myjdbc");
     Program program1 = Programs.ofRules(
-        new MockJdbcProjectRule(out), new MockJdbcTableRule(out));
+        MockJdbcProjectRule.create(out), MockJdbcTableRule.create(out));
 
     Planner planner = getPlanner(null, program0, program1);
     SqlNode parse = planner.parse("select T1.\"name\" from \"emps\" as T1 ");
@@ -1238,13 +1238,20 @@ class PlannerTest {
    * {@link org.apache.calcite.adapter.enumerable.EnumerableProject} to an
    * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcProject}.
    */
-  private class MockJdbcProjectRule extends ConverterRule {
-    private MockJdbcProjectRule(JdbcConvention out) {
-      super(EnumerableProject.class, EnumerableConvention.INSTANCE, out,
-          "MockJdbcProjectRule");
+  private static class MockJdbcProjectRule extends ConverterRule {
+    static MockJdbcProjectRule create(JdbcConvention out) {
+      return Config.INSTANCE
+          .withConversion(EnumerableProject.class,
+              EnumerableConvention.INSTANCE, out, "MockJdbcProjectRule")
+          .withRuleFactory(MockJdbcProjectRule::new)
+          .toRule(MockJdbcProjectRule.class);
     }
 
-    public RelNode convert(RelNode rel) {
+    MockJdbcProjectRule(Config config) {
+      super(config);
+    }
+
+    @Override public RelNode convert(RelNode rel) {
       final EnumerableProject project = (EnumerableProject) rel;
 
       return new JdbcRules.JdbcProject(
@@ -1262,13 +1269,20 @@ class PlannerTest {
    * {@link org.apache.calcite.adapter.enumerable.EnumerableTableScan} to an
    * {@link MockJdbcTableScan}.
    */
-  private class MockJdbcTableRule extends ConverterRule {
-    private MockJdbcTableRule(JdbcConvention out) {
-      super(EnumerableTableScan.class,
-          EnumerableConvention.INSTANCE, out, "MockJdbcTableRule");
+  private static class MockJdbcTableRule extends ConverterRule {
+    static MockJdbcTableRule create(JdbcConvention out) {
+      return Config.INSTANCE
+          .withConversion(EnumerableTableScan.class,
+              EnumerableConvention.INSTANCE, out, "MockJdbcTableRule")
+          .withRuleFactory(MockJdbcTableRule::new)
+          .toRule(MockJdbcTableRule.class);
     }
 
-    public RelNode convert(RelNode rel) {
+    private MockJdbcTableRule(Config config) {
+      super(config);
+    }
+
+    @Override public RelNode convert(RelNode rel) {
       final EnumerableTableScan scan =
           (EnumerableTableScan) rel;
       return new MockJdbcTableScan(scan.getCluster(),
@@ -1281,7 +1295,7 @@ class PlannerTest {
    * Relational expression representing a "mock" scan of a table in a
    * JDBC data source.
    */
-  private class MockJdbcTableScan extends TableScan
+  private static class MockJdbcTableScan extends TableScan
       implements JdbcRel {
 
     MockJdbcTableScan(RelOptCluster cluster, RelOptTable table,

@@ -303,7 +303,7 @@ public class Bindables {
       super(config);
     }
 
-    public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
       return BindableFilter.create(
           convert(filter.getInput(),

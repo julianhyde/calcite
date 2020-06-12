@@ -133,6 +133,10 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
 
     /** Indicates that this operand takes no inputs. */
     Done noInputs();
+
+    /** Indicates that this operand converts a relational expression to
+     * another trait. */
+    Done convert(RelTrait in);
   }
 
   /** Implementation of {@link OperandBuilder}. */
@@ -191,6 +195,12 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
       parent.operands.add(
           new RelOptRuleOperand(relClass, trait, predicate, childPolicy,
               ImmutableList.copyOf(inputBuilder.operands)));
+      return DoneImpl.INSTANCE;
+    }
+
+    public Done convert(RelTrait in) {
+      parent.operands.add(
+          new ConverterRelOptRuleOperand(relClass, in, predicate));
       return DoneImpl.INSTANCE;
     }
 

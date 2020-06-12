@@ -125,11 +125,14 @@ public class GeodeRules {
    * Rule to convert a {@link LogicalProject} to a {@link GeodeProject}.
    */
   private static class GeodeProjectRule extends GeodeConverterRule {
+    private static final GeodeProjectRule INSTANCE = Config.INSTANCE
+        .withConversion(LogicalProject.class, Convention.NONE,
+            GeodeRel.CONVENTION, "GeodeProjectRule")
+        .withRuleFactory(GeodeProjectRule::new)
+        .toRule(GeodeProjectRule.class);
 
-    private static final GeodeProjectRule INSTANCE = new GeodeProjectRule();
-
-    private GeodeProjectRule() {
-      super(LogicalProject.class, "GeodeProjectRule");
+    protected GeodeProjectRule(Config config) {
+      super(config);
     }
 
     @Override public boolean matches(RelOptRuleCall call) {
@@ -146,11 +149,12 @@ public class GeodeRules {
 
     @Override public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
-      final RelTraitSet traitSet = project.getTraitSet().replace(out);
+      final RelTraitSet traitSet =
+          project.getTraitSet().replace(getOutConvention());
       return new GeodeProject(
           project.getCluster(),
           traitSet,
-          convert(project.getInput(), out),
+          convert(project.getInput(), getOutConvention()),
           project.getProjects(),
           project.getRowType());
     }
@@ -161,16 +165,20 @@ public class GeodeRules {
    * {@link GeodeAggregate}.
    */
   private static class GeodeAggregateRule extends GeodeConverterRule {
+    private static final GeodeAggregateRule INSTANCE = Config.INSTANCE
+        .withConversion(LogicalAggregate.class, Convention.NONE,
+            GeodeRel.CONVENTION, "GeodeAggregateRule")
+        .withRuleFactory(GeodeAggregateRule::new)
+        .toRule(GeodeAggregateRule.class);
 
-    private static final GeodeAggregateRule INSTANCE = new GeodeAggregateRule();
-
-    GeodeAggregateRule() {
-      super(LogicalAggregate.class, "GeodeAggregateRule");
+    protected GeodeAggregateRule(Config config) {
+      super(config);
     }
 
     @Override public RelNode convert(RelNode rel) {
       final LogicalAggregate aggregate = (LogicalAggregate) rel;
-      final RelTraitSet traitSet = aggregate.getTraitSet().replace(out);
+      final RelTraitSet traitSet =
+          aggregate.getTraitSet().replace(getOutConvention());
       return new GeodeAggregate(
           aggregate.getCluster(),
           traitSet,
@@ -384,11 +392,8 @@ public class GeodeRules {
    * expression to Geode calling convention.
    */
   abstract static class GeodeConverterRule extends ConverterRule {
-    protected final Convention out;
-
-    GeodeConverterRule(Class<? extends RelNode> clazz, String description) {
-      super(clazz, Convention.NONE, GeodeRel.CONVENTION, description);
-      this.out = GeodeRel.CONVENTION;
+    protected GeodeConverterRule(Config config) {
+      super(config);
     }
   }
 }
