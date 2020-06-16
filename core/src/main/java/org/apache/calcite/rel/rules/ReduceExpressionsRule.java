@@ -68,7 +68,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -78,7 +77,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -108,40 +106,40 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
   public static final Pattern EXCLUSION_PATTERN =
       Pattern.compile("Reduce(Expressions|Values)Rule.*");
 
-  /**
-   * Singleton rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.logical.LogicalFilter}.
-   */
-  public static final Supplier<FilterReduceExpressionsRule> FILTER_INSTANCE =
-      Suppliers.memoize(() -> FilterReduceExpressionsRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link FilterReduceExpressionsRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final FilterReduceExpressionsRule FILTER_INSTANCE =
+      FilterReduceExpressionsRule.INSTANCE;
 
-  /**
-   * Singleton rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.logical.LogicalProject}.
-   */
-  public static final Supplier<ProjectReduceExpressionsRule> PROJECT_INSTANCE =
-      Suppliers.memoize(() -> ProjectReduceExpressionsRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link ProjectReduceExpressionsRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final ProjectReduceExpressionsRule PROJECT_INSTANCE0 =
+      ProjectReduceExpressionsRule.INSTANCE;
 
-  /**
-   * Singleton rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.core.Join}.
-   */
-  public static final Supplier<JoinReduceExpressionsRule> JOIN_INSTANCE =
-      Suppliers.memoize(() -> JoinReduceExpressionsRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link JoinReduceExpressionsRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final JoinReduceExpressionsRule JOIN_INSTANCE =
+      JoinReduceExpressionsRule.INSTANCE;
 
-  /**
-   * Singleton rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.logical.LogicalCalc}.
-   */
-  public static final Supplier<CalcReduceExpressionsRule> CALC_INSTANCE =
-      Suppliers.memoize(() -> CalcReduceExpressionsRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link CalcReduceExpressionsRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final CalcReduceExpressionsRule CALC_INSTANCE =
+      CalcReduceExpressionsRule.INSTANCE;
 
-  /**
-   * Singleton rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.logical.LogicalWindow}.
-   */
-  public static final Supplier<WindowReduceExpressionsRule> WINDOW_INSTANCE =
-      Suppliers.memoize(() -> WindowReduceExpressionsRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link WindowReduceExpressionsRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final WindowReduceExpressionsRule WINDOW_INSTANCE0 =
+      WindowReduceExpressionsRule.INSTANCE;
 
   /**
    * Rule that reduces constants inside a {@link org.apache.calcite.rel.core.Filter}.
@@ -150,6 +148,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    */
   public static class FilterReduceExpressionsRule
       extends ReduceExpressionsRule<FilterReduceExpressionsRule.Config> {
+    /** Singleton rule that reduces constants inside a
+     * {@link org.apache.calcite.rel.logical.LogicalFilter}. */
     public static final FilterReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)
@@ -307,6 +307,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    * {@link org.apache.calcite.rel.core.Project}. */
   public static class ProjectReduceExpressionsRule
       extends ReduceExpressionsRule<ProjectReduceExpressionsRule.Config> {
+    /** Singleton rule that reduces constants inside a
+     * {@link org.apache.calcite.rel.logical.LogicalProject}. */
     public static final ProjectReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)
@@ -374,6 +376,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    */
   public static class JoinReduceExpressionsRule
       extends ReduceExpressionsRule<JoinReduceExpressionsRule.Config> {
+    /** Singleton rule that reduces constants inside a
+     * {@link org.apache.calcite.rel.core.Join}. */
     public static final JoinReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(false)
@@ -450,6 +454,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    */
   public static class CalcReduceExpressionsRule
       extends ReduceExpressionsRule<CalcReduceExpressionsRule.Config> {
+    /** Singleton rule that reduces constants inside a
+     * {@link org.apache.calcite.rel.logical.LogicalCalc}. */
     public static final CalcReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)
@@ -577,6 +583,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
   public static class WindowReduceExpressionsRule
       extends ReduceExpressionsRule<WindowReduceExpressionsRule.Config> {
 
+    /** Singleton rule that reduces constants inside a
+     * {@link org.apache.calcite.rel.logical.LogicalWindow}. */
     public static final WindowReduceExpressionsRule INSTANCE =
         Config.EMPTY.as(Config.class)
             .withMatchNullability(true)

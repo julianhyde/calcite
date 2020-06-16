@@ -32,12 +32,9 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 
-import com.google.common.base.Suppliers;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Planner rule that creates a {@code SemiJoin} from a
@@ -54,11 +51,18 @@ public abstract class SemiJoinRule
   private static final Predicate<Aggregate> IS_EMPTY_AGGREGATE =
       aggregate -> aggregate.getRowType().getFieldCount() == 0;
 
-  public static final Supplier<ProjectToSemiJoinRule> PROJECT =
-      Suppliers.memoize(() -> ProjectToSemiJoinRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link ProjectToSemiJoinRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final ProjectToSemiJoinRule PROJECT =
+      ProjectToSemiJoinRule.INSTANCE;
 
-  public static final Supplier<SemiJoinRule> JOIN =
-      Suppliers.memoize(() -> JoinToSemiJoinRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link JoinToSemiJoinRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final JoinToSemiJoinRule JOIN = JoinToSemiJoinRule.INSTANCE;
 
   /** Creates a SemiJoinRule. */
   protected SemiJoinRule(Config config) {

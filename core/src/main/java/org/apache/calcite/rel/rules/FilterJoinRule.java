@@ -33,14 +33,12 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBeans;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static org.apache.calcite.plan.RelOptUtil.conjunctions;
 
@@ -57,23 +55,24 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
    * will be pushed into the ON clause. */
   public static final Predicate TRUE_PREDICATE = (join, joinType, exp) -> true;
 
-  /** Rule that pushes predicates from a Filter into the Join below them. */
-  public static final Supplier<FilterIntoJoinRule> FILTER_ON_JOIN =
-      Suppliers.memoize(() -> FilterIntoJoinRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link FilterIntoJoinRule#INSTANCE} instead. */
+  @Deprecated // to be removed before 2.0
+  public static final FilterIntoJoinRule FILTER_ON_JOIN =
+      FilterIntoJoinRule.INSTANCE;
 
-  /** Dumber version of {@link #FILTER_ON_JOIN}. Not intended for production
-   * use, but keeps some tests working for which {@code FILTER_ON_JOIN} is too
-   * smart. */
-  public static final Supplier<FilterIntoJoinRule> DUMB_FILTER_ON_JOIN =
-      Suppliers.memoize(() ->
-          FILTER_ON_JOIN.get().config
-              .withSmart(false)
-              .as(FilterIntoJoinRule.Config.class)
-              .toRule())::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link FilterIntoJoinRule#DUMB_INSTANCE} instead. */
+  @Deprecated // to be removed before 2.0
+  public static final FilterIntoJoinRule DUMB_FILTER_ON_JOIN =
+      FilterIntoJoinRule.DUMB_INSTANCE;
 
-  /** Rule that pushes predicates in a Join into the inputs to the join. */
-  public static final Supplier<JoinConditionPushRule> JOIN =
-      Suppliers.memoize(() -> JoinConditionPushRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link JoinConditionPushRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final JoinConditionPushRule JOIN =
+      JoinConditionPushRule.INSTANCE;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -302,6 +301,7 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
   /** Rule that pushes parts of the join condition to its inputs. */
   public static class JoinConditionPushRule
       extends FilterJoinRule<JoinConditionPushRule.Config> {
+    /** Rule that pushes predicates in a Join into the inputs to the join. */
     public static final JoinConditionPushRule INSTANCE =
         FilterJoinRule.Config.EMPTY
             .withOperandSupplier(b ->
@@ -363,6 +363,15 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
             .withSmart(true)
             .withPredicate(TRUE_PREDICATE)
             .as(FilterIntoJoinRule.Config.class)
+            .toRule();
+
+    /** Dumber version of {@link #INSTANCE}. Not intended for production
+     * use, but keeps some tests working for which {@code INSTANCE} is too
+     * smart. */
+    public static final FilterIntoJoinRule DUMB_INSTANCE =
+        INSTANCE.config
+            .withSmart(false)
+            .as(Config.class)
             .toRule();
 
     /** Creates a FilterIntoJoinRule. */

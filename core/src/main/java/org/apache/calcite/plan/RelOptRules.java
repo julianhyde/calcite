@@ -27,6 +27,7 @@ import org.apache.calcite.rel.rules.AggregateJoinTransposeRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.AggregateProjectMergeRule;
 import org.apache.calcite.rel.rules.AggregateProjectPullUpConstantsRule;
+import org.apache.calcite.rel.rules.AggregateProjectStarTableRule;
 import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
 import org.apache.calcite.rel.rules.AggregateRemoveRule;
 import org.apache.calcite.rel.rules.AggregateStarTableRule;
@@ -116,14 +117,14 @@ public class RelOptRules {
 
   static final List<RelOptRule> BASE_RULES = ImmutableList.of(
       AggregateStarTableRule.INSTANCE,
-      AggregateStarTableRule.INSTANCE2.get(),
+      AggregateProjectStarTableRule.INSTANCE,
       CalciteSystemProperty.COMMUTE.value()
           ? JoinAssociateRule.INSTANCE
           : ProjectMergeRule.INSTANCE,
       FilterTableScanRule.INSTANCE,
       ProjectFilterTransposeRule.INSTANCE,
       FilterProjectTransposeRule.INSTANCE,
-      FilterJoinRule.FILTER_ON_JOIN.get(),
+      FilterJoinRule.FilterIntoJoinRule.INSTANCE,
       JoinPushExpressionsRule.INSTANCE,
       AggregateExpandDistinctAggregatesRule.INSTANCE,
       AggregateCaseToFilterRule.INSTANCE,
@@ -163,12 +164,12 @@ public class RelOptRules {
       IntersectToDistinctRule.INSTANCE);
 
   static final List<RelOptRule> ABSTRACT_RELATIONAL_RULES = ImmutableList.of(
-      FilterJoinRule.FILTER_ON_JOIN.get(),
-      FilterJoinRule.JOIN.get(),
+      FilterJoinRule.FilterIntoJoinRule.INSTANCE,
+      FilterJoinRule.JoinConditionPushRule.INSTANCE,
       AbstractConverter.ExpandConversionRule.INSTANCE,
       JoinCommuteRule.INSTANCE,
-      SemiJoinRule.PROJECT.get(),
-      SemiJoinRule.JOIN.get(),
+      SemiJoinRule.ProjectToSemiJoinRule.INSTANCE,
+      SemiJoinRule.JoinToSemiJoinRule.INSTANCE,
       AggregateRemoveRule.INSTANCE,
       UnionToDistinctRule.INSTANCE,
       ProjectRemoveRule.INSTANCE,
@@ -179,9 +180,11 @@ public class RelOptRules {
       SortRemoveRule.INSTANCE);
 
   static final List<RelOptRule> CONSTANT_REDUCTION_RULES = ImmutableList.of(
-      ReduceExpressionsRule.PROJECT_INSTANCE.get(),
-      ReduceExpressionsRule.FILTER_INSTANCE.get(), ReduceExpressionsRule.CALC_INSTANCE.get(),
-      ReduceExpressionsRule.WINDOW_INSTANCE.get(), ReduceExpressionsRule.JOIN_INSTANCE.get(),
+      ReduceExpressionsRule.ProjectReduceExpressionsRule.INSTANCE,
+      ReduceExpressionsRule.FilterReduceExpressionsRule.INSTANCE,
+      ReduceExpressionsRule.CalcReduceExpressionsRule.INSTANCE,
+      ReduceExpressionsRule.WindowReduceExpressionsRule.INSTANCE,
+      ReduceExpressionsRule.JoinReduceExpressionsRule.INSTANCE,
       ValuesReduceRule.FILTER_INSTANCE,
       ValuesReduceRule.PROJECT_FILTER_INSTANCE,
       ValuesReduceRule.PROJECT_INSTANCE,

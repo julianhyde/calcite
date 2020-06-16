@@ -56,7 +56,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class ToLogicalConverterTest {
   private static final ImmutableSet<RelOptRule> RULE_SET =
       ImmutableSet.of(
-          ProjectToWindowRule.PROJECT.get(),
+          ProjectToWindowRule.ProjectToLogicalProjectAndWindowRule.INSTANCE,
           EnumerableRules.ENUMERABLE_VALUES_RULE,
           EnumerableRules.ENUMERABLE_JOIN_RULE,
           EnumerableRules.ENUMERABLE_CORRELATE_RULE,

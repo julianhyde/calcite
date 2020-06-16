@@ -185,8 +185,8 @@ public final class SortRemoveRuleTest {
     RuleSet prepareRules =
         RuleSets.ofList(
             SortProjectTransposeRule.INSTANCE,
-            SemiJoinRule.PROJECT.get(),
-            SemiJoinRule.JOIN.get(),
+            SemiJoinRule.ProjectToSemiJoinRule.INSTANCE,
+            SemiJoinRule.JoinToSemiJoinRule.INSTANCE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE,
             EnumerableRules.ENUMERABLE_JOIN_RULE,

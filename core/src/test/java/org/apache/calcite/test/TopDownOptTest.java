@@ -209,7 +209,7 @@ class TopDownOptTest extends RelOptTestBase {
         + "order by d.name";
     Query.create(sql)
         .addRule(JoinToCorrelateRule.INSTANCE)
-        .addRule(SemiJoinRule.JOIN.get())
+        .addRule(SemiJoinRule.JoinToSemiJoinRule.INSTANCE)
         .removeRule(EnumerableRules.ENUMERABLE_JOIN_RULE)
         .removeRule(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)
         .removeRule(EnumerableRules.ENUMERABLE_SORT_RULE)

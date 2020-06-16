@@ -2839,7 +2839,8 @@ class RelToSqlConverterTest {
     HepProgramBuilder builder = new HepProgramBuilder();
     builder.addRuleClass(ProjectToWindowRule.class);
     HepPlanner hepPlanner = new HepPlanner(builder.build());
-    RuleSet rules = RuleSets.ofList(ProjectToWindowRule.PROJECT.get());
+    RuleSet rules = RuleSets.ofList(
+        ProjectToWindowRule.ProjectToLogicalProjectAndWindowRule.INSTANCE);
 
     sql(query0).optimize(rules, hepPlanner).ok(expected0);
     sql(query1).optimize(rules, hepPlanner).ok(expected1);
@@ -2875,8 +2876,8 @@ class RelToSqlConverterTest {
     builder.addRuleClass(AggregateProjectMergeRule.class);
     builder.addRuleClass(AggregateJoinTransposeRule.class);
     HepPlanner hepPlanner = new HepPlanner(builder.build());
-    RuleSet rules = RuleSets.ofList(FilterJoinRule.FILTER_ON_JOIN.get(),
-        FilterJoinRule.JOIN.get(),
+    RuleSet rules = RuleSets.ofList(FilterJoinRule.FilterIntoJoinRule.INSTANCE,
+        FilterJoinRule.JoinConditionPushRule.INSTANCE,
         AggregateProjectMergeRule.INSTANCE,
         AggregateJoinTransposeRule.EXTENDED);
     sql(query).withPostgresql().optimize(rules, hepPlanner).ok(expect);

@@ -692,7 +692,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_WINDOW_RULE,
-            EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRule.PROJECT.get());
+            EnumerableRules.ENUMERABLE_SORT_RULE,
+            ProjectToWindowRule.ProjectToLogicalProjectAndWindowRule.INSTANCE);
     Planner planner = getPlanner(null,
         SqlParser.configBuilder().setLex(Lex.JAVA).build(),
         Programs.of(ruleSet));

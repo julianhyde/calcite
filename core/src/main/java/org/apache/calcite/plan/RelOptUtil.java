@@ -2063,8 +2063,8 @@ public abstract class RelOptUtil {
       }
     }
 
-    planner.addRule(ReduceExpressionsRule.FILTER_INSTANCE.get());
-
+    planner.addRule(
+        ReduceExpressionsRule.FilterReduceExpressionsRule.INSTANCE);
   }
 
   @Deprecated // to be removed before 1.25

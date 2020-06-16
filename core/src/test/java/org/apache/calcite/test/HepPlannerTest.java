@@ -333,8 +333,10 @@ class HepPlannerTest extends RelOptTestBase {
   private long checkRuleApplyCount(HepMatchOrder matchOrder) {
     final HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchOrder(matchOrder);
-    programBuilder.addRuleInstance(ReduceExpressionsRule.FILTER_INSTANCE.get());
-    programBuilder.addRuleInstance(ReduceExpressionsRule.PROJECT_INSTANCE.get());
+    programBuilder.addRuleInstance(
+        ReduceExpressionsRule.FilterReduceExpressionsRule.INSTANCE);
+    programBuilder.addRuleInstance(
+        ReduceExpressionsRule.ProjectReduceExpressionsRule.INSTANCE);
 
     final HepTestListener listener = new HepTestListener(0);
     HepPlanner planner = new HepPlanner(programBuilder.build());

@@ -29,7 +29,6 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
-import org.apache.calcite.rel.rules.FilterJoinRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
@@ -250,14 +249,14 @@ class PigRelBuilderStyleTest extends AbstractPigTest {
       planner.addRule(r);
     }
     planner.removeRule(FilterAggregateTransposeRule.INSTANCE);
-    planner.removeRule(FilterJoinRule.FILTER_ON_JOIN.get());
+    planner.removeRule(FilterIntoJoinRule.INSTANCE);
     planner.addRule(FilterAggregateTransposeRule.INSTANCE.config
         .withRelBuilderFactory(builderFactory)
         .as(FilterAggregateTransposeRule.Config.class)
         .withOperandFor(PigFilter.class, PigAggregate.class)
         .toRule());
     planner.addRule(
-        FilterJoinRule.FILTER_ON_JOIN.get().config
+        FilterIntoJoinRule.INSTANCE.config
             .withRelBuilderFactory(builderFactory)
             .withOperandSupplier(b0 ->
                 b0.operand(Filter.class).oneInput(b1 ->

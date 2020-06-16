@@ -46,7 +46,6 @@ import org.apache.calcite.util.graph.DirectedGraph;
 import org.apache.calcite.util.graph.TopologicalOrderIterator;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -56,7 +55,6 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Planner rule that slices a
@@ -77,12 +75,18 @@ public abstract class ProjectToWindowRule
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final Supplier<CalcToWindowRule> INSTANCE =
-      Suppliers.memoize(() -> CalcToWindowRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link CalcToWindowRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final CalcToWindowRule INSTANCE = CalcToWindowRule.INSTANCE;
 
-  public static final Supplier<ProjectToLogicalProjectAndWindowRule> PROJECT =
-      Suppliers.memoize(() ->
-          ProjectToLogicalProjectAndWindowRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link ProjectToLogicalProjectAndWindowRule#INSTANCE} instead. */
+  @SuppressWarnings("StaticInitializerReferencesSubClass")
+  @Deprecated // to be removed before 2.0
+  public static final ProjectToLogicalProjectAndWindowRule PROJECT =
+      ProjectToLogicalProjectAndWindowRule.INSTANCE;
 
   //~ Constructors -----------------------------------------------------------
 

@@ -45,12 +45,10 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.AbstractSourceMapping;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Planner rule that matches an {@link org.apache.calcite.rel.core.Aggregate} on
@@ -70,10 +68,11 @@ public class AggregateStarTableRule
           .withOperandFor(Aggregate.class, StarTable.StarTableScan.class)
           .toRule();
 
-  // We use a supplier to break class-loading cycles (referencing a sub-class
-  // in a super-class static initializer).
-  public static final Supplier<AggregateProjectStarTableRule> INSTANCE2 =
-      Suppliers.memoize(() -> AggregateProjectStarTableRule.INSTANCE)::get;
+  /** @deprecated This field is prone to issues during class-loading;
+   * use {@link AggregateProjectStarTableRule#INSTANCE} instead. */
+  @Deprecated // to be removed before 2.0
+  public static final AggregateProjectStarTableRule INSTANCE2 =
+      AggregateProjectStarTableRule.INSTANCE;
 
   /** Creates an AggregateStarTableRule. */
   protected AggregateStarTableRule(Config config) {
