@@ -22,6 +22,7 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.parser.SqlParserUtil;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.util.ImmutableBeans;
 
@@ -29,6 +30,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -47,6 +49,13 @@ import javax.annotation.Nonnull;
  *     Hoist.create(Hoist.config()).hoist();<br>
  * print(hoisted); // "select ?0 from emp where deptno < ?1"
  * </code></blockquote>
+ *
+ * <p>Calling {@link Hoisted#toString()} generates a string that is similar to
+ * SQL where a user has manually converted all constants to bind variables, and
+ * which could then be executed using {@link PreparedStatement#execute()}.
+ * That is not a goal of this utility, but see
+ * <a href="https://issues.apache.org/jira/browse/CALCITE-963">[CALCITE-963]
+ * Hoist literals</a>.
  *
  * <p>For more advanced formatting, use {@link Hoisted#substitute(Function)}.
  *
@@ -70,6 +79,25 @@ public class Hoist {
     this.config = Objects.requireNonNull(config);
   }
 
+  /** Converts a {@link Variable} to a string "?N",
+   * where N is the {@link Variable#ordinal}. */
+  public static String ordinalString(Variable v) {
+    return "?" + v.ordinal;
+  }
+
+  /** Converts a {@link Variable} to a string "?N",
+   * where N is the {@link Variable#ordinal},
+   * if the fragment is a character literal. Other fragments are unchanged. */
+  public static String ordinalStringIfChar(Variable v) {
+    if (v.node instanceof SqlLiteral
+        && ((SqlLiteral) v.node).getTypeName() == SqlTypeName.CHAR) {
+      return "?" + v.ordinal;
+    } else {
+      return v.sql();
+    }
+  }
+
+  /** Hoists literals in a given SQL string, returning a {@link Hoisted}. */
   public Hoisted hoist(String sql) {
     final List<Variable> variables = new ArrayList<>();
     final SqlParser parser = SqlParser.create(sql, config.parserConfig());
@@ -81,12 +109,7 @@ public class Hoist {
     }
     node.accept(new SqlShuttle() {
       @Override public SqlNode visit(SqlLiteral literal) {
-        final SqlParserPos pos = literal.getParserPosition();
-        final int start = SqlParserUtil.lineColToIndex(sql, pos.getLineNum(),
-            pos.getColumnNum());
-        final int end = SqlParserUtil.lineColToIndex(sql, pos.getEndLineNum(),
-            pos.getEndColumnNum()) + 1;
-        variables.add(new Variable(variables.size(), literal, start, end));
+        variables.add(new Variable(sql, variables.size(), literal));
         return super.visit(literal);
       }
     });
@@ -106,6 +129,8 @@ public class Hoist {
 
   /** Variable. */
   public static class Variable {
+    /** Original SQL of whole statement. */
+    public final String originalSql;
     /** Zero-based ordinal in statement. */
     public final int ordinal;
     /** Parse tree node (typically a literal). */
@@ -115,14 +140,26 @@ public class Hoist {
     /** Zero-based position within the SQL text after end of node. */
     public final int end;
 
-    private Variable(int ordinal, SqlNode node, int start, int end) {
+    private Variable(String originalSql, int ordinal, SqlNode node) {
+      this.originalSql = Objects.requireNonNull(originalSql);
       this.ordinal = ordinal;
       this.node = Objects.requireNonNull(node);
-      this.start = start;
-      this.end = end;
+      final SqlParserPos pos = node.getParserPosition();
+      start = SqlParserUtil.lineColToIndex(originalSql,
+          pos.getLineNum(), pos.getColumnNum());
+      end = SqlParserUtil.lineColToIndex(originalSql,
+          pos.getEndLineNum(), pos.getEndColumnNum()) + 1;
+
       Preconditions.checkArgument(ordinal >= 0);
       Preconditions.checkArgument(start >= 0);
       Preconditions.checkArgument(start <= end);
+      Preconditions.checkArgument(end <= originalSql.length());
+    }
+
+    /** Returns SQL text of the region of the statement covered by this
+     * Variable. */
+    public String sql() {
+      return originalSql.substring(start, end);
     }
   }
 
@@ -132,13 +169,12 @@ public class Hoist {
     public final List<Variable> variables;
 
     Hoisted(String originalSql, List<Variable> variables) {
-      super();
       this.originalSql = originalSql;
       this.variables = ImmutableList.copyOf(variables);
     }
 
     @Override public String toString() {
-      return substitute(v -> "?" + v.ordinal);
+      return substitute(Hoist::ordinalString);
     }
 
     /** Returns the SQL string with variables replaced according to the

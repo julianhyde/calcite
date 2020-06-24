@@ -8817,7 +8817,18 @@ public class SqlParserTest {
         + "and hiredate > ?4";
     assertThat(hoisted.toString(), is(expected));
 
-    // Custom string converts variables to '[N:TYPE:VALUE]'
+    // As above, using the function explicitly.
+    assertThat(hoisted.substitute(Hoist::ordinalString), is(expected));
+
+    // Simple toString converts each variable to '?N'
+    final String expected1 = "select 1 as x,\n"
+        + "  ?1 || ?2 as y\n"
+        + "from emp /* comment with 'quoted string'? */ as e\n"
+        + "where deptno < 40\n"
+        + "and hiredate > date '2010-05-06'";
+    assertThat(hoisted.substitute(Hoist::ordinalStringIfChar), is(expected1));
+
+    // Custom function converts variables to '[N:TYPE:VALUE]'
     final String expected2 = "select [0:DECIMAL:1] as x,\n"
         + "  [1:CHAR:ab] || [2:CHAR:c] as y\n"
         + "from emp /* comment with 'quoted string'? */ as e\n"
