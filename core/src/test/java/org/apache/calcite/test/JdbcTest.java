@@ -6194,8 +6194,10 @@ public class JdbcTest {
             + "  select cast(null as timestamp) as time0,"
             + "         cast(null as timestamp) as time1"
             + ") calcs")
-        .planContains("org.apache.calcite.runtime.SqlFunctions.eq(inp0_, inp1_)")
-        .planContains("org.apache.calcite.runtime.SqlFunctions.ne(inp0_, inp1_)")
+        .planContains("inp0_ == null || inp1_ == null ? (Boolean) null : "
+            + "Boolean.valueOf(inp0_0 == inp1_0)")
+        .planContains("inp0_ == null || inp1_ == null ? (Boolean) null : "
+            + "Boolean.valueOf(inp0_0 != inp1_0)x")
         .returns("EXPR$0=true; EXPR$1=false\n"
             + "EXPR$0=null; EXPR$1=null\n");
   }

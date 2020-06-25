@@ -905,7 +905,10 @@ public class RexToLixTranslator {
    * @return translated expressions
    */
   public List<Expression> translateList(List<? extends RexNode> operandList) {
-    return translateList(operandList, EnumUtils.internalTypes(operandList));
+    return translateList(operandList,
+        Util.transform(operandList, node ->
+            EnumUtils.toInternal(node.getType(),
+                Boolean.FALSE.equals(isKnownNullable(node)))));
   }
 
   /**

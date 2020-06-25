@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.runtime.FlatLists.ComparableList;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.util.NumberUtil;
 import org.apache.calcite.util.TimeWithTimeZoneString;
 import org.apache.calcite.util.TimestampWithTimeZoneString;
@@ -1774,7 +1775,7 @@ public class SqlFunctions {
 
   @NonDeterministic
   private static Object cannotConvert(Object o, Class toType) {
-    throw RESOURCE.cannotConvert(o.toString(), toType.toString()).ex();
+    throw RESOURCE.cannotConvert(String.valueOf(o), toType.toString()).ex();
   }
 
   /** CAST(VARCHAR AS BOOLEAN). */
@@ -1797,6 +1798,9 @@ public class SqlFunctions {
     return o instanceof Boolean ? (Boolean) o
         : o instanceof Number ? toBoolean((Number) o)
         : o instanceof String ? toBoolean((String) o)
+          // null is not possible; this code is only called due to common
+          // sub-expression elimination, so the false will be ignored
+          : o == null ? false
         : (Boolean) cannotConvert(o, boolean.class);
   }
 
@@ -1832,6 +1836,9 @@ public class SqlFunctions {
     return o instanceof Short ? (Short) o
         : o instanceof Number ? toShort((Number) o)
         : o instanceof String ? toShort((String) o)
+        // null is not possible; this code is only called due to common
+        // sub-expression elimination, so the 0 will be ignored
+        : o == null ? 0
         : (Short) cannotConvert(o, short.class);
   }
 
@@ -1886,6 +1893,9 @@ public class SqlFunctions {
         : o instanceof Number ? toInt((Number) o)
         : o instanceof String ? toInt((String) o)
         : o instanceof java.util.Date ? toInt((java.util.Date) o)
+        // null is not possible; this code is only called due to common
+        // sub-expression elimination, so the 0 will be ignored
+//        : o == null ? 0 // TODO
         : (Integer) cannotConvert(o, int.class);
   }
 
@@ -1935,6 +1945,9 @@ public class SqlFunctions {
         : o instanceof Number ? toLong((Number) o)
         : o instanceof String ? toLong((String) o)
         : o instanceof java.util.Date ? toLong((java.util.Date) o)
+        // null is not possible; this code is only called due to common
+        // sub-expression elimination, so the 0 will be ignored
+        : o == null ? 0
         : (Long) cannotConvert(o, long.class);
   }
 
@@ -1954,6 +1967,9 @@ public class SqlFunctions {
     return o instanceof Float ? (Float) o
         : o instanceof Number ? toFloat((Number) o)
         : o instanceof String ? toFloat((String) o)
+        // null is not possible; this code is only called due to common
+        // sub-expression elimination, so the 0 will be ignored
+        : o == null ? 0
         : (Float) cannotConvert(o, float.class);
   }
 
@@ -1969,6 +1985,9 @@ public class SqlFunctions {
     return o instanceof Double ? (Double) o
         : o instanceof Number ? toDouble((Number) o)
         : o instanceof String ? toDouble((String) o)
+        // null is not possible; this code is only called due to common
+        // sub-expression elimination, so the 0 will be ignored
+        : o == null ? 0
         : (Double) cannotConvert(o, double.class);
   }
 
@@ -2097,6 +2116,52 @@ public class SqlFunctions {
     return TimestampWithTimeZoneString.fromMillisSinceEpoch(v)
         .getLocalTimeString()
         .getMillisOfDay();
+  }
+
+  /** For {@link SqlLibraryOperators#TIMESTAMP_SECONDS}. */
+  public static long timestampSeconds(long v) {
+    return v * 1000;
+  }
+
+  /** For {@link SqlLibraryOperators#TIMESTAMP_MILLIS}. */
+  public static long timestampMillis(long v) {
+    // translation is trivial, because Calcite represents TIMESTAMP values as
+    // millis since epoch
+    return v;
+  }
+
+  /** For {@link SqlLibraryOperators#TIMESTAMP_MICROS}. */
+  public static long timestampMicros(long v) {
+    return v / 1000;
+  }
+
+  /** For {@link SqlLibraryOperators#UNIX_SECONDS}. */
+  public static long unixSeconds(long v) {
+    return v / 1000;
+  }
+
+  /** For {@link SqlLibraryOperators#UNIX_MILLIS}. */
+  public static long unixMillis(long v) {
+    // translation is trivial, because Calcite represents TIMESTAMP values as
+    // millis since epoch
+    return v;
+  }
+
+  /** For {@link SqlLibraryOperators#UNIX_MICROS}. */
+  public static long unixMicros(long v) {
+    return v * 1000;
+  }
+
+  /** For {@link SqlLibraryOperators#DATE_FROM_UNIX_DATE}. */
+  public static int dateFromUnixDate(int v) {
+    // translation is trivial, because Calcite represents dates as Unix integers
+    return v;
+  }
+
+  /** For {@link SqlLibraryOperators#UNIX_DATE}. */
+  public static int unixDate(int v) {
+    // translation is trivial, because Calcite represents dates as Unix integers
+    return v;
   }
 
   public static Long toTimestampWithLocalTimeZone(String v) {
