@@ -1798,9 +1798,6 @@ public class SqlFunctions {
     return o instanceof Boolean ? (Boolean) o
         : o instanceof Number ? toBoolean((Number) o)
         : o instanceof String ? toBoolean((String) o)
-          // null is not possible; this code is only called due to common
-          // sub-expression elimination, so the false will be ignored
-          : o == null ? false
         : (Boolean) cannotConvert(o, boolean.class);
   }
 
@@ -1836,9 +1833,6 @@ public class SqlFunctions {
     return o instanceof Short ? (Short) o
         : o instanceof Number ? toShort((Number) o)
         : o instanceof String ? toShort((String) o)
-        // null is not possible; this code is only called due to common
-        // sub-expression elimination, so the 0 will be ignored
-        : o == null ? 0
         : (Short) cannotConvert(o, short.class);
   }
 
@@ -1893,9 +1887,6 @@ public class SqlFunctions {
         : o instanceof Number ? toInt((Number) o)
         : o instanceof String ? toInt((String) o)
         : o instanceof java.util.Date ? toInt((java.util.Date) o)
-        // null is not possible; this code is only called due to common
-        // sub-expression elimination, so the 0 will be ignored
-//        : o == null ? 0 // TODO
         : (Integer) cannotConvert(o, int.class);
   }
 
@@ -1945,9 +1936,6 @@ public class SqlFunctions {
         : o instanceof Number ? toLong((Number) o)
         : o instanceof String ? toLong((String) o)
         : o instanceof java.util.Date ? toLong((java.util.Date) o)
-        // null is not possible; this code is only called due to common
-        // sub-expression elimination, so the 0 will be ignored
-        : o == null ? 0
         : (Long) cannotConvert(o, long.class);
   }
 
@@ -1967,9 +1955,6 @@ public class SqlFunctions {
     return o instanceof Float ? (Float) o
         : o instanceof Number ? toFloat((Number) o)
         : o instanceof String ? toFloat((String) o)
-        // null is not possible; this code is only called due to common
-        // sub-expression elimination, so the 0 will be ignored
-        : o == null ? 0
         : (Float) cannotConvert(o, float.class);
   }
 
@@ -1985,9 +1970,6 @@ public class SqlFunctions {
     return o instanceof Double ? (Double) o
         : o instanceof Number ? toDouble((Number) o)
         : o instanceof String ? toDouble((String) o)
-        // null is not possible; this code is only called due to common
-        // sub-expression elimination, so the 0 will be ignored
-        : o == null ? 0
         : (Double) cannotConvert(o, double.class);
   }
 

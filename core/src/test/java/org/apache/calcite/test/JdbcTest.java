@@ -6197,7 +6197,7 @@ public class JdbcTest {
         .planContains("inp0_ == null || inp1_ == null ? (Boolean) null : "
             + "Boolean.valueOf(inp0_0 == inp1_0)")
         .planContains("inp0_ == null || inp1_ == null ? (Boolean) null : "
-            + "Boolean.valueOf(inp0_0 != inp1_0)x")
+            + "Boolean.valueOf(inp0_0 != inp1_0)")
         .returns("EXPR$0=true; EXPR$1=false\n"
             + "EXPR$0=null; EXPR$1=null\n");
   }
