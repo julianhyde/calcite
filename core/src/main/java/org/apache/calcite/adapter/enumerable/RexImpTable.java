@@ -1791,8 +1791,7 @@ public class RexImpTable {
     @Override Expression implementSafe(final RexToLixTranslator translator,
         final RexCall call, final List<Expression> argValueList) {
       final boolean strict = !translator.conformance.allowExtendedTrim();
-      final Object value =
-          ((ConstantExpression) translator.getLiteral(argValueList.get(0))).value;
+      final Object value = translator.getLiteralValue(argValueList.get(0));
       SqlTrimFunction.Flag flag = (SqlTrimFunction.Flag) value;
       return Expressions.call(
           BuiltInMethod.TRIM.method,
@@ -1900,9 +1899,8 @@ public class RexImpTable {
           floorMethod = dateMethod;
           preFloor = false;
         }
-        final ConstantExpression tur =
-            (ConstantExpression) translator.getLiteral(argValueList.get(1));
-        final TimeUnitRange timeUnitRange = (TimeUnitRange) tur.value;
+        final TimeUnitRange timeUnitRange =
+            (TimeUnitRange) translator.getLiteralValue(argValueList.get(1));
         switch (timeUnitRange) {
         case YEAR:
         case QUARTER:
@@ -1911,7 +1909,8 @@ public class RexImpTable {
         case DAY:
           final Expression operand1 =
               preFloor ? call(operand, type, TimeUnit.DAY) : operand;
-          return Expressions.call(floorMethod, tur, operand1);
+          return Expressions.call(floorMethod,
+              translator.getLiteral(argValueList.get(1)), operand1);
         case NANOSECOND:
         default:
           return call(operand, type, timeUnitRange.startUnit);
@@ -1987,14 +1986,13 @@ public class RexImpTable {
       if (leftExprs.size() > 0) {
         for (int i = 0; i < leftExprs.size(); i++) {
           Expression expr = leftExprs.get(i);
-          if (expr instanceof ConstantExpression) {
-            final ConstantExpression constExpr = (ConstantExpression) expr;
-            final Object exprVal = constExpr.value;
+          final Object exprVal = translator.getLiteralValue(expr);
+          if (exprVal != null) {
             int defaultSymbolIdx = i - 2;
             if (exprVal == SqlJsonEmptyOrError.EMPTY) {
               if (defaultSymbolIdx >= 0
-                  && unwrapConstExprVal(leftExprs.get(defaultSymbolIdx))
-                    == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
+                  && translator.getLiteralValue(leftExprs.get(defaultSymbolIdx))
+                      == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
                 defaultValueOnEmpty = leftExprs.get(i - 1);
                 emptyBehavior = leftExprs.get(defaultSymbolIdx);
               } else {
@@ -2002,8 +2000,8 @@ public class RexImpTable {
               }
             } else if (exprVal == SqlJsonEmptyOrError.ERROR) {
               if (defaultSymbolIdx >= 0
-                  && unwrapConstExprVal(leftExprs.get(defaultSymbolIdx))
-                    == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
+                  && translator.getLiteralValue(leftExprs.get(defaultSymbolIdx))
+                      == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
                 defaultValueOnError = leftExprs.get(i - 1);
                 errorBehavior = leftExprs.get(defaultSymbolIdx);
               } else {
@@ -2024,13 +2022,6 @@ public class RexImpTable {
           translator.typeFactory.getJavaClass(call.getType());
       return EnumUtils.convert(expression, returnType);
     }
-  }
-
-  private static Object unwrapConstExprVal(Expression expression) {
-    if (expression instanceof ConstantExpression) {
-      return ((ConstantExpression) expression).value;
-    }
-    return null;
   }
 
   /** Implementor for SQL functions that generates calls to a given method name.
@@ -2226,8 +2217,7 @@ public class RexImpTable {
     @Override Expression implementSafe(final RexToLixTranslator translator,
         final RexCall call, final List<Expression> argValueList) {
       final TimeUnitRange timeUnitRange =
-          (TimeUnitRange) (
-              (ConstantExpression) translator.getLiteral(argValueList.get(0))).value;
+          (TimeUnitRange) translator.getLiteralValue(argValueList.get(0));
       final TimeUnit unit = timeUnitRange.startUnit;
       Expression operand = argValueList.get(1);
       final SqlTypeName sqlTypeName =

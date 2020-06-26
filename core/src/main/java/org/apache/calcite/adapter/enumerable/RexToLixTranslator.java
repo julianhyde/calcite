@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.CatchBlock;
+import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -930,7 +931,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
    * Map from RexLiteral's variable name to its literal, which is often a
    * ({@link org.apache.calcite.linq4j.tree.ConstantExpression}))
    * It is used in the some {@code RexCall}'s implementors, such as
-   * {@code ExtractImplementor}
+   * {@code ExtractImplementor}.
+   *
+   * @see #getLiteral
+   * @see #getLiteralValue
    */
   private final Map<Expression, Expression> literalMap = new HashMap<>();
 
@@ -1052,9 +1056,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   }
 
   /**
-   * Get the {@code Expression} for null literal without loss its type information
+   * Returns an {@code Expression} for null literal without losing its type
+   * information.
    */
-  private Expression getTypedNullLiteral(RexLiteral literal) {
+  private ConstantExpression getTypedNullLiteral(RexLiteral literal) {
     assert literal.isNull();
     Type javaClass = typeFactory.getJavaClass(literal.getType());
     switch (literal.getType().getSqlTypeName()) {
@@ -1390,6 +1395,18 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
   Expression getLiteral(Expression literalVariable) {
     return literalMap.get(literalVariable);
+  }
+
+  /** Returns the value of a literal. */
+  Object getLiteralValue(Expression expr) {
+    if (expr instanceof ParameterExpression) {
+      final Expression constantExpr = literalMap.get(expr);
+      return getLiteralValue(constantExpr);
+    }
+    if (expr instanceof ConstantExpression) {
+      return ((ConstantExpression) expr).value;
+    }
+    return null;
   }
 
   List<Result> getCallOperandResult(RexCall call) {
