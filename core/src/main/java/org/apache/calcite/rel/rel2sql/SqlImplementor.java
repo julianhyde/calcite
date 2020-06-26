@@ -1416,13 +1416,8 @@ public abstract class SqlImplementor {
           newContext = aliasContext(aliases, qualified);
         }
       }
-      final Map<String, RelDataType> nextAliases;
-      if (needNew) {
-        nextAliases = aliases.containsKey(neededAlias) ? aliases : newAliases;
-      } else {
-        nextAliases = aliases;
-      }
-      return new Builder(rel, clauseList, select, newContext, isAnon(), nextAliases);
+      return new Builder(rel, clauseList, select, newContext, isAnon(),
+          needNew && !aliases.containsKey(neededAlias) ? newAliases : aliases);
     }
 
     /** Returns whether a new sub-query is required. */
