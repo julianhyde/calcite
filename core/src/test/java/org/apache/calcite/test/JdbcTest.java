@@ -2493,17 +2493,23 @@ public class JdbcTest {
   }
 
   @Test void testReuseExpressionWhenNullChecking() {
+    final String sql = "select upper((case when \"empid\">\"deptno\"*10"
+        + " then 'y' else null end)) T\n"
+        + "from \"hr\".\"emps\"";
+    final String plan = ""
+        + "      String case_when_value;\n"
+        + "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache"
+        + ".calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
+        + "              if (current.empid > current.deptno * 10) {\n"
+        + "                case_when_value = \"y\";\n"
+        + "              } else {\n"
+        + "                case_when_value = (String) null;\n"
+        + "              }\n"
+        + "              return case_when_value == null ? (String) null : org.apache.calcite"
+        + ".runtime.SqlFunctions.upper(case_when_value);";
     CalciteAssert.hr()
-        .query(
-            "select upper((case when \"empid\">\"deptno\"*10 then 'y' else null end)) T from \"hr\".\"emps\"")
-        .planContains("      String case_when_value;\n"
-            + "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
-            + "              if (current.empid > current.deptno * 10) {\n"
-            + "                case_when_value = \"y\";\n"
-            + "              } else {\n"
-            + "                case_when_value = (String) null;\n"
-            + "              }\n"
-            + "              return case_when_value == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.upper(case_when_value);")
+        .query(sql)
+        .planContains(plan)
         .returns("T=null\n"
             + "T=null\n"
             + "T=Y\n"
@@ -2511,17 +2517,23 @@ public class JdbcTest {
   }
 
   @Test void testReuseExpressionWhenNullChecking2() {
+    final String sql = "select upper((case when \"empid\">\"deptno\"*10"
+        + " then \"name\" end)) T\n"
+        + "from \"hr\".\"emps\"";
+    final String plan = ""
+        + "      String case_when_value;\n"
+        + "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache"
+        + ".calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
+        + "              if (current.empid > current.deptno * 10) {\n"
+        + "                case_when_value = current.name;\n"
+        + "              } else {\n"
+        + "                case_when_value = (String) null;\n"
+        + "              }\n"
+        + "              return case_when_value == null ? (String) null : org.apache.calcite"
+        + ".runtime.SqlFunctions.upper(case_when_value);";
     CalciteAssert.hr()
-        .query(
-            "select upper((case when \"empid\">\"deptno\"*10 then \"name\" end)) T from \"hr\".\"emps\"")
-        .planContains("      String case_when_value;\n"
-            + "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
-            + "              if (current.empid > current.deptno * 10) {\n"
-            + "                case_when_value = current.name;\n"
-            + "              } else {\n"
-            + "                case_when_value = (String) null;\n"
-            + "              }\n"
-            + "              return case_when_value == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.upper(case_when_value);")
+        .query(sql)
+        .planContains(plan)
         .returns("T=null\n"
             + "T=null\n"
             + "T=SEBASTIAN\n"
@@ -2529,60 +2541,89 @@ public class JdbcTest {
   }
 
   @Test void testReuseExpressionWhenNullChecking3() {
+    final String sql = "select substring(\"name\",\n"
+        + " \"deptno\"+case when CURRENT_PATH <> '' then 1 end)\n"
+        + "from \"hr\".\"emps\"";
+    final String plan = ""
+        + "              final org.apache.calcite.test.JdbcTest.Employee current"
+        + " = (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
+        + "              final String input_value = current.name;\n"
+        + "              Integer case_when_value;\n"
+        + "              if ($L4J$C$org_apache_calcite_runtime_SqlFunctions_ne_) {\n"
+        + "                case_when_value = $L4J$C$Integer_valueOf_1_;\n"
+        + "              } else {\n"
+        + "                case_when_value = (Integer) null;\n"
+        + "              }\n"
+        + "              final Integer binary_call_value0 = "
+        + "case_when_value == null ? (Integer) null : "
+        + "Integer.valueOf(current.deptno + case_when_value.intValue());\n"
+        + "              return input_value == null || binary_call_value0 == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.substring(input_value, "
+        + "binary_call_value0.intValue());\n";
     CalciteAssert.hr()
-        .query(
-            "select substring(\"name\", \"deptno\"+case when CURRENT_PATH <> '' then 1 end) from \"hr\".\"emps\"")
-        .planContains(
-              "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
-            + "              final String input_value = current.name;\n"
-            + "              Integer case_when_value;\n"
-            + "              if ($L4J$C$org_apache_calcite_runtime_SqlFunctions_ne_) {\n"
-            + "                case_when_value = $L4J$C$Integer_valueOf_1_;\n"
-            + "              } else {\n"
-            + "                case_when_value = (Integer) null;\n"
-            + "              }\n"
-            + "              final Integer binary_call_value0 = case_when_value == null ? (Integer) null : Integer.valueOf(current.deptno + case_when_value.intValue());\n"
-            + "              return input_value == null || binary_call_value0 == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.substring(input_value, binary_call_value0.intValue());\n");
+        .query(sql)
+        .planContains(plan);
   }
 
   @Test void testReuseExpressionWhenNullChecking4() {
+    final String sql = "select substring(trim(\n"
+        + "substring(\"name\",\n"
+        + "  \"deptno\"*0+case when CURRENT_PATH = '' then 1 end)\n"
+        + "), case when \"empid\">\"deptno\" then 4\n" /* diff from 5 */
+        + "   else\n"
+        + "     case when \"deptno\"*8>8 then 5 end\n"
+        + "   end-2) T\n"
+        + "from\n"
+        + "\"hr\".\"emps\"";
+    final String plan = ""
+        + "              final org.apache.calcite.test.JdbcTest.Employee current ="
+        + " (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
+        + "              final String input_value = current.name;\n"
+        + "              final int input_value0 = current.deptno;\n"
+        + "              Integer case_when_value;\n"
+        + "              if ($L4J$C$org_apache_calcite_runtime_SqlFunctions_eq_) {\n"
+        + "                case_when_value = $L4J$C$Integer_valueOf_1_;\n"
+        + "              } else {\n"
+        + "                case_when_value = (Integer) null;\n"
+        + "              }\n"
+        + "              final Integer binary_call_value1 = "
+        + "case_when_value == null"
+        + " ? (Integer) null"
+        + " : Integer.valueOf(input_value0 * 0 + case_when_value.intValue());\n"
+        + "              final String method_call_value = "
+        + "input_value == null || binary_call_value1 == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.substring(input_value, "
+        + "binary_call_value1.intValue());\n"
+        + "              final String trim_value = "
+        + "method_call_value == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.trim(true, true, \" \", "
+        + "method_call_value, true);\n"
+        + "              Integer case_when_value0;\n"
+        + "              if (current.empid > input_value0) {\n"
+        + "                case_when_value0 = $L4J$C$Integer_valueOf_4_;\n"
+        + "              } else {\n"
+        + "                Integer case_when_value1;\n"
+        + "                if (current.deptno * 8 > 8) {\n"
+        + "                  case_when_value1 = $L4J$C$Integer_valueOf_5_;\n"
+        + "                } else {\n"
+        + "                  case_when_value1 = (Integer) null;\n"
+        + "                }\n"
+        + "                case_when_value0 = case_when_value1;\n"
+        + "              }\n"
+        + "              final Integer binary_call_value3 = "
+        + "case_when_value0 == null"
+        + " ? (Integer) null"
+        + " : Integer.valueOf(case_when_value0.intValue() - 2);\n"
+        + "              return trim_value == null || binary_call_value3 == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.substring(trim_value, "
+        + "binary_call_value3.intValue());\n";
     CalciteAssert.hr()
-        .query("select substring(trim(\n"
-            + "substring(\"name\",\n"
-            + "  \"deptno\"*0+case when CURRENT_PATH = '' then 1 end)\n"
-            + "), case when \"empid\">\"deptno\" then 4\n" /* diff from 5 */
-            + "   else\n"
-            + "     case when \"deptno\"*8>8 then 5 end\n"
-            + "   end-2) T\n"
-            + "from\n"
-            + "\"hr\".\"emps\"")
-        .planContains(
-              "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
-            + "              final String input_value = current.name;\n"
-            + "              final int input_value0 = current.deptno;\n"
-            + "              Integer case_when_value;\n"
-            + "              if ($L4J$C$org_apache_calcite_runtime_SqlFunctions_eq_) {\n"
-            + "                case_when_value = $L4J$C$Integer_valueOf_1_;\n"
-            + "              } else {\n"
-            + "                case_when_value = (Integer) null;\n"
-            + "              }\n"
-            + "              final Integer binary_call_value1 = case_when_value == null ? (Integer) null : Integer.valueOf(input_value0 * 0 + case_when_value.intValue());\n"
-            + "              final String method_call_value = input_value == null || binary_call_value1 == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.substring(input_value, binary_call_value1.intValue());\n"
-            + "              final String trim_value = method_call_value == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.trim(true, true, \" \", method_call_value, true);\n"
-            + "              Integer case_when_value0;\n"
-            + "              if (current.empid > input_value0) {\n"
-            + "                case_when_value0 = $L4J$C$Integer_valueOf_4_;\n"
-            + "              } else {\n"
-            + "                Integer case_when_value1;\n"
-            + "                if (current.deptno * 8 > 8) {\n"
-            + "                  case_when_value1 = $L4J$C$Integer_valueOf_5_;\n"
-            + "                } else {\n"
-            + "                  case_when_value1 = (Integer) null;\n"
-            + "                }\n"
-            + "                case_when_value0 = case_when_value1;\n"
-            + "              }\n"
-            + "              final Integer binary_call_value3 = case_when_value0 == null ? (Integer) null : Integer.valueOf(case_when_value0.intValue() - 2);\n"
-            + "              return trim_value == null || binary_call_value3 == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.substring(trim_value, binary_call_value3.intValue());\n")
+        .query(sql)
+        .planContains(plan)
         .returns("T=ill\n"
             + "T=ric\n"
             + "T=ebastian\n"
@@ -2590,110 +2631,70 @@ public class JdbcTest {
   }
 
   @Test void testReuseExpressionWhenNullChecking5() {
+    final String sql = "select substring(trim(\n"
+        + "substring(\"name\",\n"
+        + "  \"deptno\"*0+case when CURRENT_PATH = '' then 1 end)\n"
+        + "), case when \"empid\">\"deptno\" then 5\n" /* diff from 4 */
+        + "   else\n"
+        + "     case when \"deptno\"*8>8 then 5 end\n"
+        + "   end-2) T\n"
+        + "from\n"
+        + "\"hr\".\"emps\"";
+    final String plan = ""
+        + "              final org.apache.calcite.test.JdbcTest.Employee current ="
+        + " (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
+        + "              final String input_value = current.name;\n"
+        + "              final int input_value0 = current.deptno;\n"
+        + "              Integer case_when_value;\n"
+        + "              if ($L4J$C$org_apache_calcite_runtime_SqlFunctions_eq_) {\n"
+        + "                case_when_value = $L4J$C$Integer_valueOf_1_;\n"
+        + "              } else {\n"
+        + "                case_when_value = (Integer) null;\n"
+        + "              }\n"
+        + "              final Integer binary_call_value1 = "
+        + "case_when_value == null"
+        + " ? (Integer) null"
+        + " : Integer.valueOf(input_value0 * 0 + case_when_value.intValue());\n"
+        + "              final String method_call_value = "
+        + "input_value == null || binary_call_value1 == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.substring(input_value, "
+        + "binary_call_value1.intValue());\n"
+        + "              final String trim_value = "
+        + "method_call_value == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.trim(true, true, \" \", "
+        + "method_call_value, true);\n"
+        + "              Integer case_when_value0;\n"
+        + "              if (current.empid > input_value0) {\n"
+        + "                case_when_value0 = $L4J$C$Integer_valueOf_5_;\n"
+        + "              } else {\n"
+        + "                Integer case_when_value1;\n"
+        + "                if (current.deptno * 8 > 8) {\n"
+        + "                  case_when_value1 = $L4J$C$Integer_valueOf_5_;\n"
+        + "                } else {\n"
+        + "                  case_when_value1 = (Integer) null;\n"
+        + "                }\n"
+        + "                case_when_value0 = case_when_value1;\n"
+        + "              }\n"
+        + "              final Integer binary_call_value3 = "
+        + "case_when_value0 == null"
+        + " ? (Integer) null"
+        + " : Integer.valueOf(case_when_value0.intValue() - 2);\n"
+        + "              return trim_value == null || binary_call_value3 == null"
+        + " ? (String) null"
+        + " : org.apache.calcite.runtime.SqlFunctions.substring(trim_value, "
+        + "binary_call_value3.intValue());";
     CalciteAssert.hr()
-        .query("select substring(trim(\n"
-            + "substring(\"name\",\n"
-            + "  \"deptno\"*0+case when CURRENT_PATH = '' then 1 end)\n"
-            + "), case when \"empid\">\"deptno\" then 5\n" /* diff from 4 */
-            + "   else\n"
-            + "     case when \"deptno\"*8>8 then 5 end\n"
-            + "   end-2) T\n"
-            + "from\n"
-            + "\"hr\".\"emps\"")
-        .planContains(
-              "              final org.apache.calcite.test.JdbcTest.Employee current = (org.apache.calcite.test.JdbcTest.Employee) inputEnumerator.current();\n"
-            + "              final String input_value = current.name;\n"
-            + "              final int input_value0 = current.deptno;\n"
-            + "              Integer case_when_value;\n"
-            + "              if ($L4J$C$org_apache_calcite_runtime_SqlFunctions_eq_) {\n"
-            + "                case_when_value = $L4J$C$Integer_valueOf_1_;\n"
-            + "              } else {\n"
-            + "                case_when_value = (Integer) null;\n"
-            + "              }\n"
-            + "              final Integer binary_call_value1 = case_when_value == null ? (Integer) null : Integer.valueOf(input_value0 * 0 + case_when_value.intValue());\n"
-            + "              final String method_call_value = input_value == null || binary_call_value1 == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.substring(input_value, binary_call_value1.intValue());\n"
-            + "              final String trim_value = method_call_value == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.trim(true, true, \" \", method_call_value, true);\n"
-            + "              Integer case_when_value0;\n"
-            + "              if (current.empid > input_value0) {\n"
-            + "                case_when_value0 = $L4J$C$Integer_valueOf_5_;\n"
-            + "              } else {\n"
-            + "                Integer case_when_value1;\n"
-            + "                if (current.deptno * 8 > 8) {\n"
-            + "                  case_when_value1 = $L4J$C$Integer_valueOf_5_;\n"
-            + "                } else {\n"
-            + "                  case_when_value1 = (Integer) null;\n"
-            + "                }\n"
-            + "                case_when_value0 = case_when_value1;\n"
-            + "              }\n"
-            + "              final Integer binary_call_value3 = case_when_value0 == null ? (Integer) null : Integer.valueOf(case_when_value0.intValue() - 2);\n"
-            + "              return trim_value == null || binary_call_value3 == null ? (String) null : org.apache.calcite.runtime.SqlFunctions.substring(trim_value, binary_call_value3.intValue());"
-        )
+        .query(sql)
+        .planContains(plan)
         .returns("T=ll\n"
             + "T=ic\n"
             + "T=bastian\n"
             + "T=eodore\n");
   }
 
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-3142">[CALCITE-3142]
-   * An NPE when rounding a nullable numeric</a>. */
-  @Test public void testRoundingNPE() {
-    CalciteAssert.that()
-        .query("SELECT ROUND(CAST((X/Y) AS NUMERIC), 2) "
-            + "FROM (VALUES (1, 2), (NULLIF(5, 5), NULLIF(5, 5))) A(X, Y)")
-        .returns("EXPR$0=0.00\n"
-            + "EXPR$0=null\n");
-  }
 
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-3143">[CALCITE-3143]
-   * Dividing NULLIF clause may cause Division by zero error</a>. */
-  @Test public void testDividingZero() {
-    CalciteAssert.that()
-        .query("SELECT CASE WHEN \"Z\" < 77 AND \"Z\" > 0 THEN 99 ELSE 88 END FROM\n"
-            + "(\n"
-            + " SELECT SUM(\"X\") / NULLIF(SUM(0),0) AS Z\n"
-            + " FROM (VALUES (1.1, 2.5), (4.51, 32.5)) A(X, Y)\n"
-            + " GROUP BY \"Y\"\n"
-            + ")")
-        .returns("EXPR$0=88\n"
-            + "EXPR$0=88\n");
-  }
-
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-3150">[CALCITE-3150]
-   * NPE in UPPER when repeated and combine with LIKE</a>. */
-  @Test public void testUpperLikeNPE() {
-    CalciteAssert.that()
-        .query("SELECT \"NAME\" "
-            + "FROM (VALUES ('Bill'), NULLIF('x', 'x'), ('Eric')) A(NAME) "
-            + "WHERE UPPER(\"NAME\") LIKE 'B%' AND UPPER(\"NAME\") LIKE '%L'")
-        .returns("NAME=Bill\n");
-  }
-
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-3717">[CALCITE-3717]
-   * Query fails with "division by zero" exception</a>. */
-  @Test public void testNestedCaseWhen() {
-    CalciteAssert.that()
-        .query("SELECT "
-            + "CASE WHEN A=0 THEN (B+C+D)*1.0 "
-            + "WHEN B=0 THEN 1.0/A+(C+D)*1.0 "
-            + "WHEN C=0 THEN 1.0/A+1.0/B+D*1.0 "
-            + "WHEN D=0 THEN 1.0/A+1.0/B+1.0/C "
-            + "ELSE 1.0/A+1.0/B+1.0/C+1.0/D END AS V "
-            + "FROM (VALUES (0, 2, 4, 8), (1, 0, 4, 8), (1, 2, 0, 8),"
-            + " (1, 2, 4, 0), (0, 0, 0, 0), (1, 2, 4, 8),"
-            + " (CAST(null as int), CAST(null as int), CAST(null as int),"
-            + " CAST(null as int))) AS T(A,B,C,D)")
-        .returns("V=14.0\n"
-            + "V=13.0\n"
-            + "V=9.5\n"
-            + "V=1.75\n"
-            + "V=0.0\n"
-            + "V=1.875\n"
-            + "V=null\n");
-  }
 
   @Test void testValues() {
     CalciteAssert.that()

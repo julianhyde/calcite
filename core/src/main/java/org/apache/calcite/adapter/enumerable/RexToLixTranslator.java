@@ -106,6 +106,34 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   private final BlockBuilder list;
   private final Function1<String, InputGetter> correlates;
 
+  /**
+   * Map from RexLiteral's variable name to its literal, which is often a
+   * ({@link org.apache.calcite.linq4j.tree.ConstantExpression}))
+   * It is used in the some {@code RexCall}'s implementors, such as
+   * {@code ExtractImplementor}.
+   *
+   * @see #getLiteral
+   * @see #getLiteralValue
+   */
+  private final Map<Expression, Expression> literalMap = new HashMap<>();
+
+  /** For {@code RexCall}, keep the list of its operand's {@code Result}.
+   * It is useful when creating a {@code CallImplementor}. */
+  private final Map<RexCall, List<Result>> callOperandResultMap =
+      new HashMap<>();
+
+  /** Map from RexNode under specific storage type to its Result, to avoid
+   * generating duplicate code. For {@code RexInputRef}, {@code RexDynamicParam}
+   * and {@code RexFieldAccess}. */
+  private final Map<Pair<RexNode, Type>, Result> rexWithStorageTypeResultMap =
+      new HashMap<>();
+
+  /** Map from RexNode to its Result, to avoid generating duplicate code.
+   * For {@code RexLiteral} and {@code RexCall}. */
+  private final Map<RexNode, Result> rexResultMap = new HashMap<>();
+
+  private Type currentStorageType;
+
   private static Method findMethod(
       Class<?> clazz, String name, Class... parameterTypes) {
     try {
@@ -884,81 +912,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     return operand;
   }
 
-  /** Translates a field of an input to an expression. */
-  public interface InputGetter {
-    Expression field(BlockBuilder list, int index, Type storageType);
-  }
-
-  /** Implementation of {@link InputGetter} that calls
-   * {@link PhysType#fieldReference}. */
-  public static class InputGetterImpl implements InputGetter {
-    private List<Pair<Expression, PhysType>> inputs;
-
-    public InputGetterImpl(List<Pair<Expression, PhysType>> inputs) {
-      this.inputs = inputs;
-    }
-
-    public Expression field(BlockBuilder list, int index, Type storageType) {
-      int offset = 0;
-      for (Pair<Expression, PhysType> input : inputs) {
-        final PhysType physType = input.right;
-        int fieldCount = physType.getRowType().getFieldCount();
-        if (index >= offset + fieldCount) {
-          offset += fieldCount;
-          continue;
-        }
-        final Expression left = list.append("current", input.left);
-        return physType.fieldReference(left, index - offset, storageType);
-      }
-      throw new IllegalArgumentException("Unable to find field #" + index);
-    }
-  }
-  /**
-   * Result of translating a {@code RexNode}
-   */
-  public static class Result {
-    final ParameterExpression isNullVariable;
-    final ParameterExpression valueVariable;
-
-    public Result(ParameterExpression isNullVariable,
-        ParameterExpression valueVariable) {
-      this.isNullVariable = isNullVariable;
-      this.valueVariable = valueVariable;
-    }
-  }
-
-  /**
-   * Map from RexLiteral's variable name to its literal, which is often a
-   * ({@link org.apache.calcite.linq4j.tree.ConstantExpression}))
-   * It is used in the some {@code RexCall}'s implementors, such as
-   * {@code ExtractImplementor}.
-   *
-   * @see #getLiteral
-   * @see #getLiteralValue
-   */
-  private final Map<Expression, Expression> literalMap = new HashMap<>();
-
-  /**
-   * For {@code RexCall}, keep the list of its operand's {@code Result}.
-   * It is useful when creating a {@code CallImplementor}
-   */
-  private final Map<RexCall, List<Result>> callOperandResultMap = new HashMap<>();
-
-  /**
-   * Map from RexNode under specific storage type to its Result,
-   * to avoid generating duplicate code.
-   * For {@code RexInputRef}, {@code RexDynamicParam} and {@code RexFieldAccess}
-   */
-  private final Map<Pair<RexNode, Type>, Result> rexWithStorageTypeResultMap = new HashMap<>();
-
-  /**
-   * Map from RexNode to its Result, to avoid generating duplicate code
-   * For {@code RexLiteral} and {@code RexCall}
-   */
-  private final Map<RexNode, Result> rexResultMap = new HashMap<>();
-
-  private Type currentStorageType = null;
-
   /**
    * Visit {@code RexInputRef}. If it has never been visited
    * under current storage type before, {@code RexToLixTranslator}
@@ -1195,7 +1148,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
    * when {@code c = true}, returns {@code d};
    * else returns {@code e}.
    *
-   * We generate code that looks like: {@code
+   * <p>We generate code that looks like:
+   *
+   * <blockquote><pre>
    *      int case_when_value;
    *      ......code for a......
    *      if (!a_isNull && a_value) {
@@ -1211,7 +1166,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
    *              case_when_value = res(e_isNull, e_value);
    *          }
    *      }
-   * }
+   * </pre></blockquote>
    */
   private void implementRecursively(final RexToLixTranslator currentTranslator,
       final List<RexNode> operandList, final ParameterExpression valueVariable, int pos) {
@@ -1411,5 +1366,47 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
   List<Result> getCallOperandResult(RexCall call) {
     return callOperandResultMap.get(call);
+  }
+
+  /** Translates a field of an input to an expression. */
+  public interface InputGetter {
+    Expression field(BlockBuilder list, int index, Type storageType);
+  }
+
+  /** Implementation of {@link InputGetter} that calls
+   * {@link PhysType#fieldReference}. */
+  public static class InputGetterImpl implements InputGetter {
+    private List<Pair<Expression, PhysType>> inputs;
+
+    public InputGetterImpl(List<Pair<Expression, PhysType>> inputs) {
+      this.inputs = inputs;
+    }
+
+    public Expression field(BlockBuilder list, int index, Type storageType) {
+      int offset = 0;
+      for (Pair<Expression, PhysType> input : inputs) {
+        final PhysType physType = input.right;
+        int fieldCount = physType.getRowType().getFieldCount();
+        if (index >= offset + fieldCount) {
+          offset += fieldCount;
+          continue;
+        }
+        final Expression left = list.append("current", input.left);
+        return physType.fieldReference(left, index - offset, storageType);
+      }
+      throw new IllegalArgumentException("Unable to find field #" + index);
+    }
+  }
+
+  /** Result of translating a {@code RexNode}. */
+  public static class Result {
+    final ParameterExpression isNullVariable;
+    final ParameterExpression valueVariable;
+
+    public Result(ParameterExpression isNullVariable,
+        ParameterExpression valueVariable) {
+      this.isNullVariable = isNullVariable;
+      this.valueVariable = valueVariable;
+    }
   }
 }

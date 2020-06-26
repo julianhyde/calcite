@@ -258,7 +258,6 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PI;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POSITION;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POWER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PREV;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RADIANS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RAND;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RAND_INTEGER;
@@ -296,6 +295,8 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.USER;
  * Contains implementations of Rex operators as Java code.
  */
 public class RexImpTable {
+  public static final RexImpTable INSTANCE = new RexImpTable();
+
   public static final ConstantExpression NULL_EXPR =
       Expressions.constant(null);
   public static final ConstantExpression FALSE_EXPR =
@@ -363,7 +364,8 @@ public class RexImpTable {
     defineBinary(LESS_THAN, LessThan, NullPolicy.STRICT, "lt");
     defineBinary(LESS_THAN_OR_EQUAL, LessThanOrEqual, NullPolicy.STRICT, "le");
     defineBinary(GREATER_THAN, GreaterThan, NullPolicy.STRICT, "gt");
-    defineBinary(GREATER_THAN_OR_EQUAL, GreaterThanOrEqual, NullPolicy.STRICT, "ge");
+    defineBinary(GREATER_THAN_OR_EQUAL, GreaterThanOrEqual, NullPolicy.STRICT,
+        "ge");
     defineBinary(EQUALS, Equal, NullPolicy.STRICT, "eq");
     defineBinary(NOT_EQUALS, NotEqual, NullPolicy.STRICT, "ne");
 
@@ -411,25 +413,23 @@ public class RexImpTable {
     map.put(MINUS_DATE, new DatetimeArithmeticImplementor());
     map.put(EXTRACT, new ExtractImplementor());
     map.put(FLOOR,
-            new FloorImplementor(
-                BuiltInMethod.FLOOR.method.getName(),
-                BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
-                BuiltInMethod.UNIX_DATE_FLOOR.method));
+        new FloorImplementor(BuiltInMethod.FLOOR.method.getName(),
+            BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
+            BuiltInMethod.UNIX_DATE_FLOOR.method));
     map.put(CEIL,
-            new FloorImplementor(
-                BuiltInMethod.CEIL.method.getName(),
-                BuiltInMethod.UNIX_TIMESTAMP_CEIL.method,
-                BuiltInMethod.UNIX_DATE_CEIL.method));
+        new FloorImplementor(BuiltInMethod.CEIL.method.getName(),
+            BuiltInMethod.UNIX_TIMESTAMP_CEIL.method,
+            BuiltInMethod.UNIX_DATE_CEIL.method));
 
     defineMethod(LAST_DAY, "lastDay", NullPolicy.STRICT);
     map.put(DAYNAME,
-            new PeriodNameImplementor("dayName",
-                BuiltInMethod.DAYNAME_WITH_TIMESTAMP,
-                BuiltInMethod.DAYNAME_WITH_DATE));
+        new PeriodNameImplementor("dayName",
+            BuiltInMethod.DAYNAME_WITH_TIMESTAMP,
+            BuiltInMethod.DAYNAME_WITH_DATE));
     map.put(MONTHNAME,
-            new PeriodNameImplementor("monthName",
-                BuiltInMethod.MONTHNAME_WITH_TIMESTAMP,
-                BuiltInMethod.MONTHNAME_WITH_DATE));
+        new PeriodNameImplementor("monthName",
+            BuiltInMethod.MONTHNAME_WITH_TIMESTAMP,
+            BuiltInMethod.MONTHNAME_WITH_DATE));
 
     map.put(IS_NULL, new IsNullImplementor());
     map.put(IS_NOT_NULL, new IsNotNullImplementor());
@@ -440,11 +440,13 @@ public class RexImpTable {
 
     // LIKE and SIMILAR
     final MethodImplementor likeImplementor =
-        new MethodImplementor(BuiltInMethod.LIKE.method, NullPolicy.STRICT, false);
+        new MethodImplementor(BuiltInMethod.LIKE.method, NullPolicy.STRICT,
+            false);
     map.put(LIKE, likeImplementor);
     map.put(NOT_LIKE, likeImplementor);
     final MethodImplementor similarImplementor =
-        new MethodImplementor(BuiltInMethod.SIMILAR.method, NullPolicy.STRICT, false);
+        new MethodImplementor(BuiltInMethod.SIMILAR.method, NullPolicy.STRICT,
+            false);
     map.put(SIMILAR_TO, similarImplementor);
     map.put(NOT_SIMILAR_TO, NotImplementor.of(similarImplementor));
 
@@ -452,26 +454,31 @@ public class RexImpTable {
     final MethodImplementor posixRegexImplementor =
         new MethodImplementor(BuiltInMethod.POSIX_REGEX.method,
             NullPolicy.STRICT, false);
-    map.put(SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE, posixRegexImplementor);
-    map.put(SqlStdOperatorTable.POSIX_REGEX_CASE_SENSITIVE, posixRegexImplementor);
+    map.put(SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE,
+        posixRegexImplementor);
+    map.put(SqlStdOperatorTable.POSIX_REGEX_CASE_SENSITIVE,
+        posixRegexImplementor);
     map.put(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_INSENSITIVE,
-            NotImplementor.of(posixRegexImplementor));
+        NotImplementor.of(posixRegexImplementor));
     map.put(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE,
-            NotImplementor.of(posixRegexImplementor));
+        NotImplementor.of(posixRegexImplementor));
     map.put(REGEXP_REPLACE, new RegexpReplaceImplementor());
 
     // Multisets & arrays
-    defineMethod(CARDINALITY, BuiltInMethod.COLLECTION_SIZE.method, NullPolicy.STRICT);
+    defineMethod(CARDINALITY, BuiltInMethod.COLLECTION_SIZE.method,
+        NullPolicy.STRICT);
     defineMethod(SLICE, BuiltInMethod.SLICE.method, NullPolicy.NONE);
     defineMethod(ELEMENT, BuiltInMethod.ELEMENT.method, NullPolicy.STRICT);
     defineMethod(STRUCT_ACCESS, BuiltInMethod.STRUCT_ACCESS.method, NullPolicy.ANY);
     defineMethod(MEMBER_OF, BuiltInMethod.MEMBER_OF.method, NullPolicy.NONE);
     final MethodImplementor isEmptyImplementor =
-        new MethodImplementor(BuiltInMethod.IS_EMPTY.method, NullPolicy.NONE, false);
+        new MethodImplementor(BuiltInMethod.IS_EMPTY.method, NullPolicy.NONE,
+            false);
     map.put(IS_EMPTY, isEmptyImplementor);
     map.put(IS_NOT_EMPTY, NotImplementor.of(isEmptyImplementor));
     final MethodImplementor isASetImplementor =
-        new MethodImplementor(BuiltInMethod.IS_A_SET.method, NullPolicy.NONE, false);
+        new MethodImplementor(BuiltInMethod.IS_A_SET.method, NullPolicy.NONE,
+            false);
     map.put(IS_A_SET, isASetImplementor);
     map.put(IS_NOT_A_SET, NotImplementor.of(isASetImplementor));
     defineMethod(MULTISET_INTERSECT_DISTINCT,
@@ -502,8 +509,10 @@ public class RexImpTable {
     map.put(DEFAULT, new DefaultImplementor());
 
     // Sequences
-    defineMethod(CURRENT_VALUE, BuiltInMethod.SEQUENCE_CURRENT_VALUE.method, NullPolicy.STRICT);
-    defineMethod(NEXT_VALUE, BuiltInMethod.SEQUENCE_NEXT_VALUE.method, NullPolicy.STRICT);
+    defineMethod(CURRENT_VALUE, BuiltInMethod.SEQUENCE_CURRENT_VALUE.method,
+        NullPolicy.STRICT);
+    defineMethod(NEXT_VALUE, BuiltInMethod.SEQUENCE_NEXT_VALUE.method,
+        NullPolicy.STRICT);
 
     // Compression Operators
     defineMethod(COMPRESS, BuiltInMethod.COMPRESS.method, NullPolicy.ARG0);
@@ -543,37 +552,33 @@ public class RexImpTable {
         JsonArrayAggImplementor
             .supplierFor(BuiltInMethod.JSON_ARRAYAGG_ADD.method));
     map.put(IS_JSON_VALUE,
-            new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method, NullPolicy.NONE, false));
+        new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method,
+            NullPolicy.NONE, false));
     map.put(IS_JSON_OBJECT,
-            new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method, NullPolicy.NONE, false));
+        new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method,
+            NullPolicy.NONE, false));
     map.put(IS_JSON_ARRAY,
-            new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method, NullPolicy.NONE, false));
+        new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method,
+            NullPolicy.NONE, false));
     map.put(IS_JSON_SCALAR,
-            new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method, NullPolicy.NONE, false));
+        new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
+            NullPolicy.NONE, false));
     map.put(IS_NOT_JSON_VALUE,
-            NotImplementor.of(
-                new MethodImplementor(
-                    BuiltInMethod.IS_JSON_VALUE.method,
-                    NullPolicy.NONE,
-                    false)));
+        NotImplementor.of(
+            new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method,
+                NullPolicy.NONE, false)));
     map.put(IS_NOT_JSON_OBJECT,
-            NotImplementor.of(
-                new MethodImplementor(
-                    BuiltInMethod.IS_JSON_OBJECT.method,
-                    NullPolicy.NONE,
-                    false)));
+        NotImplementor.of(
+            new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method,
+                NullPolicy.NONE, false)));
     map.put(IS_NOT_JSON_ARRAY,
-            NotImplementor.of(
-                new MethodImplementor(
-                    BuiltInMethod.IS_JSON_ARRAY.method,
-                    NullPolicy.NONE,
-                    false)));
+        NotImplementor.of(
+            new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method,
+                NullPolicy.NONE, false)));
     map.put(IS_NOT_JSON_SCALAR,
-            NotImplementor.of(
-                new MethodImplementor(
-                    BuiltInMethod.IS_JSON_SCALAR.method,
-                    NullPolicy.NONE,
-                    false)));
+        NotImplementor.of(
+            new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
+                NullPolicy.NONE, false)));
 
     // System functions
     final SystemFunctionImplementor systemFunctionImplementor =
@@ -604,7 +609,8 @@ public class RexImpTable {
     aggMap.put(ANY_VALUE, minMax);
     aggMap.put(SOME, minMax);
     aggMap.put(EVERY, minMax);
-    final Supplier<BitOpImplementor> bitop = constructorSupplier(BitOpImplementor.class);
+    final Supplier<BitOpImplementor> bitop =
+        constructorSupplier(BitOpImplementor.class);
     aggMap.put(BIT_AND, bitop);
     aggMap.put(BIT_OR, bitop);
     aggMap.put(BIT_XOR, bitop);
@@ -633,7 +639,6 @@ public class RexImpTable {
     // Functions for MATCH_RECOGNIZE
     matchMap.put(CLASSIFIER, ClassifierImplementor::new);
     matchMap.put(LAST, LastImplementor::new);
-    map.put(PREV, wrapAsRexCallImplementor(new PrevImplementor()));
 
     tvfImplementorMap.put(TUMBLE, TumbleImplementor::new);
     tvfImplementorMap.put(HOP, HopImplementor::new);
@@ -665,51 +670,38 @@ public class RexImpTable {
       final boolean harmonize) {
     return (translator, call, nullAs) -> {
       final RexCallImplementor rexCallImplementor =
-          createRexCallImplementor(
-              implementor, nullPolicy, harmonize);
+          createRexCallImplementor(implementor, nullPolicy, harmonize);
       final List<RexToLixTranslator.Result> arguments =
           translator.getCallOperandResult(call);
       assert arguments != null;
       final RexToLixTranslator.Result result =
-          rexCallImplementor.implement(
-              translator, call, arguments);
+          rexCallImplementor.implement(translator, call, arguments);
       return nullAs.handle(result.valueVariable);
     };
   }
 
-  private void defineMethod(
-      SqlOperator operator, String functionName, NullPolicy nullPolicy) {
-    RexCallImplementor implementor =
-        new MethodNameImplementor(functionName, nullPolicy, false);
-    map.put(operator, implementor);
-  }
-
-  private void defineMethod(
-      SqlOperator operator, Method method, NullPolicy nullPolicy) {
-    RexCallImplementor implementor =
-        new MethodImplementor(method, nullPolicy, false);
-    map.put(operator, implementor);
-  }
-
-  private void defineUnary(
-      SqlOperator operator, ExpressionType expressionType,
+  private void defineMethod(SqlOperator operator, String functionName,
       NullPolicy nullPolicy) {
-    RexCallImplementor implementor =
-        new UnaryImplementor(expressionType, nullPolicy);
-    map.put(operator, implementor);
+    map.put(operator,
+        new MethodNameImplementor(functionName, nullPolicy, false));
   }
 
-  private void defineBinary(
-      SqlOperator operator,
-      ExpressionType expressionType,
-      NullPolicy nullPolicy,
-      String backupMethodName) {
-    RexCallImplementor implementor =
-        new BinaryImplementor(nullPolicy, true, expressionType, backupMethodName);
-    map.put(operator, implementor);
+  private void defineMethod(SqlOperator operator, Method method,
+      NullPolicy nullPolicy) {
+    map.put(operator, new MethodImplementor(method, nullPolicy, false));
   }
 
-  public static final RexImpTable INSTANCE = new RexImpTable();
+  private void defineUnary(SqlOperator operator, ExpressionType expressionType,
+      NullPolicy nullPolicy) {
+    map.put(operator, new UnaryImplementor(expressionType, nullPolicy));
+  }
+
+  private void defineBinary(SqlOperator operator, ExpressionType expressionType,
+      NullPolicy nullPolicy, String backupMethodName) {
+    map.put(operator,
+        new BinaryImplementor(nullPolicy, true, expressionType,
+            backupMethodName));
+  }
 
   private static RexCallImplementor createRexCallImplementor(
       final NotNullImplementor implementor,
@@ -720,9 +712,8 @@ public class RexImpTable {
         return "not_null_udf";
       }
 
-      @Override Expression implementSafe(
-          RexToLixTranslator translator, RexCall call,
-          List<Expression> argValueList) {
+      @Override Expression implementSafe(RexToLixTranslator translator,
+          RexCall call, List<Expression> argValueList) {
         return implementor.implement(translator, call, argValueList);
       }
     };
@@ -819,9 +810,7 @@ public class RexImpTable {
     } else {
       return optimize(
           Expressions.condition(
-              Expressions.equal(
-                  operand,
-                  NULL_EXPR),
+              Expressions.equal(operand, NULL_EXPR),
               NULL_EXPR,
               expression));
     }
@@ -905,8 +894,7 @@ public class RexImpTable {
       case BOX:
         switch (this) {
         case NOT_POSSIBLE:
-          return EnumUtils.convert(
-              x,
+          return EnumUtils.convert(x,
               Primitive.ofBox(x.getType()).primitiveClass);
         }
         // fall through
@@ -916,13 +904,9 @@ public class RexImpTable {
       case NOT_POSSIBLE:
         return x;
       case FALSE:
-        return Expressions.call(
-            BuiltInMethod.IS_TRUE.method,
-            x);
+        return Expressions.call(BuiltInMethod.IS_TRUE.method, x);
       case TRUE:
-        return Expressions.call(
-            BuiltInMethod.IS_NOT_FALSE.method,
-            x);
+        return Expressions.call(BuiltInMethod.IS_NOT_FALSE.method, x);
       case IS_NULL:
         return Expressions.equal(x, NULL_EXPR);
       case IS_NOT_NULL:
@@ -1779,7 +1763,6 @@ public class RexImpTable {
 
   /** Implementor for the {@code TRIM} function. */
   private static class TrimImplementor extends AbstractRexCallImplementor {
-
     TrimImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -2205,7 +2188,6 @@ public class RexImpTable {
 
   /** Implementor for the {@code EXTRACT(unit FROM datetime)} function. */
   private static class ExtractImplementor extends AbstractRexCallImplementor {
-
     ExtractImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -2399,7 +2381,6 @@ public class RexImpTable {
 
   /** Implementor for the SQL {@code CAST} operator. */
   private static class CastImplementor extends AbstractRexCallImplementor {
-
     CastImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -2481,34 +2462,25 @@ public class RexImpTable {
       switch (kind) {
       case MAP_VALUE_CONSTRUCTOR:
         Expression map =
-            blockBuilder.append(
-                "map",
-                Expressions.new_(LinkedHashMap.class),
+            blockBuilder.append("map", Expressions.new_(LinkedHashMap.class),
                 false);
         for (int i = 0; i < argValueList.size(); i++) {
           Expression key = argValueList.get(i++);
           Expression value = argValueList.get(i);
           blockBuilder.add(
               Expressions.statement(
-                  Expressions.call(
-                      map,
-                      BuiltInMethod.MAP_PUT.method,
-                      Expressions.box(key),
-                      Expressions.box(value))));
+                  Expressions.call(map, BuiltInMethod.MAP_PUT.method,
+                      Expressions.box(key), Expressions.box(value))));
         }
         return map;
       case ARRAY_VALUE_CONSTRUCTOR:
         Expression lyst =
-            blockBuilder.append(
-                "list",
-                Expressions.new_(ArrayList.class),
+            blockBuilder.append("list", Expressions.new_(ArrayList.class),
                 false);
         for (Expression value : argValueList) {
           blockBuilder.add(
               Expressions.statement(
-                  Expressions.call(
-                      lyst,
-                      BuiltInMethod.COLLECTION_ADD.method,
+                  Expressions.call(lyst, BuiltInMethod.COLLECTION_ADD.method,
                       Expressions.box(value))));
         }
         return lyst;
@@ -2520,7 +2492,6 @@ public class RexImpTable {
 
   /** Implementor for the {@code ITEM} SQL operator. */
   private static class ItemImplementor extends AbstractRexCallImplementor {
-
     ItemImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -2556,8 +2527,8 @@ public class RexImpTable {
    *
    * <p>Several of these are represented internally as constant values, set
    * per execution. */
-  private static class SystemFunctionImplementor extends AbstractRexCallImplementor {
-
+  private static class SystemFunctionImplementor
+      extends AbstractRexCallImplementor {
     SystemFunctionImplementor() {
       super(NullPolicy.NONE, false);
     }
@@ -2626,7 +2597,6 @@ public class RexImpTable {
   /** Implementor for various datetime arithmetic. */
   private static class DatetimeArithmeticImplementor
       extends AbstractRexCallImplementor {
-
     DatetimeArithmeticImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -2802,22 +2772,7 @@ public class RexImpTable {
     }
   }
 
-  /** Implements PREV match-recognize function. */
-  private static class PrevImplementor implements CallImplementor {
-    @Override public Expression implement(RexToLixTranslator translator, RexCall call,
-        NullAs nullAs) {
-      final RexNode node = call.getOperands().get(0);
-      final RexNode offset = call.getOperands().get(1);
-      final Expression offs = Expressions.multiply(translator.translate(offset),
-          Expressions.constant(-1));
-      ((EnumerableMatch.PrevInputGetter) translator.inputGetter).setOffset(offs);
-      return translator.translate(node);
-    }
-  }
-
-  /**
-   * Null safe RexCall Implementor
-   */
+  /** Null-safe implementor of {@code RexCall}s. */
   public interface RexCallImplementor {
     RexToLixTranslator.Result implement(
         RexToLixTranslator translator,
@@ -2830,17 +2785,19 @@ public class RexImpTable {
    *
    * <p>It is not always safe to execute the {@link RexCall} directly due to
    * the special null arguments. Therefore, the generated code logic is
-   * conditional correspondingly.</p>
+   * conditional correspondingly.
    *
    * <p>For example, {@code a + b} will generate two declaration statements:
-   * {@code
-   *   final Integer xxx_value = (a_isNull || b_isNull) ? null : plus(a, b);
-   *   final boolean xxx_isNull = xxx_value == null;
-   * }
-   * </p>
+   *
+   * <blockquote>
+   * <code>
+   * final Integer xxx_value = (a_isNull || b_isNull) ? null : plus(a, b);<br>
+   * final boolean xxx_isNull = xxx_value == null;
+   * </code>
+   * </blockquote>
    */
-  private abstract static class AbstractRexCallImplementor implements RexCallImplementor {
-
+  private abstract static class AbstractRexCallImplementor
+      implements RexCallImplementor {
     final NullPolicy nullPolicy;
     private final boolean harmonize;
 
@@ -2870,9 +2827,10 @@ public class RexImpTable {
     // Variable name facilitates reasoning about issues when necessary
     abstract String getVariableName();
 
-    /**Figure out conditional expression according to NullPolicy*/
+    /** Figures out conditional expression according to NullPolicy. */
     Expression getCondition(final List<Expression> argIsNullList) {
-      if (argIsNullList.size() == 0 || nullPolicy == null
+      if (argIsNullList.size() == 0
+          || nullPolicy == null
           || nullPolicy == NullPolicy.NONE) {
         return FALSE_EXPR;
       }
@@ -2894,7 +2852,8 @@ public class RexImpTable {
       }
       optimizedArgValueList = unboxIfNecessary(optimizedArgValueList);
 
-      final Expression callValue = implementSafe(translator, call, optimizedArgValueList);
+      final Expression callValue =
+          implementSafe(translator, call, optimizedArgValueList);
 
       // In general, RexCall's type is correct for code generation
       // and thus we should ensure the consistency.
@@ -2912,8 +2871,7 @@ public class RexImpTable {
               : EnumUtils.convert(callValue, returnType);
 
       final Expression valueExpression =
-          Expressions.condition(
-              condition,
+          Expressions.condition(condition,
               getIfTrue(convertedCallValue.getType(), argValueList),
               convertedCallValue);
       final ParameterExpression value =
@@ -2980,7 +2938,8 @@ public class RexImpTable {
       return harmonizedArgValues;
     }
 
-    /** Under null check, it is safe to unbox the operands before entering the implementor.*/
+    /** Under null check, it is safe to unbox the operands before entering the
+     * implementor. */
     private List<Expression> unboxIfNecessary(final List<Expression> argValueList) {
       List<Expression> unboxValueList = argValueList;
       if (nullPolicy == NullPolicy.STRICT || nullPolicy == NullPolicy.ANY
@@ -3020,14 +2979,13 @@ public class RexImpTable {
   }
 
   /**
-   * Logical And Implementor
+   * Implementor for the {@code AND} operator.
    *
    * <p>If any of the arguments are false, result is false;
    * else if any arguments are null, result is null;
-   * else true.</p>
+   * else true.
    */
   private static class LogicalAndImplementor extends AbstractRexCallImplementor {
-
     LogicalAndImplementor() {
       super(NullPolicy.NONE, true);
     }
@@ -3045,18 +3003,14 @@ public class RexImpTable {
       final List<Expression> nullAsTrue =
           arguments.stream()
               .map(result ->
-                  Expressions.condition(
-                      result.isNullVariable,
-                      TRUE_EXPR,
+                  Expressions.condition(result.isNullVariable, TRUE_EXPR,
                       result.valueVariable))
               .collect(Collectors.toList());
       final Expression hasFalse =
           Expressions.not(Expressions.foldAnd(nullAsTrue));
       final Expression hasNull = Expressions.foldOr(argIsNullList);
       final Expression callExpression =
-          Expressions.condition(
-              hasFalse,
-              BOXED_FALSE_EXPR,
+          Expressions.condition(hasFalse, BOXED_FALSE_EXPR,
               Expressions.condition(hasNull, NULL_EXPR, BOXED_TRUE_EXPR));
       final RexImpTable.NullAs nullAs = translator.isNullable(call)
           ? RexImpTable.NullAs.NULL : RexImpTable.NullAs.NOT_POSSIBLE;
@@ -3082,14 +3036,13 @@ public class RexImpTable {
   }
 
   /**
-   * Logical Or Implementor
+   * Implementor for the {@code OR} operator.
    *
    * <p>If any of the arguments are true, result is true;
    * else if any arguments are null, result is null;
-   * else false.</p>
+   * else false.
    */
   private static class LogicalOrImplementor extends AbstractRexCallImplementor {
-
     LogicalOrImplementor() {
       super(NullPolicy.NONE, true);
     }
@@ -3107,17 +3060,13 @@ public class RexImpTable {
       final List<Expression> nullAsFalse =
           arguments.stream()
               .map(result ->
-                  Expressions.condition(
-                      result.isNullVariable,
-                      FALSE_EXPR,
+                  Expressions.condition(result.isNullVariable, FALSE_EXPR,
                       result.valueVariable))
               .collect(Collectors.toList());
       final Expression hasTrue = Expressions.foldOr(nullAsFalse);
       final Expression hasNull = Expressions.foldOr(argIsNullList);
       final Expression callExpression =
-          Expressions.condition(
-              hasTrue,
-              BOXED_TRUE_EXPR,
+          Expressions.condition(hasTrue, BOXED_TRUE_EXPR,
               Expressions.condition(hasNull, NULL_EXPR, BOXED_FALSE_EXPR));
       final RexImpTable.NullAs nullAs = translator.isNullable(call)
           ? RexImpTable.NullAs.NULL : RexImpTable.NullAs.NOT_POSSIBLE;
@@ -3143,14 +3092,13 @@ public class RexImpTable {
   }
 
   /**
-   * Logical Not Implementor
+   * Implementor for the {@code NOT} operator.
    *
    * <p>If any of the arguments are false, result is true;
    * else if any arguments are null, result is null;
-   * else false.</p>
+   * else false.
    */
   private static class LogicalNotImplementor extends AbstractRexCallImplementor {
-
     LogicalNotImplementor() {
       super(NullPolicy.NONE, true);
     }
@@ -3245,7 +3193,6 @@ public class RexImpTable {
 
   /** Implementor for the {@code PI} operator. */
   private static class PiImplementor extends AbstractRexCallImplementor {
-
     PiImplementor() {
       super(NullPolicy.NONE, false);
     }
@@ -3260,9 +3207,8 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for the {@code IS_FALSE} SQL operator. */
+  /** Implementor for the {@code IS FALSE} SQL operator. */
   private static class IsFalseImplementor extends AbstractRexCallImplementor {
-
     IsFalseImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -3281,9 +3227,8 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for the {@code IS_NOT_FALSE} SQL operator. */
+  /** Implementor for the {@code IS NOT FALSE} SQL operator. */
   private static class IsNotFalseImplementor extends AbstractRexCallImplementor {
-
     IsNotFalseImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -3302,9 +3247,8 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for the {@code IS_NOT_NULL} SQL operator. */
+  /** Implementor for the {@code IS NOT NULL} SQL operator. */
   private static class IsNotNullImplementor extends AbstractRexCallImplementor {
-
     IsNotNullImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -3323,9 +3267,8 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for the {@code IS_NOT_TRUE} SQL operator. */
+  /** Implementor for the {@code IS NOT TRUE} SQL operator. */
   private static class IsNotTrueImplementor extends AbstractRexCallImplementor {
-
     IsNotTrueImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -3344,9 +3287,8 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for the {@code IS_NULL} SQL operator. */
+  /** Implementor for the {@code IS NULL} SQL operator. */
   private static class IsNullImplementor extends AbstractRexCallImplementor {
-
     IsNullImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -3365,9 +3307,8 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for the {@code IS_TRUE} SQL operator. */
+  /** Implementor for the {@code IS TRUE} SQL operator. */
   private static class IsTrueImplementor extends AbstractRexCallImplementor {
-
     IsTrueImplementor() {
       super(NullPolicy.STRICT, false);
     }
@@ -3412,7 +3353,6 @@ public class RexImpTable {
 
   /** Implementor for the {@code DEFAULT} function. */
   private static class DefaultImplementor extends AbstractRexCallImplementor {
-
     DefaultImplementor() {
       super(NullPolicy.NONE, false);
     }
@@ -3427,7 +3367,7 @@ public class RexImpTable {
     }
   }
 
-  /** Implements tumbling. */
+  /** Implements the {@code TUMBLE} table function. */
   private static class TumbleImplementor implements TableFunctionCallImplementor {
     @Override public Expression implement(RexToLixTranslator translator,
         Expression inputEnumerable,
@@ -3438,25 +3378,23 @@ public class RexImpTable {
       RexCall descriptor = (RexCall) call.getOperands().get(0);
       List<Expression> translatedOperands = new ArrayList<>();
       final ParameterExpression parameter =
-          Expressions.parameter(Primitive.box(inputPhysType.getJavaRowType()), "_input");
-      Expression wmColExpr = inputPhysType.fieldReference(
-          parameter, ((RexInputRef) descriptor.getOperands().get(0)).getIndex(),
-          outputPhysType.getJavaFieldType(inputPhysType.getRowType().getFieldCount()));
+          Expressions.parameter(Primitive.box(inputPhysType.getJavaRowType()),
+              "_input");
+      Expression wmColExpr =
+          inputPhysType.fieldReference(parameter,
+              ((RexInputRef) descriptor.getOperands().get(0)).getIndex(),
+              outputPhysType.getJavaFieldType(
+                  inputPhysType.getRowType().getFieldCount()));
       translatedOperands.add(wmColExpr);
       translatedOperands.add(intervalExpression);
 
-      return Expressions.call(
-          BuiltInMethod.TUMBLING.method,
-          inputEnumerable,
-          EnumUtils.tumblingWindowSelector(
-              inputPhysType,
-              outputPhysType,
-              translatedOperands.get(0),
-              translatedOperands.get(1)));
+      return Expressions.call(BuiltInMethod.TUMBLING.method, inputEnumerable,
+          EnumUtils.tumblingWindowSelector(inputPhysType, outputPhysType,
+              translatedOperands.get(0), translatedOperands.get(1)));
     }
   }
 
-  /** Implements hopping. */
+  /** Implements the {@code HOP} table function. */
   private static class HopImplementor implements TableFunctionCallImplementor {
     @Override public Expression implement(RexToLixTranslator translator,
         Expression inputEnumerable, RexCall call, PhysType inputPhysType, PhysType outputPhysType) {
@@ -3470,17 +3408,17 @@ public class RexImpTable {
       translatedOperands.add(slidingInterval);
       translatedOperands.add(windowSize);
 
-      return Expressions.call(
-          BuiltInMethod.HOPPING.method,
+      return Expressions.call(BuiltInMethod.HOPPING.method,
           Expressions.list(
-              Expressions.call(inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method),
+              Expressions.call(inputEnumerable,
+                  BuiltInMethod.ENUMERABLE_ENUMERATOR.method),
               translatedOperands.get(0),
               translatedOperands.get(1),
               translatedOperands.get(2)));
     }
   }
 
-  /** Implements per-key sessionization. */
+  /** Implements the {@code SESSION} table function. */
   private static class SessionImplementor implements TableFunctionCallImplementor {
     @Override public Expression implement(RexToLixTranslator translator,
         Expression inputEnumerable, RexCall call, PhysType inputPhysType, PhysType outputPhysType) {
@@ -3497,8 +3435,7 @@ public class RexImpTable {
       translatedOperands.add(keyColIndexExpr);
       translatedOperands.add(gapInterval);
 
-      return Expressions.call(
-          BuiltInMethod.SESSIONIZATION.method,
+      return Expressions.call(BuiltInMethod.SESSIONIZATION.method,
           Expressions.list(
               Expressions.call(inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method),
               translatedOperands.get(0),
