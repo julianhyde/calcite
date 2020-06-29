@@ -4553,6 +4553,39 @@ class RelToSqlConverterTest {
   }
 
   /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-3986">[CALCITE-3986]
+   * JDBC adapter should omit redundant table and column aliases</a>. */
+  @Test void testOmitRedundantAlias() {
+    final String sql = "select sal as \"sAl\", empno as \"EMPNO\",\n"
+        + "   \"emp\".deptno as \"deptno\"\n"
+        + "from emp as \"emp\"\n"
+        + "join dept as \"DEPT\" using (deptno)";
+    final String expectedMySql = "SELECT `EMP`.`SAL` AS `sAl`, `EMP`.`EMPNO`,"
+        + " `EMP`.`DEPTNO` AS `deptno`\n"
+        + "FROM `SCOTT`.`EMP`\n"
+        + "INNER JOIN `SCOTT`.`DEPT` ON `EMP`.`DEPTNO` = `DEPT`.`DEPTNO`";
+    final String expectedPostgresql = "SELECT \"EMP\".\"SAL\" AS \"sAl\","
+        + " \"EMP\".\"EMPNO\", \"EMP\".\"DEPTNO\" AS \"deptno\"\n"
+        + "FROM \"SCOTT\".\"EMP\"\n"
+        + "INNER JOIN \"SCOTT\".\"DEPT\""
+        + " ON \"EMP\".\"DEPTNO\" = \"DEPT\".\"DEPTNO\"";
+    final String expectedDb2 = "SELECT EMP.SAL AS sAl, EMP.EMPNO,"
+        + " EMP.DEPTNO AS deptno\n"
+        + "FROM SCOTT.EMP AS EMP\n"
+        + "INNER JOIN SCOTT.DEPT AS DEPT ON EMP.DEPTNO = DEPT.DEPTNO";
+    final String expectedBigQuery = "SELECT EMP.SAL AS sAl, EMP.EMPNO,"
+        + " EMP.DEPTNO AS deptno\n"
+        + "FROM SCOTT.EMP\n"
+        + "INNER JOIN SCOTT.DEPT ON EMP.DEPTNO = DEPT.DEPTNO";
+    sql(sql)
+        .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
+        .withMysql().ok(expectedMySql)
+        .withPostgresql().ok(expectedPostgresql)
+        .withDb2().ok(expectedDb2)
+        .withBigQuery().ok(expectedBigQuery);
+  }
+
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2118">[CALCITE-2118]
    * RelToSqlConverter should only generate "*" if field names match</a>. */
   @Test void testPreserveAlias() {
