@@ -121,8 +121,10 @@ public abstract class RelOptRule {
    * @param <R> Class of relational expression to match
    * @return Operand that matches a relational expression that has no
    *   children
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandBuilder#operand(Class)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static <R extends RelNode> RelOptRuleOperand operand(
       Class<R> clazz,
       RelOptRuleOperandChildren operandList) {
@@ -140,8 +142,10 @@ public abstract class RelOptRule {
    * @param <R> Class of relational expression to match
    * @return Operand that matches a relational expression that has no
    *   children
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandBuilder#operand(Class)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static <R extends RelNode> RelOptRuleOperand operand(
       Class<R> clazz,
       RelTrait trait,
@@ -161,8 +165,10 @@ public abstract class RelOptRule {
    * @param <R> Class of relational expression to match
    * @return Operand that matches a relational expression that has a
    *   particular trait and predicate
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandBuilder#operand(Class)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static <R extends RelNode> RelOptRuleOperand operandJ(
       Class<R> clazz,
       RelTrait trait,
@@ -195,8 +201,10 @@ public abstract class RelOptRule {
    * @param rest Rest operands
    * @param <R> Class of relational expression to match
    * @return Operand
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandBuilder#operand(Class)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static <R extends RelNode> RelOptRuleOperand operandJ(
       Class<R> clazz,
       RelTrait trait,
@@ -236,8 +244,10 @@ public abstract class RelOptRule {
    * @param <R> Class of relational expression to match
    * @return Operand that matches a relational expression with a given
    *   list of children
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandBuilder#operand(Class)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static <R extends RelNode> RelOptRuleOperand operand(
       Class<R> clazz,
       RelOptRuleOperand first,
@@ -252,7 +262,7 @@ public abstract class RelOptRule {
    * @param trait    Trait to match, or null to match any trait
    * @param predicate Predicate to apply to relational expression
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected static <R extends RelNode> ConverterRelOptRuleOperand
       convertOperand(Class<R> clazz, Predicate<? super R> predicate,
       RelTrait trait) {
@@ -279,8 +289,10 @@ public abstract class RelOptRule {
    * @param rest  Remaining child operands (may be empty)
    * @return List of child operands that matches child relational
    *   expressions in the order
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandDetailBuilder#inputs}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static RelOptRuleOperandChildren some(
       RelOptRuleOperand first,
       RelOptRuleOperand... rest) {
@@ -315,7 +327,7 @@ public abstract class RelOptRule {
    * @return List of child operands that matches child relational
    *   expressions in any order
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static RelOptRuleOperandChildren unordered(
       RelOptRuleOperand first,
       RelOptRuleOperand... rest) {
@@ -328,8 +340,10 @@ public abstract class RelOptRule {
    * Creates an empty list of child operands.
    *
    * @return Empty list of child operands
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandDetailBuilder#noInputs()}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static RelOptRuleOperandChildren none() {
     return RelOptRuleOperandChildren.LEAF_CHILDREN;
   }
@@ -340,7 +354,10 @@ public abstract class RelOptRule {
    *
    * @return List of child operands that signifies that the operand matches
    *   any number of child relational expressions
+   *
+   * @deprecated Use {@link RelOptNewRule.OperandDetailBuilder#anyInputs()}
    */
+  @Deprecated // to be removed before 2.0
   public static RelOptRuleOperandChildren any() {
     return RelOptRuleOperandChildren.ANY_CHILDREN;
   }

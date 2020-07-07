@@ -36,27 +36,19 @@ import java.util.List;
 public class JoinUnionTransposeRule
     extends RelOptNewRule<JoinUnionTransposeRule.Config>
     implements TransformationRule {
-  public static final JoinUnionTransposeRule LEFT_UNION =
-      Config.EMPTY.withDescription("JoinUnionTransposeRule(Union-Other)")
-          .as(Config.class)
-          .withOperandFor(Join.class, Union.class, true)
-          .toRule();
+  public static final JoinUnionTransposeRule LEFT_UNION = Config.LEFT.toRule();
 
-  public static final JoinUnionTransposeRule RIGHT_UNION =
-      Config.EMPTY.withDescription("JoinUnionTransposeRule(Other-Union)")
-          .as(Config.class)
-          .withOperandFor(Join.class, Union.class, false)
-          .toRule();
+  public static final JoinUnionTransposeRule RIGHT_UNION = Config.RIGHT.toRule();
 
   /** Creates a JoinUnionTransposeRule. */
   protected JoinUnionTransposeRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinUnionTransposeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(LEFT_UNION.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.LEFT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
@@ -123,6 +115,14 @@ public class JoinUnionTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config LEFT = EMPTY.withDescription("JoinUnionTransposeRule(Union-Other)")
+        .as(Config.class)
+        .withOperandFor(Join.class, Union.class, true);
+
+    Config RIGHT = EMPTY.withDescription("JoinUnionTransposeRule(Other-Union)")
+        .as(Config.class)
+        .withOperandFor(Join.class, Union.class, false);
+
     @Override default JoinUnionTransposeRule toRule() {
       return new JoinUnionTransposeRule(this);
     }

@@ -36,17 +36,16 @@ import java.util.List;
 /**
  * Planner rule that pushes a {@link org.apache.calcite.rel.core.Filter}
  * past a {@link org.apache.calcite.rel.core.SetOp}.
+ *
+ * @see CoreRules#FILTER_SET_OP_TRANSPOSE
  */
 public class FilterSetOpTransposeRule
     extends RelOptNewRule<FilterSetOpTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#FILTER_SET_OP_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterSetOpTransposeRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Filter.class).oneInput(b1 ->
-                  b1.operand(SetOp.class).anyInputs()))
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -55,15 +54,15 @@ public class FilterSetOpTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterSetOpTransposeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
   @Deprecated // to  be removed before 2.0
   public FilterSetOpTransposeRule(RelFactories.FilterFactory filterFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(RelBuilder.proto(Contexts.of(filterFactory)))
         .as(Config.class));
   }
@@ -104,6 +103,12 @@ public class FilterSetOpTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Filter.class).oneInput(b1 ->
+                b1.operand(SetOp.class).anyInputs()))
+        .as(Config.class);
+
     @Override default FilterSetOpTransposeRule toRule() {
       return new FilterSetOpTransposeRule(this);
     }

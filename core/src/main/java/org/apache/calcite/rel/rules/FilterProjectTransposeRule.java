@@ -40,27 +40,17 @@ import java.util.function.Predicate;
  * Planner rule that pushes
  * a {@link org.apache.calcite.rel.core.Filter}
  * past a {@link org.apache.calcite.rel.core.Project}.
+ *
+ * @see CoreRules#FILTER_PROJECT_TRANSPOSE
  */
 public class FilterProjectTransposeRule
     extends RelOptNewRule<FilterProjectTransposeRule.Config>
     implements TransformationRule {
-  /** The default instance of
-   * {@link org.apache.calcite.rel.rules.FilterProjectTransposeRule}.
-   *
-   * <p>It does not allow a Filter to be pushed past the Project if
-   * {@link RexUtil#containsCorrelation there is a correlation condition})
-   * anywhere in the Filter, since in some cases it can prevent a
-   * {@link org.apache.calcite.rel.core.Correlate} from being de-correlated.
-   */
+
+  /** @deprecated Use {@link CoreRules#FILTER_PROJECT_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterProjectTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Filter.class,
-              f -> !RexUtil.containsCorrelation(f.getCondition()),
-              Project.class, p -> true)
-          .withCopyFilter(true)
-          .withCopyProject(true)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -79,13 +69,13 @@ public class FilterProjectTransposeRule
    * filter (since in some cases it can prevent a
    * {@link org.apache.calcite.rel.core.Correlate} from being de-correlated).
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterProjectTransposeRule(
       Class<? extends Filter> filterClass,
       Class<? extends Project> projectClass,
       boolean copyFilter, boolean copyProject,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(filterClass,
@@ -107,7 +97,7 @@ public class FilterProjectTransposeRule
    * and/or the Project (using {@code projectPredicate} allows making the rule
    * more restrictive.
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public <F extends Filter, P extends Project> FilterProjectTransposeRule(
       Class<F> filterClass,
       Predicate<? super F> filterPredicate,
@@ -115,7 +105,7 @@ public class FilterProjectTransposeRule
       Predicate<? super P> projectPredicate,
       boolean copyFilter, boolean copyProject,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b0 ->
             b0.operand(filterClass).predicate(filterPredicate)
@@ -133,7 +123,7 @@ public class FilterProjectTransposeRule
       RelFactories.FilterFactory filterFactory,
       Class<? extends Project> projectClass,
       RelFactories.ProjectFactory projectFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(RelBuilder.proto(filterFactory, projectFactory))
         .withOperandSupplier(b0 ->
             b0.operand(filterClass)
@@ -148,13 +138,13 @@ public class FilterProjectTransposeRule
         .withCopyProject(projectFactory == null));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected FilterProjectTransposeRule(
       RelOptRuleOperand operand,
       boolean copyFilter,
       boolean copyProject,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class)
@@ -221,6 +211,13 @@ public class FilterProjectTransposeRule
    * and/or the Project (using {@code projectPredicate} allows making the rule
    * more restrictive. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class,
+            f -> !RexUtil.containsCorrelation(f.getCondition()),
+            Project.class, p -> true)
+        .withCopyFilter(true)
+        .withCopyProject(true);
+
     @Override default FilterProjectTransposeRule toRule() {
       return new FilterProjectTransposeRule(this);
     }

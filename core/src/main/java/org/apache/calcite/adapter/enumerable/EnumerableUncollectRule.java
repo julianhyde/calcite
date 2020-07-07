@@ -25,14 +25,15 @@ import org.apache.calcite.rel.core.Uncollect;
 /**
  * Rule to convert an {@link org.apache.calcite.rel.core.Uncollect} to an
  * {@link EnumerableUncollect}.
+ *
+ * @see EnumerableRules#ENUMERABLE_UNCOLLECT_RULE
  */
 class EnumerableUncollectRule extends ConverterRule {
-  /** Singleton instance of EnumerableUncollectRule. */
-  static final EnumerableUncollectRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(Uncollect.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableUncollectRule")
-      .withRuleFactory(EnumerableUncollectRule::new)
-      .toRule(EnumerableUncollectRule.class);
+      .withRuleFactory(EnumerableUncollectRule::new);
 
   /** Called from the Config. */
   protected EnumerableUncollectRule(Config config) {

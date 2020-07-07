@@ -29,14 +29,15 @@ import java.util.List;
 /**
  * Rule to convert an {@link org.apache.calcite.rel.logical.LogicalUnion} to an
  * {@link EnumerableUnion}.
+ *
+ * @see EnumerableRules#ENUMERABLE_UNION_RULE
  */
 class EnumerableUnionRule extends ConverterRule {
-  /** Singleton instance of EnumerableUnionRule. */
-  static final EnumerableUnionRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalUnion.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableUnionRule")
-      .withRuleFactory(EnumerableUnionRule::new)
-      .toRule(EnumerableUnionRule.class);
+      .withRuleFactory(EnumerableUnionRule::new);
 
   /** Called from the Config. */
   protected EnumerableUnionRule(Config config) {

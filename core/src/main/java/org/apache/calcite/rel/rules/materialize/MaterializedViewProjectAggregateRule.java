@@ -24,46 +24,40 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
-/** Rule that matches Project on Aggregate. */
+/** Rule that matches Project on Aggregate.
+ *
+ * @see MaterializedViewRules#PROJECT_AGGREGATE */
 public class MaterializedViewProjectAggregateRule
     extends MaterializedViewAggregateRule<MaterializedViewProjectAggregateRule.Config> {
 
+  /** @deprecated Use {@link MaterializedViewRules#PROJECT_AGGREGATE}. */
+  @Deprecated // to be removed before 1.25
   public static final MaterializedViewProjectAggregateRule INSTANCE =
-      makeConfig(RelFactories.LOGICAL_BUILDER)
-          .withGenerateUnionRewriting(true)
-          .withUnionRewritingPullProgram(null)
-          .withOperandSupplier(b0 ->
-              b0.operand(Project.class).oneInput(b1 ->
-                  b1.operand(Aggregate.class).anyInputs()))
-          .withDescription("MaterializedViewAggregateRule(Project-Aggregate)")
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private MaterializedViewProjectAggregateRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewProjectAggregateRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
-    this(INSTANCE.config
+    this(Config.create(relBuilderFactory)
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewProjectAggregateRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       RelOptRule filterProjectTransposeRule,
       RelOptRule filterAggregateTransposeRule,
       RelOptRule aggregateProjectPullUpConstantsRule,
       RelOptRule projectMergeRule) {
-    this(INSTANCE.config
+    this(Config.create(relBuilderFactory)
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withFilterProjectTransposeRule(filterProjectTransposeRule)
         .withFilterAggregateTransposeRule(filterAggregateTransposeRule)
@@ -81,6 +75,19 @@ public class MaterializedViewProjectAggregateRule
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewAggregateRule.Config {
+    Config DEFAULT = create(RelFactories.LOGICAL_BUILDER);
+
+    static Config create(RelBuilderFactory relBuilderFactory) {
+      return MaterializedViewAggregateRule.Config.create(relBuilderFactory)
+          .withGenerateUnionRewriting(true)
+          .withUnionRewritingPullProgram(null)
+          .withOperandSupplier(b0 ->
+              b0.operand(Project.class).oneInput(b1 ->
+                  b1.operand(Aggregate.class).anyInputs()))
+          .withDescription("MaterializedViewAggregateRule(Project-Aggregate)")
+          .as(Config.class);
+    }
+
     @Override default MaterializedViewProjectAggregateRule toRule() {
       return new MaterializedViewProjectAggregateRule(this);
     }

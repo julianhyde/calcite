@@ -33,14 +33,16 @@ import java.util.List;
  * creating a richer {@code MultiJoin}.
  *
  * @see org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule
+ * @see CoreRules#FILTER_MULTI_JOIN_MERGE
  */
 public class FilterMultiJoinMergeRule
     extends RelOptNewRule<FilterMultiJoinMergeRule.Config>
     implements TransformationRule {
+
+  /** @deprecated Use {@link CoreRules#FILTER_MULTI_JOIN_MERGE}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterMultiJoinMergeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(Filter.class, MultiJoin.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -49,18 +51,16 @@ public class FilterMultiJoinMergeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterMultiJoinMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterMultiJoinMergeRule(Class<? extends Filter> filterClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(filterClass, MultiJoin.class));
   }
@@ -96,6 +96,9 @@ public class FilterMultiJoinMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class, MultiJoin.class);
+
     @Override default FilterMultiJoinMergeRule toRule() {
       return new FilterMultiJoinMergeRule(this);
     }

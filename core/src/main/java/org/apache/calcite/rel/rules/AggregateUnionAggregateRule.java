@@ -38,44 +38,28 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * <p>This rule only handles cases where the
  * {@link org.apache.calcite.rel.core.Union}s
  * still have only two inputs.
+ *
+ * @see CoreRules#AGGREGATE_UNION_AGGREGATE
+ * @see CoreRules#AGGREGATE_UNION_AGGREGATE_FIRST
+ * @see CoreRules#AGGREGATE_UNION_AGGREGATE_SECOND
  */
 public class AggregateUnionAggregateRule
     extends RelOptNewRule<AggregateUnionAggregateRule.Config>
     implements TransformationRule {
-  /** Instance that matches an {@code Aggregate} as the left input of
-   * {@code Union}. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_UNION_AGGREGATE_FIRST}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateUnionAggregateRule AGG_ON_FIRST_INPUT =
-        Config.EMPTY
-            .withDescription("AggregateUnionAggregateRule:first-input-agg")
-            .as(Config.class)
-            .withOperandFor(LogicalAggregate.class, LogicalUnion.class,
-                LogicalAggregate.class, RelNode.class)
-            .toRule();
+      Config.AGG_FIRST.toRule();
 
-  /** Instance that matches an {@code Aggregate} as the right input of
-   * {@code Union}. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_UNION_AGGREGATE_SECOND}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateUnionAggregateRule AGG_ON_SECOND_INPUT =
-      Config.EMPTY
-          .withDescription("AggregateUnionAggregateRule:second-input-agg")
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalUnion.class,
-              RelNode.class, LogicalAggregate.class)
-          .toRule();
+      Config.AGG_SECOND.toRule();
 
-  /** Instance that matches an {@code Aggregate} as either input of
-   * {@link Union}.
-   *
-   * <p>Because it matches {@link RelNode} for each input of {@code Union}, it
-   * will create O(N ^ 2) matches, which may cost too much during the popMatch
-   * phase in VolcanoPlanner. If efficiency is a concern, we recommend that you
-   * use {@link #AGG_ON_FIRST_INPUT} and {@link #AGG_ON_SECOND_INPUT} instead. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_UNION_AGGREGATE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateUnionAggregateRule INSTANCE =
-      Config.EMPTY
-          .withDescription("AggregateUnionAggregateRule")
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalUnion.class,
-              RelNode.class, RelNode.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -84,14 +68,14 @@ public class AggregateUnionAggregateRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateUnionAggregateRule(Class<? extends Aggregate> aggregateClass,
       Class<? extends Union> unionClass,
       Class<? extends RelNode> firstUnionInputClass,
       Class<? extends RelNode> secondUnionInputClass,
       RelBuilderFactory relBuilderFactory,
       String desc) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withDescription(desc)
         .as(Config.class)
@@ -168,6 +152,24 @@ public class AggregateUnionAggregateRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withDescription("AggregateUnionAggregateRule")
+        .as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalUnion.class,
+            RelNode.class, RelNode.class);
+
+    Config AGG_FIRST = DEFAULT
+        .withDescription("AggregateUnionAggregateRule:first-input-agg")
+        .as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalUnion.class,
+            LogicalAggregate.class, RelNode.class);
+
+    Config AGG_SECOND = DEFAULT
+        .withDescription("AggregateUnionAggregateRule:second-input-agg")
+        .as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalUnion.class,
+            RelNode.class, LogicalAggregate.class);
+
     @Override default AggregateUnionAggregateRule toRule() {
       return new AggregateUnionAggregateRule(this);
     }

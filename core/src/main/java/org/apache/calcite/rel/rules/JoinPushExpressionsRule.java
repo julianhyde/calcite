@@ -34,16 +34,16 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * "emp" that computes the expression
  * "emp.deptno + 1". The resulting join condition is a simple combination
  * of AND, equals, and input fields, plus the remaining non-equal conditions.
+ *
+ * @see CoreRules#JOIN_PUSH_EXPRESSIONS
  */
 public class JoinPushExpressionsRule
     extends RelOptNewRule<JoinPushExpressionsRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#JOIN_PUSH_EXPRESSIONS}. */
+  @Deprecated // to be removed before 1.25
   public static final JoinPushExpressionsRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Join.class)
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates a JoinPushExpressionsRule. */
   protected JoinPushExpressionsRule(Config config) {
@@ -53,7 +53,7 @@ public class JoinPushExpressionsRule
   @Deprecated // to be removed before 2.0
   public JoinPushExpressionsRule(Class<? extends Join> joinClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(joinClass));
   }
@@ -61,7 +61,7 @@ public class JoinPushExpressionsRule
   @Deprecated // to be removed before 2.0
   public JoinPushExpressionsRule(Class<? extends Join> joinClass,
       RelFactories.ProjectFactory projectFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(RelBuilder.proto(projectFactory))
+    this(Config.DEFAULT.withRelBuilderFactory(RelBuilder.proto(projectFactory))
         .as(Config.class)
         .withOperandFor(joinClass));
   }
@@ -85,6 +85,10 @@ public class JoinPushExpressionsRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Join.class)
+        .as(Config.class);
+
     @Override default JoinPushExpressionsRule toRule() {
       return new JoinPushExpressionsRule(this);
     }

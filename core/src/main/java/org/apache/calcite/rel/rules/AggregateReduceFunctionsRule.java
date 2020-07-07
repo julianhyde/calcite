@@ -94,17 +94,18 @@ import javax.annotation.Nonnull;
  * <p>Since many of these rewrites introduce multiple occurrences of simpler
  * forms like {@code COUNT(x)}, the rule gathers common sub-expressions as it
  * goes.
+ *
+ * @see CoreRules#AGGREGATE_REDUCE_FUNCTIONS
  */
 public class AggregateReduceFunctionsRule
     extends RelOptNewRule<AggregateReduceFunctionsRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /** The singleton. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_REDUCE_FUNCTIONS}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateReduceFunctionsRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalAggregate.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private static void validateFunction(SqlKind function) {
     if (!isValid(function)) {
@@ -130,10 +131,10 @@ public class AggregateReduceFunctionsRule
         ImmutableSet.copyOf(config.actualFunctionsToReduce());
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateReduceFunctionsRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class)
@@ -141,10 +142,10 @@ public class AggregateReduceFunctionsRule
         .withFunctionsToReduce(null));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateReduceFunctionsRule(Class<? extends Aggregate> aggregateClass,
       RelBuilderFactory relBuilderFactory, EnumSet<SqlKind> functionsToReduce) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass)
@@ -862,6 +863,9 @@ public class AggregateReduceFunctionsRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalAggregate.class);
+
     Set<SqlKind> DEFAULT_FUNCTIONS_TO_REDUCE =
         ImmutableSet.<SqlKind>builder()
             .addAll(SqlKind.AVG_AGG_FUNCTIONS)

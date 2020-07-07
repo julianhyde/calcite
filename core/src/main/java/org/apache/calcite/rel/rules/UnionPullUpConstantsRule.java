@@ -41,25 +41,27 @@ import java.util.Map;
 
 /**
  * Planner rule that pulls up constants through a Union operator.
+ *
+ * @see CoreRules#UNION_PULL_UP_CONSTANTS
  */
 public class UnionPullUpConstantsRule
     extends RelOptNewRule<UnionPullUpConstantsRule.Config>
     implements TransformationRule {
 
-  public static final UnionPullUpConstantsRule INSTANCE = Config.EMPTY
-      .as(Config.class)
-      .withOperandFor(Union.class)
-      .toRule();
+  /** @deprecated Use {@link CoreRules#UNION_PULL_UP_CONSTANTS}. */
+  @Deprecated // to be removed before 1.25
+  public static final UnionPullUpConstantsRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** Creates a UnionPullUpConstantsRule. */
   protected UnionPullUpConstantsRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public UnionPullUpConstantsRule(Class<? extends Union> unionClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(unionClass));
   }
@@ -140,6 +142,9 @@ public class UnionPullUpConstantsRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Union.class);
+
     @Override default UnionPullUpConstantsRule toRule() {
       return new UnionPullUpConstantsRule(this);
     }

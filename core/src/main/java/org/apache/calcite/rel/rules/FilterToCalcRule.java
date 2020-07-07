@@ -40,18 +40,17 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * {@link org.apache.calcite.rel.logical.LogicalCalc}. This
  * {@link org.apache.calcite.rel.logical.LogicalFilter} will eventually be
  * converted by {@link FilterCalcMergeRule}.
+ *
+ * @see CoreRules#FILTER_TO_CALC
  */
 public class FilterToCalcRule
     extends RelOptNewRule<FilterToCalcRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final FilterToCalcRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalFilter.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#FILTER_TO_CALC}. */
+  @Deprecated // to be removed before 1.25
+  public static final FilterToCalcRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -60,9 +59,9 @@ public class FilterToCalcRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterToCalcRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -87,6 +86,11 @@ public class FilterToCalcRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(LogicalFilter.class).anyInputs())
+        .as(Config.class);
+
     @Override default FilterToCalcRule toRule() {
       return new FilterToCalcRule(this);
     }

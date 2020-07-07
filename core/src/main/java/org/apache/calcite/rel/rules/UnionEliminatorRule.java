@@ -26,14 +26,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * <code>UnionEliminatorRule</code> checks to see if its possible to optimize a
  * Union call by eliminating the Union operator altogether in the case the call
  * consists of only one input.
+ *
+ * @see CoreRules#UNION_REMOVE
  */
 public class UnionEliminatorRule
     extends RelOptNewRule<UnionEliminatorRule.Config>
     implements SubstitutionRule {
-  public static final UnionEliminatorRule INSTANCE = Config.EMPTY
-      .as(Config.class)
-      .withOperandFor(LogicalUnion.class)
-      .toRule();
+  /** @deprecated Use {@link CoreRules#UNION_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final UnionEliminatorRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -42,10 +43,10 @@ public class UnionEliminatorRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public UnionEliminatorRule(Class<? extends Union> unionClass,
       RelBuilderFactory relBuilderFactory) {
-    super(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    super(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(unionClass));
   }
@@ -68,6 +69,9 @@ public class UnionEliminatorRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalUnion.class);
+
     @Override default UnionEliminatorRule toRule() {
       return new UnionEliminatorRule(this);
     }

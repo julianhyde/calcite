@@ -28,16 +28,15 @@ import java.util.List;
  * Planner rule that projects from a {@link CsvTableScan} scan just the columns
  * needed to satisfy a projection. If the projection's expressions are trivial,
  * the projection is removed.
+ *
+ * @see CsvRules#PROJECT_SCAN
  */
 public class CsvProjectTableScanRule
     extends RelOptNewRule<CsvProjectTableScanRule.Config> {
+  /** @deprecated Use {@link CsvRules#PROJECT_SCAN}. */
+  @Deprecated // to be removed before 1.25
   public static final CsvProjectTableScanRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(LogicalProject.class).oneInput(b1 ->
-                  b1.operand(CsvTableScan.class).noInputs()))
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates a CsvProjectTableScanRule. */
   protected CsvProjectTableScanRule(Config config) {
@@ -75,6 +74,12 @@ public class CsvProjectTableScanRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(LogicalProject.class).oneInput(b1 ->
+                b1.operand(CsvTableScan.class).noInputs()))
+        .as(Config.class);
+
     @Override default CsvProjectTableScanRule toRule() {
       return new CsvProjectTableScanRule(this);
     }

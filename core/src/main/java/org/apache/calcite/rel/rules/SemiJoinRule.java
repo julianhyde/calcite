@@ -52,17 +52,18 @@ public abstract class SemiJoinRule
       aggregate -> aggregate.getRowType().getFieldCount() == 0;
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link ProjectToSemiJoinRule#INSTANCE} instead. */
+   * use {@link CoreRules#PROJECT_TO_SEMI_JOIN} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
+  @Deprecated // to be removed before 1.25
   public static final ProjectToSemiJoinRule PROJECT =
-      ProjectToSemiJoinRule.INSTANCE;
+      ProjectToSemiJoinRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link JoinToSemiJoinRule#INSTANCE} instead. */
+   * use {@link CoreRules#JOIN_TO_SEMI_JOIN} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
-  public static final JoinToSemiJoinRule JOIN = JoinToSemiJoinRule.INSTANCE;
+  @Deprecated // to be removed before 1.25
+  public static final JoinToSemiJoinRule JOIN =
+      JoinToSemiJoinRule.Config.DEFAULT.toRule();
 
   /** Creates a SemiJoinRule. */
   protected SemiJoinRule(Config config) {
@@ -134,24 +135,25 @@ public abstract class SemiJoinRule
   }
 
   /** SemiJoinRule that matches a Project on top of a Join with an Aggregate
-   * as its right child. */
+   * as its right child.
+   *
+   * @see CoreRules#PROJECT_TO_SEMI_JOIN */
   public static class ProjectToSemiJoinRule extends SemiJoinRule {
+    /** @deprecated Use {@link CoreRules#PROJECT_TO_SEMI_JOIN}. */
+    @Deprecated // to be removed before 1.25
     public static final ProjectToSemiJoinRule INSTANCE =
-        Config.EMPTY.withDescription("SemiJoinRule:project")
-            .as(Config.class)
-            .withOperandFor(Project.class, Join.class, Aggregate.class)
-            .toRule();
+        Config.DEFAULT.toRule();
 
     /** Creates a ProjectToSemiJoinRule. */
     protected ProjectToSemiJoinRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public ProjectToSemiJoinRule(Class<Project> projectClass,
         Class<Join> joinClass, Class<Aggregate> aggregateClass,
         RelBuilderFactory relBuilderFactory, String description) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .withDescription(description)
           .as(Config.class)
           .withOperandFor(projectClass, joinClass, aggregateClass));
@@ -167,6 +169,10 @@ public abstract class SemiJoinRule
 
     /** Rule configuration. */
     public interface Config extends SemiJoinRule.Config {
+      Config DEFAULT = EMPTY.withDescription("SemiJoinRule:project")
+          .as(Config.class)
+          .withOperandFor(Project.class, Join.class, Aggregate.class);
+
       @Override default ProjectToSemiJoinRule toRule() {
         return new ProjectToSemiJoinRule(this);
       }
@@ -187,24 +193,24 @@ public abstract class SemiJoinRule
   }
 
   /** SemiJoinRule that matches a Join with an empty Aggregate as its right
-   * child. */
+   * input.
+   *
+   * @see CoreRules#JOIN_TO_SEMI_JOIN */
   public static class JoinToSemiJoinRule extends SemiJoinRule {
-    public static final JoinToSemiJoinRule INSTANCE =
-        Config.EMPTY.withDescription("SemiJoinRule:join")
-            .as(Config.class)
-            .withOperandFor(Join.class, Aggregate.class)
-            .toRule();
+    /** @deprecated Use {@link CoreRules#JOIN_TO_SEMI_JOIN}. */
+    @Deprecated // to be removed before 1.25
+    public static final JoinToSemiJoinRule INSTANCE = Config.DEFAULT.toRule();
 
     /** Creates a JoinToSemiJoinRule. */
     protected JoinToSemiJoinRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public JoinToSemiJoinRule(
         Class<Join> joinClass, Class<Aggregate> aggregateClass,
         RelBuilderFactory relBuilderFactory, String description) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .withDescription(description)
           .as(Config.class)
           .withOperandFor(joinClass, aggregateClass));
@@ -219,6 +225,10 @@ public abstract class SemiJoinRule
 
     /** Rule configuration. */
     public interface Config extends SemiJoinRule.Config {
+      Config DEFAULT = EMPTY.withDescription("SemiJoinRule:join")
+          .as(Config.class)
+          .withOperandFor(Join.class, Aggregate.class);
+
       @Override default JoinToSemiJoinRule toRule() {
         return new JoinToSemiJoinRule(this);
       }

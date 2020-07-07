@@ -37,13 +37,9 @@ public class CalcRemoveRule extends RelOptNewRule<CalcRemoveRule.Config>
     implements SubstitutionRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final CalcRemoveRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(LogicalCalc.class)
-              .predicate(calc -> calc.getProgram().isTrivial())
-              .anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#CALC_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final CalcRemoveRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -52,9 +48,9 @@ public class CalcRemoveRule extends RelOptNewRule<CalcRemoveRule.Config>
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public CalcRemoveRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -73,6 +69,13 @@ public class CalcRemoveRule extends RelOptNewRule<CalcRemoveRule.Config>
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(LogicalCalc.class)
+                .predicate(calc -> calc.getProgram().isTrivial())
+                .anyInputs())
+        .as(Config.class);
+
     @Override default CalcRemoveRule toRule() {
       return new CalcRemoveRule(this);
     }

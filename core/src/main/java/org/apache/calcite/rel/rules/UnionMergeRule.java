@@ -37,22 +37,23 @@ import org.apache.calcite.util.Util;
  * into a single {@link org.apache.calcite.rel.core.SetOp}.
  *
  * <p>Originally written for {@link Union} (hence the name),
- * but now also applies to {@link Intersect}.
+ * but now also applies to {@link Intersect} and {@link Minus}.
  */
 public class UnionMergeRule
     extends RelOptNewRule<UnionMergeRule.Config>
     implements TransformationRule {
-  public static final UnionMergeRule INSTANCE =
-      Config.EMPTY.withDescription("UnionMergeRule").as(Config.class)
-          .withOperandFor(LogicalUnion.class).toRule();
+  /** @deprecated Use {@link CoreRules#UNION_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final UnionMergeRule INSTANCE = Config.DEFAULT.toRule();
 
+  /** @deprecated Use {@link CoreRules#INTERSECT_MERGE}. */
+  @Deprecated // to be removed before 1.25
   public static final UnionMergeRule INTERSECT_INSTANCE =
-      Config.EMPTY.withDescription("IntersectMergeRule").as(Config.class)
-          .withOperandFor(LogicalIntersect.class).toRule();
+      Config.INTERSECT.toRule();
 
-  public static final UnionMergeRule MINUS_INSTANCE =
-      Config.EMPTY.withDescription("MinusMergeRule").as(Config.class)
-          .withOperandFor(LogicalMinus.class).toRule();
+  /** @deprecated Use {@link CoreRules#MINUS_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final UnionMergeRule MINUS_INSTANCE = Config.MINUS.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -61,10 +62,10 @@ public class UnionMergeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public UnionMergeRule(Class<? extends SetOp> setOpClass, String description,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .as(Config.class)
         .withOperandFor(setOpClass));
@@ -73,7 +74,7 @@ public class UnionMergeRule
   @Deprecated // to be removed before 2.0
   public UnionMergeRule(Class<? extends Union> setOpClass,
       RelFactories.SetOpFactory setOpFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(RelBuilder.proto(setOpFactory))
+    this(Config.DEFAULT.withRelBuilderFactory(RelBuilder.proto(setOpFactory))
         .as(Config.class)
         .withOperandFor(setOpClass));
   }
@@ -174,6 +175,18 @@ public class UnionMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.withDescription("UnionMergeRule")
+        .as(Config.class)
+        .withOperandFor(LogicalUnion.class);
+
+    Config INTERSECT = EMPTY.withDescription("IntersectMergeRule")
+        .as(Config.class)
+        .withOperandFor(LogicalIntersect.class);
+
+    Config MINUS = EMPTY.withDescription("MinusMergeRule")
+        .as(Config.class)
+        .withOperandFor(LogicalMinus.class);
+
     @Override default UnionMergeRule toRule() {
       return new UnionMergeRule(this);
     }

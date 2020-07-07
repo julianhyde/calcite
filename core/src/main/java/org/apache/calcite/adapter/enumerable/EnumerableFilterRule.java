@@ -24,15 +24,17 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 /**
  * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalFilter} to an
  * {@link EnumerableFilter}.
+ *
+ * @see EnumerableRules#ENUMERABLE_FILTER_RULE
  */
 class EnumerableFilterRule extends ConverterRule {
-  static final EnumerableFilterRule INSTANCE = Config.EMPTY
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.EMPTY
       .as(Config.class)
       .withConversion(LogicalFilter.class, f -> !f.containsOver(),
           Convention.NONE, EnumerableConvention.INSTANCE,
           "EnumerableFilterRule")
-      .withRuleFactory(EnumerableFilterRule::new)
-      .toRule(EnumerableFilterRule.class);
+      .withRuleFactory(EnumerableFilterRule::new);
 
   protected EnumerableFilterRule(Config config) {
     super(config);

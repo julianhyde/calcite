@@ -44,18 +44,16 @@ import java.util.List;
  * {@link JoinCommuteRule}.
  *
  * @see JoinCommuteRule
+ * @see CoreRules#JOIN_ASSOCIATE
  */
 public class JoinAssociateRule
     extends RelOptNewRule<JoinAssociateRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /** The singleton. */
-  public static final JoinAssociateRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Join.class, RelSubset.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#JOIN_ASSOCIATE}. */
+  @Deprecated // to be removed before 1.25
+  public static final JoinAssociateRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -64,9 +62,9 @@ public class JoinAssociateRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinAssociateRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -160,6 +158,9 @@ public class JoinAssociateRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Join.class, RelSubset.class);
+
     @Override default JoinAssociateRule toRule() {
       return new JoinAssociateRule(this);
     }

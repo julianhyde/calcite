@@ -45,7 +45,6 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Match;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableScan;
@@ -93,45 +92,56 @@ public class Bindables {
   private Bindables() {}
 
   public static final RelOptRule BINDABLE_TABLE_SCAN_RULE =
-      new BindableTableScanRule(RelFactories.LOGICAL_BUILDER);
+      BindableTableScanRule.Config.DEFAULT.toRule();
 
   public static final RelOptRule BINDABLE_FILTER_RULE =
-      BindableFilterRule.INSTANCE;
+      BindableFilterRule.DEFAULT_CONFIG.toRule(BindableFilterRule.class);
 
   public static final RelOptRule BINDABLE_PROJECT_RULE =
-      BindableProjectRule.INSTANCE;
+      BindableProjectRule.DEFAULT_CONFIG.toRule(BindableProjectRule.class);
 
   public static final RelOptRule BINDABLE_SORT_RULE =
-      BindableSortRule.INSTANCE;
+      BindableSortRule.DEFAULT_CONFIG.toRule(BindableSortRule.class);
 
   public static final RelOptRule BINDABLE_JOIN_RULE =
-      BindableJoinRule.INSTANCE;
+      BindableJoinRule.DEFAULT_CONFIG.toRule(BindableJoinRule.class);
 
+  public static final RelOptRule BINDABLE_SET_OP_RULE =
+      BindableSetOpRule.DEFAULT_CONFIG.toRule(BindableSetOpRule.class);
+
+  /** @deprecated Use {@link #BINDABLE_SET_OP_RULE}. */
   public static final RelOptRule BINDABLE_SETOP_RULE =
-      BindableSetOpRule.INSTANCE;
+      BINDABLE_SET_OP_RULE;
 
   public static final RelOptRule BINDABLE_VALUES_RULE =
-      BindableValuesRule.INSTANCE;
+      BindableValuesRule.DEFAULT_CONFIG.toRule(BindableValuesRule.class);
 
   public static final RelOptRule BINDABLE_AGGREGATE_RULE =
-      BindableAggregateRule.INSTANCE;
+      BindableAggregateRule.DEFAULT_CONFIG.toRule(BindableAggregateRule.class);
 
   public static final RelOptRule BINDABLE_WINDOW_RULE =
-      BindableWindowRule.INSTANCE;
+      BindableWindowRule.DEFAULT_CONFIG.toRule(BindableWindowRule.class);
 
   public static final RelOptRule BINDABLE_MATCH_RULE =
-      BindableMatchRule.INSTANCE;
+      BindableMatchRule.DEFAULT_CONFIG.toRule(BindableMatchRule.class);
+
+  /** Rule that converts a relational expression from
+   * {@link org.apache.calcite.plan.Convention#NONE}
+   * to {@link org.apache.calcite.interpreter.BindableConvention}. */
+  public static final NoneToBindableConverterRule FROM_NONE_RULE =
+      NoneToBindableConverterRule.DEFAULT_CONFIG
+          .toRule(NoneToBindableConverterRule.class);
 
   /** All rules that convert logical relational expression to bindable. */
   public static final ImmutableList<RelOptRule> RULES =
       ImmutableList.of(
-          NoneToBindableConverterRule.INSTANCE,
+          FROM_NONE_RULE,
           BINDABLE_TABLE_SCAN_RULE,
           BINDABLE_FILTER_RULE,
           BINDABLE_PROJECT_RULE,
           BINDABLE_SORT_RULE,
           BINDABLE_JOIN_RULE,
-          BINDABLE_SETOP_RULE,
+          BINDABLE_SET_OP_RULE,
           BINDABLE_VALUES_RULE,
           BINDABLE_AGGREGATE_RULE,
           BINDABLE_WINDOW_RULE,
@@ -149,25 +159,24 @@ public class Bindables {
   }
 
   /** Rule that converts a {@link org.apache.calcite.rel.core.TableScan}
-   * to bindable convention. */
+   * to bindable convention.
+   *
+   * @see #BINDABLE_TABLE_SCAN_RULE */
   public static class BindableTableScanRule
       extends RelOptNewRule<BindableTableScanRule.Config> {
-    /** Singleton instance of BindableTableScanRule. */
+    /** @deprecated Use {@link #BINDABLE_TABLE_SCAN_RULE}. */
+    @Deprecated // to be removed before 1.25
     public static final BindableTableScanRule INSTANCE =
-        Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalTableScan.class).noInputs())
-          .as(Config.class)
-          .toRule();
+        Config.DEFAULT.toRule();
 
     /** Called from Config. */
     protected BindableTableScanRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public BindableTableScanRule(RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
     }
 
@@ -182,6 +191,11 @@ public class Bindables {
 
     /** Rule configuration. */
     public interface Config extends RelOptNewRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b ->
+              b.operand(LogicalTableScan.class).noInputs())
+          .as(Config.class);
+
       @Override default BindableTableScanRule toRule() {
         return new BindableTableScanRule(this);
       }
@@ -288,15 +302,21 @@ public class Bindables {
     }
   }
 
-  /** Rule that converts a {@link Filter} to bindable convention. */
+  /** Rule that converts a {@link Filter} to bindable convention.
+   *
+   * @see #BINDABLE_FILTER_RULE */
   public static class BindableFilterRule extends ConverterRule {
-    /** Singleton instance of BindableFilterRule. */
-    public static final BindableFilterRule INSTANCE = Config.INSTANCE
-          .withConversion(LogicalFilter.class, f -> !f.containsOver(),
-              Convention.NONE, BindableConvention.INSTANCE,
-              "BindableFilterRule")
-          .withRuleFactory(BindableFilterRule::new)
-          .toRule(BindableFilterRule.class);
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
+        .withConversion(LogicalFilter.class, f -> !f.containsOver(),
+            Convention.NONE, BindableConvention.INSTANCE,
+            "BindableFilterRule")
+        .withRuleFactory(BindableFilterRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_FILTER_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableFilterRule INSTANCE = DEFAULT_CONFIG
+        .toRule(BindableFilterRule.class);
 
     /** Called from the Config. */
     protected BindableFilterRule(Config config) {
@@ -355,14 +375,20 @@ public class Bindables {
   /**
    * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalProject}
    * to a {@link BindableProject}.
+   *
+   * @see #BINDABLE_PROJECT_RULE
    */
   public static class BindableProjectRule extends ConverterRule {
-    /** Singleton instance of BindableProjectRule. */
-    public static final BindableProjectRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalProject.class, p -> !p.containsOver(),
             Convention.NONE, BindableConvention.INSTANCE,
             "BindableProjectRule")
-        .withRuleFactory(BindableProjectRule::new)
+        .withRuleFactory(BindableProjectRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_PROJECT_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableProjectRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableProjectRule.class);
 
     /** Called from the Config. */
@@ -413,13 +439,19 @@ public class Bindables {
   /**
    * Rule to convert an {@link org.apache.calcite.rel.core.Sort} to a
    * {@link org.apache.calcite.interpreter.Bindables.BindableSort}.
+   *
+   * @see #BINDABLE_SORT_RULE
    */
   public static class BindableSortRule extends ConverterRule {
-    /** Singleton instance of BindableSortRule. */
-    public static final BindableSortRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(Sort.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableSortRule")
-        .withRuleFactory(BindableSortRule::new)
+        .withRuleFactory(BindableSortRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_SORT_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableSortRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableSortRule.class);
 
     /** Called from the Config. */
@@ -470,13 +502,19 @@ public class Bindables {
   /**
    * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalJoin}
    * to a {@link BindableJoin}.
+   *
+   * @see #BINDABLE_JOIN_RULE
    */
   public static class BindableJoinRule extends ConverterRule {
-    /** Singleton instance of BindableJoinRule. */
-    public static final BindableJoinRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalJoin.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableJoinRule")
-        .withRuleFactory(BindableJoinRule::new)
+        .withRuleFactory(BindableJoinRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_JOIN_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableJoinRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableJoinRule.class);
 
     /** Called from the Config. */
@@ -541,13 +579,19 @@ public class Bindables {
   /**
    * Rule to convert an {@link SetOp} to a {@link BindableUnion}
    * or {@link BindableIntersect} or {@link BindableMinus}.
+   *
+   * @see #BINDABLE_SET_OP_RULE
    */
   public static class BindableSetOpRule extends ConverterRule {
-    /** Singleton instance of BindableSetOpRule. */
-    public static final BindableSetOpRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(SetOp.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableSetOpRule")
-        .withRuleFactory(BindableSetOpRule::new)
+        .withRuleFactory(BindableSetOpRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_SET_OP_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableSetOpRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableSetOpRule.class);
 
     /** Called from the Config. */
@@ -674,13 +718,19 @@ public class Bindables {
     }
   }
 
-  /** Rule that converts a {@link Values} to bindable convention. */
+  /** Rule that converts a {@link Values} to bindable convention.
+   *
+   * @see #BINDABLE_VALUES_RULE */
   public static class BindableValuesRule extends ConverterRule {
-    /** Singleton instance of BindableValuesRule. */
-    public static final BindableValuesRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalValues.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableValuesRule")
-        .withRuleFactory(BindableValuesRule::new)
+        .withRuleFactory(BindableValuesRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_VALUES_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableValuesRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableValuesRule.class);
 
     /** Called from the Config. */
@@ -760,13 +810,19 @@ public class Bindables {
     }
   }
 
-  /** Rule that converts an {@link Aggregate} to bindable convention. */
+  /** Rule that converts an {@link Aggregate} to bindable convention.
+   *
+   * @see #BINDABLE_AGGREGATE_RULE */
   public static class BindableAggregateRule extends ConverterRule {
-    /** Singleton instance of BindableAggregateRule. */
-    public static final BindableAggregateRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalAggregate.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableAggregateRule")
-        .withRuleFactory(BindableAggregateRule::new)
+        .withRuleFactory(BindableAggregateRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_AGGREGATE_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableAggregateRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableAggregateRule.class);
 
     /** Called from the Config. */
@@ -822,16 +878,20 @@ public class Bindables {
     }
   }
 
-  /**
-   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalWindow}
+  /** Rule to convert a {@link org.apache.calcite.rel.logical.LogicalWindow}
    * to a {@link BindableWindow}.
-   */
+   *
+   * @see #BINDABLE_WINDOW_RULE */
   public static class BindableWindowRule extends ConverterRule {
-    /** Singleton instance of BindableWindowRule. */
-    public static final BindableWindowRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalWindow.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableWindowRule")
-        .withRuleFactory(BindableWindowRule::new)
+        .withRuleFactory(BindableWindowRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_WINDOW_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableWindowRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableWindowRule.class);
 
     /** Called from the Config. */
@@ -890,13 +950,19 @@ public class Bindables {
   /**
    * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalMatch}
    * to a {@link BindableMatch}.
+   *
+   * @see #BINDABLE_MATCH_RULE
    */
   public static class BindableMatchRule extends ConverterRule {
-    /** Singleton instance of BindableMatchRule. */
-    public static final BindableMatchRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalMatch.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableMatchRule")
-        .withRuleFactory(BindableMatchRule::new)
+        .withRuleFactory(BindableMatchRule::new);
+
+    /** @deprecated Use {@link #BINDABLE_MATCH_RULE}. */
+    @Deprecated // to be removed before 1.25
+    public static final BindableMatchRule INSTANCE = DEFAULT_CONFIG
         .toRule(BindableMatchRule.class);
 
     /** Called from the Config. */

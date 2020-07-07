@@ -33,26 +33,23 @@ import java.util.List;
  * Planner rule that pushes a {@link org.apache.calcite.rel.core.Sort} past a
  * {@link org.apache.calcite.rel.core.Union}.
  *
+ * @see CoreRules#SORT_UNION_TRANSPOSE
+ * @see CoreRules#SORT_UNION_TRANSPOSE_MATCH_NULL_FETCH
  */
 public class SortUnionTransposeRule
     extends RelOptNewRule<SortUnionTransposeRule.Config>
     implements TransformationRule {
 
-  /** Rule instance for Union implementation that does not preserve the
-   * ordering of its inputs. Thus, it makes no sense to match this rule
-   * if the Sort does not have a limit, i.e., {@link Sort#fetch} is null. */
+  /** @deprecated Use {@link CoreRules#SORT_UNION_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final SortUnionTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(Sort.class, Union.class)
-          .withMatchNullFetch(false)
-          .toRule();
+      Config.DEFAULT.toRule();
 
-  /** Rule instance for Union implementation that preserves the ordering
-   * of its inputs. It is still worth applying this rule even if the Sort
-   * does not have a limit, for the merge of already sorted inputs that
-   * the Union can do is usually cheap. */
+  /** @deprecated Use
+   * {@link CoreRules#SORT_UNION_TRANSPOSE_MATCH_NULL_FETCH}. */
+  @Deprecated // to be removed before 1.25
   public static final SortUnionTransposeRule MATCH_NULL_FETCH =
-      INSTANCE.config.withMatchNullFetch(true).toRule();
+      Config.DEFAULT.withMatchNullFetch(true).toRule();
 
   // ~ Constructors -----------------------------------------------------------
 
@@ -61,14 +58,14 @@ public class SortUnionTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SortUnionTransposeRule(
       Class<? extends Sort> sortClass,
       Class<? extends Union> unionClass,
       boolean matchNullFetch,
       RelBuilderFactory relBuilderFactory,
       String description) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .as(Config.class)
         .withOperandFor(sortClass, unionClass)
@@ -121,6 +118,10 @@ public class SortUnionTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Sort.class, Union.class)
+        .withMatchNullFetch(false);
+
     @Override default SortUnionTransposeRule toRule() {
       return new SortUnionTransposeRule(this);
     }

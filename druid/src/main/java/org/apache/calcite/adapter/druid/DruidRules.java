@@ -32,6 +32,7 @@ import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.AggregateExtractProjectRule;
 import org.apache.calcite.rel.rules.AggregateFilterTransposeRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
@@ -115,7 +116,7 @@ public class DruidRules {
    * {@link org.apache.calcite.rel.core.Project}. Useful to transform
    * to complex Druid queries. */
   public static final SortProjectTransposeRule SORT_PROJECT_TRANSPOSE =
-      SortProjectTransposeRule.INSTANCE.config
+      SortProjectTransposeRule.Config.DEFAULT
           .withOperandFor(Sort.class, Project.class, DruidQuery.class)
           .toRule();
 
@@ -124,7 +125,7 @@ public class DruidRules {
    * we could not push it inside DruidQuery. */
   @Deprecated // to be removed before 1.25
   public static final RelOptRule PROJECT_SORT_TRANSPOSE =
-      org.apache.calcite.rel.rules.ProjectSortTransposeRule.INSTANCE.config
+      org.apache.calcite.rel.rules.ProjectSortTransposeRule.Config.DEFAULT
           .withOperandFor(Project.class, Sort.class, DruidQuery.class)
           .toRule();
 
@@ -132,7 +133,7 @@ public class DruidRules {
    * past a {@link org.apache.calcite.rel.core.Filter}
    * when {@code Filter} is on top of a {@link DruidQuery}. */
   public static final ProjectFilterTransposeRule PROJECT_FILTER_TRANSPOSE =
-      ProjectFilterTransposeRule.INSTANCE.config
+      ProjectFilterTransposeRule.Config.DEFAULT
           .withOperandFor(Project.class, Filter.class, DruidQuery.class)
           .toRule();
 
@@ -140,7 +141,7 @@ public class DruidRules {
    * past a {@link org.apache.calcite.rel.core.Project}
    * when {@code Project} is on top of a {@link DruidQuery}. */
   public static final FilterProjectTransposeRule FILTER_PROJECT_TRANSPOSE =
-      FilterProjectTransposeRule.INSTANCE.config
+      CoreRules.FILTER_PROJECT_TRANSPOSE.config
           .withOperandFor(Filter.class, Project.class, DruidQuery.class)
           .withCopyFilter(true)
           .withCopyProject(true)
@@ -150,7 +151,7 @@ public class DruidRules {
    * past a {@link org.apache.calcite.rel.core.Filter}
    * when {@code Filter} is on top of a {@link DruidQuery}. */
   public static final AggregateFilterTransposeRule AGGREGATE_FILTER_TRANSPOSE =
-      AggregateFilterTransposeRule.INSTANCE.config
+      CoreRules.AGGREGATE_FILTER_TRANSPOSE.config
           .withOperandFor(Aggregate.class, Filter.class, DruidQuery.class)
           .toRule();
 
@@ -158,7 +159,7 @@ public class DruidRules {
    * past an {@link org.apache.calcite.rel.core.Aggregate}
    * when {@code Aggregate} is on top of a {@link DruidQuery}. */
   public static final FilterAggregateTransposeRule FILTER_AGGREGATE_TRANSPOSE =
-      FilterAggregateTransposeRule.INSTANCE.config
+      CoreRules.FILTER_AGGREGATE_TRANSPOSE.config
           .withOperandFor(Filter.class, Aggregate.class, DruidQuery.class)
           .toRule();
 

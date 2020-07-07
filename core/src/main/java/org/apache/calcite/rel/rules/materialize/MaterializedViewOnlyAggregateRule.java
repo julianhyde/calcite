@@ -28,32 +28,25 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewOnlyAggregateRule
     extends MaterializedViewAggregateRule<MaterializedViewOnlyAggregateRule.Config> {
 
+  /** @deprecated Use {@link MaterializedViewRules#AGGREGATE}. */
+  @Deprecated // to be removed before 1.25
   public static final MaterializedViewOnlyAggregateRule INSTANCE =
-      makeConfig(RelFactories.LOGICAL_BUILDER)
-          .withOperandSupplier(b -> b.operand(Aggregate.class).anyInputs())
-          .withDescription("MaterializedViewAggregateRule(Aggregate)")
-          .as(MaterializedViewRule.Config.class)
-          .withGenerateUnionRewriting(true)
-          .withUnionRewritingPullProgram(null)
-          .withFastBailOut(false)
-          .as(MaterializedViewOnlyAggregateRule.Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private MaterializedViewOnlyAggregateRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewOnlyAggregateRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram) {
-    this(INSTANCE.config
+    this(Config.create(relBuilderFactory)
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewOnlyAggregateRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
@@ -61,10 +54,9 @@ public class MaterializedViewOnlyAggregateRule
       RelOptRule filterAggregateTransposeRule,
       RelOptRule aggregateProjectPullUpConstantsRule,
       RelOptRule projectMergeRule) {
-    this(INSTANCE.config
+    this(Config.create(relBuilderFactory)
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
-        .withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class)
@@ -83,6 +75,19 @@ public class MaterializedViewOnlyAggregateRule
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewAggregateRule.Config {
+    Config DEFAULT = create(RelFactories.LOGICAL_BUILDER);
+
+    static Config create(RelBuilderFactory relBuilderFactory) {
+      return MaterializedViewAggregateRule.Config.create(relBuilderFactory)
+          .withOperandSupplier(b -> b.operand(Aggregate.class).anyInputs())
+          .withDescription("MaterializedViewAggregateRule(Aggregate)")
+          .as(MaterializedViewRule.Config.class)
+          .withGenerateUnionRewriting(true)
+          .withUnionRewritingPullProgram(null)
+          .withFastBailOut(false)
+          .as(MaterializedViewOnlyAggregateRule.Config.class);
+    }
+
     @Override default MaterializedViewOnlyAggregateRule toRule() {
       return new MaterializedViewOnlyAggregateRule(this);
     }

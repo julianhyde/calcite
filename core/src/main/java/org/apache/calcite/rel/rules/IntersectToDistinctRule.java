@@ -64,15 +64,15 @@ import java.math.BigDecimal;
  * <p><code>R6 = Proj(R5 on all attributes)</code>
  *
  * @see org.apache.calcite.rel.rules.UnionToDistinctRule
+ * @see CoreRules#INTERSECT_TO_DISTINCT
  */
 public class IntersectToDistinctRule
     extends RelOptNewRule<IntersectToDistinctRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#INTERSECT_TO_DISTINCT}. */
+  @Deprecated // to be removed before 1.25
   public static final IntersectToDistinctRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalIntersect.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -81,10 +81,10 @@ public class IntersectToDistinctRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public IntersectToDistinctRule(Class<? extends Intersect> intersectClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(intersectClass));
   }
@@ -137,6 +137,9 @@ public class IntersectToDistinctRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalIntersect.class);
+
     @Override default IntersectToDistinctRule toRule() {
       return new IntersectToDistinctRule(this);
     }

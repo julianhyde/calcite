@@ -51,6 +51,7 @@ import org.apache.calcite.rel.logical.LogicalSnapshot;
 import org.apache.calcite.rel.logical.LogicalTableFunctionScan;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterCorrelateRule;
 import org.apache.calcite.rel.rules.FilterJoinRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
@@ -255,7 +256,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                 .as(FilterJoinRule.FilterIntoJoinRule.Config.class)
                 .toRule())
         .addRuleInstance(
-            FilterProjectTransposeRule.INSTANCE.config
+            CoreRules.FILTER_PROJECT_TRANSPOSE.config
                 .withRelBuilderFactory(f)
                 .as(FilterProjectTransposeRule.Config.class)
                 .withOperandFor(Filter.class, filter ->
@@ -264,7 +265,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                 .withCopyFilter(true)
                 .withCopyProject(true)
                 .toRule())
-        .addRuleInstance(FilterCorrelateRule.INSTANCE.config
+        .addRuleInstance(FilterCorrelateRule.Config.DEFAULT
             .withRelBuilderFactory(f)
             .toRule())
         .build();
@@ -282,11 +283,11 @@ public class RelDecorrelator implements ReflectiveVisitor {
       // has been rewritten; apply rules post-decorrelation
       final HepProgram program2 = HepProgram.builder()
           .addRuleInstance(
-              FilterJoinRule.FilterIntoJoinRule.INSTANCE.config
+              CoreRules.FILTER_INTO_JOIN.config
                   .withRelBuilderFactory(f)
                   .toRule())
           .addRuleInstance(
-              FilterJoinRule.JoinConditionPushRule.INSTANCE.config
+              CoreRules.JOIN_CONDITION_PUSH.config
                   .withRelBuilderFactory(f)
                   .toRule())
           .build();

@@ -53,31 +53,28 @@ public class AggregateExtractProjectRule
     extends RelOptNewRule<AggregateExtractProjectRule.Config>
     implements TransformationRule {
   public static final AggregateExtractProjectRule SCAN =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Aggregate.class, LogicalTableScan.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateExtractProjectRule. */
   protected AggregateExtractProjectRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateExtractProjectRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends RelNode> inputClass,
       RelBuilderFactory relBuilderFactory) {
-    this(SCAN.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass, inputClass));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateExtractProjectRule(RelOptRuleOperand operand,
       RelBuilderFactory builderFactory) {
-    this(SCAN.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(builderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
@@ -143,6 +140,10 @@ public class AggregateExtractProjectRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .as(Config.class)
+        .withOperandFor(Aggregate.class, LogicalTableScan.class);
+
     @Override default AggregateExtractProjectRule toRule() {
       return new AggregateExtractProjectRule(this);
     }

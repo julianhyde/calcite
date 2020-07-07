@@ -44,16 +44,15 @@ import java.util.Objects;
  * (that is, it is implementing {@code SELECT DISTINCT}),
  * or all the aggregate functions are splittable,
  * and the underlying relational expression is already distinct.
+ *
+ * @see CoreRules#AGGREGATE_REMOVE
  */
 public class AggregateRemoveRule
     extends RelOptNewRule<AggregateRemoveRule.Config>
     implements SubstitutionRule {
-  public static final AggregateRemoveRule INSTANCE =
-      Config.EMPTY
-          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#AGGREGATE_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final AggregateRemoveRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -67,10 +66,10 @@ public class AggregateRemoveRule
     this(aggregateClass, RelFactories.LOGICAL_BUILDER);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateRemoveRule(Class<? extends Aggregate> aggregateClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass));
@@ -138,6 +137,11 @@ public class AggregateRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        .as(Config.class)
+        .withOperandFor(LogicalAggregate.class);
+
     @Override default AggregateRemoveRule toRule() {
       return new AggregateRemoveRule(this);
     }

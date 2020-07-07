@@ -26,14 +26,15 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 /**
  * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalAggregate}
  * to an {@link EnumerableAggregate}.
+ *
+ * @see EnumerableRules#ENUMERABLE_AGGREGATE_RULE
  */
 class EnumerableAggregateRule extends ConverterRule {
-  /** Singleton instance of EnumerableAggregateRule. */
-  static final EnumerableAggregateRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalAggregate.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableAggregateRule")
-      .withRuleFactory(EnumerableAggregateRule::new)
-      .toRule(EnumerableAggregateRule.class);
+      .withRuleFactory(EnumerableAggregateRule::new);
 
   /** Called from the Config. */
   protected EnumerableAggregateRule(Config config) {

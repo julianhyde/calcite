@@ -33,18 +33,19 @@ import com.google.common.collect.ImmutableSet;
  *
  * <p>LogicalJoin(X, Y) &rarr; LogicalJoin(SemiJoin(X, Y), Y)
  *
- * <p>The constructor is parameterized to allow any sub-class of
+ * <p>Can be configured to match any sub-class of
  * {@link org.apache.calcite.rel.core.Join}, not just
  * {@link org.apache.calcite.rel.logical.LogicalJoin}.
+ *
+ * @see CoreRules#JOIN_ADD_REDUNDANT_SEMI_JOIN
  */
 public class JoinAddRedundantSemiJoinRule
     extends RelOptNewRule<JoinAddRedundantSemiJoinRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#JOIN_ADD_REDUNDANT_SEMI_JOIN}. */
+  @Deprecated // to be removed before 1.25
   public static final JoinAddRedundantSemiJoinRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -53,10 +54,10 @@ public class JoinAddRedundantSemiJoinRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinAddRedundantSemiJoinRule(Class<? extends Join> clazz,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(clazz));
   }
@@ -102,6 +103,9 @@ public class JoinAddRedundantSemiJoinRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class);
+
     @Override default JoinAddRedundantSemiJoinRule toRule() {
       return new JoinAddRedundantSemiJoinRule(this);
     }

@@ -29,14 +29,15 @@ import org.apache.calcite.util.ImmutableIntList;
 /**
  * Rule to convert a {@link LogicalAggregate}
  * to an {@link EnumerableSortedAggregate}.
+ *
+ * @see EnumerableRules#ENUMERABLE_SORTED_AGGREGATE_RULE
  */
 class EnumerableSortedAggregateRule extends ConverterRule {
-  /** Singleton instance of EnumerableSortedAggregateRule. */
-  static final EnumerableSortedAggregateRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalAggregate.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableSortedAggregateRule")
-      .withRuleFactory(EnumerableSortedAggregateRule::new)
-      .toRule(EnumerableSortedAggregateRule.class);
+      .withRuleFactory(EnumerableSortedAggregateRule::new);
 
   /** Called from the Config. */
   protected EnumerableSortedAggregateRule(Config config) {

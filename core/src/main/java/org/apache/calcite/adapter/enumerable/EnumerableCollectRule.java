@@ -25,14 +25,15 @@ import org.apache.calcite.rel.core.Collect;
 /**
  * Rule to convert an {@link org.apache.calcite.rel.core.Collect} to an
  * {@link EnumerableCollect}.
+ *
+ * @see EnumerableRules#ENUMERABLE_COLLECT_RULE
  */
 class EnumerableCollectRule extends ConverterRule {
-  /** Singleton instance of EnumerableCollectRule. */
-  static final EnumerableCollectRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(Collect.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableCollectRule")
-      .withRuleFactory(EnumerableCollectRule::new)
-      .toRule(EnumerableCollectRule.class);
+      .withRuleFactory(EnumerableCollectRule::new);
 
   /** Called from the Config. */
   protected EnumerableCollectRule(Config config) {

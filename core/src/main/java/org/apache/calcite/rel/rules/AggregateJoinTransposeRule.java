@@ -61,33 +61,33 @@ import java.util.TreeMap;
  * Planner rule that pushes an
  * {@link org.apache.calcite.rel.core.Aggregate}
  * past a {@link org.apache.calcite.rel.core.Join}.
+ *
+ * @see CoreRules#AGGREGATE_JOIN_TRANSPOSE
+ * @see CoreRules#AGGREGATE_JOIN_TRANSPOSE_EXTENDED
  */
 public class AggregateJoinTransposeRule
     extends RelOptNewRule<AggregateJoinTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_JOIN_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateJoinTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalJoin.class, false)
-          .toRule();
+      Config.DEFAULT.toRule();
 
-  /** Extended instance of the rule that can push down aggregate functions. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_JOIN_TRANSPOSE_EXTENDED}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateJoinTransposeRule EXTENDED =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalJoin.class, true)
-          .toRule();
+      Config.EXTENDED.toRule();
 
   /** Creates an AggregateJoinTransposeRule. */
   protected AggregateJoinTransposeRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateJoinTransposeRule(Class<? extends Aggregate> aggregateClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory,
       boolean allowFunctions) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass, joinClass, allowFunctions));
@@ -461,6 +461,13 @@ public class AggregateJoinTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalJoin.class, false);
+
+    /** Extended instance that can push down aggregate functions. */
+    Config EXTENDED = EMPTY.as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalJoin.class, true);
+
     @Override default AggregateJoinTransposeRule toRule() {
       return new AggregateJoinTransposeRule(this);
     }

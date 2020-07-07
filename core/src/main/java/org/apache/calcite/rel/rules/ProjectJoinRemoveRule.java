@@ -40,11 +40,11 @@ import java.util.stream.Collectors;
  * on a {@link Join} and removes the join provided that the join is a left join
  * or right join and the join keys are unique.
  *
- * <p>For instance,</p>
+ * <p>For instance,
  *
  * <blockquote>
- * <pre>select s.product_id from
- * sales as s
+ * <pre>select s.product_id
+ * from sales as s
  * left join product as p
  * on s.product_id = p.product_id</pre></blockquote>
  *
@@ -56,22 +56,20 @@ import java.util.stream.Collectors;
 public class ProjectJoinRemoveRule
     extends RelOptNewRule<ProjectJoinRemoveRule.Config>
     implements SubstitutionRule {
-  public static final ProjectJoinRemoveRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalProject.class, LogicalJoin.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#PROJECT_JOIN_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectJoinRemoveRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Creates a ProjectJoinRemoveRule. */
   protected ProjectJoinRemoveRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectJoinRemoveRule(
       Class<? extends Project> projectClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(projectClass, joinClass));
   }
@@ -129,6 +127,9 @@ public class ProjectJoinRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, LogicalJoin.class);
+
     @Override default ProjectJoinRemoveRule toRule() {
       return new ProjectJoinRemoveRule(this);
     }

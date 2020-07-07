@@ -245,7 +245,7 @@ class ElasticsearchRules {
    * to an {@link ElasticsearchAggregate}.
    */
   private static class ElasticsearchAggregateRule extends ElasticsearchConverterRule {
-    static final RelOptRule INSTANCE = Config.INSTANCE
+    private static final RelOptRule INSTANCE = Config.INSTANCE
         .withConversion(LogicalAggregate.class, Convention.NONE,
             ElasticsearchRel.CONVENTION, "ElasticsearchAggregateRule")
         .withRuleFactory(ElasticsearchAggregateRule::new)

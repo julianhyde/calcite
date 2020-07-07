@@ -42,18 +42,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Planner rules that pushes a {@link Project} under {@link Correlate} to apply
- * on Correlate's left and right child.
+ * Planner rule that pushes a {@link Project} under {@link Correlate} to apply
+ * on Correlate's left and right inputs.
+ *
+ * @see CoreRules#PROJECT_CORRELATE_TRANSPOSE
  */
 public class ProjectCorrelateTransposeRule
     extends RelOptNewRule<ProjectCorrelateTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#PROJECT_CORRELATE_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectCorrelateTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Project.class, Correlate.class)
-          .withPreserveExprCondition(expr -> !(expr instanceof RexOver))
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -62,11 +62,11 @@ public class ProjectCorrelateTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectCorrelateTransposeRule(
       PushProjector.ExprCondition preserveExprCondition,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withPreserveExprCondition(preserveExprCondition));
   }
@@ -208,6 +208,10 @@ public class ProjectCorrelateTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Project.class, Correlate.class)
+        .withPreserveExprCondition(expr -> !(expr instanceof RexOver));
+
     @Override default ProjectCorrelateTransposeRule toRule() {
       return new ProjectCorrelateTransposeRule(this);
     }

@@ -64,24 +64,24 @@ import java.util.TreeSet;
  * <p>It is triggered by the pattern
  * {@link org.apache.calcite.rel.logical.LogicalProject}
  * ({@link MultiJoin}).
+ *
+ * @see CoreRules#MULTI_JOIN_OPTIMIZE
  */
 public class LoptOptimizeJoinRule
     extends RelOptNewRule<LoptOptimizeJoinRule.Config>
     implements TransformationRule {
-  public static final LoptOptimizeJoinRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#MULTI_JOIN_OPTIMIZE}. */
+  @Deprecated // to be removed before 1.25
+  public static final LoptOptimizeJoinRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Creates an LoptOptimizeJoinRule. */
   protected LoptOptimizeJoinRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public LoptOptimizeJoinRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -89,10 +89,7 @@ public class LoptOptimizeJoinRule
   public LoptOptimizeJoinRule(RelFactories.JoinFactory joinFactory,
       RelFactories.ProjectFactory projectFactory,
       RelFactories.FilterFactory filterFactory) {
-    this(
-        INSTANCE.config.withRelBuilderFactory(
-        RelBuilder.proto(joinFactory, projectFactory, filterFactory))
-        .as(Config.class));
+    this(RelBuilder.proto(joinFactory, projectFactory, filterFactory));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -2076,6 +2073,10 @@ public class LoptOptimizeJoinRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs())
+        .as(Config.class);
+
     @Override default LoptOptimizeJoinRule toRule() {
       return new LoptOptimizeJoinRule(this);
     }

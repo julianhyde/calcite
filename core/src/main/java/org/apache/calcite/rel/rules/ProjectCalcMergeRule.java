@@ -32,7 +32,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.Pair;
 
 /**
- * Planner rule which merges a
+ * Planner rule that merges a
  * {@link org.apache.calcite.rel.logical.LogicalProject} and a
  * {@link org.apache.calcite.rel.logical.LogicalCalc}.
  *
@@ -42,17 +42,16 @@ import org.apache.calcite.util.Pair;
  * of the original {@link org.apache.calcite.rel.logical.LogicalCalc}'s inputs.
  *
  * @see FilterCalcMergeRule
+ * @see CoreRules#PROJECT_CALC_MERGE
  */
 public class ProjectCalcMergeRule
     extends RelOptNewRule<ProjectCalcMergeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final ProjectCalcMergeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalProject.class, LogicalCalc.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#PROJECT_CALC_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectCalcMergeRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -61,9 +60,9 @@ public class ProjectCalcMergeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectCalcMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -117,6 +116,9 @@ public class ProjectCalcMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, LogicalCalc.class);
+
     @Override default ProjectCalcMergeRule toRule() {
       return new ProjectCalcMergeRule(this);
     }

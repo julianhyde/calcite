@@ -67,21 +67,11 @@ public class JoinPushThroughJoinRule
     implements TransformationRule {
   /** Instance of the rule that works on logical joins only, and pushes to the
    * right. */
-  public static final JoinPushThroughJoinRule RIGHT =
-      Config.EMPTY.withDescription("JoinPushThroughJoinRule:right")
-          .as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .withRight(true)
-          .toRule();
+  public static final JoinPushThroughJoinRule RIGHT = Config.RIGHT.toRule();
 
   /** Instance of the rule that works on logical joins only, and pushes to the
    * left. */
-  public static final JoinPushThroughJoinRule LEFT =
-      Config.EMPTY.withDescription("JoinPushThroughJoinRule:left")
-          .as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .withRight(false)
-          .toRule();
+  public static final JoinPushThroughJoinRule LEFT = Config.LEFT.toRule();
 
   /** Creates a JoinPushThroughJoinRule. */
   protected JoinPushThroughJoinRule(Config config) {
@@ -91,7 +81,7 @@ public class JoinPushThroughJoinRule
   @Deprecated // to be removed before 2.0
   public JoinPushThroughJoinRule(String description, boolean right,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    this(LEFT.config.withDescription(description)
+    this(Config.LEFT.withDescription(description)
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(joinClass)
@@ -101,7 +91,7 @@ public class JoinPushThroughJoinRule
   @Deprecated // to be removed before 2.0
   public JoinPushThroughJoinRule(String description, boolean right,
       Class<? extends Join> joinClass, ProjectFactory projectFactory) {
-    this(LEFT.config.withDescription(description)
+    this(Config.LEFT.withDescription(description)
         .withRelBuilderFactory(RelBuilder.proto(projectFactory))
         .as(Config.class)
         .withOperandFor(joinClass)
@@ -339,6 +329,16 @@ public class JoinPushThroughJoinRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config RIGHT = EMPTY.withDescription("JoinPushThroughJoinRule:right")
+        .as(Config.class)
+        .withOperandFor(LogicalJoin.class)
+        .withRight(true);
+
+    Config LEFT = EMPTY.withDescription("JoinPushThroughJoinRule:left")
+        .as(Config.class)
+        .withOperandFor(LogicalJoin.class)
+        .withRight(false);
+
     @Override default JoinPushThroughJoinRule toRule() {
       return new JoinPushThroughJoinRule(this);
     }

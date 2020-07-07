@@ -40,23 +40,16 @@ import java.util.List;
  * past a {@link org.apache.calcite.rel.core.Join}
  * by splitting the projection into a projection on top of each child of
  * the join.
+ *
+ * @see CoreRules#PROJECT_JOIN_TRANSPOSE
  */
 public class ProjectJoinTransposeRule
     extends RelOptNewRule<ProjectJoinTransposeRule.Config>
     implements TransformationRule {
-  /**
-   * A instance for ProjectJoinTransposeRule that pushes a
-   * {@link org.apache.calcite.rel.logical.LogicalProject}
-   * past a {@link org.apache.calcite.rel.logical.LogicalJoin}
-   * by splitting the projection into a projection on top of each child of
-   * the join.
-   */
+  /** @deprecated Use {@link CoreRules#PROJECT_JOIN_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectJoinTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalProject.class, LogicalJoin.class)
-          .withPreserveExprCondition(expr -> !(expr instanceof RexOver))
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -65,13 +58,14 @@ public class ProjectJoinTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectJoinTransposeRule(
       Class<? extends Project> projectClass,
       Class<? extends Join> joinClass,
       PushProjector.ExprCondition preserveExprCondition,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT
+        .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(projectClass, joinClass)
         .withPreserveExprCondition(preserveExprCondition));
@@ -163,6 +157,10 @@ public class ProjectJoinTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, LogicalJoin.class)
+        .withPreserveExprCondition(expr -> !(expr instanceof RexOver));
+
     @Override default ProjectJoinTransposeRule toRule() {
       return new ProjectJoinTransposeRule(this);
     }

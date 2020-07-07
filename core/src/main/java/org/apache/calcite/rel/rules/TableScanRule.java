@@ -37,10 +37,7 @@ public class TableScanRule extends RelOptNewRule<RelOptNewRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final TableScanRule INSTANCE = Config.EMPTY
-      .withOperandSupplier(b -> b.operand(LogicalTableScan.class).noInputs())
-      .as(Config.class)
-      .toRule();
+  public static final TableScanRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -49,9 +46,9 @@ public class TableScanRule extends RelOptNewRule<RelOptNewRule.Config>
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public TableScanRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -67,6 +64,10 @@ public class TableScanRule extends RelOptNewRule<RelOptNewRule.Config>
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(LogicalTableScan.class).noInputs())
+        .as(Config.class);
+
     @Override default TableScanRule toRule() {
       return new TableScanRule(this);
     }

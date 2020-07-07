@@ -23,13 +23,20 @@ import org.apache.calcite.rel.logical.LogicalCorrelate;
 
 /**
  * Implementation of nested loops over enumerable inputs.
+ *
+ * @see EnumerableRules#ENUMERABLE_CORRELATE_RULE
  */
 public class EnumerableCorrelateRule extends ConverterRule {
-  public static final EnumerableCorrelateRule INSTANCE = Config.EMPTY
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.EMPTY
       .as(Config.class)
       .withConversion(LogicalCorrelate.class, r -> true, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableCorrelateRule")
-      .withRuleFactory(EnumerableCorrelateRule::new)
+      .withRuleFactory(EnumerableCorrelateRule::new);
+
+  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_CORRELATE_RULE}. */
+  @Deprecated // to be removed before 1.25
+  public static final EnumerableCorrelateRule INSTANCE = DEFAULT_CONFIG
       .toRule(EnumerableCorrelateRule.class);
 
   protected EnumerableCorrelateRule(Config config) {

@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Planner rule that pushes a {@code SemiJoin}
+ * Planner rule that pushes a {@link Join#isSemiJoin semi-join}
  * down in a tree past a {@link org.apache.calcite.rel.core.Join}
  * in order to trigger other rules that will convert {@code SemiJoin}s.
  *
@@ -46,15 +46,17 @@ import java.util.List;
  *
  * <p>Whether this
  * first or second conversion is applied depends on which operands actually
- * participate in the semi-join.</p>
+ * participate in the semi-join.
+ *
+ * @see CoreRules#SEMI_JOIN_JOIN_TRANSPOSE
  */
 public class SemiJoinJoinTransposeRule
     extends RelOptNewRule<SemiJoinJoinTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#SEMI_JOIN_JOIN_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final SemiJoinJoinTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalJoin.class, Join.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -63,9 +65,9 @@ public class SemiJoinJoinTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SemiJoinJoinTransposeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -226,6 +228,9 @@ public class SemiJoinJoinTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class, Join.class);
+
     @Override default SemiJoinJoinTransposeRule toRule() {
       return new SemiJoinJoinTransposeRule(this);
     }

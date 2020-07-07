@@ -65,7 +65,7 @@ public class TraitMatchingRule extends RelOptNewRule<TraitMatchingRule.Config> {
     this(config(converterRule, RelFactories.LOGICAL_BUILDER));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public TraitMatchingRule(ConverterRule converterRule,
       RelBuilderFactory relBuilderFactory) {
     this(config(converterRule, relBuilderFactory));

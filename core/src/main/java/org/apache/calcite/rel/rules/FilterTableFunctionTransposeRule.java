@@ -37,17 +37,16 @@ import java.util.Set;
  * Planner rule that pushes
  * a {@link org.apache.calcite.rel.logical.LogicalFilter}
  * past a {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan}.
+ *
+ * @see CoreRules#FILTER_TABLE_FUNCTION_TRANSPOSE
  */
 public class FilterTableFunctionTransposeRule
     extends RelOptNewRule<FilterTableFunctionTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#FILTER_TABLE_FUNCTION_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterTableFunctionTransposeRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(LogicalFilter.class).oneInput(b1 ->
-                  b1.operand(LogicalTableFunctionScan.class).anyInputs()))
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -56,9 +55,9 @@ public class FilterTableFunctionTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterTableFunctionTransposeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -126,6 +125,12 @@ public class FilterTableFunctionTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(LogicalFilter.class).oneInput(b1 ->
+                b1.operand(LogicalTableFunctionScan.class).anyInputs()))
+        .as(Config.class);
+
     @Override default FilterTableFunctionTransposeRule toRule() {
       return new FilterTableFunctionTransposeRule(this);
     }

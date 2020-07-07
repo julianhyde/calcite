@@ -26,7 +26,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalSort;
@@ -41,15 +40,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * <p>At the moment, we only consider left/right outer joins.
  * However, an extension for full outer joins for this rule could be envisioned.
  * Special attention should be paid to null values for correctness issues.
+ *
+ * @see CoreRules#SORT_JOIN_TRANSPOSE
  */
 public class SortJoinTransposeRule
     extends RelOptNewRule<SortJoinTransposeRule.Config>
     implements TransformationRule {
-
-  public static final SortJoinTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalSort.class, LogicalJoin.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#SORT_JOIN_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
+  public static final SortJoinTransposeRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -62,13 +61,14 @@ public class SortJoinTransposeRule
   @Deprecated // to be removed before 2.0
   public SortJoinTransposeRule(Class<? extends Sort> sortClass,
       Class<? extends Join> joinClass) {
-    this(sortClass, joinClass, RelFactories.LOGICAL_BUILDER);
+    this(Config.DEFAULT.withOperandFor(sortClass, joinClass)
+        .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SortJoinTransposeRule(Class<? extends Sort> sortClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withOperandFor(sortClass, joinClass)
+    this(Config.DEFAULT.withOperandFor(sortClass, joinClass)
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
@@ -170,6 +170,9 @@ public class SortJoinTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalSort.class, LogicalJoin.class);
+
     @Override default SortJoinTransposeRule toRule() {
       return new SortJoinTransposeRule(this);
     }

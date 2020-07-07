@@ -54,7 +54,9 @@ import org.apache.calcite.util.ImmutableBitSet;
  * dept.deptno</code></blockquote>
  *
  * <p>would require emitting a NULL emp row if a certain department contained no
- * employees, and Correlator cannot do that.</p>
+ * employees, and Correlator cannot do that.
+ *
+ * @see CoreRules#JOIN_TO_CORRELATE
  */
 public class JoinToCorrelateRule
     extends RelOptNewRule<JoinToCorrelateRule.Config>
@@ -62,18 +64,13 @@ public class JoinToCorrelateRule
 
   //~ Static fields/initializers ---------------------------------------------
 
-  /**
-   * Rule that converts a {@link org.apache.calcite.rel.logical.LogicalJoin}
-   * into a {@link org.apache.calcite.rel.logical.LogicalCorrelate}.
-   */
-  public static final JoinToCorrelateRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#JOIN_TO_CORRELATE}. */
+  @Deprecated // to be removed before 1.25
+  public static final JoinToCorrelateRule INSTANCE = Config.DEFAULT.toRule();
 
-  /** Synonym for {@link #INSTANCE};
-   * {@code JOIN} is not deprecated, but {@code INSTANCE} is preferred. */
-  public static final JoinToCorrelateRule JOIN = INSTANCE;
+  /** @deprecated Use {@link CoreRules#JOIN_TO_CORRELATE}. */
+  @Deprecated // to be removed before 1.25
+  public static final JoinToCorrelateRule JOIN = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -84,14 +81,14 @@ public class JoinToCorrelateRule
 
   @Deprecated // to be removed before 2.0
   public JoinToCorrelateRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(LogicalJoin.class));
   }
 
   @Deprecated // to be removed before 2.0
   protected JoinToCorrelateRule(RelFactories.FilterFactory filterFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(RelBuilder.proto(Contexts.of(filterFactory)))
         .as(Config.class)
         .withOperandFor(LogicalJoin.class));
@@ -144,6 +141,9 @@ public class JoinToCorrelateRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class);
+
     @Override default JoinToCorrelateRule toRule() {
       return new JoinToCorrelateRule(this);
     }

@@ -311,7 +311,7 @@ public abstract class PruneEmptyRules {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public <R extends SingleRel> RemoveEmptySingleRule(Class<R> clazz,
         String description) {
       this(Config.EMPTY.withDescription(description)
@@ -319,7 +319,7 @@ public abstract class PruneEmptyRules {
           .withOperandFor(clazz, singleRel -> true));
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public <R extends SingleRel> RemoveEmptySingleRule(Class<R> clazz,
         Predicate<R> predicate, RelBuilderFactory relBuilderFactory,
         String description) {

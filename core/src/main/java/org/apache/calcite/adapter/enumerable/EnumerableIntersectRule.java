@@ -26,14 +26,15 @@ import org.apache.calcite.rel.logical.LogicalIntersect;
  * Rule to convert a
  * {@link org.apache.calcite.rel.logical.LogicalIntersect} to an
  * {@link EnumerableIntersect}.
+ *
+ * @see EnumerableRules#ENUMERABLE_INTERSECT_RULE
  */
 class EnumerableIntersectRule extends ConverterRule {
-  /** Singleton instance of EnumerableIntersectRule. */
-  static final EnumerableIntersectRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalIntersect.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableIntersectRule")
-      .withRuleFactory(EnumerableIntersectRule::new)
-      .toRule(EnumerableIntersectRule.class);
+      .withRuleFactory(EnumerableIntersectRule::new);
 
   /** Called from the Config. */
   protected EnumerableIntersectRule(Config config) {

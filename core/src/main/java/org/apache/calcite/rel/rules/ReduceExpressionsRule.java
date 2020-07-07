@@ -107,56 +107,52 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
       Pattern.compile("Reduce(Expressions|Values)Rule.*");
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link FilterReduceExpressionsRule#INSTANCE} instead. */
+   * use {@link CoreRules#FILTER_REDUCE_EXPRESSIONS} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
+  @Deprecated // to be removed before 1.25
   public static final FilterReduceExpressionsRule FILTER_INSTANCE =
-      FilterReduceExpressionsRule.INSTANCE;
+      FilterReduceExpressionsRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link ProjectReduceExpressionsRule#INSTANCE} instead. */
+   * use {@link CoreRules#PROJECT_REDUCE_EXPRESSIONS} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
-  public static final ProjectReduceExpressionsRule PROJECT_INSTANCE0 =
-      ProjectReduceExpressionsRule.INSTANCE;
+  @Deprecated // to be removed before 1.25
+  public static final ProjectReduceExpressionsRule PROJECT_INSTANCE =
+      ProjectReduceExpressionsRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link JoinReduceExpressionsRule#INSTANCE} instead. */
+   * use {@link CoreRules#JOIN_REDUCE_EXPRESSIONS} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
+  @Deprecated // to be removed before 1.25
   public static final JoinReduceExpressionsRule JOIN_INSTANCE =
-      JoinReduceExpressionsRule.INSTANCE;
+      JoinReduceExpressionsRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link CalcReduceExpressionsRule#INSTANCE} instead. */
+   * use {@link CoreRules#CALC_REDUCE_EXPRESSIONS} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
+  @Deprecated // to be removed before 1.25
   public static final CalcReduceExpressionsRule CALC_INSTANCE =
-      CalcReduceExpressionsRule.INSTANCE;
+      CalcReduceExpressionsRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link WindowReduceExpressionsRule#INSTANCE} instead. */
+   * use {@link CoreRules#WINDOW_REDUCE_EXPRESSIONS} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
-  public static final WindowReduceExpressionsRule WINDOW_INSTANCE0 =
-      WindowReduceExpressionsRule.INSTANCE;
+  @Deprecated // to be removed before 1.25
+  public static final WindowReduceExpressionsRule WINDOW_INSTANCE =
+      WindowReduceExpressionsRule.Config.DEFAULT.toRule();
 
   /**
    * Rule that reduces constants inside a {@link org.apache.calcite.rel.core.Filter}.
    * If the condition is a constant, the filter is removed (if TRUE) or replaced with
    * an empty {@link org.apache.calcite.rel.core.Values} (if FALSE or NULL).
+   *
+   * @see CoreRules#FILTER_REDUCE_EXPRESSIONS
    */
   public static class FilterReduceExpressionsRule
       extends ReduceExpressionsRule<FilterReduceExpressionsRule.Config> {
-    /** Singleton rule that reduces constants inside a
-     * {@link org.apache.calcite.rel.logical.LogicalFilter}. */
-    public static final FilterReduceExpressionsRule INSTANCE =
-        Config.EMPTY.as(Config.class)
-            .withMatchNullability(true)
-            .withOperandFor(LogicalFilter.class)
-            .withDescription("ReduceExpressionsRule(Filter)")
-            .as(Config.class)
-            .toRule();
+    /** @deprecated Use {@link CoreRules#FILTER_REDUCE_EXPRESSIONS}. */
+    @Deprecated // to be removed before 1.25
+    static final FilterReduceExpressionsRule INSTANCE = Config.DEFAULT.toRule();
 
     /** Creates a FilterReduceExpressionsRule. */
     protected FilterReduceExpressionsRule(Config config) {
@@ -166,17 +162,17 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
     @Deprecated // to be removed before 2.0
     public FilterReduceExpressionsRule(Class<? extends Filter> filterClass,
         RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(filterClass)
           .withMatchNullability(true)
           .as(Config.class));
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public FilterReduceExpressionsRule(Class<? extends Filter> filterClass,
         boolean matchNullability, RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(filterClass)
           .withMatchNullability(matchNullability)
@@ -297,6 +293,12 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
 
     /** Rule configuration. */
     public interface Config extends ReduceExpressionsRule.Config {
+      Config DEFAULT = EMPTY.as(Config.class)
+          .withMatchNullability(true)
+          .withOperandFor(LogicalFilter.class)
+          .withDescription("ReduceExpressionsRule(Filter)")
+          .as(Config.class);
+
       @Override default FilterReduceExpressionsRule toRule() {
         return new FilterReduceExpressionsRule(this);
       }
@@ -304,18 +306,15 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
   }
 
   /** Rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.core.Project}. */
+   * {@link org.apache.calcite.rel.core.Project}.
+   *
+   * @see CoreRules#PROJECT_REDUCE_EXPRESSIONS */
   public static class ProjectReduceExpressionsRule
       extends ReduceExpressionsRule<ProjectReduceExpressionsRule.Config> {
-    /** Singleton rule that reduces constants inside a
-     * {@link org.apache.calcite.rel.logical.LogicalProject}. */
+    /** @deprecated Use {@link CoreRules#PROJECT_REDUCE_EXPRESSIONS}. */
+    @Deprecated // to be removed before 1.25
     public static final ProjectReduceExpressionsRule INSTANCE =
-        Config.EMPTY.as(Config.class)
-            .withMatchNullability(true)
-            .withOperandFor(LogicalProject.class)
-            .withDescription("ReduceExpressionsRule(Project)")
-            .as(Config.class)
-            .toRule();
+        Config.DEFAULT.toRule();
 
     /** Creates a ProjectReduceExpressionsRule. */
     protected ProjectReduceExpressionsRule(Config config) {
@@ -325,16 +324,16 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
     @Deprecated // to be removed before 2.0
     public ProjectReduceExpressionsRule(Class<? extends Project> projectClass,
         RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(projectClass)
           .as(Config.class));
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public ProjectReduceExpressionsRule(Class<? extends Project> projectClass,
         boolean matchNullability, RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(projectClass)
           .withMatchNullability(matchNullability)
@@ -365,26 +364,25 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
 
     /** Rule configuration. */
     public interface Config extends ReduceExpressionsRule.Config {
+      Config DEFAULT = EMPTY.as(Config.class)
+          .withMatchNullability(true)
+          .withOperandFor(LogicalProject.class)
+          .withDescription("ReduceExpressionsRule(Project)")
+          .as(Config.class);
+
       @Override default ProjectReduceExpressionsRule toRule() {
         return new ProjectReduceExpressionsRule(this);
       }
     }
   }
 
-  /**
-   * Rule that reduces constants inside a {@link org.apache.calcite.rel.core.Join}.
-   */
+  /** Rule that reduces constants inside a {@link Join}.
+   *
+   * @see CoreRules#JOIN_REDUCE_EXPRESSIONS */
   public static class JoinReduceExpressionsRule
       extends ReduceExpressionsRule<JoinReduceExpressionsRule.Config> {
-    /** Singleton rule that reduces constants inside a
-     * {@link org.apache.calcite.rel.core.Join}. */
     public static final JoinReduceExpressionsRule INSTANCE =
-        Config.EMPTY.as(Config.class)
-            .withMatchNullability(false)
-            .withOperandFor(Join.class)
-            .withDescription("ReduceExpressionsRule(Join)")
-            .as(Config.class)
-            .toRule();
+        Config.DEFAULT.toRule();
 
     /** Creates a JoinReduceExpressionsRule. */
     protected JoinReduceExpressionsRule(Config config) {
@@ -394,17 +392,17 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
     @Deprecated // to be removed before 2.0
     public JoinReduceExpressionsRule(Class<? extends Join> joinClass,
         RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(joinClass)
           .withMatchNullability(true)
           .as(Config.class));
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public JoinReduceExpressionsRule(Class<? extends Join> joinClass,
         boolean matchNullability, RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(joinClass)
           .withMatchNullability(matchNullability)
@@ -443,6 +441,12 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
 
     /** Rule configuration. */
     public interface Config extends ReduceExpressionsRule.Config {
+      Config DEFAULT = EMPTY.as(Config.class)
+          .withMatchNullability(false)
+          .withOperandFor(Join.class)
+          .withDescription("ReduceExpressionsRule(Join)")
+          .as(Config.class);
+
       @Override default JoinReduceExpressionsRule toRule() {
         return new JoinReduceExpressionsRule(this);
       }
@@ -450,19 +454,16 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
   }
 
   /**
-   * Rule that reduces constants inside a {@link org.apache.calcite.rel.core.Calc}.
+   * Rule that reduces constants inside a {@link Calc}.
+   *
+   * @see CoreRules#CALC_REDUCE_EXPRESSIONS
    */
   public static class CalcReduceExpressionsRule
       extends ReduceExpressionsRule<CalcReduceExpressionsRule.Config> {
-    /** Singleton rule that reduces constants inside a
-     * {@link org.apache.calcite.rel.logical.LogicalCalc}. */
+    /** @deprecated Use {@link CoreRules#CALC_REDUCE_EXPRESSIONS}. */
+    @Deprecated // to be removed before 1.25
     public static final CalcReduceExpressionsRule INSTANCE =
-        Config.EMPTY.as(Config.class)
-            .withMatchNullability(true)
-            .withOperandFor(LogicalCalc.class)
-            .withDescription("ReduceExpressionsRule(Calc)")
-            .as(Config.class)
-            .toRule();
+        Config.DEFAULT.toRule();
 
     /** Creates a CalcReduceExpressionsRule. */
     protected CalcReduceExpressionsRule(Config config) {
@@ -472,17 +473,17 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
     @Deprecated // to be removed before 2.0
     public CalcReduceExpressionsRule(Class<? extends Calc> calcClass,
         RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(calcClass)
           .withMatchNullability(true)
           .as(Config.class));
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public CalcReduceExpressionsRule(Class<? extends Calc> calcClass,
         boolean matchNullability, RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(calcClass)
           .withMatchNullability(matchNullability)
@@ -572,36 +573,38 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
 
     /** Rule configuration. */
     public interface Config extends ReduceExpressionsRule.Config {
+      Config DEFAULT = EMPTY.as(Config.class)
+          .withMatchNullability(true)
+          .withOperandFor(LogicalCalc.class)
+          .withDescription("ReduceExpressionsRule(Calc)")
+          .as(Config.class);
+
       @Override default CalcReduceExpressionsRule toRule() {
         return new CalcReduceExpressionsRule(this);
       }
     }
   }
 
-  /** Rule that reduces constants inside a
-   * {@link org.apache.calcite.rel.core.Window}. */
+  /** Rule that reduces constants inside a {@link Window}.
+   *
+   * @see CoreRules#WINDOW_REDUCE_EXPRESSIONS */
   public static class WindowReduceExpressionsRule
       extends ReduceExpressionsRule<WindowReduceExpressionsRule.Config> {
 
-    /** Singleton rule that reduces constants inside a
-     * {@link org.apache.calcite.rel.logical.LogicalWindow}. */
+    /** @deprecated Use {@link CoreRules#WINDOW_REDUCE_EXPRESSIONS}. */
+    @Deprecated // to be removed before 1.25
     public static final WindowReduceExpressionsRule INSTANCE =
-        Config.EMPTY.as(Config.class)
-            .withMatchNullability(true)
-            .withOperandFor(LogicalWindow.class)
-            .withDescription("ReduceExpressionsRule(Window)")
-            .as(Config.class)
-            .toRule();
+        Config.DEFAULT.toRule();
 
     /** Creates a WindowReduceExpressionsRule. */
     protected WindowReduceExpressionsRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public WindowReduceExpressionsRule(Class<? extends Window> windowClass,
         boolean matchNullability, RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class)
           .withOperandFor(windowClass)
           .withMatchNullability(matchNullability)
@@ -668,6 +671,12 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
 
     /** Rule configuration. */
     public interface Config extends ReduceExpressionsRule.Config {
+      Config DEFAULT = EMPTY.as(Config.class)
+          .withMatchNullability(true)
+          .withOperandFor(LogicalWindow.class)
+          .withDescription("ReduceExpressionsRule(Window)")
+          .as(Config.class);
+
       @Override default WindowReduceExpressionsRule toRule() {
         return new WindowReduceExpressionsRule(this);
       }

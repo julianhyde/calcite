@@ -41,40 +41,42 @@ import java.util.Set;
 
 /** Planner rule that converts a
  * {@link org.apache.calcite.rel.logical.LogicalJoin} into an
- * {@link org.apache.calcite.adapter.enumerable.EnumerableBatchNestedLoopJoin}. */
+ * {@link org.apache.calcite.adapter.enumerable.EnumerableBatchNestedLoopJoin}.
+ *
+ * @see EnumerableRules#ENUMERABLE_BATCH_NESTED_LOOP_JOIN_RULE
+ */
 public class EnumerableBatchNestedLoopJoinRule
     extends RelOptNewRule<EnumerableBatchNestedLoopJoinRule.Config> {
+  /** @deprecated Use
+   * {@link EnumerableRules#ENUMERABLE_BATCH_NESTED_LOOP_JOIN_RULE}. */
+  @Deprecated // to be removed before 1.25
   public static final EnumerableBatchNestedLoopJoinRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(LogicalJoin.class).anyInputs())
-          .withDescription("EnumerableBatchNestedLoopJoinRule")
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an EnumerableBatchNestedLoopJoinRule. */
   protected EnumerableBatchNestedLoopJoinRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected EnumerableBatchNestedLoopJoinRule(Class<? extends Join> clazz,
       RelBuilderFactory relBuilderFactory, int batchSize) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.operand(clazz).anyInputs())
         .as(Config.class)
         .withBatchSize(batchSize));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public EnumerableBatchNestedLoopJoinRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public EnumerableBatchNestedLoopJoinRule(RelBuilderFactory relBuilderFactory,
       int batchSize) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withBatchSize(batchSize));
   }
@@ -155,6 +157,11 @@ public class EnumerableBatchNestedLoopJoinRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(LogicalJoin.class).anyInputs())
+        .withDescription("EnumerableBatchNestedLoopJoinRule")
+        .as(Config.class);
+
     @Override default EnumerableBatchNestedLoopJoinRule toRule() {
       return new EnumerableBatchNestedLoopJoinRule(this);
     }

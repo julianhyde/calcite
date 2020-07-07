@@ -37,17 +37,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * several transformation paths, which is a waste of effort.
  *
  * @see FilterToCalcRule
+ * @see CoreRules#PROJECT_TO_CALC
  */
 public class ProjectToCalcRule extends RelOptNewRule<ProjectToCalcRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final ProjectToCalcRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalProject.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#PROJECT_TO_CALC}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectToCalcRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -56,9 +54,9 @@ public class ProjectToCalcRule extends RelOptNewRule<ProjectToCalcRule.Config>
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectToCalcRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -80,6 +78,11 @@ public class ProjectToCalcRule extends RelOptNewRule<ProjectToCalcRule.Config>
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(LogicalProject.class).anyInputs())
+        .as(Config.class);
+
     @Override default ProjectToCalcRule toRule() {
       return new ProjectToCalcRule(this);
     }

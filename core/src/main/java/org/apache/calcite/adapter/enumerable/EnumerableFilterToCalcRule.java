@@ -26,24 +26,24 @@ import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Variant of {@link org.apache.calcite.rel.rules.FilterToCalcRule} for
- * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
+ * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ *
+ * @see EnumerableRules#ENUMERABLE_FILTER_TO_CALC_RULE */
 public class EnumerableFilterToCalcRule
     extends RelOptNewRule<EnumerableFilterToCalcRule.Config> {
+  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_FILTER_TO_CALC_RULE}. */
+  @Deprecated // to be removed before 1.25
   public static final EnumerableFilterToCalcRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(EnumerableFilter.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an EnumerableFilterToCalcRule. */
   protected EnumerableFilterToCalcRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public EnumerableFilterToCalcRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -66,6 +66,11 @@ public class EnumerableFilterToCalcRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(EnumerableFilter.class).anyInputs())
+        .as(Config.class);
+
     @Override default EnumerableFilterToCalcRule toRule() {
       return new EnumerableFilterToCalcRule(this);
     }

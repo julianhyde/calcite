@@ -23,16 +23,23 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalTableFunctionScan;
 
 /** Planner rule that converts a
- * {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan}
- * relational expression
- * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
+ * {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan} to
+ * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ *
+ * @see EnumerableRules#ENUMERABLE_TABLE_FUNCTION_SCAN_RULE */
 public class EnumerableTableFunctionScanRule extends ConverterRule {
-  public static final EnumerableTableFunctionScanRule INSTANCE = Config.EMPTY
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.EMPTY
       .as(Config.class)
       .withConversion(LogicalTableFunctionScan.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableTableFunctionScanRule")
-      .withRuleFactory(EnumerableTableFunctionScanRule::new)
-      .toRule(EnumerableTableFunctionScanRule.class);
+      .withRuleFactory(EnumerableTableFunctionScanRule::new);
+
+  /** @deprecated Use
+   * {@link EnumerableRules#ENUMERABLE_TABLE_FUNCTION_SCAN_RULE}. */
+  @Deprecated // to be removed before 1.25
+  public static final EnumerableTableFunctionScanRule INSTANCE =
+      DEFAULT_CONFIG.toRule(EnumerableTableFunctionScanRule.class);
 
   protected EnumerableTableFunctionScanRule(Config config) {
     super(config);

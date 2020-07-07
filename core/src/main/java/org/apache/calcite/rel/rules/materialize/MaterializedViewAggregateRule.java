@@ -30,6 +30,7 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.AggregateProjectPullUpConstantsRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
@@ -89,41 +90,6 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
   /** Creates a MaterializedViewAggregateRule. */
   MaterializedViewAggregateRule(C config) {
     super(config);
-  }
-
-  protected static Config makeConfig(RelBuilderFactory relBuilderFactory) {
-    return Config.EMPTY
-        .as(Config.class)
-        .withFilterProjectTransposeRule(
-            FilterProjectTransposeRule.INSTANCE.config
-                .withRelBuilderFactory(relBuilderFactory)
-                .as(FilterProjectTransposeRule.Config.class)
-                .withOperandFor(Filter.class, filter ->
-                        !RexUtil.containsCorrelation(filter.getCondition()),
-                    Project.class, project -> true)
-                .withCopyFilter(true)
-                .withCopyProject(true)
-                .toRule())
-        .withFilterAggregateTransposeRule(
-            FilterAggregateTransposeRule.INSTANCE.config
-                .withRelBuilderFactory(relBuilderFactory)
-                .as(FilterAggregateTransposeRule.Config.class)
-                .withOperandFor(Filter.class, Aggregate.class)
-                .toRule())
-        .withAggregateProjectPullUpConstantsRule(
-            AggregateProjectPullUpConstantsRule.INSTANCE.config
-                .withRelBuilderFactory(relBuilderFactory)
-                .withDescription("AggFilterPullUpConstants")
-                .as(AggregateProjectPullUpConstantsRule.Config.class)
-                .withOperandFor(Aggregate.class, Filter.class)
-                .toRule())
-        .withProjectMergeRule(
-            ProjectMergeRule.INSTANCE.config
-                .withRelBuilderFactory(relBuilderFactory)
-                .as(ProjectMergeRule.Config.class)
-                .toRule())
-        .withRelBuilderFactory(relBuilderFactory)
-        .as(Config.class);
   }
 
   @Override protected boolean isValidPlan(Project topProject, RelNode node,
@@ -936,6 +902,40 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewRule.Config {
+    static Config create(RelBuilderFactory relBuilderFactory) {
+      return EMPTY.as(Config.class)
+          .withFilterProjectTransposeRule(
+              CoreRules.FILTER_PROJECT_TRANSPOSE.config
+                  .withRelBuilderFactory(relBuilderFactory)
+                  .as(FilterProjectTransposeRule.Config.class)
+                  .withOperandFor(Filter.class, filter ->
+                          !RexUtil.containsCorrelation(filter.getCondition()),
+                      Project.class, project -> true)
+                  .withCopyFilter(true)
+                  .withCopyProject(true)
+                  .toRule())
+          .withFilterAggregateTransposeRule(
+              CoreRules.FILTER_AGGREGATE_TRANSPOSE.config
+                  .withRelBuilderFactory(relBuilderFactory)
+                  .as(FilterAggregateTransposeRule.Config.class)
+                  .withOperandFor(Filter.class, Aggregate.class)
+                  .toRule())
+          .withAggregateProjectPullUpConstantsRule(
+              AggregateProjectPullUpConstantsRule.Config.DEFAULT
+                  .withRelBuilderFactory(relBuilderFactory)
+                  .withDescription("AggFilterPullUpConstants")
+                  .as(AggregateProjectPullUpConstantsRule.Config.class)
+                  .withOperandFor(Aggregate.class, Filter.class)
+                  .toRule())
+          .withProjectMergeRule(
+              CoreRules.PROJECT_MERGE.config
+                  .withRelBuilderFactory(relBuilderFactory)
+                  .as(ProjectMergeRule.Config.class)
+                  .toRule())
+          .withRelBuilderFactory(relBuilderFactory)
+          .as(Config.class);
+    }
+
     /** Instance of rule to push filter through project. */
     @ImmutableBeans.Property
     RelOptRule filterProjectTransposeRule();

@@ -45,7 +45,8 @@ import java.util.stream.Collectors;
  * of a {@link org.apache.calcite.schema.ProjectableFilterableTable}
  * to a {@link org.apache.calcite.interpreter.Bindables.BindableTableScan}.
  *
- * <p>The {@link #INTERPRETER} variant allows an intervening
+ * <p>The {@link CoreRules#PROJECT_INTERPRETER_TABLE_SCAN} variant allows an
+ * intervening
  * {@link org.apache.calcite.adapter.enumerable.EnumerableInterpreter}.
  *
  * @see FilterTableScanRule
@@ -57,29 +58,14 @@ public class ProjectTableScanRule
   public static final com.google.common.base.Predicate<TableScan> PREDICATE =
       ProjectTableScanRule::test;
 
-  /** Rule that matches Project on TableScan. */
-  public static final ProjectTableScanRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Project.class).oneInput(b1 ->
-                  b1.operand(TableScan.class)
-                      .predicate(ProjectTableScanRule::test)
-                      .noInputs()))
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#PROJECT_TABLE_SCAN}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectTableScanRule INSTANCE = Config.DEFAULT.toRule();
 
-  /** Rule that matches Project on EnumerableInterpreter on TableScan. */
+  /** @deprecated Use {@link CoreRules#PROJECT_INTERPRETER_TABLE_SCAN}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectTableScanRule INTERPRETER =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Project.class).oneInput(b1 ->
-                  b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
-                      b2.operand(TableScan.class)
-                          .predicate(ProjectTableScanRule::test)
-                          .noInputs())))
-          .withDescription("ProjectTableScanRule:interpreter")
-          .as(Config.class)
-          .toRule();
+      Config.INTERPRETER.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -88,10 +74,10 @@ public class ProjectTableScanRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectTableScanRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
@@ -169,6 +155,26 @@ public class ProjectTableScanRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    /** Config that matches Project on TableScan. */
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Project.class).oneInput(b1 ->
+                b1.operand(TableScan.class)
+                    .predicate(ProjectTableScanRule::test)
+                    .noInputs()))
+        .as(Config.class);
+
+    /** Config that matches Project on EnumerableInterpreter on TableScan. */
+    Config INTERPRETER = DEFAULT
+        .withOperandSupplier(b0 ->
+            b0.operand(Project.class).oneInput(b1 ->
+                b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
+                    b2.operand(TableScan.class)
+                        .predicate(ProjectTableScanRule::test)
+                        .noInputs())))
+        .withDescription("ProjectTableScanRule:interpreter")
+        .as(Config.class);
+
     @Override default ProjectTableScanRule toRule() {
       return new ProjectTableScanRule(this);
     }

@@ -30,11 +30,9 @@ import org.apache.calcite.tools.RelBuilderFactory;
  */
 public class FilterMergeRule extends RelOptNewRule<FilterMergeRule.Config>
     implements SubstitutionRule {
-  public static final FilterMergeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Filter.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#FILTER_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final FilterMergeRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -43,9 +41,9 @@ public class FilterMergeRule extends RelOptNewRule<FilterMergeRule.Config>
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
@@ -70,6 +68,9 @@ public class FilterMergeRule extends RelOptNewRule<FilterMergeRule.Config>
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class);
+
     @Override default FilterMergeRule toRule() {
       return new FilterMergeRule(this);
     }

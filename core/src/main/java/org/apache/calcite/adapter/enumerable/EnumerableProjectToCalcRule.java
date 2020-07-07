@@ -23,23 +23,23 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Variant of {@link org.apache.calcite.rel.rules.ProjectToCalcRule} for
- * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
+ * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ *
+ * @see EnumerableRules#ENUMERABLE_PROJECT_TO_CALC_RULE */
 public class EnumerableProjectToCalcRule extends ProjectToCalcRule {
+  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_PROJECT_TO_CALC_RULE}. */
+  @Deprecated // to be removed before 1.25
   public static final EnumerableProjectToCalcRule INSTANCE =
-      ProjectToCalcRule.INSTANCE.config
-          .withOperandSupplier(b ->
-              b.operand(EnumerableProject.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an EnumerableProjectToCalcRule. */
   protected EnumerableProjectToCalcRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public EnumerableProjectToCalcRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -58,6 +58,11 @@ public class EnumerableProjectToCalcRule extends ProjectToCalcRule {
 
   /** Rule configuration. */
   public interface Config extends ProjectToCalcRule.Config {
+    Config DEFAULT = ProjectToCalcRule.Config.DEFAULT
+        .withOperandSupplier(b ->
+            b.operand(EnumerableProject.class).anyInputs())
+        .as(Config.class);
+
     @Override default EnumerableProjectToCalcRule toRule() {
       return new EnumerableProjectToCalcRule(this);
     }

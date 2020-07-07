@@ -26,17 +26,19 @@ import org.apache.calcite.rel.logical.LogicalCalc;
 /**
  * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalCalc} to an
  * {@link EnumerableCalc}.
+ *
+ * @see EnumerableRules#ENUMERABLE_CALC_RULE
  */
 class EnumerableCalcRule extends ConverterRule {
-  static final EnumerableCalcRule INSTANCE = Config.EMPTY
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.EMPTY
       .as(Config.class)
       // The predicate ensures that if there's a multiset,
       // FarragoMultisetSplitter will work on it first.
       .withConversion(LogicalCalc.class, RelOptUtil::notContainsWindowedAgg,
           Convention.NONE, EnumerableConvention.INSTANCE,
           "EnumerableCalcRule")
-      .withRuleFactory(EnumerableCalcRule::new)
-      .toRule(EnumerableCalcRule.class);
+      .withRuleFactory(EnumerableCalcRule::new);
 
   protected EnumerableCalcRule(Config config) {
     super(config);

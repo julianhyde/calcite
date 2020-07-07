@@ -123,7 +123,7 @@ public class ValuesReduceRule
     Util.discard(LOGGER);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ValuesReduceRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String desc) {
     this(Config.EMPTY.withRelBuilderFactory(relBuilderFactory)

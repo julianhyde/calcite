@@ -56,23 +56,23 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
   public static final Predicate TRUE_PREDICATE = (join, joinType, exp) -> true;
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link FilterIntoJoinRule#INSTANCE} instead. */
+   * use {@link CoreRules#FILTER_INTO_JOIN} instead. */
   @Deprecated // to be removed before 2.0
   public static final FilterIntoJoinRule FILTER_ON_JOIN =
-      FilterIntoJoinRule.INSTANCE;
+      CoreRules.FILTER_INTO_JOIN;
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link FilterIntoJoinRule#DUMB_INSTANCE} instead. */
+   * use {@link CoreRules#FILTER_INTO_JOIN_DUMB} instead. */
   @Deprecated // to be removed before 2.0
   public static final FilterIntoJoinRule DUMB_FILTER_ON_JOIN =
-      FilterIntoJoinRule.DUMB_INSTANCE;
+      CoreRules.FILTER_INTO_JOIN_DUMB;
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link JoinConditionPushRule#INSTANCE} instead. */
+   * use {@link CoreRules#JOIN_CONDITION_PUSH} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
   @Deprecated // to be removed before 2.0
   public static final JoinConditionPushRule JOIN =
-      JoinConditionPushRule.INSTANCE;
+      CoreRules.JOIN_CONDITION_PUSH;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -301,23 +301,12 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
   /** Rule that pushes parts of the join condition to its inputs. */
   public static class JoinConditionPushRule
       extends FilterJoinRule<JoinConditionPushRule.Config> {
-    /** Rule that pushes predicates in a Join into the inputs to the join. */
-    public static final JoinConditionPushRule INSTANCE =
-        FilterJoinRule.Config.EMPTY
-            .withOperandSupplier(b ->
-                b.operand(Join.class).anyInputs())
-            .as(JoinConditionPushRule.Config.class)
-            .withSmart(true)
-            .withPredicate(TRUE_PREDICATE)
-            .as(JoinConditionPushRule.Config.class)
-            .toRule();
-
     /** Creates a JoinConditionPushRule. */
     protected JoinConditionPushRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public JoinConditionPushRule(RelBuilderFactory relBuilderFactory,
         Predicate predicate) {
       this(Config.EMPTY
@@ -344,6 +333,14 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
 
     /** Rule configuration. */
     public interface Config extends FilterJoinRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b ->
+              b.operand(Join.class).anyInputs())
+          .as(JoinConditionPushRule.Config.class)
+          .withSmart(true)
+          .withPredicate(TRUE_PREDICATE)
+          .as(JoinConditionPushRule.Config.class);
+
       @Override default JoinConditionPushRule toRule() {
         return new JoinConditionPushRule(this);
       }
@@ -351,29 +348,11 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
   }
 
   /** Rule that tries to push filter expressions into a join
-   * condition and into the inputs of the join. */
+   * condition and into the inputs of the join.
+   *
+   * @see CoreRules#FILTER_INTO_JOIN */
   public static class FilterIntoJoinRule
       extends FilterJoinRule<FilterIntoJoinRule.Config> {
-    public static final FilterIntoJoinRule INSTANCE =
-        FilterJoinRule.Config.EMPTY
-            .withOperandSupplier(b0 ->
-                b0.operand(Filter.class).oneInput(b1 ->
-                    b1.operand(Join.class).anyInputs()))
-            .as(FilterIntoJoinRule.Config.class)
-            .withSmart(true)
-            .withPredicate(TRUE_PREDICATE)
-            .as(FilterIntoJoinRule.Config.class)
-            .toRule();
-
-    /** Dumber version of {@link #INSTANCE}. Not intended for production
-     * use, but keeps some tests working for which {@code INSTANCE} is too
-     * smart. */
-    public static final FilterIntoJoinRule DUMB_INSTANCE =
-        INSTANCE.config
-            .withSmart(false)
-            .as(Config.class)
-            .toRule();
-
     /** Creates a FilterIntoJoinRule. */
     protected FilterIntoJoinRule(Config config) {
       super(config);
@@ -420,6 +399,15 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
 
     /** Rule configuration. */
     public interface Config extends FilterJoinRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b0 ->
+              b0.operand(Filter.class).oneInput(b1 ->
+                  b1.operand(Join.class).anyInputs()))
+          .as(FilterIntoJoinRule.Config.class)
+          .withSmart(true)
+          .withPredicate(TRUE_PREDICATE)
+          .as(FilterIntoJoinRule.Config.class);
+
       @Override default FilterIntoJoinRule toRule() {
         return new FilterIntoJoinRule(this);
       }

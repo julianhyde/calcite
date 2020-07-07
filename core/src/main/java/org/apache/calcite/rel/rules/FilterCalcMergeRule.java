@@ -35,17 +35,17 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * whose filter condition is the logical AND of the two.
  *
  * @see FilterMergeRule
+ * @see ProjectCalcMergeRule
+ * @see CoreRules#FILTER_CALC_MERGE
  */
 public class FilterCalcMergeRule
     extends RelOptNewRule<FilterCalcMergeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final FilterCalcMergeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Filter.class, LogicalCalc.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#FILTER_CALC_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final FilterCalcMergeRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -54,9 +54,9 @@ public class FilterCalcMergeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterCalcMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
@@ -98,6 +98,9 @@ public class FilterCalcMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class, LogicalCalc.class);
+
     @Override default FilterCalcMergeRule toRule() {
       return new FilterCalcMergeRule(this);
     }

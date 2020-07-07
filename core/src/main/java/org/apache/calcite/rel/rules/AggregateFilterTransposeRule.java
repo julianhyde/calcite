@@ -53,25 +53,25 @@ import java.util.List;
  * under an aggregate to an existing aggregate table.
  *
  * @see org.apache.calcite.rel.rules.FilterAggregateTransposeRule
+ * @see CoreRules#AGGREGATE_FILTER_TRANSPOSE
  */
 public class AggregateFilterTransposeRule
     extends RelOptNewRule<AggregateFilterTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_FILTER_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateFilterTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Aggregate.class, Filter.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateFilterTransposeRule. */
   protected AggregateFilterTransposeRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateFilterTransposeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
@@ -162,6 +162,9 @@ public class AggregateFilterTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Aggregate.class, Filter.class);
+
     @Override default AggregateFilterTransposeRule toRule() {
       return new AggregateFilterTransposeRule(this);
     }

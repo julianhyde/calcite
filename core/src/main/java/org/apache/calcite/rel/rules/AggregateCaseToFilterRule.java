@@ -60,27 +60,26 @@ import javax.annotation.Nullable;
  *   <code>SELECT SUM(salary) FILTER (WHERE gender = 'F')<br>
  *   FROM Emp</code>
  * </blockquote>
+ *
+ * @see CoreRules#AGGREGATE_CASE_TO_FILTER
  */
 public class AggregateCaseToFilterRule
     extends RelOptNewRule<AggregateCaseToFilterRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_CASE_TO_FILTER}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateCaseToFilterRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Aggregate.class).oneInput(b1 ->
-                  b1.operand(Project.class).anyInputs()))
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateCaseToFilterRule. */
   protected AggregateCaseToFilterRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected AggregateCaseToFilterRule(RelBuilderFactory relBuilderFactory,
       String description) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .as(Config.class));
   }
@@ -279,6 +278,12 @@ public class AggregateCaseToFilterRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Aggregate.class).oneInput(b1 ->
+                b1.operand(Project.class).anyInputs()))
+        .as(Config.class);
+
     @Override default AggregateCaseToFilterRule toRule() {
       return new AggregateCaseToFilterRule(this);
     }

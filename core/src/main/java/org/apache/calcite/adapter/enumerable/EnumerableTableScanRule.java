@@ -25,17 +25,24 @@ import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.Table;
 
 /** Planner rule that converts a
- * {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan}
- * relational expression
- * {@link EnumerableConvention enumerable calling convention}. */
+ * {@link org.apache.calcite.rel.logical.LogicalTableScan} to
+ * {@link EnumerableConvention enumerable calling convention}.
+ *
+ * @see EnumerableRules#ENUMERABLE_TABLE_SCAN_RULE */
 public class EnumerableTableScanRule extends ConverterRule {
-  public static final EnumerableTableScanRule INSTANCE = Config.EMPTY
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.EMPTY
       .as(Config.class)
       .withConversion(LogicalTableScan.class,
           r -> EnumerableTableScan.canHandle(r.getTable()),
           Convention.NONE, EnumerableConvention.INSTANCE,
           "EnumerableTableScanRule")
-      .withRuleFactory(EnumerableTableScanRule::new)
+      .withRuleFactory(EnumerableTableScanRule::new);
+
+  /** @deprecated Use
+   * {@link EnumerableRules#ENUMERABLE_TABLE_SCAN_RULE}. */
+  @Deprecated // to be removed before 1.25
+  public static final EnumerableTableScanRule INSTANCE = DEFAULT_CONFIG
       .toRule(EnumerableTableScanRule.class);
 
   protected EnumerableTableScanRule(Config config) {

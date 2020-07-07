@@ -45,25 +45,25 @@ import java.util.List;
  * Planner rule that pushes
  * a {@link org.apache.calcite.rel.logical.LogicalProject}
  * past a {@link org.apache.calcite.rel.logical.LogicalWindow}.
+ *
+ * @see CoreRules#PROJECT_WINDOW_TRANSPOSE
  */
 public class ProjectWindowTransposeRule
     extends RelOptNewRule<ProjectWindowTransposeRule.Config>
     implements TransformationRule {
-  /** The default instance of ProjectWindowTransposeRule. */
+  /** @deprecated Use {@link CoreRules#PROJECT_WINDOW_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectWindowTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalProject.class, LogicalWindow.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates a ProjectWindowTransposeRule. */
   protected ProjectWindowTransposeRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectWindowTransposeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -243,6 +243,9 @@ public class ProjectWindowTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, LogicalWindow.class);
+
     @Override default ProjectWindowTransposeRule toRule() {
       return new ProjectWindowTransposeRule(this);
     }

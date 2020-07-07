@@ -51,7 +51,7 @@ import java.util.Map;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /**
- * ReduceDecimalsRule is a rule which reduces decimal operations (such as casts
+ * Rule that reduces decimal operations (such as casts
  * or arithmetic) into operations involving more primitive types (such as longs
  * and doubles). The rule allows Calcite implementations to deal with decimals
  * in a consistent manner, while saving the effort of implementing them.
@@ -64,15 +64,15 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * <p>While decimals are generally not implemented by the Calcite runtime, the
  * rule is optionally applied, in order to support the situation in which we
  * would like to push down decimal operations to an external database.
+ *
+ * @see CoreRules#CALC_REDUCE_DECIMALS
  */
 public class ReduceDecimalsRule
     extends RelOptNewRule<ReduceDecimalsRule.Config>
     implements TransformationRule {
-  public static final ReduceDecimalsRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(LogicalCalc.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#CALC_REDUCE_DECIMALS}. */
+  @Deprecated // to be removed before 1.25
+  public static final ReduceDecimalsRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -81,9 +81,9 @@ public class ReduceDecimalsRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ReduceDecimalsRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -1322,6 +1322,10 @@ public class ReduceDecimalsRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(LogicalCalc.class).anyInputs())
+        .as(Config.class);
+
     @Override default ReduceDecimalsRule toRule() {
       return new ReduceDecimalsRule(this);
     }

@@ -35,18 +35,17 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * in a {@link Filter} with logically equivalent operations.
  *
  * @see org.apache.calcite.sql.fun.SqlStdOperatorTable#IS_NOT_DISTINCT_FROM
+ * @see CoreRules#FILTER_EXPAND_IS_NOT_DISTINCT_FROM
  */
 public final class FilterRemoveIsNotDistinctFromRule
     extends RelOptNewRule<FilterRemoveIsNotDistinctFromRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /** The singleton. */
+  /** @deprecated Use {@link CoreRules#FILTER_EXPAND_IS_NOT_DISTINCT_FROM}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterRemoveIsNotDistinctFromRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(Filter.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -55,10 +54,10 @@ public final class FilterRemoveIsNotDistinctFromRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterRemoveIsNotDistinctFromRule(
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -124,6 +123,10 @@ public final class FilterRemoveIsNotDistinctFromRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(Filter.class).anyInputs())
+        .as(Config.class);
+
     @Override default FilterRemoveIsNotDistinctFromRule toRule() {
       return new FilterRemoveIsNotDistinctFromRule(this);
     }

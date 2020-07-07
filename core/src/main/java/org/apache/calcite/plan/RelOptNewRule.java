@@ -34,7 +34,74 @@ import javax.annotation.Nonnull;
 /**
  * Rule that is parameterized via a configuration.
  *
- * <p>Temporary.
+ * <p>Eventually (before Calcite version 2.0), this class will replace
+ * {@link RelOptRule}. Constructors of {@code RelOptRule} are deprecated, so new
+ * rule classes should extend {@code RelOptNewRule}, not {@code RelOptRule}.
+ * Next, we will deprecate {@code RelOptRule}, so that variables that reference
+ * rules will be of type {@code RelOptNewRule}.
+ *
+ * <p><b>Guidelines for writing rules</b>
+ *
+ * <p>1. If your rule is a sub-class of
+ * {@link org.apache.calcite.rel.convert.ConverterRule}
+ * and does not need any extra properties,
+ * there's no need to create an {@code interface Config} inside your class.
+ * In your class, create a constant
+ * {@code public static final Config DEFAULT_CONFIG}. Goto step 5.
+ *
+ * <p>2. If your rule is not a sub-class of
+ * {@link org.apache.calcite.rel.convert.ConverterRule},
+ * create an inner {@code interface Config extends RelOptNewRule.Config}.
+ * Implement {@link Config#toRule() toRule} using a {@code default} method:
+ *
+ * <blockquote>
+ * <code>
+ * &#x40;Override default CsvProjectTableScanRule toRule() {<br>
+ * &nbsp;&nbsp;return new CsvProjectTableScanRule(this);<br>
+ * }
+ * </code>
+ * </blockquote>
+ *
+ * <p>3. For each configuration property, create a pair of methods in your
+ * {@code Config} interface. For example, for a property {@code foo} of type
+ * {@code int}, create methods {@code foo} and {@code withFoo}:
+ *
+ * <blockquote><pre><code>
+ * &#x2f;** Returns foo. *&#x2f;
+ * &#x40;ImmutableBeans.Property
+ * int foo();
+ *
+ * &#x2f;** Sets {&#x40;link #foo}. *&#x2f;
+ * Config withFoo(int x);
+ * </code></pre></blockquote>
+ *
+ * <p>4. In your {@code Config} interface, create a {@code DEFAULT} constant
+ * that represents the most typical configuration of your rule. For example,
+ * {@code CsvProjectTableScanRule.Config} has the following:
+ *
+ * <blockquote><pre><code>
+ * Config DEFAULT = EMPTY
+ *     .withOperandSupplier(b0 -&gt;
+ *         b0.operand(LogicalProject.class).oneInput(b1 -&gt;
+ *             b1.operand(CsvTableScan.class).noInputs()))
+ *      .as(Config.class);
+ * </code></pre></blockquote>
+ *
+ * <p>5. Do not create an {@code INSTANCE} constant inside your rule.
+ * Instead, create a named instance of your rule, with default configuration,
+ * in a holder class. The holder class must not be a sub-class of
+ * {@code RelOptRule} (otherwise cyclic class-loading issues may arise).
+ * Generally it will be called <code><i>Xxx</i>Rules</code>, for example
+ * {@code CsvRules}. The rule instance is named after your rule, and is based
+ * on the default config ({@code Config.DEFAULT}, or {@code DEFAULT_CONFIG} for
+ * converter rules):
+ *
+ * <blockquote><pre><code>
+ * &#x2f;** Rule that matches a {&#x40;code Project} on a
+ *  * {&#x40;code CsvTableScan} and pushes down projects if possible. *&#x2f;
+ * public static final CsvProjectTableScanRule PROJECT_SCAN =
+ *     CsvProjectTableScanRule.Config.DEFAULT.toRule();
+ * </code></pre></blockquote>
  *
  * @param <C> Configuration type
  */
@@ -42,6 +109,7 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
     extends RelOptRule {
   public final C config;
 
+  /** Creates a RelOptNewRule. */
   public RelOptNewRule(C config) {
     super(OperandBuilderImpl.operand(config.operandSupplier()),
         config.relBuilderFactory(), config.description());
@@ -89,12 +157,16 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
     Config withOperandSupplier(OperandTransform transform);
   }
 
-  /** Function that creates an operand. */
+  /** Function that creates an operand.
+   *
+   * @see Config#withOperandSupplier(OperandTransform) */
   @FunctionalInterface
   public interface OperandTransform extends Function<OperandBuilder, Done> {
   }
 
-  /** Callback to create an operand. */
+  /** Callback to create an operand.
+   *
+   * @see OperandTransform */
   public interface OperandBuilder {
     /** Starts building an operand by specifying its class.
      * Call further methods on the returned {@link OperandDetailBuilder} to
@@ -105,7 +177,9 @@ public abstract class RelOptNewRule<C extends RelOptNewRule.Config>
     Done exactly(RelOptRuleOperand operand);
   }
 
-  /** Indicates that an operand is complete. */
+  /** Indicates that an operand is complete.
+   *
+   * @see OperandTransform */
   public interface Done {
   }
 

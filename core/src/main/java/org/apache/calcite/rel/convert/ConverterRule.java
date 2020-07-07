@@ -67,8 +67,10 @@ public abstract class ConverterRule
    * @param in          Trait of relational expression to consider converting
    * @param out         Trait which is converted to
    * @param descriptionPrefix Description prefix of rule
+   *
+   * @deprecated Use {@link #ConverterRule(Config)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ConverterRule(Class<? extends RelNode> clazz, RelTrait in,
       RelTrait out, String descriptionPrefix) {
     this(Config.INSTANCE
@@ -94,8 +96,10 @@ public abstract class ConverterRule
    * @param out         Trait which is converted to
    * @param relBuilderFactory Builder for relational expressions
    * @param descriptionPrefix Description prefix of rule
+   *
+   * @deprecated Use {@link #ConverterRule(Config)}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public <R extends RelNode> ConverterRule(Class<R> clazz,
       Predicate<? super R> predicate, RelTrait in, RelTrait out,
       RelBuilderFactory relBuilderFactory, String descriptionPrefix) {

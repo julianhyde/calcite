@@ -56,7 +56,8 @@ import static org.apache.calcite.util.mapping.Mappings.TargetMapping;
  * {@link org.apache.calcite.rel.logical.LogicalProject} ({@link MultiJoin}).
  *
  * <p>It is similar to
- * {@link org.apache.calcite.rel.rules.LoptOptimizeJoinRule}.
+ * {@link org.apache.calcite.rel.rules.LoptOptimizeJoinRule}
+ * ({@link CoreRules#MULTI_JOIN_OPTIMIZE}).
  * {@code LoptOptimizeJoinRule} is only capable of producing left-deep joins;
  * this rule is capable of producing bushy joins.
  *
@@ -67,15 +68,16 @@ import static org.apache.calcite.util.mapping.Mappings.TargetMapping;
  *   <li>More than 1 join conditions that touch the same pair of factors,
  *       e.g. {@code t0.c1 = t1.c1 and t1.c2 = t0.c3}
  * </ol>
+ *
+ * @see CoreRules#MULTI_JOIN_OPTIMIZE_BUSHY
  */
 public class MultiJoinOptimizeBushyRule
     extends RelOptNewRule<MultiJoinOptimizeBushyRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#MULTI_JOIN_OPTIMIZE_BUSHY}. */
+  @Deprecated // to be removed before 1.25
   public static final MultiJoinOptimizeBushyRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private final PrintWriter pw = CalciteSystemProperty.DEBUG.value()
       ? Util.printWriter(System.out)
@@ -86,18 +88,16 @@ public class MultiJoinOptimizeBushyRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MultiJoinOptimizeBushyRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
   public MultiJoinOptimizeBushyRule(RelFactories.JoinFactory joinFactory,
       RelFactories.ProjectFactory projectFactory) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(RelBuilder.proto(joinFactory, projectFactory))
-        .as(Config.class));
+    this(RelBuilder.proto(joinFactory, projectFactory));
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -402,6 +402,10 @@ public class MultiJoinOptimizeBushyRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(MultiJoin.class).anyInputs())
+        .as(Config.class);
+
     @Override default MultiJoinOptimizeBushyRule toRule() {
       return new MultiJoinOptimizeBushyRule(this);
     }

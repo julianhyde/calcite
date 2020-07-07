@@ -47,25 +47,23 @@ import java.util.List;
  *
  * <p>To preserve the order of columns in the output row, the rule adds a
  * {@link org.apache.calcite.rel.core.Project}.
+ *
+ * @see CoreRules#JOIN_COMMUTE
+ * @see CoreRules#JOIN_COMMUTE_OUTER
  */
 public class JoinCommuteRule
     extends RelOptNewRule<JoinCommuteRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /** Instance of the rule that only swaps inner joins. */
-  public static final JoinCommuteRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .withSwapOuter(false)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#JOIN_COMMUTE}. */
+  @Deprecated // to be removed before 1.25
+  public static final JoinCommuteRule INSTANCE = Config.DEFAULT.toRule();
 
-  /** Instance of the rule that swaps outer joins as well as inner joins. */
+  /** @deprecated Use {@link CoreRules#JOIN_COMMUTE_OUTER}. */
+  @Deprecated // to be removed before 1.25
   public static final JoinCommuteRule SWAP_OUTER =
-      INSTANCE.config
-          .withSwapOuter(true)
-          .toRule();
+      Config.DEFAULT.withSwapOuter(true).toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -74,10 +72,10 @@ public class JoinCommuteRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinCommuteRule(Class<? extends Join> clazz,
       RelBuilderFactory relBuilderFactory, boolean swapOuter) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(clazz)
         .withSwapOuter(swapOuter));
@@ -233,6 +231,10 @@ public class JoinCommuteRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class)
+        .withSwapOuter(false);
+
     @Override default JoinCommuteRule toRule() {
       return new JoinCommuteRule(this);
     }

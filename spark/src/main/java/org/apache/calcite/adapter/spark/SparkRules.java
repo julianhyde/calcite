@@ -46,8 +46,7 @@ import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.rules.FilterToCalcRule;
-import org.apache.calcite.rel.rules.ProjectToCalcRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
@@ -85,25 +84,46 @@ import java.util.Random;
 public abstract class SparkRules {
   private SparkRules() {}
 
+  /** Rule that converts from Spark to enumerable convention. */
+  public static final SparkToEnumerableConverterRule SPARK_TO_ENUMERABLE =
+      SparkToEnumerableConverterRule.DEFAULT_CONFIG
+          .toRule(SparkToEnumerableConverterRule.class);
+
+  /** Rule that converts from enumerable to Spark convention. */
+  public static final EnumerableToSparkConverterRule ENUMERABLE_TO_SPARK =
+      EnumerableToSparkConverterRule.DEFAULT_CONFIG
+          .toRule(EnumerableToSparkConverterRule.class);
+
+  /** Rule that converts a {@link org.apache.calcite.rel.logical.LogicalCalc}
+   * to a {@link org.apache.calcite.adapter.spark.SparkRules.SparkCalc}. */
+  public static final SparkCalcRule SPARK_CALC_RULE =
+      SparkCalcRule.DEFAULT_CONFIG.toRule(SparkCalcRule.class);
+
+  /** Rule that implements VALUES operator in Spark convention. */
+  public static final SparkValuesRule SPARK_VALUES_RULE =
+      SparkValuesRule.DEFAULT_CONFIG.toRule(SparkValuesRule.class);
+
   public static List<RelOptRule> rules() {
     return ImmutableList.of(
         // TODO: add SparkProjectRule, SparkFilterRule, SparkProjectToCalcRule,
         // SparkFilterToCalcRule, and remove the following 2 rules.
-        ProjectToCalcRule.INSTANCE,
-        FilterToCalcRule.INSTANCE,
-        EnumerableToSparkConverterRule.INSTANCE,
-        SparkToEnumerableConverterRule.INSTANCE,
-        SparkValuesRule.INSTANCE,
-        SparkCalcRule.INSTANCE);
+        CoreRules.PROJECT_TO_CALC,
+        CoreRules.FILTER_TO_CALC,
+        ENUMERABLE_TO_SPARK,
+        SPARK_TO_ENUMERABLE,
+        SPARK_VALUES_RULE,
+        SPARK_CALC_RULE);
   }
 
-  /** Planner rule that converts from enumerable to Spark convention. */
+  /** Planner rule that converts from enumerable to Spark convention.
+   *
+   * @see #ENUMERABLE_TO_SPARK */
   static class EnumerableToSparkConverterRule extends ConverterRule {
-    static final EnumerableToSparkConverterRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(RelNode.class, EnumerableConvention.INSTANCE,
             SparkRel.CONVENTION, "EnumerableToSparkConverterRule")
-        .withRuleFactory(EnumerableToSparkConverterRule::new)
-        .toRule(EnumerableToSparkConverterRule.class);
+        .withRuleFactory(EnumerableToSparkConverterRule::new);
 
     EnumerableToSparkConverterRule(Config config) {
       super(config);
@@ -115,13 +135,14 @@ public abstract class SparkRules {
     }
   }
 
-  /** Planner rule that converts from Spark to enumerable convention. */
+  /** Planner rule that converts from Spark to enumerable convention.
+   *
+   * @see #SPARK_TO_ENUMERABLE */
   static class SparkToEnumerableConverterRule extends ConverterRule {
-    static final SparkToEnumerableConverterRule INSTANCE = Config.INSTANCE
+    static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(RelNode.class, SparkRel.CONVENTION,
             EnumerableConvention.INSTANCE, "SparkToEnumerableConverterRule")
-        .withRuleFactory(SparkToEnumerableConverterRule::new)
-        .toRule(SparkToEnumerableConverterRule.class);
+        .withRuleFactory(SparkToEnumerableConverterRule::new);
 
     SparkToEnumerableConverterRule(Config config) {
       super(config);
@@ -133,17 +154,15 @@ public abstract class SparkRules {
     }
   }
 
-  @Deprecated
-  public static final SparkValuesRule SPARK_VALUES_RULE =
-      SparkValuesRule.INSTANCE;
-
-  /** Planner rule that implements VALUES operator in Spark convention. */
+  /** Planner rule that implements VALUES operator in Spark convention.
+   *
+   * @see #SPARK_VALUES_RULE */
   public static class SparkValuesRule extends ConverterRule {
-    static final SparkValuesRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalValues.class, Convention.NONE,
             SparkRel.CONVENTION, "SparkValuesRule")
-        .withRuleFactory(SparkValuesRule::new)
-        .toRule(SparkValuesRule.class);
+        .withRuleFactory(SparkValuesRule::new);
 
     SparkValuesRule(Config config) {
       super(config);
@@ -219,20 +238,18 @@ public abstract class SparkRules {
     }
   }
 
-  @Deprecated
-  public static final SparkCalcRule SPARK_CALC_RULE =
-      SparkCalcRule.INSTANCE;
-
   /**
    * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalCalc} to an
    * {@link org.apache.calcite.adapter.spark.SparkRules.SparkCalc}.
+   *
+   * @see #SPARK_CALC_RULE
    */
   private static class SparkCalcRule extends ConverterRule {
-    static final SparkCalcRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalCalc.class, Convention.NONE, SparkRel.CONVENTION,
             "SparkCalcRule")
-        .withRuleFactory(SparkCalcRule::new)
-        .toRule(SparkCalcRule.class);
+        .withRuleFactory(SparkCalcRule::new);
 
     SparkCalcRule(Config config) {
       super(config);

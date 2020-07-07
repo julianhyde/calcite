@@ -31,14 +31,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * into an {@link org.apache.calcite.rel.core.Aggregate}
  * on top of a non-distinct {@link org.apache.calcite.rel.core.Union}
  * (<code>all</code> = <code>true</code>).
+ *
+ * @see CoreRules#UNION_TO_DISTINCT
  */
 public class UnionToDistinctRule
     extends RelOptNewRule<UnionToDistinctRule.Config>
     implements TransformationRule {
-  public static final UnionToDistinctRule INSTANCE = Config.EMPTY
-      .as(Config.class)
-      .withOperandFor(LogicalUnion.class)
-      .toRule();
+  /** @deprecated Use {@link CoreRules#UNION_TO_DISTINCT}. */
+  @Deprecated // to be removed before 1.25
+  public static final UnionToDistinctRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -47,10 +48,10 @@ public class UnionToDistinctRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public UnionToDistinctRule(Class<? extends Union> unionClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withOperandFor(unionClass)
+    this(Config.DEFAULT.withOperandFor(unionClass)
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
@@ -58,7 +59,7 @@ public class UnionToDistinctRule
   @Deprecated // to be removed before 2.0
   public UnionToDistinctRule(Class<? extends Union> unionClazz,
       RelFactories.SetOpFactory setOpFactory) {
-    this(INSTANCE.config.withOperandFor(unionClazz)
+    this(Config.DEFAULT.withOperandFor(unionClazz)
         .withRelBuilderFactory(RelBuilder.proto(setOpFactory))
         .as(Config.class));
   }
@@ -76,6 +77,9 @@ public class UnionToDistinctRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalUnion.class);
+
     @Override default UnionToDistinctRule toRule() {
       return new UnionToDistinctRule(this);
     }

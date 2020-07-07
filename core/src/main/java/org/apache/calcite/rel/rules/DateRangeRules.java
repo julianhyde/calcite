@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelOptNewRule;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
@@ -90,8 +89,13 @@ public abstract class DateRangeRules {
 
   private DateRangeRules() {}
 
+  /** Rule that matches a {@link Filter} and converts calls to {@code EXTRACT},
+   * {@code FLOOR} and {@code CEIL} functions to date ranges (typically using
+   * the {@code BETWEEN} operator). */
   public static final RelOptRule FILTER_INSTANCE =
-      new FilterDateRangeRule(RelFactories.LOGICAL_BUILDER);
+      FilterDateRangeRule.Config.DEFAULT
+          .as(FilterDateRangeRule.Config.class)
+          .toRule();
 
   private static final Map<TimeUnitRange, Integer> TIME_UNIT_CODES =
       ImmutableMap.<TimeUnitRange, Integer>builder()
@@ -154,19 +158,16 @@ public abstract class DateRangeRules {
   }
 
   /** Rule that converts EXTRACT, FLOOR and CEIL in a {@link Filter} into a date
-   * range. */
+   * range.
+   *
+   * @see DateRangeRules#FILTER_INSTANCE */
   @SuppressWarnings("WeakerAccess")
   public static class FilterDateRangeRule
       extends RelOptNewRule<FilterDateRangeRule.Config>
       implements TransformationRule {
-    public static final FilterDateRangeRule INSTANCE =
-        Config.EMPTY
-            .withOperandSupplier(b ->
-                b.operand(Filter.class)
-                    .predicate(FilterDateRangeRule::containsRoundingExpression)
-                    .anyInputs())
-            .as(Config.class)
-            .toRule();
+    /** @deprecated Use {@link DateRangeRules#FILTER_INSTANCE}. */
+    @Deprecated // to be removed before 1.25
+    public static final FilterDateRangeRule INSTANCE = Config.DEFAULT.toRule();
 
     /** Whether this an EXTRACT of YEAR, or a call to FLOOR or CEIL.
      * If none of these, we cannot apply the rule. */
@@ -186,9 +187,9 @@ public abstract class DateRangeRules {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public FilterDateRangeRule(RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
     }
 
@@ -211,6 +212,13 @@ public abstract class DateRangeRules {
 
     /** Rule configuration. */
     public interface Config extends RelOptNewRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b ->
+              b.operand(Filter.class)
+                  .predicate(FilterDateRangeRule::containsRoundingExpression)
+                  .anyInputs())
+          .as(Config.class);
+
       @Override default FilterDateRangeRule toRule() {
         return new FilterDateRangeRule(this);
       }

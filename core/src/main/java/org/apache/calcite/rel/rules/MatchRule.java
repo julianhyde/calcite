@@ -25,16 +25,16 @@ import org.apache.calcite.rel.logical.LogicalMatch;
  * Planner rule that converts a
  * {@link LogicalMatch} to the result
  * of calling {@link LogicalMatch#copy}.
+ *
+ * @see CoreRules#MATCH
  */
 public class MatchRule extends RelOptNewRule<MatchRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final MatchRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(LogicalMatch.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#MATCH}. */
+  @Deprecated // to be removed before 1.25
+  public static final MatchRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -59,6 +59,10 @@ public class MatchRule extends RelOptNewRule<MatchRule.Config>
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(LogicalMatch.class).anyInputs())
+        .as(Config.class);
+
     @Override default MatchRule toRule() {
       return new MatchRule(this);
     }

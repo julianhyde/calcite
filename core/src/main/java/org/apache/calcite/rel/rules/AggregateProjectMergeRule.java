@@ -50,27 +50,28 @@ import java.util.Set;
  *
  * <p>In some cases, this rule has the effect of trimming: the aggregate will
  * use fewer columns than the project did.
+ *
+ * @see CoreRules#AGGREGATE_PROJECT_MERGE
  */
 public class AggregateProjectMergeRule
     extends RelOptNewRule<AggregateProjectMergeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_PROJECT_MERGE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateProjectMergeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Aggregate.class, Project.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateProjectMergeRule. */
   protected AggregateProjectMergeRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateProjectMergeRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends Project> projectClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(CoreRules.AGGREGATE_PROJECT_MERGE.config
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass, projectClass));
@@ -146,6 +147,9 @@ public class AggregateProjectMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Aggregate.class, Project.class);
+
     @Override default AggregateProjectMergeRule toRule() {
       return new AggregateProjectMergeRule(this);
     }

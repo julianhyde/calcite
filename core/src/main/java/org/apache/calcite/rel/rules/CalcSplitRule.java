@@ -36,23 +36,23 @@ import com.google.common.collect.ImmutableList;
  * convert {@code Project} and {@code Filter} to {@code Calc}. But useful for
  * specific tasks, such as optimizing before calling an
  * {@link org.apache.calcite.interpreter.Interpreter}.
+ *
+ * @see CoreRules#CALC_SPLIT
  */
 public class CalcSplitRule
     extends RelOptNewRule<CalcSplitRule.Config> implements TransformationRule {
-  public static final CalcSplitRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(Calc.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#CALC_SPLIT}. */
+  @Deprecated // to be removed before 1.25
+  public static final CalcSplitRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Creates a CalcSplitRule. */
   protected CalcSplitRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public CalcSplitRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -69,6 +69,10 @@ public class CalcSplitRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(Calc.class).anyInputs())
+        .as(Config.class);
+
     @Override default CalcSplitRule toRule() {
       return new CalcSplitRule(this);
     }

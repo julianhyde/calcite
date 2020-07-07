@@ -32,16 +32,15 @@ import java.util.List;
  * CoerceInputsRule pre-casts inputs to a particular type. This can be used to
  * assist operator implementations which impose requirements on their input
  * types.
+ *
+ * @see CoreRules#COERCE_INPUTS
  */
 public class CoerceInputsRule
     extends RelOptNewRule<CoerceInputsRule.Config>
     implements TransformationRule {
-  public static final CoerceInputsRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withCoerceNames(false)
-          .withOperandFor(RelNode.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#COERCE_INPUTS}. */
+  @Deprecated // to be removed before 1.25
+  public static final CoerceInputsRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -54,15 +53,15 @@ public class CoerceInputsRule
   public CoerceInputsRule(
       Class<? extends RelNode> consumerRelClass,
       boolean coerceNames) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withCoerceNames(coerceNames)
         .withOperandFor(consumerRelClass));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public CoerceInputsRule(Class<? extends RelNode> consumerRelClass,
       boolean coerceNames, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withCoerceNames(coerceNames)
@@ -113,6 +112,10 @@ public class CoerceInputsRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withCoerceNames(false)
+        .withOperandFor(RelNode.class);
+
     @Override default CoerceInputsRule toRule() {
       return new CoerceInputsRule(this);
     }

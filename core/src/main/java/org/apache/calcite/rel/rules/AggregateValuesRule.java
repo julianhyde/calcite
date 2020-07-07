@@ -50,24 +50,24 @@ import java.util.List;
  * <p>This rule only applies to "grand totals", that is, {@code GROUP BY ()}.
  * Any non-empty {@code GROUP BY} clause will return one row per group key
  * value, and each group will consist of at least one row.
+ *
+ * @see CoreRules#AGGREGATE_VALUES
  */
 public class AggregateValuesRule
     extends RelOptNewRule<AggregateValuesRule.Config>
     implements SubstitutionRule {
-  public static final AggregateValuesRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Aggregate.class, Values.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#AGGREGATE_VALUES}. */
+  @Deprecated // to be removed before 1.25
+  public static final AggregateValuesRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Creates an AggregateValuesRule. */
   protected AggregateValuesRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateValuesRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
@@ -111,6 +111,9 @@ public class AggregateValuesRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Aggregate.class, Values.class);
+
     @Override default AggregateValuesRule toRule() {
       return new AggregateValuesRule(this);
     }

@@ -63,26 +63,27 @@ import java.util.Set;
  * from sales as s
  * left join product_class pc
  *   on s.product_id = pc.product_id</pre></blockquote>
+ *
+ * @see CoreRules#AGGREGATE_JOIN_JOIN_REMOVE
  */
 public class AggregateJoinJoinRemoveRule
     extends RelOptNewRule<AggregateJoinJoinRemoveRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_JOIN_JOIN_REMOVE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateJoinJoinRemoveRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalJoin.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateJoinJoinRemoveRule. */
   protected AggregateJoinJoinRemoveRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateJoinJoinRemoveRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass, joinClass));
@@ -160,6 +161,10 @@ public class AggregateJoinJoinRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalJoin.class);
+
     @Override default AggregateJoinJoinRemoveRule toRule() {
       return new AggregateJoinJoinRemoveRule(this);
     }

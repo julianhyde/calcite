@@ -30,19 +30,18 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * can be combined with conditions and expressions above the join. It also makes
  * the <code>FennelCartesianJoinRule</code> applicable.
  *
- * <p>The constructor is parameterized to allow any sub-class of
+ * <p>Can be configured to match any sub-class of
  * {@link org.apache.calcite.rel.core.Join}, not just
  * {@link org.apache.calcite.rel.logical.LogicalJoin}.
+ *
+ * @see CoreRules#JOIN_EXTRACT_FILTER
  */
 public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /** The singleton. */
-  public static final JoinExtractFilterRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(LogicalJoin.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#JOIN_EXTRACT_FILTER}. */
+  @Deprecated // to be removed before 1.25
+  public static final JoinExtractFilterRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -51,10 +50,10 @@ public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinExtractFilterRule(Class<? extends Join> clazz,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b ->
             b.operand(clazz).anyInputs())
@@ -63,6 +62,10 @@ public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
 
   /** Rule configuration. */
   public interface Config extends AbstractJoinExtractFilterRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(LogicalJoin.class).anyInputs())
+        .as(Config.class);
+
     @Override default JoinExtractFilterRule toRule() {
       return new JoinExtractFilterRule(this);
     }

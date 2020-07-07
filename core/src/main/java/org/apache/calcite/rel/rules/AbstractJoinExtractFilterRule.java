@@ -46,7 +46,7 @@ public abstract class AbstractJoinExtractFilterRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected AbstractJoinExtractFilterRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
     this(Config.EMPTY

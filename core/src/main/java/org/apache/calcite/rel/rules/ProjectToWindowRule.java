@@ -76,17 +76,18 @@ public abstract class ProjectToWindowRule
   //~ Static fields/initializers ---------------------------------------------
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link CalcToWindowRule#INSTANCE} instead. */
+   * use {@link CoreRules#CALC_TO_WINDOW} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
-  public static final CalcToWindowRule INSTANCE = CalcToWindowRule.INSTANCE;
+  @Deprecated // to be removed before 1.25
+  public static final CalcToWindowRule INSTANCE =
+      CalcToWindowRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link ProjectToLogicalProjectAndWindowRule#INSTANCE} instead. */
+   * use {@link CoreRules#PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
-  @Deprecated // to be removed before 2.0
+  @Deprecated // to be removed before 1.25
   public static final ProjectToLogicalProjectAndWindowRule PROJECT =
-      ProjectToLogicalProjectAndWindowRule.INSTANCE;
+      ProjectToLogicalProjectAndWindowRule.Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -95,8 +96,7 @@ public abstract class ProjectToWindowRule
     super(config);
   }
 
-  @SuppressWarnings("unused")
-  @Deprecated
+  @Deprecated // to be removed before 1.25
   public ProjectToWindowRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
     super(Config.EMPTY.as(Config.class));
@@ -110,26 +110,22 @@ public abstract class ProjectToWindowRule
    * {@link org.apache.calcite.rel.core.Calc} that contains
    * windowed aggregates and converts it into a mixture of
    * {@link org.apache.calcite.rel.logical.LogicalWindow} and {@code Calc}.
+   *
+   * @see CoreRules#CALC_TO_WINDOW
    */
   public static class CalcToWindowRule extends ProjectToWindowRule {
-    public static final CalcToWindowRule INSTANCE =
-        Config.EMPTY
-            .withOperandSupplier(b ->
-                b.operand(Calc.class)
-                    .predicate(Calc::containsOver)
-                    .anyInputs())
-            .withDescription("ProjectToWindowRule")
-            .as(Config.class)
-            .toRule();
+    /** @deprecated Use {@link CoreRules#CALC_TO_WINDOW}. */
+    @Deprecated // to be removed before 1.25
+    static final CalcToWindowRule INSTANCE = Config.DEFAULT.toRule();
 
     /** Creates a CalcToWindowRule. */
     protected CalcToWindowRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public CalcToWindowRule(RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
     }
 
@@ -144,6 +140,14 @@ public abstract class ProjectToWindowRule
 
     /** Rule configuration. */
     public interface Config extends ProjectToWindowRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b ->
+              b.operand(Calc.class)
+                  .predicate(Calc::containsOver)
+                  .anyInputs())
+          .withDescription("ProjectToWindowRule")
+          .as(Config.class);
+
       @Override default CalcToWindowRule toRule() {
         return new CalcToWindowRule(this);
       }
@@ -155,28 +159,26 @@ public abstract class ProjectToWindowRule
    * {@link org.apache.calcite.rel.core.Project} and that produces, in turn,
    * a mixture of {@code LogicalProject}
    * and {@link org.apache.calcite.rel.logical.LogicalWindow}.
+   *
+   * @see CoreRules#PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW
    */
   public static class ProjectToLogicalProjectAndWindowRule
       extends ProjectToWindowRule {
+    /** @deprecated Use
+     * {@link CoreRules#PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW}. */
+    @Deprecated // to be removed before 1.25
     public static final ProjectToLogicalProjectAndWindowRule INSTANCE =
-        CalcToWindowRule.Config.EMPTY
-            .withOperandSupplier(b ->
-                b.operand(Project.class)
-                    .predicate(Project::containsOver)
-                    .anyInputs())
-            .withDescription("ProjectToWindowRule:project")
-            .as(Config.class)
-            .toRule();
+        Config.DEFAULT.toRule();
 
     /** Creates a ProjectToLogicalProjectAndWindowRule. */
     protected ProjectToLogicalProjectAndWindowRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public ProjectToLogicalProjectAndWindowRule(
         RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
     }
 
@@ -221,6 +223,14 @@ public abstract class ProjectToWindowRule
 
     /** Rule configuration. */
     public interface Config extends ProjectToWindowRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b ->
+              b.operand(Project.class)
+                  .predicate(Project::containsOver)
+                  .anyInputs())
+          .withDescription("ProjectToWindowRule:project")
+          .as(Config.class);
+
       @Override default ProjectToLogicalProjectAndWindowRule toRule() {
         return new ProjectToLogicalProjectAndWindowRule(this);
       }

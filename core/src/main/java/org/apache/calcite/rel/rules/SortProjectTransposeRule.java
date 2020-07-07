@@ -50,14 +50,15 @@ import java.util.Objects;
  * past a {@link org.apache.calcite.rel.core.Project}.
  *
  * @see org.apache.calcite.rel.rules.ProjectSortTransposeRule
+ * @see CoreRules#SORT_PROJECT_TRANSPOSE
  */
 public class SortProjectTransposeRule
     extends RelOptNewRule<SortProjectTransposeRule.Config>
     implements TransformationRule {
-  public static final SortProjectTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(Sort.class, LogicalProject.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#SORT_PROJECT_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
+  public static final SortProjectTransposeRule INSTANCE0 =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -70,7 +71,7 @@ public class SortProjectTransposeRule
   public SortProjectTransposeRule(
       Class<? extends Sort> sortClass,
       Class<? extends Project> projectClass) {
-    this(INSTANCE.config.withOperandFor(sortClass, projectClass));
+    this(Config.DEFAULT.withOperandFor(sortClass, projectClass));
   }
 
   @Deprecated // to be removed before 2.0
@@ -78,26 +79,26 @@ public class SortProjectTransposeRule
       Class<? extends Sort> sortClass,
       Class<? extends Project> projectClass,
       String description) {
-    this(INSTANCE.config.withDescription(description)
+    this(Config.DEFAULT.withDescription(description)
         .as(Config.class)
         .withOperandFor(sortClass, projectClass));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SortProjectTransposeRule(
       Class<? extends Sort> sortClass,
       Class<? extends Project> projectClass,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .as(Config.class)
         .withOperandFor(sortClass, projectClass));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected SortProjectTransposeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
@@ -105,7 +106,7 @@ public class SortProjectTransposeRule
 
   @Deprecated // to be removed before 2.0
   protected SortProjectTransposeRule(RelOptRuleOperand operand) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
   }
@@ -173,6 +174,9 @@ public class SortProjectTransposeRule
   }
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Sort.class, LogicalProject.class);
+
     @Override default SortProjectTransposeRule toRule() {
       return new SortProjectTransposeRule(this);
     }

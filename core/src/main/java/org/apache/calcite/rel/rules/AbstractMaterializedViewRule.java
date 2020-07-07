@@ -16,12 +16,33 @@
  */
 package org.apache.calcite.rel.rules;
 
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.rules.materialize.MaterializedViewRules;
 
 /** For backwards compatibility.
  *
- * @deprecated Use {@link MaterializedViewRules}.
+ * @deprecated Use equivalent fields in {@link MaterializedViewRules}.
  */
-@Deprecated
-public class AbstractMaterializedViewRule extends MaterializedViewRules {
+@Deprecated // to be removed before 1.25
+public abstract class AbstractMaterializedViewRule {
+  private AbstractMaterializedViewRule() {
+  }
+
+  public static final RelOptRule INSTANCE_PROJECT_AGGREGATE =
+      MaterializedViewRules.PROJECT_AGGREGATE;
+
+  public static final RelOptRule INSTANCE_AGGREGATE =
+      MaterializedViewRules.AGGREGATE;
+
+  public static final RelOptRule INSTANCE_FILTER =
+      MaterializedViewRules.FILTER;
+
+  public static final RelOptRule INSTANCE_JOIN =
+      MaterializedViewRules.JOIN;
+
+  public static final RelOptRule INSTANCE_PROJECT_FILTER =
+      MaterializedViewRules.PROJECT_FILTER;
+
+  public static final RelOptRule INSTANCE_PROJECT_JOIN =
+      MaterializedViewRules.PROJECT_JOIN;
 }

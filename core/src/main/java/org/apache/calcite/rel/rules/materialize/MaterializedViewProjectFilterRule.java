@@ -27,29 +27,20 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewProjectFilterRule
     extends MaterializedViewJoinRule<MaterializedViewProjectFilterRule.Config> {
 
+  /** @deprecated Use {@link MaterializedViewRules#PROJECT_FILTER}. */
+  @Deprecated // to be removed before 1.25
   public static final MaterializedViewProjectFilterRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .withOperandSupplier(b0 ->
-              b0.operand(Project.class).oneInput(b1 ->
-                  b1.operand(Filter.class).anyInputs()))
-          .withDescription("MaterializedViewJoinRule(Project-Filter)")
-          .as(Config.class)
-          .withGenerateUnionRewriting(true)
-          .withUnionRewritingPullProgram(null)
-          .withFastBailOut(true)
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private MaterializedViewProjectFilterRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewProjectFilterRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withGenerateUnionRewriting(generateUnionRewriting)
@@ -66,6 +57,18 @@ public class MaterializedViewProjectFilterRule
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewJoinRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        .withOperandSupplier(b0 ->
+            b0.operand(Project.class).oneInput(b1 ->
+                b1.operand(Filter.class).anyInputs()))
+        .withDescription("MaterializedViewJoinRule(Project-Filter)")
+        .as(Config.class)
+        .withGenerateUnionRewriting(true)
+        .withUnionRewritingPullProgram(null)
+        .withFastBailOut(true)
+        .as(Config.class);
+
     default MaterializedViewProjectFilterRule toRule() {
       return new MaterializedViewProjectFilterRule(this);
     }

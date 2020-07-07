@@ -37,26 +37,26 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * the predicates,
  * returns them in a {@link org.apache.calcite.plan.RelOptPredicateList}
  * and applies them appropriately.
+ *
+ * @see CoreRules#JOIN_PUSH_TRANSITIVE_PREDICATES
  */
 public class JoinPushTransitivePredicatesRule
     extends RelOptNewRule<JoinPushTransitivePredicatesRule.Config>
     implements TransformationRule {
-  /** The singleton. */
+  /** @deprecated Use {@link CoreRules#JOIN_PUSH_TRANSITIVE_PREDICATES}. */
+  @Deprecated // to be removed before 1.25
   public static final JoinPushTransitivePredicatesRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Join.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates a JoinPushTransitivePredicatesRule. */
   protected JoinPushTransitivePredicatesRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinPushTransitivePredicatesRule(Class<? extends Join> joinClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(joinClass));
   }
@@ -64,7 +64,7 @@ public class JoinPushTransitivePredicatesRule
   @Deprecated // to be removed before 2.0
   public JoinPushTransitivePredicatesRule(Class<? extends Join> joinClass,
       RelFactories.FilterFactory filterFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(RelBuilder.proto(Contexts.of(filterFactory)))
         .as(Config.class)
         .withOperandFor(joinClass));
@@ -107,6 +107,9 @@ public class JoinPushTransitivePredicatesRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Join.class);
+
     @Override default JoinPushTransitivePredicatesRule toRule() {
       return new JoinPushTransitivePredicatesRule(this);
     }

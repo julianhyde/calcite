@@ -43,19 +43,15 @@ import java.util.List;
  * past a {@link org.apache.calcite.rel.core.Aggregate}.
  *
  * @see org.apache.calcite.rel.rules.AggregateFilterTransposeRule
+ * @see CoreRules#FILTER_AGGREGATE_TRANSPOSE
  */
 public class FilterAggregateTransposeRule
     extends RelOptNewRule<FilterAggregateTransposeRule.Config>
     implements TransformationRule {
-  /** The default instance of
-   * {@link FilterAggregateTransposeRule}.
-   *
-   * <p>It matches any kind of agg. or filter */
+  /** @deprecated Use {@link CoreRules#FILTER_AGGREGATE_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterAggregateTransposeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Filter.class, Aggregate.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -64,22 +60,20 @@ public class FilterAggregateTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterAggregateTransposeRule(
       Class<? extends Filter> filterClass,
       RelBuilderFactory relBuilderFactory,
       Class<? extends Aggregate> aggregateClass) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(filterClass, aggregateClass));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected FilterAggregateTransposeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
   }
@@ -160,6 +154,9 @@ public class FilterAggregateTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class, Aggregate.class);
+
     @Override default FilterAggregateTransposeRule toRule() {
       return new FilterAggregateTransposeRule(this);
     }

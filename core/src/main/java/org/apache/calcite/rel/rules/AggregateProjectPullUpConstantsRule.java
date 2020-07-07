@@ -59,17 +59,15 @@ import java.util.TreeMap;
 public class AggregateProjectPullUpConstantsRule
     extends RelOptNewRule<AggregateProjectPullUpConstantsRule.Config>
     implements TransformationRule {
-  /** The singleton. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_PROJECT_PULL_UP_CONSTANTS}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateProjectPullUpConstantsRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalProject.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
-  /** More general instance that matches any relational expression. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_ANY_PULL_UP_CONSTANTS}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateProjectPullUpConstantsRule INSTANCE2 =
-      INSTANCE.config
-          .withOperandFor(LogicalAggregate.class, RelNode.class)
+      Config.DEFAULT.withOperandFor(LogicalAggregate.class, RelNode.class)
           .toRule();
 
   //~ Constructors -----------------------------------------------------------
@@ -79,12 +77,12 @@ public class AggregateProjectPullUpConstantsRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateProjectPullUpConstantsRule(
       Class<? extends Aggregate> aggregateClass,
       Class<? extends RelNode> inputClass,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .as(Config.class)
@@ -190,6 +188,9 @@ public class AggregateProjectPullUpConstantsRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalProject.class);
+
     @Override default AggregateProjectPullUpConstantsRule toRule() {
       return new AggregateProjectPullUpConstantsRule(this);
     }

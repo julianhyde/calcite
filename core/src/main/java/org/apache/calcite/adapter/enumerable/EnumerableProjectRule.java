@@ -25,15 +25,17 @@ import org.apache.calcite.rel.logical.LogicalProject;
 /**
  * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalProject} to an
  * {@link EnumerableProject}.
+ *
+ * @see EnumerableRules#ENUMERABLE_PROJECT_RULE
  */
 class EnumerableProjectRule extends ConverterRule {
-  static final EnumerableProjectRule INSTANCE = Config.EMPTY
+  /** Default configuration. */
+  static final Config DEFAULT_CONFIG = Config.EMPTY
       .as(Config.class)
       .withConversion(LogicalProject.class, p -> !p.containsOver(),
           Convention.NONE, EnumerableConvention.INSTANCE,
           "EnumerableProjectRule")
-      .withRuleFactory(EnumerableProjectRule::new)
-      .toRule(EnumerableProjectRule.class);
+      .withRuleFactory(EnumerableProjectRule::new);
 
   protected EnumerableProjectRule(Config config) {
     super(config);

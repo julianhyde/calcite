@@ -26,13 +26,19 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * Rule to convert a relational expression from
  * {@link org.apache.calcite.plan.Convention#NONE}
  * to {@link org.apache.calcite.interpreter.BindableConvention}.
+ *
+ * @see Bindables#FROM_NONE_RULE
  */
 public class NoneToBindableConverterRule extends ConverterRule {
-  /** Singleton instance of NoneToBindableConverterRule. */
-  public static final NoneToBindableConverterRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(RelNode.class, Convention.NONE,
           BindableConvention.INSTANCE, "NoneToBindableConverterRule")
-      .withRuleFactory(NoneToBindableConverterRule::new)
+      .withRuleFactory(NoneToBindableConverterRule::new);
+
+  /** @deprecated Use {@link Bindables#FROM_NONE_RULE}. */
+  @Deprecated // to be removed before 1.25
+  public static final NoneToBindableConverterRule INSTANCE = DEFAULT_CONFIG
       .toRule(NoneToBindableConverterRule.class);
 
   /** Called from the Config. */

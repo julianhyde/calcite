@@ -16,7 +16,12 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
+import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.logical.LogicalMatch;
+import org.apache.calcite.rel.logical.LogicalRepeatUnion;
+import org.apache.calcite.rel.logical.LogicalTableSpool;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import com.google.common.collect.ImmutableList;
@@ -37,83 +42,158 @@ public class EnumerableRules {
   private EnumerableRules() {
   }
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalJoin} to
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final RelOptRule ENUMERABLE_JOIN_RULE =
-      EnumerableJoinRule.INSTANCE;
+      EnumerableJoinRule.DEFAULT_CONFIG.toRule(EnumerableJoinRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalJoin} to
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final RelOptRule ENUMERABLE_MERGE_JOIN_RULE =
-      EnumerableMergeJoinRule.INSTANCE;
+      EnumerableMergeJoinRule.DEFAULT_CONFIG
+          .toRule(EnumerableMergeJoinRule.class);
 
   public static final RelOptRule ENUMERABLE_CORRELATE_RULE =
-      EnumerableCorrelateRule.INSTANCE;
+      EnumerableCorrelateRule.DEFAULT_CONFIG
+          .toRule(EnumerableCorrelateRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalJoin} into an
+   * {@link org.apache.calcite.adapter.enumerable.EnumerableBatchNestedLoopJoin}. */
   public static final RelOptRule ENUMERABLE_BATCH_NESTED_LOOP_JOIN_RULE =
-      EnumerableBatchNestedLoopJoinRule.INSTANCE;
+      EnumerableBatchNestedLoopJoinRule.Config.DEFAULT.toRule();
 
+  /** Rule that converts a
+   *  {@link org.apache.calcite.rel.logical.LogicalProject} to an
+   * {@link EnumerableProject}. */
   public static final EnumerableProjectRule ENUMERABLE_PROJECT_RULE =
-      EnumerableProjectRule.INSTANCE;
+      EnumerableProjectRule.DEFAULT_CONFIG.toRule(EnumerableProjectRule.class);
 
   public static final EnumerableFilterRule ENUMERABLE_FILTER_RULE =
-      EnumerableFilterRule.INSTANCE;
+      EnumerableFilterRule.DEFAULT_CONFIG.toRule(EnumerableFilterRule.class);
 
   public static final EnumerableCalcRule ENUMERABLE_CALC_RULE =
-      EnumerableCalcRule.INSTANCE;
+      EnumerableCalcRule.DEFAULT_CONFIG.toRule(EnumerableCalcRule.class);
 
   public static final EnumerableAggregateRule ENUMERABLE_AGGREGATE_RULE =
-      EnumerableAggregateRule.INSTANCE;
+      EnumerableAggregateRule.DEFAULT_CONFIG
+          .toRule(EnumerableAggregateRule.class);
 
+  /** Rule that converts a {@link org.apache.calcite.rel.core.Sort} to an
+   * {@link EnumerableSort}. */
   public static final EnumerableSortRule ENUMERABLE_SORT_RULE =
-      EnumerableSortRule.INSTANCE;
+      EnumerableSortRule.DEFAULT_CONFIG.toRule(EnumerableSortRule.class);
 
   public static final EnumerableLimitRule ENUMERABLE_LIMIT_RULE =
-      EnumerableLimitRule.INSTANCE;
+      EnumerableLimitRule.Config.DEFAULT.toRule();
 
+  /** Rule that converts a {@link org.apache.calcite.rel.logical.LogicalUnion}
+   * to an {@link EnumerableUnion}. */
   public static final EnumerableUnionRule ENUMERABLE_UNION_RULE =
-      EnumerableUnionRule.INSTANCE;
+      EnumerableUnionRule.DEFAULT_CONFIG.toRule(EnumerableUnionRule.class);
 
+  /** Rule that converts a {@link LogicalRepeatUnion} into an
+   * {@link EnumerableRepeatUnion}. */
   public static final EnumerableRepeatUnionRule ENUMERABLE_REPEAT_UNION_RULE =
-      EnumerableRepeatUnionRule.INSTANCE;
+      EnumerableRepeatUnionRule.DEFAULT_CONFIG
+          .toRule(EnumerableRepeatUnionRule.class);
 
+  /** Rule that converts a {@link LogicalTableSpool} into an
+   * {@link EnumerableTableSpool}. */
+  @Experimental
   public static final EnumerableTableSpoolRule ENUMERABLE_TABLE_SPOOL_RULE =
-      EnumerableTableSpoolRule.INSTANCE;
+      EnumerableTableSpoolRule.DEFAULT_CONFIG
+          .toRule(EnumerableTableSpoolRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalIntersect} to an
+   * {@link EnumerableIntersect}. */
   public static final EnumerableIntersectRule ENUMERABLE_INTERSECT_RULE =
-      EnumerableIntersectRule.INSTANCE;
+      EnumerableIntersectRule.DEFAULT_CONFIG
+          .toRule(EnumerableIntersectRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalMinus} to an
+   * {@link EnumerableMinus}. */
   public static final EnumerableMinusRule ENUMERABLE_MINUS_RULE =
-      EnumerableMinusRule.INSTANCE;
+      EnumerableMinusRule.DEFAULT_CONFIG.toRule(EnumerableMinusRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalTableModify} to
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final EnumerableTableModifyRule ENUMERABLE_TABLE_MODIFICATION_RULE =
-      EnumerableTableModifyRule.INSTANCE;
+      EnumerableTableModifyRule.DEFAULT_CONFIG
+          .toRule(EnumerableTableModifyRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalValues} to
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final EnumerableValuesRule ENUMERABLE_VALUES_RULE =
-      EnumerableValuesRule.INSTANCE;
+      EnumerableValuesRule.DEFAULT_CONFIG.toRule(EnumerableValuesRule.class);
 
+  /** Rule that converts a {@link org.apache.calcite.rel.logical.LogicalWindow}
+   * to an {@link org.apache.calcite.adapter.enumerable.EnumerableWindow}. */
   public static final EnumerableWindowRule ENUMERABLE_WINDOW_RULE =
-      EnumerableWindowRule.INSTANCE;
+      EnumerableWindowRule.DEFAULT_CONFIG.toRule(EnumerableWindowRule.class);
 
+  /** Rule that converts an {@link org.apache.calcite.rel.core.Collect}
+   * to an {@link EnumerableCollect}. */
   public static final EnumerableCollectRule ENUMERABLE_COLLECT_RULE =
-      EnumerableCollectRule.INSTANCE;
+      EnumerableCollectRule.DEFAULT_CONFIG.toRule(EnumerableCollectRule.class);
 
+  /** Rule that converts an {@link org.apache.calcite.rel.core.Uncollect}
+   * to an {@link EnumerableUncollect}. */
   public static final EnumerableUncollectRule ENUMERABLE_UNCOLLECT_RULE =
-      EnumerableUncollectRule.INSTANCE;
+      EnumerableUncollectRule.DEFAULT_CONFIG
+          .toRule(EnumerableUncollectRule.class);
 
   public static final EnumerableFilterToCalcRule ENUMERABLE_FILTER_TO_CALC_RULE =
-      EnumerableFilterToCalcRule.INSTANCE;
+      EnumerableFilterToCalcRule.Config.DEFAULT.toRule();
 
+  /** Variant of {@link org.apache.calcite.rel.rules.ProjectToCalcRule} for
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final EnumerableProjectToCalcRule ENUMERABLE_PROJECT_TO_CALC_RULE =
-      EnumerableProjectToCalcRule.INSTANCE;
+      EnumerableProjectToCalcRule.Config.DEFAULT.toRule();
 
+  /** Rule that converts a
+   *  {@link org.apache.calcite.rel.logical.LogicalTableScan} to
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final EnumerableTableScanRule ENUMERABLE_TABLE_SCAN_RULE =
-      EnumerableTableScanRule.INSTANCE;
+      EnumerableTableScanRule.DEFAULT_CONFIG
+          .toRule(EnumerableTableScanRule.class);
 
+  /** Rule that converts a
+   * {@link org.apache.calcite.rel.logical.LogicalTableFunctionScan} to
+   * {@link EnumerableConvention enumerable calling convention}. */
   public static final EnumerableTableFunctionScanRule ENUMERABLE_TABLE_FUNCTION_SCAN_RULE =
-      EnumerableTableFunctionScanRule.INSTANCE;
+      EnumerableTableFunctionScanRule.DEFAULT_CONFIG
+          .toRule(EnumerableTableFunctionScanRule.class);
 
+  /** Rule that converts a {@link LogicalMatch} to an
+   *  {@link EnumerableMatch}. */
   public static final EnumerableMatchRule ENUMERABLE_MATCH_RULE =
-      EnumerableMatchRule.INSTANCE;
+      EnumerableMatchRule.DEFAULT_CONFIG.toRule(EnumerableMatchRule.class);
 
+  /** Rule to convert a {@link LogicalAggregate}
+   * to an {@link EnumerableSortedAggregate}. */
   public static final EnumerableSortedAggregateRule ENUMERABLE_SORTED_AGGREGATE_RULE =
-      EnumerableSortedAggregateRule.INSTANCE;
+      EnumerableSortedAggregateRule.DEFAULT_CONFIG
+          .toRule(EnumerableSortedAggregateRule.class);
+
+  /** Rule that converts any enumerable relational expression to bindable. */
+  public static final EnumerableBindable.EnumerableToBindableConverterRule TO_BINDABLE =
+      EnumerableBindable.EnumerableToBindableConverterRule.DEFAULT_CONFIG
+          .toRule(EnumerableBindable.EnumerableToBindableConverterRule.class);
+
+  /**
+   * Rule that converts {@link org.apache.calcite.interpreter.BindableRel}
+   * to {@link org.apache.calcite.adapter.enumerable.EnumerableRel} by creating
+   * an {@link org.apache.calcite.adapter.enumerable.EnumerableInterpreter}. */
+  public static final EnumerableInterpreterRule TO_INTERPRETER =
+      EnumerableInterpreterRule.DEFAULT_CONFIG
+          .toRule(EnumerableInterpreterRule.class);
 
   public static final List<RelOptRule> ENUMERABLE_RULES = ImmutableList.of(
       EnumerableRules.ENUMERABLE_JOIN_RULE,

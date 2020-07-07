@@ -37,15 +37,15 @@ import java.util.List;
 /**
  * Planner rule that pushes a {@link Filter} above a {@link Correlate} into the
  * inputs of the Correlate.
+ *
+ * @see CoreRules#FILTER_CORRELATE
  */
 public class FilterCorrelateRule
     extends RelOptNewRule<FilterCorrelateRule.Config>
     implements TransformationRule {
-  public static final FilterCorrelateRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Filter.class, Correlate.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#FILTER_CORRELATE}. */
+  @Deprecated // to be removed before 1.25
+  public static final FilterCorrelateRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -54,19 +54,16 @@ public class FilterCorrelateRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public FilterCorrelateRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
   @Deprecated // to be removed before 2.0
   public FilterCorrelateRule(RelFactories.FilterFactory filterFactory,
       RelFactories.ProjectFactory projectFactory) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(RelBuilder.proto(filterFactory, projectFactory))
-        .as(Config.class));
+    this(RelBuilder.proto(filterFactory, projectFactory));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -134,6 +131,9 @@ public class FilterCorrelateRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Filter.class, Correlate.class);
+
     @Override default FilterCorrelateRule toRule() {
       return new FilterCorrelateRule(this);
     }

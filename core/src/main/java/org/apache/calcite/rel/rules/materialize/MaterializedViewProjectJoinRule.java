@@ -24,31 +24,23 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /** Rule that matches Project on Join. */
-public class MaterializedViewProjectJoinRule extends MaterializedViewJoinRule {
+public class MaterializedViewProjectJoinRule
+    extends MaterializedViewJoinRule<MaterializedViewProjectJoinRule.Config> {
 
+  /** @deprecated Use {@link MaterializedViewRules#PROJECT_JOIN}. */
+  @Deprecated // to be removed before 1.25
   public static final MaterializedViewProjectJoinRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .withOperandSupplier(b0 ->
-              b0.operand(Project.class).oneInput(b1 ->
-                  b1.operand(Join.class).anyInputs()))
-          .withDescription("MaterializedViewJoinRule(Project-Join)")
-          .as(MaterializedViewProjectFilterRule.Config.class)
-          .withGenerateUnionRewriting(true)
-          .withUnionRewritingPullProgram(null)
-          .withFastBailOut(true)
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private MaterializedViewProjectJoinRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewProjectJoinRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withGenerateUnionRewriting(generateUnionRewriting)
@@ -65,6 +57,18 @@ public class MaterializedViewProjectJoinRule extends MaterializedViewJoinRule {
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewJoinRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        .withOperandSupplier(b0 ->
+            b0.operand(Project.class).oneInput(b1 ->
+                b1.operand(Join.class).anyInputs()))
+        .withDescription("MaterializedViewJoinRule(Project-Join)")
+        .as(MaterializedViewProjectFilterRule.Config.class)
+        .withGenerateUnionRewriting(true)
+        .withUnionRewritingPullProgram(null)
+        .withFastBailOut(true)
+        .as(Config.class);
+
     default MaterializedViewProjectJoinRule toRule() {
       return new MaterializedViewProjectJoinRule(this);
     }

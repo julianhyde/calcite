@@ -24,14 +24,15 @@ import org.apache.calcite.rel.core.Sort;
 /**
  * Rule to convert an {@link org.apache.calcite.rel.core.Sort} to an
  * {@link EnumerableSort}.
+ *
+ * @see EnumerableRules#ENUMERABLE_SORT_RULE
  */
 class EnumerableSortRule extends ConverterRule {
-  /** Singleton instance of EnumerableSortRule. */
-  static final EnumerableSortRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(Sort.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableSortRule")
-      .withRuleFactory(EnumerableSortRule::new)
-      .toRule(EnumerableSortRule.class);
+      .withRuleFactory(EnumerableSortRule::new);
 
   /** Called from the Config. */
   protected EnumerableSortRule(Config config) {

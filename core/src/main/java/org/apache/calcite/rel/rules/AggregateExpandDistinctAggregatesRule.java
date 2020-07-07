@@ -77,37 +77,35 @@ import java.util.stream.Stream;
  * (e.g. {@code COUNT(DISTINCT x), COUNT(DISTINCT y)})
  * the rule creates separate {@code Aggregate}s and combines using a
  * {@link org.apache.calcite.rel.core.Join}.
+ *
+ * @see CoreRules#AGGREGATE_EXPAND_DISTINCT_AGGREGATES
+ * @see CoreRules#AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN
  */
 public final class AggregateExpandDistinctAggregatesRule
     extends RelOptNewRule<AggregateExpandDistinctAggregatesRule.Config>
     implements TransformationRule {
-  /** The default instance of the rule; operates only on logical expressions. */
+  /** @deprecated Use {@link CoreRules#AGGREGATE_EXPAND_DISTINCT_AGGREGATES}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateExpandDistinctAggregatesRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(LogicalAggregate.class).anyInputs())
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
-  /** Instance of the rule that operates only on logical expressions and
-   * generates a join. */
+  /** @deprecated Use
+   * {@link CoreRules#AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateExpandDistinctAggregatesRule JOIN =
-      INSTANCE.config
-          .as(Config.class)
-          .withUsingGroupingSets(false)
-          .toRule();
+      Config.JOIN.toRule();
 
   /** Creates an AggregateExpandDistinctAggregatesRule. */
   protected AggregateExpandDistinctAggregatesRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateExpandDistinctAggregatesRule(
       Class<? extends Aggregate> clazz,
       boolean useGroupingSets,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b ->
             b.operand(clazz).anyInputs())
         .as(Config.class)
@@ -912,6 +910,13 @@ public final class AggregateExpandDistinctAggregatesRule
 
        /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(LogicalAggregate.class).anyInputs())
+        .as(Config.class);
+
+    Config JOIN = DEFAULT.withUsingGroupingSets(false);
+
     @Override default AggregateExpandDistinctAggregatesRule toRule() {
       return new AggregateExpandDistinctAggregatesRule(this);
     }

@@ -43,10 +43,13 @@ import com.google.common.collect.ImmutableList;
  * or a {@link org.apache.calcite.schema.ProjectableFilterableTable}
  * to a {@link org.apache.calcite.interpreter.Bindables.BindableTableScan}.
  *
- * <p>The {@link #INTERPRETER} variant allows an intervening
+ * <p>The {@link CoreRules#FILTER_INTERPRETER_SCAN} variant allows an
+ * intervening
  * {@link org.apache.calcite.adapter.enumerable.EnumerableInterpreter}.
  *
  * @see org.apache.calcite.rel.rules.ProjectTableScanRule
+ * @see CoreRules#FILTER_SCAN
+ * @see CoreRules#FILTER_INTERPRETER_SCAN
  */
 public class FilterTableScanRule
     extends RelOptNewRule<FilterTableScanRule.Config> {
@@ -55,27 +58,14 @@ public class FilterTableScanRule
   public static final com.google.common.base.Predicate<TableScan> PREDICATE =
       FilterTableScanRule::test;
 
-  /** Rule that matches Filter on TableScan. */
-  public static final FilterTableScanRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Filter.class).oneInput(b1 ->
-                  b1.operand(TableScan.class)
-                      .predicate(FilterTableScanRule::test).noInputs()))
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#FILTER_SCAN}. */
+  @Deprecated // to be removed before 1.25
+  public static final FilterTableScanRule INSTANCE = Config.DEFAULT.toRule();
 
-  /** Rule that matches Filter on EnumerableInterpreter on TableScan. */
+  /** @deprecated Use {@link CoreRules#FILTER_INTERPRETER_SCAN}. */
+  @Deprecated // to be removed before 1.25
   public static final FilterTableScanRule INTERPRETER =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Filter.class).oneInput(b1 ->
-                  b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
-                      b2.operand(TableScan.class)
-                          .predicate(FilterTableScanRule::test).noInputs())))
-          .withDescription("FilterTableScanRule:interpreter")
-          .as(Config.class)
-          .toRule();
+      Config.INTERPRETER.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -147,6 +137,22 @@ public class FilterTableScanRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Filter.class).oneInput(b1 ->
+                b1.operand(TableScan.class)
+                    .predicate(FilterTableScanRule::test).noInputs()))
+        .as(Config.class);
+
+    Config INTERPRETER = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Filter.class).oneInput(b1 ->
+                b1.operand(EnumerableInterpreter.class).oneInput(b2 ->
+                    b2.operand(TableScan.class)
+                        .predicate(FilterTableScanRule::test).noInputs())))
+        .withDescription("FilterTableScanRule:interpreter")
+        .as(Config.class);
+
     @Override default FilterTableScanRule toRule() {
       return new FilterTableScanRule(this);
     }

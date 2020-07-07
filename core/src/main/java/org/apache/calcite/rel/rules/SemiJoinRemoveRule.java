@@ -23,7 +23,8 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 /**
- * Planner rule that removes a {@code SemiJoin}s from a join tree.
+ * Planner rule that removes a {@link Join#isSemiJoin semi-join} from a join
+ * tree.
  *
  * <p>It is invoked after attempts have been made to convert a SemiJoin to an
  * indexed scan on a join factor have failed. Namely, if the join factor does
@@ -31,14 +32,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * <p>It should only be enabled if all SemiJoins in the plan are advisory; that
  * is, they can be safely dropped without affecting the semantics of the query.
+ *
+ * @see CoreRules#SEMI_JOIN_REMOVE
  */
 public class SemiJoinRemoveRule
     extends RelOptNewRule<SemiJoinRemoveRule.Config>
     implements TransformationRule {
-  public static final SemiJoinRemoveRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#SEMI_JOIN_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final SemiJoinRemoveRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -47,9 +49,9 @@ public class SemiJoinRemoveRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SemiJoinRemoveRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -61,6 +63,9 @@ public class SemiJoinRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class);
+
     @Override default SemiJoinRemoveRule toRule() {
       return new SemiJoinRemoveRule(this);
     }

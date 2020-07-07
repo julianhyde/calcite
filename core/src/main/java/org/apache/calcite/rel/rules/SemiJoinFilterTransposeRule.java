@@ -40,14 +40,15 @@ import com.google.common.collect.ImmutableSet;
  * <p>SemiJoin(LogicalFilter(X), Y) &rarr; LogicalFilter(SemiJoin(X, Y))
  *
  * @see SemiJoinProjectTransposeRule
+ * @see CoreRules#SEMI_JOIN_FILTER_TRANSPOSE
  */
 public class SemiJoinFilterTransposeRule
     extends RelOptNewRule<SemiJoinFilterTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#SEMI_JOIN_FILTER_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final SemiJoinFilterTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalJoin.class, LogicalFilter.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -56,9 +57,9 @@ public class SemiJoinFilterTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SemiJoinFilterTransposeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -88,6 +89,9 @@ public class SemiJoinFilterTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class, LogicalFilter.class);
+
     @Override default SemiJoinFilterTransposeRule toRule() {
       return new SemiJoinFilterTransposeRule(this);
     }

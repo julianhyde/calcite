@@ -35,15 +35,15 @@ import java.util.List;
  * ProjectMergeRule merges a {@link org.apache.calcite.rel.core.Project} into
  * another {@link org.apache.calcite.rel.core.Project},
  * provided the projects aren't projecting identical sets of input references.
+ *
+ * @see CoreRules#PROJECT_MERGE
  */
 public class ProjectMergeRule
     extends RelOptNewRule<ProjectMergeRule.Config>
     implements TransformationRule {
-  public static final ProjectMergeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Project.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#PROJECT_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectMergeRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Default amount by which complexity is allowed to increase.
    *
@@ -57,10 +57,10 @@ public class ProjectMergeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectMergeRule(boolean force, int bloat,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(CoreRules.PROJECT_MERGE.config.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withForce(force)
         .withBloat(bloat));
@@ -68,14 +68,14 @@ public class ProjectMergeRule
 
   @Deprecated // to be removed before 2.0
   public ProjectMergeRule(boolean force, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(CoreRules.PROJECT_MERGE.config.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withForce(force));
   }
 
   @Deprecated // to be removed before 2.0
   public ProjectMergeRule(boolean force, ProjectFactory projectFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(RelBuilder.proto(projectFactory))
+    this(CoreRules.PROJECT_MERGE.config.withRelBuilderFactory(RelBuilder.proto(projectFactory))
         .as(Config.class)
         .withForce(force));
   }
@@ -150,6 +150,9 @@ public class ProjectMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Project.class);
+
     @Override default ProjectMergeRule toRule() {
       return new ProjectMergeRule(this);
     }

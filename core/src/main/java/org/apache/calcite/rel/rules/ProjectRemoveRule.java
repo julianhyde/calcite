@@ -33,20 +33,14 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see CalcRemoveRule
  * @see ProjectMergeRule
+ * @see CoreRules#PROJECT_REMOVE
  */
 public class ProjectRemoveRule
     extends RelOptNewRule<ProjectRemoveRule.Config>
     implements SubstitutionRule {
-  public static final ProjectRemoveRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b ->
-              b.operand(Project.class)
-                  // Use a predicate to detect non-matches early.
-                  // This keeps the rule queue short.
-                  .predicate(ProjectRemoveRule::isTrivial)
-                  .anyInputs())
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#PROJECT_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectRemoveRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -55,9 +49,9 @@ public class ProjectRemoveRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectRemoveRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -97,6 +91,15 @@ public class ProjectRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(Project.class)
+                // Use a predicate to detect non-matches early.
+                // This keeps the rule queue short.
+                .predicate(ProjectRemoveRule::isTrivial)
+                .anyInputs())
+        .as(Config.class);
+
     @Override default ProjectRemoveRule toRule() {
       return new ProjectRemoveRule(this);
     }

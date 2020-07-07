@@ -81,14 +81,21 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
 
   /**
    * Rule that converts any enumerable relational expression to bindable.
+   *
+   * @see EnumerableRules#TO_BINDABLE
    */
   public static class EnumerableToBindableConverterRule extends ConverterRule {
-    public static final EnumerableToBindableConverterRule INSTANCE = Config.INSTANCE
+    /** Default configuration. */
+    public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(EnumerableRel.class,
             EnumerableConvention.INSTANCE, BindableConvention.INSTANCE,
             "EnumerableToBindableConverterRule")
-        .withRuleFactory(EnumerableToBindableConverterRule::new)
-        .toRule(EnumerableToBindableConverterRule.class);
+        .withRuleFactory(EnumerableToBindableConverterRule::new);
+
+    /** @deprecated Use {@link EnumerableRules#TO_BINDABLE}. */
+    @Deprecated // to be removed before 1.25
+    public static final EnumerableToBindableConverterRule INSTANCE =
+        DEFAULT_CONFIG.toRule(EnumerableToBindableConverterRule.class);
 
     protected EnumerableToBindableConverterRule(Config config) {
       super(config);

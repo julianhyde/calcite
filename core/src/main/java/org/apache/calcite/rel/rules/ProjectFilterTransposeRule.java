@@ -45,33 +45,18 @@ import java.util.Set;
 /**
  * Planner rule that pushes a {@link org.apache.calcite.rel.core.Project}
  * past a {@link org.apache.calcite.rel.core.Filter}.
+ *
+ * @see CoreRules#PROJECT_FILTER_TRANSPOSE
+ * @see CoreRules#PROJECT_FILTER_TRANSPOSE_WHOLE_EXPRESSIONS
+ * @see CoreRules#PROJECT_FILTER_TRANSPOSE_WHOLE_PROJECT_EXPRESSIONS
  */
 public class ProjectFilterTransposeRule
     extends RelOptNewRule<ProjectFilterTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#PROJECT_FILTER_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectFilterTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalProject.class, LogicalFilter.class)
-          .withPreserveExprCondition(expr -> false)
-          .withWholeProject(false)
-          .withWholeFilter(false)
-          .toRule();
-
-  /** Instance that pushes down project and filter expressions whole, not field
-   * references. */
-  public static final ProjectFilterTransposeRule EXPRESSION_INSTANCE =
-      INSTANCE.config
-          .withWholeProject(true)
-          .withWholeFilter(true)
-          .toRule();
-
-  /** Instance that pushes down project expressions whole, but pushes down
-   * field references for filters. */
-  public static final ProjectFilterTransposeRule PROJECT_EXPRESSION_INSTANCE =
-      INSTANCE.config
-          .withWholeProject(true)
-          .withWholeFilter(false)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -80,24 +65,23 @@ public class ProjectFilterTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectFilterTransposeRule(
       Class<? extends Project> projectClass,
       Class<? extends Filter> filterClass,
       RelBuilderFactory relBuilderFactory,
       PushProjector.ExprCondition preserveExprCondition) {
-    this(INSTANCE.config
-        .withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(projectClass, filterClass)
         .withPreserveExprCondition(preserveExprCondition));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected ProjectFilterTransposeRule(RelOptRuleOperand operand,
       PushProjector.ExprCondition preserveExprCondition, boolean wholeProject,
       boolean wholeFilter, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withOperandSupplier(b -> b.exactly(operand))
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
@@ -250,6 +234,16 @@ public class ProjectFilterTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, LogicalFilter.class)
+        .withPreserveExprCondition(expr -> false)
+        .withWholeProject(false)
+        .withWholeFilter(false);
+
+    Config PROJECT = DEFAULT.withWholeProject(true);
+
+    Config PROJECT_FILTER = PROJECT.withWholeFilter(true);
+
     @Override default ProjectFilterTransposeRule toRule() {
       return new ProjectFilterTransposeRule(this);
     }

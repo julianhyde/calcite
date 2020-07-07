@@ -100,15 +100,14 @@ import java.util.Map;
  *
  * @see org.apache.calcite.rel.rules.FilterMultiJoinMergeRule
  * @see org.apache.calcite.rel.rules.ProjectMultiJoinMergeRule
+ * @see CoreRules#JOIN_TO_MULTI_JOIN
  */
 public class JoinToMultiJoinRule
     extends RelOptNewRule<JoinToMultiJoinRule.Config>
     implements TransformationRule {
-  public static final JoinToMultiJoinRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalJoin.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#JOIN_TO_MULTI_JOIN}. */
+  @Deprecated // to be removed before 1.25
+  public static final JoinToMultiJoinRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -119,14 +118,13 @@ public class JoinToMultiJoinRule
 
   @Deprecated // to be removed before 2.0
   public JoinToMultiJoinRule(Class<? extends Join> clazz) {
-    this(INSTANCE.config.as(Config.class)
-        .withOperandFor(clazz));
+    this(Config.DEFAULT.withOperandFor(clazz));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JoinToMultiJoinRule(Class<? extends Join> joinClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(joinClass));
   }
@@ -579,6 +577,9 @@ public class JoinToMultiJoinRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class);
+
     @Override default JoinToMultiJoinRule toRule() {
       return new JoinToMultiJoinRule(this);
     }

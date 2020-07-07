@@ -26,27 +26,20 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewOnlyJoinRule
     extends MaterializedViewJoinRule<MaterializedViewJoinRule.Config> {
 
+  /** @deprecated Use {@link MaterializedViewRules#JOIN}. */
+  @Deprecated // to be removed before 1.25
   public static final MaterializedViewOnlyJoinRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b -> b.operand(Join.class).anyInputs())
-          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .withDescription("MaterializedViewJoinRule(Join)")
-          .as(MaterializedViewRule.Config.class)
-          .withGenerateUnionRewriting(true)
-          .withUnionRewritingPullProgram(null)
-          .withFastBailOut(true)
-          .as(MaterializedViewOnlyJoinRule.Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   MaterializedViewOnlyJoinRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewOnlyJoinRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withFastBailOut(fastBailOut)
@@ -61,6 +54,16 @@ public class MaterializedViewOnlyJoinRule
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b -> b.operand(Join.class).anyInputs())
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        .withDescription("MaterializedViewJoinRule(Join)")
+        .as(MaterializedViewRule.Config.class)
+        .withGenerateUnionRewriting(true)
+        .withUnionRewritingPullProgram(null)
+        .withFastBailOut(true)
+        .as(MaterializedViewOnlyJoinRule.Config.class);
+
     @Override default MaterializedViewOnlyJoinRule toRule() {
       return new MaterializedViewOnlyJoinRule(this);
     }

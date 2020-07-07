@@ -24,13 +24,20 @@ import org.apache.calcite.rel.convert.ConverterRule;
 /**
  * Rule to convert a relational expression from
  * {@link CassandraRel#CONVENTION} to {@link EnumerableConvention}.
+ *
+ * @see CassandraRules#TO_ENUMERABLE
  */
 public class CassandraToEnumerableConverterRule extends ConverterRule {
-  public static final CassandraToEnumerableConverterRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(RelNode.class, CassandraRel.CONVENTION,
           EnumerableConvention.INSTANCE, "CassandraToEnumerableConverterRule")
-      .withRuleFactory(CassandraToEnumerableConverterRule::new)
-      .toRule(CassandraToEnumerableConverterRule.class);
+      .withRuleFactory(CassandraToEnumerableConverterRule::new);
+
+  /** @deprecated Use {@link CassandraRules#TO_ENUMERABLE}. */
+  @Deprecated // to be removed before 1.25
+  public static final CassandraToEnumerableConverterRule INSTANCE =
+      DEFAULT_CONFIG.toRule(CassandraToEnumerableConverterRule.class);
 
   /** Creates a CassandraToEnumerableConverterRule. */
   protected CassandraToEnumerableConverterRule(Config config) {

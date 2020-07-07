@@ -38,9 +38,7 @@ public class ProjectSortTransposeRule
     extends RelOptNewRule<ProjectSortTransposeRule.Config>
     implements TransformationRule {
   public static final ProjectSortTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(Project.class, Sort.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -51,14 +49,14 @@ public class ProjectSortTransposeRule
 
   @Deprecated // to be removed before 2.0
   protected ProjectSortTransposeRule(RelOptRuleOperand operand) {
-    this(INSTANCE.config.withOperandSupplier(b -> b.exactly(operand))
+    this(Config.DEFAULT.withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected ProjectSortTransposeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .withDescription(description)
         .as(Config.class));
@@ -87,6 +85,9 @@ public class ProjectSortTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Project.class, Sort.class);
+
     @Override default ProjectSortTransposeRule toRule() {
       return new ProjectSortTransposeRule(this);
     }

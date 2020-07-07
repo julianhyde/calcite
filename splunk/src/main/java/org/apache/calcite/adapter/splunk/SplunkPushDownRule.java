@@ -122,7 +122,7 @@ public class SplunkPushDownRule
         .withId(id));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   protected SplunkPushDownRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String id) {
     this(Config.EMPTY.withOperandSupplier(b -> b.exactly(operand))

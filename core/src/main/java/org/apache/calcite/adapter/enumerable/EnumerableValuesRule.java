@@ -24,12 +24,19 @@ import org.apache.calcite.rel.logical.LogicalValues;
 /** Planner rule that converts a
  * {@link org.apache.calcite.rel.logical.LogicalValues}
  * relational expression
- * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
+ * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ *
+ * @see EnumerableRules#ENUMERABLE_VALUES_RULE */
 public class EnumerableValuesRule extends ConverterRule {
-  public static final EnumerableValuesRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalValues.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableValuesRule")
-      .withRuleFactory(EnumerableValuesRule::new)
+      .withRuleFactory(EnumerableValuesRule::new);
+
+  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_VALUES_RULE}. */
+  @Deprecated // to be removed before 1.25
+  public static final EnumerableValuesRule INSTANCE = DEFAULT_CONFIG
       .toRule(EnumerableValuesRule.class);
 
   protected EnumerableValuesRule(Config config) {

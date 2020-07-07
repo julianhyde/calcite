@@ -106,7 +106,7 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
   public MultiJoinProjectTransposeRule(
       RelOptRuleOperand operand,
       String description) {
-    this(BOTH_PROJECT.config.withDescription(description)
+    this(Config.DEFAULT.withDescription(description)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
   }
@@ -116,7 +116,7 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
       RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory,
       String description) {
-    this(BOTH_PROJECT.config.withDescription(description)
+    this(Config.DEFAULT.withDescription(description)
         .withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));

@@ -36,7 +36,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.rules.ProjectRemoveRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBeans;
 
@@ -335,7 +335,7 @@ class VolcanoPlannerTest {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     if (useRule) {
-      planner.addRule(ProjectRemoveRule.INSTANCE);
+      planner.addRule(CoreRules.PROJECT_REMOVE);
     }
 
     planner.addRule(PhysLeafRule.INSTANCE);

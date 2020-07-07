@@ -31,15 +31,15 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * creating a richer {@code MultiJoin}.
  *
  * @see org.apache.calcite.rel.rules.FilterMultiJoinMergeRule
+ * @see CoreRules#PROJECT_MULTI_JOIN_MERGE
  */
 public class ProjectMultiJoinMergeRule
     extends RelOptNewRule<ProjectMultiJoinMergeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#PROJECT_MULTI_JOIN_MERGE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectMultiJoinMergeRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalProject.class, MultiJoin.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -48,16 +48,16 @@ public class ProjectMultiJoinMergeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectMultiJoinMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectMultiJoinMergeRule(Class<? extends Project> projectClass,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(projectClass, MultiJoin.class));
   }
@@ -94,6 +94,9 @@ public class ProjectMultiJoinMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, MultiJoin.class);
+
     @Override default ProjectMultiJoinMergeRule toRule() {
       return new ProjectMultiJoinMergeRule(this);
     }

@@ -105,20 +105,16 @@ public class AbstractConverter extends ConverterImpl {
    */
   public static class ExpandConversionRule
       extends RelOptNewRule<ExpandConversionRule.Config> {
-    public static final ExpandConversionRule INSTANCE = Config.EMPTY
-        .withOperandSupplier(b ->
-            b.operand(AbstractConverter.class).anyInputs())
-        .as(Config.class)
-        .toRule();
+    public static final ExpandConversionRule INSTANCE = Config.DEFAULT.toRule();
 
     /** Creates an ExpandConversionRule. */
     protected ExpandConversionRule(Config config) {
       super(config);
     }
 
-    @Deprecated
+    @Deprecated // to be removed before 2.0
     public ExpandConversionRule(RelBuilderFactory relBuilderFactory) {
-      this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
           .as(Config.class));
     }
 
@@ -137,6 +133,11 @@ public class AbstractConverter extends ConverterImpl {
 
     /** Rule configuration. */
     public interface Config extends RelOptNewRule.Config {
+      Config DEFAULT = EMPTY
+          .withOperandSupplier(b ->
+              b.operand(AbstractConverter.class).anyInputs())
+          .as(Config.class);
+
       @Override default ExpandConversionRule toRule() {
         return new ExpandConversionRule(this);
       }

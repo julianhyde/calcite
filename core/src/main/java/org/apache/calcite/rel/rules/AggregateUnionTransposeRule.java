@@ -52,14 +52,16 @@ import java.util.Map;
  * Planner rule that pushes an
  * {@link org.apache.calcite.rel.core.Aggregate}
  * past a non-distinct {@link org.apache.calcite.rel.core.Union}.
+ *
+ * @see CoreRules#AGGREGATE_UNION_TRANSPOSE
  */
 public class AggregateUnionTransposeRule
     extends RelOptNewRule<AggregateUnionTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#AGGREGATE_UNION_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateUnionTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalAggregate.class, LogicalUnion.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private static final Map<Class<? extends SqlAggFunction>, Boolean>
       SUPPORTED_AGGREGATES = new IdentityHashMap<>();
@@ -78,10 +80,10 @@ public class AggregateUnionTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateUnionTransposeRule(Class<? extends Aggregate> aggregateClass,
       Class<? extends Union> unionClass, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(aggregateClass, unionClass));
@@ -194,6 +196,9 @@ public class AggregateUnionTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalAggregate.class, LogicalUnion.class);
+
     @Override default AggregateUnionTransposeRule toRule() {
       return new AggregateUnionTransposeRule(this);
     }

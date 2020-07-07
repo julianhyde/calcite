@@ -28,15 +28,16 @@ import org.apache.calcite.rel.logical.LogicalTableSpool;
  *
  * <p>NOTE: The current API is experimental and subject to change without
  * notice.
+ *
+ * @see EnumerableRules#ENUMERABLE_TABLE_SPOOL_RULE
  */
 @Experimental
 public class EnumerableTableSpoolRule extends ConverterRule {
-  /** Singleton instance of EnumerableTableSpoolRule. */
-  static final EnumerableTableSpoolRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalTableSpool.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableTableSpoolRule")
-      .withRuleFactory(EnumerableTableSpoolRule::new)
-      .toRule(EnumerableTableSpoolRule.class);
+      .withRuleFactory(EnumerableTableSpoolRule::new);
 
   /** Called from the Config. */
   protected EnumerableTableSpoolRule(Config config) {

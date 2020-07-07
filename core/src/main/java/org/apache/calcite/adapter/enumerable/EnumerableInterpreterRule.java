@@ -24,12 +24,19 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * Planner rule that converts {@link org.apache.calcite.interpreter.BindableRel}
  * to {@link org.apache.calcite.adapter.enumerable.EnumerableRel} by creating
  * an {@link org.apache.calcite.adapter.enumerable.EnumerableInterpreter}.
+ *
+ * @see EnumerableRules#TO_INTERPRETER
  */
 public class EnumerableInterpreterRule extends ConverterRule {
-  public static final EnumerableInterpreterRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(RelNode.class, BindableConvention.INSTANCE,
           EnumerableConvention.INSTANCE, "EnumerableInterpreterRule")
-      .withRuleFactory(EnumerableInterpreterRule::new)
+      .withRuleFactory(EnumerableInterpreterRule::new);
+
+  /** @deprecated Use {@link EnumerableRules#TO_INTERPRETER}. */
+  @Deprecated // to be removed before 1.25
+  public static final EnumerableInterpreterRule INSTANCE = DEFAULT_CONFIG
       .toRule(EnumerableInterpreterRule.class);
 
   protected EnumerableInterpreterRule(Config config) {

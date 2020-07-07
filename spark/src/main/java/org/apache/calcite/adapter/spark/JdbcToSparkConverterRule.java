@@ -37,7 +37,7 @@ public class JdbcToSparkConverterRule extends ConverterRule {
         .toRule(JdbcToSparkConverterRule.class);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public JdbcToSparkConverterRule(JdbcConvention out,
       RelBuilderFactory relBuilderFactory) {
     this(create(out).config.withRelBuilderFactory(relBuilderFactory)

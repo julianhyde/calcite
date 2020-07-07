@@ -44,30 +44,25 @@ import java.util.Objects;
  * <p>For example, SUM of SUM becomes SUM; SUM of COUNT becomes COUNT;
  * MAX of MAX becomes MAX; MIN of MIN becomes MIN. AVG of AVG would not
  * match, nor would COUNT of COUNT.
+ *
+ * @see CoreRules#AGGREGATE_MERGE
  */
 public class AggregateMergeRule
     extends RelOptNewRule<AggregateMergeRule.Config>
     implements TransformationRule {
-  public static final AggregateMergeRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Aggregate.class)
-                  .oneInput(b1 ->
-                      b1.operand(Aggregate.class)
-                          .predicate(Aggregate::isSimple)
-                      .anyInputs()))
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#AGGREGATE_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final AggregateMergeRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Creates an AggregateMergeRule. */
   protected AggregateMergeRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateMergeRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .withOperandSupplier(b -> b.exactly(operand))
         .as(Config.class));
   }
@@ -157,6 +152,15 @@ public class AggregateMergeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Aggregate.class)
+                .oneInput(b1 ->
+                    b1.operand(Aggregate.class)
+                        .predicate(Aggregate::isSimple)
+                        .anyInputs()))
+        .as(Config.class);
+
     @Override default AggregateMergeRule toRule() {
       return new AggregateMergeRule(this);
     }

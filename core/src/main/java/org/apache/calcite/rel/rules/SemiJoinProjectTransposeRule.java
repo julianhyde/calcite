@@ -42,7 +42,7 @@ import java.util.List;
 
 /**
  * Planner rule that pushes
- * a {@code SemiJoin} down in a tree past
+ * a {@link Join#isSemiJoin semi-join} down in a tree past
  * a {@link org.apache.calcite.rel.core.Project}.
  *
  * <p>The intention is to trigger other rules that will convert
@@ -55,10 +55,10 @@ import java.util.List;
 public class SemiJoinProjectTransposeRule
     extends RelOptNewRule<SemiJoinProjectTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#SEMI_JOIN_PROJECT_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final SemiJoinProjectTransposeRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalJoin.class, LogicalProject.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -182,6 +182,9 @@ public class SemiJoinProjectTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalJoin.class, LogicalProject.class);
+
     @Override default SemiJoinProjectTransposeRule toRule() {
       return new SemiJoinProjectTransposeRule(this);
     }

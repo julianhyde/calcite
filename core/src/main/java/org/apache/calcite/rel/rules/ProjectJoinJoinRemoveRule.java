@@ -58,26 +58,27 @@ import java.util.stream.Collectors;
  * from sales as s
  * left join product_class pc
  *   on s.product_id = pc.product_id</pre></blockquote>
+ *
+ * @see CoreRules#PROJECT_JOIN_JOIN_REMOVE
  */
 public class ProjectJoinJoinRemoveRule
     extends RelOptNewRule<ProjectJoinJoinRemoveRule.Config>
     implements SubstitutionRule {
+  /** @deprecated Use {@link CoreRules#PROJECT_JOIN_JOIN_REMOVE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectJoinJoinRemoveRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(LogicalProject.class, LogicalJoin.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   /** Creates a ProjectJoinJoinRemoveRule. */
   protected ProjectJoinJoinRemoveRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectJoinJoinRemoveRule(
       Class<? extends Project> projectClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withOperandFor(projectClass, joinClass));
   }
@@ -118,7 +119,7 @@ public class ProjectJoinJoinRemoveRule
 
     // Make sure that right keys of bottom join are unique.
     final ImmutableBitSet.Builder columns = ImmutableBitSet.builder();
-    rightChildKeys.forEach(key -> columns.set(key));
+    rightChildKeys.forEach(columns::set);
     final RelMetadataQuery mq = call.getMetadataQuery();
     if (!mq.areColumnsUnique(bottomJoin.getRight(), columns.build())) {
       return;
@@ -143,6 +144,9 @@ public class ProjectJoinJoinRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalProject.class, LogicalJoin.class);
+
     @Override default ProjectJoinJoinRemoveRule toRule() {
       return new ProjectJoinJoinRemoveRule(this);
     }

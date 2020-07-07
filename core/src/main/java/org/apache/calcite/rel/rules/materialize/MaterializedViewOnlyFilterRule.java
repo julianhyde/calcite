@@ -26,27 +26,20 @@ import org.apache.calcite.tools.RelBuilderFactory;
 public class MaterializedViewOnlyFilterRule
     extends MaterializedViewJoinRule<MaterializedViewOnlyFilterRule.Config> {
 
+  /** @deprecated Use {@link MaterializedViewRules#FILTER}. */
+  @Deprecated // to be removed before 1.25
   public static final MaterializedViewOnlyFilterRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandSupplier(b -> b.operand(Filter.class).anyInputs())
-          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-          .withDescription("MaterializedViewJoinRule(Filter)")
-          .as(MaterializedViewRule.Config.class)
-          .withGenerateUnionRewriting(true)
-          .withUnionRewritingPullProgram(null)
-          .withFastBailOut(true)
-          .as(Config.class)
-          .toRule();
+      Config.DEFAULT.toRule();
 
   private MaterializedViewOnlyFilterRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public MaterializedViewOnlyFilterRule(RelBuilderFactory relBuilderFactory,
       boolean generateUnionRewriting, HepProgram unionRewritingPullProgram,
       boolean fastBailOut) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withGenerateUnionRewriting(generateUnionRewriting)
         .withUnionRewritingPullProgram(unionRewritingPullProgram)
         .withFastBailOut(fastBailOut)
@@ -61,6 +54,16 @@ public class MaterializedViewOnlyFilterRule
 
   /** Rule configuration. */
   public interface Config extends MaterializedViewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandSupplier(b -> b.operand(Filter.class).anyInputs())
+        .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+        .withDescription("MaterializedViewJoinRule(Filter)")
+        .as(MaterializedViewRule.Config.class)
+        .withGenerateUnionRewriting(true)
+        .withUnionRewritingPullProgram(null)
+        .withFastBailOut(true)
+        .as(Config.class);
+
     @Override default MaterializedViewOnlyFilterRule toRule() {
       return new MaterializedViewOnlyFilterRule(this);
     }

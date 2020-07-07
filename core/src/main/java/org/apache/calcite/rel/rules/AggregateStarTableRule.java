@@ -58,31 +58,31 @@ import java.util.List;
  * the star table for an aggregate table at the required level of aggregation.
  *
  * @see AggregateProjectStarTableRule
+ * @see CoreRules#AGGREGATE_STAR_TABLE
+ * @see CoreRules#AGGREGATE_PROJECT_STAR_TABLE
  */
 public class AggregateStarTableRule
     extends RelOptNewRule<AggregateStarTableRule.Config>
     implements TransformationRule {
-  public static final AggregateStarTableRule INSTANCE =
-      Config.EMPTY
-          .as(Config.class)
-          .withOperandFor(Aggregate.class, StarTable.StarTableScan.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#AGGREGATE_STAR_TABLE}. */
+  @Deprecated // to be removed before 1.25
+  public static final AggregateStarTableRule INSTANCE = Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
-   * use {@link AggregateProjectStarTableRule#INSTANCE} instead. */
-  @Deprecated // to be removed before 2.0
+   * use {@link CoreRules#AGGREGATE_PROJECT_STAR_TABLE} instead. */
+  @Deprecated // to be removed before 1.25
   public static final AggregateProjectStarTableRule INSTANCE2 =
-      AggregateProjectStarTableRule.INSTANCE;
+      AggregateProjectStarTableRule.Config.DEFAULT.toRule();
 
   /** Creates an AggregateStarTableRule. */
   protected AggregateStarTableRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public AggregateStarTableRule(RelOptRuleOperand operand,
       RelBuilderFactory relBuilderFactory, String description) {
-    this(INSTANCE.config
+    this(Config.DEFAULT
         .withRelBuilderFactory(relBuilderFactory)
         .withDescription(description)
         .withOperandSupplier(b -> b.exactly(operand))
@@ -256,6 +256,9 @@ public class AggregateStarTableRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(Aggregate.class, StarTable.StarTableScan.class);
+
     @Override default AggregateStarTableRule toRule() {
       return new AggregateStarTableRule(this);
     }

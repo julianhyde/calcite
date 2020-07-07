@@ -38,18 +38,16 @@ import java.util.List;
  * <p>The children of the {@code SetOp} will project
  * only the {@link RexInputRef}s referenced in the original
  * {@code LogicalProject}.
+ *
+ * @see CoreRules#PROJECT_SET_OP_TRANSPOSE
  */
 public class ProjectSetOpTransposeRule
     extends RelOptNewRule<ProjectSetOpTransposeRule.Config>
     implements TransformationRule {
+  /** @deprecated Use {@link CoreRules#PROJECT_SET_OP_TRANSPOSE}. */
+  @Deprecated // to be removed before 1.25
   public static final ProjectSetOpTransposeRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(LogicalProject.class).oneInput(b1 ->
-                  b1.operand(SetOp.class).anyInputs()))
-          .as(Config.class)
-          .withPreserveExprCondition(expr -> !(expr instanceof RexOver))
-          .toRule();
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -58,11 +56,11 @@ public class ProjectSetOpTransposeRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ProjectSetOpTransposeRule(
       PushProjector.ExprCondition preserveExprCondition,
       RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class)
         .withPreserveExprCondition(preserveExprCondition));
   }
@@ -120,6 +118,13 @@ public class ProjectSetOpTransposeRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(LogicalProject.class).oneInput(b1 ->
+                b1.operand(SetOp.class).anyInputs()))
+        .as(Config.class)
+        .withPreserveExprCondition(expr -> !(expr instanceof RexOver));
+
     @Override default ProjectSetOpTransposeRule toRule() {
       return new ProjectSetOpTransposeRule(this);
     }

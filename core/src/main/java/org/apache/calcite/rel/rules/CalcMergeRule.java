@@ -33,18 +33,16 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * same project list as the upper
  * {@link org.apache.calcite.rel.logical.LogicalCalc}, but expressed in terms of
  * the lower {@link org.apache.calcite.rel.logical.LogicalCalc}'s inputs.
+ *
+ * @see CoreRules#CALC_MERGE
  */
 public class CalcMergeRule extends RelOptNewRule<CalcMergeRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final CalcMergeRule INSTANCE =
-      Config.EMPTY
-          .withOperandSupplier(b0 ->
-              b0.operand(Calc.class).oneInput(b1 ->
-                  b1.operand(Calc.class).anyInputs()))
-          .as(Config.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#CALC_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final CalcMergeRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -53,9 +51,9 @@ public class CalcMergeRule extends RelOptNewRule<CalcMergeRule.Config>
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public CalcMergeRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -100,6 +98,12 @@ public class CalcMergeRule extends RelOptNewRule<CalcMergeRule.Config>
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = Config.EMPTY
+        .withOperandSupplier(b0 ->
+            b0.operand(Calc.class).oneInput(b1 ->
+                b1.operand(Calc.class).anyInputs()))
+        .as(Config.class);
+
     @Override default CalcMergeRule toRule() {
       return new CalcMergeRule(this);
     }

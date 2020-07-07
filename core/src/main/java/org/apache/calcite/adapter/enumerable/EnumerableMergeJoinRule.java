@@ -40,14 +40,14 @@ import java.util.List;
  * {@link EnumerableConvention enumerable calling convention}.
  *
  * @see EnumerableJoinRule
+ * @see EnumerableRules#ENUMERABLE_MERGE_JOIN_RULE
  */
 class EnumerableMergeJoinRule extends ConverterRule {
-  /** Singleton instance of EnumerableMergeJoinRule. */
-  static final EnumerableMergeJoinRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalJoin.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableMergeJoinRule")
-      .withRuleFactory(EnumerableMergeJoinRule::new)
-      .toRule(EnumerableMergeJoinRule.class);
+      .withRuleFactory(EnumerableMergeJoinRule::new);
 
   /** Called from the Config. */
   protected EnumerableMergeJoinRule(Config config) {

@@ -46,15 +46,15 @@ import java.util.List;
  * incorporated in an index scan; facilitating the use of operators requiring
  * sorted inputs; and allowing the sort to be performed on a possibly smaller
  * result.
+ *
+ * @see CoreRules#SORT_JOIN_COPY
  */
 public class SortJoinCopyRule
     extends RelOptNewRule<SortJoinCopyRule.Config>
     implements TransformationRule {
-
-  public static final SortJoinCopyRule INSTANCE =
-      Config.EMPTY.as(Config.class)
-          .withOperandFor(LogicalSort.class, LogicalJoin.class)
-          .toRule();
+  /** @deprecated Use {@link CoreRules#SORT_JOIN_COPY}. */
+  @Deprecated // to be removed before 1.25
+  public static final SortJoinCopyRule INSTANCE = Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -63,10 +63,10 @@ public class SortJoinCopyRule
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SortJoinCopyRule(Class<? extends Sort> sortClass,
       Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withOperandFor(sortClass, joinClass)
+    this(Config.DEFAULT.withOperandFor(sortClass, joinClass)
         .withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
@@ -171,6 +171,9 @@ public class SortJoinCopyRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY.as(Config.class)
+        .withOperandFor(LogicalSort.class, LogicalJoin.class);
+
     @Override default SortJoinCopyRule toRule() {
       return new SortJoinCopyRule(this);
     }

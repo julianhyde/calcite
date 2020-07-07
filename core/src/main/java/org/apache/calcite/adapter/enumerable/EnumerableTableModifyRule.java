@@ -24,14 +24,21 @@ import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.schema.ModifiableTable;
 
 /** Planner rule that converts a
- * {@link org.apache.calcite.rel.logical.LogicalTableModify}
- * relational expression
- * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}. */
+ * {@link org.apache.calcite.rel.logical.LogicalTableModify} to
+ * {@link org.apache.calcite.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ *
+ * @see EnumerableRules#ENUMERABLE_TABLE_MODIFICATION_RULE */
 public class EnumerableTableModifyRule extends ConverterRule {
-  public static final EnumerableTableModifyRule INSTANCE = Config.INSTANCE
+  /** Default configuration. */
+  public static final Config DEFAULT_CONFIG = Config.INSTANCE
       .withConversion(LogicalTableModify.class, Convention.NONE,
           EnumerableConvention.INSTANCE, "EnumerableTableModificationRule")
-      .withRuleFactory(EnumerableTableModifyRule::new)
+      .withRuleFactory(EnumerableTableModifyRule::new);
+
+  /** @deprecated Use
+   * {@link EnumerableRules#ENUMERABLE_TABLE_MODIFICATION_RULE}. */
+  @Deprecated // to be removed before 1.25
+  public static final EnumerableTableModifyRule INSTANCE = DEFAULT_CONFIG
       .toRule(EnumerableTableModifyRule.class);
 
   protected EnumerableTableModifyRule(Config config) {

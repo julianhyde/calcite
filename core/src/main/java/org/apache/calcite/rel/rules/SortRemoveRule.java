@@ -29,24 +29,24 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * a {@link org.apache.calcite.rel.core.Sort} if its input is already sorted.
  *
  * <p>Requires {@link RelCollationTraitDef}.
+ *
+ * @see CoreRules#SORT_REMOVE
  */
 public class SortRemoveRule
     extends RelOptNewRule<SortRemoveRule.Config>
     implements TransformationRule {
-  public static final SortRemoveRule INSTANCE = Config.EMPTY
-      .withOperandSupplier(b ->
-          b.operand(Sort.class).anyInputs())
-      .as(Config.class)
-      .toRule();
+  /** @deprecated Use {@link CoreRules#SORT_REMOVE}. */
+  @Deprecated // to be removed before 1.25
+  public static final SortRemoveRule INSTANCE = Config.DEFAULT.toRule();
 
   /** Creates a SortRemoveRule. */
   protected SortRemoveRule(Config config) {
     super(config);
   }
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public SortRemoveRule(RelBuilderFactory relBuilderFactory) {
-    this(INSTANCE.config.withRelBuilderFactory(relBuilderFactory)
+    this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
         .as(Config.class));
   }
 
@@ -74,6 +74,11 @@ public class SortRemoveRule
 
   /** Rule configuration. */
   public interface Config extends RelOptNewRule.Config {
+    Config DEFAULT = EMPTY
+        .withOperandSupplier(b ->
+            b.operand(Sort.class).anyInputs())
+        .as(Config.class);
+
     @Override default SortRemoveRule toRule() {
       return new SortRemoveRule(this);
     }
