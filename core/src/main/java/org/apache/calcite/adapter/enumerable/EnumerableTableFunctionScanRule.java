@@ -35,12 +35,7 @@ public class EnumerableTableFunctionScanRule extends ConverterRule {
           EnumerableConvention.INSTANCE, "EnumerableTableFunctionScanRule")
       .withRuleFactory(EnumerableTableFunctionScanRule::new);
 
-  /** @deprecated Use
-   * {@link EnumerableRules#ENUMERABLE_TABLE_FUNCTION_SCAN_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableTableFunctionScanRule INSTANCE =
-      DEFAULT_CONFIG.toRule(EnumerableTableFunctionScanRule.class);
-
+  /** Creates an EnumerableTableFunctionScanRule. */
   protected EnumerableTableFunctionScanRule(Config config) {
     super(config);
   }

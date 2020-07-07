@@ -34,11 +34,7 @@ public class EnumerableCorrelateRule extends ConverterRule {
           EnumerableConvention.INSTANCE, "EnumerableCorrelateRule")
       .withRuleFactory(EnumerableCorrelateRule::new);
 
-  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_CORRELATE_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableCorrelateRule INSTANCE = DEFAULT_CONFIG
-      .toRule(EnumerableCorrelateRule.class);
-
+  /** Creates an EnumerableCorrelateRule. */
   protected EnumerableCorrelateRule(Config config) {
     super(config);
   }

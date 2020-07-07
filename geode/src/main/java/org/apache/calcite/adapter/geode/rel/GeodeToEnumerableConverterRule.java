@@ -26,7 +26,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * {@link GeodeRel#CONVENTION} to {@link EnumerableConvention}.
  */
 public class GeodeToEnumerableConverterRule extends ConverterRule {
-  public static final GeodeToEnumerableConverterRule INSTANCE = Config.INSTANCE
+  public static final ConverterRule INSTANCE = Config.INSTANCE
       .withConversion(RelNode.class, GeodeRel.CONVENTION,
           EnumerableConvention.INSTANCE, "GeodeToEnumerableConverterRule")
       .withRuleFactory(GeodeToEnumerableConverterRule::new)

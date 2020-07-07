@@ -47,12 +47,6 @@ import java.util.Set;
  */
 public class EnumerableBatchNestedLoopJoinRule
     extends RelOptNewRule<EnumerableBatchNestedLoopJoinRule.Config> {
-  /** @deprecated Use
-   * {@link EnumerableRules#ENUMERABLE_BATCH_NESTED_LOOP_JOIN_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableBatchNestedLoopJoinRule INSTANCE =
-      Config.DEFAULT.toRule();
-
   /** Creates an EnumerableBatchNestedLoopJoinRule. */
   protected EnumerableBatchNestedLoopJoinRule(Config config) {
     super(config);

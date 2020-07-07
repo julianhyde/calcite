@@ -39,7 +39,8 @@ public class CalcRemoveRule extends RelOptNewRule<CalcRemoveRule.Config>
 
   /** @deprecated Use {@link CoreRules#CALC_REMOVE}. */
   @Deprecated // to be removed before 1.25
-  public static final CalcRemoveRule INSTANCE = Config.DEFAULT.toRule();
+  public static final CalcRemoveRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

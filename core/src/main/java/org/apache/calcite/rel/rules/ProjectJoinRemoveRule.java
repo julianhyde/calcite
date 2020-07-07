@@ -58,7 +58,8 @@ public class ProjectJoinRemoveRule
     implements SubstitutionRule {
   /** @deprecated Use {@link CoreRules#PROJECT_JOIN_REMOVE}. */
   @Deprecated // to be removed before 1.25
-  public static final ProjectJoinRemoveRule INSTANCE = Config.DEFAULT.toRule();
+  public static final ProjectJoinRemoveRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** Creates a ProjectJoinRemoveRule. */
   protected ProjectJoinRemoveRule(Config config) {

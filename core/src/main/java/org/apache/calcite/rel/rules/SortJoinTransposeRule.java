@@ -48,7 +48,8 @@ public class SortJoinTransposeRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#SORT_JOIN_TRANSPOSE}. */
   @Deprecated // to be removed before 1.25
-  public static final SortJoinTransposeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final SortJoinTransposeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

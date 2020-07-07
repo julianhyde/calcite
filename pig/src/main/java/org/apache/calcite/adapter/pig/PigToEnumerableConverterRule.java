@@ -26,7 +26,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * {@link PigRel#CONVENTION} to {@link EnumerableConvention}.
  */
 public class PigToEnumerableConverterRule extends ConverterRule {
-  public static final PigToEnumerableConverterRule INSTANCE = Config.INSTANCE
+  public static final ConverterRule INSTANCE = Config.INSTANCE
       .withConversion(RelNode.class, PigRel.CONVENTION,
           EnumerableConvention.INSTANCE, "PigToEnumerableConverterRule")
       .withRuleFactory(PigToEnumerableConverterRule::new)

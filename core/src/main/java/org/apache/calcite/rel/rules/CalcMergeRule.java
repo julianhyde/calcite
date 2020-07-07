@@ -42,7 +42,8 @@ public class CalcMergeRule extends RelOptNewRule<CalcMergeRule.Config>
 
   /** @deprecated Use {@link CoreRules#CALC_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final CalcMergeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final CalcMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

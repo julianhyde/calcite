@@ -35,12 +35,7 @@ public class EnumerableTableModifyRule extends ConverterRule {
           EnumerableConvention.INSTANCE, "EnumerableTableModificationRule")
       .withRuleFactory(EnumerableTableModifyRule::new);
 
-  /** @deprecated Use
-   * {@link EnumerableRules#ENUMERABLE_TABLE_MODIFICATION_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableTableModifyRule INSTANCE = DEFAULT_CONFIG
-      .toRule(EnumerableTableModifyRule.class);
-
+  /** Creates an EnumerableTableModifyRule. */
   protected EnumerableTableModifyRule(Config config) {
     super(config);
   }

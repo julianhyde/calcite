@@ -41,7 +41,8 @@ public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
 
   /** @deprecated Use {@link CoreRules#JOIN_EXTRACT_FILTER}. */
   @Deprecated // to be removed before 1.25
-  public static final JoinExtractFilterRule INSTANCE = Config.DEFAULT.toRule();
+  public static final JoinExtractFilterRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

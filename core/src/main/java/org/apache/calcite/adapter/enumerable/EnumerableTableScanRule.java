@@ -39,12 +39,6 @@ public class EnumerableTableScanRule extends ConverterRule {
           "EnumerableTableScanRule")
       .withRuleFactory(EnumerableTableScanRule::new);
 
-  /** @deprecated Use
-   * {@link EnumerableRules#ENUMERABLE_TABLE_SCAN_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableTableScanRule INSTANCE = DEFAULT_CONFIG
-      .toRule(EnumerableTableScanRule.class);
-
   protected EnumerableTableScanRule(Config config) {
     super(config);
   }

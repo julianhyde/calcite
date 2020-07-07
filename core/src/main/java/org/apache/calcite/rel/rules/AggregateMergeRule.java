@@ -52,7 +52,8 @@ public class AggregateMergeRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#AGGREGATE_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final AggregateMergeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final AggregateMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateMergeRule. */
   protected AggregateMergeRule(Config config) {

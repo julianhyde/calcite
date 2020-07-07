@@ -36,8 +36,8 @@ public class EnumerableInterpreterRule extends ConverterRule {
 
   /** @deprecated Use {@link EnumerableRules#TO_INTERPRETER}. */
   @Deprecated // to be removed before 1.25
-  public static final EnumerableInterpreterRule INSTANCE = DEFAULT_CONFIG
-      .toRule(EnumerableInterpreterRule.class);
+  public static final EnumerableInterpreterRule INSTANCE =
+      DEFAULT_CONFIG.toRule(EnumerableInterpreterRule.class);
 
   protected EnumerableInterpreterRule(Config config) {
     super(config);

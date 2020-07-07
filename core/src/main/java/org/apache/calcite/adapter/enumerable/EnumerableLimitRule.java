@@ -31,11 +31,6 @@ import org.apache.calcite.rel.core.Sort;
  */
 public class EnumerableLimitRule
     extends RelOptNewRule<EnumerableLimitRule.Config> {
-  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_LIMIT_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableLimitRule INSTANCE =
-      Config.DEFAULT.toRule();
-
   /** Creates an EnumerableLimitRule. */
   protected EnumerableLimitRule(Config config) {
     super(config);

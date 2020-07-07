@@ -43,9 +43,11 @@ import java.util.List;
 public class FilterCorrelateRule
     extends RelOptNewRule<FilterCorrelateRule.Config>
     implements TransformationRule {
+
   /** @deprecated Use {@link CoreRules#FILTER_CORRELATE}. */
   @Deprecated // to be removed before 1.25
-  public static final FilterCorrelateRule INSTANCE = Config.DEFAULT.toRule();
+  public static final FilterCorrelateRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

@@ -58,7 +58,8 @@ public class AggregateValuesRule
     implements SubstitutionRule {
   /** @deprecated Use {@link CoreRules#AGGREGATE_VALUES}. */
   @Deprecated // to be removed before 1.25
-  public static final AggregateValuesRule INSTANCE = Config.DEFAULT.toRule();
+  public static final AggregateValuesRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** Creates an AggregateValuesRule. */
   protected AggregateValuesRule(Config config) {

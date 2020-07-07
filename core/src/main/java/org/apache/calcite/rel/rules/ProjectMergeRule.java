@@ -41,14 +41,15 @@ import java.util.List;
 public class ProjectMergeRule
     extends RelOptNewRule<ProjectMergeRule.Config>
     implements TransformationRule {
-  /** @deprecated Use {@link CoreRules#PROJECT_MERGE}. */
-  @Deprecated // to be removed before 1.25
-  public static final ProjectMergeRule INSTANCE = Config.DEFAULT.toRule();
-
   /** Default amount by which complexity is allowed to increase.
    *
    * @see Config#bloat() */
   public static final int DEFAULT_BLOAT = 100;
+
+  /** @deprecated Use {@link CoreRules#PROJECT_MERGE}. */
+  @Deprecated // to be removed before 1.25
+  public static final ProjectMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

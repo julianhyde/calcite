@@ -40,7 +40,8 @@ public class SemiJoinRemoveRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#SEMI_JOIN_REMOVE}. */
   @Deprecated // to be removed before 1.25
-  public static final SemiJoinRemoveRule INSTANCE = Config.DEFAULT.toRule();
+  public static final SemiJoinRemoveRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

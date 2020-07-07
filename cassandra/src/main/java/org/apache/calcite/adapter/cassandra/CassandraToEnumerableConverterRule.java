@@ -36,7 +36,7 @@ public class CassandraToEnumerableConverterRule extends ConverterRule {
 
   /** @deprecated Use {@link CassandraRules#TO_ENUMERABLE}. */
   @Deprecated // to be removed before 1.25
-  public static final CassandraToEnumerableConverterRule INSTANCE =
+  public static final ConverterRule INSTANCE =
       DEFAULT_CONFIG.toRule(CassandraToEnumerableConverterRule.class);
 
   /** Creates a CassandraToEnumerableConverterRule. */

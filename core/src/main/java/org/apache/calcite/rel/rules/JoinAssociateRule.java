@@ -53,7 +53,8 @@ public class JoinAssociateRule
 
   /** @deprecated Use {@link CoreRules#JOIN_ASSOCIATE}. */
   @Deprecated // to be removed before 1.25
-  public static final JoinAssociateRule INSTANCE = Config.DEFAULT.toRule();
+  public static final JoinAssociateRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

@@ -60,7 +60,8 @@ public class FilterTableScanRule
 
   /** @deprecated Use {@link CoreRules#FILTER_SCAN}. */
   @Deprecated // to be removed before 1.25
-  public static final FilterTableScanRule INSTANCE = Config.DEFAULT.toRule();
+  public static final FilterTableScanRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** @deprecated Use {@link CoreRules#FILTER_INTERPRETER_SCAN}. */
   @Deprecated // to be removed before 1.25

@@ -50,7 +50,8 @@ public class FilterToCalcRule
 
   /** @deprecated Use {@link CoreRules#FILTER_TO_CALC}. */
   @Deprecated // to be removed before 1.25
-  public static final FilterToCalcRule INSTANCE = Config.DEFAULT.toRule();
+  public static final FilterToCalcRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

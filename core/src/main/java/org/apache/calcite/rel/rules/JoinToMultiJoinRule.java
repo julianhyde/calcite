@@ -107,7 +107,8 @@ public class JoinToMultiJoinRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#JOIN_TO_MULTI_JOIN}. */
   @Deprecated // to be removed before 1.25
-  public static final JoinToMultiJoinRule INSTANCE = Config.DEFAULT.toRule();
+  public static final JoinToMultiJoinRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

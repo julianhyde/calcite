@@ -164,11 +164,6 @@ public class Bindables {
    * @see #BINDABLE_TABLE_SCAN_RULE */
   public static class BindableTableScanRule
       extends RelOptNewRule<BindableTableScanRule.Config> {
-    /** @deprecated Use {@link #BINDABLE_TABLE_SCAN_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableTableScanRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Called from Config. */
     protected BindableTableScanRule(Config config) {
       super(config);
@@ -313,11 +308,6 @@ public class Bindables {
             "BindableFilterRule")
         .withRuleFactory(BindableFilterRule::new);
 
-    /** @deprecated Use {@link #BINDABLE_FILTER_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableFilterRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableFilterRule.class);
-
     /** Called from the Config. */
     protected BindableFilterRule(Config config) {
       super(config);
@@ -386,11 +376,6 @@ public class Bindables {
             "BindableProjectRule")
         .withRuleFactory(BindableProjectRule::new);
 
-    /** @deprecated Use {@link #BINDABLE_PROJECT_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableProjectRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableProjectRule.class);
-
     /** Called from the Config. */
     protected BindableProjectRule(Config config) {
       super(config);
@@ -449,11 +434,6 @@ public class Bindables {
             BindableConvention.INSTANCE, "BindableSortRule")
         .withRuleFactory(BindableSortRule::new);
 
-    /** @deprecated Use {@link #BINDABLE_SORT_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableSortRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableSortRule.class);
-
     /** Called from the Config. */
     protected BindableSortRule(Config config) {
       super(config);
@@ -511,11 +491,6 @@ public class Bindables {
         .withConversion(LogicalJoin.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableJoinRule")
         .withRuleFactory(BindableJoinRule::new);
-
-    /** @deprecated Use {@link #BINDABLE_JOIN_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableJoinRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableJoinRule.class);
 
     /** Called from the Config. */
     protected BindableJoinRule(Config config) {
@@ -588,11 +563,6 @@ public class Bindables {
         .withConversion(SetOp.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableSetOpRule")
         .withRuleFactory(BindableSetOpRule::new);
-
-    /** @deprecated Use {@link #BINDABLE_SET_OP_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableSetOpRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableSetOpRule.class);
 
     /** Called from the Config. */
     protected BindableSetOpRule(Config config) {
@@ -728,11 +698,6 @@ public class Bindables {
             BindableConvention.INSTANCE, "BindableValuesRule")
         .withRuleFactory(BindableValuesRule::new);
 
-    /** @deprecated Use {@link #BINDABLE_VALUES_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableValuesRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableValuesRule.class);
-
     /** Called from the Config. */
     protected BindableValuesRule(Config config) {
       super(config);
@@ -820,11 +785,6 @@ public class Bindables {
             BindableConvention.INSTANCE, "BindableAggregateRule")
         .withRuleFactory(BindableAggregateRule::new);
 
-    /** @deprecated Use {@link #BINDABLE_AGGREGATE_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableAggregateRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableAggregateRule.class);
-
     /** Called from the Config. */
     protected BindableAggregateRule(Config config) {
       super(config);
@@ -888,11 +848,6 @@ public class Bindables {
         .withConversion(LogicalWindow.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableWindowRule")
         .withRuleFactory(BindableWindowRule::new);
-
-    /** @deprecated Use {@link #BINDABLE_WINDOW_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableWindowRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableWindowRule.class);
 
     /** Called from the Config. */
     protected BindableWindowRule(Config config) {
@@ -959,11 +914,6 @@ public class Bindables {
         .withConversion(LogicalMatch.class, Convention.NONE,
             BindableConvention.INSTANCE, "BindableMatchRule")
         .withRuleFactory(BindableMatchRule::new);
-
-    /** @deprecated Use {@link #BINDABLE_MATCH_RULE}. */
-    @Deprecated // to be removed before 1.25
-    public static final BindableMatchRule INSTANCE = DEFAULT_CONFIG
-        .toRule(BindableMatchRule.class);
 
     /** Called from the Config. */
     protected BindableMatchRule(Config config) {

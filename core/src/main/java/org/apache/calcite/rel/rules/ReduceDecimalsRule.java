@@ -72,7 +72,8 @@ public class ReduceDecimalsRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#CALC_REDUCE_DECIMALS}. */
   @Deprecated // to be removed before 1.25
-  public static final ReduceDecimalsRule INSTANCE = Config.DEFAULT.toRule();
+  public static final ReduceDecimalsRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

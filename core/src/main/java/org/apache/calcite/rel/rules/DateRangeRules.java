@@ -165,9 +165,16 @@ public abstract class DateRangeRules {
   public static class FilterDateRangeRule
       extends RelOptNewRule<FilterDateRangeRule.Config>
       implements TransformationRule {
-    /** @deprecated Use {@link DateRangeRules#FILTER_INSTANCE}. */
-    @Deprecated // to be removed before 1.25
-    public static final FilterDateRangeRule INSTANCE = Config.DEFAULT.toRule();
+    /** Creates a FilterDateRangeRule. */
+    protected FilterDateRangeRule(Config config) {
+      super(config);
+    }
+
+    @Deprecated // to be removed before 2.0
+    public FilterDateRangeRule(RelBuilderFactory relBuilderFactory) {
+      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
+          .as(Config.class));
+    }
 
     /** Whether this an EXTRACT of YEAR, or a call to FLOOR or CEIL.
      * If none of these, we cannot apply the rule. */
@@ -180,17 +187,6 @@ public abstract class DateRangeRules {
             || finder.opKinds.contains(SqlKind.FLOOR)
             || finder.opKinds.contains(SqlKind.CEIL);
       }
-    }
-
-    /** Creates a FilterDateRangeRule. */
-    protected FilterDateRangeRule(Config config) {
-      super(config);
-    }
-
-    @Deprecated // to be removed before 2.0
-    public FilterDateRangeRule(RelBuilderFactory relBuilderFactory) {
-      this(Config.DEFAULT.withRelBuilderFactory(relBuilderFactory)
-          .as(Config.class));
     }
 
     @Override public void onMatch(RelOptRuleCall call) {

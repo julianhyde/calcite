@@ -51,7 +51,8 @@ public class ProjectCalcMergeRule
 
   /** @deprecated Use {@link CoreRules#PROJECT_CALC_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final ProjectCalcMergeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final ProjectCalcMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

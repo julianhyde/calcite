@@ -31,11 +31,6 @@ import org.apache.calcite.tools.RelBuilderFactory;
  * @see EnumerableRules#ENUMERABLE_FILTER_TO_CALC_RULE */
 public class EnumerableFilterToCalcRule
     extends RelOptNewRule<EnumerableFilterToCalcRule.Config> {
-  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_FILTER_TO_CALC_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableFilterToCalcRule INSTANCE =
-      Config.DEFAULT.toRule();
-
   /** Creates an EnumerableFilterToCalcRule. */
   protected EnumerableFilterToCalcRule(Config config) {
     super(config);

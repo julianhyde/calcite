@@ -43,7 +43,8 @@ public class CalcSplitRule
     extends RelOptNewRule<CalcSplitRule.Config> implements TransformationRule {
   /** @deprecated Use {@link CoreRules#CALC_SPLIT}. */
   @Deprecated // to be removed before 1.25
-  public static final CalcSplitRule INSTANCE = Config.DEFAULT.toRule();
+  public static final CalcSplitRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** Creates a CalcSplitRule. */
   protected CalcSplitRule(Config config) {

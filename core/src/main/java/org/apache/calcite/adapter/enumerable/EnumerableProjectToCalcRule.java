@@ -27,11 +27,6 @@ import org.apache.calcite.tools.RelBuilderFactory;
  *
  * @see EnumerableRules#ENUMERABLE_PROJECT_TO_CALC_RULE */
 public class EnumerableProjectToCalcRule extends ProjectToCalcRule {
-  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_PROJECT_TO_CALC_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableProjectToCalcRule INSTANCE =
-      Config.DEFAULT.toRule();
-
   /** Creates an EnumerableProjectToCalcRule. */
   protected EnumerableProjectToCalcRule(Config config) {
     super(config);

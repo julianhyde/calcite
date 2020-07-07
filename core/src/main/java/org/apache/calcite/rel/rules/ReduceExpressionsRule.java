@@ -150,10 +150,6 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    */
   public static class FilterReduceExpressionsRule
       extends ReduceExpressionsRule<FilterReduceExpressionsRule.Config> {
-    /** @deprecated Use {@link CoreRules#FILTER_REDUCE_EXPRESSIONS}. */
-    @Deprecated // to be removed before 1.25
-    static final FilterReduceExpressionsRule INSTANCE = Config.DEFAULT.toRule();
-
     /** Creates a FilterReduceExpressionsRule. */
     protected FilterReduceExpressionsRule(Config config) {
       super(config);
@@ -311,11 +307,6 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    * @see CoreRules#PROJECT_REDUCE_EXPRESSIONS */
   public static class ProjectReduceExpressionsRule
       extends ReduceExpressionsRule<ProjectReduceExpressionsRule.Config> {
-    /** @deprecated Use {@link CoreRules#PROJECT_REDUCE_EXPRESSIONS}. */
-    @Deprecated // to be removed before 1.25
-    public static final ProjectReduceExpressionsRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Creates a ProjectReduceExpressionsRule. */
     protected ProjectReduceExpressionsRule(Config config) {
       super(config);
@@ -381,9 +372,6 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    * @see CoreRules#JOIN_REDUCE_EXPRESSIONS */
   public static class JoinReduceExpressionsRule
       extends ReduceExpressionsRule<JoinReduceExpressionsRule.Config> {
-    public static final JoinReduceExpressionsRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Creates a JoinReduceExpressionsRule. */
     protected JoinReduceExpressionsRule(Config config) {
       super(config);
@@ -460,11 +448,6 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    */
   public static class CalcReduceExpressionsRule
       extends ReduceExpressionsRule<CalcReduceExpressionsRule.Config> {
-    /** @deprecated Use {@link CoreRules#CALC_REDUCE_EXPRESSIONS}. */
-    @Deprecated // to be removed before 1.25
-    public static final CalcReduceExpressionsRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Creates a CalcReduceExpressionsRule. */
     protected CalcReduceExpressionsRule(Config config) {
       super(config);
@@ -590,12 +573,6 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
    * @see CoreRules#WINDOW_REDUCE_EXPRESSIONS */
   public static class WindowReduceExpressionsRule
       extends ReduceExpressionsRule<WindowReduceExpressionsRule.Config> {
-
-    /** @deprecated Use {@link CoreRules#WINDOW_REDUCE_EXPRESSIONS}. */
-    @Deprecated // to be removed before 1.25
-    public static final WindowReduceExpressionsRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Creates a WindowReduceExpressionsRule. */
     protected WindowReduceExpressionsRule(Config config) {
       super(config);

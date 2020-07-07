@@ -32,7 +32,8 @@ public class FilterMergeRule extends RelOptNewRule<FilterMergeRule.Config>
     implements SubstitutionRule {
   /** @deprecated Use {@link CoreRules#FILTER_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final FilterMergeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final FilterMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

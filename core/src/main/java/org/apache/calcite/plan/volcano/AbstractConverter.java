@@ -105,7 +105,8 @@ public class AbstractConverter extends ConverterImpl {
    */
   public static class ExpandConversionRule
       extends RelOptNewRule<ExpandConversionRule.Config> {
-    public static final ExpandConversionRule INSTANCE = Config.DEFAULT.toRule();
+    public static final ExpandConversionRule INSTANCE =
+        Config.DEFAULT.toRule();
 
     /** Creates an ExpandConversionRule. */
     protected ExpandConversionRule(Config config) {

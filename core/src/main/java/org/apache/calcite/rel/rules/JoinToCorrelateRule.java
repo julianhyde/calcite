@@ -66,11 +66,13 @@ public class JoinToCorrelateRule
 
   /** @deprecated Use {@link CoreRules#JOIN_TO_CORRELATE}. */
   @Deprecated // to be removed before 1.25
-  public static final JoinToCorrelateRule INSTANCE = Config.DEFAULT.toRule();
+  public static final JoinToCorrelateRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** @deprecated Use {@link CoreRules#JOIN_TO_CORRELATE}. */
   @Deprecated // to be removed before 1.25
-  public static final JoinToCorrelateRule JOIN = Config.DEFAULT.toRule();
+  public static final JoinToCorrelateRule JOIN =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

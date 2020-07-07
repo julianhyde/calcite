@@ -26,11 +26,6 @@ import org.apache.calcite.schema.impl.StarTable;
  * between the {@link Aggregate} and its {@link StarTable.StarTableScan}
  * input. */
 public class AggregateProjectStarTableRule extends AggregateStarTableRule {
-  /** @deprecated Use {@link CoreRules#AGGREGATE_PROJECT_STAR_TABLE}. */
-  @Deprecated // to be removed before 1.25
-  public static final AggregateProjectStarTableRule INSTANCE =
-      Config.DEFAULT.toRule();
-
   /** Creates an AggregateProjectStarTableRule. */
   protected AggregateProjectStarTableRule(Config config) {
     super(config);

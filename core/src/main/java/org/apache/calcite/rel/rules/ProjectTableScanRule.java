@@ -60,7 +60,8 @@ public class ProjectTableScanRule
 
   /** @deprecated Use {@link CoreRules#PROJECT_TABLE_SCAN}. */
   @Deprecated // to be removed before 1.25
-  public static final ProjectTableScanRule INSTANCE = Config.DEFAULT.toRule();
+  public static final ProjectTableScanRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** @deprecated Use {@link CoreRules#PROJECT_INTERPRETER_TABLE_SCAN}. */
   @Deprecated // to be removed before 1.25

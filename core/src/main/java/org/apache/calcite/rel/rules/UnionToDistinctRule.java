@@ -39,7 +39,8 @@ public class UnionToDistinctRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#UNION_TO_DISTINCT}. */
   @Deprecated // to be removed before 1.25
-  public static final UnionToDistinctRule INSTANCE = Config.DEFAULT.toRule();
+  public static final UnionToDistinctRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

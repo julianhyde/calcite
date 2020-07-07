@@ -79,14 +79,14 @@ public abstract class ProjectToWindowRule
    * use {@link CoreRules#CALC_TO_WINDOW} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
   @Deprecated // to be removed before 1.25
-  public static final CalcToWindowRule INSTANCE =
+  public static final ProjectToWindowRule INSTANCE =
       CalcToWindowRule.Config.DEFAULT.toRule();
 
   /** @deprecated This field is prone to issues during class-loading;
    * use {@link CoreRules#PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW} instead. */
   @SuppressWarnings("StaticInitializerReferencesSubClass")
   @Deprecated // to be removed before 1.25
-  public static final ProjectToLogicalProjectAndWindowRule PROJECT =
+  public static final ProjectToWindowRule PROJECT =
       ProjectToLogicalProjectAndWindowRule.Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
@@ -114,10 +114,6 @@ public abstract class ProjectToWindowRule
    * @see CoreRules#CALC_TO_WINDOW
    */
   public static class CalcToWindowRule extends ProjectToWindowRule {
-    /** @deprecated Use {@link CoreRules#CALC_TO_WINDOW}. */
-    @Deprecated // to be removed before 1.25
-    static final CalcToWindowRule INSTANCE = Config.DEFAULT.toRule();
-
     /** Creates a CalcToWindowRule. */
     protected CalcToWindowRule(Config config) {
       super(config);
@@ -164,12 +160,6 @@ public abstract class ProjectToWindowRule
    */
   public static class ProjectToLogicalProjectAndWindowRule
       extends ProjectToWindowRule {
-    /** @deprecated Use
-     * {@link CoreRules#PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW}. */
-    @Deprecated // to be removed before 1.25
-    public static final ProjectToLogicalProjectAndWindowRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Creates a ProjectToLogicalProjectAndWindowRule. */
     protected ProjectToLogicalProjectAndWindowRule(Config config) {
       super(config);

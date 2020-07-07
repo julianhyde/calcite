@@ -45,7 +45,8 @@ public class FilterCalcMergeRule
 
   /** @deprecated Use {@link CoreRules#FILTER_CALC_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final FilterCalcMergeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final FilterCalcMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

@@ -34,7 +34,8 @@ public class UnionEliminatorRule
     implements SubstitutionRule {
   /** @deprecated Use {@link CoreRules#UNION_REMOVE}. */
   @Deprecated // to be removed before 1.25
-  public static final UnionEliminatorRule INSTANCE = Config.DEFAULT.toRule();
+  public static final UnionEliminatorRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

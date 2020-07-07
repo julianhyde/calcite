@@ -27,7 +27,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
  */
 public class MongoToEnumerableConverterRule extends ConverterRule {
   /** Singleton instance of MongoToEnumerableConverterRule. */
-  public static final MongoToEnumerableConverterRule INSTANCE = Config.INSTANCE
+  public static final ConverterRule INSTANCE = Config.INSTANCE
       .withConversion(RelNode.class, MongoRel.CONVENTION,
           EnumerableConvention.INSTANCE, "MongoToEnumerableConverterRule")
       .withRuleFactory(MongoToEnumerableConverterRule::new)

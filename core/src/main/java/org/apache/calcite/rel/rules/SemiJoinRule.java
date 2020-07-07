@@ -139,11 +139,6 @@ public abstract class SemiJoinRule
    *
    * @see CoreRules#PROJECT_TO_SEMI_JOIN */
   public static class ProjectToSemiJoinRule extends SemiJoinRule {
-    /** @deprecated Use {@link CoreRules#PROJECT_TO_SEMI_JOIN}. */
-    @Deprecated // to be removed before 1.25
-    public static final ProjectToSemiJoinRule INSTANCE =
-        Config.DEFAULT.toRule();
-
     /** Creates a ProjectToSemiJoinRule. */
     protected ProjectToSemiJoinRule(Config config) {
       super(config);
@@ -197,10 +192,6 @@ public abstract class SemiJoinRule
    *
    * @see CoreRules#JOIN_TO_SEMI_JOIN */
   public static class JoinToSemiJoinRule extends SemiJoinRule {
-    /** @deprecated Use {@link CoreRules#JOIN_TO_SEMI_JOIN}. */
-    @Deprecated // to be removed before 1.25
-    public static final JoinToSemiJoinRule INSTANCE = Config.DEFAULT.toRule();
-
     /** Creates a JoinToSemiJoinRule. */
     protected JoinToSemiJoinRule(Config config) {
       super(config);

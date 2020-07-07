@@ -37,7 +37,8 @@ public class TableScanRule extends RelOptNewRule<RelOptNewRule.Config>
     implements TransformationRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final TableScanRule INSTANCE = Config.DEFAULT.toRule();
+  public static final TableScanRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

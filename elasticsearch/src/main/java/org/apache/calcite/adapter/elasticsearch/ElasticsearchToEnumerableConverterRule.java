@@ -27,7 +27,7 @@ import org.apache.calcite.rel.convert.ConverterRule;
  */
 public class ElasticsearchToEnumerableConverterRule extends ConverterRule {
   /** Singleton instance of ElasticsearchToEnumerableConverterRule. */
-  static final ElasticsearchToEnumerableConverterRule INSTANCE = Config.INSTANCE
+  static final ConverterRule INSTANCE = Config.INSTANCE
       .withConversion(RelNode.class, ElasticsearchRel.CONVENTION,
           EnumerableConvention.INSTANCE,
           "ElasticsearchToEnumerableConverterRule")

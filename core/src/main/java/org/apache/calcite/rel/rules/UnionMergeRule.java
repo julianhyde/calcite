@@ -44,7 +44,8 @@ public class UnionMergeRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#UNION_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final UnionMergeRule INSTANCE = Config.DEFAULT.toRule();
+  public static final UnionMergeRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** @deprecated Use {@link CoreRules#INTERSECT_MERGE}. */
   @Deprecated // to be removed before 1.25
@@ -53,7 +54,8 @@ public class UnionMergeRule
 
   /** @deprecated Use {@link CoreRules#MINUS_MERGE}. */
   @Deprecated // to be removed before 1.25
-  public static final UnionMergeRule MINUS_INSTANCE = Config.MINUS.toRule();
+  public static final UnionMergeRule MINUS_INSTANCE =
+      Config.MINUS.toRule();
 
   //~ Constructors -----------------------------------------------------------
 

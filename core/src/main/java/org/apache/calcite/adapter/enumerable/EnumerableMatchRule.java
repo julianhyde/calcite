@@ -34,11 +34,7 @@ public class EnumerableMatchRule extends ConverterRule {
           EnumerableConvention.INSTANCE, "EnumerableMatchRule")
       .withRuleFactory(EnumerableMatchRule::new);
 
-  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_MATCH_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableMatchRule INSTANCE = DEFAULT_CONFIG
-      .toRule(EnumerableMatchRule.class);
-
+  /** Creates an EnumerableMatchRule. */
   protected EnumerableMatchRule(Config config) {
     super(config);
   }

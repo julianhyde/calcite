@@ -37,6 +37,7 @@ class EnumerableProjectRule extends ConverterRule {
           "EnumerableProjectRule")
       .withRuleFactory(EnumerableProjectRule::new);
 
+  /** Creates an EnumerableProjectRule. */
   protected EnumerableProjectRule(Config config) {
     super(config);
   }

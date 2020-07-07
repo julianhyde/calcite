@@ -38,10 +38,6 @@ import java.util.List;
 public class CoerceInputsRule
     extends RelOptNewRule<CoerceInputsRule.Config>
     implements TransformationRule {
-  /** @deprecated Use {@link CoreRules#COERCE_INPUTS}. */
-  @Deprecated // to be removed before 1.25
-  public static final CoerceInputsRule INSTANCE = Config.DEFAULT.toRule();
-
   //~ Constructors -----------------------------------------------------------
 
   /** Creates a CoerceInputsRule. */

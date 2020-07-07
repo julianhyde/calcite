@@ -25,7 +25,10 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * Rule to convert a relational expression from
  * {@link org.apache.calcite.adapter.jdbc.JdbcConvention} to
  * {@link SparkRel#CONVENTION Spark convention}.
+ *
+ * @deprecated Use {@link SparkRules#ENUMERABLE_TO_SPARK}.
  */
+@Deprecated // to be removed before 1.25
 public class EnumerableToSparkConverterRule extends ConverterRule {
   /** Singleton instance of EnumerableToSparkConverterRule. */
   public static final EnumerableToSparkConverterRule INSTANCE = Config.INSTANCE

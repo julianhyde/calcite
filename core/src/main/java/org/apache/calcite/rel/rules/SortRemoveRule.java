@@ -37,7 +37,8 @@ public class SortRemoveRule
     implements TransformationRule {
   /** @deprecated Use {@link CoreRules#SORT_REMOVE}. */
   @Deprecated // to be removed before 1.25
-  public static final SortRemoveRule INSTANCE = Config.DEFAULT.toRule();
+  public static final SortRemoveRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   /** Creates a SortRemoveRule. */
   protected SortRemoveRule(Config config) {

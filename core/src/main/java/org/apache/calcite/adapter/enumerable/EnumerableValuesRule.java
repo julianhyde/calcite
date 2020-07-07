@@ -34,11 +34,7 @@ public class EnumerableValuesRule extends ConverterRule {
           EnumerableConvention.INSTANCE, "EnumerableValuesRule")
       .withRuleFactory(EnumerableValuesRule::new);
 
-  /** @deprecated Use {@link EnumerableRules#ENUMERABLE_VALUES_RULE}. */
-  @Deprecated // to be removed before 1.25
-  public static final EnumerableValuesRule INSTANCE = DEFAULT_CONFIG
-      .toRule(EnumerableValuesRule.class);
-
+  /** Creates an EnumerableValuesRule. */
   protected EnumerableValuesRule(Config config) {
     super(config);
   }

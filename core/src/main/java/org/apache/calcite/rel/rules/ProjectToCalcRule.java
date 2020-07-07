@@ -45,7 +45,8 @@ public class ProjectToCalcRule extends RelOptNewRule<ProjectToCalcRule.Config>
 
   /** @deprecated Use {@link CoreRules#PROJECT_TO_CALC}. */
   @Deprecated // to be removed before 1.25
-  public static final ProjectToCalcRule INSTANCE = Config.DEFAULT.toRule();
+  public static final ProjectToCalcRule INSTANCE =
+      Config.DEFAULT.toRule();
 
   //~ Constructors -----------------------------------------------------------
 
