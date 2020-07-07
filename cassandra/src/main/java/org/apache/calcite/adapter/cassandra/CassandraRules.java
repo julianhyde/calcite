@@ -115,7 +115,7 @@ public class CassandraRules {
    *
    * @see #FILTER
    */
-  private static class CassandraFilterRule
+  public static class CassandraFilterRule
       extends RelOptNewRule<CassandraFilterRule.Config> {
     /** Creates a CassandraFilterRule. */
     protected CassandraFilterRule(Config config) {
@@ -251,7 +251,7 @@ public class CassandraRules {
    *
    * @see #PROJECT
    */
-  private static class CassandraProjectRule extends CassandraConverterRule {
+  public static class CassandraProjectRule extends CassandraConverterRule {
     /** Default configuration. */
     private static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(LogicalProject.class, Convention.NONE,
@@ -288,7 +288,7 @@ public class CassandraRules {
    *
    * @see #SORT
    */
-  private static class CassandraSortRule
+  public static class CassandraSortRule
       extends RelOptNewRule<CassandraSortRule.Config> {
     /** Creates a CassandraSortRule. */
     protected CassandraSortRule(Config config) {
@@ -412,7 +412,7 @@ public class CassandraRules {
    *
    * @see #LIMIT
    */
-  private static class CassandraLimitRule
+  public static class CassandraLimitRule
       extends RelOptNewRule<CassandraLimitRule.Config> {
     /** Creates a CassandraLimitRule. */
     protected CassandraLimitRule(Config config) {
