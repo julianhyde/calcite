@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.sql.fun.SqlLibrary;
 
 import net.hydromatic.quidem.Quidem;
 
@@ -62,6 +63,7 @@ class CoreQuidemTest extends QuidemTest {
           return CalciteAssert.that()
               .with(CalciteConnectionProperty.PARSER_FACTORY,
                   ExtensionDdlExecutor.class.getName() + "#PARSER_FACTORY")
+              .with(CalciteConnectionProperty.FUN, SqlLibrary.CALCITE.fun)
               .with(CalciteAssert.Config.SCOTT)
               .connect();
         default:
