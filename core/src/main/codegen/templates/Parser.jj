@@ -1921,7 +1921,13 @@ void AddSelectItem(List<SqlNode> list) :
 {
     e = SelectExpression()
     (
-        [ <AS> ]
+        [ <AS>
+            [ <MEASURE> {
+                    e = SqlStdOperatorTable.AS_MEASURE.createCall(
+                        e.getParserPosition(), e);
+                }
+            ]
+        ]
         (
             id = SimpleIdentifier()
         |
@@ -7787,6 +7793,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MATCH_RECOGNIZE: "MATCH_RECOGNIZE">
 |   < MAX: "MAX" >
 |   < MAXVALUE: "MAXVALUE" >
+|   < MEASURE: "MEASURE" >
 |   < MEASURES: "MEASURES" >
 |   < MEMBER: "MEMBER" >
 |   < MERGE: "MERGE" > { beforeTableName(); }
