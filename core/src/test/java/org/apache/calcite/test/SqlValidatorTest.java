@@ -3826,6 +3826,93 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .isAggregate(is(false));
   }
 
+  @Test void testAsMeasure() {
+    // various kinds of measure expressions
+    sql("select deptno, empno + 1 as measure e1 from emp").ok();
+    sql("select *, empno + 1 as measure e1 from emp").ok();
+
+    // an aggregate function in a measure does not make it an aggregate query
+    sql("select *, sum(empno) as measure e1 from emp").ok();
+    sql("select e1 from (\n"
+        + "  select deptno, empno + 1 as measure e1 from emp)").ok();
+    sql("select e1 from (\n"
+        + "  select *, sum(empno) as measure e1 from emp)").ok();
+
+    // Aggregate and DISTINCT queries may not contain measures.
+    // (Maybe relax this restriction later?)
+    final String message = "MEASURE not valid in aggregate or DISTINCT query";
+    sql("select deptno, ^1 as measure e1^ from emp group by deptno")
+        .fails(message);
+    sql("select sum(sal) as s, ^1 as measure e1^ from emp having count(*) > 0")
+        .fails(message);
+    sql("select 2 + 3, count(*), ^1 as measure e1^ from emp")
+        .fails(message);
+    sql("select ^1 as measure e1^ from emp group by ()")
+        .fails(message);
+    sql("select distinct deptno, ^1 as measure e1^ from emp")
+        .fails(message);
+
+    // invalid column
+    sql("select\n"
+        + "  ^nonExistent^ + 1 as d1,\n"
+        + "  deptno + 3 as d3\n"
+        + "from emp").fails("Column 'NONEXISTENT' not found in any table");
+    sql("select\n"
+        + "  ^nonExistent^ + 1 as measure d1,\n"
+        + "  deptno + 3 as d3\n"
+        + "from emp").fails("Column 'NONEXISTENT' not found in any table");
+
+    // measures may reference both measures and non-measure aliases
+    sql("select\n"
+        + "  deptno + 1 as d1,\n"
+        + "  d1 + 2 as measure d3\n"
+        + "from emp").ok();
+    sql("select\n"
+        + "  deptno + 1 as d1,\n"
+        + "  d1 + 2 as measure d3,\n"
+        + "  d3 + 3 as measure d6\n"
+        + "from emp").ok();
+    // forward references are ok
+    sql("select\n"
+        + "  d3 + 3 as measure d6,\n"
+        + "  d1 + 2 as measure d3,\n"
+        + "  deptno + 1 as d1\n"
+        + "from emp").ok();
+    // non-measures may not reference measures
+    sql("select\n"
+        + "  deptno + 1 as measure d1,\n"
+        + "  ^d1^ + 2 as d3\n"
+        + "from emp").fails("Column 'D1' not found in any table");
+    // non-measures don't even see measures - fall back to columns
+    final String intVarcharType =
+        "RecordType(INTEGER NOT NULL ENAME, VARCHAR(20) NOT NULL N) NOT NULL";
+    sql("select\n"
+        + "  deptno + 1 as measure ename,\n"
+        + "  ename as n\n"
+        + "from emp")
+        .type(intVarcharType);
+    // todo: INTEGER would be better than UNKNOWN
+    final String intIntType =
+        "RecordType(INTEGER NOT NULL ENAME, UNKNOWN N) NOT NULL";
+    sql("select\n"
+        + "  deptno + 1 as measure ename,\n"
+        + "  ename as measure n\n"
+        + "from emp").type(intIntType);
+    sql("select\n"
+        + "  deptno + 1 as measure ename,\n"
+        + "  min(ename) as measure n\n"
+        + "from emp").type(intIntType);
+    // measure can reference column by qualifying with table alias
+    sql("select\n"
+        + "  deptno + 1 as measure ename,\n"
+        + "  emp.ename as measure n\n"
+        + "from emp").type(intVarcharType);
+    sql("select\n"
+        + "  deptno + 1 as measure ename,\n"
+        + "  min(emp.ename) as measure n\n"
+        + "from emp").type(intVarcharType);
+  }
+
   @Test void testAmbiguousColumnInIn() {
     // ok: cyclic reference
     sql("select * from emp as e\n"
