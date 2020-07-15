@@ -211,6 +211,9 @@ public enum SqlKind {
   /** {@code AS} operator. */
   AS,
 
+  /** {@code MEASURE} operator. */
+  MEASURE,
+
   /** Argument assignment operator, {@code =>}. */
   ARGUMENT_ASSIGNMENT,
 
