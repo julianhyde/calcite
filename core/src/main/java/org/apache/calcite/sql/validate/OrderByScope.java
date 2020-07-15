@@ -71,31 +71,43 @@ public class OrderByScope extends DelegatingScope {
     // If it's a simple identifier, look for an alias.
     if (identifier.isSimple()
         && validator.config().sqlConformance().isSortByAlias()) {
-      final String name = identifier.names.get(0);
-      final SqlValidatorNamespace selectNs =
-          validator.getNamespace(select);
-      final RelDataType rowType = selectNs.getRowType();
-
-      final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
-      final RelDataTypeField field = nameMatcher.field(rowType, name);
-      final int aliasCount = aliasCount(nameMatcher, name);
-      if (aliasCount > 1) {
-        // More than one column has this alias.
-        throw validator.newValidationError(identifier,
-            RESOURCE.columnAmbiguous(name));
-      }
-      if (field != null && !field.isDynamicStar() && aliasCount == 1) {
-        // if identifier is resolved to a dynamic star, use super.fullyQualify() for such case.
-        return SqlQualified.create(this, 1, selectNs, identifier);
+      SqlQualified qualified = foo(this, select, identifier);
+      if (qualified != null) {
+        return qualified;
       }
     }
     return super.fullyQualify(identifier);
   }
 
+  // This method was refactored out of fullyQualify so that it can be shared
+  // with MeasureScope;
+  // TODO: complete refactoring (perhaps moving to DelegatingScope);
+  // note that we have removed a check for DynamicStar.
+  static SqlQualified foo(DelegatingScope scope, SqlSelect select,
+      SqlIdentifier identifier) {
+    final String name = identifier.names.get(0);
+    final SqlValidatorNamespace selectNs =
+        scope.validator.getNamespace(select);
+
+    final SqlNameMatcher nameMatcher =
+        scope.validator.catalogReader.nameMatcher();
+    final int aliasCount = aliasCount(select, nameMatcher, name);
+    if (aliasCount > 1) {
+      // More than one column has this alias.
+      throw scope.validator.newValidationError(identifier,
+          RESOURCE.columnAmbiguous(name));
+    }
+    if (aliasCount == 1) {
+      return SqlQualified.create(scope, 1, selectNs, identifier);
+    }
+    return null;
+  }
+
   /** Returns the number of columns in the SELECT clause that have {@code name}
    * as their implicit (e.g. {@code t.name}) or explicit (e.g.
    * {@code t.c as name}) alias. */
-  private int aliasCount(SqlNameMatcher nameMatcher, String name) {
+  static int aliasCount(SqlSelect select, SqlNameMatcher nameMatcher,
+      String name) {
     int n = 0;
     for (SqlNode s : select.getSelectList()) {
       final String alias = SqlValidatorUtil.getAlias(s, -1);
