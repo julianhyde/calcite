@@ -1920,13 +1920,19 @@ SqlInsert WhenNotMatchedClause(SqlNode table) :
  */
 void AddSelectItem(List<SqlNode> list) :
 {
-    final SqlNode e;
+    SqlNode e;
     final SqlIdentifier id;
 }
 {
     e = SelectExpression()
     (
-        [ <AS> ]
+        [ <AS>
+            [ <MEASURE> {
+                    e = SqlStdOperatorTable.AS_MEASURE.createCall(
+                        e.getParserPosition(), e);
+                }
+            ]
+        ]
         (
             id = SimpleIdentifier()
         |
@@ -8117,6 +8123,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MATCH_RECOGNIZE: "MATCH_RECOGNIZE">
 |   < MAX: "MAX" >
 |   < MAXVALUE: "MAXVALUE" >
+|   < MEASURE: "MEASURE" >
 |   < MEASURES: "MEASURES" >
 |   < MEMBER: "MEMBER" >
 |   < MERGE: "MERGE" > { beforeTableName(); }
