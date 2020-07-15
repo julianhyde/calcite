@@ -320,6 +320,9 @@ public interface CalciteResource {
   @BaseMessage("OVER clause is necessary for window functions")
   ExInst<SqlValidatorException> absentOverClause();
 
+  @BaseMessage("MEASURE not valid in aggregate or DISTINCT query")
+  ExInst<SqlValidatorException> measureInAggregateQuery();
+
   @BaseMessage("Window ''{0}'' not found")
   ExInst<SqlValidatorException> windowNotFound(String a0);
 
