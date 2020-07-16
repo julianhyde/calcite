@@ -77,7 +77,7 @@ public class InnodbTableScan extends TableScan implements InnodbRel {
         .build();
     getCluster().setHintStrategies(strategies);
 
-    planner.addRule(InnodbToEnumerableConverterRule.INSTANCE);
+    planner.addRule(InnodbRules.TO_ENUMERABLE);
     for (RelOptRule rule : InnodbRules.RULES) {
       planner.addRule(rule);
     }

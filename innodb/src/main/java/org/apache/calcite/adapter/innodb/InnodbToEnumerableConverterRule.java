@@ -20,7 +20,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.function.Predicate;
@@ -28,10 +27,10 @@ import java.util.function.Predicate;
 /**
  * Rule to convert a relational expression from
  * {@link InnodbRel#CONVENTION} to {@link EnumerableConvention}.
+ *
+ * @see InnodbRules#TO_ENUMERABLE
  */
 public class InnodbToEnumerableConverterRule extends ConverterRule {
-  public static final ConverterRule INSTANCE =
-      new InnodbToEnumerableConverterRule(RelFactories.LOGICAL_BUILDER);
 
   /**
    * Creates an InnodbToEnumerableConverterRule.
