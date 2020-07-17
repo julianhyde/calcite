@@ -232,6 +232,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     // "AS" has no effect, so expand "x AS id" into "x".
     registerOp(SqlStdOperatorTable.AS,
         (cx, call) -> cx.convertExpression(call.operand(0)));
+    // "MEASURE" has no effect, so expand "x AS MEASURE id" into "x".
+    registerOp(SqlStdOperatorTable.MEASURE,
+        (cx, call) -> cx.convertExpression(call.operand(0)));
     // "SQRT(x)" is equivalent to "POWER(x, .5)"
     registerOp(SqlStdOperatorTable.SQRT,
         (cx, call) -> cx.convertExpression(
