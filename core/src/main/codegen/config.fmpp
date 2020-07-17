@@ -177,7 +177,6 @@ data: {
       "MAP"
       "MATCHED"
       "MAXVALUE"
-      "MEASURE"
       "MESSAGE_LENGTH"
       "MESSAGE_OCTET_LENGTH"
       "MESSAGE_TEXT"

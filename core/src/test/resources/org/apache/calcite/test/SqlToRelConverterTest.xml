@@ -3652,6 +3652,18 @@ LogicalDelta
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testMeasure1">
+        <Resource name="sql">
+            <![CDATA[select * from (
+  select deptno, empno + 1 as measure e1 from emp)]]>
+        </Resource>
+        <Resource name="plan">
+            <![CDATA[
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
     <TestCase name="testNotInWithLiteral">
         <Resource name="sql">
             <![CDATA[SELECT *

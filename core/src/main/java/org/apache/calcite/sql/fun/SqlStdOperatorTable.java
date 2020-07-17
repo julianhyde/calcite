@@ -174,10 +174,10 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlAsOperator AS = new SqlAsOperator();
 
   /**
-   * <code>AS_MEASURE</code> operator wraps an expression in the SELECT clause
-   * that is a measure.
+   * <code>MEASURE</code> operator wraps an expression in the SELECT clause
+   * that is a measure. It always occurs inside a call to "AS".
    */
-  public static final SqlMeasureOperator AS_MEASURE =
+  public static final SqlMeasureOperator MEASURE =
       new SqlMeasureOperator();
 
   /**
