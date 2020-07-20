@@ -31,6 +31,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -38,9 +39,6 @@ import java.sql.Types;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-import static java.sql.Timestamp.valueOf;
-
-import static org.apache.calcite.adapter.file.FileAdapterTests.checkSql;
 import static org.apache.calcite.adapter.file.FileAdapterTests.sql;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -48,6 +46,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import static java.sql.Timestamp.valueOf;
 
 /**
  * System test of the Calcite file adapter, which can also read and parse
@@ -138,21 +138,24 @@ class FileAdapterTest {
   /** Reads the EMPTY table from the CSV schema. The CSV file has no lines,
    * therefore the table has a system-generated column called
    * "EmptyFileHasNoColumns". */
-  @Test void testCsvSalesEmpty() throws SQLException {
+  @Test void testCsvSalesEmpty() {
     final String sql = "select * from sales.\"EMPTY\"";
-    checkSql(sql, "sales-csv", resultSet -> {
-      try {
-        assertThat(resultSet.getMetaData().getColumnCount(), is(1));
-        assertThat(resultSet.getMetaData().getColumnName(1),
-            is("EmptyFileHasNoColumns"));
-        assertThat(resultSet.getMetaData().getColumnType(1),
-            is(Types.BOOLEAN));
-        String actual = FileAdapterTests.toString(resultSet);
-        assertThat(actual, is(""));
-      } catch (SQLException e) {
-        throw TestUtil.rethrow(e);
-      }
-    });
+    sql("sales-csv", sql)
+        .checking(SqlTest::checkEmpty)
+        .ok();
+  }
+
+  private static void checkEmpty(ResultSet resultSet) {
+    try {
+      final ResultSetMetaData metaData = resultSet.getMetaData();
+      assertThat(metaData.getColumnCount(), is(1));
+      assertThat(metaData.getColumnName(1), is("EmptyFileHasNoColumns"));
+      assertThat(metaData.getColumnType(1), is(Types.BOOLEAN));
+      String actual = FileAdapterTests.toString(resultSet);
+      assertThat(actual, is(""));
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
+    }
   }
 
   /** Test case for
@@ -216,21 +219,11 @@ class FileAdapterTest {
   /** Reads the EMPTY table from the JSON schema. The JSON file has no lines,
    * therefore the table has a system-generated column called
    * "EmptyFileHasNoColumns". */
-  @Test void testJsonSalesEmpty() throws SQLException {
+  @Test void testJsonSalesEmpty() {
     final String sql = "select * from sales.\"EMPTY\"";
-    checkSql(sql, "sales-json", resultSet -> {
-      try {
-        assertThat(resultSet.getMetaData().getColumnCount(), is(1));
-        assertThat(resultSet.getMetaData().getColumnName(1),
-            is("EmptyFileHasNoColumns"));
-        assertThat(resultSet.getMetaData().getColumnType(1),
-            is(Types.BOOLEAN));
-        String actual = FileAdapterTests.toString(resultSet);
-        assertThat(actual, is(""));
-      } catch (SQLException e) {
-        throw TestUtil.rethrow(e);
-      }
-    });
+    sql("sales-json", sql)
+        .checking(SqlTest::checkEmpty)
+        .ok();
   }
 
   /** Test returns the result of two json file joins. */
