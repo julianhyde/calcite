@@ -92,7 +92,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * {@link org.apache.calcite.sql.test.SqlTester}.
  */
 @LocaleEnUs
-class SqlValidatorTest extends SqlValidatorTestCase {
+public class SqlValidatorTest extends SqlValidatorTestCase {
   //~ Static fields/initializers ---------------------------------------------
 
   /**
@@ -1549,7 +1549,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("(?s).*Function '.fn HAHAHA.' is not defined.*");
   }
 
-  @Test void testQuotedFunction() {
+  @Test public void testQuotedFunction() {
     if (false) {
       // REVIEW jvs 2-Feb-2005:  I am disabling this test because I
       // removed the corresponding support from the parser.  Where in the
@@ -1821,7 +1821,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalYearPositive() {
+  void subTestIntervalYearPositive() {
     // default precision
     expr("INTERVAL '1' YEAR")
         .columnType("INTERVAL YEAR NOT NULL");
@@ -1872,7 +1872,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalYearToMonthPositive() {
+  void subTestIntervalYearToMonthPositive() {
     // default precision
     expr("INTERVAL '1-2' YEAR TO MONTH")
         .columnType("INTERVAL YEAR TO MONTH NOT NULL");
@@ -1927,7 +1927,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalMonthPositive() {
+  void subTestIntervalMonthPositive() {
     // default precision
     expr("INTERVAL '1' MONTH")
         .columnType("INTERVAL MONTH NOT NULL");
@@ -1978,7 +1978,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalDayPositive() {
+  void subTestIntervalDayPositive() {
     // default precision
     expr("INTERVAL '1' DAY")
         .columnType("INTERVAL DAY NOT NULL");
@@ -2022,7 +2022,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .columnType("INTERVAL DAY NOT NULL");
   }
 
-  public void subTestIntervalDayToHourPositive() {
+  void subTestIntervalDayToHourPositive() {
     // default precision
     expr("INTERVAL '1 2' DAY TO HOUR")
         .columnType("INTERVAL DAY TO HOUR NOT NULL");
@@ -2077,7 +2077,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalDayToMinutePositive() {
+  void subTestIntervalDayToMinutePositive() {
     // default precision
     expr("INTERVAL '1 2:3' DAY TO MINUTE")
         .columnType("INTERVAL DAY TO MINUTE NOT NULL");
@@ -2132,7 +2132,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalDayToSecondPositive() {
+  void subTestIntervalDayToSecondPositive() {
     // default precision
     expr("INTERVAL '1 2:3:4' DAY TO SECOND")
         .columnType("INTERVAL DAY TO SECOND NOT NULL");
@@ -2201,7 +2201,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalHourPositive() {
+  void subTestIntervalHourPositive() {
     // default precision
     expr("INTERVAL '1' HOUR")
         .columnType("INTERVAL HOUR NOT NULL");
@@ -2252,7 +2252,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalHourToMinutePositive() {
+  void subTestIntervalHourToMinutePositive() {
     // default precision
     expr("INTERVAL '2:3' HOUR TO MINUTE")
         .columnType("INTERVAL HOUR TO MINUTE NOT NULL");
@@ -2307,7 +2307,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalHourToSecondPositive() {
+  void subTestIntervalHourToSecondPositive() {
     // default precision
     expr("INTERVAL '2:3:4' HOUR TO SECOND")
         .columnType("INTERVAL HOUR TO SECOND NOT NULL");
@@ -2376,7 +2376,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalMinutePositive() {
+  void subTestIntervalMinutePositive() {
     // default precision
     expr("INTERVAL '1' MINUTE")
         .columnType("INTERVAL MINUTE NOT NULL");
@@ -2427,7 +2427,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalMinuteToSecondPositive() {
+  void subTestIntervalMinuteToSecondPositive() {
     // default precision
     expr("INTERVAL '2:4' MINUTE TO SECOND")
         .columnType("INTERVAL MINUTE TO SECOND NOT NULL");
@@ -2496,7 +2496,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXPositive() tests.
    */
-  public void subTestIntervalSecondPositive() {
+  void subTestIntervalSecondPositive() {
     // default precision
     expr("INTERVAL '1' SECOND")
         .columnType("INTERVAL SECOND NOT NULL");
@@ -2557,7 +2557,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalYearNegative() {
+  void subTestIntervalYearNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' YEAR")
         .fails("Illegal interval literal format '-' for INTERVAL YEAR.*");
@@ -2594,14 +2594,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + "YEAR\\(10\\) field");
 
     // precision > maximum
-    expr("INTERVAL '1' YEAR(11^)^")
+    expr("INTERVAL '1' ^YEAR(11)^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL YEAR\\(11\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0' YEAR(0^)^")
+    expr("INTERVAL '0' ^YEAR(0)^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL YEAR\\(0\\)");
   }
@@ -2613,7 +2613,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalYearToMonthNegative() {
+  void subTestIntervalYearToMonthNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' YEAR TO MONTH")
         .fails("Illegal interval literal format '-' for INTERVAL YEAR TO MONTH");
@@ -2659,14 +2659,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Illegal interval literal format '1-12' for INTERVAL YEAR TO MONTH.*");
 
     // precision > maximum
-    expr("INTERVAL '1-1' YEAR(11) TO ^MONTH^")
+    expr("INTERVAL '1-1' ^YEAR(11) TO MONTH^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL YEAR\\(11\\) TO MONTH");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0-0' YEAR(0) TO ^MONTH^")
+    expr("INTERVAL '0-0' ^YEAR(0) TO MONTH^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL YEAR\\(0\\) TO MONTH");
   }
@@ -2678,7 +2678,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalMonthNegative() {
+  void subTestIntervalMonthNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' MONTH")
         .fails("Illegal interval literal format '-' for INTERVAL MONTH.*");
@@ -2713,14 +2713,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Interval field value -2,147,483,648 exceeds precision of MONTH\\(10\\) field.*");
 
     // precision > maximum
-    expr("INTERVAL '1' MONTH(11^)^")
+    expr("INTERVAL '1' ^MONTH(11)^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL MONTH\\(11\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0' MONTH(0^)^")
+    expr("INTERVAL '0' ^MONTH(0)^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL MONTH\\(0\\)");
   }
@@ -2732,7 +2732,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalDayNegative() {
+  void subTestIntervalDayNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' DAY")
         .fails("Illegal interval literal format '-' for INTERVAL DAY.*");
@@ -2771,14 +2771,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + "DAY\\(10\\) field.*");
 
     // precision > maximum
-    expr("INTERVAL '1' DAY(11^)^")
+    expr("INTERVAL '1' ^DAY(11)^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL DAY\\(11\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0' DAY(0^)^")
+    expr("INTERVAL '0' ^DAY(0)^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL DAY\\(0\\)");
   }
@@ -2790,7 +2790,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalDayToHourNegative() {
+  void subTestIntervalDayToHourNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' DAY TO HOUR")
         .fails("Illegal interval literal format '-' for INTERVAL DAY TO HOUR");
@@ -2837,14 +2837,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Illegal interval literal format '1 24' for INTERVAL DAY TO HOUR.*");
 
     // precision > maximum
-    expr("INTERVAL '1 1' DAY(11) TO ^HOUR^")
+    expr("INTERVAL '1 1' ^DAY(11) TO HOUR^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL DAY\\(11\\) TO HOUR");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0 0' DAY(0) TO ^HOUR^")
+    expr("INTERVAL '0 0' ^DAY(0) TO HOUR^")
         .fails("Interval leading field precision '0' out of range for INTERVAL DAY\\(0\\) TO HOUR");
   }
 
@@ -2855,7 +2855,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalDayToMinuteNegative() {
+  void subTestIntervalDayToMinuteNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL ' :' DAY TO MINUTE")
         .fails("Illegal interval literal format ' :' for INTERVAL DAY TO MINUTE");
@@ -2919,14 +2919,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Illegal interval literal format '1 1:60' for INTERVAL DAY TO MINUTE.*");
 
     // precision > maximum
-    expr("INTERVAL '1 1:1' DAY(11) TO ^MINUTE^")
+    expr("INTERVAL '1 1:1' ^DAY(11) TO MINUTE^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL DAY\\(11\\) TO MINUTE");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0 0' DAY(0) TO ^MINUTE^")
+    expr("INTERVAL '0 0' ^DAY(0) TO MINUTE^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL DAY\\(0\\) TO MINUTE");
   }
@@ -2938,7 +2938,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalDayToSecondNegative() {
+  void subTestIntervalDayToSecondNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL ' ::' DAY TO SECOND")
         .fails("Illegal interval literal format ' ::' for INTERVAL DAY TO SECOND");
@@ -3040,20 +3040,20 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + "INTERVAL DAY TO SECOND\\(3\\).*");
 
     // precision > maximum
-    expr("INTERVAL '1 1' DAY(11) TO ^SECOND^")
+    expr("INTERVAL '1 1' ^DAY(11) TO SECOND^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL DAY\\(11\\) TO SECOND");
-    expr("INTERVAL '1 1' DAY TO SECOND(10^)^")
+    expr("INTERVAL '1 1' ^DAY TO SECOND(10)^")
         .fails("Interval fractional second precision '10' out of range for "
             + "INTERVAL DAY TO SECOND\\(10\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0 0:0:0' DAY(0) TO ^SECOND^")
+    expr("INTERVAL '0 0:0:0' ^DAY(0) TO SECOND^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL DAY\\(0\\) TO SECOND");
-    expr("INTERVAL '0 0:0:0' DAY TO SECOND(0^)^")
+    expr("INTERVAL '0 0:0:0' ^DAY TO SECOND(0)^")
         .fails("Interval fractional second precision '0' out of range for "
             + "INTERVAL DAY TO SECOND\\(0\\)");
   }
@@ -3065,7 +3065,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalHourNegative() {
+  void subTestIntervalHourNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' HOUR")
         .fails("Illegal interval literal format '-' for INTERVAL HOUR.*");
@@ -3109,14 +3109,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + "HOUR\\(10\\) field.*");
 
     // precision > maximum
-    expr("INTERVAL '1' HOUR(11^)^")
+    expr("INTERVAL '1' ^HOUR(11)^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL HOUR\\(11\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0' HOUR(0^)^")
+    expr("INTERVAL '0' ^HOUR(0)^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL HOUR\\(0\\)");
   }
@@ -3128,7 +3128,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalHourToMinuteNegative() {
+  void subTestIntervalHourToMinuteNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL ':' HOUR TO MINUTE")
         .fails("Illegal interval literal format ':' for INTERVAL HOUR TO MINUTE");
@@ -3174,14 +3174,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Illegal interval literal format '1:60' for INTERVAL HOUR TO MINUTE.*");
 
     // precision > maximum
-    expr("INTERVAL '1:1' HOUR(11) TO ^MINUTE^")
+    expr("INTERVAL '1:1' ^HOUR(11) TO MINUTE^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL HOUR\\(11\\) TO MINUTE");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0:0' HOUR(0) TO ^MINUTE^")
+    expr("INTERVAL '0:0' ^HOUR(0) TO MINUTE^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL HOUR\\(0\\) TO MINUTE");
   }
@@ -3193,7 +3193,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalHourToSecondNegative() {
+  void subTestIntervalHourToSecondNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '::' HOUR TO SECOND")
         .fails("Illegal interval literal format '::' for INTERVAL HOUR TO SECOND");
@@ -3269,20 +3269,20 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + "INTERVAL HOUR TO SECOND\\(3\\).*");
 
     // precision > maximum
-    expr("INTERVAL '1:1:1' HOUR(11) TO ^SECOND^")
+    expr("INTERVAL '1:1:1' ^HOUR(11) TO SECOND^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL HOUR\\(11\\) TO SECOND");
-    expr("INTERVAL '1:1:1' HOUR TO SECOND(10^)^")
+    expr("INTERVAL '1:1:1' ^HOUR TO SECOND(10)^")
         .fails("Interval fractional second precision '10' out of range for "
             + "INTERVAL HOUR TO SECOND\\(10\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0:0:0' HOUR(0) TO ^SECOND^")
+    expr("INTERVAL '0:0:0' ^HOUR(0) TO SECOND^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL HOUR\\(0\\) TO SECOND");
-    expr("INTERVAL '0:0:0' HOUR TO SECOND(0^)^")
+    expr("INTERVAL '0:0:0' ^HOUR TO SECOND(0)^")
         .fails("Interval fractional second precision '0' out of range for "
             + "INTERVAL HOUR TO SECOND\\(0\\)");
   }
@@ -3294,7 +3294,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalMinuteNegative() {
+  void subTestIntervalMinuteNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL '-' MINUTE")
         .fails("Illegal interval literal format '-' for INTERVAL MINUTE.*");
@@ -3331,14 +3331,14 @@ class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Interval field value -2,147,483,648 exceeds precision of MINUTE\\(10\\) field.*");
 
     // precision > maximum
-    expr("INTERVAL '1' MINUTE(11^)^")
+    expr("INTERVAL '1' ^MINUTE(11)^")
         .fails("Interval leading field precision '11' out of range for "
             + "INTERVAL MINUTE\\(11\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0' MINUTE(0^)^")
+    expr("INTERVAL '0' ^MINUTE(0)^")
         .fails("Interval leading field precision '0' out of range for "
             + "INTERVAL MINUTE\\(0\\)");
   }
@@ -3350,7 +3350,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalMinuteToSecondNegative() {
+  void subTestIntervalMinuteToSecondNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL ':' MINUTE TO SECOND")
         .fails("Illegal interval literal format ':' for INTERVAL MINUTE TO SECOND");
@@ -3413,20 +3413,20 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + " INTERVAL MINUTE TO SECOND\\(3\\).*");
 
     // precision > maximum
-    expr("INTERVAL '1:1' MINUTE(11) TO ^SECOND^")
+    expr("INTERVAL '1:1' ^MINUTE(11) TO SECOND^")
         .fails("Interval leading field precision '11' out of range for"
             + " INTERVAL MINUTE\\(11\\) TO SECOND");
-    expr("INTERVAL '1:1' MINUTE TO SECOND(10^)^")
+    expr("INTERVAL '1:1' ^MINUTE TO SECOND(10)^")
         .fails("Interval fractional second precision '10' out of range for"
             + " INTERVAL MINUTE TO SECOND\\(10\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0:0' MINUTE(0) TO ^SECOND^")
+    expr("INTERVAL '0:0' ^MINUTE(0) TO SECOND^")
         .fails("Interval leading field precision '0' out of range for"
             + " INTERVAL MINUTE\\(0\\) TO SECOND");
-    expr("INTERVAL '0:0' MINUTE TO SECOND(0^)^")
+    expr("INTERVAL '0:0' ^MINUTE TO SECOND(0)^")
         .fails("Interval fractional second precision '0' out of range for"
             + " INTERVAL MINUTE TO SECOND\\(0\\)");
   }
@@ -3438,7 +3438,7 @@ class SqlValidatorTest extends SqlValidatorTestCase {
    * Similarly, any changes to tests here should be echoed appropriately to
    * each of the other 12 subTestIntervalXXXNegative() tests.
    */
-  public void subTestIntervalSecondNegative() {
+  void subTestIntervalSecondNegative() {
     // Qualifier - field mismatches
     wholeExpr("INTERVAL ':' SECOND")
         .fails("Illegal interval literal format ':' for INTERVAL SECOND.*");
@@ -3490,20 +3490,20 @@ class SqlValidatorTest extends SqlValidatorTestCase {
             + " INTERVAL SECOND\\(2, 9\\).*");
 
     // precision > maximum
-    expr("INTERVAL '1' SECOND(11^)^")
+    expr("INTERVAL '1' ^SECOND(11)^")
         .fails("Interval leading field precision '11' out of range for"
             + " INTERVAL SECOND\\(11\\)");
-    expr("INTERVAL '1.1' SECOND(1, 10^)^")
+    expr("INTERVAL '1.1' ^SECOND(1, 10)^")
         .fails("Interval fractional second precision '10' out of range for"
             + " INTERVAL SECOND\\(1, 10\\)");
 
     // precision < minimum allowed)
     // note: parser will catch negative values, here we
     // just need to check for 0
-    expr("INTERVAL '0' SECOND(0^)^")
+    expr("INTERVAL '0' ^SECOND(0)^")
         .fails("Interval leading field precision '0' out of range for"
             + " INTERVAL SECOND\\(0\\)");
-    expr("INTERVAL '0' SECOND(1, 0^)^")
+    expr("INTERVAL '0' ^SECOND(1, 0)^")
         .fails("Interval fractional second precision '0' out of range for"
             + " INTERVAL SECOND\\(1, 0\\)");
   }
@@ -3580,6 +3580,31 @@ class SqlValidatorTest extends SqlValidatorTestCase {
     // leading zeroes do not cause precision to be exceeded
     expr("INTERVAL '0999' MONTH(3)")
         .columnType("INTERVAL MONTH(3) NOT NULL");
+  }
+
+  @Test void testIntervalExpression() {
+    expr("interval 1 hour").columnType("INTERVAL HOUR NOT NULL");
+    expr("interval (2 + 3) month").columnType("INTERVAL MONTH NOT NULL");
+    expr("interval (cast(null as integer)) year").columnType("INTERVAL YEAR");
+    expr("interval (cast(null as integer)) year(2)")
+        .columnType("INTERVAL YEAR(2)");
+    expr("interval (date '1970-01-01') hour").withWhole(true)
+        .fails("Cannot apply 'INTERVAL' to arguments of type "
+            + "'INTERVAL <DATE> <INTERVAL HOUR>'\\. Supported form\\(s\\): "
+            + "'INTERVAL <NUMERIC> <DATETIME_INTERVAL>'");
+    expr("interval (nullif(true, true)) hour").withWhole(true)
+        .fails("Cannot apply 'INTERVAL' to arguments of type "
+            + "'INTERVAL <BOOLEAN> <INTERVAL HOUR>'\\. Supported form\\(s\\): "
+            + "'INTERVAL <NUMERIC> <DATETIME_INTERVAL>'");
+    expr("interval (interval '1' day) hour").withWhole(true)
+        .fails("Cannot apply 'INTERVAL' to arguments of type "
+            + "'INTERVAL <INTERVAL DAY> <INTERVAL HOUR>'\\. "
+            + "Supported form\\(s\\): "
+            + "'INTERVAL <NUMERIC> <DATETIME_INTERVAL>'");
+    sql("select interval empno hour as h from emp")
+        .columnType("INTERVAL HOUR NOT NULL");
+    sql("select interval emp.mgr hour as h from emp")
+        .columnType("INTERVAL HOUR");
   }
 
   @Test void testIntervalOperators() {
