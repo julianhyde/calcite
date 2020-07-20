@@ -136,7 +136,7 @@ abstract class FileAdapterTests {
   }
 
   static String resourcePath(String path) {
-    return Sources.of(SqlTest.class.getResource("/" + path)).file().getAbsolutePath();
+    return Sources.of(FileAdapterTest.class.getResource("/" + path)).file().getAbsolutePath();
   }
 
   private static void output(ResultSet resultSet, PrintStream out)

@@ -28,12 +28,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Properties;
@@ -47,11 +49,9 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static java.sql.Timestamp.valueOf;
-
 /**
- * System test of the Calcite file adapter, which can also read and parse
- * HTML tables over HTTP.
+ * System test of the Calcite file adapter, which can read and parse
+ * HTML tables over HTTP, and also read CSV and JSON files from the filesystem.
  */
 @ExtendWith(RequiresNetworkExtension.class)
 class FileAdapterTest {
@@ -141,7 +141,7 @@ class FileAdapterTest {
   @Test void testCsvSalesEmpty() {
     final String sql = "select * from sales.\"EMPTY\"";
     sql("sales-csv", sql)
-        .checking(SqlTest::checkEmpty)
+        .checking(FileAdapterTest::checkEmpty)
         .ok();
   }
 
@@ -222,7 +222,7 @@ class FileAdapterTest {
   @Test void testJsonSalesEmpty() {
     final String sql = "select * from sales.\"EMPTY\"";
     sql("sales-json", sql)
-        .checking(SqlTest::checkEmpty)
+        .checking(FileAdapterTest::checkEmpty)
         .ok();
   }
 
@@ -566,17 +566,17 @@ class FileAdapterTest {
       ResultSet res = connection.getMetaData().getColumns(null, null,
           "DATE", "JOINEDAT");
       res.next();
-      assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.DATE);
+      assertEquals(res.getInt("DATA_TYPE"), Types.DATE);
 
       res = connection.getMetaData().getColumns(null, null,
           "DATE", "JOINTIME");
       res.next();
-      assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIME);
+      assertEquals(res.getInt("DATA_TYPE"), Types.TIME);
 
       res = connection.getMetaData().getColumns(null, null,
           "DATE", "JOINTIMES");
       res.next();
-      assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIMESTAMP);
+      assertEquals(res.getInt("DATA_TYPE"), Types.TIMESTAMP);
 
       Statement statement = connection.createStatement();
       ResultSet resultSet = statement.executeQuery(
@@ -584,23 +584,17 @@ class FileAdapterTest {
       resultSet.next();
 
       // date
-      assertEquals(java.sql.Date.class, resultSet.getDate(1).getClass());
-      assertEquals(java.sql.Date.valueOf("1996-08-03"),
-          resultSet.getDate(1));
+      assertEquals(Date.class, resultSet.getDate(1).getClass());
+      assertEquals(Date.valueOf("1996-08-03"), resultSet.getDate(1));
 
       // time
-      assertEquals(java.sql.Time.class, resultSet.getTime(2).getClass());
-      assertEquals(java.sql.Time.valueOf("00:01:02"),
-          resultSet.getTime(2));
+      assertEquals(Time.class, resultSet.getTime(2).getClass());
+      assertEquals(Time.valueOf("00:01:02"), resultSet.getTime(2));
 
       // timestamp
-      assertEquals(
-          Timestamp.class,
-          resultSet.getTimestamp(3).getClass());
-      assertEquals(
-          Timestamp.valueOf("1996-08-03 00:01:02"),
+      assertEquals(Timestamp.class, resultSet.getTimestamp(3).getClass());
+      assertEquals(Timestamp.valueOf("1996-08-03 00:01:02"),
           resultSet.getTimestamp(3));
-
     }
   }
 
@@ -664,7 +658,7 @@ class FileAdapterTest {
       assertThat(timestamp, isA(Timestamp.class));
       // Note: This logic is time zone specific, but the same time zone is
       // used in the CSV adapter and this test, so they should cancel out.
-      assertThat(timestamp, is(valueOf("1996-08-03 00:01:02.0")));
+      assertThat(timestamp, is(Timestamp.valueOf("1996-08-03 00:01:02.0")));
     }
   }
 
@@ -680,7 +674,7 @@ class FileAdapterTest {
          ResultSet resultSet = statement.executeQuery(sql)) {
       assertThat(resultSet.next(), is(true));
       final Timestamp timestamp = resultSet.getTimestamp(2);
-      assertThat(timestamp, is(valueOf("1996-08-03 00:01:02")));
+      assertThat(timestamp, is(Timestamp.valueOf("1996-08-03 00:01:02")));
     }
   }
 
@@ -697,7 +691,7 @@ class FileAdapterTest {
          ResultSet resultSet = statement.executeQuery(sql)) {
       assertThat(resultSet.next(), is(true));
       final Timestamp timestamp = resultSet.getTimestamp(2);
-      assertThat(timestamp, is(valueOf("1996-08-03 00:01:02")));
+      assertThat(timestamp, is(Timestamp.valueOf("1996-08-03 00:01:02")));
     }
   }
 
@@ -748,7 +742,7 @@ class FileAdapterTest {
           + "or JOINEDAT >= {d '2017-01-01'}";
       final ResultSet joinedAt = statement.executeQuery(sql1);
       assertThat(joinedAt.next(), is(true));
-      assertThat(joinedAt.getDate(1), is(java.sql.Date.valueOf("1996-08-03")));
+      assertThat(joinedAt.getDate(1), is(Date.valueOf("1996-08-03")));
 
       // time
       final String sql2 = "select JOINTIME from \"DATE\"\n"
@@ -756,7 +750,7 @@ class FileAdapterTest {
           + "and JOINTIME < {t '08:00:00'}";
       final ResultSet joinTime = statement.executeQuery(sql2);
       assertThat(joinTime.next(), is(true));
-      assertThat(joinTime.getTime(1), is(java.sql.Time.valueOf("07:15:56")));
+      assertThat(joinTime.getTime(1), is(Time.valueOf("07:15:56")));
 
       // timestamp
       final String sql3 = "select JOINTIMES,\n"
@@ -831,16 +825,16 @@ class FileAdapterTest {
           + "where JOINEDAT is not null";
       final ResultSet joinedAt = statement.executeQuery(sql1);
       assertThat(joinedAt.next(), is(true));
-      assertThat(joinedAt.getDate(1).getClass(), equalTo(java.sql.Date.class));
-      assertThat(joinedAt.getDate(1), is(java.sql.Date.valueOf("1996-08-03")));
+      assertThat(joinedAt.getDate(1).getClass(), equalTo(Date.class));
+      assertThat(joinedAt.getDate(1), is(Date.valueOf("1996-08-03")));
 
       // time
       final String sql2 = "select JOINTIME from \"DATE\"\n"
           + "where JOINTIME is not null";
       final ResultSet joinTime = statement.executeQuery(sql2);
       assertThat(joinTime.next(), is(true));
-      assertThat(joinTime.getTime(1).getClass(), equalTo(java.sql.Time.class));
-      assertThat(joinTime.getTime(1), is(java.sql.Time.valueOf("00:01:02")));
+      assertThat(joinTime.getTime(1).getClass(), equalTo(Time.class));
+      assertThat(joinTime.getTime(1), is(Time.valueOf("00:01:02")));
 
       // timestamp
       final String sql3 = "select JOINTIMES from \"DATE\"\n"
@@ -871,16 +865,16 @@ class FileAdapterTest {
           + "where JOINEDAT > {d '1990-01-01'}";
       final ResultSet joinedAt = statement.executeQuery(sql1);
       assertThat(joinedAt.next(), is(true));
-      assertThat(joinedAt.getDate(1).getClass(), equalTo(java.sql.Date.class));
-      assertThat(joinedAt.getDate(1), is(java.sql.Date.valueOf("1996-08-03")));
+      assertThat(joinedAt.getDate(1).getClass(), equalTo(Date.class));
+      assertThat(joinedAt.getDate(1), is(Date.valueOf("1996-08-03")));
 
       // time
       final String sql2 = "select JOINTIME from \"DATE\"\n"
           + "where JOINTIME > {t '00:00:00'}";
       final ResultSet joinTime = statement.executeQuery(sql2);
       assertThat(joinTime.next(), is(true));
-      assertThat(joinTime.getTime(1).getClass(), equalTo(java.sql.Time.class));
-      assertThat(joinTime.getTime(1), is(java.sql.Time.valueOf("00:01:02")));
+      assertThat(joinTime.getTime(1).getClass(), equalTo(Time.class));
+      assertThat(joinTime.getTime(1), is(Time.valueOf("00:01:02")));
 
       // timestamp
       final String sql3 = "select JOINTIMES from \"DATE\"\n"
