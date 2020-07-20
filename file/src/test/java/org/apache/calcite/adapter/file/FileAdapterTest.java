@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * HTML tables over HTTP.
  */
 @ExtendWith(RequiresNetworkExtension.class)
-class SqlTest {
+class FileAdapterTest {
   // helper functions
 
   private Fluent sql(String model, String sql) {
@@ -87,7 +87,7 @@ class SqlTest {
     return resultSet -> {
       try {
         final List<String> lines = new ArrayList<>();
-        SqlTest.collect(lines, resultSet);
+        FileAdapterTest.collect(lines, resultSet);
         Collections.sort(lines);
         assertEquals(expectedLines, lines);
       } catch (SQLException e) {
@@ -122,7 +122,7 @@ class SqlTest {
     try {
       Properties info = new Properties();
       info.put("model",
-          Sources.of(SqlTest.class.getResource("/" + model + ".json")).path());
+          Sources.of(FileAdapterTest.class.getResource("/" + model + ".json")).path());
       connection = DriverManager.getConnection("jdbc:calcite:", info);
       statement = connection.createStatement();
       final ResultSet resultSet = statement.executeQuery(sql);
