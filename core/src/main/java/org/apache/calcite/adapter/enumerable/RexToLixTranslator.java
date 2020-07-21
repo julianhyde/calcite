@@ -1268,8 +1268,18 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       }
       final RexToLixTranslator.InputGetter getter =
           correlates.apply(((RexCorrelVariable) target).getName());
-      final Expression input = getter.field(
+      Expression input = getter.field(
           list, fieldIndex, currentStorageType);
+/* TODO
+      switch (nullAs) {
+      case IS_NULL:
+        input = Expressions.equal(input, RexImpTable.NULL_EXPR);
+        break;
+      case IS_NOT_NULL:
+        input = Expressions.notEqual(input, RexImpTable.NULL_EXPR);
+        break;
+      }
+*/
       final Expression condition = checkNull(input);
       final ParameterExpression valueVariable =
           Expressions.parameter(input.getType(), list.newName("corInp_value"));
