@@ -17,14 +17,13 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
-import org.apache.calcite.rel.type.RelRecordType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -32,14 +31,29 @@ import static org.apache.calcite.util.Static.RESOURCE;
 /**
  * Base class for table-valued function windowing operator (TUMBLE, HOP and SESSION).
  */
-public class SqlWindowTableFunction extends SqlFunction {
+public class SqlWindowTableFunction extends SqlFunction
+    implements SqlTableFunction {
+  /**
+   * Type-inference strategy whereby the result type of a table function call is a ROW,
+   * which is combined from the operand #0(TABLE parameter)'s schema and two
+   * additional fields:
+   *
+   * <ol>
+   *  <li>window_start: TIMESTAMP type to indicate a window's start
+   *  <li>window_end: TIMESTAMP type to indicate a window's end
+   * </ol>
+   */
+  public static final SqlReturnTypeInference ARG0_TABLE_FUNCTION_WINDOWING =
+      SqlWindowTableFunction::inferRowType;
+
+  /** Creates a window table function with a given name. */
   public SqlWindowTableFunction(String name) {
-    super(name,
-        SqlKind.OTHER_FUNCTION,
-        ARG0_TABLE_FUNCTION_WINDOWING,
-        null,
-        null,
+    super(name, SqlKind.OTHER_FUNCTION, ReturnTypes.CURSOR, null, null,
         SqlFunctionCategory.SYSTEM);
+  }
+
+  @Override public SqlReturnTypeInference getRowTypeInference() {
+    return ARG0_TABLE_FUNCTION_WINDOWING;
   }
 
   protected boolean throwValidationSignatureErrorOrReturnFalse(SqlCallBinding callBinding,
@@ -53,16 +67,10 @@ public class SqlWindowTableFunction extends SqlFunction {
 
   protected void validateColumnNames(SqlValidator validator,
       List<String> fieldNames, List<SqlNode> unvalidatedColumnNames) {
-    for (SqlNode descOperand: unvalidatedColumnNames) {
+    final SqlNameMatcher matcher = validator.getCatalogReader().nameMatcher();
+    for (SqlNode descOperand : unvalidatedColumnNames) {
       final String colName = ((SqlIdentifier) descOperand).getSimple();
-      boolean matches = false;
-      for (String field : fieldNames) {
-        if (validator.getCatalogReader().nameMatcher().matches(field, colName)) {
-          matches = true;
-          break;
-        }
-      }
-      if (!matches) {
+      if (matcher.frequency(fieldNames, colName) == 0) {
         throw SqlUtil.newContextException(descOperand.getParserPosition(),
             RESOURCE.unknownIdentifier(colName));
       }
@@ -78,29 +86,16 @@ public class SqlWindowTableFunction extends SqlFunction {
     return ordinal != 0;
   }
 
-  /**
-   * Type-inference strategy whereby the result type of a table function call is a ROW,
-   * which is combined from the operand #0(TABLE parameter)'s schema and two
-   * additional fields:
-   *
-   * <ol>
-   *  <li>window_start: TIMESTAMP type to indicate a window's start.</li>
-   *  <li>window_end: TIMESTAMP type to indicate a window's end.</li>
-   * </ol>
-   */
-  public static final SqlReturnTypeInference ARG0_TABLE_FUNCTION_WINDOWING =
-      opBinding -> {
-        RelDataType inputRowType = opBinding.getOperandType(0);
-        List<RelDataTypeField> newFields = new ArrayList<>(inputRowType.getFieldList());
-        RelDataType timestampType = opBinding.getTypeFactory().createSqlType(SqlTypeName.TIMESTAMP);
-
-        RelDataTypeField windowStartField =
-            new RelDataTypeFieldImpl("window_start", newFields.size(), timestampType);
-        newFields.add(windowStartField);
-        RelDataTypeField windowEndField =
-            new RelDataTypeFieldImpl("window_end", newFields.size(), timestampType);
-        newFields.add(windowEndField);
-
-        return new RelRecordType(inputRowType.getStructKind(), newFields);
-      };
+  private static RelDataType inferRowType(SqlOperatorBinding opBinding) {
+    final RelDataType inputRowType = opBinding.getOperandType(0);
+    final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+    final RelDataType timestampType =
+        typeFactory.createSqlType(SqlTypeName.TIMESTAMP);
+    return typeFactory.builder()
+        .kind(inputRowType.getStructKind())
+        .addAll(inputRowType.getFieldList())
+        .add("window_start", timestampType)
+        .add("window_end", timestampType)
+        .build();
+  }
 }

@@ -124,6 +124,9 @@ public enum SqlKind {
    */
   LITERAL,
 
+  /** Interval qualifier. */
+  INTERVAL_QUALIFIER,
+
   /**
    * Function that is not a special function.
    *

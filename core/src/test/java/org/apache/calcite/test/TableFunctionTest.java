@@ -145,8 +145,7 @@ class TableFunctionTest {
    * Tests a table function that implements {@link ScannableTable} and returns
    * a single column.
    */
-  @Test void testScannableTableFunction()
-      throws SQLException, ClassNotFoundException {
+  @Test void testScannableTableFunction() throws SQLException {
     Connection connection = DriverManager.getConnection("jdbc:calcite:");
     CalciteConnection calciteConnection =
         connection.unwrap(CalciteConnection.class);
@@ -165,7 +164,7 @@ class TableFunctionTest {
 
   /** As {@link #testScannableTableFunction()} but with named parameters. */
   @Test void testScannableTableFunctionWithNamedParameters()
-      throws SQLException, ClassNotFoundException {
+      throws SQLException {
     Connection connection = DriverManager.getConnection("jdbc:calcite:");
     CalciteConnection calciteConnection =
         connection.unwrap(CalciteConnection.class);
@@ -198,7 +197,7 @@ class TableFunctionTest {
 
   /** As {@link #testScannableTableFunction()} but with named parameters. */
   @Test void testMultipleScannableTableFunctionWithNamedParameters()
-      throws SQLException, ClassNotFoundException {
+      throws SQLException {
     try (Connection connection = DriverManager.getConnection("jdbc:calcite:");
          Statement statement = connection.createStatement()) {
       CalciteConnection calciteConnection =
@@ -243,8 +242,7 @@ class TableFunctionTest {
    * Tests a table function that returns different row type based on
    * actual call arguments.
    */
-  @Test void testTableFunctionDynamicStructure()
-      throws SQLException, ClassNotFoundException {
+  @Test void testTableFunctionDynamicStructure() throws SQLException {
     Connection connection = getConnectionWithMultiplyFunction();
     final PreparedStatement ps = connection.prepareStatement("select *\n"
         + "from table(\"s\".\"multiplication\"(4, 3, ?))\n");
@@ -262,7 +260,7 @@ class TableFunctionTest {
    */
   @Disabled("SQLException does not include message from nested exception")
   @Test void testTableFunctionNonNullableMustBeLiterals()
-      throws SQLException, ClassNotFoundException {
+      throws SQLException {
     Connection connection = getConnectionWithMultiplyFunction();
     try {
       final PreparedStatement ps = connection.prepareStatement("select *\n"
@@ -299,8 +297,7 @@ class TableFunctionTest {
    */
   @Disabled("CannotPlanException: Node [rel#18:Subset#4.ENUMERABLE.[]] "
       + "could not be implemented")
-  @Test void testTableFunctionCursorInputs()
-      throws SQLException, ClassNotFoundException {
+  @Test void testTableFunctionCursorInputs() throws SQLException {
     try (Connection connection =
              DriverManager.getConnection("jdbc:calcite:")) {
       CalciteConnection calciteConnection =
@@ -334,8 +331,7 @@ class TableFunctionTest {
    */
   @Disabled("CannotPlanException: Node [rel#24:Subset#6.ENUMERABLE.[]] "
       + "could not be implemented")
-  @Test void testTableFunctionCursorsInputs()
-      throws SQLException, ClassNotFoundException {
+  @Test void testTableFunctionCursorsInputs() throws SQLException {
     try (Connection connection = getConnectionWithMultiplyFunction()) {
       CalciteConnection calciteConnection =
           connection.unwrap(CalciteConnection.class);
@@ -369,6 +365,7 @@ class TableFunctionTest {
     }
   }
 
+  /** @see Smalls#multiplicationTable */
   @Test void testUserDefinedTableFunction() {
     final String q = "select *\n"
         + "from table(\"s\".\"multiplication\"(2, 3, 100))\n";
@@ -379,6 +376,7 @@ class TableFunctionTest {
             "row_name=row 2; c1=103; c2=106");
   }
 
+  /** @see Smalls#multiplicationTable */
   @Test void testUserDefinedTableFunction2() {
     final String q = "select c1\n"
         + "from table(\"s\".\"multiplication\"(2, 3, 100))\n"
@@ -387,6 +385,7 @@ class TableFunctionTest {
         .throws_("Column 'C1' not found in any table; did you mean 'c1'?");
   }
 
+  /** @see Smalls#multiplicationTable */
   @Test void testUserDefinedTableFunction3() {
     final String q = "select \"c1\"\n"
         + "from table(\"s\".\"multiplication\"(2, 3, 100))\n"
@@ -394,6 +393,7 @@ class TableFunctionTest {
     with().query(q).returnsUnordered("c1=103");
   }
 
+  /** @see Smalls#multiplicationTable */
   @Test void testUserDefinedTableFunction4() {
     final String q = "select \"c1\"\n"
         + "from table(\"s\".\"multiplication\"('2', 3, 100))\n"

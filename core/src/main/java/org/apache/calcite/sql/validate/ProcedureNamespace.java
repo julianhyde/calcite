@@ -22,6 +22,7 @@ import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlTableFunction;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
@@ -64,8 +65,9 @@ public class ProcedureNamespace extends AbstractNamespace {
       throw new IllegalArgumentException("Table function should have CURSOR "
           + "type, not " + type);
     }
-    return tableFunction.getRowType(validator.typeFactory,
-        callBinding.operands());
+    final SqlReturnTypeInference rowTypeInference =
+        tableFunction.getRowTypeInference();
+    return rowTypeInference.inferReturnType(callBinding);
   }
 
   public SqlNode getNode() {

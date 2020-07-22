@@ -17,11 +17,10 @@
 package org.apache.calcite.sql.validate;
 
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TableFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
@@ -56,12 +55,15 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction
     return (TableFunction) super.getFunction();
   }
 
-  public RelDataType getRowType(RelDataTypeFactory typeFactory,
-      List<SqlNode> operandList) {
+  @Override public SqlReturnTypeInference getRowTypeInference() {
+    return this::inferRowType;
+  }
+
+  private RelDataType inferRowType(SqlOperatorBinding callBinding) {
     List<Object> arguments =
-        SqlUserDefinedTableMacro.convertArguments(typeFactory, operandList,
-          function, getNameAsId(), false);
-    return getFunction().getRowType(typeFactory, arguments);
+        SqlUserDefinedTableMacro.convertArguments(callBinding, function,
+            getNameAsId(), false);
+    return getFunction().getRowType(callBinding.getTypeFactory(), arguments);
   }
 
   /**
@@ -69,15 +71,13 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction
    * applied to given arguments. Only literal arguments are passed,
    * non-literal are replaced with default values (null, 0, false, etc).
    *
-   * @param operandList arguments of a function call (only literal arguments
-   *                    are passed, nulls for non-literal ones)
+   * @param callBinding Operand bound to arguments
    * @return element type of the table (e.g. {@code Object[].class})
    */
-  public Type getElementType(RelDataTypeFactory typeFactory,
-      List<SqlNode> operandList) {
+  public Type getElementType(SqlOperatorBinding callBinding) {
     List<Object> arguments =
-        SqlUserDefinedTableMacro.convertArguments(typeFactory, operandList,
-            function, getNameAsId(), false);
+        SqlUserDefinedTableMacro.convertArguments(callBinding, function,
+            getNameAsId(), false);
     return getFunction().getElementType(arguments);
   }
 }

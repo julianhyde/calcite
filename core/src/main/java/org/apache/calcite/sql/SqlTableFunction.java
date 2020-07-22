@@ -16,10 +16,7 @@
  */
 package org.apache.calcite.sql;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-
-import java.util.List;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
 
 /**
  * A function that returns a table.
@@ -30,11 +27,7 @@ public interface SqlTableFunction {
    * applied to given arguments. Only literal arguments are passed,
    * non-literal are replaced with default values (null, 0, false, etc).
    *
-   * @param typeFactory Type factory
-   * @param operandList arguments of a function call (only literal arguments
-   *                    are passed, nulls for non-literal ones)
-   * @return row type of the table
+   * @return strategy to infer the row type of a call to this function
    */
-  RelDataType getRowType(RelDataTypeFactory typeFactory,
-      List<SqlNode> operandList);
+  SqlReturnTypeInference getRowTypeInference();
 }

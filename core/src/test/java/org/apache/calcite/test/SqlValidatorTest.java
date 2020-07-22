@@ -11561,6 +11561,6 @@ class SqlValidatorTest extends SqlValidatorTestCase {
     MockSqlOperatorTable.addRamp(operatorTable);
     sql("select * FROM TABLE(ROW_FUNC()) AS T(a, b)")
         .withOperatorTable(operatorTable)
-        .type("RecordType(BIGINT A, BIGINT B) NOT NULL");
+        .type("RecordType(BIGINT NOT NULL A, BIGINT B) NOT NULL");
   }
 }
