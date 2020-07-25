@@ -62,7 +62,7 @@ import static java.lang.String.format;
 class PredicateAnalyzer {
 
   /**
-   * Internal exception
+   * Internal exception.
    */
   @SuppressWarnings("serial")
   private static final class PredicateAnalyzerException extends RuntimeException {
