@@ -202,8 +202,8 @@ public class PigAggregate extends Aggregate implements PigRel {
       if (aggCall.isDistinct()) {
         for (int fieldIndex : aggCall.getArgList()) {
           String fieldName = getInputFieldName(fieldIndex);
-          result.add("  " + fieldName + DISTINCT_FIELD_SUFFIX + " = DISTINCT " + relAlias + '.'
-              + fieldName + ";\n");
+          result.add("  " + fieldName + DISTINCT_FIELD_SUFFIX + " = DISTINCT "
+              + relAlias + '.' + fieldName + ";\n");
         }
       }
     }

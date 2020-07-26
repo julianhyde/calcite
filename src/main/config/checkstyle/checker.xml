@@ -81,16 +81,10 @@
     <!-- Packages must have javadoc. -->
     <module name="MissingJavadocPackage"/>
 
-    <!-- Classes and interfaces (even private ones) must have javadoc. -->
+    <!-- Classes, interfaces, enums (even private ones) must have javadoc. -->
     <module name="MissingJavadocType">
       <property name="scope" value="private"/>
     </module>
-
-    <!-- Public methods must have javadoc. -->
-<!--    <module name="MissingJavadocMethod">-->
-<!--       Getters and setters don't need javadoc. -->
-<!--      <property name="allowMissingPropertyJavadoc" value="true"/>-->
-<!--    </module>-->
 
     <!-- Javadoc must not have empty @param, @return etc. -->
     <module name="NonEmptyAtclauseDescription"/>

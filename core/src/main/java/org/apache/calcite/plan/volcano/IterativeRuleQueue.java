@@ -245,7 +245,7 @@ class IterativeRuleQueue extends RuleQueue {
     final VolcanoPlannerPhase phase;
 
     /**
-     * Rule match queue for SubstitutionRule
+     * Rule match queue for SubstitutionRule.
      */
     private final Queue<VolcanoRuleMatch> preQueue = new LinkedList<>();
 

@@ -955,7 +955,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   }
 
   /**
-   * Find the new root subset in case the root is merged with another subset
+   * Find the new root subset in case the root is merged with another subset.
    */
   void canonize() {
     root = canonize(root);
