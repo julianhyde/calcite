@@ -91,6 +91,27 @@ public class SqlWindowTableFunction extends SqlFunction
     return ARG0_TABLE_FUNCTION_WINDOWING;
   }
 
+  protected boolean throwValidationSignatureErrorOrReturnFalse(SqlCallBinding callBinding,
+      boolean throwOnFailure) {
+    if (throwOnFailure) {
+      throw callBinding.newValidationSignatureError();
+    } else {
+      return false;
+    }
+  }
+
+  protected void validateColumnNames(SqlValidator validator,
+      List<String> fieldNames, List<SqlNode> columnNames) {
+    final SqlNameMatcher matcher = validator.getCatalogReader().nameMatcher();
+    for (SqlNode columnName : columnNames) {
+      final String name = ((SqlIdentifier) columnName).getSimple();
+      if (matcher.indexOf(fieldNames, name) < 0) {
+        throw SqlUtil.newContextException(columnName.getParserPosition(),
+            RESOURCE.unknownIdentifier(name));
+      }
+    }
+  }
+
   /**
    * {@inheritDoc}
    *
