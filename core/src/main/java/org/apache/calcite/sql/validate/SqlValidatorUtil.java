@@ -36,6 +36,7 @@ import org.apache.calcite.schema.ExtensibleTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.schema.impl.AbstractTable;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -1236,6 +1237,29 @@ public class SqlValidatorUtil {
     default:
       return new FlatAggregate(call, filterCall, distinctCall, orderCall);
     }
+  }
+
+  /** Returns whether a select item is a measure. */
+  public static boolean isMeasure(SqlNode selectItem) {
+    return getMeasure(selectItem) != null;
+  }
+
+  /** Returns the measure expression if a select item is a measure, null
+   * otherwise.
+   *
+   * <p>For a mesaure, {@code selectItem} will have the form
+   * {@code AS(MEASURE(exp), alias)} and this method returns {@code exp}. */
+  @SuppressWarnings("SwitchStatementWithTooFewBranches")
+  public static SqlNode getMeasure(SqlNode selectItem) {
+    switch (selectItem.getKind()) {
+    case AS:
+      final SqlBasicCall call = (SqlBasicCall) selectItem;
+      switch (call.operand(0).getKind()) {
+      case MEASURE:
+        return ((SqlBasicCall) call.operand(0)).operand(0);
+      }
+    }
+    return null;
   }
 
   //~ Inner Classes ----------------------------------------------------------

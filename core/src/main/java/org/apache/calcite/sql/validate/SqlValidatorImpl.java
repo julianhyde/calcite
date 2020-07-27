@@ -400,7 +400,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final SqlValidatorScope scope;
     final SqlValidatorScope selectScope;
     SqlNode expanded;
-    if (isMeasure(selectItem)) {
+    if (SqlValidatorUtil.isMeasure(selectItem)) {
       selectScope =
           scope = getMeasureScope(select);
       expanded = selectItem;
@@ -1094,7 +1094,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return clauseScopes.get(IdPair.of(select, Clause.SELECT));
   }
 
-  SqlValidatorScope getMeasureScope(SqlSelect select) {
+  public SqlValidatorScope getMeasureScope(SqlSelect select) {
     return clauseScopes.get(IdPair.of(select, Clause.MEASURE));
   }
 
@@ -3472,7 +3472,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   private void checkRollUpInSelectList(SqlSelect select) {
     SqlValidatorScope scope = getSelectScope(select);
     for (SqlNode item : select.getSelectList()) {
-      if (isMeasure(item)) {
+      if (SqlValidatorUtil.isMeasure(item)) {
         continue;
       }
       checkRollUp(null, select, item, scope);
@@ -4214,7 +4214,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     final boolean aggregate = isAggregate(select) || select.isDistinct();
     for (SqlNode selectItem : expandedSelectItems) {
-      if (isMeasure(selectItem) && aggregate) {
+      if (SqlValidatorUtil.isMeasure(selectItem) && aggregate) {
         throw newValidationError(selectItem,
             RESOURCE.measureInAggregateQuery());
       }
@@ -4223,29 +4223,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
     return typeFactory.createStructType(fieldList);
-  }
-
-  /** Returns whether a select item is a measure. */
-  private boolean isMeasure(SqlNode selectItem) {
-    return getMeasure(selectItem) != null;
-  }
-
-  /** Returns the measure expression if a select item is a measure, null
-   * otherwise.
-   *
-   * <p>For a mesaure, {@code selectItem} will have the form
-   * {@code AS(MEASURE(exp), alias)} and this method returns {@code exp}. */
-  @SuppressWarnings("SwitchStatementWithTooFewBranches")
-  private SqlNode getMeasure(SqlNode selectItem) {
-    switch (selectItem.getKind()) {
-    case AS:
-      final SqlBasicCall call = (SqlBasicCall) selectItem;
-      switch (call.operand(0).getKind()) {
-      case MEASURE:
-        return ((SqlBasicCall) call.operand(0)).operand(0);
-      }
-    }
-    return null;
   }
 
   /**
@@ -4266,7 +4243,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
 
-    if (isMeasure(expr) && scope instanceof SelectScope) {
+    if (SqlValidatorUtil.isMeasure(expr) && scope instanceof SelectScope) {
       scope = getMeasureScope(((SelectScope) scope).getNode());
     }
 
