@@ -452,7 +452,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final SqlValidatorScope scope;
     final SqlValidatorScope selectScope;
     SqlNode expanded;
-    if (isMeasure(selectItem)) {
+    if (SqlValidatorUtil.isMeasure(selectItem)) {
       selectScope =
           scope = getMeasureScope(select);
       expanded = selectItem;
@@ -1182,7 +1182,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return getScope(select, Clause.SELECT);
   }
 
-  SqlValidatorScope getMeasureScope(SqlSelect select) {
+  @Override public SqlValidatorScope getMeasureScope(SqlSelect select) {
     return getScope(select, Clause.MEASURE);
   }
 
@@ -3845,7 +3845,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   private void checkRollUpInSelectList(SqlSelect select) {
     SqlValidatorScope scope = getSelectScope(select);
     for (SqlNode item : SqlNonNullableAccessors.getSelectList(select)) {
-      if (isMeasure(item)) {
+      if (SqlValidatorUtil.isMeasure(item)) {
         continue;
       }
       checkRollUp(null, select, item, scope);
@@ -4666,7 +4666,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     final boolean aggregate = isAggregate(select) || select.isDistinct();
     for (SqlNode selectItem : expandedSelectItems) {
-      if (isMeasure(selectItem) && aggregate) {
+      if (SqlValidatorUtil.isMeasure(selectItem) && aggregate) {
         throw newValidationError(selectItem,
             RESOURCE.measureInAggregateQuery());
       }
@@ -4730,7 +4730,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           RESOURCE.measureMustBeInAggregateQuery());
     }
 
-    if (isMeasure(expr) && scope instanceof SelectScope) {
+    if (SqlValidatorUtil.isMeasure(expr) && scope instanceof SelectScope) {
       scope = getMeasureScope(((SelectScope) scope).getNode());
     }
 
