@@ -477,6 +477,8 @@ public interface SqlValidator {
    */
   SqlValidatorScope getWhereScope(SqlSelect select);
 
+  SqlValidatorScope getMeasureScope(SqlSelect select);
+
   /**
    * Returns the type factory used by this validator.
    *
