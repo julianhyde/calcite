@@ -661,8 +661,11 @@ public class SqlToRelConverter {
    */
   public RelNode convertSelect(SqlSelect select, boolean top) {
     final SqlValidatorScope selectScope = validator().getWhereScope(select);
+    final SqlValidatorScope measureScope = validator().getMeasureScope(select);
     final Blackboard bb = createBlackboard(selectScope, null, top);
-    convertSelectImpl(bb, select);
+    final Blackboard measureBb = new Blackboard(measureScope, bb.nameToNodeMap, bb.top) {
+    };
+    convertSelectImpl(bb, measureBb, select);
     return castNonNull(bb.root);
   }
 
@@ -680,6 +683,7 @@ public class SqlToRelConverter {
    */
   protected void convertSelectImpl(
       final Blackboard bb,
+      final Blackboard measureBb,
       SqlSelect select) {
     convertFrom(
         bb,
@@ -707,6 +711,7 @@ public class SqlToRelConverter {
     } else {
       convertSelectList(
           bb,
+          measureBb,
           select,
           orderExprList);
     }
@@ -4298,6 +4303,7 @@ public class SqlToRelConverter {
 
   private void convertSelectList(
       Blackboard bb,
+      Blackboard measureBb,
       SqlSelect select,
       List<SqlNode> orderList) {
     SqlNodeList selectList = select.getSelectList();
@@ -4324,7 +4330,14 @@ public class SqlToRelConverter {
     int i = -1;
     for (SqlNode expr : selectList) {
       ++i;
-      exprs.add(bb.convertExpression(expr));
+      final SqlNode measure = SqlValidatorUtil.getMeasure(expr);
+      final RexNode e;
+      if (measure != null) {
+        e = measureBb.convertExpression(measure);
+      } else {
+        e = bb.convertExpression(expr);
+      }
+      exprs.add(e);
       fieldNames.add(deriveAlias(expr, aliases, i));
     }
 
