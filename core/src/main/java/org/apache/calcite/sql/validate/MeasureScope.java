@@ -71,12 +71,29 @@ public class MeasureScope extends DelegatingScope {
   }
 
   @Override public RelDataType resolveColumn(String name, SqlNode ctx) {
-    final boolean matches = aliasList.stream().anyMatch(alias ->
-        validator.getCatalogReader().nameMatcher().matches(alias, name));
-    if (matches) {
-      return validator.unknownType;
+    final SqlNameMatcher matcher = validator.getCatalogReader().nameMatcher();
+    final int aliasOrdinal = matcher.indexOf(aliasList, name);
+    if (aliasOrdinal >= 0) {
+      final SqlNode selectItem = select.getSelectList().get(aliasOrdinal);
+      final SqlNode measure = SqlValidatorUtil.getMeasure(selectItem);
+      if (measure != null) {
+        return validator.unknownType;
+      }
     }
     return super.resolveColumn(name, ctx);
+  }
+
+  public SqlNode lookupMeasure(String name) {
+    final SqlNameMatcher matcher = validator.getCatalogReader().nameMatcher();
+    final int aliasOrdinal = matcher.indexOf(aliasList, name);
+    if (aliasOrdinal >= 0) {
+      final SqlNode selectItem = select.getSelectList().get(aliasOrdinal);
+      final SqlNode measure = SqlValidatorUtil.getMeasure(selectItem);
+      if (measure != null) {
+        return measure;
+      }
+    }
+    return null;
   }
 
   public SqlQualified fullyQualify(SqlIdentifier identifier) {
