@@ -151,6 +151,7 @@ import org.apache.calcite.sql.validate.CollectNamespace;
 import org.apache.calcite.sql.validate.DelegatingScope;
 import org.apache.calcite.sql.validate.ListScope;
 import org.apache.calcite.sql.validate.MatchRecognizeScope;
+import org.apache.calcite.sql.validate.MeasureScope;
 import org.apache.calcite.sql.validate.ParameterScope;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
@@ -660,10 +661,10 @@ public class SqlToRelConverter {
    */
   public RelNode convertSelect(SqlSelect select, boolean top) {
     final SqlValidatorScope selectScope = validator().getWhereScope(select);
-    final SqlValidatorScope measureScope = validator().getMeasureScope(select);
+    final MeasureScope measureScope =
+        (MeasureScope) validator().getMeasureScope(select);
     final Blackboard bb = createBlackboard(selectScope, null, top);
-    final Blackboard measureBb = new Blackboard(measureScope, bb.nameToNodeMap, bb.top) {
-    };
+    final Blackboard measureBb = new MeasureBlackboard(measureScope, bb);
     convertSelectImpl(bb, measureBb, select);
     return castNonNull(bb.root);
   }
@@ -4095,6 +4096,14 @@ public class SqlToRelConverter {
       pv = identifier.names.get(0);
     }
 
+    final SqlNode measure = bb.lookupMeasure(identifier);
+    if (measure != null) {
+      return bb.convertExpression(measure);
+    }
+    if (bb instanceof MeasureBlackboard) {
+      bb = ((MeasureBlackboard) bb).parentBlackboard;
+    }
+
     final SqlQualified qualified;
     if (bb.scope != null) {
       qualified = bb.scope.fullyQualify(identifier);
@@ -5272,6 +5281,9 @@ public class SqlToRelConverter {
       return columnMonotonicities;
     }
 
+    public SqlNode lookupMeasure(SqlIdentifier identifier) {
+      return null;
+    }
   }
 
   private static SqlQuantifyOperator negate(SqlQuantifyOperator operator) {
@@ -6358,6 +6370,25 @@ public class SqlToRelConverter {
     /** Builds a {@link Config}. */
     public Config build() {
       return config;
+    }
+  }
+
+  /** Blackboard for converting measure expressions. */
+  private class MeasureBlackboard extends Blackboard {
+    private final MeasureScope measureScope;
+    private final Blackboard parentBlackboard;
+
+    MeasureBlackboard(MeasureScope measureScope, Blackboard bb) {
+      super(measureScope, bb.nameToNodeMap, bb.top);
+      this.measureScope = measureScope;
+      this.parentBlackboard = bb;
+    }
+
+    @Override public SqlNode lookupMeasure(SqlIdentifier identifier) {
+      if (identifier.isSimple()) {
+        return measureScope.lookupMeasure(identifier.getSimple());
+      }
+      return super.lookupMeasure(identifier);
     }
   }
 }
