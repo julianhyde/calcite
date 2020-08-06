@@ -20,6 +20,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -81,6 +82,7 @@ public class MeasureScope extends DelegatingScope {
       if (measure != null) {
         return validator.unknownType;
       }
+      return validator.unknownType; // non-measure
     }
     return super.resolveColumn(name, ctx);
   }
@@ -94,6 +96,7 @@ public class MeasureScope extends DelegatingScope {
       if (measure != null) {
         return measure;
       }
+      return SqlUtil.stripAs(selectItem); // non-measure select item
     }
     return null;
   }
