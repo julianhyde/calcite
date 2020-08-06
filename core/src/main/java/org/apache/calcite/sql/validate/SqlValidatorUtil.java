@@ -51,7 +51,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSyntax;
-import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -82,6 +81,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.apache.calcite.sql.SqlUtil.deriveAliasFromOrdinal;
 import static org.apache.calcite.sql.type.NonNullableAccessors.getCharset;
 import static org.apache.calcite.sql.type.NonNullableAccessors.getCollation;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -362,8 +362,31 @@ public class SqlValidatorUtil {
       if (ordinal < 0) {
         return null;
       } else {
-        return SqlUtil.deriveAliasFromOrdinal(ordinal);
+        return deriveAliasFromOrdinal(ordinal);
       }
+    }
+  }
+
+  /** As {@link #getAlias(SqlNode, int)} but returns a {@link SqlIdentifier}. */
+  public static SqlIdentifier getAliasId(SqlNode node, int ordinal) {
+    Preconditions.checkArgument(ordinal >= 0);
+    switch (node.getKind()) {
+    case AS:
+      // E.g. "1 + 2 as foo" --> "foo"
+      return ((SqlCall) node).operand(1);
+
+    case OVER:
+      // E.g. "bids over w" --> "bids"
+      return getAliasId(((SqlCall) node).operand(0), ordinal);
+
+    case IDENTIFIER:
+      // E.g. "foo.bar" --> "bar"
+      final SqlIdentifier identifier = (SqlIdentifier) node;
+      return identifier.getComponent(identifier.names.size() - 1);
+
+    default:
+      return new SqlIdentifier(deriveAliasFromOrdinal(ordinal),
+          SqlParserPos.ZERO);
     }
   }
 
@@ -1295,7 +1318,7 @@ public class SqlValidatorUtil {
   /** Returns the measure expression if a select item is a measure, null
    * otherwise.
    *
-   * <p>For a mesaure, {@code selectItem} will have the form
+   * <p>For a measure, {@code selectItem} will have the form
    * {@code AS(MEASURE(exp), alias)} and this method returns {@code exp}. */
   @SuppressWarnings({"SwitchStatementWithTooFewBranches", "MissingCasesInEnumSwitch"})
   public static @Nullable SqlNode getMeasure(SqlNode selectItem) {
