@@ -5289,6 +5289,12 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "  deptno + 1 as measure ename,\n"
         + "  min(emp.ename) as measure n\n"
         + "from emp").type(intVarcharType);
+
+    // measure does not need to be grouped
+    sql("select deptno, count_plus_100 from (\n"
+        + "  select empno, deptno, count(*) + 100 as measure count_plus_100\n"
+        + "  from emp)\n"
+        + "group by deptno").ok();
   }
 
   @Test void testAmbiguousColumnInIn() {
@@ -10726,11 +10732,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testDummy() {
     // (To debug individual statements, paste them into this method.)
-    expr("true\n"
-        + "or ^(date '1-2-3', date '1-2-3', date '1-2-3')\n"
-        + "   overlaps (date '1-2-3', date '1-2-3')^\n"
-        + "or false")
-        .fails("(?s).*Cannot apply 'OVERLAPS' to arguments of type .*");
   }
 
   @Test void testCustomColumnResolving() {
