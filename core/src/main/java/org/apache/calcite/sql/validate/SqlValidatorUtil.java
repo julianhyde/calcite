@@ -51,7 +51,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSyntax;
-import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -335,29 +334,6 @@ public class SqlValidatorUtil {
       } else {
         return deriveAliasFromOrdinal(ordinal);
       }
-    }
-  }
-
-  /** As {@link #getAlias(SqlNode, int)} but returns a {@link SqlIdentifier}. */
-  public static SqlIdentifier getAliasId(SqlNode node, int ordinal) {
-    Preconditions.checkArgument(ordinal >= 0);
-    switch (node.getKind()) {
-    case AS:
-      // E.g. "1 + 2 as foo" --> "foo"
-      return ((SqlCall) node).operand(1);
-
-    case OVER:
-      // E.g. "bids over w" --> "bids"
-      return getAliasId(((SqlCall) node).operand(0), ordinal);
-
-    case IDENTIFIER:
-      // E.g. "foo.bar" --> "bar"
-      final SqlIdentifier identifier = (SqlIdentifier) node;
-      return identifier.getComponent(identifier.names.size() - 1);
-
-    default:
-        return new SqlIdentifier(deriveAliasFromOrdinal(ordinal),
-            SqlParserPos.ZERO);
     }
   }
 

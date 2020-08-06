@@ -97,15 +97,6 @@ public class AggregatingSelectScope
           SqlValidatorUtil.analyzeGroupItem(this, groupAnalyzer, builder,
               groupExpr);
         }
-        Ord.forEach(select.getSelectList(), (selectItem, i) -> {
-          final SqlNode measure = SqlValidatorUtil.getMeasure(selectItem);
-          if (measure != null) {
-            groupAnalyzer.extraExprs.add(
-                SqlValidatorUtil.getAliasId(selectItem, i));
-            SqlValidatorUtil.analyzeGroupItem(this, groupAnalyzer, builder,
-                measure);
-          }
-        });
       }
 
       for (ScopeChild child : ((SelectScope) parent).children) {
