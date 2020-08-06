@@ -3667,6 +3667,21 @@ LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 19),
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testMeasure2">
+        <Resource name="sql">
+            <![CDATA[select * from (
+  select deptno,
+    empno + 1 as e1,
+    e1 + deptno as measure e2
+  from emp)]]>
+        </Resource>
+        <Resource name="plan">
+            <![CDATA[
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 19), CAST($7):DECIMAL(19, 19))])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
     <TestCase name="testNotInWithLiteral">
         <Resource name="sql">
             <![CDATA[SELECT *

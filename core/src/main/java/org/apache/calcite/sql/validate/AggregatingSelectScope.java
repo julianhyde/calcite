@@ -20,9 +20,11 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
@@ -33,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMultiset;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -93,6 +96,31 @@ public class AggregatingSelectScope
         for (SqlNode groupExpr : groupList) {
           SqlValidatorUtil.analyzeGroupItem(this, groupAnalyzer, builder,
               groupExpr);
+        }
+        Ord.forEach(select.getSelectList(), (selectItem, i) -> {
+          final SqlNode measure = SqlValidatorUtil.getMeasure(selectItem);
+          if (measure != null) {
+            groupAnalyzer.extraExprs.add(
+                SqlValidatorUtil.getAliasId(selectItem, i));
+            SqlValidatorUtil.analyzeGroupItem(this, groupAnalyzer, builder,
+                measure);
+          }
+        });
+      }
+
+      for (ScopeChild child : ((SelectScope) parent).children) {
+        if (child.namespace instanceof SelectNamespace) {
+          final SqlSelect select = ((SelectNamespace) child.namespace).getNode();
+          Pair.forEach(select.getSelectList(),
+              child.namespace.getRowType().getFieldList(),
+              (selectItem, field) -> {
+                if (SqlValidatorUtil.isMeasure(selectItem)) {
+                  groupAnalyzer.extraExprs.add(
+                      new SqlIdentifier(
+                          Arrays.asList(child.name, field.getName()),
+                          SqlParserPos.ZERO));
+                }
+              });
         }
       }
 
