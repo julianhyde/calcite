@@ -25,16 +25,63 @@ from (
     empno + 1 as measure e1,
     e1 + deptno as measure e2
   from "scott".emp
-  where deptno = 10);
+  where job = 'CLERK');
 +--------+------+------+
 | DEPTNO | E1   | E2   |
 +--------+------+------+
-|     10 | 7783 | 7793 |
-|     10 | 7840 | 7850 |
+|     20 | 7370 | 7390 |
+|     20 | 7877 | 7897 |
+|     30 | 7901 | 7931 |
 |     10 | 7935 | 7945 |
 +--------+------+------+
-(3 rows)
+(4 rows)
 
 !ok
+
+# Measure may reference non-measure alias
+select deptno + 1 as d1,
+  d1 + 2 as measure d3
+from "scott".dept;
++----+----+
+| D1 | D3 |
++----+----+
+| 11 | 13 |
+| 21 | 23 |
+| 31 | 33 |
+| 41 | 43 |
++----+----+
+(4 rows)
+
+!ok
+
+# In a measure ('d'), qualified references give you the column, and unqualified
+# references give the alias. In a regular select item ('d2'), qualified and
+# unqualified references give the column.
+select e.empno + 1 as deptno,
+ deptno + e.deptno as measure d,
+ deptno + e.deptno as d2
+from "scott".emp as e
+where job = 'CLERK';
++--------+------+----+
+| DEPTNO | D    | D2 |
++--------+------+----+
+|   7370 | 7390 | 40 |
+|   7877 | 7897 | 40 |
+|   7901 | 7931 | 60 |
+|   7935 | 7945 | 20 |
++--------+------+----+
+(4 rows)
+
+!ok
+
+# Aggregate measure
+!if (false) {
+select deptno, count_plus_100
+from (
+  select empno, deptno, job, count(*) + 100 as measure count_plus_100
+  from "scott".emp)
+group by deptno;
+!ok
+!}
 
 # End measure.iq
