@@ -82,6 +82,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.apache.calcite.sql.SqlUtil.deriveAliasFromOrdinal;
 import static org.apache.calcite.sql.type.NonNullableAccessors.getCharset;
 import static org.apache.calcite.sql.type.NonNullableAccessors.getCollation;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -362,7 +363,7 @@ public class SqlValidatorUtil {
       if (ordinal < 0) {
         return null;
       } else {
-        return SqlUtil.deriveAliasFromOrdinal(ordinal);
+        return deriveAliasFromOrdinal(ordinal);
       }
     }
   }
@@ -1295,7 +1296,7 @@ public class SqlValidatorUtil {
   /** Returns the measure expression if a select item is a measure, null
    * otherwise.
    *
-   * <p>For a mesaure, {@code selectItem} will have the form
+   * <p>For a measure, {@code selectItem} will have the form
    * {@code AS(MEASURE(exp), alias)} and this method returns {@code exp}. */
   @SuppressWarnings({"SwitchStatementWithTooFewBranches", "MissingCasesInEnumSwitch"})
   public static @Nullable SqlNode getMeasure(SqlNode selectItem) {
