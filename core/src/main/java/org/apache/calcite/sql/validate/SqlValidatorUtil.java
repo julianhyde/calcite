@@ -342,29 +342,6 @@ public class SqlValidatorUtil {
     }
   }
 
-  /** As {@link #getAlias(SqlNode, int)} but returns a {@link SqlIdentifier}. */
-  public static SqlIdentifier getAliasId(SqlNode node, int ordinal) {
-    Preconditions.checkArgument(ordinal >= 0);
-    switch (node.getKind()) {
-    case AS:
-      // E.g. "1 + 2 as foo" --> "foo"
-      return ((SqlCall) node).operand(1);
-
-    case OVER:
-      // E.g. "bids over w" --> "bids"
-      return getAliasId(((SqlCall) node).operand(0), ordinal);
-
-    case IDENTIFIER:
-      // E.g. "foo.bar" --> "bar"
-      final SqlIdentifier identifier = (SqlIdentifier) node;
-      return identifier.getComponent(identifier.names.size() - 1);
-
-    default:
-      return new SqlIdentifier(deriveAliasFromOrdinal(ordinal),
-          SqlParserPos.ZERO);
-    }
-  }
-
   /**
    * Factory method for {@link SqlValidator}.
    */
