@@ -3954,6 +3954,20 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
+  /** As {@link #testMeasure1()} but uses an aggregate measure. */
+  @Disabled
+  @Test void testMeasure3() {
+    final String sql = "select deptno, count_plus_10, min(job) as min_job\n"
+        + "from (\n"
+        + "  select deptno,\n"
+        + "    job,\n"
+        + "    count(*) + 10 as measure count_plus_10,\n"
+        + "    count_plus_10 + deptno as measure e2\n"
+        + "  from emp)\n"
+        + "group by deptno";
+    sql(sql).ok();
+  }
+
   /** Test case for:
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3310">[CALCITE-3310]
    * Approximate and exact aggregate calls are recognized as the same
