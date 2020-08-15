@@ -173,9 +173,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class RelOptRulesTest extends RelOptTestBase {
   //~ Methods ----------------------------------------------------------------
 
-  private final PushProjector.ExprCondition skipItem = expr ->
-      expr instanceof RexCall
+  private static boolean skipItem(RexNode expr) {
+    return expr instanceof RexCall
           && "item".equalsIgnoreCase(((RexCall) expr).getOperator().getName());
+  }
 
   protected DiffRepository getDiffRepos() {
     return DiffRepository.lookup(RelOptRulesTest.class);
@@ -1537,7 +1538,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testProjectCorrelateTransposeDynamic() {
     ProjectCorrelateTransposeRule customPCTrans =
         ProjectCorrelateTransposeRule.Config.DEFAULT
-            .withPreserveExprCondition(skipItem)
+            .withPreserveExprCondition(RelOptRulesTest::skipItem)
             .toRule();
 
     String sql = "select t1.c_nationkey, t2.a as fake_col2 "
@@ -1640,7 +1641,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testProjectCorrelateTransposeWithExprCond() {
     ProjectCorrelateTransposeRule customPCTrans =
         ProjectCorrelateTransposeRule.Config.DEFAULT
-            .withPreserveExprCondition(skipItem)
+            .withPreserveExprCondition(RelOptRulesTest::skipItem)
             .toRule();
 
     final String sql = "select t1.name, t2.ename\n"
@@ -6125,7 +6126,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select *\n"
         + "from GEO.Restaurants as r\n"
         + "where ST_DWithin(ST_Point(10.0, 20.0),\n"
-        + "                 ST_Point(r.latitude, r.longitude), 10)";
+        + "                 ST_Point(r.longitude, r.latitude), 10)";
     spatial(sql).check();
   }
 
@@ -6177,7 +6178,7 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   /** Constant reduction on geo-spatial expression. */
-  @Test void testSpatialReduce() throws Exception {
+  @Test void testSpatialReduce() {
     final String sql = "select\n"
         + "  ST_Buffer(ST_Point(0.0, 1.0), 2) as b\n"
         + "from GEO.Restaurants as r";
@@ -6728,7 +6729,7 @@ class RelOptRulesTest extends RelOptTestBase {
     ProjectJoinTransposeRule projectJoinTransposeRule =
         CoreRules.PROJECT_JOIN_TRANSPOSE.config
             .withOperandFor(Project.class, Join.class)
-            .withPreserveExprCondition(skipItem)
+            .withPreserveExprCondition(RelOptRulesTest::skipItem)
             .toRule();
 
     final String sql = "select t1.c_nationkey[0], t2.c_nationkey[0]\n"

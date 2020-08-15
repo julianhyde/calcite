@@ -686,7 +686,13 @@ public class RexLiteral extends RexNode {
             }).toString());
         break;
       case GEOMETRY:
-        destination.append(GeoFunctions.ST_AsWKT((Geometries.Geom) value));
+        final String wkt = GeoFunctions.ST_AsWKT((Geometries.Geom) value);
+        if (java) {
+          appendAsJava(new NlsString(wkt, null, null),
+              destination, SqlTypeName.CHAR, java, includeType);
+        } else {
+          destination.append(wkt);
+        }
         break;
       default:
         assert valueMatchesType(value, typeName, true);

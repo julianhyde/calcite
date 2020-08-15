@@ -200,8 +200,8 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     final MockTable restaurantTable =
         MockTable.create(this, geoSchema, "RESTAURANTS", false, 100);
     restaurantTable.addColumn("NAME", f.varchar20Type, true);
-    restaurantTable.addColumn("LONGITUDE", f.intType);
     restaurantTable.addColumn("LATITUDE", f.intType);
+    restaurantTable.addColumn("LONGITUDE", f.intType);
     restaurantTable.addColumn("CUISINE", f.varchar10Type);
     restaurantTable.addColumn("HILBERT", f.bigintType);
     restaurantTable.addMonotonic("HILBERT");
@@ -211,9 +211,11 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
               RelMetadataQuery mq) {
             // Return the predicate:
             //  r.hilbert = hilbert(r.longitude, r.latitude)
+            //
+            // (Yes, x = longitude, y = latitude. Same as ST_MakePoint.)
             final RexBuilder rexBuilder = r.getCluster().getRexBuilder();
-            final RexInputRef refLongitude = rexBuilder.makeInputRef(r, 1);
-            final RexInputRef refLatitude = rexBuilder.makeInputRef(r, 2);
+            final RexInputRef refLatitude = rexBuilder.makeInputRef(r, 1);
+            final RexInputRef refLongitude = rexBuilder.makeInputRef(r, 2);
             final RexInputRef refHilbert = rexBuilder.makeInputRef(r, 4);
             return RelOptPredicateList.of(rexBuilder,
                 ImmutableList.of(
