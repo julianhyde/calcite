@@ -13,11 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Includes code from LocationTech SFCurve,
+ * Copyright (c) 2015 Azavea.
  */
 package org.apache.calcite.runtime;
 
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.uzaygezen.core.BacktrackingQueryBuilder;
 import com.google.uzaygezen.core.BitVector;
@@ -107,28 +108,26 @@ public class HilbertCurve2D implements SpaceFillingCurve2D {
     return new Point((double) x, (double) y);
   }
 
-  public List<IndexRange> toRanges(double xmin, double ymin, double xmax,
-      double ymax, RangeComputeHints hints) {
+  public List<IndexRange> toRanges(double xMin, double yMin, double xMax,
+      double yMax, RangeComputeHints hints) {
     final CompactHilbertCurve chc =
         new CompactHilbertCurve(new int[] {resolution, resolution});
     final List<LongRange> region = new ArrayList<>();
 
-    final long minNormalizedLongitude = getNormalizedLongitude(xmin);
-    final long minNormalizedLatitude  = getNormalizedLatitude(ymin);
+    final long minNormalizedLongitude = getNormalizedLongitude(xMin);
+    final long minNormalizedLatitude  = getNormalizedLatitude(yMin);
 
-    final long maxNormalizedLongitude = getNormalizedLongitude(xmax);
-    final long maxNormalizedLatitude  = getNormalizedLatitude(ymax);
+    final long maxNormalizedLongitude = getNormalizedLongitude(xMax);
+    final long maxNormalizedLatitude  = getNormalizedLatitude(yMax);
 
     region.add(LongRange.of(minNormalizedLongitude, maxNormalizedLongitude));
     region.add(LongRange.of(minNormalizedLatitude, maxNormalizedLatitude));
 
     final LongContent zero = new LongContent(0L);
-    final Function<LongRange, LongRange> longRangeIDFunction =
-        Functions.identity();
 
     final SimpleRegionInspector<LongRange, Long, LongContent, LongRange> inspector =
         SimpleRegionInspector.create(ImmutableList.of(region),
-            new LongContent(1L), longRangeIDFunction, LongRangeHome.INSTANCE,
+            new LongContent(1L), range -> range, LongRangeHome.INSTANCE,
             zero);
 
     final PlainFilterCombiner<LongRange, Long, LongContent, LongRange> combiner =

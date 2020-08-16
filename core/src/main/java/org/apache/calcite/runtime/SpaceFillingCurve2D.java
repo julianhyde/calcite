@@ -13,6 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Includes code from LocationTech SFCurve,
+ * Copyright (c) 2015 Azavea.
  */
 package org.apache.calcite.runtime;
 
@@ -22,15 +25,15 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Utilities for Hilbert space-filling curves.
+ * Utilities for space-filling curves.
  *
  * <p>Based upon <a href="https://github.com/locationtech/sfcurve">SFCurve</a>.
  */
 public interface SpaceFillingCurve2D {
   long toIndex(double x, double y);
   Point toPoint(long i);
-  List<IndexRange> toRanges(double xmin, double ymin, double xmax,
-      double ymax, RangeComputeHints hints);
+  List<IndexRange> toRanges(double xMin, double yMin, double xMax,
+      double yMax, RangeComputeHints hints);
 
   /** Hints for the {@link SpaceFillingCurve2D#toRanges} method. */
   class RangeComputeHints extends HashMap<String, Object> {
@@ -62,7 +65,6 @@ public interface SpaceFillingCurve2D {
   abstract class AbstractRange implements IndexRange {
     final long lower;
     final long upper;
-
 
     protected AbstractRange(long lower, long upper) {
       this.lower = lower;
