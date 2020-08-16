@@ -6107,6 +6107,7 @@ class RelOptRulesTest extends RelOptTestBase {
     diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
   }
 
+  /** Creates an environment for testing spatial queries. */
   private Sql spatial(String sql) {
     final HepProgram program = new HepProgramBuilder()
         .addRuleInstance(CoreRules.PROJECT_REDUCE_EXPRESSIONS)

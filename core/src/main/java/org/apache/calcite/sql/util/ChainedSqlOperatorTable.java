@@ -41,7 +41,7 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
 
   //~ Constructors -----------------------------------------------------------
 
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public ChainedSqlOperatorTable(List<SqlOperatorTable> tableList) {
     this(ImmutableList.copyOf(tableList));
   }

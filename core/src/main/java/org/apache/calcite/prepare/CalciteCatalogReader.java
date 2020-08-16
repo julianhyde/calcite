@@ -350,6 +350,8 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
     }
   }
 
+  /** Deduces the {@link org.apache.calcite.sql.SqlKind} of a user-defined
+   * function based on a {@link Hints} annotation, if present. */
   private static SqlKind kind(Function function) {
     if (function instanceof ScalarFunctionImpl) {
       Hints hints =

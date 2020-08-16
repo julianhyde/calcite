@@ -707,12 +707,6 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final List<SqlOperatorTable> list = new ArrayList<>();
     list.add(opTab0);
     list.add(catalogReader);
-    // TODO figure out whether we need this
-/*
-    if (context.config().conformance().allowGeometry()) {
-      list.add(SqlStdOperatorTables.spatialInstance());
-    }
-*/
     final SqlOperatorTable opTab = SqlOperatorTables.chain(list);
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     final CalciteConnectionConfig connectionConfig = context.config();

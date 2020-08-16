@@ -48,11 +48,6 @@ public class RelReferentialConstraintImpl implements RelReferentialConstraint {
     return columnPairs;
   }
 
-  @SuppressWarnings("deprecation")
-  @Override public int getNumColumns() {
-    return columnPairs.size();
-  }
-
   public static RelReferentialConstraintImpl of(List<String> sourceQualifiedName,
       List<String> targetQualifiedName, List<IntPair> columnPairs) {
     return new RelReferentialConstraintImpl(

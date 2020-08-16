@@ -54,7 +54,7 @@ import java.util.List;
  *
  * <blockquote>SELECT ...
  * FROM Restaurants AS r
- * WHERE ST_DWithin(ST_Point(10, 20), ST_Point(r.latitude, r.longitude), 5)
+ * WHERE ST_DWithin(ST_Point(10, 20), ST_Point(r.longitude, r.latitude), 5)
  * </blockquote>
  *
  * <p>is rewritten to
@@ -63,19 +63,19 @@ import java.util.List;
  * FROM Restaurants AS r
  * WHERE (r.h BETWEEN 100 AND 150
  *        OR r.h BETWEEN 170 AND 185)
- * AND ST_DWithin(ST_Point(10, 20), ST_Point(r.latitude, r.longitude), 5)
+ * AND ST_DWithin(ST_Point(10, 20), ST_Point(r.longitude, r.latitude), 5)
  * </blockquote>
  *
  * <p>if there is the constraint
  *
- * <blockquote>CHECK (h = Hilbert(8, r.latitude, r.longitude))</blockquote>
+ * <blockquote>CHECK (h = Hilbert(8, r.longitude, r.latitude))</blockquote>
  *
  * <p>If the {@code Restaurants} table is sorted on {@code h} then the latter
  * query can be answered using two limited range-scans, and so is much more
  * efficient.
  *
  * <p>Note that the original predicate
- * {@code ST_DWithin(ST_Point(10, 20), ST_Point(r.latitude, r.longitude), 5)}
+ * {@code ST_DWithin(ST_Point(10, 20), ST_Point(r.longitude, r.latitude), 5)}
  * is still present, but is evaluated after the approximate predicate has
  * eliminated many potential matches.
  */
@@ -126,8 +126,8 @@ public abstract class SpatialRules {
       //   r.hilbert between h1 and h2
       //   or r.hilbert between h3 and h4
       // where {[h1, h2], [h3, h4]} are the ranges of the Hilbert curve
-      // intersecting the rectangle
-      //   (r.longitude - d, r.longitude + d, r.latitude - d, r.latitude + d)
+      // intersecting the square
+      //   (r.longitude - d, r.latitude - d, r.longitude + d, r.latitude + d)
       final RelOptPredicateList predicates =
           call.getMetadataQuery().getAllPredicates(filter.getInput());
       int changeCount = 0;
