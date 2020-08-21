@@ -2090,6 +2090,7 @@ Not implemented:
 |:- |:-------------------- |:-----------
 | o | ST_Boundary(geom [, srid ]) | Returns the boundary of *geom*
 | o | ST_Distance(geom1, geom2) | Returns the distance between *geom1* and *geom2*
+| o | ST_ExteriorRing(polygon) | Returns the exterior ring of *polygon* as a linear-ring
 | o | ST_GeometryType(geom) | Returns the type of *geom*
 | o | ST_GeometryTypeCode(geom) | Returns the OGC SFS type code of *geom*
 | o | ST_Envelope(geom [, srid ]) | Returns the envelope of *geom* (which may be a GEOMETRYCOLLECTION) as a GEOMETRY
@@ -2106,7 +2107,6 @@ Not implemented:
 * ST_Envelope(geom [, srid ]) Returns the envelope of *geom* (which may be a GEOMETRYCOLLECTION) as a GEOMETRY
 * ST_Explode(query [, fieldName]) Explodes the GEOMETRYCOLLECTIONs in the *fieldName* column of a query into multiple geometries
 * ST_Extent(geom) Returns the minimum bounding box of *geom* (which may be a GEOMETRYCOLLECTION)
-* ST_ExteriorRing(polygon) Returns the exterior ring of *polygon* as a linear-ring
 * ST_GeometryN(geomCollection, n) Returns the *n*th GEOMETRY of *geomCollection*
 * ST_InteriorRingN(polygon, n) Returns the *n*th interior ring of *polygon*
 * ST_IsClosed(geom) Returns whether *geom* is a closed LINESTRING or MULTILINESTRING
@@ -2149,6 +2149,8 @@ Not implemented:
 |:- |:-------------------- |:-----------
 | o | ST_Contains(geom1, geom2) | Returns whether *geom1* contains *geom2*
 | p | ST_ContainsProperly(geom1, geom2) | Returns whether *geom1* contains *geom2* but does not intersect its boundary
+| o p | ST_CoveredBy(geom1, geom2) | Returns whether no point in *geom1* is outside *geom2*
+| o p | ST_Covers(geom1, geom2) | Returns whether no point in *geom2* is outside *geom1*
 | o | ST_Crosses(geom1, geom2) | Returns whether *geom1* crosses *geom2*
 | o | ST_Disjoint(geom1, geom2) | Returns whether *geom1* and *geom2* are disjoint
 | p | ST_DWithin(geom1, geom2, distance) | Returns whether *geom1* and *geom* are within *distance* of one another
@@ -2156,15 +2158,14 @@ Not implemented:
 | o | ST_Equals(geom1, geom2) | Returns whether *geom1* equals *geom2*
 | o | ST_Intersects(geom1, geom2) | Returns whether *geom1* intersects *geom2*
 | o | ST_Overlaps(geom1, geom2) | Returns whether *geom1* overlaps *geom2*
+| o | ST_Relate(geom1, geom2, iMatrix) | Returns whether *geom1* and *geom2* are related by the given intersection matrix *iMatrix*
 | o | ST_Touches(geom1, geom2) | Returns whether *geom1* touches *geom2*
 | o | ST_Within(geom1, geom2) | Returns whether *geom1* is within *geom2*
 
 Not implemented:
 
-* ST_Covers(geom1, geom2) Returns whether no point in *geom2* is outside *geom1*
 * ST_OrderingEquals(geom1, geom2) Returns whether *geom1* equals *geom2* and their coordinates and component Geometries are listed in the same order
 * ST_Relate(geom1, geom2) Returns the DE-9IM intersection matrix of *geom1* and *geom2*
-* ST_Relate(geom1, geom2, iMatrix) Returns whether *geom1* and *geom2* are related by the given intersection matrix *iMatrix*
 
 #### Geometry operators (2D)
 

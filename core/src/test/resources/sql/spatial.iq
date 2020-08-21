@@ -512,7 +512,13 @@ POLYGON ((0 0, 1.0000000001 0, 1.0000000001 1, 0 1, 0 0))
 # Not implemented
 
 # ST_ExteriorRing(polygon) Returns the exterior ring of *polygon* as a linear-ring
-# Not implemented
+SELECT ST_AsText(
+  ST_ExteriorRing(
+    ST_GeomFromText('POLYGON((0 0, 1 1, 1 2, 0 1, 0 0))')));
+
+EXPR$0
+LINESTRING(0 0, 1 1, 1 2, 0 1, 0 0)
+!ok
 
 # ST_GeometryN(geomCollection, n) Returns the *n*th geometry of *geomCollection*
 # Not implemented

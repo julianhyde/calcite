@@ -29,17 +29,31 @@ import org.apache.calcite.runtime.Geometries.JoinStyle;
 
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Geometry;
+import com.esri.core.geometry.GeometryCursor;
 import com.esri.core.geometry.GeometryEngine;
 import com.esri.core.geometry.Line;
 import com.esri.core.geometry.OperatorBoundary;
+import com.esri.core.geometry.OperatorSimplifyOGC;
+import com.esri.core.geometry.OperatorUnion;
 import com.esri.core.geometry.Point;
 import com.esri.core.geometry.Polygon;
 import com.esri.core.geometry.Polyline;
+import com.esri.core.geometry.Segment;
+import com.esri.core.geometry.SegmentIterator;
+import com.esri.core.geometry.SimpleGeometryCursor;
 import com.esri.core.geometry.SpatialReference;
 import com.esri.core.geometry.WktExportFlags;
 import com.esri.core.geometry.WktImportFlags;
+import com.esri.core.geometry.ogc.OGCLineString;
+import com.esri.core.geometry.ogc.OGCMultiLineString;
+import com.esri.core.geometry.ogc.OGCPolygon;
+import com.google.common.collect.ImmutableList;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.apache.calcite.runtime.Geometries.NO_SRID;
 import static org.apache.calcite.runtime.Geometries.bind;
@@ -291,6 +305,57 @@ public class GeoFunctions {
     return GeometryEngine.distance(geom1.g(), geom2.g(), geom1.sr());
   }
 
+  /** Returns the exterior ring of *polygon* as a linear-ring. */
+  public static Geom ST_ExteriorRing(Geom polygon) {
+    switch (Geometries.type(polygon.g())) {
+    case POLYGON:
+      final List<Polygon> outermostRings =
+          getOutermostRings((Polygon) polygon.g());
+      if (outermostRings.size() > 0) {
+        final Polygon outerRing = outermostRings.get(0);
+        final SegmentIterator segmentIterator = outerRing.querySegmentIterator();
+        if (segmentIterator.nextPath()) {
+          final Polyline polyline = new Polyline();
+          while (segmentIterator.hasNextSegment()) {
+            polyline.addSegment(segmentIterator.nextSegment(), false);
+          }
+          return polygon.wrap(polyline);
+        }
+      }
+    }
+    return null;
+  }
+
+  static List<Polygon> getAllOuterRings(Polygon polygon) {
+    Polygon simplePolygon =
+        (Polygon) OperatorSimplifyOGC.local().execute(polygon, null, true, null);
+    final List<Polygon> rings = new ArrayList<>();
+    int n = simplePolygon.getPathCount();
+    for (int i = 0; i < n; i++) {
+      if (simplePolygon.calculateRingArea2D(i) <= 0) {
+        continue;
+      }
+      Polygon ring = new Polygon();
+      ring.addPath(simplePolygon, i, true);
+      rings.add(ring);
+    }
+    return rings;
+  }
+
+  static List<Polygon> getOutermostRings(Polygon polygon) {
+    final List<Polygon> allOuterRings = getAllOuterRings(polygon);
+    final List<Geometry> allOuterRingsAsGeom =
+        ImmutableList.copyOf(allOuterRings);
+    final GeometryCursor outerRingsCursor =
+        new SimpleGeometryCursor(allOuterRingsAsGeom);
+    final GeometryCursor unionCursor =
+        OperatorUnion.local().execute(outerRingsCursor, null, null);
+    final Geometry unionPoly = unionCursor.next();
+
+    // Holes could have been produced during the union, so rerun just in case.
+    return getAllOuterRings((Polygon)unionPoly);
+  }
+
   /** Returns the type of {@code geom}. */
   public static String ST_GeometryType(Geom geom) {
     return Geometries.type(geom.g()).name();
@@ -325,7 +390,8 @@ public class GeoFunctions {
 
   /** Returns whether no point in {@code geom2} is outside {@code geom1}. */
   private static boolean ST_Covers(Geom geom1, Geom geom2)  {
-    throw todo();
+    return Stream.of("T*****FF*", "*T****FF*", "***T**FF*", "****T*FF*")
+        .anyMatch(relation -> ST_Relate(geom1, geom2, relation));
   }
 
   /** Returns whether {@code geom1} crosses {@code geom2}. */
@@ -359,6 +425,11 @@ public class GeoFunctions {
     return intersects(g1, g2, sr);
   }
 
+  /** Converse of {@link #ST_Covers(Geom, Geom)}. */
+  private static boolean ST_IsCoveredBy(Geom geom1, Geom geom2)  {
+    return ST_Covers(geom2, geom1);
+  }
+
   /** Returns whether {@code geom1} equals {@code geom2} and their coordinates
    * and component Geometries are listed in the same order. */
   public static boolean ST_OrderingEquals(Geom geom1, Geom geom2)  {
@@ -368,6 +439,19 @@ public class GeoFunctions {
   /** Returns {@code geom1} overlaps {@code geom2}. */
   public static boolean ST_Overlaps(Geom geom1, Geom geom2)  {
     return GeometryEngine.overlaps(geom1.g(), geom2.g(), geom1.sr());
+  }
+
+  /** Returns the <a href="http://en.wikipedia.org/wiki/DE-9IM">DE-9IM</a>
+   * intersection matrix for {@code geom1} and {@code geom2}. */
+  private static String ST_Relate(Geom geom1, Geom geom2) {
+    throw todo();
+  }
+
+  /** Returns whether {@code geom1} and {@code geom2} are related by the
+   * <a href="http://en.wikipedia.org/wiki/DE-9IM">DE-9IM</a> intersection
+   * matrix {@code iMatrix}. */
+  public static boolean ST_Relate(Geom geom1, Geom geom2, String relation) {
+    return GeometryEngine.relate(geom1.g(), geom2.g(), geom1.sr(), relation);
   }
 
   /** Returns whether {@code geom1} touches {@code geom2}. */
