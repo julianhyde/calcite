@@ -33,6 +33,7 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.RangeSets;
+import org.apache.calcite.util.Sarg;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -1298,6 +1299,18 @@ public class RexSimplify {
       RelOptUtil.decomposeConjunction(o, terms, notTerms);
     }
 
+    final SargCollector sargCollector = new SargCollector();
+    final List<RexNode> newTerms = new ArrayList<>();
+    final List<RexNode> newNotTerms = new ArrayList<>();
+    terms.forEach(t -> sargCollector.accept(t, true, newTerms));
+    notTerms.forEach(t -> sargCollector.accept(t, false, newNotTerms));
+    if (sargCollector.benefit() > 1) {
+      terms.clear();
+      newTerms.forEach(t -> terms.add(sargCollector.fix(rexBuilder, t, true)));
+      notTerms.clear();
+      newNotTerms.forEach(t -> notTerms.add(sargCollector.fix(rexBuilder, t, false)));
+    }
+
     switch (unknownAs) {
     case FALSE:
       return simplifyAnd2ForUnknownAsFalse(terms, notTerms, Comparable.class);
@@ -1787,6 +1800,14 @@ public class RexSimplify {
   /** Simplifies a list of terms and combines them into an OR.
    * Modifies the list in place. */
   private RexNode simplifyOrs(List<RexNode> terms, RexUnknownAs unknownAs) {
+    final SargCollector sargCollector = new SargCollector();
+    final List<RexNode> newTerms = new ArrayList<>();
+    terms.forEach(t -> sargCollector.accept(t, false, newTerms));
+    if (sargCollector.benefit() > 1) {
+      terms.clear();
+      newTerms.forEach(t -> terms.add(sargCollector.fix(rexBuilder, t, false)));
+    }
+
     // CALCITE-3198 Auxiliary map to simplify cases like:
     //   X <> A OR X <> B => X IS NOT NULL or NULL
     // The map key will be the 'X'; and the value the first call 'X<>A' that is found,
@@ -2515,4 +2536,202 @@ public class RexSimplify {
     return true;
   }
 
+  /** Gathers expressions that can be converted into
+   * {@link Sarg search arguments}. */
+  static class SargCollector {
+    final Map<RexNode, RexSargBuilder> map = new HashMap<>();
+
+    /** Returns a rough estimate of whether it is worth converting to sargs.
+     *
+     * <p>Does not deal well with a mixture of simple and complex sargs, e.g.
+     * {@code x = 1 or y in (2, 3, 4, 6, 8)}, where we should sargify {@code y}
+     * but not {@code x}.
+     */
+    int benefit() {
+      int benefit = 0;
+      for (RexSargBuilder b : map.values()) {
+        benefit += b.rangeSet.asRanges().size()
+            + (b.containsNull ? 1 : 0);
+      }
+      return benefit;
+    }
+
+    private void accept(RexNode term, boolean negate, List<RexNode> newTerms) {
+      if (!accept_(term, negate, newTerms)) {
+        newTerms.add(term);
+      }
+    }
+
+    private boolean accept_(RexNode e, boolean negate, List<RexNode> newTerms) {
+      final ImmutableList<RexNode> operands;
+      switch (e.getKind()) {
+      case LESS_THAN:
+      case LESS_THAN_OR_EQUAL:
+      case GREATER_THAN:
+      case GREATER_THAN_OR_EQUAL:
+      case EQUALS:
+      case NOT_EQUALS:
+      case SEARCH:
+        operands = ((RexCall) e).operands;
+        return accept2(operands.get(0), operands.get(1), e.getKind(), negate,
+            newTerms);
+      case IS_NULL:
+      case IS_NOT_NULL:
+        operands = ((RexCall) e).operands;
+        return accept1(operands.get(0), e.getKind(), negate, null, newTerms);
+      default:
+        return false;
+      }
+    }
+
+    private boolean accept2(RexNode left, RexNode right, SqlKind kind,
+        boolean negate, List<RexNode> newTerms) {
+      switch (left.getKind()) {
+      case INPUT_REF:
+      case FIELD_ACCESS:
+        switch (right.getKind()) {
+        case LITERAL:
+          return accept1(left, kind, negate, (RexLiteral) right, newTerms);
+        }
+        return false;
+      case LITERAL:
+        switch (right.getKind()) {
+        case INPUT_REF:
+        case FIELD_ACCESS:
+          return accept1(right, kind, !negate, (RexLiteral) left, newTerms);
+        }
+        return false;
+      }
+      return false;
+    }
+
+    private static <E> E addFluent(List<? super E> list, E e) {
+      list.add(e);
+      return e;
+    }
+
+    // always returns true
+    private boolean accept1(RexNode e, SqlKind kind, boolean negate,
+        RexLiteral literal, List<RexNode> newTerms) {
+      final RexSargBuilder b =
+          map.computeIfAbsent(e, e2 ->
+              addFluent(newTerms,
+                  new RexSargBuilder(e2, Util.first(literal, e).getType())));
+      if (negate) {
+        kind = kind.negateNullSafe();
+      }
+      switch (kind) {
+      case LESS_THAN:
+        b.rangeSet.add(Range.lessThan(literal.getValue()));
+        return true;
+      case LESS_THAN_OR_EQUAL:
+        b.rangeSet.add(Range.atMost(literal.getValue()));
+        return true;
+      case GREATER_THAN:
+        b.rangeSet.add(Range.greaterThan(literal.getValue()));
+        return true;
+      case GREATER_THAN_OR_EQUAL:
+        b.rangeSet.add(Range.atLeast(literal.getValue()));
+        return true;
+      case EQUALS:
+        b.rangeSet.add(Range.singleton(literal.getValue()));
+        return true;
+      case NOT_EQUALS:
+        b.rangeSet.add(Range.lessThan(literal.getValue()));
+        b.rangeSet.add(Range.greaterThan(literal.getValue()));
+        return true;
+      case SEARCH:
+        final Sarg sarg = literal.getValueAs(Sarg.class);
+        if (negate) {
+          b.rangeSet.addAll(sarg.rangeSet.complement());
+          b.containsNull |= sarg.containsNull; // TODO
+        } else {
+          b.rangeSet.addAll(sarg.rangeSet);
+          b.containsNull |= sarg.containsNull;
+        }
+        return true;
+      case IS_NULL:
+        if (negate) {
+          throw new AssertionError();
+        }
+        b.containsNull = true;
+        return true;
+      default:
+        throw new AssertionError("unexpected " + kind);
+      }
+    }
+
+    /** If a term is a call to {@code SEARCH} on a {@link SargBuilder}, converts
+     * it to a {@code SEARCH} on a {@link Sarg}. */
+    RexNode fix(RexBuilder rexBuilder, RexNode term, boolean negate) {
+      if (term instanceof RexSargBuilder) {
+        RexSargBuilder sargBuilder = (RexSargBuilder) term;
+        return rexBuilder.makeCall(SqlStdOperatorTable.SEARCH, sargBuilder.ref,
+            rexBuilder.makeSearchArgumentLiteral(sargBuilder.build(negate),
+                term.getType()));
+      }
+      return term;
+    }
+  }
+
+  static class SargBuilder<C extends Comparable<C>>
+      implements Comparable<SargBuilder<C>> {
+    final RangeSet rangeSet = TreeRangeSet.create();
+    boolean containsNull;
+
+    @Override public int compareTo(SargBuilder<C> o) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public String toString() {
+      return rangeSet + (containsNull ? " + null" : "");
+    }
+
+    Sarg<C> build() {
+      return Sarg.of(containsNull, rangeSet);
+    }
+  }
+
+  static class RexSargBuilder extends RexNode {
+    final RexNode ref;
+    private final RelDataType type;
+    RangeSet<Comparable> rangeSet = TreeRangeSet.create();
+    boolean containsNull;
+
+    RexSargBuilder(RexNode ref, RelDataType type) {
+      this.ref = Objects.requireNonNull(ref);
+      this.type = Objects.requireNonNull(type);
+    }
+
+    @Override public String toString() {
+      return "SEARCH(" + ref + ", " + rangeSet
+          + (containsNull ? " + null)" : ")");
+    }
+
+    <C extends Comparable<C>> Sarg<C> build(boolean negate) {
+      final RangeSet rangeSet =
+          negate ? this.rangeSet.complement() : this.rangeSet;
+      return Sarg.of(containsNull, rangeSet);
+    }
+
+    @Override public RelDataType getType() {
+      return type;
+    }
+
+    @Override public <R> R accept(RexVisitor<R> visitor) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public <R, P> R accept(RexBiVisitor<R, P> visitor, P arg) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public boolean equals(Object obj) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public int hashCode() {
+      throw new UnsupportedOperationException();
+    }
+  }
 }
