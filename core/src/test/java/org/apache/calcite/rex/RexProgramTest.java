@@ -934,7 +934,7 @@ class RexProgramTest extends RexProgramTestBase {
 
     checkSimplify2(and(le(hRef, literal(1)), ge(hRef, literal(1))),
         "AND(<=(?0.h, 1), >=(?0.h, 1))",
-        "=(?0.h, 1)");
+        "SEARCH(?0.h, Sarg([[1‥1]]))");
 
     checkSimplify2(and(lt(hRef, literal(1)), eq(hRef, literal(1)), ge(hRef, literal(1))),
         "AND(<(?0.h, 1), =(?0.h, 1), >=(?0.h, 1))",
@@ -1068,7 +1068,7 @@ class RexProgramTest extends RexProgramTestBase {
         "false");
 
     checkSimplifyFilter(and(le(aRef, literal(1)), ge(aRef, literal(1))),
-        "=(?0.a, 1)");
+        "SEARCH(?0.a, Sarg([[1‥1]]))");
 
     checkSimplifyFilter(
         and(lt(aRef, literal(1)), eq(aRef, literal(1)), ge(aRef, literal(1))),
@@ -1302,7 +1302,7 @@ class RexProgramTest extends RexProgramTestBase {
                 eq(aRef, literal(1))),
             and(eq(aRef, literal(10)),
                 eq(aRef, literal(1)))),
-        "=(?0.a, 1)");
+        "SEARCH(?0.a, Sarg([[1‥1]]))");
 
     checkSimplifyFilter(
         and(
@@ -1414,12 +1414,11 @@ class RexProgramTest extends RexProgramTestBase {
             ne(aRef, literal1)),
         "true");
 
-    // "a = 1 or a <> 2" could (and should) be simplified to "a <> 2"
-    // but can't do that right now
+    // "a = 1 or a <> 2" simplifies to "a <> 2"
     checkSimplifyFilter(
         or(eq(aRef, literal1),
             ne(aRef, literal2)),
-        "OR(=(?0.a, 1), <>(?0.a, 2))");
+        "SEARCH(?0.a, Sarg([(-∞‥2), (2‥+∞)]))");
 
     // "(a >= 1 and a <= 3) or a <> 2", or equivalently
     // "a between 1 and 3 or a <> 2" ==> "true"
@@ -1572,7 +1571,8 @@ class RexProgramTest extends RexProgramTestBase {
             ge(aRef, literal(15))),
         ne(aRef, literal(6)),
         ne(aRef, literal(12)));
-    checkSimplifyUnchanged(expr);
+    final String expected = "SEARCH($0, Sarg([[0‥6), (6‥10], [15‥+∞)]))";
+    checkSimplify(expr, expected);
   }
 
   @Test void testSimplifyRange2() {
@@ -1580,7 +1580,7 @@ class RexProgramTest extends RexProgramTestBase {
     // a is null or a >= 15
     RexNode expr = or(isNull(aRef),
         ge(aRef, literal(15)));
-    checkSimplifyUnchanged(expr);
+    checkSimplify(expr, "SEARCH($0, Sarg([[15‥+∞)], null))");
   }
 
   /** Unit test for
@@ -1597,10 +1597,7 @@ class RexProgramTest extends RexProgramTestBase {
             lt(aRef, literal(12))),
         ge(aRef, literal(15)));
     // [CALCITE-4190] causes "or a >= 15" to disappear from the simplified form.
-    final String expected = "OR(IS NULL($0),"
-        + " AND(<(0, $0), <=($0, 10)),"
-        + " AND(<(8, $0), <($0, 12)),"
-        + " >=($0, 15))";
+    final String expected = "SEARCH($0, Sarg([[0‥12), [15‥+∞)], null))";
     checkSimplify(expr, expected);
   }
 
@@ -1614,7 +1611,7 @@ class RexProgramTest extends RexProgramTestBase {
           eq(vInt(), literal(1)),
           eq(vInt(), literal(2)),
           and(gt(item, literal(4)), lt(item, literal(3)), eq(vInt(), literal(3)))),
-        "OR(=(?0.int0, 1), =(?0.int0, 2))");
+        "SEARCH(?0.int0, Sarg([[1‥1], [2‥2]]))");
     simplify = simplify.withParanoid(true);
   }
 
