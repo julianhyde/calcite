@@ -934,7 +934,7 @@ class RexProgramTest extends RexProgramTestBase {
 
     checkSimplify2(and(le(hRef, literal(1)), ge(hRef, literal(1))),
         "AND(<=(?0.h, 1), >=(?0.h, 1))",
-        "SEARCH(?0.h, Sarg([[1‥1]]))");
+        "=(?0.h, 1)");
 
     checkSimplify2(and(lt(hRef, literal(1)), eq(hRef, literal(1)), ge(hRef, literal(1))),
         "AND(<(?0.h, 1), =(?0.h, 1), >=(?0.h, 1))",
@@ -1068,7 +1068,7 @@ class RexProgramTest extends RexProgramTestBase {
         "false");
 
     checkSimplifyFilter(and(le(aRef, literal(1)), ge(aRef, literal(1))),
-        "SEARCH(?0.a, Sarg([[1‥1]]))");
+        "=(?0.a, 1)");
 
     checkSimplifyFilter(
         and(lt(aRef, literal(1)), eq(aRef, literal(1)), ge(aRef, literal(1))),
@@ -1132,7 +1132,7 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplifyFilter(
         and(lt(literal(1), aRef), lt(aRef, literal(5))),
         RelOptPredicateList.EMPTY,
-        "AND(<(1, ?0.a), <(?0.a, 5))");
+        "SEARCH(?0.a, Sarg[[1‥5)])");
 
     // condition "1 > a && 5 > x" yields "1 > a"
     checkSimplifyFilter(
@@ -1151,7 +1151,7 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplifyFilter(
         and(gt(aRef, literal(1)), lt(aRef, literal(10)), lt(aRef, literal(5))),
         RelOptPredicateList.EMPTY,
-        "AND(>(?0.a, 1), <(?0.a, 5))");
+        "SEARCH(?0.a, Sarg[(1‥5)])");
 
     // condition "a > 1 && a < 10 && a < 5"
     // with pre-condition "a > 5"
@@ -1179,7 +1179,7 @@ class RexProgramTest extends RexProgramTestBase {
         and(gt(aRef, literal(1)), lt(aRef, literal(10)), lt(aRef, literal(5))),
         RelOptPredicateList.of(rexBuilder,
             ImmutableList.of(lt(bRef, literal(10)), ge(aRef, literal(1)))),
-        "AND(>(?0.a, 1), <(?0.a, 5))");
+        "SEARCH(?0.a, Sarg[(1‥5)])");
 
     // condition "a > 1"
     // with pre-condition "b < 10 && a > 5"
@@ -1302,7 +1302,7 @@ class RexProgramTest extends RexProgramTestBase {
                 eq(aRef, literal(1))),
             and(eq(aRef, literal(10)),
                 eq(aRef, literal(1)))),
-        "SEARCH(?0.a, Sarg([[1‥1]]))");
+        "=(?0.a, 1)");
 
     checkSimplifyFilter(
         and(
@@ -1418,7 +1418,7 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplifyFilter(
         or(eq(aRef, literal1),
             ne(aRef, literal2)),
-        "SEARCH(?0.a, Sarg([(-∞‥2), (2‥+∞)]))");
+        "OR(=(?0.a, 1), <>(?0.a, 2))"); // TODO
 
     // "(a >= 1 and a <= 3) or a <> 2", or equivalently
     // "a between 1 and 3 or a <> 2" ==> "true"
@@ -1551,7 +1551,7 @@ class RexProgramTest extends RexProgramTestBase {
             eq(aRef, literal(3)),
             or(eq(aRef, literal(3)),
                 eq(aRef, literal(4)))),
-        "AND(=(?0.b, 2), =(?0.a, 3))");
+        "AND(SEARCH(?0.b, Sarg[2, null]), SEARCH(?0.a, Sarg[3]))"); // TODO
 
     checkSimplify3(
         or(lt(vInt(), nullInt),
@@ -1571,8 +1571,11 @@ class RexProgramTest extends RexProgramTestBase {
             ge(aRef, literal(15))),
         ne(aRef, literal(6)),
         ne(aRef, literal(12)));
-    final String expected = "SEARCH($0, Sarg([[0‥6), (6‥10], [15‥+∞)]))";
-    checkSimplify(expr, expected);
+    final String expected = "SEARCH($0, Sarg[[0‥6), (6‥10], [15‥+∞)])";
+    final String expanded = "OR(AND(>=($0, 0), <($0, 6)), AND(>($0, 6),"
+        + " <=($0, 10)), >=($0, 15))";
+    checkSimplify(expr, expected)
+        .expandedSearch(expanded);
   }
 
   @Test void testSimplifyRange2() {
@@ -1580,7 +1583,8 @@ class RexProgramTest extends RexProgramTestBase {
     // a is null or a >= 15
     RexNode expr = or(isNull(aRef),
         ge(aRef, literal(15)));
-    checkSimplify(expr, "SEARCH($0, Sarg([[15‥+∞)], null))");
+    checkSimplify(expr, "SEARCH($0, Sarg[[15‥+∞), null])")
+        .expandedSearch("OR(IS NULL($0), >=($0, 15))");
   }
 
   /** Unit test for
@@ -1597,8 +1601,32 @@ class RexProgramTest extends RexProgramTestBase {
             lt(aRef, literal(12))),
         ge(aRef, literal(15)));
     // [CALCITE-4190] causes "or a >= 15" to disappear from the simplified form.
-    final String expected = "SEARCH($0, Sarg([[0‥12), [15‥+∞)], null))";
-    checkSimplify(expr, expected);
+    final String expanded =
+        "OR(IS NULL($0), AND(>=($0, 0), <($0, 12)), >=($0, 15))";
+    checkSimplify(expr, "SEARCH($0, Sarg[[0‥12), [15‥+∞), null])")
+        .expandedSearch(expanded);
+  }
+
+  @Test void testSimplifyRange4() {
+    final RexNode aRef = input(tInt(true), 0);
+    // not (a = 3 or a = 5)
+    RexNode expr = not(
+        or(eq(aRef, literal(3)),
+            eq(aRef, literal(5))));
+    checkSimplify(expr, "SEARCH($0, Sarg[(-∞‥3), (3‥5), (5‥+∞)])")
+        .expandedSearch("AND(<>($0, 3), <>($0, 5))");
+  }
+
+  @Test void testSimplifyRange5() {
+    final RexNode aRef = input(tInt(true), 0);
+    // not (a = 3 or a = 5) or a is null
+    RexNode expr = or(
+        not(
+            or(eq(aRef, literal(3)),
+                eq(aRef, literal(5)))),
+        isNull(aRef));
+    checkSimplify(expr, "SEARCH($0, Sarg[(-∞‥3), (3‥5), (5‥+∞), null])")
+        .expandedSearch("OR(IS NULL($0), AND(<>($0, 3), <>($0, 5)))");
   }
 
   @Test void testSimplifyItemRangeTerms() {
@@ -1608,10 +1636,11 @@ class RexProgramTest extends RexProgramTestBase {
     // (a=1 or a=2 or (arr[1]>4 and arr[1]<3 and a=3)) => a=1 or a=2
     checkSimplifyFilter(
         or(
-          eq(vInt(), literal(1)),
-          eq(vInt(), literal(2)),
-          and(gt(item, literal(4)), lt(item, literal(3)), eq(vInt(), literal(3)))),
-        "SEARCH(?0.int0, Sarg([[1‥1], [2‥2]]))");
+            eq(vInt(), literal(1)),
+            eq(vInt(), literal(2)),
+            and(gt(item, literal(4)), lt(item, literal(3)),
+                eq(vInt(), literal(3)))),
+        "SEARCH(?0.int0, Sarg[1, 2])");
     simplify = simplify.withParanoid(true);
   }
 
@@ -1790,7 +1819,7 @@ class RexProgramTest extends RexProgramTestBase {
         "=(?0.notNullInt0, 3)");
   }
 
-  @Test void testSimplifyCaseAndNotSimplicationIsInAction() {
+  @Test void testSimplifyCaseAndNotSimplificationIsInAction() {
     RexNode caseNode = case_(
         eq(vIntNotNull(), literal(0)), falseLiteral,
         eq(vIntNotNull(), literal(1)), trueLiteral,
@@ -2250,7 +2279,8 @@ class RexProgramTest extends RexProgramTestBase {
 
   /** Unit test for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2421">[CALCITE-2421]
-   * to-be-filled </a>. */
+   * RexSimplify#simplifyAnds foregoes some simplifications if unknownAsFalse
+   * set to true</a>. */
   @Test void testSelfComparisons() {
     checkSimplify3(and(eq(vInt(), vInt()), eq(vInt(1), vInt(1))),
         "AND(OR(null, IS NOT NULL(?0.int0)), OR(null, IS NOT NULL(?0.int1)))",
@@ -2703,7 +2733,7 @@ class RexProgramTest extends RexProgramTestBase {
    * Computing digest of IN expressions leads to Exceptions</a>. */
   @Test void testInDigest() {
     RexNode e = in(vInt(), literal(1), literal(2));
-    assertThat(e.toString(), is("SEARCH(?0.int0, Sarg([[1‥1], [2‥2]]))"));
+    assertThat(e.toString(), is("SEARCH(?0.int0, Sarg[1, 2])"));
   }
 
   /** Tests that {@link #in} does not generate SEARCH if any of the arguments

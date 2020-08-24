@@ -848,7 +848,7 @@ public abstract class SqlImplementor {
       if (sarg.containsNull) {
         orList.add(SqlStdOperatorTable.IS_NULL.createCall(POS, operandSql));
       }
-      if (sarg.rangeSet.asRanges().stream().allMatch(RangeSets::isPoint)) {
+      if (sarg.isPoints()) {
         final SqlNodeList list = sarg.rangeSet.asRanges().stream()
             .map(range ->
                 toSql(program,

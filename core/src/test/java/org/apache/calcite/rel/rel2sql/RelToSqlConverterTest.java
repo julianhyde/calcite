@@ -818,8 +818,7 @@ class RelToSqlConverterTest {
         .build();
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "WHERE (\"EMPNO\" = 0 OR \"EMPNO\" = 1 OR (\"EMPNO\" = 2 OR \"EMPNO\" = 3))"
-        + " AND (\"DEPTNO\" = 5 OR (\"DEPTNO\" = 6 OR \"DEPTNO\" = 7))";
+        + "WHERE \"EMPNO\" IN (0, 1, 2, 3) AND \"DEPTNO\" IN (5, 6, 7)";
     relFn(relFn).ok(expected);
   }
 

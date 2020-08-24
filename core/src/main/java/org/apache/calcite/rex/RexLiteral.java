@@ -376,6 +376,23 @@ public class RexLiteral extends RexNode {
     }
   }
 
+  /** Returns the strict literal type for a given type. */
+  public static SqlTypeName strictType(RelDataType type) {
+    final SqlTypeName typeName = type.getSqlTypeName();
+    switch (typeName) {
+    case INTEGER:
+    case TINYINT:
+    case SMALLINT:
+      return SqlTypeName.DECIMAL;
+    case VARBINARY:
+      return SqlTypeName.BINARY;
+    case VARCHAR:
+      return SqlTypeName.CHAR;
+    default:
+      return typeName;
+    }
+  }
+
   private static String toJavaString(
       Comparable value,
       SqlTypeName typeName, RelDataType type,

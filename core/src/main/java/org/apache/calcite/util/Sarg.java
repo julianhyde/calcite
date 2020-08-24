@@ -16,9 +16,11 @@
  */
 package org.apache.calcite.util;
 
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 
 /** Set of values (or ranges) that are the target of a search.
@@ -50,8 +52,36 @@ public class Sarg<C extends Comparable<C>> implements Comparable<Sarg<C>> {
     return new Sarg<>(ImmutableRangeSet.copyOf(rangeSet), containsNull);
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Produces a similar result to {@link RangeSet}, but adds ", null"
+   * if nulls are matched, and simplifies point ranges. For example,
+   * the sarg that allows the range set
+   *
+   * <blockquote>{@code [[7‥7], [9‥9], (10‥+∞)]}</blockquote>
+   *
+   * and also null is printed as
+   *
+   * <blockquote>{@code Sarg[7, 9, (10‥+∞), null]}</blockquote>
+   */
   @Override public String toString() {
-    return "Sarg(" + rangeSet + (containsNull ? ", null" : "") + ")";
+    final StringBuilder b = new StringBuilder("Sarg[");
+    Ord.forEach(rangeSet.asRanges(), (r, i) -> {
+      if (i > 0) {
+        b.append(", ");
+      }
+      if (RangeSets.isPoint(r)) {
+        b.append(r.lowerEndpoint());
+      } else {
+        b.append(r);
+      }
+    });
+    if (containsNull) {
+      b.append(", null");
+    }
+    return b.append("]")
+        .toString();
   }
 
   @Override public int compareTo(Sarg<C> o) {
@@ -67,5 +97,25 @@ public class Sarg<C extends Comparable<C>> implements Comparable<Sarg<C>> {
         || o instanceof Sarg
         && rangeSet.equals(((Sarg) o).rangeSet)
         && containsNull == ((Sarg) o).containsNull;
+  }
+
+  /** Returns whether this Sarg is a collection of 1 or more points (and perhaps
+   * an {@code IS NULL} if {@link #containsNull}).
+   *
+   * <p>Such sargs could be translated as {@code ref = value}
+   * or {@code ref IN (value1, ...)}. */
+  public boolean isPoints() {
+    return pointCount == rangeSet.asRanges().size();
+  }
+
+  /** Returns whether this Sarg, when negated, is a collection of 1 or more
+   * points (and perhaps an {@code IS NULL} if {@link #containsNull}).
+   *
+   * <p>Such sargs could be translated as {@code ref <> value}
+   * or {@code ref NOT IN (value1, ...)}. */
+  public boolean isComplementedPoints() {
+    return rangeSet.span().encloses(Range.all())
+        && rangeSet.complement().asRanges().stream()
+            .allMatch(RangeSets::isPoint);
   }
 }

@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import javax.annotation.Nonnull;
 
 import static org.apache.calcite.rex.RexUnknownAs.FALSE;
 import static org.apache.calcite.rex.RexUnknownAs.TRUE;
@@ -1295,20 +1296,17 @@ public class RexSimplify {
     final List<RexNode> terms = new ArrayList<>();
     final List<RexNode> notTerms = new ArrayList<>();
 
+    final SargCollector sargCollector = new SargCollector(rexBuilder);
+    operands.forEach(t -> sargCollector.accept(t, true, terms));
+    if (sargCollector.map.values().stream().anyMatch(b -> b.complexity() > 1)) {
+      operands.clear();
+      terms.forEach(t ->
+          operands.add(sargCollector.fix(rexBuilder, t, true)));
+    }
+    terms.clear();
+
     for (RexNode o : operands) {
       RelOptUtil.decomposeConjunction(o, terms, notTerms);
-    }
-
-    final SargCollector sargCollector = new SargCollector();
-    final List<RexNode> newTerms = new ArrayList<>();
-    final List<RexNode> newNotTerms = new ArrayList<>();
-    terms.forEach(t -> sargCollector.accept(t, true, newTerms));
-    notTerms.forEach(t -> sargCollector.accept(t, false, newNotTerms));
-    if (sargCollector.benefit() > 1) {
-      terms.clear();
-      newTerms.forEach(t -> terms.add(sargCollector.fix(rexBuilder, t, true)));
-      notTerms.clear();
-      newNotTerms.forEach(t -> notTerms.add(sargCollector.fix(rexBuilder, t, false)));
     }
 
     switch (unknownAs) {
@@ -1800,10 +1798,10 @@ public class RexSimplify {
   /** Simplifies a list of terms and combines them into an OR.
    * Modifies the list in place. */
   private RexNode simplifyOrs(List<RexNode> terms, RexUnknownAs unknownAs) {
-    final SargCollector sargCollector = new SargCollector();
+    final SargCollector sargCollector = new SargCollector(rexBuilder);
     final List<RexNode> newTerms = new ArrayList<>();
     terms.forEach(t -> sargCollector.accept(t, false, newTerms));
-    if (sargCollector.benefit() > 1) {
+    if (sargCollector.map.values().stream().anyMatch(b -> b.complexity() > 1)) {
       terms.clear();
       newTerms.forEach(t -> terms.add(sargCollector.fix(rexBuilder, t, false)));
     }
@@ -2540,20 +2538,10 @@ public class RexSimplify {
    * {@link Sarg search arguments}. */
   static class SargCollector {
     final Map<RexNode, RexSargBuilder> map = new HashMap<>();
+    private final RexBuilder rexBuilder;
 
-    /** Returns a rough estimate of whether it is worth converting to sargs.
-     *
-     * <p>Does not deal well with a mixture of simple and complex sargs, e.g.
-     * {@code x = 1 or y in (2, 3, 4, 6, 8)}, where we should sargify {@code y}
-     * but not {@code x}.
-     */
-    int benefit() {
-      int benefit = 0;
-      for (RexSargBuilder b : map.values()) {
-        benefit += b.rangeSet.asRanges().size()
-            + (b.containsNull ? 1 : 0);
-      }
-      return benefit;
+    SargCollector(RexBuilder rexBuilder) {
+      this.rexBuilder = rexBuilder;
     }
 
     private void accept(RexNode term, boolean negate, List<RexNode> newTerms) {
@@ -2563,7 +2551,6 @@ public class RexSimplify {
     }
 
     private boolean accept_(RexNode e, boolean negate, List<RexNode> newTerms) {
-      final ImmutableList<RexNode> operands;
       switch (e.getKind()) {
       case LESS_THAN:
       case LESS_THAN_OR_EQUAL:
@@ -2572,13 +2559,20 @@ public class RexSimplify {
       case EQUALS:
       case NOT_EQUALS:
       case SEARCH:
-        operands = ((RexCall) e).operands;
-        return accept2(operands.get(0), operands.get(1), e.getKind(), negate,
-            newTerms);
+        return accept2(((RexCall) e).operands.get(0),
+            ((RexCall) e).operands.get(1), e.getKind(), negate, newTerms);
       case IS_NULL:
+        if (negate) {
+          return false;
+        }
+        return accept1(((RexCall) e).operands.get(0), e.getKind(), negate,
+            rexBuilder.makeNullLiteral(e.getType()), newTerms);
       case IS_NOT_NULL:
-        operands = ((RexCall) e).operands;
-        return accept1(operands.get(0), e.getKind(), negate, null, newTerms);
+        if (!negate) {
+          return false;
+        }
+        return accept1(((RexCall) e).operands.get(0), e.getKind(), negate,
+            rexBuilder.makeNullLiteral(e.getType()), newTerms);
       default:
         return false;
       }
@@ -2612,7 +2606,7 @@ public class RexSimplify {
 
     // always returns true
     private boolean accept1(RexNode e, SqlKind kind, boolean negate,
-        RexLiteral literal, List<RexNode> newTerms) {
+        @Nonnull RexLiteral literal, List<RexNode> newTerms) {
       final RexSargBuilder b =
           map.computeIfAbsent(e, e2 ->
               addFluent(newTerms,
@@ -2620,38 +2614,39 @@ public class RexSimplify {
       if (negate) {
         kind = kind.negateNullSafe();
       }
+      final Comparable value = literal.getValueAs(Comparable.class);
       switch (kind) {
       case LESS_THAN:
-        b.rangeSet.add(Range.lessThan(literal.getValue()));
+        b.addRange(Range.lessThan(value), literal.getType());
         return true;
       case LESS_THAN_OR_EQUAL:
-        b.rangeSet.add(Range.atMost(literal.getValue()));
+        b.addRange(Range.atMost(value), literal.getType());
         return true;
       case GREATER_THAN:
-        b.rangeSet.add(Range.greaterThan(literal.getValue()));
+        b.addRange(Range.greaterThan(value), literal.getType());
         return true;
       case GREATER_THAN_OR_EQUAL:
-        b.rangeSet.add(Range.atLeast(literal.getValue()));
+        b.addRange(Range.atLeast(value), literal.getType());
         return true;
       case EQUALS:
-        b.rangeSet.add(Range.singleton(literal.getValue()));
+        b.addRange(Range.singleton(value), literal.getType());
         return true;
       case NOT_EQUALS:
-        b.rangeSet.add(Range.lessThan(literal.getValue()));
-        b.rangeSet.add(Range.greaterThan(literal.getValue()));
+        b.addRange(Range.lessThan(value), literal.getType());
+        b.addRange(Range.greaterThan(value), literal.getType());
         return true;
       case SEARCH:
         final Sarg sarg = literal.getValueAs(Sarg.class);
-        if (negate) {
-          b.rangeSet.addAll(sarg.rangeSet.complement());
-          b.containsNull |= sarg.containsNull; // TODO
-        } else {
-          b.rangeSet.addAll(sarg.rangeSet);
-          b.containsNull |= sarg.containsNull;
-        }
+        b.addSarg(sarg, negate, literal.getType());
         return true;
       case IS_NULL:
         if (negate) {
+          throw new AssertionError();
+        }
+        b.containsNull = true;
+        return true;
+      case IS_NOT_NULL:
+        if (!negate) {
           throw new AssertionError();
         }
         b.containsNull = true;
@@ -2661,8 +2656,8 @@ public class RexSimplify {
       }
     }
 
-    /** If a term is a call to {@code SEARCH} on a {@link SargBuilder}, converts
-     * it to a {@code SEARCH} on a {@link Sarg}. */
+    /** If a term is a call to {@code SEARCH} on a {@link RexSargBuilder},
+     * converts it to a {@code SEARCH} on a {@link Sarg}. */
     RexNode fix(RexBuilder rexBuilder, RexNode term, boolean negate) {
       if (term instanceof RexSargBuilder) {
         RexSargBuilder sargBuilder = (RexSargBuilder) term;
@@ -2674,28 +2669,16 @@ public class RexSimplify {
     }
   }
 
-  static class SargBuilder<C extends Comparable<C>>
-      implements Comparable<SargBuilder<C>> {
-    final RangeSet rangeSet = TreeRangeSet.create();
-    boolean containsNull;
-
-    @Override public int compareTo(SargBuilder<C> o) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override public String toString() {
-      return rangeSet + (containsNull ? " + null" : "");
-    }
-
-    Sarg<C> build() {
-      return Sarg.of(containsNull, rangeSet);
-    }
-  }
-
+  /** Equivalent to a {@link RexLiteral} whose value is a {@link Sarg},
+   * but mutable, so that the sarg can be expanded as {@link SargCollector}
+   * traverses a list of OR or AND terms.
+   *
+   * <p>The {@link SargCollector#fix} method converts it to an immutable
+   * literal. */
   static class RexSargBuilder extends RexNode {
     final RexNode ref;
-    private final RelDataType type;
-    RangeSet<Comparable> rangeSet = TreeRangeSet.create();
+    private RelDataType type;
+    final RangeSet<Comparable> rangeSet = TreeRangeSet.create();
     boolean containsNull;
 
     RexSargBuilder(RexNode ref, RelDataType type) {
@@ -2706,6 +2689,31 @@ public class RexSimplify {
     @Override public String toString() {
       return "SEARCH(" + ref + ", " + rangeSet
           + (containsNull ? " + null)" : ")");
+    }
+
+    /** Returns a rough estimate of whether it is worth converting to a Sarg.
+     *
+     * <p>Examples:
+     * <ul>
+     *   <li>{@code x = 1}, {@code x <> 1}, {@code x > 1} have complexity 1
+     *   <li>{@code x > 1 or x is null} has complexity 2
+     *   <li>{@code x in (2, 4, 6) or x > 20} has complexity 4
+     * </ul>
+     */
+    int complexity() {
+      int complexity = 0;
+      if (rangeSet.asRanges().size() == 2
+          && rangeSet.complement().asRanges().size() == 1
+          && RangeSets.isPoint(
+              Iterables.getOnlyElement(rangeSet.complement().asRanges()))) {
+        complexity++;
+      } else {
+        complexity += rangeSet.asRanges().size();
+      }
+      if (containsNull) {
+        ++complexity;
+      }
+      return complexity;
     }
 
     <C extends Comparable<C>> Sarg<C> build(boolean negate) {
@@ -2732,6 +2740,26 @@ public class RexSimplify {
 
     @Override public int hashCode() {
       throw new UnsupportedOperationException();
+    }
+
+    public void addRange(Range<Comparable> range, RelDataType type) {
+      if (rangeSet.isEmpty()) {
+        this.type = type;
+      }
+      rangeSet.add(range);
+    }
+
+    public void addSarg(Sarg sarg, boolean negate, RelDataType type) {
+      if (rangeSet.isEmpty()) {
+        this.type = type;
+      }
+      if (negate) {
+        rangeSet.addAll(sarg.rangeSet.complement());
+        containsNull |= sarg.containsNull; // TODO
+      } else {
+        rangeSet.addAll(sarg.rangeSet);
+        containsNull |= sarg.containsNull;
+      }
     }
   }
 }

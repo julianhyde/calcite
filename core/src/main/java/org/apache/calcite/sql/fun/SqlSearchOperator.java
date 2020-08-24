@@ -18,11 +18,16 @@ package org.apache.calcite.sql.fun;
 
 import org.apache.calcite.sql.SqlInternalOperator;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.OperandTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
 
 /** Operator that tests whether its left operand is included in the range of
  * values covered by search arguments. */
 class SqlSearchOperator extends SqlInternalOperator {
   SqlSearchOperator() {
-    super("SEARCH", SqlKind.SEARCH);
+    super("SEARCH", SqlKind.SEARCH, 30, true, ReturnTypes.BOOLEAN_NULLABLE,
+        InferTypes.FIRST_KNOWN,
+        OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED);
   }
 }
