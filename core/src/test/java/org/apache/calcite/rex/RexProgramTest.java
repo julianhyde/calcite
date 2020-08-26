@@ -1128,11 +1128,11 @@ class RexProgramTest extends RexProgramTestBase {
         RelOptPredicateList.EMPTY,
         "<(5, ?0.a)");
 
-    // condition "1 < a && a < 5" is unchanged
+    // condition "1 < a && a < 5" is converted to a Sarg
     checkSimplifyFilter(
         and(lt(literal(1), aRef), lt(aRef, literal(5))),
         RelOptPredicateList.EMPTY,
-        "SEARCH(?0.a, Sarg[[1‥5)])");
+        "SEARCH(?0.a, Sarg[(1‥5)])");
 
     // condition "1 > a && 5 > x" yields "1 > a"
     checkSimplifyFilter(
@@ -1551,7 +1551,7 @@ class RexProgramTest extends RexProgramTestBase {
             eq(aRef, literal(3)),
             or(eq(aRef, literal(3)),
                 eq(aRef, literal(4)))),
-        "AND(SEARCH(?0.b, Sarg[2, null]), SEARCH(?0.a, Sarg[3]))"); // TODO
+        "AND(=(?0.b, 2), =(?0.a, 3))");
 
     checkSimplify3(
         or(lt(vInt(), nullInt),
@@ -1571,10 +1571,10 @@ class RexProgramTest extends RexProgramTestBase {
             ge(aRef, literal(15))),
         ne(aRef, literal(6)),
         ne(aRef, literal(12)));
-    final String expected = "SEARCH($0, Sarg[[0‥6), (6‥10], [15‥+∞)])";
-    final String expanded = "OR(AND(>=($0, 0), <($0, 6)), AND(>($0, 6),"
+    final String simplified = "SEARCH($0, Sarg[(0‥6), (6‥10], [15‥+∞)])";
+    final String expanded = "OR(AND(>($0, 0), <($0, 6)), AND(>($0, 6),"
         + " <=($0, 10)), >=($0, 15))";
-    checkSimplify(expr, expected)
+    checkSimplify(expr, simplified)
         .expandedSearch(expanded);
   }
 
@@ -1602,8 +1602,8 @@ class RexProgramTest extends RexProgramTestBase {
         ge(aRef, literal(15)));
     // [CALCITE-4190] causes "or a >= 15" to disappear from the simplified form.
     final String expanded =
-        "OR(IS NULL($0), AND(>=($0, 0), <($0, 12)), >=($0, 15))";
-    checkSimplify(expr, "SEARCH($0, Sarg[[0‥12), [15‥+∞), null])")
+        "OR(IS NULL($0), AND(>($0, 0), <($0, 12)), >=($0, 15))";
+    checkSimplify(expr, "SEARCH($0, Sarg[(0‥12), [15‥+∞), null])")
         .expandedSearch(expanded);
   }
 
@@ -2592,6 +2592,15 @@ class RexProgramTest extends RexProgramTestBase {
         "OR(AND(null, IS NULL(?0.int1)), null, IS NOT NULL(?0.int2))",
         "IS NOT NULL(?0.int2)",
         "true");
+  }
+
+  @Test void testSimplifyOrIsNull() {
+    // x = 10 OR x IS NULL
+    checkSimplify(or(eq(vInt(0), literal(10)), isNull(vInt(0))),
+        "SEARCH(?0.int0, Sarg[10, null])");
+    // 10 = x OR x IS NULL
+    checkSimplify(or(eq(literal(10), vInt(0)), isNull(vInt(0))),
+        "SEARCH(?0.int0, Sarg[10, null])");
   }
 
   @Test void testSimplifyOrNot() {

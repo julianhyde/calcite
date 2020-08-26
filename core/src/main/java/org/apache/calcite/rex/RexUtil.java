@@ -594,14 +594,14 @@ public class RexUtil {
           orList.add(
               rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, ref,
                   rexBuilder.makeLiteral(range.lowerEndpoint(),
-                      literal.getType(), true))));
+                      literal.getType(), true, true))));
     } else if (sarg.isComplementedPoints()) {
       // Generate 'ref <> value1 AND ... AND ref <> valueN'
       final List<RexNode> list = sarg.rangeSet.complement().asRanges().stream()
           .map(range ->
               rexBuilder.makeCall(SqlStdOperatorTable.NOT_EQUALS, ref,
                   rexBuilder.makeLiteral(range.lowerEndpoint(),
-                      literal.getType(), true)))
+                      literal.getType(), true, true)))
           .collect(Util.toImmutableList());
       orList.add(composeConjunction(rexBuilder, list));
     } else {
@@ -2924,7 +2924,7 @@ public class RexUtil {
 
     private RexNode op(SqlOperator op, C value) {
       return rexBuilder.makeCall(op, ref,
-          rexBuilder.makeLiteral(value, type, typeName));
+          rexBuilder.makeLiteral(value, type, true, true));
     }
 
     @Override public void all() {

@@ -496,7 +496,7 @@ public class MaterializedViewRelOptRulesTest extends AbstractMaterializedViewTes
             "EnumerableUnion(all=[true])",
             "EnumerableAggregate(group=[{2}])",
             "EnumerableTableScan(table=[[hr, MV0]])",
-            "expr#13=[OR($t10, $t12)], expr#14=[AND($t6, $t8, $t13)]"))
+            "expr#5=[Sarg[(10‥20)]], expr#6=[SEARCH($t0, $t5)]"))
         .ok();
   }
 

@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 
+import java.util.Objects;
+
 /** Set of values (or ranges) that are the target of a search.
  *
  * <p>The name is derived from <b>S</b>earch <b>arg</b>ument, an ancient
@@ -41,7 +43,7 @@ public class Sarg<C extends Comparable<C>> implements Comparable<Sarg<C>> {
   public final int pointCount;
 
   private Sarg(ImmutableRangeSet<C> rangeSet, boolean containsNull) {
-    this.rangeSet = rangeSet;
+    this.rangeSet = Objects.requireNonNull(rangeSet);
     this.containsNull = containsNull;
     this.pointCount = RangeSets.countPoints(rangeSet);
   }
@@ -57,7 +59,7 @@ public class Sarg<C extends Comparable<C>> implements Comparable<Sarg<C>> {
    *
    * <p>Produces a similar result to {@link RangeSet}, but adds ", null"
    * if nulls are matched, and simplifies point ranges. For example,
-   * the sarg that allows the range set
+   * the Sarg that allows the range set
    *
    * <blockquote>{@code [[7‥7], [9‥9], (10‥+∞)]}</blockquote>
    *

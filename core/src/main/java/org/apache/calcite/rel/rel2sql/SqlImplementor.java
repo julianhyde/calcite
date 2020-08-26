@@ -835,7 +835,7 @@ public abstract class SqlImplementor {
       }
     }
 
-    /** Converts a sarg to SQL, generating "operand IN (c1, c2, ...)" if the
+    /** Converts a Sarg to SQL, generating "operand IN (c1, c2, ...)" if the
      * ranges are all points. */
     @SuppressWarnings("UnstableApiUsage")
     private <C extends Comparable<C>> SqlNode toSql(RexProgram program,
@@ -852,7 +852,8 @@ public abstract class SqlImplementor {
         final SqlNodeList list = sarg.rangeSet.asRanges().stream()
             .map(range ->
                 toSql(program,
-                    rexBuilder.makeLiteral(range.lowerEndpoint(), type, false)))
+                    rexBuilder.makeLiteral(range.lowerEndpoint(), type, true,
+                        true)))
             .collect(SqlNode.toList());
         switch (list.size()) {
         case 1:

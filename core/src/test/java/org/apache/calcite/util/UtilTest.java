@@ -1676,6 +1676,10 @@ class UtilTest {
     final Collection<String> cbcaC = new LinkedHashSet<>(cbca);
     assertThat(Util.distinctList(cbcaC), not(sameInstance(cbca)));
     assertThat(Util.distinctList(cbcaC), is(Arrays.asList("c", "b", "a")));
+    final List<String> a2 = ImmutableList.of("a", "a");
+    assertThat(Util.distinctList(a2), is(a));
+    final List<String> a1m = Collections.nCopies(1_000_000, "a");
+    assertThat(Util.distinctList(a1m), is(a));
   }
 
   /** Unit test for {@link Utilities#hashCode(double)}. */

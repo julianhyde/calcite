@@ -108,6 +108,9 @@ import javax.annotation.Nonnull;
  * Miscellaneous utility functions.
  */
 public class Util {
+
+  private static final int QUICK_DISTINCT = 15;
+
   private Util() {}
 
   //~ Static fields/initializers ---------------------------------------------
@@ -2033,7 +2036,7 @@ public class Util {
       // Lists of size 0 and 1 are always distinct.
       return -1;
     }
-    if (size < 15) {
+    if (size < QUICK_DISTINCT) {
       // For smaller lists, avoid the overhead of creating a set. Threshold
       // determined empirically using UtilTest.testIsDistinctBenchmark.
       for (int i = 1; i < size; i++) {
@@ -2064,10 +2067,28 @@ public class Util {
    *
    * <p>If the list is already unique it is returned unchanged. */
   public static <E> List<E> distinctList(List<E> list) {
-    if (isDistinct(list)) {
+    // If the list is small, check for duplicates using pairwise comparison.
+    if (list.size() < QUICK_DISTINCT && isDistinct(list)) {
       return list;
     }
+    // Lists that have all the same element are common. Avoiding creating a set.
+    if (allSameElement(list)) {
+      return ImmutableList.of(list.get(0));
+    }
     return ImmutableList.copyOf(new LinkedHashSet<>(list));
+  }
+
+  /** Returns whether all of the elements of a list are equal.
+   * The list is assumed to be non-empty. */
+  private static <E> boolean allSameElement(List<E> list) {
+    final Iterator<E> iterator = list.iterator();
+    final E first = iterator.next();
+    while (iterator.hasNext()) {
+      if (!first.equals(iterator.next())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** Converts an iterable into a list with unique elements.

@@ -962,8 +962,8 @@ public class RexBuilder {
       o = ((TimestampString) o).round(p);
       break;
     }
-    if (type.getSqlTypeName() == SqlTypeName.DECIMAL && !SqlTypeUtil
-        .isValidDecimalValue((BigDecimal) o, type)) {
+    if (typeName == SqlTypeName.DECIMAL
+        && !SqlTypeUtil.isValidDecimalValue((BigDecimal) o, type)) {
       throw new IllegalArgumentException(
           "Cannot convert " + o + " to " + type  + " due to overflow");
     }
@@ -1469,8 +1469,8 @@ public class RexBuilder {
   }
 
   /**
-   * Creates a literal of a given type. The value is assumed to be
-   * compatible with the type.
+   * Creates a literal of a given type, padding values of constant-width
+   * types to match their type.
    *
    * @param value     Value
    * @param type      Type
@@ -1480,6 +1480,32 @@ public class RexBuilder {
    */
   public RexNode makeLiteral(Object value, RelDataType type,
       boolean allowCast) {
+    return makeLiteral(value, type, allowCast, false);
+  }
+
+  /**
+   * Creates a literal of a given type. The value is assumed to be
+   * compatible with the type.
+   *
+   * <p>The {@code trim} parameter controls whether to trim values of
+   * constant-width types such as {@code CHAR}. Consider a call to
+   * {@code makeLiteral("foo ", CHAR(5)}, and note that the value is too short
+   * for its type. If {@code trim} is true, the value is converted to "foo"
+   * and the type to {@code CHAR(3)}; if {@code trim} is false, the value is
+   * right-padded with spaces to {@code "foo  "}, to match the type
+   * {@code CHAR(5)}.
+   *
+   * @param value     Value
+   * @param type      Type
+   * @param allowCast Whether to allow a cast. If false, value is always a
+   *                  {@link RexLiteral} but may not be the exact type
+   * @param trim      Whether to trim values and type to the shortest equivalent
+   *                  value; for example whether to convert CHAR(4) 'foo '
+   *                  to CHAR(3) 'foo'
+   * @return Simple literal, or cast simple literal
+   */
+  public RexNode makeLiteral(Object value, RelDataType type,
+      boolean allowCast, boolean trim) {
     if (value == null) {
       return makeCast(type, constantNull);
     }
@@ -1495,7 +1521,15 @@ public class RexBuilder {
     final SqlTypeName sqlTypeName = type.getSqlTypeName();
     switch (sqlTypeName) {
     case CHAR:
-      return makeCharLiteral(padRight((NlsString) value, type.getPrecision()));
+      int precision = type.getPrecision();
+      NlsString nlsString = (NlsString) value;
+      if (trim) {
+        nlsString = nlsString.rtrim();
+        precision = nlsString.getValue().length();
+      } else {
+        nlsString = padRight(nlsString, precision);
+      }
+      return makeCharLiteral(padRight(nlsString, precision));
     case VARCHAR:
       literal = makeCharLiteral((NlsString) value);
       if (allowCast) {
