@@ -1712,51 +1712,6 @@ public class RexSimplify {
     return result;
   }
 
-  /** Subtracts a range from a range set. */
-  public static <C extends Comparable<C>> RangeSet<C> minus(RangeSet<C> rangeSet,
-      Range<C> range) {
-    final TreeRangeSet<C> mutableRangeSet = TreeRangeSet.create(rangeSet);
-    mutableRangeSet.remove(range);
-    return mutableRangeSet.equals(rangeSet) ? rangeSet
-        : ImmutableRangeSet.copyOf(mutableRangeSet);
-  }
-
-  // TODO
-  public static <C extends Comparable<C>> RangeSet<C> minus0(RangeSet<C> rangeSet,
-      Range<C> range) {
-    ImmutableRangeSet<C> x = ImmutableRangeSet.of(range).complement();
-    final ImmutableRangeSet.Builder<C> builder = ImmutableRangeSet.<C>builder();
-    for (Range<C> r : x.asRanges()) {
-      builder.addAll(rangeSet.subRangeSet(r));
-    }
-    return builder.build();
-  }
-
-  /** Returns the intersection of two range sets.
-   *
-   * <p>For example:
-   * <ul>
-   *   <li>empty intersect empty &rarr; empty
-   *   <li>{1, [3, 5], (9, &inf;)} intersect {1, 3, 5, 7, 9, 11}} &rarr;
-   *   {1, 3, 5, 11}
-   *   <li>all intersect {[3, 5)} &rarr; {[3, 5)}
-   * </ul>
-   *
-   * @param s0 First range set
-   * @param s1 Second range set
-   * @param <C> Value type
-   * @return Intersection of range sets
-   */
-  // TODO
-  private static <C extends Comparable<C>> RangeSet<C> intersect(RangeSet<C> s0,
-      RangeSet<C> s1) {
-    RangeSet<C> s = s0;
-    for (Range<C> range : s1.asRanges()) {
-      s = s.subRangeSet(range);
-    }
-    return s;
-  }
-
   /** Simplifies OR(x, x) into x, and similar.
    * The simplified expression returns UNKNOWN values as is (not as FALSE). */
   @Deprecated // to be removed before 2.0
@@ -1800,7 +1755,7 @@ public class RexSimplify {
     final SargCollector sargCollector = new SargCollector(rexBuilder, false);
     final List<RexNode> newTerms = new ArrayList<>();
     terms.forEach(t -> sargCollector.accept(t, newTerms));
-    if (sargCollector.map.values().stream().anyMatch(b -> b.complexity() > 1)) { // TODO
+    if (sargCollector.map.values().stream().anyMatch(b -> b.complexity() > 1)) {
       terms.clear();
       newTerms.forEach(t -> terms.add(sargCollector.fix(rexBuilder, t)));
     }
@@ -1873,7 +1828,6 @@ public class RexSimplify {
         }
         break;
       }
-      terms.set(i, term); // TODO remove useless line
     }
     return RexUtil.composeDisjunction(rexBuilder, terms);
   }
@@ -2611,23 +2565,23 @@ public class RexSimplify {
       final Comparable value = literal.getValueAs(Comparable.class);
       switch (kind) {
       case LESS_THAN:
-        b.addRange(Range.lessThan(value), negate, literal.getType());
+        b.addRange(Range.lessThan(value), literal.getType());
         return true;
       case LESS_THAN_OR_EQUAL:
-        b.addRange(Range.atMost(value), negate, literal.getType());
+        b.addRange(Range.atMost(value), literal.getType());
         return true;
       case GREATER_THAN:
-        b.addRange(Range.greaterThan(value), negate, literal.getType());
+        b.addRange(Range.greaterThan(value), literal.getType());
         return true;
       case GREATER_THAN_OR_EQUAL:
-        b.addRange(Range.atLeast(value), negate, literal.getType());
+        b.addRange(Range.atLeast(value), literal.getType());
         return true;
       case EQUALS:
-        b.addRange(Range.singleton(value), negate, literal.getType());
+        b.addRange(Range.singleton(value), literal.getType());
         return true;
       case NOT_EQUALS:
-        b.addRange(Range.lessThan(value), negate, literal.getType());
-        b.addRange(Range.greaterThan(value), negate, literal.getType());
+        b.addRange(Range.lessThan(value), literal.getType());
+        b.addRange(Range.greaterThan(value), literal.getType());
         return true;
       case SEARCH:
         final Sarg sarg = literal.getValueAs(Sarg.class);
@@ -2732,24 +2686,15 @@ public class RexSimplify {
       throw new UnsupportedOperationException();
     }
 
-    public void addRange(Range<Comparable> range, boolean negate, RelDataType type) {
+    void addRange(Range<Comparable> range, RelDataType type) {
       types.add(type);
-      if (negate && false) {
-        rangeSet.remove(range);
-      } else {
-        rangeSet.add(range);
-      }
+      rangeSet.add(range);
     }
 
-    public void addSarg(Sarg sarg, boolean negate, RelDataType type) {
+    void addSarg(Sarg sarg, boolean negate, RelDataType type) {
       types.add(type);
-      if (negate) {
-        rangeSet.addAll(sarg.rangeSet.complement());
-        containsNull |= sarg.containsNull; // TODO
-      } else {
-        rangeSet.addAll(sarg.rangeSet);
-        containsNull |= sarg.containsNull;
-      }
+      rangeSet.addAll(negate ? sarg.rangeSet.complement() : sarg.rangeSet);
+      containsNull |= sarg.containsNull;
     }
   }
 }
