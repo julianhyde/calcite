@@ -298,6 +298,8 @@ public class RexSimplify {
     case LESS_THAN_OR_EQUAL:
     case NOT_EQUALS:
       return simplifyComparison((RexCall) e, unknownAs);
+    case SEARCH:
+      return simplifySearch((RexCall) e, unknownAs);
     case LIKE:
       return simplifyLike((RexCall) e);
     case MINUS_PREFIX:
@@ -655,15 +657,19 @@ public class RexSimplify {
     return simplify(call.getOperands().get(0), unknownAs);
   }
 
-  private RexNode simplifyIs(RexCall call, RexUnknownAs unknownAs) {
+  private @Nonnull RexNode simplifyIs(RexCall call, RexUnknownAs unknownAs) {
     final SqlKind kind = call.getKind();
     final RexNode a = call.getOperands().get(0);
+    final RexNode simplified = simplifyIs1(kind, a, unknownAs);
+    return simplified == null ? call : simplified;
+  }
 
+  private RexNode simplifyIs1(SqlKind kind, RexNode a, RexUnknownAs unknownAs) {
     // UnknownAs.FALSE corresponds to x IS TRUE evaluation
     // UnknownAs.TRUE to x IS NOT FALSE
     // Note that both UnknownAs.TRUE and UnknownAs.FALSE only changes the meaning of Unknown
     // (1) if we are already in UnknownAs.FALSE mode; x IS TRUE can be simplified to x
-    // (2) similarily in UnknownAs.TRUE mode; x IS NOT FALSE can be simplified to x
+    // (2) similarly in UnknownAs.TRUE mode; x IS NOT FALSE can be simplified to x
     // (3) x IS FALSE could be rewritten to (NOT x) IS TRUE and from there the 1. rule applies
     // (4) x IS NOT TRUE can be rewritten to (NOT x) IS NOT FALSE and from there the 2. rule applies
     if (kind == SqlKind.IS_TRUE && unknownAs == RexUnknownAs.FALSE) {
@@ -683,11 +689,7 @@ public class RexSimplify {
       return pred;
     }
 
-    final RexNode simplified = simplifyIs2(kind, a, unknownAs);
-    if (simplified != null) {
-      return simplified;
-    }
-    return call;
+    return simplifyIs2(kind, a, unknownAs);
   }
 
   private RexNode simplifyIsPredicate(SqlKind kind, RexNode a) {
@@ -1888,6 +1890,27 @@ public class RexSimplify {
             + ", and " + simplified + " yielded " + v1);
       }
     }
+  }
+
+  private RexNode simplifySearch(RexCall call, RexUnknownAs unknownAs) {
+    assert call.getKind() == SqlKind.SEARCH;
+    final RexNode a = call.getOperands().get(0);
+    if (call.getOperands().get(1) instanceof RexLiteral) {
+      RexLiteral literal = (RexLiteral) call.getOperands().get(1);
+      final Sarg sarg = literal.getValueAs(Sarg.class);
+      if (sarg.containsNull) {
+        final RexNode simplified = simplifyIs1(SqlKind.IS_NULL, a, unknownAs);
+        if (simplified != null
+            && simplified.isAlwaysFalse()) {
+          final Sarg sarg2 = Sarg.of(false, sarg.rangeSet);
+          final RexLiteral literal2 =
+              rexBuilder.makeLiteral(sarg2, literal.getType(),
+                  literal.getTypeName());
+          return call.clone(call.type, ImmutableList.of(a, literal2));
+        }
+      }
+    }
+    return call;
   }
 
   private RexNode simplifyCast(RexCall e) {
