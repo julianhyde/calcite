@@ -258,7 +258,11 @@ public class DruidDateTimeUtils {
   }
 
   private static Long toLong(Comparable comparable) {
-    return 0L;
+    if (comparable instanceof TimestampString) {
+      TimestampString timestampString = (TimestampString) comparable;
+      return timestampString.getMillisSinceEpoch();
+    }
+    throw new AssertionError("unsupported type: " + comparable.getClass());
   }
 
   /**
