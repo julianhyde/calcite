@@ -159,7 +159,7 @@ public class ProjectAggregateMergeRule
     final AggregateCall sum0 =
         AggregateCall.create(SqlStdOperatorTable.SUM0, sum.isDistinct(),
             sum.isApproximate(), sum.ignoreNulls(), sum.getArgList(),
-            sum.filterArg, sum.collation,
+            sum.filterArg, null, sum.collation,
             typeFactory.createTypeWithNullability(sum.type, false), null);
     final int i = aggCallList.indexOf(sum0);
     if (i >= 0) {
