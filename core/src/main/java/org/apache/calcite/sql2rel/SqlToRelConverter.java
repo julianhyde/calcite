@@ -3004,10 +3004,8 @@ public class SqlToRelConverter {
             bb.scope.getMonotonicity(groupItem));
       }
 
-      final RelNode relNode = aggConverter.containsGroupId()
-          ? rewriteAggregateWithGroupId(bb, r, aggConverter)
-          : createAggregate(bb, r.groupSet, r.groupSets,
-              aggConverter.getAggCalls());
+      final RelNode relNode = createAggregate(bb, r.groupSet, r.groupSets,
+          aggConverter.getAggCalls(), r.groupSetCount);
 
       bb.setRoot(relNode, false);
       bb.mapRootRelToFieldProjection.put(bb.root, r.groupExprProjection);
@@ -3097,13 +3095,11 @@ public class SqlToRelConverter {
    * GROUP_ID returns wrong result</a>.
    */
   private RelNode rewriteAggregateWithGroupId(Blackboard bb,
-      AggregatingSelectScope.Resolved r, AggConverter converter) {
-    final List<AggregateCall> aggregateCalls = converter.getAggCalls();
-    final ImmutableBitSet groupSet = r.groupSet;
-    final Map<ImmutableBitSet, Integer> groupSetCount = r.groupSetCount;
+      List<AggregateCall> aggregateCalls, ImmutableBitSet groupSet,
+      ImmutableList<ImmutableBitSet> groupSets, Map<ImmutableBitSet, Integer> groupSetCount) {
 
     final List<String> fieldNamesIfNoRewrite = createAggregate(bb, groupSet,
-        r.groupSets, aggregateCalls).getRowType().getFieldNames();
+        groupSets, aggregateCalls).getRowType().getFieldNames();
 
     // If n duplicates exist for a particular grouping, the {@code GROUP_ID()}
     // function produces values in the range 0 to n-1. For each value,
@@ -3142,10 +3138,10 @@ public class SqlToRelConverter {
     // The Project adds literal value for group id in right position.
     for (int groupId = 0; groupId <= maxGroupId; groupId++) {
       // Create the Aggregate node without GROUP_ID() call
-      final ImmutableList<ImmutableBitSet> groupSets =
+      final ImmutableList<ImmutableBitSet> groupSets2 =
           ImmutableList.copyOf(groupIdToGroupSets.get(groupId));
       final RelNode aggregate = createAggregate(bb, groupSet,
-          groupSets, aggregateCallsWithoutGroupId);
+          groupSets2, aggregateCallsWithoutGroupId);
 
       // RexLiteral for each GROUP_ID, note the type should be BIGINT
       final RelDataType groupIdType = typeFactory.createSqlType(SqlTypeName.BIGINT);
@@ -3154,7 +3150,7 @@ public class SqlToRelConverter {
 
       relBuilder.push(aggregate);
       final List<RexNode> selectList = new ArrayList<>();
-      final int groupExprLength = r.groupExprList.size();
+      final int groupExprLength = groupSet.cardinality();
       // Project fields in group by expressions
       for (int i = 0; i < groupExprLength; i++) {
         selectList.add(relBuilder.field(i));
@@ -3201,7 +3197,24 @@ public class SqlToRelConverter {
    */
   protected RelNode createAggregate(Blackboard bb, ImmutableBitSet groupSet,
       ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-    return LogicalAggregate.create(bb.root, ImmutableList.of(), groupSet, groupSets, aggCalls);
+    return relBuilder.push(bb.root)
+        .aggregate(
+            relBuilder.groupKey(groupSet,
+                (Iterable<ImmutableBitSet>) groupSets),
+            aggCalls)
+        .build();
+  }
+
+  private RelNode createAggregate(Blackboard bb, ImmutableBitSet groupSet,
+      ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls,
+      Map<ImmutableBitSet, Integer> groupSetCount) {
+    boolean containsGroupId = aggCalls.stream().anyMatch(
+          agg -> agg.getAggregation().kind == SqlKind.GROUP_ID);
+    if (containsGroupId) {
+      return rewriteAggregateWithGroupId(bb, aggCalls, groupSet, groupSets,
+          groupSetCount);
+    }
+    return createAggregate(bb, groupSet, groupSets, aggCalls);
   }
 
   public RexDynamicParam convertDynamicParam(
@@ -5475,11 +5488,6 @@ public class SqlToRelConverter {
 
     public List<AggregateCall> getAggCalls() {
       return aggCalls;
-    }
-
-    private boolean containsGroupId() {
-      return aggCalls.stream().anyMatch(
-          agg -> agg.getAggregation().kind == SqlKind.GROUP_ID);
     }
 
     public RelDataTypeFactory getTypeFactory() {

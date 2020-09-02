@@ -1299,8 +1299,7 @@ public class RelBuilder {
   /** Creates a {@link Project} of all original fields, plus the given list of
    * expressions. */
   public RelBuilder projectPlus(Iterable<RexNode> nodes) {
-    final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
-    return project(builder.addAll(fields()).addAll(nodes).build());
+    return project(Iterables.concat(fields(), nodes));
   }
 
   /** Creates a {@link Project} of all original fields, except the given
@@ -1673,13 +1672,13 @@ public class RelBuilder {
       }
       if (registrar.extraNodes.size() == fields().size()) {
         final Boolean unique = mq.areColumnsUnique(peek(), groupSet);
-        if (unique != null && unique) {
+        if (unique != null && unique && config.skipAggOnUniqueKey()) {
           // Rel is already unique.
           return project(fields(groupSet));
         }
       }
       final Double maxRowCount = mq.getMaxRowCount(peek());
-      if (maxRowCount != null && maxRowCount <= 1D) {
+      if (maxRowCount != null && maxRowCount <= 1D && config.skipAggOnUniqueKey()) {
         // If there is at most one row, rel is already unique.
         return project(fields(groupSet));
       }
@@ -3232,6 +3231,15 @@ public class RelBuilder {
 
     /** Sets {@link #simplify}. */
     Config withSimplify(boolean simplify);
+
+    /** Whether to not create an Aggregate if the input is already unique
+     * on the key. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(false) // TODO: true
+    boolean skipAggOnUniqueKey();
+
+    /** Sets {@link #skipAggOnUniqueKey()}. */
+    Config withSkipAggOnUniqueKey(boolean skip);
   }
 
   /** Creates a {@link RelBuilder.Config}.
