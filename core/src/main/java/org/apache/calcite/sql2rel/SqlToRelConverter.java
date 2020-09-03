@@ -2796,10 +2796,8 @@ public class SqlToRelConverter {
         rightRel = tempRightRel;
         break;
       case ON:
-        Pair<RexNode, RelNode> conditionAndRightNode = convertOnCondition(fromBlackboard,
-            join,
-            leftRel,
-            tempRightRel);
+        Pair<RexNode, RelNode> conditionAndRightNode =
+            convertOnCondition(fromBlackboard, join, leftRel, tempRightRel);
         condition = conditionAndRightNode.left;
         rightRel = conditionAndRightNode.right;
         break;
@@ -2807,17 +2805,17 @@ public class SqlToRelConverter {
         throw Util.unexpected(conditionType);
       }
     }
-    final RelNode joinRel = createJoin(
-        fromBlackboard,
-        leftRel,
-        rightRel,
-        condition,
-        convertJoinType(join.getJoinType()));
+
+    final RelNode joinRel =
+        createJoin(fromBlackboard,
+            leftRel,
+            rightRel,
+            condition,
+            convertJoinType(join.getJoinType()));
     bb.setRoot(joinRel, false);
   }
 
-  private RexNode convertNaturalCondition(
-      SqlValidatorNamespace leftNamespace,
+  private RexNode convertNaturalCondition(SqlValidatorNamespace leftNamespace,
       SqlValidatorNamespace rightNamespace) {
     final List<String> columnList =
         SqlValidatorUtil.deriveNaturalJoinColumnList(
@@ -2827,8 +2825,7 @@ public class SqlToRelConverter {
     return convertUsing(leftNamespace, rightNamespace, columnList);
   }
 
-  private RexNode convertUsingCondition(
-      SqlJoin join,
+  private RexNode convertUsingCondition(SqlJoin join,
       SqlValidatorNamespace leftNamespace,
       SqlValidatorNamespace rightNamespace) {
     SqlNode condition = join.getCondition();
@@ -2844,8 +2841,10 @@ public class SqlToRelConverter {
   }
 
   /**
-   * This currently does not expand correlated full outer joins correctly.  Replaying on the right
-   * side to correctly support left joins multiplicities.
+   * TODO
+   *
+   * This currently does not expand correlated full outer joins correctly.
+   * Replaying on the right side to correctly support left joins multiplicities.
    *
    * <blockquote><pre>
    *   SELECT *
@@ -2864,15 +2863,13 @@ public class SqlToRelConverter {
    *    1   |  2
    * </pre></blockquote>
    *
-   * <p>If correlated query was replayed on the left side, then an extra rows would be emitted for
-   * every {code t1.c1 = 1}, where it failed to join to right side due to {code NOT(t2.t2 = 2)}.
-   * However, if the query is joined on the right, side multiplicity is maintained.
+   * <p>If correlated query was replayed on the left side, then extra rows would
+   * be emitted for every {@code t1.c1 = 1}, where it failed to join to right
+   * side due to {!code NOT(t2.t2 = 2)}. However, if the query is joined on the
+   * right, side multiplicity is maintained.
    */
-  private Pair<RexNode, RelNode> convertOnCondition(
-      Blackboard bb,
-      SqlJoin join,
-      RelNode leftRel,
-      RelNode rightRel) {
+  private Pair<RexNode, RelNode> convertOnCondition(Blackboard bb, SqlJoin join,
+      RelNode leftRel, RelNode rightRel) {
     SqlNode condition = join.getCondition();
 
     bb.setRoot(ImmutableList.of(leftRel, rightRel));
@@ -4263,9 +4260,7 @@ public class SqlToRelConverter {
 
   //~ Inner Classes ----------------------------------------------------------
 
-  /**
-   * A Tuple to remember all calls to Blackboard.register
-   */
+  /** A Tuple to remember a call to {@link Blackboard#register}. */
   private static class RegisterArgs {
     final RelNode rel;
     final JoinRelType joinType;
@@ -4476,8 +4471,8 @@ public class SqlToRelConverter {
     }
 
     /**
-     * Re-register the {@code registered} with given root node and
-     * return the new root node.
+     * Re-registers the {@code registered} with given root node and
+     * returns the new root node.
      *
      * @param root The given root, never leaf
      *
