@@ -105,8 +105,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Sets;
+import com.google.common.collect.SortedMultiset;
 
 import java.math.BigDecimal;
 import java.util.AbstractList;
@@ -1651,8 +1655,15 @@ public class RelBuilder {
             .collect(Collectors.toList()));
   }
 
-  /** Creates an {@link Aggregate} with multiple
-   * calls. */
+  private static SqlAggFunction op(AggCall aggCall) {
+    if (aggCall instanceof AggCallImpl) {
+      return ((AggCallImpl) aggCall).aggFunction;
+    } else {
+      return ((AggCallImpl2) aggCall).aggregateCall.getAggregation();
+    }
+  }
+
+  /** Creates an {@link Aggregate} with multiple calls. */
   public RelBuilder aggregate(GroupKey groupKey, Iterable<AggCall> aggCalls) {
     final Registrar registrar =
         new Registrar(fields(), peek().getRowType().getFieldNames());
@@ -1672,22 +1683,26 @@ public class RelBuilder {
       }
       if (registrar.extraNodes.size() == fields().size()) {
         final Boolean unique = mq.areColumnsUnique(peek(), groupSet);
-        if (unique != null && unique && config.skipAggOnUniqueKey()) {
+        if (unique != null && unique
+            && !config.aggregateUnique()
+            && groupKey_.isSimple()) {
           // Rel is already unique.
           return project(fields(groupSet));
         }
       }
       final Double maxRowCount = mq.getMaxRowCount(peek());
-      if (maxRowCount != null && maxRowCount <= 1D && config.skipAggOnUniqueKey()) {
+      if (maxRowCount != null && maxRowCount <= 1D
+          && !config.aggregateUnique()
+          && groupKey_.isSimple()) {
         // If there is at most one row, rel is already unique.
         return project(fields(groupSet));
       }
     }
+
     ImmutableList<ImmutableBitSet> groupSets;
     if (groupKey_.nodeLists != null) {
       final int sizeBefore = registrar.extraNodes.size();
-      final SortedSet<ImmutableBitSet> groupSetSet =
-          new TreeSet<>(ImmutableBitSet.ORDERING);
+      final List<ImmutableBitSet> groupSetList = new ArrayList<>();
       for (ImmutableList<RexNode> nodeList : groupKey_.nodeLists) {
         final ImmutableBitSet groupSet2 =
             ImmutableBitSet.of(registrar.registerExpressions(nodeList));
@@ -1695,9 +1710,17 @@ public class RelBuilder {
           throw new IllegalArgumentException("group set element " + nodeList
               + " must be a subset of group key");
         }
-        groupSetSet.add(groupSet2);
+        groupSetList.add(groupSet2);
       }
-      groupSets = ImmutableList.copyOf(groupSetSet);
+      final ImmutableSortedMultiset<ImmutableBitSet> groupSetMultiset =
+          ImmutableSortedMultiset.copyOf(ImmutableBitSet.COMPARATOR,
+              groupSetList);
+      if (groupSetMultiset.elementSet().size() < groupSetMultiset.size()
+          && Iterables.any(aggCalls, RelBuilder::isGroupId)) {
+        return rewriteAggregateWithGroupId(groupSet, groupSetMultiset,
+            ImmutableList.copyOf(aggCalls));
+      }
+      groupSets = ImmutableList.copyOf(groupSetMultiset.elementSet());
       if (registrar.extraNodes.size() > sizeBefore) {
         throw new IllegalArgumentException(
             "group sets contained expressions not in group key: "
@@ -1707,6 +1730,7 @@ public class RelBuilder {
     } else {
       groupSets = ImmutableList.of(groupSet);
     }
+
     for (AggCall aggCall : aggCalls) {
       if (aggCall instanceof AggCallImpl) {
         final AggCallImpl aggCall1 = (AggCallImpl) aggCall;
@@ -1877,6 +1901,96 @@ public class RelBuilder {
     }
     stack.push(new Frame(aggregate, fields.build()));
     return this;
+  }
+
+  /**
+   * The {@code GROUP_ID()} function is used to distinguish duplicate groups.
+   * However, as Aggregate normalizes group sets to canonical form (i.e.,
+   * flatten, sorting, redundancy removal), this information is lost in RelNode.
+   * Therefore, it is impossible to implement the function in runtime.
+   *
+   * <p>To fill this gap, an aggregation query that contains {@code GROUP_ID()}
+   * function will generally be rewritten into UNION when converting to RelNode.
+   *
+   * <p>Also see the discussion in
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-1824">[CALCITE-1824]
+   * GROUP_ID returns wrong result</a>.
+   */
+  private RelBuilder rewriteAggregateWithGroupId(ImmutableBitSet groupSet,
+      SortedMultiset<ImmutableBitSet> groupSets, List<AggCall> aggregateCalls) {
+    final RelNode input = peek();
+
+    push(input);
+    final RelBuilder.GroupKey groupKey =
+        groupKey(groupSet, groupSets.elementSet());
+    aggregate(groupKey, aggregateCalls);
+    final List<String> fieldNamesIfNoRewrite =
+        build().getRowType().getFieldNames();
+
+    // If n duplicates exist for a particular grouping, the {@code GROUP_ID()}
+    // function produces values in the range 0 to n-1. For each value,
+    // we need to figure out the corresponding group sets.
+    //
+    // For example, "... GROUPING SETS (a, a, b, c, c, c, c)"
+    // (i) The max value of the GROUP_ID() function returns is 3
+    // (ii) GROUPING SETS (a, b, c) produces value 0,
+    //      GROUPING SETS (a, c) produces value 1,
+    //      GROUPING SETS (c) produces value 2
+    //      GROUPING SETS (c) produces value 3
+    final Map<Integer, Set<ImmutableBitSet>> groupIdToGroupSets = new HashMap<>();
+    int maxGroupId = 0;
+    for (Multiset.Entry<ImmutableBitSet> entry: groupSets.entrySet()) {
+      int groupId = entry.getCount() - 1;
+      if (groupId > maxGroupId) {
+        maxGroupId = groupId;
+      }
+      for (int i = 0; i <= groupId; i++) {
+        groupIdToGroupSets.computeIfAbsent(i,
+            k -> Sets.newTreeSet(ImmutableBitSet.COMPARATOR))
+            .add(entry.getElement());
+      }
+    }
+
+    // AggregateCall list without GROUP_ID function
+    final List<AggCall> aggregateCallsWithoutGroupId =
+        new ArrayList<>(aggregateCalls);
+    aggregateCallsWithoutGroupId.removeIf(RelBuilder::isGroupId);
+
+    // For each group id value, we first construct an Aggregate without
+    // GROUP_ID() function call, and then create a Project node on top of it.
+    // The Project adds literal value for group id in right position.
+    for (int groupId = 0; groupId <= maxGroupId; groupId++) {
+      // Create the Aggregate node without GROUP_ID() call
+      push(input);
+      aggregate(groupKey(groupSet, groupIdToGroupSets.get(groupId)),
+          aggregateCallsWithoutGroupId);
+
+      final List<RexNode> selectList = new ArrayList<>();
+      final int groupExprLength = groupSet.cardinality();
+      // Project fields in group by expressions
+      for (int i = 0; i < groupExprLength; i++) {
+        selectList.add(field(i));
+      }
+      // Project fields in aggregate calls
+      int groupIdCount = 0;
+      for (int i = 0; i < aggregateCalls.size(); i++) {
+        if (isGroupId(aggregateCalls.get(i))) {
+          selectList.add(
+              getRexBuilder().makeExactLiteral(BigDecimal.valueOf(groupId),
+                  getTypeFactory().createSqlType(SqlTypeName.BIGINT)));
+          groupIdCount++;
+        } else {
+          selectList.add(field(groupExprLength + i - groupIdCount));
+        }
+      }
+      project(selectList, fieldNamesIfNoRewrite);
+    }
+
+    return union(true, maxGroupId + 1);
+  }
+
+  private static boolean isGroupId(AggCall c) {
+    return op(c).kind == SqlKind.GROUP_ID;
   }
 
   private RelBuilder setOp(boolean all, SqlKind kind, int n) {
@@ -2798,9 +2912,9 @@ public class RelBuilder {
 
   /** Implementation of {@link RelBuilder.GroupKey}. */
   public static class GroupKeyImpl implements GroupKey {
-    public final ImmutableList<RexNode> nodes;
-    public final ImmutableList<ImmutableList<RexNode>> nodeLists;
-    public final String alias;
+    final ImmutableList<RexNode> nodes;
+    final ImmutableList<ImmutableList<RexNode>> nodeLists;
+    final String alias;
 
     GroupKeyImpl(ImmutableList<RexNode> nodes,
         ImmutableList<ImmutableList<RexNode>> nodeLists, String alias) {
@@ -2817,6 +2931,10 @@ public class RelBuilder {
       return Objects.equals(this.alias, alias)
           ? this
           : new GroupKeyImpl(nodes, nodeLists, alias);
+    }
+
+    boolean isSimple() {
+      return nodeLists == null || nodeLists.size() == 1;
     }
   }
 
@@ -3232,14 +3350,14 @@ public class RelBuilder {
     /** Sets {@link #simplify}. */
     Config withSimplify(boolean simplify);
 
-    /** Whether to not create an Aggregate if the input is already unique
-     * on the key. */
+    /** Whether to create an Aggregate even if we know that the input is
+     * already unique; default false. */
     @ImmutableBeans.Property
-    @ImmutableBeans.BooleanDefault(false) // TODO: true
-    boolean skipAggOnUniqueKey();
+    @ImmutableBeans.BooleanDefault(false)
+    boolean aggregateUnique();
 
-    /** Sets {@link #skipAggOnUniqueKey()}. */
-    Config withSkipAggOnUniqueKey(boolean skip);
+    /** Sets {@link #aggregateUnique()}. */
+    Config withAggregateUnique(boolean aggregateUnique);
   }
 
   /** Creates a {@link RelBuilder.Config}.

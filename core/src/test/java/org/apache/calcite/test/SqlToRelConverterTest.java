@@ -85,8 +85,12 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
   /** Sets the SQL statement for a test. */
   public final Sql sql(String sql) {
-    return new Sql(sql, true, tester, false, b -> b.withExpand(true),
+    final Sql s = new Sql(sql, true, tester, false, UnaryOperator.identity(),
         tester.getConformance());
+    return s.withConfig(b ->
+        b.withExpand(true)
+            .withRelBuilderConfigTransform(c ->
+                c.withAggregateUnique(true)));
   }
 
   @Test void testDotLiteralAfterNestedRow() {
@@ -534,6 +538,13 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select 1\n"
         + "from (values (1, 2, 3, 4)) as t(a, b, c, d)\n"
         + "group by cube(a, b)";
+    sql(sql).ok();
+  }
+
+  @Test void testGroupingSetsRepeated() {
+    final String sql = "select deptno, group_id()\n"
+        + "from emp\n"
+        + "group by grouping sets (deptno, (), deptno)";
     sql(sql).ok();
   }
 

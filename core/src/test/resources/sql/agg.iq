@@ -356,7 +356,7 @@ select 1 as c
 from (values ('a', 'b')) as t (a, b)
 group by grouping sets ((a), (b), (b, a));
 +---+
-| O |
+| C |
 +---+
 | 1 |
 | 1 |
