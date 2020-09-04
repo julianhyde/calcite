@@ -163,7 +163,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       this.tester = Objects.requireNonNull(tester);
       this.sql = Objects.requireNonNull(sql);
       this.preProgram = preProgram;
-      this.planner = Objects.requireNonNull(planner);
+      this.planner = planner;
       this.hooks = Objects.requireNonNull(hooks);
       this.transforms = Objects.requireNonNull(transforms);
     }

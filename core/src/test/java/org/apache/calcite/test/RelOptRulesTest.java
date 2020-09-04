@@ -1042,7 +1042,6 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
-  @Disabled // TODO
   @Test void testSemiJoinRuleExists() {
     final String sql = "select * from dept where exists (\n"
         + "  select * from emp\n"
@@ -1051,6 +1050,7 @@ class RelOptRulesTest extends RelOptTestBase {
     sql(sql)
         .withDecorrelation(true)
         .withTrim(true)
+        .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(true))
         .withPreRule(CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.PROJECT_MERGE)
