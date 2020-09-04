@@ -112,7 +112,7 @@ public abstract class SqlToRelTestBase {
         SqlConformanceEnum.DEFAULT, Contexts.empty()).withConfig(c ->
             c.withTrimUnusedFields(true)
                 .withExpand(true)
-                .withRelBuilderConfigTransform(b ->
+                .addRelBuilderConfigTransform(b ->
                     b.withAggregateUnique(true)
                         .withPruneInputOfAggregate(false)));
   }
@@ -241,7 +241,7 @@ public abstract class SqlToRelTestBase {
 
     /** Returns a tester that applies a transform to its
      * {@code SqlToRelConverter.Config} before it uses it. */
-    Tester withConfig(UnaryOperator<SqlToRelConverter.ConfigBuilder> transform);
+    Tester withConfig(UnaryOperator<SqlToRelConverter.Config> transform);
 
     /** Returns a tester with a {@link SqlConformance}. */
     Tester withConformance(SqlConformance conformance);
@@ -535,8 +535,7 @@ public abstract class SqlToRelTestBase {
     private final SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory;
     private final Function<RelOptCluster, RelOptCluster> clusterFactory;
     private RelDataTypeFactory typeFactory;
-    private final UnaryOperator<SqlToRelConverter.ConfigBuilder>
-        configTransform;
+    private final UnaryOperator<SqlToRelConverter.Config> configTransform;
     private final Context context;
 
     /** Creates a TesterImpl with default options. */
@@ -561,7 +560,7 @@ public abstract class SqlToRelTestBase {
         SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
         Function<RelOptCluster, RelOptCluster> clusterFactory,
         Function<Context, RelOptPlanner> plannerFactory,
-        UnaryOperator<SqlToRelConverter.ConfigBuilder> configTransform,
+        UnaryOperator<SqlToRelConverter.Config> configTransform,
         SqlConformance conformance, Context context) {
       this.diffRepos = diffRepos;
       this.enableDecorrelate = enableDecorrelate;
@@ -598,10 +597,8 @@ public abstract class SqlToRelTestBase {
         validator.transform(config ->
             config.withDefaultNullCollation(calciteConfig.defaultNullCollation()));
       }
-      final SqlToRelConverter.ConfigBuilder configBuilder =
-          SqlToRelConverter.configBuilder();
       final SqlToRelConverter.Config config =
-          configTransform.apply(configBuilder).build();
+          configTransform.apply(SqlToRelConverter.config());
 
       final SqlToRelConverter converter =
           createSqlToRelConverter(
@@ -797,13 +794,13 @@ public abstract class SqlToRelTestBase {
               context);
     }
 
-    public Tester withConfig(
-        UnaryOperator<SqlToRelConverter.ConfigBuilder> configTransform) {
+    public Tester withConfig(UnaryOperator<SqlToRelConverter.Config> transform) {
+      final UnaryOperator<SqlToRelConverter.Config> configTransform =
+          this.configTransform.andThen(transform)::apply;
       return new TesterImpl(diffRepos, enableDecorrelate, enableTrim,
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
-          clusterFactory, plannerFactory,
-          this.configTransform.andThen(configTransform)::apply,
-          conformance, context);
+          clusterFactory, plannerFactory, configTransform, conformance,
+          context);
     }
 
     public TesterImpl withTrim(boolean enableTrim) {

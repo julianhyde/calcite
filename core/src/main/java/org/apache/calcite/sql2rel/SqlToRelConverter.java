@@ -165,6 +165,7 @@ import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Litmus;
@@ -218,6 +219,13 @@ import static org.apache.calcite.sql.SqlUtil.stripAs;
 @SuppressWarnings("UnstableApiUsage")
 public class SqlToRelConverter {
   //~ Static fields/initializers ---------------------------------------------
+
+  /** Default configuration. */
+  private static final Config CONFIG =
+      ImmutableBeans.create(Config.class)
+          .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+          .withRelBuilderConfigTransform(c -> c.withPushJoinCondition(true))
+          .withHintStrategyTable(HintStrategyTable.EMPTY);
 
   protected static final Logger SQL2REL_LOGGER =
       CalciteTrace.getSqlToRelTracer();
@@ -289,8 +297,7 @@ public class SqlToRelConverter {
       RexBuilder rexBuilder,
       SqlRexConvertletTable convertletTable) {
     this(viewExpander, validator, catalogReader,
-        RelOptCluster.create(planner, rexBuilder), convertletTable,
-        Config.DEFAULT);
+        RelOptCluster.create(planner, rexBuilder), convertletTable, SqlToRelConverter.config());
   }
 
   @Deprecated // to be removed before 2.0
@@ -301,7 +308,7 @@ public class SqlToRelConverter {
       RelOptCluster cluster,
       SqlRexConvertletTable convertletTable) {
     this(viewExpander, validator, catalogReader, cluster, convertletTable,
-        Config.DEFAULT);
+        SqlToRelConverter.config());
   }
 
   /* Creates a converter. */
@@ -324,7 +331,7 @@ public class SqlToRelConverter {
     this.typeFactory = rexBuilder.getTypeFactory();
     this.exprConverter = new SqlNodeToRexConverterImpl(convertletTable);
     this.explainParamCount = 0;
-    this.config = new ConfigBuilder().withConfig(config).build();
+    this.config = Objects.requireNonNull(config);
     this.relBuilder = config.getRelBuilderFactory().create(cluster, null)
         .transform(config.getRelBuilderConfigTransform());
     this.hintStrategies = config.getHintStrategyTable();
@@ -5704,42 +5711,54 @@ public class SqlToRelConverter {
   }
 
   /** Creates a builder for a {@link Config}. */
+  @Deprecated // to be removed before 2.0
   public static ConfigBuilder configBuilder() {
     return new ConfigBuilder();
+  }
+
+  /** Returns a default {@link Config}. */
+  public static Config config() {
+    return CONFIG;
   }
 
   /**
    * Interface to define the configuration for a SqlToRelConverter.
    * Provides methods to set each configuration option.
    *
-   * @see ConfigBuilder
-   * @see SqlToRelConverter#configBuilder()
+   * @see SqlToRelConverter#CONFIG
    */
   public interface Config {
-    /** Default configuration. */
-    Config DEFAULT = configBuilder().build();
-
     /** Returns the {@code decorrelationEnabled} option. Controls whether to
      * disable sub-query decorrelation when needed. e.g. if outer joins are not
      * supported. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(true)
     boolean isDecorrelationEnabled();
 
     /** Returns the {@code trimUnusedFields} option. Controls whether to trim
      * unused fields as part of the conversion process. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(false)
     boolean isTrimUnusedFields();
 
     /** Returns the {@code createValuesRel} option. Controls whether instances
      * of {@link org.apache.calcite.rel.logical.LogicalValues} are generated.
      * These may not be supported by all physical implementations. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(true)
     boolean isCreateValuesRel();
 
     /** Returns the {@code explain} option. Describes whether the current
      * statement is part of an EXPLAIN PLAN statement. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(false)
     boolean isExplain();
 
     /** Returns the {@code expand} option. Controls whether to expand
      * sub-queries. If false, each sub-query becomes a
      * {@link org.apache.calcite.rex.RexSubQuery}. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.BooleanDefault(true)
     boolean isExpand();
 
     /** Returns the {@code inSubQueryThreshold} option,
@@ -5750,20 +5769,59 @@ public class SqlToRelConverter {
      * a predicate. A threshold of 0 forces usage of an inline table in all
      * cases; a threshold of {@link Integer#MAX_VALUE} forces usage of OR in all
      * cases. */
+    @ImmutableBeans.Property
+    @ImmutableBeans.IntDefault(DEFAULT_IN_SUB_QUERY_THRESHOLD)
     int getInSubQueryThreshold();
 
     /** Returns the factory to create {@link RelBuilder}, never null. Default is
      * {@link RelFactories#LOGICAL_BUILDER}. */
+    @ImmutableBeans.Property(required = true)
     RelBuilderFactory getRelBuilderFactory();
 
     /** Returns a function that takes a {@link RelBuilder.Config} and returns
      * another. Default is the identity function. */
+    @ImmutableBeans.Property(required = true)
     UnaryOperator<RelBuilder.Config> getRelBuilderConfigTransform();
 
     /** Returns the hint strategies used to decide how the hints are propagated to
      * the relational expressions. Default is
      * {@link HintStrategyTable#EMPTY}. */
+    @ImmutableBeans.Property(required = true)
     HintStrategyTable getHintStrategyTable();
+
+    /** Sets {@link #isTrimUnusedFields()}. */
+    Config withTrimUnusedFields(boolean trimUnusedFields);
+
+    /** Sets {@link #isExpand()}. */
+    Config withExpand(boolean expand);
+
+    /** Sets {@link #isExplain()}. */
+    Config withExplain(boolean explain);
+
+    /** Sets {@link #isDecorrelationEnabled()}. */
+    Config withDecorrelationEnabled(boolean decorrelationEnabled);
+
+    /** Sets {@link #getRelBuilderConfigTransform()}. */
+    Config withRelBuilderConfigTransform(
+        UnaryOperator<RelBuilder.Config> transform);
+
+    /** Adds {@link #getRelBuilderConfigTransform()}. */
+    default Config addRelBuilderConfigTransform(
+        UnaryOperator<RelBuilder.Config> transform) {
+      return withRelBuilderConfigTransform(
+          getRelBuilderConfigTransform().andThen(transform)::apply);
+    }
+
+    /** Sets {@link #getInSubQueryThreshold()}. */
+    Config withInSubQueryThreshold(int threshold);
+
+    /** Sets {@link #getHintStrategyTable()}. */
+    Config withHintStrategyTable(HintStrategyTable hintStrategyTable);
+
+    /** Sets {@link #getRelBuilderFactory()}. */
+    Config withRelBuilderFactory(RelBuilderFactory factory);
+
+    Config withCreateValuesRel(boolean createValuesRel);
   }
 
   /** Builder for a {@link Config}. */
@@ -5947,6 +6005,43 @@ public class SqlToRelConverter {
 
     public HintStrategyTable getHintStrategyTable() {
       return hintStrategyTable;
+    }
+
+    public Config withTrimUnusedFields(boolean trimUnusedFields) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withExpand(boolean expand) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withExplain(boolean explain) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withDecorrelationEnabled(boolean decorrelationEnabled) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withRelBuilderConfigTransform(
+        UnaryOperator<RelBuilder.Config> transform) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withInSubQueryThreshold(int threshold) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withHintStrategyTable(HintStrategyTable hintStrategyTable) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withRelBuilderFactory(RelBuilderFactory factory) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
+    }
+
+    public Config withCreateValuesRel(boolean createValuesRel) {
+      throw new UnsupportedOperationException(); // use Config.DEFAULT
     }
   }
 }

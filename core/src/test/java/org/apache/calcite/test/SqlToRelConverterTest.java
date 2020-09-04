@@ -89,7 +89,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         tester.getConformance());
     return s.withConfig(b ->
         b.withExpand(true)
-            .withRelBuilderConfigTransform(c ->
+            .addRelBuilderConfigTransform(c ->
                 c.withAggregateUnique(true)));
   }
 
@@ -3039,7 +3039,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql)
         .withConfig(c ->
             // Don't prune the Project. We want to see columns "FO"."C1" & "C1".
-            c.withRelBuilderConfigTransform(c2 ->
+            c.addRelBuilderConfigTransform(c2 ->
                 c2.withPruneInputOfAggregate(false)))
         .ok();
   }
@@ -3877,7 +3877,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "GROUP by deptno, job";
     sql(sql)
         .withConfig(c ->
-            c.withRelBuilderConfigTransform(c2 ->
+            c.addRelBuilderConfigTransform(c2 ->
                 c2.withPruneInputOfAggregate(false)))
         .ok();
   }
@@ -3900,7 +3900,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select *\n"
         + "from emp as e\n"
         + "join dept as d on e.deptno + 20 = d.deptno / 2";
-    sql(sql).withConfig(b -> b.withPushJoinCondition(false)).ok();
+    sql(sql).withConfig(c ->
+        c.addRelBuilderConfigTransform(b ->
+            b.withPushJoinCondition(false)))
+        .ok();
   }
 
   /** As {@link #testDoNotPushDownJoinCondition()}. */
@@ -3991,11 +3994,11 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     private final boolean decorrelate;
     private final Tester tester;
     private final boolean trim;
-    private final UnaryOperator<SqlToRelConverter.ConfigBuilder> config;
+    private final UnaryOperator<SqlToRelConverter.Config> config;
     private final SqlConformance conformance;
 
     Sql(String sql, boolean decorrelate, Tester tester, boolean trim,
-        UnaryOperator<SqlToRelConverter.ConfigBuilder> config,
+        UnaryOperator<SqlToRelConverter.Config> config,
         SqlConformance conformance) {
       this.sql = Objects.requireNonNull(sql);
       this.decorrelate = decorrelate;
@@ -4017,9 +4020,8 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
           .assertConvertsTo(sql, plan, trim);
     }
 
-    public Sql withConfig(
-        UnaryOperator<SqlToRelConverter.ConfigBuilder> config) {
-      final UnaryOperator<SqlToRelConverter.ConfigBuilder> config2 =
+    public Sql withConfig(UnaryOperator<SqlToRelConverter.Config> config) {
+      final UnaryOperator<SqlToRelConverter.Config> config2 =
           this.config.andThen(Objects.requireNonNull(config))::apply;
       return new Sql(sql, decorrelate, tester, trim, config2, conformance);
     }

@@ -236,15 +236,13 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       return withConfig(c -> c.withExpand(b));
     }
 
-    public Sql withConfig(
-        UnaryOperator<SqlToRelConverter.ConfigBuilder> transform) {
+    public Sql withConfig(UnaryOperator<SqlToRelConverter.Config> transform) {
       return withTransform(tester -> tester.withConfig(transform));
     }
 
     public Sql withRelBuilderConfig(
         UnaryOperator<RelBuilder.Config> transform) {
-      return withConfig(c ->
-          c.withRelBuilderConfigTransform(transform));
+      return withConfig(c -> c.addRelBuilderConfigTransform(transform));
     }
 
     public Sql withLateDecorrelation(final boolean b) {
