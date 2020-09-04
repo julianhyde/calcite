@@ -179,11 +179,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Sets;
-import com.google.common.collect.SortedMultiset;
 
 import org.slf4j.Logger;
 
@@ -3086,105 +3082,6 @@ public class SqlToRelConverter {
   }
 
   /**
-   * The {@code GROUP_ID()} function is used to distinguish duplicate groups.
-   * However, as Aggregate normalizes group sets to canonical form (i.e.,
-   * flatten, sorting, redundancy removal), this information is lost in RelNode.
-   * Therefore, it is impossible to implement the function in runtime.
-   *
-   * To fill this gap, an aggregation query that contains {@code GROUP_ID()} function
-   * will generally be rewritten into UNION when converting to RelNode.
-   *
-   * Also see the discussion in JIRA
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-1824">[CALCITE-1824]
-   * GROUP_ID returns wrong result</a>.
-   */
-  private RelNode rewriteAggregateWithGroupId(Blackboard bb,
-      List<AggregateCall> aggregateCalls, ImmutableBitSet groupSet,
-      SortedMultiset<ImmutableBitSet> groupSets) {
-    relBuilder.push(bb.root);
-    final RelBuilder.GroupKey groupKey =
-        relBuilder.groupKey(groupSet, groupSets.elementSet());
-    final List<String> fieldNamesIfNoRewrite =
-        relBuilder.aggregate(groupKey, aggregateCalls)
-            .build().getRowType().getFieldNames();
-
-    // If n duplicates exist for a particular grouping, the {@code GROUP_ID()}
-    // function produces values in the range 0 to n-1. For each value,
-    // we need to figure out the corresponding group sets.
-    //
-    // For example, "... GROUPING SETS (a, a, b, c, c, c, c)"
-    // (i) The max value of the GROUP_ID() function returns is 3
-    // (ii) GROUPING SETS (a, b, c) produces value 0,
-    //      GROUPING SETS (a, c) produces value 1,
-    //      GROUPING SETS (c) produces value 2
-    //      GROUPING SETS (c) produces value 3
-    final Map<Integer, Set<ImmutableBitSet>> groupIdToGroupSets = new HashMap<>();
-    int maxGroupId = 0;
-    for (Multiset.Entry<ImmutableBitSet> entry: groupSets.entrySet()) {
-      int groupId = entry.getCount() - 1;
-      if (groupId > maxGroupId) {
-        maxGroupId = groupId;
-      }
-      for (int i = 0; i <= groupId; i++) {
-        groupIdToGroupSets.computeIfAbsent(i,
-            k -> Sets.newTreeSet(ImmutableBitSet.COMPARATOR))
-            .add(entry.getElement());
-      }
-    }
-
-    // AggregateCall list without GROUP_ID function
-    final List<AggregateCall> aggregateCallsWithoutGroupId = new ArrayList<>();
-    for (AggregateCall aggregateCall : aggregateCalls) {
-      if (aggregateCall.getAggregation().kind != SqlKind.GROUP_ID) {
-        aggregateCallsWithoutGroupId.add(aggregateCall);
-      }
-    }
-    final List<RelNode> projects = new ArrayList<>();
-    // For each group id value , we first construct an Aggregate without
-    // GROUP_ID() function call, and then create a Project node on top of it.
-    // The Project adds literal value for group id in right position.
-    for (int groupId = 0; groupId <= maxGroupId; groupId++) {
-      // Create the Aggregate node without GROUP_ID() call
-      final ImmutableSortedMultiset<ImmutableBitSet> groupSets2 =
-          ImmutableSortedMultiset.copyOf(groupIdToGroupSets.get(groupId));
-      final RelNode aggregate = createAggregate(bb, groupSet,
-          groupSets2.asList(), aggregateCallsWithoutGroupId);
-
-      // RexLiteral for each GROUP_ID, note the type should be BIGINT
-      final RelDataType groupIdType = typeFactory.createSqlType(SqlTypeName.BIGINT);
-      final RexNode groupIdLiteral = rexBuilder.makeExactLiteral(
-          BigDecimal.valueOf(groupId), groupIdType);
-
-      relBuilder.push(aggregate);
-      final List<RexNode> selectList = new ArrayList<>();
-      final int groupExprLength = groupSet.cardinality();
-      // Project fields in group by expressions
-      for (int i = 0; i < groupExprLength; i++) {
-        selectList.add(relBuilder.field(i));
-      }
-      // Project fields in aggregate calls
-      int groupIdCount = 0;
-      for (int i = 0; i < aggregateCalls.size(); i++) {
-        if (aggregateCalls.get(i).getAggregation().kind == SqlKind.GROUP_ID) {
-          selectList.add(groupIdLiteral);
-          groupIdCount++;
-        } else {
-          int ordinal = groupExprLength + i - groupIdCount;
-          selectList.add(relBuilder.field(ordinal));
-        }
-      }
-      final RelNode project = relBuilder.project(
-          selectList, fieldNamesIfNoRewrite).build();
-      projects.add(project);
-    }
-    // Skip to create Union when there is only one child, i.e., no duplicate group set.
-    if (projects.size() == 1) {
-      return projects.get(0);
-    }
-    return LogicalUnion.create(projects, true);
-  }
-
-  /**
    * Creates an Aggregate.
    *
    * <p>In case the aggregate rel changes the order in which it projects
@@ -3204,11 +3101,6 @@ public class SqlToRelConverter {
    */
   protected RelNode createAggregate(Blackboard bb, ImmutableBitSet groupSet,
       ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-    boolean containsGroupId = aggCalls.stream().anyMatch(
-          agg -> agg.getAggregation().kind == SqlKind.GROUP_ID);
-//    if (containsGroupId && false) { // TODO
-//      return rewriteAggregateWithGroupId(bb, aggCalls, groupSet, groupSets);
-//    }
     relBuilder.push(bb.root);
     final RelBuilder.GroupKey groupKey =
         relBuilder.groupKey(groupSet, (Iterable<ImmutableBitSet>) groupSets);
@@ -6027,6 +5919,7 @@ public class SqlToRelConverter {
 
     public boolean isTrimUnusedFields() {
       return trimUnusedFields;
+//      return true; // TODO
     }
 
     public boolean isCreateValuesRel() {

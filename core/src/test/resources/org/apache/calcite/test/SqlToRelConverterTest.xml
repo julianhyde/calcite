@@ -129,9 +129,10 @@ LogicalAggregate(group=[{0}])
         <Resource name="plan">
             <![CDATA[
 LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
-  LogicalAggregate(group=[{0}])
-    LogicalProject($f0=[SUBSTRING($1, 2, 3)])
-      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+  LogicalProject($f0=[0])
+    LogicalAggregate(group=[{0}])
+      LogicalProject($f0=[SUBSTRING($1, 2, 3)])
+        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
         </Resource>
         <Resource name="sql">
@@ -144,7 +145,8 @@ LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
             <![CDATA[
 LogicalFilter(condition=[>($0, 1)])
   LogicalAggregate(group=[{}], E=[COUNT()])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalProject(EMPNO=[$0])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
         </Resource>
         <Resource name="sql">
@@ -2344,8 +2346,9 @@ LogicalProject(C=[$9])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
     LogicalAggregate(group=[{}], agg#0=[SINGLE_VALUE($0)])
       LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
-        LogicalFilter(condition=[>($0, 10)])
-          LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+        LogicalProject($f0=[0])
+          LogicalFilter(condition=[>($0, 10)])
+            LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
 ]]>
         </Resource>
     </TestCase>
@@ -5480,8 +5483,9 @@ from emp]]>
             <![CDATA[
 LogicalProject(C=[$SCALAR_QUERY({
 LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
-  LogicalFilter(condition=[>($0, 10)])
-    LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+  LogicalProject($f0=[0])
+    LogicalFilter(condition=[>($0, 10)])
+      LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
 })])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>

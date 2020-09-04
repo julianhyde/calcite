@@ -110,7 +110,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
-import com.google.common.collect.SortedMultiset;
 
 import java.math.BigDecimal;
 import java.util.AbstractList;
@@ -1655,14 +1654,6 @@ public class RelBuilder {
             .collect(Collectors.toList()));
   }
 
-  private static SqlAggFunction op(AggCall aggCall) {
-    if (aggCall instanceof AggCallImpl) {
-      return ((AggCallImpl) aggCall).aggFunction;
-    } else {
-      return ((AggCallImpl2) aggCall).aggregateCall.getAggregation();
-    }
-  }
-
   /** Creates an {@link Aggregate} with multiple calls. */
   public RelBuilder aggregate(GroupKey groupKey, Iterable<AggCall> aggCalls) {
     final Registrar registrar =
@@ -1715,8 +1706,7 @@ public class RelBuilder {
       final ImmutableSortedMultiset<ImmutableBitSet> groupSetMultiset =
           ImmutableSortedMultiset.copyOf(ImmutableBitSet.COMPARATOR,
               groupSetList);
-      if (groupSetMultiset.elementSet().size() < groupSetMultiset.size()
-          && Iterables.any(aggCalls, RelBuilder::isGroupId)) {
+      if (Iterables.any(aggCalls, RelBuilder::isGroupId)) {
         return rewriteAggregateWithGroupId(groupSet, groupSetMultiset,
             ImmutableList.copyOf(aggCalls));
       }
@@ -1732,13 +1722,7 @@ public class RelBuilder {
     }
 
     for (AggCall aggCall : aggCalls) {
-      if (aggCall instanceof AggCallImpl) {
-        final AggCallImpl aggCall1 = (AggCallImpl) aggCall;
-        registrar.registerExpressions(aggCall1.operands);
-        if (aggCall1.filter != null) {
-          registrar.registerExpression(aggCall1.filter);
-        }
-      }
+      ((AggCallPlus) aggCall).register(registrar);
     }
     project(registrar.extraNodes);
     rename(registrar.names);
@@ -1746,35 +1730,8 @@ public class RelBuilder {
     RelNode r = frame.rel;
     final List<AggregateCall> aggregateCalls = new ArrayList<>();
     for (AggCall aggCall : aggCalls) {
-      final AggregateCall aggregateCall;
-      if (aggCall instanceof AggCallImpl) {
-        final AggCallImpl aggCall1 = (AggCallImpl) aggCall;
-        final List<Integer> args =
-            registrar.registerExpressions(aggCall1.operands);
-        final int filterArg = aggCall1.filter == null ? -1
-            : registrar.registerExpression(aggCall1.filter);
-        if (aggCall1.distinct && !aggCall1.aggFunction.isQuantifierAllowed()) {
-          throw new IllegalArgumentException("DISTINCT not allowed");
-        }
-        if (aggCall1.filter != null && !aggCall1.aggFunction.allowsFilter()) {
-          throw new IllegalArgumentException("FILTER not allowed");
-        }
-        RelCollation collation =
-            RelCollations.of(aggCall1.orderKeys
-                .stream()
-                .map(orderKey ->
-                    collation(orderKey, RelFieldCollation.Direction.ASCENDING,
-                        null, Collections.emptyList()))
-                .collect(Collectors.toList()));
-        aggregateCall =
-            AggregateCall.create(aggCall1.aggFunction, aggCall1.distinct,
-                aggCall1.approximate,
-                aggCall1.ignoreNulls, args, filterArg, collation,
-                groupSet.cardinality(), r, null, aggCall1.alias);
-      } else {
-        aggregateCall = ((AggCallImpl2) aggCall).aggregateCall;
-      }
-      aggregateCalls.add(aggregateCall);
+      aggregateCalls.add(
+          ((AggCallPlus) aggCall).aggregateCall(registrar, groupSet, r));
     }
 
     assert ImmutableBitSet.ORDERING.isStrictlyOrdered(groupSets) : groupSets;
@@ -1917,15 +1874,13 @@ public class RelBuilder {
    * GROUP_ID returns wrong result</a>.
    */
   private RelBuilder rewriteAggregateWithGroupId(ImmutableBitSet groupSet,
-      SortedMultiset<ImmutableBitSet> groupSets, List<AggCall> aggregateCalls) {
-    final RelNode input = peek();
-
-    push(input);
-    final RelBuilder.GroupKey groupKey =
-        groupKey(groupSet, groupSets.elementSet());
-    aggregate(groupKey, aggregateCalls);
+      ImmutableSortedMultiset<ImmutableBitSet> groupSets,
+      List<AggCall> aggregateCalls) {
     final List<String> fieldNamesIfNoRewrite =
-        build().getRowType().getFieldNames();
+        Aggregate.deriveRowType(getTypeFactory(), peek().getRowType(), false,
+            groupSet, groupSets.asList(),
+            aggregateCalls.stream().map(c -> ((AggCallPlus) c).aggregateCall())
+                .collect(Util.toImmutableList())).getFieldNames();
 
     // If n duplicates exist for a particular grouping, the {@code GROUP_ID()}
     // function produces values in the range 0 to n-1. For each value,
@@ -1959,9 +1914,10 @@ public class RelBuilder {
     // For each group id value, we first construct an Aggregate without
     // GROUP_ID() function call, and then create a Project node on top of it.
     // The Project adds literal value for group id in right position.
+    final Frame frame = stack.pop();
     for (int groupId = 0; groupId <= maxGroupId; groupId++) {
       // Create the Aggregate node without GROUP_ID() call
-      push(input);
+      stack.push(frame);
       aggregate(groupKey(groupSet, groupIdToGroupSets.get(groupId)),
           aggregateCallsWithoutGroupId);
 
@@ -1990,7 +1946,7 @@ public class RelBuilder {
   }
 
   private static boolean isGroupId(AggCall c) {
-    return op(c).kind == SqlKind.GROUP_ID;
+    return ((AggCallPlus) c).op().kind == SqlKind.GROUP_ID;
   }
 
   private RelBuilder setOp(boolean all, SqlKind kind, int n) {
@@ -2900,6 +2856,24 @@ public class RelBuilder {
     AggCall distinct();
   }
 
+  /** Internal methods shared by all implementations of {@link AggCall}. */
+  private interface AggCallPlus extends AggCall {
+    /** Returns the aggregate function. */
+    SqlAggFunction op();
+
+    /** Returns an {@link AggregateCall} that is approximately equivalent
+     * to this {@code AggCall} and is good for certain things, such as deriving
+     * field names. */
+    AggregateCall aggregateCall();
+
+    /** Converts this {@code AggCall} to a good {@link AggregateCall}. */
+    AggregateCall aggregateCall(Registrar registrar, ImmutableBitSet groupSet,
+        RelNode r);
+
+    /** Registers expressions in operands and filters. */
+    void register(Registrar registrar);
+  }
+
   /** Information necessary to create the GROUP BY clause of an Aggregate.
    *
    * @see RelBuilder#groupKey */
@@ -2908,6 +2882,9 @@ public class RelBuilder {
      *
      * <p>Used to assign field names in the {@code group} operation. */
     GroupKey alias(String alias);
+
+    /** Returns the number of columns in the group key. */
+    int groupKeyCount();
   }
 
   /** Implementation of {@link RelBuilder.GroupKey}. */
@@ -2927,6 +2904,10 @@ public class RelBuilder {
       return alias == null ? nodes.toString() : nodes + " as " + alias;
     }
 
+    @Override public int groupKeyCount() {
+      return nodes.size();
+    }
+
     public GroupKey alias(String alias) {
       return Objects.equals(this.alias, alias)
           ? this
@@ -2939,7 +2920,7 @@ public class RelBuilder {
   }
 
   /** Implementation of {@link AggCall}. */
-  private class AggCallImpl implements AggCall {
+  private class AggCallImpl implements AggCallPlus {
     private final SqlAggFunction aggFunction;
     private final boolean distinct;
     private final boolean approximate;
@@ -2994,6 +2975,46 @@ public class RelBuilder {
         b.append(" FILTER (WHERE ").append(filter).append(')');
       }
       return b.toString();
+    }
+
+    @Override public SqlAggFunction op() {
+      return aggFunction;
+    }
+
+    @Override public AggregateCall aggregateCall() {
+      return AggregateCall.create(aggFunction, distinct, approximate,
+          ignoreNulls, ImmutableList.of(), -1, null, null, alias);
+    }
+
+    @Override public AggregateCall aggregateCall(Registrar registrar,
+        ImmutableBitSet groupSet, RelNode r) {
+      final List<Integer> args =
+          registrar.registerExpressions(this.operands);
+      final int filterArg = this.filter == null ? -1
+          : registrar.registerExpression(this.filter);
+      if (this.distinct && !this.aggFunction.isQuantifierAllowed()) {
+        throw new IllegalArgumentException("DISTINCT not allowed");
+      }
+      if (this.filter != null && !this.aggFunction.allowsFilter()) {
+        throw new IllegalArgumentException("FILTER not allowed");
+      }
+      RelCollation collation =
+          RelCollations.of(this.orderKeys
+              .stream()
+              .map(orderKey ->
+                  collation(orderKey, RelFieldCollation.Direction.ASCENDING,
+                      null, Collections.emptyList()))
+              .collect(Collectors.toList()));
+      return AggregateCall.create(aggFunction, distinct, approximate,
+          ignoreNulls, args, filterArg, collation, groupSet.cardinality(), r,
+          null, alias);
+    }
+
+    @Override public void register(Registrar registrar) {
+      registrar.registerExpressions(operands);
+      if (filter != null) {
+        registrar.registerExpression(filter);
+      }
     }
 
     public AggCall sort(Iterable<RexNode> orderKeys) {
@@ -3051,7 +3072,7 @@ public class RelBuilder {
 
   /** Implementation of {@link AggCall} that wraps an
    * {@link AggregateCall}. */
-  private static class AggCallImpl2 implements AggCall {
+  private static class AggCallImpl2 implements AggCallPlus {
     private final AggregateCall aggregateCall;
 
     AggCallImpl2(AggregateCall aggregateCall) {
@@ -3060,6 +3081,23 @@ public class RelBuilder {
 
     @Override public String toString() {
       return aggregateCall.toString();
+    }
+
+    @Override public SqlAggFunction op() {
+      return aggregateCall.getAggregation();
+    }
+
+    @Override public AggregateCall aggregateCall() {
+      return aggregateCall;
+    }
+
+    @Override public AggregateCall aggregateCall(Registrar registrar,
+        ImmutableBitSet groupSet, RelNode r) {
+      return aggregateCall;
+    }
+
+    @Override public void register(Registrar registrar) {
+      // nothing to do
     }
 
     public AggCall sort(Iterable<RexNode> orderKeys) {
