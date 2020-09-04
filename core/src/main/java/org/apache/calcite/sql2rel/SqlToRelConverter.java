@@ -5825,57 +5825,38 @@ public class SqlToRelConverter {
   }
 
   /** Builder for a {@link Config}. */
+  @Deprecated // to be removed before 2.0
   public static class ConfigBuilder {
-    private boolean decorrelationEnabled = true;
-    private boolean trimUnusedFields = false;
-    private boolean createValuesRel = true;
-    private boolean explain;
-    private boolean expand = true;
-    private int inSubQueryThreshold = DEFAULT_IN_SUB_QUERY_THRESHOLD;
-    private UnaryOperator<RelBuilder.Config> relBuilderConfigTransform = c ->
-        c.withPushJoinCondition(true);
-    private RelBuilderFactory relBuilderFactory = RelFactories.LOGICAL_BUILDER;
-    private HintStrategyTable hintStrategyTable = HintStrategyTable.EMPTY;
+    private Config config;
 
-    private ConfigBuilder() {}
+    private ConfigBuilder() {
+      config = CONFIG;
+    }
 
     /** Sets configuration identical to a given {@link Config}. */
     public ConfigBuilder withConfig(Config config) {
-      this.decorrelationEnabled = config.isDecorrelationEnabled();
-      this.trimUnusedFields = config.isTrimUnusedFields();
-      this.createValuesRel = config.isCreateValuesRel();
-      this.explain = config.isExplain();
-      this.expand = config.isExpand();
-      this.inSubQueryThreshold = config.getInSubQueryThreshold();
-      this.relBuilderConfigTransform = config.getRelBuilderConfigTransform();
-      this.relBuilderFactory = config.getRelBuilderFactory();
-      this.hintStrategyTable = config.getHintStrategyTable();
+      this.config = config;
       return this;
     }
 
     public ConfigBuilder withDecorrelationEnabled(boolean enabled) {
-      this.decorrelationEnabled = enabled;
-      return this;
+      return withConfig(config.withDecorrelationEnabled(enabled));
     }
 
     public ConfigBuilder withTrimUnusedFields(boolean trimUnusedFields) {
-      this.trimUnusedFields = trimUnusedFields;
-      return this;
+      return withConfig(config.withTrimUnusedFields(trimUnusedFields));
     }
 
     public ConfigBuilder withCreateValuesRel(boolean createValuesRel) {
-      this.createValuesRel = createValuesRel;
-      return this;
+      return withConfig(config.withCreateValuesRel(createValuesRel));
     }
 
     public ConfigBuilder withExplain(boolean explain) {
-      this.explain = explain;
-      return this;
+      return withConfig(config.withExplain(explain));
     }
 
     public ConfigBuilder withExpand(boolean expand) {
-      this.expand = expand;
-      return this;
+      return withConfig(config.withExpand(expand));
     }
 
     /** Whether to push down join conditions; default true. */
@@ -5890,158 +5871,27 @@ public class SqlToRelConverter {
     }
 
     public ConfigBuilder withInSubQueryThreshold(int inSubQueryThreshold) {
-      this.inSubQueryThreshold = inSubQueryThreshold;
-      return this;
+      return withConfig(config.withInSubQueryThreshold(inSubQueryThreshold));
     }
 
     public ConfigBuilder withRelBuilderConfigTransform(
         UnaryOperator<RelBuilder.Config> configTransform) {
-      this.relBuilderConfigTransform =
-          relBuilderConfigTransform.andThen(configTransform)::apply;
-      return this;
+      return withConfig(config.addRelBuilderConfigTransform(configTransform));
     }
 
     public ConfigBuilder withRelBuilderFactory(
         RelBuilderFactory relBuilderFactory) {
-      this.relBuilderFactory = relBuilderFactory;
-      return this;
+      return withConfig(config.withRelBuilderFactory(relBuilderFactory));
     }
 
     public ConfigBuilder withHintStrategyTable(
         HintStrategyTable hintStrategyTable) {
-      this.hintStrategyTable = hintStrategyTable;
-      return this;
+      return withConfig(config.withHintStrategyTable(hintStrategyTable));
     }
 
     /** Builds a {@link Config}. */
     public Config build() {
-      return new ConfigImpl(decorrelationEnabled,
-          trimUnusedFields, createValuesRel, explain, expand,
-          inSubQueryThreshold, relBuilderConfigTransform, relBuilderFactory,
-          hintStrategyTable);
-    }
-  }
-
-  /** Implementation of {@link Config}.
-   * Called by builder; all values are in private final fields. */
-  private static class ConfigImpl implements Config {
-    private final boolean decorrelationEnabled;
-    private final boolean trimUnusedFields;
-    private final boolean createValuesRel;
-    private final boolean explain;
-    private final boolean expand;
-    private final int inSubQueryThreshold;
-    private final UnaryOperator<RelBuilder.Config> relBuilderConfigTransform;
-    private final RelBuilderFactory relBuilderFactory;
-    private final HintStrategyTable hintStrategyTable;
-
-    private ConfigImpl(boolean decorrelationEnabled,
-        boolean trimUnusedFields, boolean createValuesRel, boolean explain,
-        boolean expand, int inSubQueryThreshold,
-        UnaryOperator<RelBuilder.Config> relBuilderConfigTransform,
-        RelBuilderFactory relBuilderFactory,
-        HintStrategyTable hintStrategyTable) {
-      this.decorrelationEnabled = decorrelationEnabled;
-      this.trimUnusedFields = trimUnusedFields;
-      this.createValuesRel = createValuesRel;
-      this.explain = explain;
-      this.expand = expand;
-      this.inSubQueryThreshold = inSubQueryThreshold;
-      this.relBuilderConfigTransform = relBuilderConfigTransform;
-      this.relBuilderFactory = relBuilderFactory;
-      this.hintStrategyTable = hintStrategyTable;
-    }
-
-    @Override public boolean equals(Object obj) {
-      return this == obj
-          || obj instanceof ConfigImpl
-          && decorrelationEnabled == ((ConfigImpl) obj).decorrelationEnabled
-          && trimUnusedFields == ((ConfigImpl) obj).trimUnusedFields
-          && createValuesRel == ((ConfigImpl) obj).createValuesRel
-          && explain == ((ConfigImpl) obj).explain
-          && expand == ((ConfigImpl) obj).expand
-          && inSubQueryThreshold == ((ConfigImpl) obj).inSubQueryThreshold
-          && relBuilderFactory == ((ConfigImpl) obj).relBuilderFactory
-          && hintStrategyTable == ((ConfigImpl) obj).hintStrategyTable;
-    }
-
-    @Override public int hashCode() {
-      return Objects.hash(decorrelationEnabled, trimUnusedFields,
-          createValuesRel, explain, expand, inSubQueryThreshold,
-          relBuilderFactory, hintStrategyTable);
-    }
-
-    public boolean isDecorrelationEnabled() {
-      return decorrelationEnabled;
-    }
-
-    public boolean isTrimUnusedFields() {
-      return trimUnusedFields;
-    }
-
-    public boolean isCreateValuesRel() {
-      return createValuesRel;
-    }
-
-    public boolean isExplain() {
-      return explain;
-    }
-
-    public boolean isExpand() {
-      return expand;
-    }
-
-    public int getInSubQueryThreshold() {
-      return inSubQueryThreshold;
-    }
-
-    public UnaryOperator<RelBuilder.Config> getRelBuilderConfigTransform() {
-      return relBuilderConfigTransform;
-    }
-
-    public RelBuilderFactory getRelBuilderFactory() {
-      return relBuilderFactory;
-    }
-
-    public HintStrategyTable getHintStrategyTable() {
-      return hintStrategyTable;
-    }
-
-    public Config withTrimUnusedFields(boolean trimUnusedFields) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withExpand(boolean expand) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withExplain(boolean explain) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withDecorrelationEnabled(boolean decorrelationEnabled) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withRelBuilderConfigTransform(
-        UnaryOperator<RelBuilder.Config> transform) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withInSubQueryThreshold(int threshold) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withHintStrategyTable(HintStrategyTable hintStrategyTable) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withRelBuilderFactory(RelBuilderFactory factory) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
-    }
-
-    public Config withCreateValuesRel(boolean createValuesRel) {
-      throw new UnsupportedOperationException(); // use Config.DEFAULT
+      return config;
     }
   }
 }
