@@ -37,6 +37,7 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql2rel.RelDecorrelator;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Closer;
 
@@ -142,7 +143,8 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
   /** Sets the SQL statement for a test. */
   Sql sql(String sql) {
     return new Sql(tester, sql, null, null,
-        ImmutableMap.of(), ImmutableList.of());
+        ImmutableMap.of(), ImmutableList.of())
+        .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
   }
 
   /** Allows fluent testing. */
@@ -227,7 +229,18 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
     }
 
     public Sql expand(final boolean b) {
-      return withTransform(tester -> tester.withExpand(b));
+      return withConfig(c -> c.withExpand(b));
+    }
+
+    public Sql withConfig(
+        UnaryOperator<SqlToRelConverter.ConfigBuilder> transform) {
+      return withTransform(tester -> tester.withConfig(transform));
+    }
+
+    public Sql withRelBuilderConfig(
+        UnaryOperator<RelBuilder.Config> transform) {
+      return withConfig(c ->
+          c.withRelBuilderConfigTransform(transform));
     }
 
     public Sql withLateDecorrelation(final boolean b) {

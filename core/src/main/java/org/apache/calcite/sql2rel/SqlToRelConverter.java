@@ -5923,9 +5923,8 @@ public class SqlToRelConverter {
 
     /** Whether to push down join conditions; default true. */
     public ConfigBuilder withPushJoinCondition(boolean pushJoinCondition) {
-      return withRelBuilderConfigTransform(
-          Util.andThen(relBuilderConfigTransform,
-              c -> c.withPushJoinCondition(pushJoinCondition)));
+      return withRelBuilderConfigTransform(c ->
+          c.withPushJoinCondition(pushJoinCondition));
     }
 
     @Deprecated // to be removed before 2.0
@@ -5939,8 +5938,9 @@ public class SqlToRelConverter {
     }
 
     public ConfigBuilder withRelBuilderConfigTransform(
-        UnaryOperator<RelBuilder.Config> relBuilderConfigTransform) {
-      this.relBuilderConfigTransform = relBuilderConfigTransform;
+        UnaryOperator<RelBuilder.Config> configTransform) {
+      this.relBuilderConfigTransform =
+          relBuilderConfigTransform.andThen(configTransform)::apply;
       return this;
     }
 

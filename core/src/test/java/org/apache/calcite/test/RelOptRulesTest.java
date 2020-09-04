@@ -23,7 +23,6 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
@@ -5388,10 +5387,8 @@ class RelOptRulesTest extends RelOptTestBase {
    * Wrong collation trait in SortJoinTransposeRule for right joins</a>. */
   @Test void testSortJoinTranspose4() {
     // Create a customized test with RelCollation trait in the test cluster.
-    Tester tester = new TesterImpl(getDiffRepos(), true, true, false, false,
-        true, null, null) {
-      @Override public RelOptPlanner createPlanner() {
-        return new MockRelOptPlanner(Contexts.empty()) {
+    Tester tester = new TesterImpl(getDiffRepos())
+        .withPlannerFactory(context -> new MockRelOptPlanner(Contexts.empty()) {
           @Override public List<RelTraitDef> getRelTraitDefs() {
             return ImmutableList.of(RelCollationTraitDef.INSTANCE);
           }
@@ -5399,9 +5396,7 @@ class RelOptRulesTest extends RelOptTestBase {
             return RelTraitSet.createEmpty().plus(
                 RelCollationTraitDef.INSTANCE.getDefault());
           }
-        };
-      }
-    };
+        });
 
     final String sql = "select * from sales.emp e right join (\n"
         + "  select * from sales.dept d) d on e.deptno = d.deptno\n"
