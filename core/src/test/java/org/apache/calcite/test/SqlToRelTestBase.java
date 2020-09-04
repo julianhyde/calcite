@@ -787,7 +787,7 @@ public abstract class SqlToRelTestBase {
               context);
     }
 
-    public Tester withLateDecorrelation(boolean enableLateDecorrelate) {
+    public TesterImpl withLateDecorrelation(boolean enableLateDecorrelate) {
       return this.enableLateDecorrelate == enableLateDecorrelate
           ? this
           : new TesterImpl(diffRepos, enableDecorrelate, enableTrim,
@@ -805,7 +805,7 @@ public abstract class SqlToRelTestBase {
           conformance, context);
     }
 
-    public Tester withTrim(boolean enableTrim) {
+    public TesterImpl withTrim(boolean enableTrim) {
       return this.enableTrim == enableTrim
           ? this
           : new TesterImpl(diffRepos, enableDecorrelate, enableTrim,
@@ -814,7 +814,7 @@ public abstract class SqlToRelTestBase {
               context);
     }
 
-    public Tester withConformance(SqlConformance conformance) {
+    public TesterImpl withConformance(SqlConformance conformance) {
       return new TesterImpl(diffRepos, enableDecorrelate, enableTrim,
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,
@@ -854,7 +854,7 @@ public abstract class SqlToRelTestBase {
               context);
     }
 
-    public Tester withContext(Context context) {
+    public TesterImpl withContext(Context context) {
       return new TesterImpl(diffRepos, enableDecorrelate, enableTrim,
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,

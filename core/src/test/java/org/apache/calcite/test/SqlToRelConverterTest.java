@@ -3589,10 +3589,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         NullCollation.LOW.name());
     CalciteConnectionConfigImpl connectionConfig =
         new CalciteConnectionConfigImpl(properties);
-    TesterImpl tester =
-        new TesterImpl(getDiffRepos(), false, false, false, true, null, null,
-            MockRelOptPlanner::new, UnaryOperator.identity(),
-            SqlConformanceEnum.DEFAULT, Contexts.of(connectionConfig));
+    final TesterImpl tester = new TesterImpl(getDiffRepos())
+        .withDecorrelation(false)
+        .withTrim(false)
+        .withContext(Contexts.of(connectionConfig));
     sql(sql).with(tester).ok();
   }
 
@@ -3983,15 +3983,15 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     private final UnaryOperator<SqlToRelConverter.ConfigBuilder> config;
     private final SqlConformance conformance;
 
-    Sql(String sql, boolean decorrelate, Tester tester,
-        boolean trim, UnaryOperator<SqlToRelConverter.ConfigBuilder> config,
+    Sql(String sql, boolean decorrelate, Tester tester, boolean trim,
+        UnaryOperator<SqlToRelConverter.ConfigBuilder> config,
         SqlConformance conformance) {
-      this.sql = sql;
+      this.sql = Objects.requireNonNull(sql);
       this.decorrelate = decorrelate;
-      this.tester = tester;
+      this.tester = Objects.requireNonNull(tester);
       this.trim = trim;
-      this.config = config;
-      this.conformance = conformance;
+      this.config = Objects.requireNonNull(config);
+      this.conformance = Objects.requireNonNull(conformance);
     }
 
     public void ok() {
@@ -4008,9 +4008,9 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
     public Sql withConfig(
         UnaryOperator<SqlToRelConverter.ConfigBuilder> config) {
-      return new Sql(sql, decorrelate, tester, trim,
-          this.config.andThen(Objects.requireNonNull(config))::apply,
-          conformance);
+      final UnaryOperator<SqlToRelConverter.ConfigBuilder> config2 =
+          this.config.andThen(Objects.requireNonNull(config))::apply;
+      return new Sql(sql, decorrelate, tester, trim, config2, conformance);
     }
 
     public Sql expand(boolean expand) {
@@ -4018,23 +4018,19 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     }
 
     public Sql decorrelate(boolean decorrelate) {
-      return new Sql(sql, decorrelate, tester, trim, config,
-          conformance);
+      return new Sql(sql, decorrelate, tester, trim, config, conformance);
     }
 
     public Sql with(Tester tester) {
-      return new Sql(sql, decorrelate, tester, trim, config,
-          conformance);
+      return new Sql(sql, decorrelate, tester, trim, config, conformance);
     }
 
     public Sql trim(boolean trim) {
-      return new Sql(sql, decorrelate, tester, trim, config,
-          conformance);
+      return new Sql(sql, decorrelate, tester, trim, config, conformance);
     }
 
     public Sql conformance(SqlConformance conformance) {
-      return new Sql(sql, decorrelate, tester, trim, config,
-          conformance);
+      return new Sql(sql, decorrelate, tester, trim, config, conformance);
     }
   }
 }
