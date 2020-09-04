@@ -2888,7 +2888,7 @@ public class RelBuilder {
   }
 
   /** Implementation of {@link RelBuilder.GroupKey}. */
-  public static class GroupKeyImpl implements GroupKey {
+  static class GroupKeyImpl implements GroupKey {
     final ImmutableList<RexNode> nodes;
     final ImmutableList<ImmutableList<RexNode>> nodeLists;
     final String alias;

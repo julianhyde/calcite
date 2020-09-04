@@ -5919,7 +5919,6 @@ public class SqlToRelConverter {
 
     public boolean isTrimUnusedFields() {
       return trimUnusedFields;
-//      return true; // TODO
     }
 
     public boolean isCreateValuesRel() {
