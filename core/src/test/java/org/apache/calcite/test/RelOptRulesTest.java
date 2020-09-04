@@ -1042,6 +1042,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
+  @Disabled // TODO
   @Test void testSemiJoinRuleExists() {
     final String sql = "select * from dept where exists (\n"
         + "  select * from emp\n"
