@@ -4792,7 +4792,23 @@ void TableIdentifierSegment(List<String> names, List<SqlParserPos> positions) :
     final int i = names.size();
 }
 {
-    IdentifierSegment(names, positions) {
+    IdentifierSegment(names, positions)
+    (
+        LOOKAHEAD(2)
+        <MINUS> {
+            if (!this.conformance.splitQuotedTableName()) {
+                throw SqlUtil.newContextException(getPos(),
+                    RESOURCE.hyphenInTableName());
+            }
+        }
+        <IDENTIFIER> {
+            names.set(names.size() - 1,
+                names.get(names.size() - 1) + '-' + unquotedIdentifier());
+            positions.set(positions.size() - 1,
+                positions.get(positions.size() - 1).plus(getPos()));
+        }
+    )*
+    {
         final int n = names.size();
         if (n > 0
                 && positions.size() == n
