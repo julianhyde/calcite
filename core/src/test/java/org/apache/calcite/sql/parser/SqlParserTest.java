@@ -740,6 +740,37 @@ public class SqlParserTest {
         .fails("(?s)Encountered \"\\*\" at .*");
   }
 
+  @Test void testHyphenatedTableName() {
+    sql("select * from bigquery^-^foo-bar.baz")
+        .fails("In this dialect, unquoted table names must not contain '-'")
+        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .sansCarets()
+        .ok("SELECT *\n"
+            + "FROM `bigquery-foo-bar`.baz");
+
+    // The ideal implementation would not accept hyphenated identifiers that
+    // contain spaces, and would accept reserved words such as 'public' in
+    // identifiers. But that would require lexical states. So just live with it.
+    sql("select * from bigquery - foo - bar as t where x < y")
+        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .ok("SELECT *\n"
+            + "FROM `bigquery-foo-bar` AS t\n"
+            + "WHERE (x < y)");
+  }
+
+  @Test void testHyphenatedColumnName() {
+    // While BigQuery allows hyphenated table names, no dialect allows
+    // hyphenated column names; they are parsed as arithmetic minus.
+    final String expected = "SELECT (`FOO` - `BAR`)\n"
+        + "FROM `EMP`";
+    final String expectedBigQuery = "SELECT (foo - bar)\n"
+        + "FROM emp";
+    sql("select foo-bar from emp")
+        .ok(expected)
+        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .ok(expectedBigQuery);
+  }
+
   @Test void testDerivedColumnList() {
     sql("select * from emp as e (empno, gender) where true")
         .ok("SELECT *\n"
