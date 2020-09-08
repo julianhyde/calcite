@@ -14,7 +14,6 @@
 # limitations under the License.
 
 data: {
-  tdd(../default_parser.fmpp)
   parser: {
     # Generated parser implementation class package and name
     package: "org.apache.calcite.sql.parser.babel",

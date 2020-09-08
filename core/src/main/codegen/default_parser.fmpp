@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+parser: {
   # List of additional classes and packages to import.
   # Example. "org.apache.calcite.sql.*", "java.util.List".
   imports: [
@@ -331,3 +332,4 @@
     "YEARS"
     "ZONE"
   ]
+}

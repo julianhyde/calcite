@@ -34,7 +34,6 @@
 
 data: {
   parser: {
-    tdd(../default_parser.fmpp)
     # Generated parser implementation package and class name.
     package: "org.apache.calcite.sql.parser.impl",
     class: "SqlParserImpl",
