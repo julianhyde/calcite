@@ -116,6 +116,7 @@ parser: {
     "GOTO"
     "GRANTED"
     "HIERARCHY"
+    "HOP"
     "HOURS"
     "IGNORE"
     "IMMEDIATE"
