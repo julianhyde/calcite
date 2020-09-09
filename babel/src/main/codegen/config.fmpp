@@ -14,12 +14,18 @@
 # limitations under the License.
 
 data: {
+  # Data declarations for this parser.
+  #
+  # Default declarations are in default_parser.fmpp; if you do not include a
+  # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
+  # FMPP will use the declaration from default_parser.fmpp.
   parser: {
     # Generated parser implementation class package and name
     package: "org.apache.calcite.sql.parser.babel",
     class: "SqlBabelParserImpl",
 
-    # List of import statements.
+    # List of additional classes and packages to import.
+    # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
       "org.apache.calcite.sql.SqlCreate",
       "org.apache.calcite.sql.babel.SqlBabelCreateTable",
@@ -27,7 +33,8 @@ data: {
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
     ]
 
-    # List of keywords.
+    # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
+    # not a reserved keyword, add it to the 'nonReservedKeywords' section.
     keywords: [
       "IF"
       "SEMI"
@@ -511,63 +518,35 @@ data: {
       "ZONE"
     ]
 
-    # List of non-reserved keywords to remove;
-    # items in this list become reserved
-    nonReservedKeywordsToRemove: [
-    ]
-
     # List of additional join types. Each is a method with no arguments.
-    # Example: LeftSemiJoin()
+    # Example: "LeftSemiJoin".
     joinTypes: [
       "LeftSemiJoin"
     ]
 
-    # List of methods for parsing custom SQL statements.
-    statementParserMethods: [
-    ]
-
-    # List of methods for parsing custom literals.
-    # Return type of method implementation should be "SqlNode".
-    # Example: ParseJsonLiteral().
-    literalParserMethods: [
-    ]
-
-    # List of methods for parsing custom data types.
-    # Return type of method implementation should be "SqlTypeNameSpec".
-    # Example: SqlParseTimeStampZ().
-    dataTypeParserMethods: [
-    ]
-
     # List of methods for parsing builtin function calls.
     # Return type of method implementation should be "SqlNode".
-    # Example: DateFunctionCall().
+    # Example: "DateFunctionCall()".
     builtinFunctionCallMethods: [
        "DateFunctionCall()"
        "DateaddFunctionCall()"
     ]
 
-    # List of methods for parsing extensions to "ALTER <scope>" calls.
-    # Each must accept arguments "(SqlParserPos pos, String scope)".
-    alterStatementParserMethods: [
-    ]
-
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
     # Each must accept arguments "(SqlParserPos pos, boolean replace)".
+    # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
       "SqlCreateTable"
     ]
 
-    # List of methods for parsing extensions to "DROP" calls.
-    # Each must accept arguments "(SqlParserPos pos)".
-    dropStatementParserMethods: [
-    ]
-
-    # Binary operators tokens
+    # Binary operators tokens.
+    # Example: "< INFIX_CAST: \"::\" >".
     binaryOperatorsTokens: [
       "< INFIX_CAST: \"::\" >"
     ]
 
-    # Binary operators initialization
+    # Binary operators initialization.
+    # Example: "InfixCast".
     extraBinaryExpressions: [
       "InfixCast"
     ]
@@ -576,14 +555,12 @@ data: {
     # implementations for parsing custom SQL statements, literals or types
     # given as part of "statementParserMethods", "literalParserMethods" or
     # "dataTypeParserMethods".
+    # Example: "parserImpls.ftl".
     implementationFiles: [
       "parserImpls.ftl"
     ]
 
     includePosixOperators: true
-    includeCompoundIdentifier: true
-    includeBraces: true
-    includeAdditionalDeclarations: false
   }
 }
 
