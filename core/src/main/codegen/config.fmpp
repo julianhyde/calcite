@@ -33,84 +33,15 @@
 # part of the calcite-core-<version>.jar under "codegen" directory.
 
 data: {
+  # Data declarations for this parser.
+  #
+  # Default declarations are in default_parser.fmpp; if you do not include a
+  # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
+  # FMPP will use the declaration from default_parser.fmpp.
   parser: {
     # Generated parser implementation package and class name.
     package: "org.apache.calcite.sql.parser.impl",
     class: "SqlParserImpl",
-
-    # List of additional classes and packages to import.
-    # Example. "org.apache.calcite.sql.*", "java.util.List".
-    imports: [
-    ]
-
-    # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved
-    # keyword add it to 'nonReservedKeywords' section.
-    keywords: [
-    ]
-
-
-    # List of non-reserved keywords to add;
-    # items in this list become non-reserved
-    nonReservedKeywordsToAdd: [
-    ]
-
-    # List of non-reserved keywords to remove;
-    # items in this list become reserved
-    nonReservedKeywordsToRemove: [
-    ]
-
-    # List of additional join types. Each is a method with no arguments.
-    # Example: LeftSemiJoin()
-    joinTypes: [
-    ]
-
-    # List of methods for parsing custom SQL statements.
-    # Return type of method implementation should be 'SqlNode'.
-    # Example: SqlShowDatabases(), SqlShowTables().
-    statementParserMethods: [
-    ]
-
-    # List of methods for parsing custom literals.
-    # Return type of method implementation should be "SqlNode".
-    # Example: ParseJsonLiteral().
-    literalParserMethods: [
-    ]
-
-    # List of methods for parsing custom data types.
-    # Return type of method implementation should be "SqlTypeNameSpec".
-    # Example: SqlParseTimeStampZ().
-    dataTypeParserMethods: [
-    ]
-
-    # List of methods for parsing builtin function calls.
-    # Return type of method implementation should be "SqlNode".
-    # Example: DateFunctionCall().
-    builtinFunctionCallMethods: [
-    ]
-
-    # List of methods for parsing extensions to "ALTER <scope>" calls.
-    # Each must accept arguments "(SqlParserPos pos, String scope)".
-    # Example: "SqlUploadJarNode"
-    alterStatementParserMethods: [
-    ]
-
-    # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
-    # Each must accept arguments "(SqlParserPos pos, boolean replace)".
-    createStatementParserMethods: [
-    ]
-
-    # List of methods for parsing extensions to "DROP" calls.
-    # Each must accept arguments "(SqlParserPos pos)".
-    dropStatementParserMethods: [
-    ]
-
-    # Binary operators tokens
-    binaryOperatorsTokens: [
-    ]
-
-    # Binary operators initialization
-    extraBinaryExpressions: [
-    ]
 
     # List of files in @includes directory that have parser method
     # implementations for parsing custom SQL statements, literals or types
@@ -119,11 +50,6 @@ data: {
     implementationFiles: [
       "parserImpls.ftl"
     ]
-
-    includePosixOperators: false
-    includeCompoundIdentifier: true
-    includeBraces: true
-    includeAdditionalDeclarations: false
   }
 }
 

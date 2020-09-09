@@ -13,10 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Default data declarations for parsers.
+# Each of these may be overridden in a parser's config.fmpp file.
+# In addition, each parser must define "package" and "class".
 parser: {
   # List of additional classes and packages to import.
-  # Example. "org.apache.calcite.sql.*", "java.util.List".
+  # Example: "org.apache.calcite.sql.*", "java.util.List".
   imports: [
+  ]
+
+  # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
+  # not a reserved keyword, add it to the 'nonReservedKeywords' section.
+  keywords: [
   ]
 
   # List of keywords from "keywords" section that are not reserved.
@@ -333,4 +341,84 @@ parser: {
     "YEARS"
     "ZONE"
   ]
+
+  # List of non-reserved keywords to add;
+  # items in this list become non-reserved.
+  nonReservedKeywordsToAdd: [
+  ]
+
+  # List of non-reserved keywords to remove;
+  # items in this list become reserved.
+  nonReservedKeywordsToRemove: [
+  ]
+
+  # List of additional join types. Each is a method with no arguments.
+  # Example: "LeftSemiJoin".
+  joinTypes: [
+  ]
+
+  # List of methods for parsing custom SQL statements.
+  # Return type of method implementation should be 'SqlNode'.
+  # Example: "SqlShowDatabases()", "SqlShowTables()".
+  statementParserMethods: [
+  ]
+
+  # List of methods for parsing custom literals.
+  # Return type of method implementation should be "SqlNode".
+  # Example: ParseJsonLiteral().
+  literalParserMethods: [
+  ]
+
+  # List of methods for parsing custom data types.
+  # Return type of method implementation should be "SqlTypeNameSpec".
+  # Example: SqlParseTimeStampZ().
+  dataTypeParserMethods: [
+  ]
+
+  # List of methods for parsing builtin function calls.
+  # Return type of method implementation should be "SqlNode".
+  # Example: "DateFunctionCall()".
+  builtinFunctionCallMethods: [
+  ]
+
+  # List of methods for parsing extensions to "ALTER <scope>" calls.
+  # Each must accept arguments "(SqlParserPos pos, String scope)".
+  # Example: "SqlAlterTable".
+  alterStatementParserMethods: [
+  ]
+
+  # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
+  # Each must accept arguments "(SqlParserPos pos, boolean replace)".
+  # Example: "SqlCreateForeignSchema".
+  createStatementParserMethods: [
+  ]
+
+  # List of methods for parsing extensions to "DROP" calls.
+  # Each must accept arguments "(SqlParserPos pos)".
+  # Example: "SqlDropSchema".
+  dropStatementParserMethods: [
+  ]
+
+  # Binary operators tokens.
+  # Example: "< INFIX_CAST: \"::\" >".
+  binaryOperatorsTokens: [
+  ]
+
+  # Binary operators initialization.
+  # Example: "InfixCast".
+  extraBinaryExpressions: [
+  ]
+
+  # List of files in @includes directory that have parser method
+  # implementations for parsing custom SQL statements, literals or types
+  # given as part of "statementParserMethods", "literalParserMethods" or
+  # "dataTypeParserMethods".
+  # Example: "parserImpls.ftl".
+  implementationFiles: [
+  ]
+
+  includePosixOperators: false
+  includeCompoundIdentifier: true
+  includeBraces: true
+  includeAdditionalDeclarations: false
 }
