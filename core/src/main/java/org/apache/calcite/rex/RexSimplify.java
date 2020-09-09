@@ -2543,9 +2543,9 @@ public class RexSimplify {
         if (negate) {
           return false;
         }
-        RexNode op = ((RexCall) e).operands.get(0);
-        return accept1(op, e.getKind(),
-            rexBuilder.makeNullLiteral(op.getType()), newTerms);
+        final RexNode arg = ((RexCall) e).operands.get(0);
+        return accept1(arg, e.getKind(),
+            rexBuilder.makeNullLiteral(arg.getType()), newTerms);
       default:
         return false;
       }
@@ -2586,16 +2586,7 @@ public class RexSimplify {
       if (negate) {
         kind = kind.negateNullSafe();
       }
-      if (kind == SqlKind.IS_NULL) {
-        if (negate) {
-          throw new AssertionError("negate is not supported for IS_NULL kind");
-        }
-        b.containsNull = true;
-        b.types.add(literal.getType());
-        return true;
-      }
       final Comparable value = literal.getValueAs(Comparable.class);
-      assert value != null : "value must not be null, kind=" + kind;
       switch (kind) {
       case LESS_THAN:
         b.addRange(Range.lessThan(value), literal.getType());
@@ -2619,6 +2610,12 @@ public class RexSimplify {
       case SEARCH:
         final Sarg sarg = literal.getValueAs(Sarg.class);
         b.addSarg(sarg, negate, literal.getType());
+        return true;
+      case IS_NULL:
+        if (negate) {
+          throw new AssertionError("negate is not supported for IS_NULL");
+        }
+        b.containsNull = true;
         return true;
       default:
         throw new AssertionError("unexpected " + kind);
@@ -2694,14 +2691,14 @@ public class RexSimplify {
     }
 
     @Override public RelDataType getType() {
-      List<RelDataType> distinctTypes = Util.distinctList(this.types);
-      assert distinctTypes.size() >= 1 : "at least one type expected";
-      if (distinctTypes.size() == 1) {
-        return distinctTypes.get(0);
+      if (this.types.isEmpty()) {
+        // Expression is "x IS NULL"
+        return ref.getType();
       }
-      RelDataType type = rexBuilder.typeFactory.leastRestrictive(distinctTypes);
-      assert type != null : "Can't find leastRestrictive type among " + distinctTypes;
-      return type;
+      final List<RelDataType> distinctTypes = Util.distinctList(this.types);
+      return Objects.requireNonNull(
+          rexBuilder.typeFactory.leastRestrictive(distinctTypes),
+          () -> "Can't find leastRestrictive type among " + distinctTypes);
     }
 
     @Override public <R> R accept(RexVisitor<R> visitor) {
