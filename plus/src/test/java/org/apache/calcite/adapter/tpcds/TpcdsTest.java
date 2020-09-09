@@ -367,15 +367,13 @@ class TpcdsTest {
                 builder.equals(builder.field("CD_EDUCATION_STATUS"),
                     builder.literal("HIGH SCHOOL")),
                 builder.equals(builder.field("D_YEAR"), builder.literal(1998)),
-                builder.call(SqlStdOperatorTable.IN,
-                    builder.field("S_STATE"),
-                    builder.call(SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR,
-                        builder.literal("CA"),
-                        builder.literal("OR"),
-                        builder.literal("WA"),
-                        builder.literal("TX"),
-                        builder.literal("OK"),
-                        builder.literal("MD"))))
+                builder.in(builder.field("S_STATE"),
+                    builder.literal("CA"),
+                    builder.literal("OR"),
+                    builder.literal("WA"),
+                    builder.literal("TX"),
+                    builder.literal("OK"),
+                    builder.literal("MD")))
             .aggregate(builder.groupKey("I_ITEM_ID", "S_STATE"),
                 builder.avg(false, "AGG1", builder.field("SS_QUANTITY")),
                 builder.avg(false, "AGG2", builder.field("SS_LIST_PRICE")),
@@ -386,7 +384,12 @@ class TpcdsTest {
     String expectResult = ""
         + "LogicalSort(sort0=[$1], sort1=[$0], dir0=[ASC], dir1=[ASC], fetch=[100])\n"
         + "  LogicalAggregate(group=[{84, 90}], AGG1=[AVG($10)], AGG2=[AVG($12)], AGG3=[AVG($19)], AGG4=[AVG($13)])\n"
-        + "    LogicalFilter(condition=[AND(=($0, $32), =($2, $89), =($7, $60), =($4, $23), =($24, 'M'), =($25, 'S'), =($26, 'HIGH SCHOOL'), =($38, 1998), IN($84, ARRAY('CA', 'OR', 'WA', 'TX', 'OK', 'MD')))])\n"
+        + "    LogicalFilter(condition=[AND(=($0, $32), =($2, $89), "
+        + "=($7, $60), =($4, $23), SEARCH($24, Sarg['M']:CHAR(1)), "
+        + "SEARCH($25, Sarg['S']:CHAR(1)), "
+        + "SEARCH($26, Sarg['HIGH SCHOOL']:CHAR(11)), "
+        + "SEARCH($38, Sarg[1998]), SEARCH($84, Sarg['CA', 'MD', 'OK', 'OR', "
+        + "'TX', 'WA']:CHAR(2)))])\n"
         + "      LogicalJoin(condition=[true], joinType=[inner])\n"
         + "        LogicalTableScan(table=[[TPCDS, STORE_SALES]])\n"
         + "        LogicalJoin(condition=[true], joinType=[inner])\n"
