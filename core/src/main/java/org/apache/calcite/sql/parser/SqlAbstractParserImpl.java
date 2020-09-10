@@ -528,9 +528,9 @@ public abstract class SqlAbstractParserImpl {
     /** Starting state where quoted identifiers use back-ticks, like MySQL. */
     BTID,
 
-    /** Starting state where quoted identifiers use back-ticks, and unquoted
-     * identifiers that are part of table names may contain hyphens, like
-     * BigQuery. */
+    /** Starting state where quoted identifiers use back-ticks,
+     * unquoted identifiers that are part of table names may contain hyphens,
+     * like BigQuery. */
     BQID;
 
     /** Returns the corresponding parser state with the given configuration
