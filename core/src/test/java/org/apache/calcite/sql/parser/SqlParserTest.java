@@ -630,6 +630,12 @@ public class SqlParserTest {
     return SqlParser.create(source, config);
   }
 
+  private static UnaryOperator<SqlParser.ConfigBuilder> getTransform(
+      SqlDialect dialect) {
+    return dialect == null ? UnaryOperator.identity()
+        : dialect::configureParser;
+  }
+
   /** Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a
    * DDL statement. */
   public static Matcher<SqlNode> isDdl() {
@@ -9128,14 +9134,17 @@ public class SqlParserTest {
     void check(StringAndPos sap, SqlDialect dialect, String expected,
         Consumer<SqlParser> parserChecker);
 
-    void checkExp(StringAndPos sap, String expected,
+    void checkExp(StringAndPos sap, SqlDialect dialect, String expected,
         Consumer<SqlParser> parserChecker);
 
-    void checkFails(StringAndPos sap, boolean list, String expectedMsgPattern);
+    void checkFails(StringAndPos sap, SqlDialect dialect, boolean list,
+        String expectedMsgPattern);
 
-    void checkExpFails(StringAndPos sap, String expectedMsgPattern);
+    void checkExpFails(StringAndPos sap, SqlDialect dialect,
+        String expectedMsgPattern);
 
-    void checkNode(StringAndPos sap, Matcher<SqlNode> matcher);
+    void checkNode(StringAndPos sap, SqlDialect dialect,
+        Matcher<SqlNode> matcher);
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -9166,17 +9175,18 @@ public class SqlParserTest {
 
     public void check(StringAndPos sap, SqlDialect dialect, String expected,
         Consumer<SqlParser> parserChecker) {
-      final SqlNode sqlNode = parseStmtAndHandleEx(sap.sql,
-          dialect == null ? UnaryOperator.identity() : dialect::configureParser,
-          parserChecker);
+      final UnaryOperator<SqlParser.ConfigBuilder> transform =
+          getTransform(dialect);
+      final SqlNode sqlNode =
+          parseStmtAndHandleEx(sap.sql, transform, parserChecker);
       check(sqlNode, dialect, expected);
     }
 
     protected SqlNode parseStmtAndHandleEx(String sql,
         UnaryOperator<SqlParser.ConfigBuilder> transform,
         Consumer<SqlParser> parserChecker) {
-      final SqlParser parser =
-          getSqlParser(new SourceStringReader(sql), transform);
+      final Reader reader = new SourceStringReader(sql);
+      final SqlParser parser = getSqlParser(reader, transform);
       final SqlNode sqlNode;
       try {
         sqlNode = parser.parseStmt();
@@ -9198,19 +9208,23 @@ public class SqlParserTest {
       return sqlNodeList;
     }
 
-    public void checkExp(StringAndPos sap, String expected,
+    public void checkExp(StringAndPos sap, SqlDialect dialect, String expected,
         Consumer<SqlParser> parserChecker) {
+      final UnaryOperator<SqlParser.ConfigBuilder> transform =
+          getTransform(dialect);
       final SqlNode sqlNode =
-          parseExpressionAndHandleEx(sap.sql, parserChecker);
+          parseExpressionAndHandleEx(sap.sql, transform, parserChecker);
       final String actual = sqlNode.toSqlString(null, true).getSql();
       TestUtil.assertEqualsVerbose(expected, linux(actual));
     }
 
     protected SqlNode parseExpressionAndHandleEx(String sql,
+        UnaryOperator<SqlParser.ConfigBuilder> transform,
         Consumer<SqlParser> parserChecker) {
       final SqlNode sqlNode;
       try {
-        final SqlParser parser = getSqlParser(sql);
+        final SqlParser parser =
+            getSqlParser(new SourceStringReader(sql), transform);
         sqlNode = parser.parseExpression();
         parserChecker.accept(parser);
       } catch (SqlParseException e) {
@@ -9219,15 +9233,19 @@ public class SqlParserTest {
       return sqlNode;
     }
 
-    @Override public void checkFails(StringAndPos sap, boolean list,
-        String expectedMsgPattern) {
+    @Override public void checkFails(StringAndPos sap, SqlDialect dialect,
+        boolean list, String expectedMsgPattern) {
       Throwable thrown = null;
       try {
         final SqlNode sqlNode;
+        final UnaryOperator<SqlParser.ConfigBuilder> transform =
+            getTransform(dialect);
+        final Reader reader = new SourceStringReader(sap.sql);
+        final SqlParser parser = getSqlParser(reader, transform);
         if (list) {
-          sqlNode = getSqlParser(sap.sql).parseStmtList();
+          sqlNode = parser.parseStmtList();
         } else {
-          sqlNode = getSqlParser(sap.sql).parseStmt();
+          sqlNode = parser.parseStmt();
         }
         Util.discard(sqlNode);
       } catch (Throwable ex) {
@@ -9237,10 +9255,14 @@ public class SqlParserTest {
       checkEx(expectedMsgPattern, sap, thrown);
     }
 
-    @Override public void checkNode(StringAndPos sap,
+    @Override public void checkNode(StringAndPos sap, SqlDialect dialect,
         Matcher<SqlNode> matcher) {
       try {
-        final SqlNode sqlNode = getSqlParser(sap.sql).parseStmt();
+        final UnaryOperator<SqlParser.ConfigBuilder> transform =
+            getTransform(dialect);
+        final Reader reader = new SourceStringReader(sap.sql);
+        final SqlParser parser = getSqlParser(reader, transform);
+        final SqlNode sqlNode = parser.parseStmt();
         assertThat(sqlNode, matcher);
       } catch (SqlParseException e) {
         throw TestUtil.rethrow(e);
@@ -9251,11 +9273,15 @@ public class SqlParserTest {
      * Tests that an expression throws an exception which matches the given
      * pattern.
      */
-    @Override public void checkExpFails(StringAndPos sap,
+    @Override public void checkExpFails(StringAndPos sap, SqlDialect dialect,
         String expectedMsgPattern) {
       Throwable thrown = null;
       try {
-        final SqlNode sqlNode = getSqlParser(sap.sql).parseExpression();
+        final UnaryOperator<SqlParser.ConfigBuilder> transform =
+            getTransform(dialect);
+        final Reader reader = new SourceStringReader(sap.sql);
+        final SqlParser parser = getSqlParser(reader, transform);
+        final SqlNode sqlNode = parser.parseExpression();
         Util.discard(sqlNode);
       } catch (Throwable ex) {
         thrown = ex;
@@ -9377,15 +9403,15 @@ public class SqlParserTest {
 
     @Override public void check(StringAndPos sap, SqlDialect dialect,
         String expected, Consumer<SqlParser> parserChecker) {
-      SqlNode sqlNode = parseStmtAndHandleEx(sap.sql,
-          dialect == null ? UnaryOperator.identity() : dialect::configureParser,
-          parserChecker);
+      final UnaryOperator<SqlParser.ConfigBuilder> transform =
+          getTransform(dialect);
+      SqlNode sqlNode = parseStmtAndHandleEx(sap.sql, transform, parserChecker);
 
       // Unparse with the given dialect, always parenthesize.
       final SqlDialect dialect2 = Util.first(dialect, AnsiSqlDialect.DEFAULT);
-      final UnaryOperator<SqlWriterConfig> transform =
+      final UnaryOperator<SqlWriterConfig> transform2 =
           simpleWithParens().andThen(c -> c.withDialect(dialect2))::apply;
-      final String actual = sqlNode.toSqlString(transform).getSql();
+      final String actual = sqlNode.toSqlString(transform2).getSql();
       assertEquals(expected, linux(actual));
 
       // Unparse again in Calcite dialect (which we can parse), and
@@ -9409,7 +9435,7 @@ public class SqlParserTest {
       // Now unparse again in the given dialect.
       // If the unparser is not including sufficient parens to override
       // precedence, the problem will show up here.
-      final String actual2 = sqlNode.toSqlString(transform).getSql();
+      final String actual2 = sqlNode.toSqlString(transform2).getSql();
       assertEquals(expected, linux(actual2));
 
       // Now unparse with a randomly configured SqlPrettyWriter.
@@ -9428,14 +9454,17 @@ public class SqlParserTest {
       assertEquals(sql1, sql4);
     }
 
-    @Override public void checkExp(StringAndPos sap, String expected,
-        Consumer<SqlParser> parserChecker) {
-      SqlNode sqlNode = parseExpressionAndHandleEx(sap.sql, parserChecker);
+    @Override public void checkExp(StringAndPos sap, SqlDialect dialect,
+        String expected, Consumer<SqlParser> parserChecker) {
+      final UnaryOperator<SqlParser.ConfigBuilder> transform =
+          getTransform(dialect);
+      SqlNode sqlNode =
+          parseExpressionAndHandleEx(sap.sql, transform, parserChecker);
 
       // Unparse with no dialect, always parenthesize.
-      final UnaryOperator<SqlWriterConfig> transform = c ->
+      final UnaryOperator<SqlWriterConfig> transform2 = c ->
           simpleWithParens().apply(c).withDialect(AnsiSqlDialect.DEFAULT);
-      final String actual = sqlNode.toSqlString(transform).getSql();
+      final String actual = sqlNode.toSqlString(transform2).getSql();
       assertEquals(expected, linux(actual));
 
       // Unparse again in Calcite dialect (which we can parse), and
@@ -9449,7 +9478,7 @@ public class SqlParserTest {
       final Quoting q = quoting;
       try {
         quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode2 = parseExpressionAndHandleEx(sql1, parser -> { });
+        sqlNode2 = parseExpressionAndHandleEx(sql1, transform, parser -> { });
       } finally {
         quoting = q;
       }
@@ -9466,12 +9495,12 @@ public class SqlParserTest {
       assertEquals(expected, linux(actual2));
     }
 
-    @Override public void checkFails(StringAndPos sap,
+    @Override public void checkFails(StringAndPos sap, SqlDialect dialect,
         boolean list, String expectedMsgPattern) {
       // Do nothing. We're not interested in unparsing invalid SQL
     }
 
-    @Override public void checkExpFails(StringAndPos sap,
+    @Override public void checkExpFails(StringAndPos sap, SqlDialect dialect,
         String expectedMsgPattern) {
       // Do nothing. We're not interested in unparsing invalid SQL
     }
@@ -9508,7 +9537,7 @@ public class SqlParserTest {
 
     public Sql ok(String expected) {
       if (expression) {
-        getTester().checkExp(sap, expected, parserChecker);
+        getTester().checkExp(sap, dialect, expected, parserChecker);
       } else {
         getTester().check(sap, dialect, expected, parserChecker);
       }
@@ -9517,9 +9546,9 @@ public class SqlParserTest {
 
     public Sql fails(String expectedMsgPattern) {
       if (expression) {
-        getTester().checkExpFails(sap, expectedMsgPattern);
+        getTester().checkExpFails(sap, dialect, expectedMsgPattern);
       } else {
-        getTester().checkFails(sap, false, expectedMsgPattern);
+        getTester().checkFails(sap, dialect, false, expectedMsgPattern);
       }
       return this;
     }
@@ -9530,7 +9559,7 @@ public class SqlParserTest {
     }
 
     public Sql node(Matcher<SqlNode> matcher) {
-      getTester().checkNode(sap, matcher);
+      getTester().checkNode(sap, dialect, matcher);
       return this;
     }
 
@@ -9561,7 +9590,7 @@ public class SqlParserTest {
     }
 
     public SqlList fails(String expectedMsgPattern) {
-      getTester().checkFails(sap, true, expectedMsgPattern);
+      getTester().checkFails(sap, null, true, expectedMsgPattern);
       return this;
     }
   }
