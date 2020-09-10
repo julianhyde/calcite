@@ -581,6 +581,19 @@ public class SqlParserTest {
           .withFromFolding(SqlWriterConfig.LineFolding.TALL)
           .withIndentation(0);
 
+  private static final SqlDialect BIG_QUERY =
+      SqlDialect.DatabaseProduct.BIG_QUERY.getDialect();
+  private static final SqlDialect CALCITE =
+      SqlDialect.DatabaseProduct.CALCITE.getDialect();
+  private static final SqlDialect MYSQL =
+      SqlDialect.DatabaseProduct.MYSQL.getDialect();
+  private static final SqlDialect ORACLE =
+      SqlDialect.DatabaseProduct.ORACLE.getDialect();
+  private static final SqlDialect POSTGRESQL =
+      SqlDialect.DatabaseProduct.POSTGRESQL.getDialect();
+  private static final SqlDialect REDSHIFT =
+      SqlDialect.DatabaseProduct.REDSHIFT.getDialect();
+
   Quoting quoting = Quoting.DOUBLE_QUOTE;
   Casing unquotedCasing = Casing.TO_UPPER;
   Casing quotedCasing = Casing.UNCHANGED;
@@ -750,13 +763,13 @@ public class SqlParserTest {
   @Test void testHyphenatedTableName() {
     sql("select * from bigquery^-^foo-bar.baz")
         .fails("(?s)Encountered \"-\" at .*")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("SELECT *\n"
             + "FROM `bigquery-foo-bar`.baz");
 
     // Like BigQuery, MySQL allows back-ticks.
     sql("select `baz`.`buzz` from foo.`baz`")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("SELECT baz.buzz\n"
             + "FROM foo.baz")
         .withDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect())
@@ -765,7 +778,7 @@ public class SqlParserTest {
 
     // Unlike BigQuery, MySQL does not allow hyphenated identifiers.
     sql("select `baz`.`buzz` from foo^-^bar.`baz`")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("SELECT baz.buzz\n"
             + "FROM `foo-bar`.baz")
         .withDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect())
@@ -773,40 +786,40 @@ public class SqlParserTest {
 
     // No hyphenated identifiers as table aliases.
     sql("select * from foo.baz as hyphenated^-^alias-not-allowed")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .fails("(?s)Encountered \"-\" at .*");
 
     sql("select * from foo.baz as `hyphenated-alias-allowed-if-quoted`")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("SELECT *\n"
             + "FROM foo.baz AS `hyphenated-alias-allowed-if-quoted`");
 
     // No hyphenated identifiers as column names.
     sql("select * from foo-bar.baz cross join (select alpha-omega from t) as t")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("SELECT *\n"
             + "FROM `foo-bar`.baz\n"
             + "CROSS JOIN (SELECT (alpha - omega)\n"
             + "FROM t) AS t");
 
     sql("select * from bigquery-foo-bar.baz as hyphenated^-^alias-not-allowed")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .fails("(?s)Encountered \"-\" at .*");
 
     sql("insert into bigquery^-^public-data.foo values (1)")
         .fails("Non-query expression encountered in illegal context")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("INSERT INTO `bigquery-public-data`.foo\n"
             + "VALUES (1)");
 
     sql("update bigquery^-^public-data.foo set a = b")
         .fails("(?s)Encountered \"-\" at .*")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("UPDATE `bigquery-public-data`.foo SET a = b");
 
     sql("delete from bigquery^-^public-data.foo where a = 5")
         .fails("(?s)Encountered \"-\" at .*")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("DELETE FROM `bigquery-public-data`.foo\n"
             + "WHERE (a = 5)");
 
@@ -835,13 +848,13 @@ public class SqlParserTest {
         + " (VALUES (t.name, 10, (t.salary * 0.15)))";
     sql(mergeSql)
         .fails("(?s)Encountered \"-\" at .*")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok(mergeExpected);
 
     // Hyphenated identifiers may not contain spaces, even in BigQuery.
     sql("select * from bigquery ^-^ foo - bar as t where x < y")
         .fails("(?s)Encountered \"-\" at .*")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .fails("(?s)Encountered \"-\" at .*");
   }
 
@@ -854,7 +867,7 @@ public class SqlParserTest {
         + "FROM emp";
     sql("select foo-bar from emp")
         .ok(expected)
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok(expectedBigQuery);
   }
 
@@ -1265,7 +1278,7 @@ public class SqlParserTest {
             + "VALUES (1, 'Fred'),\n"
             + "(2, 'Eric')";
     sql(sql)
-        .withDialect(SqlDialect.DatabaseProduct.ORACLE.getDialect())
+        .withDialect(ORACLE)
         .ok(expected2);
 
     final String expected3 = "INSERT INTO [EMPS]\n"
@@ -3904,10 +3917,10 @@ public class SqlParserTest {
 
     // BigQuery allows hyphens in schema (project) names
     sql("describe foo-bar.baz")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("DESCRIBE TABLE `foo-bar`.baz");
     sql("describe table foo-bar.baz")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(SqlParserTest.BIG_QUERY)
         .ok("DESCRIBE TABLE `foo-bar`.baz");
 
     // table keyword is OK
@@ -8951,32 +8964,32 @@ public class SqlParserTest {
   @Test void testConfigureFromDialect() {
     // Calcite's default converts unquoted identifiers to upper case
     sql("select unquotedColumn from \"doubleQuotedTable\"")
-        .withDialect(SqlDialect.DatabaseProduct.CALCITE.getDialect())
+        .withDialect(CALCITE)
         .ok("SELECT \"UNQUOTEDCOLUMN\"\n"
             + "FROM \"doubleQuotedTable\"");
     // MySQL leaves unquoted identifiers unchanged
     sql("select unquotedColumn from `doubleQuotedTable`")
-        .withDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect())
+        .withDialect(MYSQL)
         .ok("SELECT `unquotedColumn`\n"
             + "FROM `doubleQuotedTable`");
     // Oracle converts unquoted identifiers to upper case
     sql("select unquotedColumn from \"doubleQuotedTable\"")
-        .withDialect(SqlDialect.DatabaseProduct.ORACLE.getDialect())
+        .withDialect(ORACLE)
         .ok("SELECT \"UNQUOTEDCOLUMN\"\n"
             + "FROM \"doubleQuotedTable\"");
     // PostgreSQL converts unquoted identifiers to lower case
     sql("select unquotedColumn from \"doubleQuotedTable\"")
-        .withDialect(SqlDialect.DatabaseProduct.POSTGRESQL.getDialect())
+        .withDialect(POSTGRESQL)
         .ok("SELECT \"unquotedcolumn\"\n"
             + "FROM \"doubleQuotedTable\"");
     // Redshift converts all identifiers to lower case
     sql("select unquotedColumn from \"doubleQuotedTable\"")
-        .withDialect(SqlDialect.DatabaseProduct.REDSHIFT.getDialect())
+        .withDialect(REDSHIFT)
         .ok("SELECT \"unquotedcolumn\"\n"
             + "FROM \"doublequotedtable\"");
     // BigQuery leaves quoted and unquoted identifiers unchanged
     sql("select unquotedColumn from `doubleQuotedTable`")
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(BIG_QUERY)
         .ok("SELECT unquotedColumn\n"
             + "FROM doubleQuotedTable");
   }
@@ -8997,19 +9010,19 @@ public class SqlParserTest {
         + "FROM `bigquery-public-data`.`samples`.`natality`";
     // In BigQuery, an identifier containing dots is split into sub-identifiers.
     sql(sql)
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(BIG_QUERY)
         .ok(expectedSplit);
     // In MySQL, identifiers are not split.
     sql(sql)
-        .withDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect())
+        .withDialect(MYSQL)
         .ok(expectedNoSplit);
     // Query with split identifiers produces split AST. No surprise there.
     sql(sql2)
-        .withDialect(SqlDialect.DatabaseProduct.BIG_QUERY.getDialect())
+        .withDialect(BIG_QUERY)
         .ok(expectedSplit);
     // Similar to previous; we just quote simple identifiers on unparse.
     sql(sql2)
-        .withDialect(SqlDialect.DatabaseProduct.MYSQL.getDialect())
+        .withDialect(MYSQL)
         .ok(expectedSplitMysql);
   }
 
