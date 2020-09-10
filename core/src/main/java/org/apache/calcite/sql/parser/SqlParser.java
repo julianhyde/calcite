@@ -54,7 +54,7 @@ public class SqlParser {
     parser.setUnquotedCasing(config.unquotedCasing());
     parser.setIdentifierMaxLength(config.identifierMaxLength());
     parser.setConformance(config.conformance());
-    parser.switchTo(SqlParserUtil.quotingToParserState(config.quoting()));
+    parser.switchTo(SqlAbstractParserImpl.LexicalState.forConfig(config));
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -391,4 +391,5 @@ public class SqlParser {
       return parserFactory;
     }
   }
+
 }
