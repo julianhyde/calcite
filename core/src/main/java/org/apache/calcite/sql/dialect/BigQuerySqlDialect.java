@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 
 /**
  * A <code>SqlDialect</code> implementation for Google BigQuery's "Standard SQL"
@@ -117,10 +118,10 @@ public class BigQuerySqlDialect extends SqlDialect {
     return false;
   }
 
-  @Override public SqlParser.ConfigBuilder configureParser(
-      SqlParser.ConfigBuilder configBuilder) {
-    return super.configureParser(configBuilder)
-        .setCharLiteralStyles(
+  @Override public @Nonnull SqlParser.Config configureParser(
+      SqlParser.Config config) {
+    return super.configureParser(config)
+        .withCharLiteralStyles(
             ImmutableSet.of(CharLiteralStyle.BQ_SINGLE,
                 CharLiteralStyle.BQ_DOUBLE));
   }
