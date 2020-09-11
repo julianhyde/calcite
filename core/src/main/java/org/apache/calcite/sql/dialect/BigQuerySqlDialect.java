@@ -18,6 +18,7 @@ package org.apache.calcite.sql.dialect;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.config.CharLiteralStyle;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -37,12 +38,14 @@ import org.apache.calcite.sql.SqlSetOperator;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.List;
@@ -112,6 +115,14 @@ public class BigQuerySqlDialect extends SqlDialect {
 
   @Override public boolean supportsNestedAggregations() {
     return false;
+  }
+
+  @Override public SqlParser.ConfigBuilder configureParser(
+      SqlParser.ConfigBuilder configBuilder) {
+    return super.configureParser(configBuilder)
+        .setCharLiteralStyles(
+            ImmutableSet.of(CharLiteralStyle.BQ_SINGLE,
+                CharLiteralStyle.BQ_DOUBLE));
   }
 
   @Override public void unparseOffsetFetch(SqlWriter writer, SqlNode offset,
