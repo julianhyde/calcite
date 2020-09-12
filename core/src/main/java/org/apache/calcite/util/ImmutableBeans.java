@@ -151,10 +151,8 @@ public class ImmutableBeans {
         requiredPropertyNames.add(propertyName);
       }
       final boolean copy = property.makeImmutable()
-          && (propertyType == Object.class
-              || Iterable.class.isAssignableFrom(propertyType)
-              || Collection.class.isAssignableFrom(propertyType)
-              || Map.class.isAssignableFrom(propertyType));
+          && (ReflectUtil.mightBeAssignableFrom(propertyType, Collection.class)
+              || ReflectUtil.mightBeAssignableFrom(propertyType, Map.class));
       if (copy) {
         copyPropertyNames.add(propertyName);
       }

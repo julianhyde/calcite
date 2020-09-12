@@ -49,9 +49,12 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 import org.hamcrest.TypeSafeMatcher;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.management.MemoryType;
@@ -60,6 +63,8 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.MessageFormat;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAccessor;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1974,6 +1979,118 @@ class UtilTest {
     assertThat(ImmutableNullableSet.copyOf(ab0cSet),
         not(isA((Class) ImmutableSet.class)));
     assertThat(ImmutableNullableSet.copyOf(ab0cSet), equalTo(ab0cSet));
+  }
+
+  /** Tests {@link ReflectUtil#mightBeAssignableFrom(Class, Class)}. */
+  @Test void testMightBeAssignableFrom() {
+    final Object myMap = new HashMap<String, Integer>() {
+      @NotNull @Override public Set<Entry<String, Integer>> entrySet() {
+        throw new UnsupportedOperationException();
+      }
+      @Nullable @Override public Integer put(String key, Integer value) {
+        throw new UnsupportedOperationException();
+      }
+      @Override public int size() {
+        throw new UnsupportedOperationException();
+      }
+    };
+    final Class<?> myMapClass = myMap.getClass();
+
+    // Categories:
+    //   String - final class
+    //   int - primitive
+    //   Map - interface
+    //   HashMap - non-final class
+    //   myMapClass - anonymous (therefore final) class that extends HashMap
+    //   StringBuilder - final class
+    //   DayOfWeek - enum
+
+    // What can be assigned to an Object parameter? Anything except a primitive.
+    checkAssignable(Object.class, Object.class, true);
+    checkAssignable(Object.class, String.class, true);
+    checkAssignable(Object.class, DayOfWeek.class, true);
+    checkAssignable(Object.class, int.class, false);
+    checkAssignable(Object.class, Map.class, true);
+    checkAssignable(Object.class, HashMap.class, true);
+    checkAssignable(Object.class, myMapClass, true);
+
+    // What can be assigned to an String parameter? String is a final class, so
+    // only itself, super-classes and super-interfaces.
+    checkAssignable(String.class, Object.class, true);
+    checkAssignable(String.class, String.class, true);
+    checkAssignable(String.class, DayOfWeek.class, false);
+    checkAssignable(String.class, int.class, false);
+    checkAssignable(String.class, Integer.class, false);
+    checkAssignable(String.class, Map.class, false);
+    checkAssignable(String.class, HashMap.class, false);
+    checkAssignable(String.class, myMapClass, false);
+    checkAssignable(String.class, Serializable.class, true);
+    checkAssignable(String.class, Throwable.class, false);
+
+    // What can be assigned to an int parameter? int is primitive, so only int.
+    checkAssignable(int.class, Object.class, false);
+    checkAssignable(int.class, String.class, false);
+    checkAssignable(int.class, DayOfWeek.class, false);
+    checkAssignable(int.class, int.class, true);
+    checkAssignable(int.class, Map.class, false);
+    checkAssignable(int.class, HashMap.class, false);
+    checkAssignable(int.class, myMapClass, false);
+    checkAssignable(int.class, Serializable.class, false);
+
+    // What can be assigned to an Integer parameter? Integer is a final class.
+    checkAssignable(Integer.class, Object.class, true);
+    checkAssignable(Integer.class, String.class, false);
+    checkAssignable(Integer.class, DayOfWeek.class, false);
+    checkAssignable(Integer.class, Integer.class, true);
+    checkAssignable(Integer.class, int.class, false);
+    checkAssignable(Integer.class, Map.class, false);
+    checkAssignable(Integer.class, HashMap.class, false);
+    checkAssignable(Integer.class, myMapClass, false);
+    checkAssignable(Integer.class, Serializable.class, true);
+    checkAssignable(Integer.class, Number.class, true);
+
+    // What can be assigned to an HashMap parameter? HashMap is a non-final
+    // class.
+    checkAssignable(HashMap.class, Object.class, true);
+    checkAssignable(HashMap.class, String.class, false);
+    checkAssignable(HashMap.class, DayOfWeek.class, false);
+    checkAssignable(HashMap.class, int.class, false);
+    checkAssignable(HashMap.class, Map.class, true);
+    checkAssignable(HashMap.class, HashMap.class, true);
+    checkAssignable(HashMap.class, myMapClass, true);
+    checkAssignable(HashMap.class, Serializable.class, true);
+    checkAssignable(HashMap.class, Number.class, true);
+
+    // What can be assigned to a Map parameter? Map is an interface, so
+    // anything except primitives and final classes that do not implement Map.
+    checkAssignable(Map.class, Object.class, true);
+    checkAssignable(Map.class, String.class, false);
+    checkAssignable(Map.class, DayOfWeek.class, false);
+    checkAssignable(Map.class, int.class, false);
+    checkAssignable(Map.class, Map.class, true);
+    checkAssignable(Map.class, HashMap.class, true);
+    checkAssignable(Map.class, myMapClass, true);
+    checkAssignable(Map.class, NavigableMap.class, true);
+    checkAssignable(Map.class, Serializable.class, true);
+    checkAssignable(Map.class, StringBuilder.class, false);
+
+    // What can be assigned to an Enum parameter? An Enum is very similar to a
+    // final class.
+    checkAssignable(DayOfWeek.class, Object.class, true);
+    checkAssignable(DayOfWeek.class, String.class, false);
+    checkAssignable(DayOfWeek.class, DayOfWeek.class, true);
+    checkAssignable(DayOfWeek.class, int.class, false);
+    checkAssignable(DayOfWeek.class, Map.class, false);
+    checkAssignable(DayOfWeek.class, HashMap.class, false);
+    checkAssignable(DayOfWeek.class, myMapClass, false);
+    checkAssignable(DayOfWeek.class, Serializable.class, true);
+    checkAssignable(DayOfWeek.class, Enum.class, true);
+    checkAssignable(DayOfWeek.class, TemporalAccessor.class, true);
+    checkAssignable(DayOfWeek.class, StringBuilder.class, false);
+  }
+
+  private void checkAssignable(Class<?> target, Class<?> source, boolean b) {
+    assertThat(ReflectUtil.mightBeAssignableFrom(target, source), is(b));
   }
 
   @Test void testHuman() {
