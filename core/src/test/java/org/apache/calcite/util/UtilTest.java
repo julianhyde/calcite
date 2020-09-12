@@ -1912,6 +1912,70 @@ class UtilTest {
     assertThat(arrayList.equals(list), is(true));
   }
 
+  /** Test for {@link org.apache.calcite.util.ImmutableNullableSet}. */
+  @Test void testImmutableNullableSet() {
+    final List<String> arrayList = Arrays.asList("a", null, "c", "a");
+    final Set<String> set = ImmutableNullableSet.copyOf(arrayList);
+    final Set<String> set2 = new LinkedHashSet<>(arrayList);
+    assertThat(set.size(), is(set2.size()));
+    assertThat(set, equalTo(set2));
+    assertThat(set.hashCode(), equalTo(set2.hashCode()));
+    assertThat(set.toString(), equalTo(set2.toString()));
+    StringBuilder z = new StringBuilder();
+    for (String s : set) {
+      z.append(s);
+    }
+    assertThat(z.toString(), equalTo("anullc"));
+
+    // changes to array list do not affect copy
+    arrayList.set(0, "z");
+    assertThat(arrayList.get(0), equalTo("z"));
+    assertThat(set.iterator().next(), equalTo("a"));
+
+    try {
+      boolean b = set.add("z");
+      fail("expected error, got " + b);
+    } catch (UnsupportedOperationException e) {
+      // ok
+    }
+    try {
+      boolean b = set.remove("z");
+      fail("expected error, got " + b);
+    } catch (UnsupportedOperationException e) {
+      // ok
+    }
+
+    // empty set uses ImmutableSet
+    assertThat(ImmutableNullableSet.copyOf(Collections.emptySet()),
+        isA((Class) ImmutableSet.class));
+
+    // set with no nulls uses ImmutableSet
+    final List<String> abcList = Arrays.asList("a", "b", "c");
+    final Set<String> abcSet = new LinkedHashSet<>(abcList);
+    assertThat(ImmutableNullableSet.copyOf(abcList),
+        isA((Class) ImmutableSet.class));
+
+    // set with no nulls uses ImmutableSet
+    assertThat(ImmutableNullableSet.copyOf(abcList),
+        isA((Class) ImmutableSet.class));
+    assertThat(ImmutableNullableSet.copyOf(abcList), equalTo(abcSet));
+
+    assertThat(ImmutableNullableSet.copyOf(abcSet),
+        isA((Class) ImmutableSet.class));
+    assertThat(ImmutableNullableSet.copyOf(abcSet), equalTo(abcSet));
+
+    // set with no nulls uses ImmutableSet
+    final List<String> ab0cList = Arrays.asList("a", "b", null, "c");
+    final Set<String> ab0cSet = new LinkedHashSet<>(ab0cList);
+    assertThat(ImmutableNullableSet.copyOf(ab0cList),
+        not(isA((Class) ImmutableSet.class)));
+    assertThat(ImmutableNullableSet.copyOf(ab0cList), equalTo(ab0cSet));
+
+    assertThat(ImmutableNullableSet.copyOf(ab0cSet),
+        not(isA((Class) ImmutableSet.class)));
+    assertThat(ImmutableNullableSet.copyOf(ab0cSet), equalTo(ab0cSet));
+  }
+
   @Test void testHuman() {
     assertThat(Util.human(0D), equalTo("0"));
     assertThat(Util.human(1D), equalTo("1"));
