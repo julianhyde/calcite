@@ -27,6 +27,7 @@ import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -37,12 +38,16 @@ import java.util.Set;
  *
  * <p>If the set cannot contain null values, use {@link ImmutableSet}.
  *
+ * <p>We do not yet support sorted sets.
+ *
  * @param <E> Element type
  */
 public class ImmutableNullableSet<E> extends AbstractSet<E> {
   @SuppressWarnings("rawtypes")
   private static final Set SINGLETON_NULL =
       new ImmutableNullableSet(ImmutableSet.of(NullSentinel.INSTANCE));
+
+  private static final Set<Integer> SINGLETON = Collections.singleton(0);
 
   private final ImmutableSet<Object> elements;
 
@@ -81,7 +86,10 @@ public class ImmutableNullableSet<E> extends AbstractSet<E> {
   public static <E> Set<E> copyOf(Iterable<? extends E> elements) {
     if (elements instanceof ImmutableNullableSet
         || elements instanceof ImmutableSet
-        || elements == SINGLETON_NULL) {
+        || elements == Collections.emptySet()
+        || elements == Collections.emptySortedSet()
+        || elements == SINGLETON_NULL
+        || elements.getClass() == SINGLETON.getClass()) {
       return (Set<E>) elements;
     }
     final ImmutableSet<Object> set;

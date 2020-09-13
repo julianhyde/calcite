@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -332,6 +333,13 @@ class ImmutableBeanTest {
     assertThat(bean.withImmutableSet(emptySet).immutableSet(),
         is(emptySet));
     assertThat(bean.withImmutableSet(emptySet).immutableSet(),
+        sameInstance(emptySet));
+
+    // set: other empty
+    final Set<String> emptySet2 = new HashSet<>();
+    assertThat(bean.withImmutableSet(emptySet2).immutableSet(),
+        is(emptySet));
+    assertThat(bean.withImmutableSet(emptySet2).immutableSet(),
         instanceOf(ImmutableSet.class));
 
     // set: singleton
@@ -339,12 +347,29 @@ class ImmutableBeanTest {
     assertThat(bean.withImmutableSet(singletonSet).immutableSet(),
         is(singletonSet));
     assertThat(bean.withImmutableSet(singletonSet).immutableSet(),
+        sameInstance(singletonSet));
+
+    // set: other singleton
+    final Set<String> singletonSet2 =
+        new HashSet<>(Collections.singletonList("Elvis"));
+    assertThat(bean.withImmutableSet(singletonSet2).immutableSet(),
+        is(singletonSet2));
+    assertThat(bean.withImmutableSet(singletonSet2).immutableSet(),
         instanceOf(ImmutableSet.class));
 
+    // set: singleton null set
     final Set<String> singletonNullSet = Collections.singleton(null);
     assertThat(bean.withImmutableSet(singletonNullSet).immutableSet(),
         is(singletonNullSet));
     assertThat(bean.withImmutableSet(singletonNullSet).immutableSet(),
+        sameInstance(singletonNullSet));
+
+    // set: other singleton null set
+    final Set<String> singletonNullSet2 =
+        new HashSet<>(Collections.singleton(null));
+    assertThat(bean.withImmutableSet(singletonNullSet2).immutableSet(),
+        is(singletonNullSet2));
+    assertThat(bean.withImmutableSet(singletonNullSet2).immutableSet(),
         instanceOf(ImmutableNullableSet.class));
 
     // map: the non-copying method never makes a copy

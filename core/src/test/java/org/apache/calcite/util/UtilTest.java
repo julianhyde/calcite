@@ -1950,9 +1950,25 @@ class UtilTest {
       // ok
     }
 
-    // empty set uses ImmutableSet
+    // Collections.emptySet() is unchanged
     assertThat(ImmutableNullableSet.copyOf(Collections.emptySet()),
-        isA((Class) ImmutableSet.class));
+        sameInstance(Collections.emptySet()));
+
+    // any other empty set becomes ImmutableSet
+    assertThat(ImmutableNullableSet.copyOf(ImmutableSet.of()),
+        sameInstance(ImmutableSet.of()));
+
+    assertThat(ImmutableNullableSet.copyOf(new HashSet<>()),
+        sameInstance(ImmutableSet.of()));
+
+    // singleton set is unchanged
+    final Set<String> justA = Collections.singleton("a");
+    assertThat(ImmutableNullableSet.copyOf(justA),
+        sameInstance(justA));
+
+    final Set<String> justNull = Collections.singleton(null);
+    assertThat(ImmutableNullableSet.copyOf(justNull),
+        sameInstance(justNull));
 
     // set with no nulls uses ImmutableSet
     final List<String> abcList = Arrays.asList("a", "b", "c");

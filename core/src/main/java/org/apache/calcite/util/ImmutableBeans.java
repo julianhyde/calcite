@@ -37,7 +37,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -65,11 +64,6 @@ public class ImmutableBeans {
               return makeDef(key);
             }
           });
-
-  private static final Set<Integer> SINGLETON_SET =
-      Collections.singleton(0);
-  private static final Map<Integer, Integer> SINGLETON_MAP =
-      Collections.singletonMap(0, 0);
 
   private ImmutableBeans() {}
 
@@ -331,13 +325,7 @@ public class ImmutableBeans {
         return ImmutableNullableSet.copyOf((Set) o);
       }
       if (o instanceof Map) {
-        // TODO: allow null keys and values
-        if (o instanceof ImmutableMap
-            || o == Collections.EMPTY_MAP
-            || o.getClass() == SINGLETON_MAP.getClass()) {
-          return o;
-        }
-        return ImmutableMap.copyOf((Map) o);
+        return ImmutableNullableMap.copyOf((Map) o);
       }
     }
     return o;
