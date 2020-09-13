@@ -1098,6 +1098,53 @@ public abstract class SqlUtil {
     return (RelNode) rel;
   }
 
+  /** Creates a call to an operator.
+   *
+   * <p>Deals with the fact the AND and OR are binary. */
+  public static SqlNode createCall(SqlOperator op, SqlParserPos pos,
+      List<SqlNode> operands) {
+    switch (op.kind) {
+    case OR:
+    case AND:
+      // In RexNode trees, OR and AND have any number of children;
+      // SqlCall requires exactly 2. So, convert to a balanced binary
+      // tree for OR/AND, left-deep binary tree for others.
+      if (operands.size() > 5) {
+        return createBalancedCall(op, pos, operands, 0, operands.size());
+      }
+      // fall through
+    }
+    if (op instanceof SqlBinaryOperator && operands.size() > 2) {
+      return createLeftCall(op, pos, operands);
+    }
+    return op.createCall(pos, operands);
+  }
+
+  private static SqlNode createLeftCall(SqlOperator op, SqlParserPos pos,
+      List<SqlNode> nodeList) {
+    SqlNode node = op.createCall(pos, nodeList.subList(0, 2));
+    for (int i = 2; i < nodeList.size(); i++) {
+      node = op.createCall(pos, node, nodeList.get(i));
+    }
+    return node;
+  }
+
+  /**
+   * Creates a balanced binary call from sql node list,
+   * start inclusive, end exclusive.
+   */
+  private static SqlNode createBalancedCall(SqlOperator op, SqlParserPos pos,
+      List<SqlNode> operands, int start, int end) {
+    assert start < end && end <= operands.size();
+    if (start + 1 == end) {
+      return operands.get(start);
+    }
+    int mid = (end - start) / 2 + start;
+    SqlNode leftNode = createBalancedCall(op, pos, operands, start, mid);
+    SqlNode rightNode = createBalancedCall(op, pos, operands, mid, end);
+    return op.createCall(pos, leftNode, rightNode);
+  }
+
   //~ Inner Classes ----------------------------------------------------------
 
   /**

@@ -2422,6 +2422,30 @@ class RelToSqlConverterTest {
     assertThat(s, notNullValue()); // sufficient that conversion did not throw
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4249">[CALCITE-4249]
+   * JDBC adapter cannot translate NOT LIKE in join condition</a>. */
+  @Test void testJoinWithNotLikeConditionRel2Sql() {
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("EMP")
+            .scan("DEPT")
+            .join(JoinRelType.LEFT,
+                b.and(
+                    b.equals(b.field(2, 0, "DEPTNO"),
+                        b.field(2, 1, "DEPTNO")),
+                    b.not(
+                        b.call(SqlStdOperatorTable.LIKE,
+                            b.field(2, 1, "DNAME"),
+                            b.literal("ACCOUNTING")))))
+            .build();
+    final String expectedSql = "SELECT *\n"
+        + "FROM \"scott\".\"EMP\"\n"
+        + "LEFT JOIN \"scott\".\"DEPT\" "
+        + "ON \"EMP\".\"DEPTNO\" = \"DEPT\".\"DEPTNO\" "
+        + "AND \"DEPT\".\"DNAME\" NOT LIKE 'ACCOUNTING'";
+    relFn(relFn).ok(expectedSql);
+  }
+
   @Test void testCartesianProductWithInnerJoinSyntax() {
     String query = "select * from \"department\"\n"
         + "INNER JOIN \"employee\" ON TRUE";
