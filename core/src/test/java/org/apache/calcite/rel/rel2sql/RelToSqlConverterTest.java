@@ -2425,7 +2425,7 @@ class RelToSqlConverterTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4249">[CALCITE-4249]
    * JDBC adapter cannot translate NOT LIKE in join condition</a>. */
-  @Test void testJoinWithNotLikeConditionRel2Sql() {
+  @Test void testJoinOnNotLike() {
     final Function<RelBuilder, RelNode> relFn = b ->
         b.scan("EMP")
             .scan("DEPT")
