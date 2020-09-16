@@ -69,7 +69,7 @@ dependencies {
         apiv("de.bwaldvogel:mongo-java-server", "mongo-java-server")
         apiv("de.bwaldvogel:mongo-java-server-core", "mongo-java-server")
         apiv("de.bwaldvogel:mongo-java-server-memory-backend", "mongo-java-server")
-        apiv("io.airlift.tpch:tpch")
+        apiv("io.prestosql.tpch:tpch")
         apiv("javax.servlet:javax.servlet-api", "servlet")
         apiv("joda-time:joda-time")
         apiv("junit:junit", "junit4")
