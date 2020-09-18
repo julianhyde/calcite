@@ -145,7 +145,9 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
   Sql sql(String sql) {
     final Sql s =
         new Sql(tester, sql, null, null, ImmutableMap.of(), ImmutableList.of());
-    return s.withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
+    return s.withRelBuilderConfig(b ->
+        b.withPruneInputOfAggregate(false)
+            .withSimplify(false));
   }
 
   /** Allows fluent testing. */

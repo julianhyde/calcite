@@ -11618,7 +11618,7 @@ LogicalProject(JOB=[$1])
         <Resource name="sql">
             <![CDATA[select hiredate
 from sales.emp
-where sal is null and hiredate = current_timestamp
+where sal > 100 and hiredate = current_timestamp
 group by sal, hiredate
 having count(*) > 3]]>
         </Resource>
@@ -11628,7 +11628,7 @@ LogicalProject(HIREDATE=[$1])
   LogicalFilter(condition=[>($2, 3)])
     LogicalAggregate(group=[{0, 1}], agg#0=[COUNT()])
       LogicalProject(SAL=[$5], HIREDATE=[$4])
-        LogicalFilter(condition=[AND(IS NULL($5), =($4, CURRENT_TIMESTAMP))])
+        LogicalFilter(condition=[AND(>($5, 100), =($4, CURRENT_TIMESTAMP))])
           LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
         </Resource>
@@ -11639,7 +11639,7 @@ LogicalProject(HIREDATE=[$1])
     LogicalProject(SAL=[$0], HIREDATE=[CURRENT_TIMESTAMP], $f2=[$1])
       LogicalAggregate(group=[{0}], agg#0=[COUNT()])
         LogicalProject(SAL=[$5])
-          LogicalFilter(condition=[AND(IS NULL($5), =($4, CURRENT_TIMESTAMP))])
+          LogicalFilter(condition=[AND(>($5, 100), =($4, CURRENT_TIMESTAMP))])
             LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
         </Resource>
