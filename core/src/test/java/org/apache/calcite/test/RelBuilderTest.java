@@ -3711,10 +3711,9 @@ public class RelBuilderTest {
                   builder.field(1, "MYVIEW", "EMPNO"),
                   builder.field(1, "MYVIEW", "ENAME"))
               .build();
-      String expected =
-          "LogicalProject(EMPNO=[$0], ENAME=[$1])\n"
-              + "  LogicalFilter(condition=[=(1, 1)])\n"
-                  + "    LogicalTableScan(table=[[scott, EMP]])\n";
+      String expected = ""
+          + "LogicalProject(EMPNO=[$0], ENAME=[$1])\n"
+          + "  LogicalTableScan(table=[[scott, EMP]])\n";
       assertThat(node, hasTree(expected));
     }
   }

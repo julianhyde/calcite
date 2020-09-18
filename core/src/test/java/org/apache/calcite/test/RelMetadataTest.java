@@ -3133,7 +3133,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testNodeTypeCountFilterAggregateEmptyKey() {
-    final String sql = "select count(*) from emp where 1 = 0";
+    final String sql = "select count(*) from emp where deptno = 0";
     final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
     expected.put(TableScan.class, 1);
     expected.put(Project.class, 1);

@@ -1563,7 +1563,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
   @Test void testAllValueList() {
     final String sql = "select empno from emp where deptno > all (10, 20)";
-    sql(sql).expand(false).ok();
+    sql(sql).expand(false)
+        .withConfig(c ->
+            c.addRelBuilderConfigTransform(b -> b.withSimplify(false)))
+        .ok();
   }
 
   @Test void testSomeValueList() {

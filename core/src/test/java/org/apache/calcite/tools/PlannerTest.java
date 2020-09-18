@@ -75,6 +75,7 @@ import org.apache.calcite.sql.util.ListSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.RelBuilderTest;
 import org.apache.calcite.util.Optionality;
@@ -92,6 +93,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.test.RelMetadataTest.sortsAs;
 
@@ -134,7 +136,7 @@ class PlannerTest {
 
   @Test void testParseIdentifierMaxLengthWithDefault() {
     Assertions.assertThrows(SqlParseException.class, () -> {
-      Planner planner = getPlanner(null, SqlParser.config());
+      Planner planner = getPlanner(null);
       planner.parse("select name as "
           + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"");
     });
@@ -142,7 +144,7 @@ class PlannerTest {
 
   @Test void testParseIdentifierMaxLengthWithIncreased() throws Exception {
     Planner planner = getPlanner(null,
-        SqlParser.config().withIdentifierMaxLength(512));
+        b -> b.parserConfig(SqlParser.config().withIdentifierMaxLength(512)));
     planner.parse("select name as "
         + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"");
   }
@@ -263,20 +265,19 @@ class PlannerTest {
   }
 
   private Planner getPlanner(List<RelTraitDef> traitDefs, Program... programs) {
-    return getPlanner(traitDefs, SqlParser.Config.DEFAULT, programs);
+    return getPlanner(traitDefs, UnaryOperator.identity(), programs);
   }
 
   private Planner getPlanner(List<RelTraitDef> traitDefs,
-                             SqlParser.Config parserConfig,
-                             Program... programs) {
+      UnaryOperator<Frameworks.ConfigBuilder> transform,
+      Program... programs) {
     final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
-    final FrameworkConfig config = Frameworks.newConfigBuilder()
-        .parserConfig(parserConfig)
+    final Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
         .defaultSchema(
             CalciteAssert.addSchema(rootSchema, CalciteAssert.SchemaSpec.HR))
         .traitDefs(traitDefs)
-        .programs(programs)
-        .build();
+        .programs(programs);
+    final FrameworkConfig config = transform.apply(configBuilder).build();
     return Frameworks.getPlanner(config);
   }
 
@@ -301,7 +302,10 @@ class PlannerTest {
    * metadata. */
   private void checkMetadataPredicates(String sql,
       String expectedPredicates) throws Exception {
-    Planner planner = getPlanner(null);
+    Planner planner = getPlanner(null,
+        b -> b.sqlToRelConverterConfig(
+            SqlToRelConverter.config().addRelBuilderConfigTransform(
+                b2 -> b2.withSimplify(false))));
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode rel = planner.rel(validate).project();
@@ -472,8 +476,8 @@ class PlannerTest {
 
   private void checkUnionPruning(String sql, String plan, RelOptRule... extraRules)
       throws SqlParseException, ValidationException, RelConversionException {
-    ImmutableList.Builder<RelOptRule> rules = ImmutableList.<RelOptRule>builder().add(
-        PruneEmptyRules.UNION_INSTANCE,
+    final ImmutableList.Builder<RelOptRule> rules = ImmutableList.builder();
+    rules.add(PruneEmptyRules.UNION_INSTANCE,
         CoreRules.PROJECT_FILTER_VALUES_MERGE,
         EnumerableRules.ENUMERABLE_PROJECT_RULE,
         EnumerableRules.ENUMERABLE_FILTER_RULE,
@@ -481,7 +485,10 @@ class PlannerTest {
         EnumerableRules.ENUMERABLE_UNION_RULE);
     rules.add(extraRules);
     Program program = Programs.ofRules(rules.build());
-    Planner planner = getPlanner(null, program);
+    Planner planner = getPlanner(null, b ->
+        b.sqlToRelConverterConfig(SqlToRelConverter.config()
+            .withRelBuilderConfigTransform(c ->
+                c.withSimplify(false))), program);
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).project();
@@ -688,7 +695,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_WINDOW_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE,
             CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW);
-    Planner planner = getPlanner(null, SqlParser.config().withLex(Lex.JAVA),
+    Planner planner = getPlanner(null,
+        b -> b.parserConfig(SqlParser.config().withLex(Lex.JAVA)),
         Programs.of(ruleSet));
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
