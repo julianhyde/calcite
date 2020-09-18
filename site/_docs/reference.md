@@ -228,6 +228,7 @@ joinCondition:
 tableReference:
       tablePrimary
       [ FOR SYSTEM_TIME AS OF expression ]
+      [ pivot ]
       [ matchRecognize ]
       [ [ AS ] alias [ '(' columnAlias [, columnAlias ]* ')' ] ]
 
@@ -258,6 +259,27 @@ hintKVOption:
 optionValue:
       stringLiteral
   |   numericLiteral
+
+pivot:
+      PIVOT '('
+      pivotAgg [, pivotAgg ]*
+      FOR pivotList
+      IN '(' pivotExpr [, pivotExpr ]* ')'
+      ')'
+
+pivotAgg:
+      agg '(' [ ALL | DISTINCT ] value [, value ]* ')'
+      [ [ AS ] alias ]
+
+pivotList:
+      column
+   |  '(' column [, column ]* ')'
+
+pivotExpr:
+      { expr
+      | '(' expr [, expr ]* ')'
+      }
+      [ [ AS ] alias ]
 
 values:
       VALUES expression [, expression ]*

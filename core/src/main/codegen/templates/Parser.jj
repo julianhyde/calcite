@@ -2130,6 +2130,9 @@ SqlNode TableRef2(boolean lateral) :
             tableRef = Snapshot(tableRef)
         ]
         [
+            tableRef = Pivot(tableRef)
+        ]
+        [
             tableRef = MatchRecognize(tableRef)
         ]
     |
@@ -2809,6 +2812,33 @@ SqlSnapshot Snapshot(SqlNode tableRef) :
     e = Expression(ExprContext.ACCEPT_NON_QUERY) {
         return new SqlSnapshot(s.end(this), tableRef, e);
     }
+}
+
+/** Parses a PIVOT clause following a table expression. */
+SqlNode Pivot(SqlNode tableRef) :
+{
+    final Span s;
+    final Span s2;
+    final List<SqlNode> aggList = new ArrayList<SqlNode>();
+    final SqlNodeList axisList;
+    final SqlNodeList inList;
+}
+{
+    <PIVOT> { s = span(); } <LPAREN>
+    PivotAgg(aggList) ( <COMMA> PivotAgg(aggList) )*
+    <FOR> axisList = SimpleIdentifierOrList()
+    <IN> <LPAREN> { s2 = span(); }
+    inList = ExpressionCommaList(s2, ExprContext.ACCEPT_SUB_QUERY)
+    <RPAREN>
+    <RPAREN>
+    { return null; }
+}
+
+void PivotAgg(List<SqlNode> list) :
+{
+}
+{
+  {;}
 }
 
 /**
@@ -4911,6 +4941,28 @@ SqlNodeList ParenthesizedSimpleIdentifierList() :
     SimpleIdentifierCommaList(list)
     <RPAREN> {
         return new SqlNodeList(list, s.end(this));
+    }
+}
+
+/** List of simple identifiers in parentheses or one simple identifier.
+ *
+ * <ul>Examples:
+ * <li>{@code DEPTNO}
+ * <li>{@code (EMPNO, DEPTNO)}
+ * </ul>
+ */
+SqlNodeList SimpleIdentifierOrList() :
+{
+    SqlIdentifier id;
+    SqlNodeList list;
+}
+{
+    id = SimpleIdentifier() {
+        return new SqlNodeList(Collections.singletonList(id), id.getParserPosition());
+    }
+|
+    list = ParenthesizedSimpleIdentifierList() {
+        return list;
     }
 }
 
@@ -7391,6 +7443,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PERCENT_RANK: "PERCENT_RANK" >
 |   < PERIOD: "PERIOD" >
 |   < PERMUTE: "PERMUTE" >
+|   < PIVOT: "PIVOT" >
 |   < PLACING: "PLACING" >
 |   < PLAN: "PLAN" >
 |   < PLI: "PLI" >

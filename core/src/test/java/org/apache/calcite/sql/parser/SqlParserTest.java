@@ -7962,6 +7962,17 @@ public class SqlParserTest {
             + "VALUES (ROW(1, (CURRENT VALUE FOR `MY_SEQ`)))");
   }
 
+  @Test void testPivot() {
+    final String sql = "SELECT *\n"
+        + "FROM   (SELECT deptno, job, sal\n"
+        + "        FROM   emp)\n"
+        + "PIVOT  (SUM(sal) AS sum_sal, COUNT(*) AS count\n"
+        + "        FOR (job) IN ('CLERK', 'MANAGER' mgr, 'ANALYST' AS \"a\"))\n"
+        + "ORDER BY deptno";
+    final String expected = "";
+    sql(sql).ok(expected);
+  }
+
   @Test void testMatchRecognize1() {
     final String sql = "select *\n"
         + "  from t match_recognize\n"
