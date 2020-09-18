@@ -47,6 +47,7 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sample;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
@@ -1049,7 +1050,7 @@ public class SqlToRelConverter {
       r = filter;
     }
 
-    bb.setRoot(r, false);
+    bb.setRoot(r, r instanceof Values);
   }
 
   private void replaceSubQueries(

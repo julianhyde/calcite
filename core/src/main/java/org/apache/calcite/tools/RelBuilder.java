@@ -1220,10 +1220,15 @@ public class RelBuilder {
    * If the result is TRUE no filter is created. */
   public RelBuilder filter(Iterable<CorrelationId> variablesSet,
       Iterable<? extends RexNode> predicates) {
-    final RexNode simplifiedPredicates =
-        simplifier.simplifyFilterPredicates(predicates);
-    if (simplifiedPredicates == null) {
-      return empty();
+    final RexNode simplifiedPredicates;
+    if (config.simplify()) {
+      simplifiedPredicates =
+          simplifier.simplifyFilterPredicates(predicates);
+      if (simplifiedPredicates == null) {
+        return empty();
+      }
+    } else {
+      simplifiedPredicates = and(predicates);
     }
 
     if (!simplifiedPredicates.isAlwaysTrue()) {

@@ -2456,6 +2456,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .withRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS,
             CoreRules.FILTER_REDUCE_EXPRESSIONS,
             CoreRules.JOIN_REDUCE_EXPRESSIONS)
+        .withProperty(Hook.REL_BUILDER_SIMPLIFY, false)
         .check();
   }
 
@@ -3121,6 +3122,7 @@ class RelOptRulesTest extends RelOptTestBase {
             PruneEmptyRules.PROJECT_INSTANCE,
             PruneEmptyRules.JOIN_LEFT_INSTANCE,
             PruneEmptyRules.JOIN_RIGHT_INSTANCE)
+        .withProperty(Hook.REL_BUILDER_SIMPLIFY, false)
         .check();
   }
 
@@ -5571,7 +5573,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testAggregateDynamicFunction() {
     final String sql = "select hiredate\n"
         + "from sales.emp\n"
-        + "where sal is null and hiredate = current_timestamp\n"
+        + "where sal > 100 and hiredate = current_timestamp\n"
         + "group by sal, hiredate\n"
         + "having count(*) > 3";
     sql(sql).withRule(CoreRules.AGGREGATE_ANY_PULL_UP_CONSTANTS)
