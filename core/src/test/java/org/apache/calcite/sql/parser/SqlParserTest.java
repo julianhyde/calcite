@@ -408,6 +408,7 @@ public class SqlParserTest {
       "PERCENT_RANK",                                      "2011", "2014", "c",
       "PERIOD",                                                    "2014", "c",
       "PERMUTE",                                                           "c",
+      "PIVOT",                                                             "c",
       "PORTION",                                                   "2014", "c",
       "POSITION",                      "92",               "2011", "2014", "c",
       "POSITION_REGEX",                                    "2011", "2014", "c",

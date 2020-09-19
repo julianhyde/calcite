@@ -84,6 +84,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOrderBy;
+import org.apache.calcite.sql.SqlPivot;
 import org.apache.calcite.sql.SqlPostfixOperator;
 import org.apache.calcite.sql.SqlPrefixOperator;
 import org.apache.calcite.sql.SqlRowTypeNameSpec;
@@ -2831,14 +2832,29 @@ SqlNode Pivot(SqlNode tableRef) :
     inList = ExpressionCommaList(s2, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN>
     <RPAREN>
-    { return null; }
+    {
+        return new SqlPivot(s.end(this),
+            new SqlNodeList(aggList, SqlParserPos.sum(aggList)),
+            axisList, inList);
+    }
 }
 
 void PivotAgg(List<SqlNode> list) :
 {
+    final SqlNode e;
+    SqlIdentifier alias;
 }
 {
-  {;}
+    e = NamedFunctionCall()
+    (
+        [ <AS> ] alias = SimpleIdentifier() {
+            list.add(
+                SqlStdOperatorTable.AS.createCall(Span.of(e).end(this), e,
+                    alias));
+        }
+    |
+        { list.add(e); }
+    )
 }
 
 /**
