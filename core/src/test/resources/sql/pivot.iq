@@ -18,10 +18,12 @@
 !set outputformat oracle
 !use scott
 
+# TODO: Oracle allows "COUNT" to be unquoted: count
+
 SELECT *
 FROM   (SELECT deptno, job, sal
         FROM   "scott".emp)
-PIVOT  (SUM(sal) AS sum_sal, COUNT(*) AS count
+PIVOT  (SUM(sal) AS sum_sal, COUNT(*) AS "COUNT"
         FOR (job) IN ('CLERK', 'MANAGER' mgr, 'ANALYST' AS "a"))
 ORDER BY deptno;
 

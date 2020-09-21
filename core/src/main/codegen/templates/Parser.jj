@@ -2131,9 +2131,6 @@ SqlNode TableRef2(boolean lateral) :
             tableRef = Snapshot(tableRef)
         ]
         [
-            tableRef = Pivot(tableRef)
-        ]
-        [
             tableRef = MatchRecognize(tableRef)
         ]
     |
@@ -2179,6 +2176,9 @@ SqlNode TableRef2(boolean lateral) :
     |
         tableRef = ExtendedTableRef()
     )
+    [
+        tableRef = Pivot(tableRef)
+    ]
     [
         [ <AS> ] alias = SimpleIdentifier()
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
@@ -2386,24 +2386,23 @@ SqlNode ExplicitTable(SqlParserPos pos) :
  */
 SqlNode TableConstructor() :
 {
-    SqlNodeList rowConstructorList;
+    final List<SqlNode> rowConstructorList = new ArrayList<SqlNode>();
     final Span s;
 }
 {
     <VALUES> { s = span(); }
-    rowConstructorList = RowConstructorList(s)
+    RowConstructorList(rowConstructorList)
     {
         return SqlStdOperatorTable.VALUES.createCall(
-            s.end(this), rowConstructorList.toArray());
+            s.end(this), rowConstructorList);
     }
 }
 
 /**
  * Parses one or more rows in a VALUES expression.
  */
-SqlNodeList RowConstructorList(Span s) :
+void RowConstructorList(List<SqlNode> list) :
 {
-    List<SqlNode> list = new ArrayList<SqlNode>();
     SqlNode rowConstructor;
 }
 {
@@ -2412,9 +2411,6 @@ SqlNodeList RowConstructorList(Span s) :
         LOOKAHEAD(2)
         <COMMA> rowConstructor = RowConstructor() { list.add(rowConstructor); }
     )*
-    {
-        return new SqlNodeList(list, s.end(this));
-    }
 }
 
 /**
@@ -2561,26 +2557,32 @@ SqlNodeList ExpressionCommaList(
     final Span s,
     ExprContext exprContext) :
 {
-    List<SqlNode> list;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+}
+{
+    ExpressionCommaList2(list, exprContext) {
+        return new SqlNodeList(list, s.addAll(list).pos());
+    }
+}
+
+/**
+ * Parses a list of expressions separated by commas,
+ * appending expressions to a given list.
+ */
+void ExpressionCommaList2(List<SqlNode> list, ExprContext exprContext) :
+{
     SqlNode e;
 }
 {
-    e = Expression(exprContext)
-    {
-        list = startList(e);
-    }
+    e = Expression(exprContext) { list.add(e); }
     (
         // NOTE jvs 6-Feb-2004:  See comments at top of file for why
         // hint is necessary here.
         LOOKAHEAD(2)
-        <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
-        {
+        <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
             list.add(e);
         }
     )*
-    {
-        return new SqlNodeList(list, s.addAll(list).pos());
-    }
 }
 
 /**
@@ -2821,19 +2823,23 @@ SqlNode Pivot(SqlNode tableRef) :
     final Span s;
     final Span s2;
     final List<SqlNode> aggList = new ArrayList<SqlNode>();
+    final List<SqlNode> valueList = new ArrayList<SqlNode>();
     final SqlNodeList axisList;
     final SqlNodeList inList;
 }
 {
-    <PIVOT> { s = span(); } <LPAREN>
+    <PIVOT> { s = span(); }
+    <LPAREN>
     PivotAgg(aggList) ( <COMMA> PivotAgg(aggList) )*
     <FOR> axisList = SimpleIdentifierOrList()
     <IN> <LPAREN> { s2 = span(); }
-    inList = ExpressionCommaList(s2, ExprContext.ACCEPT_SUB_QUERY)
-    <RPAREN>
+    [ PivotValue(valueList) ( <COMMA> PivotValue(valueList) )* ]
+    <RPAREN> {
+        inList = new SqlNodeList(valueList, s2.end(this));
+    }
     <RPAREN>
     {
-        return new SqlPivot(s.end(this),
+        return new SqlPivot(s.end(this), tableRef,
             new SqlNodeList(aggList, SqlParserPos.sum(aggList)),
             axisList, inList);
     }
@@ -2842,7 +2848,7 @@ SqlNode Pivot(SqlNode tableRef) :
 void PivotAgg(List<SqlNode> list) :
 {
     final SqlNode e;
-    SqlIdentifier alias;
+    final SqlIdentifier alias;
 }
 {
     e = NamedFunctionCall()
@@ -2854,6 +2860,25 @@ void PivotAgg(List<SqlNode> list) :
         }
     |
         { list.add(e); }
+    )
+}
+
+void PivotValue(List<SqlNode> list) :
+{
+    final SqlNode e;
+    final SqlNodeList tuple;
+    final SqlIdentifier alias;
+}
+{
+    e = RowConstructor() { tuple = SqlParserUtil.stripRow(e); }
+    (
+        [ <AS> ] alias = SimpleIdentifier() {
+            list.add(
+                SqlStdOperatorTable.AS.createCall(Span.of(tuple).end(this),
+                    tuple, alias));
+        }
+    |
+        { list.add(tuple); }
     )
 }
 

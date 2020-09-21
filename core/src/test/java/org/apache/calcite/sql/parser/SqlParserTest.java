@@ -408,7 +408,6 @@ public class SqlParserTest {
       "PERCENT_RANK",                                      "2011", "2014", "c",
       "PERIOD",                                                    "2014", "c",
       "PERMUTE",                                                           "c",
-      "PIVOT",                                                             "c",
       "PORTION",                                                   "2014", "c",
       "POSITION",                      "92",               "2011", "2014", "c",
       "POSITION_REGEX",                                    "2011", "2014", "c",
@@ -7964,13 +7963,81 @@ public class SqlParserTest {
   }
 
   @Test void testPivot() {
+    final String sql = "SELECT * FROM emp\n"
+        + "PIVOT (sum(sal) AS sal FOR job in ('CLERK' AS c))";
+    final String expected = "SELECT *\n"
+        + "FROM `EMP` PIVOT\n"
+        + "(SUM(`SAL`) AS `SAL` FOR `JOB` IN ('CLERK' AS `C`)\n"
+        + ")";
+    sql(sql).ok(expected);
+
+    // As previous, but parentheses around singleton column.
+    final String sql2 = "SELECT * FROM emp\n"
+        + "PIVOT (sum(sal) AS sal FOR (job) in ('CLERK' AS c))";
+    sql(sql2).ok(expected);
+  }
+
+  /** As {@link #testPivot()} but composite FOR and two composite values. */
+  @Test void testPivotComposite() {
+    final String sql = "SELECT * FROM emp\n"
+        + "PIVOT (sum(sal) AS sal FOR (job, deptno) IN\n"
+        + " (('CLERK', 10) AS c10, ('MANAGER', 20) AS m20))";
+    final String expected = "SELECT *\n"
+        + "FROM `EMP` PIVOT\n"
+        + "(SUM(`SAL`) AS `SAL` FOR (`JOB`, `DEPTNO`)"
+        + " IN (('CLERK', 10) AS `C10`, ('MANAGER', 20) AS `M20`)\n"
+        + ")";
+    sql(sql).ok(expected);
+  }
+
+  /** Pivot with no values. */
+  @Test void testPivotWithoutValues() {
+    final String sql = "SELECT * FROM emp\n"
+        + "PIVOT (sum(sal) AS sal FOR job IN ())";
+    final String expected = "SELECT *\n"
+        + "FROM `EMP` PIVOT\n"
+        + "(SUM(`SAL`) AS `SAL` FOR `JOB` IN ()\n"
+        + ")";
+    sql(sql).ok(expected);
+  }
+
+  /** In PIVOT, FOR clause must contain only simple identifiers. */
+  @Test void testPivotErrorExpressionInFor() {
+    final String sql = "SELECT * FROM emp\n"
+        + "PIVOT (sum(sal) AS sal FOR deptno ^-^10 IN (10, 20)";
+    sql(sql).fails("(?s)Encountered \"-\" at .*");
+  }
+
+  /** As {@link #testPivotErrorExpressionInFor()} but more than one column. */
+  @Test void testPivotErrorExpressionInCompositeFor() {
+    final String sql = "SELECT * FROM emp\n"
+        + "PIVOT (sum(sal) AS sal FOR (job, deptno ^-^10)\n"
+        + " IN (('CLERK', 10), ('MANAGER', 20))";
+    sql(sql).fails("(?s)Encountered \"-\" at .*");
+  }
+
+  /** More complex PIVOT case (multiple aggregates, composite FOR, multiple
+   * values with and without aliases). */
+  @Test void testPivot2() {
     final String sql = "SELECT *\n"
-        + "FROM   (SELECT deptno, job, sal\n"
-        + "        FROM   emp)\n"
-        + "PIVOT  (SUM(sal) AS sum_sal, COUNT(*) AS count\n"
-        + "        FOR (job) IN ('CLERK', 'MANAGER' mgr, 'ANALYST' AS \"a\"))\n"
+        + "FROM (SELECT deptno, job, sal\n"
+        + "    FROM   emp)\n"
+        + "PIVOT (SUM(sal) AS sum_sal, COUNT(*) AS \"COUNT\"\n"
+        + "    FOR (job, deptno)\n"
+        + "    IN (('CLERK', 10),\n"
+        + "        ('MANAGER', 20) mgr20,\n"
+        + "        ('ANALYST', 10) AS \"a10\"))\n"
         + "ORDER BY deptno";
-    final String expected = "";
+    final String expected = "SELECT *\n"
+        + "FROM (SELECT `DEPTNO`, `JOB`, `SAL`\n"
+        + "FROM `EMP`) PIVOT\n"
+        + "(SUM(`SAL`) AS `SUM_SAL`, COUNT(*) AS `COUNT` "
+        + "FOR (`JOB`, `DEPTNO`) "
+        + "IN (('CLERK', 10),"
+        + " ('MANAGER', 20) AS `MGR20`,"
+        + " ('ANALYST', 10) AS `a10`)\n"
+        + ")\n"
+        + "ORDER BY `DEPTNO`";
     sql(sql).ok(expected);
   }
 
@@ -8056,7 +8123,7 @@ public class SqlParserTest {
 
   @Test void testMatchRecognize5() {
     final String sql = "select *\n"
-        + "  from t match_recognize\n"
+        + "  from (select * from t) match_recognize\n"
         + "  (\n"
         + "    pattern (strt down* up?)\n"
         + "    define\n"
@@ -8064,7 +8131,8 @@ public class SqlParserTest {
         + "      up as up.price > prev(up.price)\n"
         + "  ) mr";
     final String expected = "SELECT *\n"
-        + "FROM `T` MATCH_RECOGNIZE(\n"
+        + "FROM (SELECT *\n"
+        + "FROM `T`) MATCH_RECOGNIZE(\n"
         + "PATTERN (((`STRT` (`DOWN` *)) (`UP` ?)))\n"
         + "DEFINE "
         + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
