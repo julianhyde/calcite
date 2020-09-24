@@ -896,7 +896,7 @@ public class RelBuilder {
   public AggCall aggregateCall(AggregateCall a) {
     return aggregateCall(a.getAggregation(), a.isDistinct(), a.isApproximate(),
         a.ignoreNulls(), a.filterArg < 0 ? null : field(a.filterArg),
-        fields(a.collation.getKeys()), a.name, fields(a.getArgList()));
+        fields(a.collation), a.name, fields(a.getArgList()));
   }
 
   /** Creates a call to an aggregate function as a copy of an
@@ -905,7 +905,7 @@ public class RelBuilder {
     return aggregateCall(a.getAggregation(), a.isDistinct(), a.isApproximate(),
         a.ignoreNulls(),
         a.filterArg < 0 ? null : field(Mappings.apply(mapping, a.filterArg)),
-        fields(a.collation.getKeys()), a.name,
+        fields(RexUtil.apply(mapping, a.collation)), a.name,
         fields(Mappings.apply2(mapping, a.getArgList())));
   }
 
