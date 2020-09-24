@@ -18,10 +18,20 @@ package org.apache.calcite.sql;
 
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.sql.util.SqlVisitor;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableNullableList;
+import org.apache.calcite.util.Util;
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 /**
@@ -36,7 +46,7 @@ import javax.annotation.Nonnull;
  */
 public class SqlPivot extends SqlCall {
 
-  public final SqlNode query;
+  public SqlNode query;
   public final SqlNodeList aggList;
   public final SqlNodeList axisList;
   public final SqlNodeList inList;
@@ -64,19 +74,30 @@ public class SqlPivot extends SqlCall {
     return ImmutableNullableList.of(query, aggList, axisList, inList);
   }
 
+  @Override public void setOperand(int i, SqlNode operand) {
+    // Only 'query' is mutable. (It is required for validation.)
+    switch (i) {
+    case 0:
+      query = operand;
+      break;
+    default:
+      super.setOperand(i, operand);
+    }
+  }
+
   @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
     query.unparse(writer, leftPrec, 0);
     writer.keyword("PIVOT");
-    writer.sep("(");
+    final SqlWriter.Frame frame = writer.startList("(", ")");
     aggList.unparse(writer, 0, 0);
-    writer.keyword("FOR");
+    writer.sep("FOR");
     // force parentheses if there is more than one axis
     final int leftPrec1 = axisList.size() > 1 ? 1 : 0;
     axisList.unparse(writer, leftPrec1, 0);
-    writer.keyword("IN");
+    writer.sep("IN");
     writer.list(SqlWriter.FrameTypeEnum.PARENTHESES, SqlWriter.COMMA,
         stripList(inList));
-    writer.sep(")");
+    writer.endList(frame);
   }
 
   private static SqlNodeList stripList(SqlNodeList list) {
@@ -102,6 +123,69 @@ public class SqlPivot extends SqlCall {
       }
       return e;
     }
+  }
+
+  /** Returns the aggregate list as (alias, call) pairs.
+   * If there is no 'AS', alias is null. */
+  public void forEachAgg(BiConsumer<String, SqlCall> consumer) {
+    for (SqlNode agg : aggList) {
+      final SqlCall call = (SqlCall) SqlUtil.stripAs(agg);
+      final String alias = SqlValidatorUtil.getAlias(agg, -1);
+      consumer.accept(alias, call);
+    }
+  }
+
+  /** Returns the value list as (alias, node list) pairs. */
+  public void forEachNameValues(BiConsumer<String, SqlNodeList> consumer) {
+    for (SqlNode node : inList) {
+      String alias;
+      if (node.getKind() == SqlKind.AS) {
+        final List<SqlNode> operands = ((SqlCall) node).getOperandList();
+        alias = ((SqlIdentifier) operands.get(1)).getSimple();
+        node = operands.get(0);
+      } else {
+        alias = pivotAlias(node);
+      }
+      consumer.accept(alias, toNodes(node));
+    }
+  }
+
+  private static String pivotAlias(SqlNode node) {
+    if (node instanceof SqlNodeList) {
+      return ((SqlNodeList) node).getList().stream()
+          .map(SqlPivot::pivotAlias).collect(Collectors.joining("_"));
+    }
+    return node.toString();
+  }
+
+  /** Converts a SqlNodeList to a list, and other nodes to a singleton list. */
+  private static SqlNodeList toNodes(SqlNode node) {
+    if (node instanceof SqlNodeList) {
+      return (SqlNodeList) node;
+    } else {
+      return new SqlNodeList(ImmutableList.of(node), node.getParserPosition());
+    }
+  }
+
+  /** Returns the set of columns that are referenced as an argument to an
+   * aggregate function or in a column in the {@code FOR} clause. All columns
+   * that are not used will become "GROUP BY" columns. */
+  public Set<String> usedColumnNames() {
+    final Set<String> columnNames = new HashSet<>();
+    final SqlVisitor<Void> nameCollector = new SqlBasicVisitor<Void>() {
+      @Override public Void visit(SqlIdentifier id) {
+        columnNames.add(Util.last(id.names));
+        return super.visit(id);
+      }
+    };
+    for (SqlNode agg : aggList) {
+      final SqlCall call = (SqlCall) SqlUtil.stripAs(agg);
+      call.accept(nameCollector);
+    }
+    for (SqlNode axis : axisList) {
+      axis.accept(nameCollector);
+    }
+    return columnNames;
   }
 
   /** Pivot operator. */

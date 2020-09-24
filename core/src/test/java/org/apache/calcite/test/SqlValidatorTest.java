@@ -1788,6 +1788,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql(sql).type(type);
   }
 
+  @Test void testPivotAggAliases() {
+    final String sql = "SELECT *\n"
+        + "FROM (SELECT deptno, job, sal FROM emp)\n"
+        + "PIVOT (SUM(sal) AS ss, MIN(job)\n"
+        + "    FOR deptno IN (10 AS ten, 20))";
+    final String type = "RecordType(INTEGER TEN_SS, VARCHAR(10) TEN, "
+        + "INTEGER 20_SS, VARCHAR(10) 20) NOT NULL";
+    sql(sql).type(type);
+  }
+
   @Test void testPivotNoValues() {
     final String sql = "SELECT *\n"
         + "FROM (SELECT deptno, sal, job FROM emp)\n"

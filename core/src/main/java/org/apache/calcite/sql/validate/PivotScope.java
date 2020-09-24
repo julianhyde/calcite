@@ -32,6 +32,13 @@ public class PivotScope extends ListScope {
     this.pivot = pivot;
   }
 
+  /** By analogy with
+   * {@link org.apache.calcite.sql.validate.ListScope#getChildren()}, but this
+   * scope only has one namespace, and it is anonymous. */
+  public SqlValidatorNamespace getChild() {
+    return validator.getNamespace(pivot.query);
+  }
+
   @Override public SqlPivot getNode() {
     return pivot;
   }

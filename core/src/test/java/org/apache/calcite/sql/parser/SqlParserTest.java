@@ -7966,9 +7966,8 @@ public class SqlParserTest {
     final String sql = "SELECT * FROM emp\n"
         + "PIVOT (sum(sal) AS sal FOR job in ('CLERK' AS c))";
     final String expected = "SELECT *\n"
-        + "FROM `EMP` PIVOT\n"
-        + "(SUM(`SAL`) AS `SAL` FOR `JOB` IN ('CLERK' AS `C`)\n"
-        + ")";
+        + "FROM `EMP` PIVOT (SUM(`SAL`) AS `SAL`"
+        + " FOR `JOB` IN ('CLERK' AS `C`))";
     sql(sql).ok(expected);
 
     // As previous, but parentheses around singleton column.
@@ -7983,10 +7982,8 @@ public class SqlParserTest {
         + "PIVOT (sum(sal) AS sal FOR (job, deptno) IN\n"
         + " (('CLERK', 10) AS c10, ('MANAGER', 20) AS m20))";
     final String expected = "SELECT *\n"
-        + "FROM `EMP` PIVOT\n"
-        + "(SUM(`SAL`) AS `SAL` FOR (`JOB`, `DEPTNO`)"
-        + " IN (('CLERK', 10) AS `C10`, ('MANAGER', 20) AS `M20`)\n"
-        + ")";
+        + "FROM `EMP` PIVOT (SUM(`SAL`) AS `SAL` FOR (`JOB`, `DEPTNO`)"
+        + " IN (('CLERK', 10) AS `C10`, ('MANAGER', 20) AS `M20`))";
     sql(sql).ok(expected);
   }
 
@@ -7995,9 +7992,7 @@ public class SqlParserTest {
     final String sql = "SELECT * FROM emp\n"
         + "PIVOT (sum(sal) AS sal FOR job IN ())";
     final String expected = "SELECT *\n"
-        + "FROM `EMP` PIVOT\n"
-        + "(SUM(`SAL`) AS `SAL` FOR `JOB` IN ()\n"
-        + ")";
+        + "FROM `EMP` PIVOT (SUM(`SAL`) AS `SAL` FOR `JOB` IN ())";
     sql(sql).ok(expected);
   }
 
@@ -8030,13 +8025,11 @@ public class SqlParserTest {
         + "ORDER BY deptno";
     final String expected = "SELECT *\n"
         + "FROM (SELECT `DEPTNO`, `JOB`, `SAL`\n"
-        + "FROM `EMP`) PIVOT\n"
-        + "(SUM(`SAL`) AS `SUM_SAL`, COUNT(*) AS `COUNT` "
+        + "FROM `EMP`) PIVOT (SUM(`SAL`) AS `SUM_SAL`, COUNT(*) AS `COUNT` "
         + "FOR (`JOB`, `DEPTNO`) "
         + "IN (('CLERK', 10),"
         + " ('MANAGER', 20) AS `MGR20`,"
-        + " ('ANALYST', 10) AS `a10`)\n"
-        + ")\n"
+        + " ('ANALYST', 10) AS `a10`))\n"
         + "ORDER BY `DEPTNO`";
     sql(sql).ok(expected);
   }

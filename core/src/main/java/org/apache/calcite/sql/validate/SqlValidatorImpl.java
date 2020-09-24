@@ -5401,32 +5401,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // where k1, ... kN are columns that are not referenced as an argument to
     // an aggregate or as an axis.
 
-    // Columns that have been seen as arguments to aggregates or as axes
-    // do not appear in the output.
-    final Set<String> columnNames = new HashSet<>();
-    final SqlVisitor<Void> nameCollector = new SqlBasicVisitor<Void>() {
-      @Override public Void visit(SqlIdentifier id) {
-        columnNames.add(Util.last(id.names));
-        return super.visit(id);
-      }
-    };
-
     // Aggregates, e.g. "PIVOT (sum(x) AS sum_x, count(*) AS c)"
     final List<Pair<String, RelDataType>> aggNames = new ArrayList<>();
-    Ord.forEach(pivot.aggList, (agg, i) -> {
-      final SqlCall call = (SqlCall) SqlUtil.stripAs(agg);
-      final String alias = deriveAlias(agg, i);
+    pivot.forEachAgg((alias, call) -> {
       call.validate(this, scope);
       final RelDataType type = deriveType(scope, call);
       aggNames.add(Pair.of(alias, type));
-      call.accept(nameCollector);
     });
 
     // Axes, e.g. "FOR (JOB, DEPTNO)"
     final List<RelDataType> axisTypes = new ArrayList<>();
     final List<SqlIdentifier> axisIdentifiers = new ArrayList<>();
     for (SqlNode axis : pivot.axisList) {
-      axis.accept(nameCollector);
       SqlIdentifier identifier = (SqlIdentifier) axis;
       identifier.validate(this, scope);
       final RelDataType type = deriveType(scope, identifier);
@@ -5434,31 +5420,24 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       axisIdentifiers.add(identifier);
     }
 
+    // Columns that have been seen as arguments to aggregates or as axes
+    // do not appear in the output.
+    final Set<String> columnNames = pivot.usedColumnNames();
     final RelDataTypeFactory.Builder typeBuilder = typeFactory.builder();
-    scope.getChildren().get(0).getRowType().getFieldList().forEach(field -> {
+    scope.getChild().getRowType().getFieldList().forEach(field -> {
       if (!columnNames.contains(field.getName())) {
         typeBuilder.add(field);
       }
     });
 
     // Values, e.g. "IN (('CLERK', 10) AS c10, ('MANAGER, 20) AS m20)"
-    for (SqlNode node : pivot.inList) {
-      final String alias;
-      if (node.getKind() == SqlKind.AS) {
-        final List<SqlNode> operands = ((SqlCall) node).getOperandList();
-        alias = ((SqlIdentifier) operands.get(1)).getSimple();
-        node = operands.get(0);
-      } else {
-        // Reasonably close to
-        alias = pivotAlias(node);
-      }
-      final List<SqlNode> nodes = toNodes(node);
-      if (nodes.size() != axisTypes.size()) {
-        throw newValidationError(node, null); // value count mismatch
+    pivot.forEachNameValues((alias, nodeList) -> {
+      if (nodeList.size() != axisTypes.size()) {
+        throw newValidationError(nodeList, null); // value count mismatch
       }
       final SqlOperandTypeChecker typeChecker =
           OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
-      Pair.forEach(axisIdentifiers, nodes, (identifier, subNode) -> {
+      Pair.forEach(axisIdentifiers, nodeList, (identifier, subNode) -> {
         subNode.validate(this, scope);
         typeChecker.checkOperandTypes(
             new SqlCallBinding(this, scope,
@@ -5466,29 +5445,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     subNode.getParserPosition(), identifier, subNode)),
             true);
       });
-      Pair.forEach(aggNames, (name, type) ->
-          typeBuilder.add(alias + "_" + name, type));
-    }
+      Pair.forEach(aggNames, (aggAlias, aggType) ->
+          typeBuilder.add(aggAlias == null ? alias : alias + "_" + aggAlias,
+              aggType));
+    });
 
     final RelDataType rowType = typeBuilder.build();
     ns.setType(rowType);
-  }
-
-  private String pivotAlias(SqlNode node) {
-    if (node instanceof SqlNodeList) {
-      return ((SqlNodeList) node).getList().stream()
-          .map(this::pivotAlias).collect(Collectors.joining("_"));
-    }
-    return node.toString();
-  }
-
-  /** Converts a SqlNodeList to a list, and other nodes to a singleton list. */
-  private List<SqlNode> toNodes(SqlNode node) {
-    if (node instanceof SqlNodeList) {
-      return ((SqlNodeList) node).getList();
-    } else {
-      return ImmutableList.of(node);
-    }
   }
 
   /** Returns the alias of a "expr AS alias" expression. */
