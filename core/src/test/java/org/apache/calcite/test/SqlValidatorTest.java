@@ -1830,11 +1830,14 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql(sql).fails("Column 'INVALID' not found in any table");
   }
 
-  @Disabled // TODO
   @Test void testPivotMustBeAgg() {
     final String sql = "SELECT * FROM emp\n"
-        + "PIVOT (sal + 1 AS sal FOR job in ('CLERK' AS c, 'MANAGER'))";
-    sql(sql).fails("must be agg");
+        + "PIVOT (sal ^+^ 1 AS sal1 FOR job in ('CLERK' AS c, 'MANAGER'))";
+    sql(sql).fails("(?s).*Encountered \"\\+\" at .*");
+
+    final String sql2 = "SELECT * FROM emp\n"
+        + "PIVOT (log(sal) AS logSal FOR job in ('CLERK' AS c, 'MANAGER'))";
+    sql(sql2).fails("(?s).*Encountered \"\\+\" at .*");
   }
 
   /** Tests an expression as argument to an aggregate function in a PIVOT.
