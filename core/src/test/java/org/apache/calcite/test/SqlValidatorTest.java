@@ -1837,6 +1837,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql(sql).fails("must be agg");
   }
 
+  /** Tests an expression as argument to an aggregate function in a PIVOT.
+   * Both of the columns referenced ({@code sum} and {@code deptno}) are removed
+   * from the implicit GROUP BY. */
+  @Test void testPivotAggExpression() {
+    final String sql = "SELECT * FROM (SELECT sal, deptno, job, mgr FROM Emp)\n"
+        + "PIVOT (sum(sal + deptno + 1)\n"
+        + "   FOR job in ('CLERK' AS c, 'ANALYST' AS a))";
+    sql(sql).type("RecordType(INTEGER MGR, INTEGER C, INTEGER A) NOT NULL");
+  }
+
   @Test void testMatchRecognizeWithDistinctAggregation() {
     final String sql = "SELECT *\n"
         + "FROM emp\n"

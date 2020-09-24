@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-!set outputformat oracle
+!set outputformat mysql
 !use scott
 
 # TODO: Oracle allows "COUNT" to be unquoted: count
@@ -26,12 +26,14 @@ FROM   (SELECT deptno, job, sal
 PIVOT  (SUM(sal) AS sum_sal, COUNT(*) AS "COUNT"
         FOR (job) IN ('CLERK', 'MANAGER' mgr, 'ANALYST' AS "a"))
 ORDER BY deptno;
-
-DEPTNO 'CLERK'_SUM_SAL 'CLERK'_COUNT MGR_SUM_SAL MGR_COUNT a_SUM_SAL a_COUNT
------- --------------- ------------- ----------- --------- --------- -------
-    10         1300.00             1     2450.00         1                 0
-    20         1900.00             2     2975.00         1   6000.00       2
-    30          950.00             1     2850.00         1                 0
++--------+-----------------+---------------+-------------+-----------+-----------+---------+
+| DEPTNO | 'CLERK'_SUM_SAL | 'CLERK'_COUNT | MGR_SUM_SAL | MGR_COUNT | a_SUM_SAL | a_COUNT |
++--------+-----------------+---------------+-------------+-----------+-----------+---------+
+|     10 |         1300.00 |             1 |     2450.00 |         1 |           |       0 |
+|     20 |         1900.00 |             2 |     2975.00 |         1 |   6000.00 |       2 |
+|     30 |          950.00 |             1 |     2850.00 |         1 |           |       0 |
++--------+-----------------+---------------+-------------+-----------+-----------+---------+
+(3 rows)
 
 !ok
 
@@ -59,14 +61,16 @@ ORDER BY deptno;
 SELECT *
 FROM (SELECT job, deptno FROM emp)
 PIVOT (COUNT(*) AS "COUNT" FOR deptno IN (10, 50, 20));
-
-JOB       10_COUNT 50_COUNT 20_COUNT
---------- -------- -------- --------
-ANALYST          0        0        2
-CLERK            1        0        2
-MANAGER          1        0        1
-PRESIDENT        1        0        0
-SALESMAN         0        0        0
++-----------+----------+----------+----------+
+| JOB       | 10_COUNT | 50_COUNT | 20_COUNT |
++-----------+----------+----------+----------+
+| ANALYST   |        0 |        0 |        2 |
+| CLERK     |        1 |        0 |        2 |
+| MANAGER   |        1 |        0 |        1 |
+| PRESIDENT |        1 |        0 |        0 |
+| SALESMAN  |        0 |        0 |        0 |
++-----------+----------+----------+----------+
+(5 rows)
 
 !ok
 
@@ -75,13 +79,15 @@ SELECT *
 FROM (SELECT job, deptno FROM emp)
 PIVOT (COUNT(*) AS "COUNT" FOR deptno IN (10, 50, 20)) AS e
 WHERE e.job <> 'MANAGER';
-
-JOB       10_COUNT 50_COUNT 20_COUNT
---------- -------- -------- --------
-ANALYST          0        0        2
-CLERK            1        0        2
-PRESIDENT        1        0        0
-SALESMAN         0        0        0
++-----------+----------+----------+----------+
+| JOB       | 10_COUNT | 50_COUNT | 20_COUNT |
++-----------+----------+----------+----------+
+| ANALYST   |        0 |        0 |        2 |
+| CLERK     |        1 |        0 |        2 |
+| PRESIDENT |        1 |        0 |        0 |
+| SALESMAN  |        0 |        0 |        0 |
++-----------+----------+----------+----------+
+(4 rows)
 
 !ok
 
@@ -91,13 +97,15 @@ FROM (SELECT job, deptno FROM emp)
 PIVOT (COUNT(*) AS "COUNT" FOR deptno IN (10, 50, 20)) AS e
 WHERE e.job <> 'MANAGER'
 GROUP BY job;
-
-JOB       SUM10 SUM20
---------- ----- -----
-ANALYST       0     2
-CLERK         1     2
-PRESIDENT     1     0
-SALESMAN      0     0
++-----------+-------+-------+
+| JOB       | SUM10 | SUM20 |
++-----------+-------+-------+
+| ANALYST   |     0 |     2 |
+| CLERK     |     1 |     2 |
+| PRESIDENT |     1 |     0 |
+| SALESMAN  |     0 |     0 |
++-----------+-------+-------+
+(4 rows)
 
 !ok
 
@@ -108,17 +116,18 @@ PIVOT (SUM(sal) AS ss, COUNT(*) AS c
    FOR (job, deptno)
    IN (('CLERK', 20) AS c20, ('MANAGER', 10) AS m10))
 ORDER BY 1 NULLS FIRST;
-MGR  C20_SS  C20_C M10_SS  M10_C
----- ------- ----- ------- -----
-                 0             0
-7566             0             0
-7698             0             0
-7782             0             0
-7788 1100.00     1             0
-7839             0 2450.00     1
-7902  800.00     1             0
-
-7 rows selected.
++------+---------+-------+---------+-------+
+| MGR  | C20_SS  | C20_C | M10_SS  | M10_C |
++------+---------+-------+---------+-------+
+|      |         |     0 |         |     0 |
+| 7566 |         |     0 |         |     0 |
+| 7698 |         |     0 |         |     0 |
+| 7782 |         |     0 |         |     0 |
+| 7788 | 1100.00 |     1 |         |     0 |
+| 7839 |         |     0 | 2450.00 |     1 |
+| 7902 |  800.00 |     1 |         |     0 |
++------+---------+-------+---------+-------+
+(7 rows)
 
 !ok
 
@@ -131,17 +140,18 @@ SELECT mgr,
 FROM emp
 GROUP BY mgr
 ORDER BY 1 NULLS FIRST;
-MGR  C20_SS  C20_C M10_SS  M10_C
----- ------- ----- ------- -----
-                 0             0
-7566             0             0
-7698             0             0
-7782             0             0
-7788 1100.00     1             0
-7839             0 2450.00     1
-7902  800.00     1             0
-
-7 rows selected.
++------+---------+-------+---------+-------+
+| MGR  | C20_SS  | C20_C | M10_SS  | M10_C |
++------+---------+-------+---------+-------+
+|      |         |     0 |         |     0 |
+| 7566 |         |     0 |         |     0 |
+| 7698 |         |     0 |         |     0 |
+| 7782 |         |     0 |         |     0 |
+| 7788 | 1100.00 |     1 |         |     0 |
+| 7839 |         |     0 | 2450.00 |     1 |
+| 7902 |  800.00 |     1 |         |     0 |
++------+---------+-------+---------+-------+
+(7 rows)
 
 !ok
 
@@ -154,17 +164,18 @@ SELECT mgr,
 FROM emp
 GROUP BY mgr
 ORDER BY 1 NULLS FIRST;
-MGR  C20_SS  C20_C M10_SS  M10_C
----- ------- ----- ------- -----
-                 0             0
-7566             0             0
-7698             0             0
-7782             0             0
-7788 1100.00     1             0
-7839             0 2450.00     1
-7902  800.00     1             0
-
-7 rows selected.
++------+---------+-------+---------+-------+
+| MGR  | C20_SS  | C20_C | M10_SS  | M10_C |
++------+---------+-------+---------+-------+
+|      |         |     0 |         |     0 |
+| 7566 |         |     0 |         |     0 |
+| 7698 |         |     0 |         |     0 |
+| 7782 |         |     0 |         |     0 |
+| 7788 | 1100.00 |     1 |         |     0 |
+| 7839 |         |     0 | 2450.00 |     1 |
+| 7902 |  800.00 |     1 |         |     0 |
++------+---------+-------+---------+-------+
+(7 rows)
 
 !ok
 
@@ -174,11 +185,14 @@ SELECT *
 FROM (SELECT deptno, mgr FROM   emp)
 PIVOT (COUNT(*) AS c FOR mgr IN (7839, null, 7698))
 ORDER BY deptno;
-DEPTNO 7839_C NULL_C 7698_C
------- ------ ------ ------
-    10      1      0      0
-    20      1      0      0
-    30      1      0      5
++--------+--------+--------+--------+
+| DEPTNO | 7839_C | NULL_C | 7698_C |
++--------+--------+--------+--------+
+|     10 |      1 |      0 |      0 |
+|     20 |      1 |      0 |      0 |
+|     30 |      1 |      0 |      5 |
++--------+--------+--------+--------+
+(3 rows)
 
 !ok
 
@@ -186,13 +200,16 @@ DEPTNO 7839_C NULL_C 7698_C
 SELECT *
 FROM   (SELECT job, deptno FROM emp)
 PIVOT  (COUNT(*) AS c FOR (deptno,deptno) IN ((10,10), (30,20)));
-JOB       10_10_C 30_20_C
---------- ------- -------
-CLERK           1       0
-SALESMAN        0       0
-PRESIDENT       1       0
-MANAGER         1       0
-ANALYST         0       0
++-----------+---------+---------+
+| JOB       | 10_10_C | 30_20_C |
++-----------+---------+---------+
+| ANALYST   |       0 |       0 |
+| CLERK     |       1 |       0 |
+| MANAGER   |       1 |       0 |
+| PRESIDENT |       1 |       0 |
+| SALESMAN  |       0 |       0 |
++-----------+---------+---------+
+(5 rows)
 
 !ok
 
@@ -223,9 +240,12 @@ PIVOT (SUM(sal) FOR hiredate IN (CAST('1981-12-03' AS DATE), '1981-11-17'));
 SELECT "20"
 FROM (SELECT deptno, sal FROM emp)
 PIVOT (SUM(sal) FOR (deptno) IN (10, 10, 20));
-20
---------
-10875.00
++----------+
+| 20       |
++----------+
+| 10875.00 |
++----------+
+(1 row)
 
 !ok
 
@@ -233,9 +253,12 @@ PIVOT (SUM(sal) FOR (deptno) IN (10, 10, 20));
 SELECT *
 FROM (SELECT deptno, sal FROM emp)
 PIVOT (SUM(sal) FOR (deptno) IN (10, 10 as ten, 20));
-10      TEN     20
-------- ------- --------
-8750.00 8750.00 10875.00
++---------+---------+----------+
+| 10      | TEN     | 20       |
++---------+---------+----------+
+| 8750.00 | 8750.00 | 10875.00 |
++---------+---------+----------+
+(1 row)
 
 !ok
 
@@ -251,20 +274,26 @@ At line 1, column 8: Column 'A_B_C' is ambiguous
 SELECT a_c, a_b_b_c
 FROM (SELECT sal, deptno FROM emp)
 PIVOT (SUM(sal) AS b_c, COUNT(*) AS c FOR deptno IN (10 as a, 20 as a_b));
-A_C A_B_B_C
---- --------
-  3 10875.00
++-----+----------+
+| A_C | A_B_B_C  |
++-----+----------+
+|   3 | 10875.00 |
++-----+----------+
+(1 row)
 
 !ok
 
 # Multiple pivot expressions, one with alias, one without
-# (We cast empno as integer to avoid overflow in sum.)
+# (Note that we cast empno as integer to avoid overflow in sum.)
 SELECT *
-FROM (SELECT sal, cast(empno as integer) as empno, deptno FROM emp)
+FROM (SELECT sal, CAST(empno as integer) as empno, deptno FROM emp)
 PIVOT (SUM(sal), SUM(empno) AS sum_empno FOR deptno IN (10, 20));
-10      10_SUM_EMPNO 20       20_SUM_EMPNO
-------- ------------ -------- ------------
-8750.00        23555 10875.00        38501
++---------+--------------+----------+--------------+
+| 10      | 10_SUM_EMPNO | 20       | 20_SUM_EMPNO |
++---------+--------------+----------+--------------+
+| 8750.00 |        23555 | 10875.00 |        38501 |
++---------+--------------+----------+--------------+
+(1 row)
 
 !ok
 
@@ -279,9 +308,31 @@ At line 1, column 8: Column '10' is ambiguous
 SELECT "10_SUM_EMPNO"
 FROM (SELECT sal, empno, deptno FROM emp)
 PIVOT (SUM(sal), COUNT(*), SUM(empno) AS sum_empno FOR deptno IN (10, 20));
-10_SUM_EMPNO
-------------
-       23555
++--------------+
+| 10_SUM_EMPNO |
++--------------+
+|        23555 |
++--------------+
+(1 row)
+
+!ok
+
+# Expression as argument to aggregate function.
+SELECT * FROM (SELECT sal, deptno, job, mgr FROM Emp)
+PIVOT (sum(sal + deptno + 1)
+   FOR job in ('CLERK' AS c, 'ANALYST' AS a));
++------+---------+---------+
+| MGR  | C       | A       |
++------+---------+---------+
+| 7566 |         | 6042.00 |
+| 7698 |  981.00 |         |
+| 7782 | 1311.00 |         |
+| 7788 | 1121.00 |         |
+| 7839 |         |         |
+| 7902 |  821.00 |         |
+|      |         |         |
++------+---------+---------+
+(7 rows)
 
 !ok
 

@@ -2451,6 +2451,7 @@ public class SqlToRelConverter {
     convertFrom(pivotBb, pivot.query);
     final RelNode input = pivotBb.root;
 
+    final RelDataType inputRowType = input.getRowType();
     relBuilder.push(input);
 
     // Gather fields.
@@ -2459,7 +2460,7 @@ public class SqlToRelConverter {
     final Set<String> usedColumnNames = pivot.usedColumnNames();
 
     // 1. Gather group keys.
-    relBuilder.peek().getRowType().getFieldList().stream()
+    inputRowType.getFieldList().stream()
         .filter(field -> !usedColumnNames.contains(field.getName()))
         .forEach(field ->
             aggConverter.addGroupExpr(
@@ -2489,11 +2490,11 @@ public class SqlToRelConverter {
     // 1. Build group key
     final RelBuilder.GroupKey groupKey =
         relBuilder.groupKey(
-            relBuilder.peek().getRowType().getFieldList().stream()
+            inputRowType.getFieldList().stream()
                 .filter(field -> !usedColumnNames.contains(field.getName()))
                 .map(field ->
-                    aggConverter.lookupOrCreateGroupExpr(
-                        relBuilder.field(field.getName())))
+                    aggConverter.addGroupExpr(
+                        new SqlIdentifier(field.getName(), SqlParserPos.ZERO)))
                 .collect(ImmutableBitSet.toImmutableBitSet()));
 
     // 2. Build axes, for example
