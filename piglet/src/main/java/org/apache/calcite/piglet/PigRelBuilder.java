@@ -371,11 +371,6 @@ public class PigRelBuilder extends RelBuilder {
     return projectionExprs;
   }
 
-  public AggCall aggregateCall(SqlAggFunction aggFunction, String alias, RexNode... operands) {
-    return aggregateCall(aggFunction, false, false, false, null,
-        ImmutableList.of(), alias, ImmutableList.copyOf(operands));
-  }
-
   /**
    * Cogroups relations on top of the stack. The number of relations and the
    * group key are specified in groupKeys
