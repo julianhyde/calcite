@@ -5407,6 +5407,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       call.validate(this, scope);
       final RelDataType type = deriveType(scope, call);
       aggNames.add(Pair.of(alias, type));
+      if (!(call instanceof SqlCall)
+          || !(((SqlCall) call).getOperator() instanceof SqlAggFunction)) {
+        throw newValidationError(call, RESOURCE.pivotAggMalformed());
+      }
     });
 
     // Axes, e.g. "FOR (JOB, DEPTNO)"
@@ -5433,7 +5437,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // Values, e.g. "IN (('CLERK', 10) AS c10, ('MANAGER, 20) AS m20)"
     pivot.forEachNameValues((alias, nodeList) -> {
       if (nodeList.size() != axisTypes.size()) {
-        throw newValidationError(nodeList, null); // value count mismatch
+        throw newValidationError(nodeList,
+            RESOURCE.pivotValueArityMismatch(nodeList.size(),
+                axisTypes.size()));
       }
       final SqlOperandTypeChecker typeChecker =
           OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;

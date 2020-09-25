@@ -1830,14 +1830,18 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql(sql).fails("Column 'INVALID' not found in any table");
   }
 
-  @Test void testPivotMustBeAgg() {
+  @Test void testPivotMeasureMustBeAgg() {
     final String sql = "SELECT * FROM emp\n"
         + "PIVOT (sal ^+^ 1 AS sal1 FOR job in ('CLERK' AS c, 'MANAGER'))";
     sql(sql).fails("(?s).*Encountered \"\\+\" at .*");
 
     final String sql2 = "SELECT * FROM emp\n"
-        + "PIVOT (log(sal) AS logSal FOR job in ('CLERK' AS c, 'MANAGER'))";
-    sql(sql2).fails("(?s).*Encountered \"\\+\" at .*");
+        + "PIVOT (^log10(sal)^ AS logSal FOR job in ('CLERK' AS c, 'MANAGER'))";
+    sql(sql2).fails("Measure expression in PIVOT must use aggregate function");
+
+    final String sql3 = "SELECT * FROM emp\n"
+        + "PIVOT (^123^ AS logSal FOR job in ('CLERK' AS c, 'MANAGER'))";
+    sql(sql3).fails("(?s).*Encountered \"123\" at .*");
   }
 
   /** Tests an expression as argument to an aggregate function in a PIVOT.
@@ -1848,6 +1852,28 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "PIVOT (sum(sal + deptno + 1)\n"
         + "   FOR job in ('CLERK' AS c, 'ANALYST' AS a))";
     sql(sql).type("RecordType(INTEGER MGR, INTEGER C, INTEGER A) NOT NULL");
+  }
+
+  @Test void testPivotValueMismatch() {
+    final String sql = "SELECT * FROM Emp\n"
+        + "PIVOT (SUM(sal) FOR job IN (^('A', 'B')^, ('C', 'D')))";
+    sql(sql).fails("Value count in PIVOT \\(2\\) must match number of "
+        + "FOR columns \\(1\\)");
+
+    final String sql2 = "SELECT * FROM Emp\n"
+        + "PIVOT (SUM(sal) FOR job IN (^('A', 'B')^ AS x, ('C', 'D')))";
+    sql(sql2).fails("Value count in PIVOT \\(2\\) must match number of "
+        + "FOR columns \\(1\\)");
+
+    final String sql3 = "SELECT * FROM Emp\n"
+        + "PIVOT (SUM(sal) FOR (job) IN (^('A', 'B')^))";
+    sql(sql3).fails("Value count in PIVOT \\(2\\) must match number of "
+        + "FOR columns \\(1\\)");
+
+    final String sql4 = "SELECT * FROM Emp\n"
+        + "PIVOT (SUM(sal) FOR (job, deptno) IN (^'CLERK'^, 10))";
+    sql(sql4).fails("Value count in PIVOT \\(1\\) must match number of "
+        + "FOR columns \\(2\\)");
   }
 
   @Test void testMatchRecognizeWithDistinctAggregation() {

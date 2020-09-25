@@ -127,9 +127,9 @@ public class SqlPivot extends SqlCall {
 
   /** Returns the aggregate list as (alias, call) pairs.
    * If there is no 'AS', alias is null. */
-  public void forEachAgg(BiConsumer<String, SqlCall> consumer) {
+  public void forEachAgg(BiConsumer<String, SqlNode> consumer) {
     for (SqlNode agg : aggList) {
-      final SqlCall call = (SqlCall) SqlUtil.stripAs(agg);
+      final SqlNode call = SqlUtil.stripAs(agg);
       final String alias = SqlValidatorUtil.getAlias(agg, -1);
       consumer.accept(alias, call);
     }
