@@ -16,9 +16,9 @@
 data: {
   # Data declarations for this parser.
   #
-  # Default declarations are in default_parser.fmpp; if you do not include a
+  # Default declarations are in default_config.fmpp; if you do not include a
   # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
-  # FMPP will use the declaration from default_parser.fmpp.
+  # FMPP will use the declaration from default_config.fmpp.
   parser: {
     # Generated parser implementation class package and name
     package: "org.apache.calcite.sql.parser.parserextensiontesting",
