@@ -204,7 +204,7 @@ public abstract class Bug {
   /** Whether
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4279">[CALCITE-4279]
    * SEARCH operator cannot be pushed into Druid</a> is fixed. */
-  public static final boolean CALCITE_4279_FIXED = false;
+  public static final boolean CALCITE_4279_FIXED = true;
 
   /**
    * Use this to flag temporary code.
