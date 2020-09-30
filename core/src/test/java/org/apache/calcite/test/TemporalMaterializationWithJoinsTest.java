@@ -248,7 +248,11 @@ public class TemporalMaterializationWithJoinsTest extends SqlToRelTestBase {
 
     // Attempt optimization?
     MaterializedViewOnlyAggregateRule rule =
-        new MaterializedViewOnlyAggregateRule(RelFactories.LOGICAL_BUILDER, false, null);
+        MaterializedViewOnlyAggregateRule.Config.DEFAULT
+            .withGenerateUnionRewriting(false)
+            .withUnionRewritingPullProgram(null)
+            .as(MaterializedViewOnlyAggregateRule.Config.class)
+            .toRule();
 
     HepProgram program = new HepProgramBuilder()
         .addRuleInstance(rule)
