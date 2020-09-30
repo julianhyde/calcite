@@ -187,7 +187,7 @@ public class TemporalMaterializationWithJoinsTest extends SqlToRelTestBase {
     builder.project(
         rexBuilder.makeCall(
             SqlStdOperatorTable.FLOOR,
-            builder.field(1),
+            builder.field(2),
             rexBuilder.makeFlag(TimeUnitRange.YEAR)));
 
     ImmutableBitSet bitSet = ImmutableBitSet.of(0);
