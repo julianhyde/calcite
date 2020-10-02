@@ -116,6 +116,7 @@ import com.google.common.collect.Sets;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.hamcrest.core.Is;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -1895,6 +1896,25 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   /** Unit test for
+   * {@link org.apache.calcite.rel.metadata.RelMetadataQuery#getAverageColumnSizes(org.apache.calcite.rel.RelNode)}
+   * with a table that has its own implementation of {@link BuiltInMetadata.Size}. */
+  @Test void testAverageColumnSizes() {
+    SqlTestFactory.MockCatalogReaderFactory factory = (typeFactory, caseSensitive) -> {
+      CompositeKeysCatalogReader catalogReader =
+          new CompositeKeysCatalogReader(typeFactory, false);
+      catalogReader.init();
+      return catalogReader;
+    };
+    Tester newTester = tester.withCatalogReaderFactory(factory);
+    final RelNode rel =
+        convertSql(newTester, "select key1, key2 from s.composite_keys_table");
+    assertThat(rel, Is.isA(Project.class));
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    List<Double> columnSizes = mq.getAverageColumnSizes(rel);
+    assertThat(columnSizes.size(), is(2));
+  }
+
+  /** Unit test for
    * {@link org.apache.calcite.rel.metadata.RelMdPredicates#getPredicates(Join, RelMetadataQuery)}. */
   @Test void testPredicates() {
     final Project rel = (Project) convertSql("select * from emp, dept");
@@ -3273,6 +3293,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
       t1.addColumn("key1", typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
       t1.addColumn("key2", typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
       t1.addColumn("value1", typeFactory.createSqlType(SqlTypeName.INTEGER));
+//      t1.addWrap
       registerTable(t1);
       return this;
     }

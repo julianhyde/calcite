@@ -24,6 +24,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rex.RexNode;
@@ -101,6 +102,17 @@ public class RelMdPopulationSize
       ImmutableBitSet groupKey) {
     // assume half the rows are duplicates
     return rel.estimateRowCount(mq) / 2;
+  }
+
+  public Double getPopulationSize(TableScan scan, RelMetadataQuery mq,
+      ImmutableBitSet groupKey) {
+    final BuiltInMetadata.PopulationSize.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.PopulationSize.Handler.class);
+    if (handler != null) {
+      return handler.getPopulationSize(scan, mq, groupKey);
+    }
+    // Fall back to the catch-all.
+    return getPopulationSize((RelNode) scan, mq, groupKey);
   }
 
   public Double getPopulationSize(Project rel, RelMetadataQuery mq,

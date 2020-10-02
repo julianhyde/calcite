@@ -114,9 +114,15 @@ public class RelMdExpressionLineage
    * <p>We extract the fields referenced by the expression and we express them
    * using {@link RexTableInputRef}.
    */
-  public Set<RexNode> getExpressionLineage(TableScan rel,
+  public Set<RexNode> getExpressionLineage(TableScan scan,
       RelMetadataQuery mq, RexNode outputExpression) {
-    final RexBuilder rexBuilder = rel.getCluster().getRexBuilder();
+    final BuiltInMetadata.ExpressionLineage.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.ExpressionLineage.Handler.class);
+    if (handler != null) {
+      return handler.getExpressionLineage(scan, mq, outputExpression);
+    }
+
+    final RexBuilder rexBuilder = scan.getCluster().getRexBuilder();
 
     // Extract input fields referenced by expression
     final ImmutableBitSet inputFieldsUsed = extractInputRefs(outputExpression);
@@ -125,9 +131,9 @@ public class RelMdExpressionLineage
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
     for (int idx : inputFieldsUsed) {
       final RexNode inputRef = RexTableInputRef.of(
-          RelTableRef.of(rel.getTable(), 0),
-          RexInputRef.of(idx, rel.getRowType().getFieldList()));
-      final RexInputRef ref = RexInputRef.of(idx, rel.getRowType().getFieldList());
+          RelTableRef.of(scan.getTable(), 0),
+          RexInputRef.of(idx, scan.getRowType().getFieldList()));
+      final RexInputRef ref = RexInputRef.of(idx, scan.getRowType().getFieldList());
       mapping.put(ref, ImmutableSet.of(inputRef));
     }
 

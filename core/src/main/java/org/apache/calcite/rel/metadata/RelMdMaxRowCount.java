@@ -186,7 +186,12 @@ public class RelMdMaxRowCount
     return left * right;
   }
 
-  public Double getMaxRowCount(TableScan rel, RelMetadataQuery mq) {
+  public Double getMaxRowCount(TableScan scan, RelMetadataQuery mq) {
+    final BuiltInMetadata.MaxRowCount.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.MaxRowCount.Handler.class);
+    if (handler != null) {
+      return handler.getMaxRowCount(scan, mq);
+    }
     // For typical tables, there is no upper bound to the number of rows.
     return Double.POSITIVE_INFINITY;
   }

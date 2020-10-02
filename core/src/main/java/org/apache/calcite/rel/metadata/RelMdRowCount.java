@@ -211,8 +211,13 @@ public class RelMdRowCount
     return distinctRowCount;
   }
 
-  public Double getRowCount(TableScan rel, RelMetadataQuery mq) {
-    return rel.estimateRowCount(mq);
+  public Double getRowCount(TableScan scan, RelMetadataQuery mq) {
+    final BuiltInMetadata.RowCount.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.RowCount.Handler.class);
+    if (handler != null) {
+      return handler.getRowCount(scan, mq);
+    }
+    return scan.estimateRowCount(mq);
   }
 
   public Double getRowCount(Values rel, RelMetadataQuery mq) {

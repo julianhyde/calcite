@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.util.BuiltInMethod;
 
@@ -115,6 +116,16 @@ public class RelMdPercentageOriginalRows
       return null;
     }
     return left * right;
+  }
+
+  public Double getPercentageOriginalRows(TableScan scan, RelMetadataQuery mq) {
+    final BuiltInMetadata.PercentageOriginalRows.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.PercentageOriginalRows.Handler.class);
+    if (handler != null) {
+      return handler.getPercentageOriginalRows(scan, mq);
+    }
+    // Fall back to the catch-all.
+    return getPercentageOriginalRows((RelNode) scan, mq);
   }
 
   // Catch-all rule when none of the others apply.

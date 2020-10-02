@@ -304,11 +304,17 @@ public class RelMdUniqueKeys
     return ImmutableSet.of();
   }
 
-  public Set<ImmutableBitSet> getUniqueKeys(TableScan rel, RelMetadataQuery mq,
+  public Set<ImmutableBitSet> getUniqueKeys(TableScan scan, RelMetadataQuery mq,
       boolean ignoreNulls) {
-    final List<ImmutableBitSet> keys = rel.getTable().getKeys();
+    final BuiltInMetadata.UniqueKeys.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.UniqueKeys.Handler.class);
+    if (handler != null) {
+      return handler.getUniqueKeys(scan, mq, ignoreNulls);
+    }
+
+    final List<ImmutableBitSet> keys = scan.getTable().getKeys();
     for (ImmutableBitSet key : keys) {
-      assert rel.getTable().isKey(key);
+      assert scan.getTable().isKey(key);
     }
     return ImmutableSet.copyOf(keys);
   }

@@ -29,6 +29,7 @@ import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -146,10 +147,9 @@ public class RelMdColumnOrigins
         return rel.getProgram().expandLocalRef(localRef);
       }
     };
-    final List<RexNode> projects = new ArrayList<>();
-    for (RexNode rex: rexShuttle.apply(rel.getProgram().getProjectList())) {
-      projects.add(rex);
-    }
+    final List<RexNode> projects =
+        new ArrayList<>(
+            rexShuttle.apply(rel.getProgram().getProjectList()));
     final RexNode rexNode = projects.get(iOutputColumn);
     if (rexNode instanceof RexInputRef) {
       // Direct reference:  no derivation added.
@@ -213,6 +213,17 @@ public class RelMdColumnOrigins
       set.addAll(origins);
     }
     return set;
+  }
+
+  public Set<RelColumnOrigin> getColumnOrigins(TableScan scan,
+      RelMetadataQuery mq, int iOutputColumn) {
+    final BuiltInMetadata.ColumnOrigin.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.ColumnOrigin.Handler.class);
+    if (handler != null) {
+      return handler.getColumnOrigins(scan, mq, iOutputColumn);
+    }
+    // Fall back to the catch-all.
+    return getColumnOrigins((RelNode) scan, mq, iOutputColumn);
   }
 
   // Catch-all rule when none of the others apply.

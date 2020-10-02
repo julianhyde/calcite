@@ -124,9 +124,14 @@ public class RelMdNodeTypes
     return getNodeTypes(rel, Aggregate.class, mq);
   }
 
-  public Multimap<Class<? extends RelNode>, RelNode> getNodeTypes(TableScan rel,
+  public Multimap<Class<? extends RelNode>, RelNode> getNodeTypes(TableScan scan,
       RelMetadataQuery mq) {
-    return getNodeTypes(rel, TableScan.class, mq);
+    final BuiltInMetadata.NodeTypes.Handler handler =
+        scan.getTable().unwrap(BuiltInMetadata.NodeTypes.Handler.class);
+    if (handler != null) {
+      return handler.getNodeTypes(scan, mq);
+    }
+    return getNodeTypes(scan, TableScan.class, mq);
   }
 
   public Multimap<Class<? extends RelNode>, RelNode> getNodeTypes(Values rel,
