@@ -19,7 +19,6 @@ package org.apache.calcite.test.catalog;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
-import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -234,10 +233,6 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
               }
             }
             throw new AssertionError();
-          }
-
-          public MetadataDef<BuiltInMetadata.AllPredicates> getDef() {
-            return BuiltInMetadata.AllPredicates.DEF;
           }
         });
     registerTable(restaurantTable);

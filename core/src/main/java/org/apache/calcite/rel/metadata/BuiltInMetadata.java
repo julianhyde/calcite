@@ -17,6 +17,7 @@
 package org.apache.calcite.rel.metadata;
 
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollation;
@@ -59,6 +60,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Selectivity> {
+      @Override default MetadataDef<Selectivity> getDef() {
+        return DEF;
+      }
+
       Double getSelectivity(RelNode r, RelMetadataQuery mq, RexNode predicate);
     }
   }
@@ -85,6 +90,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<UniqueKeys> {
+      @Override default MetadataDef<UniqueKeys> getDef() {
+        return DEF;
+      }
+
       Set<ImmutableBitSet> getUniqueKeys(RelNode r, RelMetadataQuery mq,
           boolean ignoreNulls);
     }
@@ -121,6 +130,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<ColumnUniqueness> {
+      @Override default MetadataDef<ColumnUniqueness> getDef() {
+        return DEF;
+      }
+
       Boolean areColumnsUnique(RelNode r, RelMetadataQuery mq,
           ImmutableBitSet columns, boolean ignoreNulls);
     }
@@ -136,6 +149,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Collation> {
+      @Override default MetadataDef<Collation> getDef() {
+        return DEF;
+      }
+
       ImmutableList<RelCollation> collations(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -160,6 +177,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Distribution> {
+      @Override default MetadataDef<Distribution> getDef() {
+        return DEF;
+      }
+
       RelDistribution distribution(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -184,6 +205,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<NodeTypes> {
+      @Override default MetadataDef<NodeTypes> getDef() {
+        return DEF;
+      }
+
       Multimap<Class<? extends RelNode>, RelNode> getNodeTypes(RelNode r,
           RelMetadataQuery mq);
     }
@@ -207,6 +232,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<RowCount> {
+      @Override default MetadataDef<RowCount> getDef() {
+        return DEF;
+      }
+
       Double getRowCount(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -231,6 +260,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<MaxRowCount> {
+      @Override default MetadataDef<MaxRowCount> getDef() {
+        return DEF;
+      }
+
       Double getMaxRowCount(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -254,6 +287,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<MinRowCount> {
+      @Override default MetadataDef<MinRowCount> getDef() {
+        return DEF;
+      }
+
       Double getMinRowCount(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -280,6 +317,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<DistinctRowCount> {
+      @Override default MetadataDef<DistinctRowCount> getDef() {
+        return DEF;
+      }
+
       Double getDistinctRowCount(RelNode r, RelMetadataQuery mq,
           ImmutableBitSet groupKey, RexNode predicate);
     }
@@ -305,6 +346,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<PercentageOriginalRows> {
+      @Override default MetadataDef<PercentageOriginalRows> getDef() {
+        return DEF;
+      }
+
       Double getPercentageOriginalRows(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -330,6 +375,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<PopulationSize> {
+      @Override default MetadataDef<PopulationSize> getDef() {
+        return DEF;
+      }
+
       Double getPopulationSize(RelNode r, RelMetadataQuery mq,
           ImmutableBitSet groupKey);
     }
@@ -368,6 +417,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Size> {
+      @Override default MetadataDef<Size> getDef() {
+        return DEF;
+      }
+
       Double averageRowSize(RelNode r, RelMetadataQuery mq);
       List<Double> averageColumnSizes(RelNode r, RelMetadataQuery mq);
     }
@@ -394,6 +447,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<ColumnOrigin> {
+      @Override default MetadataDef<ColumnOrigin> getDef() {
+        return DEF;
+      }
+
       Set<RelColumnOrigin> getColumnOrigins(RelNode r, RelMetadataQuery mq,
           int outputColumn);
     }
@@ -431,6 +488,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<ExpressionLineage> {
+      @Override default MetadataDef<ExpressionLineage> getDef() {
+        return DEF;
+      }
+
       Set<RexNode> getExpressionLineage(RelNode r, RelMetadataQuery mq,
           RexNode expression);
     }
@@ -461,6 +522,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<TableReferences> {
+      @Override default MetadataDef<TableReferences> getDef() {
+        return DEF;
+      }
+
       Set<RelTableRef> getTableReferences(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -485,6 +550,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<CumulativeCost> {
+      @Override default MetadataDef<CumulativeCost> getDef() {
+        return DEF;
+      }
+
       RelOptCost getCumulativeCost(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -512,6 +581,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<NonCumulativeCost> {
+      @Override default MetadataDef<NonCumulativeCost> getDef() {
+        return DEF;
+      }
+
       RelOptCost getNonCumulativeCost(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -533,6 +606,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<ExplainVisibility> {
+      @Override default MetadataDef<ExplainVisibility> getDef() {
+        return DEF;
+      }
+
       Boolean isVisibleInExplain(RelNode r, RelMetadataQuery mq,
           SqlExplainLevel explainLevel);
     }
@@ -554,6 +631,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Predicates> {
+      @Override default MetadataDef<Predicates> getDef() {
+        return DEF;
+      }
+
       RelOptPredicateList getPredicates(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -582,6 +663,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<AllPredicates> {
+      @Override default MetadataDef<AllPredicates> getDef() {
+        return DEF;
+      }
+
       RelOptPredicateList getAllPredicates(RelNode r, RelMetadataQuery mq);
     }
   }
@@ -617,6 +702,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Parallelism> {
+      @Override default MetadataDef<Parallelism> getDef() {
+        return DEF;
+      }
+
       Boolean isPhaseTransition(RelNode r, RelMetadataQuery mq);
       Integer splitCount(RelNode r, RelMetadataQuery mq);
     }
@@ -632,8 +721,12 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<LowerBoundCost> {
-      RelOptCost getLowerBoundCost(
-          RelNode r, RelMetadataQuery mq, VolcanoPlanner planner);
+      @Override default MetadataDef<LowerBoundCost> getDef() {
+        return DEF;
+      }
+
+      RelOptCost getLowerBoundCost(RelNode r, RelMetadataQuery mq,
+          VolcanoPlanner planner);
     }
   }
 
@@ -678,6 +771,10 @@ public abstract class BuiltInMetadata {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Memory> {
+      @Override default MetadataDef<Memory> getDef() {
+        return DEF;
+      }
+
       Double memory(RelNode r, RelMetadataQuery mq);
       Double cumulativeMemoryWithinPhase(RelNode r, RelMetadataQuery mq);
       Double cumulativeMemoryWithinPhaseSplit(RelNode r, RelMetadataQuery mq);

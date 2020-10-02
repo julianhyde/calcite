@@ -3166,6 +3166,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     /** Handler API. */
     interface Handler extends MetadataHandler<ColType> {
+      @Override default MetadataDef<ColType> getDef() {
+        return DEF;
+      }
+
       String getColType(RelNode r, RelMetadataQuery mq, int column);
     }
   }

@@ -17,13 +17,14 @@
 package org.apache.calcite.rel.metadata;
 
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.util.Pair;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Definition of metadata.
@@ -40,21 +41,31 @@ public class MetadataDef<M extends Metadata> {
     this.metadataClass = metadataClass;
     this.handlerClass = handlerClass;
     this.methods = ImmutableList.copyOf(methods);
-    final Method[] handlerMethods = handlerClass.getDeclaredMethods();
+    final Map<String, Method> handlerMethods =
+        byName(handlerClass.getDeclaredMethods());
 
     // Handler must have the same methods as Metadata, each method having
     // additional "subclass-of-RelNode, RelMetadataQuery" parameters.
-    assert handlerMethods.length == methods.length;
-    for (Pair<Method, Method> pair : Pair.zip(methods, handlerMethods)) {
+    for (Method method : methods) {
       final List<Class<?>> leftTypes =
-          Arrays.asList(pair.left.getParameterTypes());
+          Arrays.asList(method.getParameterTypes());
+      final Method handlerMethod = handlerMethods.get(method.getName());
+      assert  handlerMethod != null;
       final List<Class<?>> rightTypes =
-          Arrays.asList(pair.right.getParameterTypes());
+          Arrays.asList(handlerMethod.getParameterTypes());
       assert leftTypes.size() + 2 == rightTypes.size();
       assert RelNode.class.isAssignableFrom(rightTypes.get(0));
       assert RelMetadataQuery.class == rightTypes.get(1);
       assert leftTypes.equals(rightTypes.subList(2, rightTypes.size()));
     }
+  }
+
+  private Map<String, Method> byName(Method[] methods) {
+    final ImmutableMap.Builder<String, Method> builder = ImmutableMap.builder();
+    for (Method method : methods) {
+      builder.put(method.getName(), method);
+    }
+    return builder.build();
   }
 
   /** Creates a {@link org.apache.calcite.rel.metadata.MetadataDef}. */
