@@ -386,6 +386,17 @@ public class RelBuilder {
     return offset;
   }
 
+  /** Evaluates an expression with a relational expression temporarily on the
+   * stack. */
+  public <E> E with(RelNode r, Function<RelBuilder, E> fn) {
+    try {
+      push(r);
+      return fn.apply(this);
+    } finally {
+      stack.pop();
+    }
+  }
+
   // Methods that return scalar expressions
 
   /** Creates a literal (constant expression). */
