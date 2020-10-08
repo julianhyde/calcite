@@ -377,7 +377,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       RelMetadataQuery mq,
       MatchModality matchModality,
       boolean unionRewriting,
-      RelNode input,
+      final RelNode input,
       @Nullable Project topProject,
       RelNode node,
       @Nullable Project topViewProject0,
@@ -511,13 +511,10 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     // Multimap is required since a column in the materialized view's project
     // could map to multiple columns in the target query
     final ImmutableMultimap<Integer, Integer> rewritingMapping;
-    final RelNode result0 = relBuilder.push(input).build();
+    relBuilder.push(input);
     // We create view expressions that will be used in a Project on top of the
     // view in case we need to rollup the expression
-    final List<RexNode> inputViewExprs =
-        new ArrayList<>(relBuilder.push(result0).fields());
-    relBuilder.clear();
-    final RelNode result3;
+    final List<RexNode> inputViewExprs = new ArrayList<>(relBuilder.fields());
     if (forceRollup
         || queryAggregate.getGroupCount() != viewAggregate.getGroupCount()
         || matchModality == MatchModality.VIEW_PARTIAL) {
@@ -546,7 +543,9 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
               // No matching column needed for computed expression, bail out
               return null;
             }
-            exprsLineage.put(new RexInputRef(ref, targetNode.getType()), k);
+            exprsLineage.put(
+                relBuilder.with(topViewProject.getInput(), b -> b.field(ref)),
+                k);
           }
           // We create the new node pointing to the index
           groupSetB.set(inputViewExprs.size());
@@ -606,24 +605,16 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
                 .as(queryAggCall.name));
       }
       // Create aggregate on top of input
-      final RelNode prevNode = result0;
-      relBuilder.push(result0);
-      if (inputViewExprs.size() != result0.getRowType().getFieldCount()) {
+      final RelNode prevNode = relBuilder.peek();
+      if (inputViewExprs.size() > relBuilder.peek().getRowType().getFieldCount()) {
         relBuilder.project(inputViewExprs);
       }
-      final RelNode result1 = relBuilder
-          .aggregate(relBuilder.groupKey(groupSet), aggregateCalls)
-          .build();
-      final RelNode result2;
-      if (prevNode == result1
-          && groupSet.cardinality() != result1.getRowType().getFieldCount()) {
+      relBuilder
+          .aggregate(relBuilder.groupKey(groupSet), aggregateCalls);
+      if (prevNode == relBuilder.peek()
+          && groupSet.cardinality() != relBuilder.peek().getRowType().getFieldCount()) {
         // Aggregate was not inserted but we need to prune columns
-        result2 = relBuilder
-            .push(result1)
-            .project(relBuilder.fields(groupSet))
-            .build();
-      } else {
-        result2 = result1;
+        relBuilder.project(relBuilder.fields(groupSet));
       }
       // We introduce a project on top, as group by columns order is lost.
       // Multimap is required since a column in the materialized view's project
@@ -636,24 +627,19 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       for (int i = 0; i < queryAggregate.getGroupCount(); i++) {
         final int pos = groupSet.indexOf(inverseMapping.get(i).iterator().next());
         addedProjects.set(pos);
-        projects.add(
-            rexBuilder.makeInputRef(result2, pos));
+        projects.add(relBuilder.field(pos));
       }
 
       final ImmutableBitSet projectedCols = addedProjects.build();
       // We add aggregate functions that are present in result to projection list
-      for (int i = 0; i < result2.getRowType().getFieldCount(); i++) {
+      for (int i = 0; i < relBuilder.peek().getRowType().getFieldCount(); i++) {
         if (!projectedCols.get(i)) {
-          projects.add(rexBuilder.makeInputRef(result2, i));
+          projects.add(relBuilder.field(i));
         }
       }
-      result3 = relBuilder
-          .push(result2)
-          .project(projects)
-          .build();
+      relBuilder.project(projects);
     } else {
       rewritingMapping = null;
-      result3 = result0;
     }
 
     // Add query expressions on top. We first map query expressions to view
@@ -675,35 +661,37 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     }
     // Available in view.
     final Multimap<RexNode, Integer> viewExprs = ArrayListMultimap.create();
-    int numberViewExprs = 0;
-    for (RexNode viewExpr : topViewProject.getProjects()) {
-      viewExprs.put(viewExpr, numberViewExprs++);
-    }
-    for (RexNode additionalViewExpr : additionalViewExprs) {
-      viewExprs.put(additionalViewExpr, numberViewExprs++);
-    }
+    addAllIndexed(viewExprs, topViewProject.getProjects());
+    addAllIndexed(viewExprs, additionalViewExprs);
     final List<RexNode> rewrittenExprs = new ArrayList<>(topExprs.size());
     for (RexNode expr : topExprs) {
       // First map through the aggregate
-      RexNode rewrittenExpr = shuttleReferences(rexBuilder, expr, aggregateMapping);
-      if (rewrittenExpr == null) {
+      final RexNode e2 = shuttleReferences(rexBuilder, expr, aggregateMapping);
+      if (e2 == null) {
         // Cannot map expression
         return null;
       }
       // Next map through the last project
-      rewrittenExpr =
-          shuttleReferences(rexBuilder, rewrittenExpr, viewExprs, result3, rewritingMapping);
-      if (rewrittenExpr == null) {
+      final RexNode e3 =
+          shuttleReferences(rexBuilder, e2, viewExprs,
+              relBuilder.peek(), rewritingMapping);
+      if (e3 == null) {
         // Cannot map expression
         return null;
       }
-      rewrittenExprs.add(rewrittenExpr);
+      rewrittenExprs.add(e3);
     }
     return relBuilder
-        .push(result3)
         .project(rewrittenExprs)
         .convert(topRowType, false)
         .build();
+  }
+
+  private static <K> void addAllIndexed(Multimap<K, Integer> multimap,
+      Iterable<? extends K> list) {
+    for (K k : list) {
+      multimap.put(k, multimap.size());
+    }
   }
 
   private static int find(List<RexNode> projects, int ref) {
