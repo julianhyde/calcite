@@ -5767,6 +5767,15 @@ public class JdbcTest {
     });
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4323">[CALCITE-4323]
+   * View with ORDER BY throws AssertionError during view expansion</a>. */
+  @Test void testSortedView() {
+    final String viewSql = "select * from \"EMPLOYEES\" order by \"deptno\"";
+    final String sql = "select * from \"adhoc\".V";
+    modelWithView(viewSql, null).query(sql).returnsUnordered();
+  }
+
   /** Tests a view with ORDER BY and LIMIT clauses. */
   @Test void testOrderByView() throws Exception {
     final CalciteAssert.AssertThat with =
