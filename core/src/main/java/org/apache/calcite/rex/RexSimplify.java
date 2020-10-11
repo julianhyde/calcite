@@ -2710,6 +2710,8 @@ public class RexSimplify {
     private List<RelDataType> types = new ArrayList<>();
     final RangeSet<Comparable> rangeSet = TreeRangeSet.create();
     boolean containsNull;
+    private int termCount;
+    private int nullCount;
 
     RexSargBuilder(RexNode ref, RexBuilder rexBuilder, boolean negate) {
       this.ref = Objects.requireNonNull(ref);
@@ -2783,11 +2785,16 @@ public class RexSimplify {
     void addRange(Range<Comparable> range, RelDataType type) {
       types.add(type);
       rangeSet.add(range);
+      ++termCount;
     }
 
     void addSarg(Sarg sarg, boolean negate, RelDataType type) {
       types.add(type);
       rangeSet.addAll(negate ? sarg.rangeSet.complement() : sarg.rangeSet);
+      ++termCount;
+      if (sarg.containsNull) {
+        ++nullCount;
+      }
       containsNull |= sarg.containsNull;
     }
   }
