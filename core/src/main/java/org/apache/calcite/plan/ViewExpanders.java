@@ -80,7 +80,7 @@ public abstract class ViewExpanders {
       }
 
       public List<RelHint> getTableHints() {
-        return ImmutableList.of();
+        throw new UnsupportedOperationException();
       }
     };
   }

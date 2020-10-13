@@ -90,7 +90,6 @@ import static org.hamcrest.collection.IsIn.in;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Unit test for {@link org.apache.calcite.rel.hint.RelHint}.
@@ -478,11 +477,10 @@ public class SqlHintsConverterTest extends SqlToRelTestBase {
       assertThat(1, is(join.getHints().size()));
       call.transformTo(
           LogicalJoin.create(join.getLeft(),
-              join.getRight(),
-              ImmutableList.of(),
-              join.getCondition(),
-              join.getVariablesSet(),
-              join.getJoinType()));
+            join.getRight(),
+            join.getCondition(),
+            join.getVariablesSet(),
+            join.getJoinType()));
     }
   }
 
@@ -601,7 +599,6 @@ public class SqlHintsConverterTest extends SqlToRelTestBase {
     void fails(String failedMsg) {
       try {
         tester.convertSqlToRel(sql);
-        fail("Unexpected exception");
       } catch (AssertionError e) {
         assertThat(e.getMessage(), is(failedMsg));
       }

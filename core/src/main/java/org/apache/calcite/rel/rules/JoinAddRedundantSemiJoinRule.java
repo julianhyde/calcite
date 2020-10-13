@@ -26,7 +26,6 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.tools.RelBuilderFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -75,7 +74,6 @@ public class JoinAddRedundantSemiJoinRule extends RelOptRule {
     RelNode semiJoin =
         LogicalJoin.create(origJoinRel.getLeft(),
             origJoinRel.getRight(),
-            ImmutableList.of(),
             origJoinRel.getCondition(),
             ImmutableSet.of(),
             JoinRelType.SEMI);

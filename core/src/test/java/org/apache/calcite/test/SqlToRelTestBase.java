@@ -411,8 +411,7 @@ public abstract class SqlToRelTestBase {
       }
 
       public RelNode toRel(ToRelContext context) {
-        return LogicalTableScan.create(context.getCluster(), this,
-            context.getTableHints());
+        return LogicalTableScan.create(context.getCluster(), this);
       }
 
       public List<RelCollation> getCollationList() {
@@ -494,8 +493,7 @@ public abstract class SqlToRelTestBase {
     }
 
     public RelNode toRel(ToRelContext context) {
-      return LogicalTableScan.create(context.getCluster(), this,
-          context.getTableHints());
+      return LogicalTableScan.create(context.getCluster(), this);
     }
 
     public List<RelCollation> getCollationList() {

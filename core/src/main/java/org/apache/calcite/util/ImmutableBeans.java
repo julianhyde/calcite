@@ -24,7 +24,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -113,8 +112,7 @@ public class ImmutableBeans {
     final ImmutableMap<String, Class> propertyNames =
         propertyNameBuilder.build();
     for (Method method : beanClass.getMethods()) {
-      if (!Modifier.isPublic(method.getModifiers())
-          || method.isDefault()) {
+      if (!Modifier.isPublic(method.getModifiers())) {
         continue;
       }
       final Mode mode;
@@ -202,31 +200,6 @@ public class ImmutableBeans {
           throw new AssertionError();
         }
       });
-    }
-
-    // Third pass, add default methods.
-    for (Method method : beanClass.getMethods()) {
-      if (method.isDefault()) {
-        final MethodHandle methodHandle;
-        try {
-          methodHandle = Compatible.INSTANCE.lookupPrivate(beanClass)
-              .unreflectSpecial(method, beanClass);
-        } catch (Throwable throwable) {
-          throw new RuntimeException("while binding method " + method,
-              throwable);
-        }
-        handlers.put(method, (bean, args) -> {
-          try {
-            return methodHandle.bindTo(bean.asBean())
-                .invokeWithArguments(args);
-          } catch (RuntimeException | Error e) {
-            throw e;
-          } catch (Throwable throwable) {
-            throw new RuntimeException("while invoking method " + method,
-                throwable);
-          }
-        });
-      }
     }
 
     handlers.put(getMethod(Object.class, "toString"),

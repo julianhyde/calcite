@@ -44,6 +44,7 @@ public class ExplicitHintStrategy implements HintStrategy {
   //~ Methods ----------------------------------------------------------------
 
   @Override public boolean supportsRel(RelHint hint, RelNode rel) {
-    return this.matcher.matches(hint, rel);
+    //noinspection unchecked
+    return this.matcher.apply(hint, rel);
   }
 }

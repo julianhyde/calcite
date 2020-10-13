@@ -29,6 +29,7 @@ import org.apache.calcite.schema.Table;
 
 import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -114,10 +115,14 @@ public final class LogicalTableScan extends TableScan {
     return new LogicalTableScan(cluster, traitSet, hints, relOptTable);
   }
 
-  @Deprecated // to be removed before 1.23
+  /** Creates a LogicalTableScan.
+   *
+   * @param cluster Cluster
+   * @param relOptTable Table
+   */
   public static LogicalTableScan create(RelOptCluster cluster,
       final RelOptTable relOptTable) {
-    return create(cluster, relOptTable, ImmutableList.of());
+    return create(cluster, relOptTable, new ArrayList<>());
   }
 
   @Override public RelNode withHints(List<RelHint> hintList) {

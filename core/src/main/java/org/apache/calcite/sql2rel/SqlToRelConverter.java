@@ -767,8 +767,8 @@ public class SqlToRelConverter {
         }
       }
       rel =
-          LogicalProject.create(rel, ImmutableList.of(),
-              Pair.left(newProjects), Pair.right(newProjects));
+          LogicalProject.create(rel, Pair.left(newProjects),
+              Pair.right(newProjects));
       bb.root = rel;
       distinctify(bb, false);
       rel = bb.root;
@@ -787,8 +787,8 @@ public class SqlToRelConverter {
       }
 
       rel =
-          LogicalProject.create(rel, ImmutableList.of(),
-              Pair.left(undoProjects), Pair.right(undoProjects));
+          LogicalProject.create(rel, Pair.left(undoProjects),
+              Pair.right(undoProjects));
       bb.setRoot(
           rel,
           false);
@@ -863,9 +863,7 @@ public class SqlToRelConverter {
         exprs.add(rexBuilder.makeInputRef(bb.root, i));
       }
       bb.setRoot(
-          LogicalProject.create(bb.root,
-              ImmutableList.of(),
-              exprs,
+          LogicalProject.create(bb.root, exprs,
               rowType.getFieldNames().subList(0, fieldCount)),
           false);
     }
@@ -1168,10 +1166,7 @@ public class SqlToRelConverter {
         final int keyCount = leftKeys.size();
         final List<Integer> args = ImmutableIntList.range(0, keyCount);
         LogicalAggregate aggregate =
-            LogicalAggregate.create(seek,
-                ImmutableList.of(),
-                ImmutableBitSet.of(),
-                null,
+            LogicalAggregate.create(seek, ImmutableBitSet.of(), null,
                 ImmutableList.of(
                     AggregateCall.create(SqlStdOperatorTable.COUNT, false,
                         false, false, ImmutableList.of(), -1, RelCollations.EMPTY,
@@ -1179,8 +1174,8 @@ public class SqlToRelConverter {
                     AggregateCall.create(SqlStdOperatorTable.COUNT, false,
                         false, false, args, -1, RelCollations.EMPTY, longType, null)));
         LogicalJoin join =
-            LogicalJoin.create(bb.root, aggregate, ImmutableList.of(),
-                rexBuilder.makeLiteral(true), ImmutableSet.of(), JoinRelType.INNER);
+            LogicalJoin.create(bb.root, aggregate, rexBuilder.makeLiteral(true),
+                ImmutableSet.of(), JoinRelType.INNER);
         bb.setRoot(join, false);
       }
       final RexNode rex =
@@ -1269,12 +1264,6 @@ public class SqlToRelConverter {
           subQuery.logic, true, null);
       assert !converted.indicator;
       subQuery.expr = bb.register(converted.r, JoinRelType.LEFT);
-
-      // This is used when converting window table functions:
-      //
-      // select * from table(table emps, descriptor(deptno), interval '3' DAY)
-      //
-      bb.cursors.add(converted.r);
       return;
 
     default:
@@ -2408,15 +2397,12 @@ public class SqlToRelConverter {
       table = table.extend(extendedFields);
     }
     final RelNode tableRel;
-    // Review Danny 2020-01-13: hacky to construct a new table scan
-    // in order to apply the hint strategies.
-    final List<RelHint> hints = hintStrategies.apply(
-        SqlUtil.getRelHint(hintStrategies, tableHints),
-        LogicalTableScan.create(cluster, table, ImmutableList.of()));
+    final List<RelHint> hints = SqlUtil.getRelHint(hintStrategies, tableHints);
     if (config.isConvertTableAccess()) {
       tableRel = toRel(table, hints);
     } else {
-      tableRel = LogicalTableScan.create(cluster, table, hints);
+      tableRel = SqlUtil.attachRelHint(hintStrategies,
+          hints, LogicalTableScan.create(cluster, table));
     }
     bb.setRoot(tableRel, true);
     if (usedDataset[0]) {
@@ -2578,7 +2564,7 @@ public class SqlToRelConverter {
 
     final Join originalJoin =
         (Join) RelFactories.DEFAULT_JOIN_FACTORY.createJoin(leftRel, rightRel,
-            ImmutableList.of(), joinCond, ImmutableSet.of(), joinType, false);
+            joinCond, ImmutableSet.of(), joinType, false);
 
     RelNode node = RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
     // If join conditions are pushed down, update the leaves.
@@ -3073,7 +3059,7 @@ public class SqlToRelConverter {
    */
   protected RelNode createAggregate(Blackboard bb, ImmutableBitSet groupSet,
       ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-    return LogicalAggregate.create(bb.root, ImmutableList.of(), groupSet, groupSets, aggCalls);
+    return LogicalAggregate.create(bb.root, groupSet, groupSets, aggCalls);
   }
 
   public RexDynamicParam convertDynamicParam(
@@ -3396,7 +3382,10 @@ public class SqlToRelConverter {
   }
 
   public RelNode toRel(final RelOptTable table, @Nonnull final List<RelHint> hints) {
-    final RelNode scan = table.toRel(createToRelContext(hints));
+    final RelNode rel = table.toRel(createToRelContext(hints));
+    final RelNode scan = rel instanceof Hintable && hints.size() > 0
+        ? SqlUtil.attachRelHint(hintStrategies, hints, (Hintable) rel)
+        : rel;
 
     final InitializerExpressionFactory ief =
         Util.first(table.unwrap(InitializerExpressionFactory.class),
@@ -3976,7 +3965,6 @@ public class SqlToRelConverter {
           RelFactories.DEFAULT_JOIN_FACTORY.createJoin(
               ret,
               relNode,
-              ImmutableList.of(),
               rexBuilder.makeLiteral(true),
               ImmutableSet.of(),
               JoinRelType.INNER,

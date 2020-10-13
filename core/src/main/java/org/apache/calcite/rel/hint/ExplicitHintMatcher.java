@@ -30,18 +30,12 @@ import org.apache.calcite.rel.RelNode;
  * has "r" and "st" as the input table names. To implement this, you may need to customize an
  * {@link ExplicitHintStrategy} with the {@link ExplicitHintMatcher}.
  *
+ * @param <R> Relational expression to test if the hint matches
+ *
  * @see ExplicitHintStrategy
  * @see HintStrategies
  */
 @FunctionalInterface
-public interface ExplicitHintMatcher {
-
-  /**
-   * Returns whether the given hint can attach to the relational expression.
-   *
-   * @param hint Hints
-   * @param node Relational expression to test if the hint matches
-   * @return true if the {@code hint} can attach to the {@code node}
-   */
-  boolean matches(RelHint hint, RelNode node);
+public interface ExplicitHintMatcher<R extends RelNode> {
+  boolean apply(RelHint hint, R node);
 }
