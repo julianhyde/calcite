@@ -627,6 +627,7 @@ class LatticeSuggesterTest {
         .withLibrary(SqlLibrary.BIG_QUERY);
 
     final String q0 = "select `product_id`,\n"
+        + "  countif(unit_sales > 1000) as num_over_thousand,\n"
         + "  SUM(unit_sales)\n"
         + "from\n"
         + "  `sales_fact_1997`"
