@@ -16,12 +16,11 @@
  */
 package org.apache.calcite.util;
 
-import com.google.common.collect.Iterables;
-
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 

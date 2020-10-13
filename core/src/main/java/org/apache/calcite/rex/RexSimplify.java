@@ -2753,13 +2753,13 @@ public class RexSimplify {
       return build(negate);
     }
 
-    @SuppressWarnings({"unchecked", "UnstableApiUsage"})
+    @SuppressWarnings({"rawtypes", "unchecked", "UnstableApiUsage"})
     <C extends Comparable<C>> Sarg<C> build(boolean negate) {
       if (negate) {
         return Sarg.of(notNullTermCount == 0,
-            (RangeSet<C>) rangeSet.complement());
+            (RangeSet) rangeSet.complement());
       } else {
-        return Sarg.of(nullTermCount > 0, (RangeSet<C>) rangeSet);
+        return Sarg.of(nullTermCount > 0, (RangeSet) rangeSet);
       }
     }
 
