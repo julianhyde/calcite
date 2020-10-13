@@ -33,15 +33,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeAssignmentRule;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.DateString;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.NlsString;
-import org.apache.calcite.util.RangeSets;
-import org.apache.calcite.util.TestUtil;
-import org.apache.calcite.util.TimeString;
-import org.apache.calcite.util.TimestampString;
-import org.apache.calcite.util.TimestampWithTimeZoneString;
-import org.apache.calcite.util.Util;
+import org.apache.calcite.util.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1682,6 +1674,42 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplify(e, "OR(<=(?0.bool1, true), ?0.bool1)");
   }
 
+  @Test void testSimplifyNeOrIsNullAndEq() {
+    // (deptno <> 20 OR deptno IS NULL) AND deptno = 10
+    //   ==>
+    // deptno = 10
+    final RexNode e =
+        and(
+            or(ne(vInt(), literal(20)),
+                isNull(vInt())),
+        eq(vInt(), literal(10)));
+    checkSimplify2(e, "SEARCH(?0.int0, Sarg[10])", "=(?0.int0, 10)");
+  }
+
+  @Test void testSimplifyEqOrIsNullAndEq() {
+    // (deptno = 20 OR deptno IS NULL) AND deptno = 10
+    //   ==>
+    // false
+    final RexNode e =
+        and(
+            or(eq(vInt(), literal(20)),
+                isNull(vInt())),
+        eq(vInt(), literal(10)));
+    checkSimplify2(e, "SEARCH(?0.int0, Sarg[])", "false");
+  }
+
+  @Test void testSimplifyEqOrIsNullAndEqSame() {
+    // (deptno = 10 OR deptno IS NULL) AND deptno = 10
+    //   ==>
+    // false
+    final RexNode e =
+        and(
+            or(eq(vInt(), literal(10)),
+                isNull(vInt())),
+        eq(vInt(), literal(10)));
+    checkSimplify2(e, "SEARCH(?0.int0, Sarg[10])", "=(?0.int0, 10)");
+  }
+
   @Test void testSimplifyUnknown() {
     final RelDataType intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
     final RelDataType rowType = typeFactory.builder()
@@ -2650,6 +2678,57 @@ class RexProgramTest extends RexProgramTestBase {
         "AND(null, IS NULL(?0.int1), OR(null, IS NOT NULL(?0.int2)))",
         "false",
         "IS NULL(?0.int1)");
+  }
+
+  /** Tests {@link Sarg#complexity()}. */
+  @SuppressWarnings("UnstableApiUsage")
+  @Test void testSargComplexity() {
+    assertThat("complexity of 'x is not null'",
+        Sarg.of(false, RangeSets.<Integer>rangeSetAll()).complexity(),
+        is(1));
+    assertThat("complexity of 'x is null'",
+        Sarg.of(true, ImmutableRangeSet.<Integer>of()).complexity(),
+        is(1));
+
+    assertThat("complexity of 'x = 1'",
+        Sarg.of(false, ImmutableRangeSet.of(Range.singleton(1))).complexity(),
+        is(1));
+    assertThat("complexity of 'x > 1'",
+        Sarg.of(false, ImmutableRangeSet.of(Range.greaterThan(1)))
+            .complexity(),
+        is(1));
+    assertThat("complexity of 'x >= 1'",
+        Sarg.of(false, ImmutableRangeSet.of(Range.atLeast(1))).complexity(),
+        is(1));
+    assertThat("complexity of 'x > 1 or x is null'",
+        Sarg.of(true, ImmutableRangeSet.of(Range.greaterThan(1))).complexity(),
+        is(2));
+    assertThat("complexity of 'x <> 1'",
+        Sarg.of(false, ImmutableRangeSet.of(Range.singleton(1)).complement())
+            .complexity(),
+        is(1));
+    assertThat("complexity of 'x <> 1 or x is null'",
+        Sarg.of(true, ImmutableRangeSet.of(Range.singleton(1)).complement())
+            .complexity(),
+        is(2));
+    assertThat("complexity of 'x < 10 or x >= 20'",
+        Sarg.of(false,
+            ImmutableRangeSet.copyOf(
+                ImmutableList.of(Range.lessThan(10), Range.atLeast(20))))
+            .complexity(),
+        is(2));
+    assertThat("complexity of 'x in (2, 4, 6) or x > 20'",
+        Sarg.of(false,
+            ImmutableRangeSet.copyOf(
+                Arrays.asList(Range.singleton(2), Range.singleton(4),
+                    Range.singleton(6), Range.greaterThan(20)))).complexity(),
+        is(4));
+    assertThat("complexity of 'x between 3 and 8 or x between 10 and 20'",
+        Sarg.of(false,
+            ImmutableRangeSet.copyOf(
+                Arrays.asList(Range.closed(3, 8),
+                    Range.closed(10, 20)))).complexity(),
+        is(2));
   }
 
   @Test void testInterpreter() {

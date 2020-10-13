@@ -1939,8 +1939,15 @@ public class RexSimplify {
           final RexLiteral literal2 =
               rexBuilder.makeLiteral(sarg2, literal.getType(),
                   literal.getTypeName());
-          return call.clone(call.type, ImmutableList.of(a, literal2));
+          // Now we've strengthened containsNull to false, try to simplify again
+          return simplifySearch(
+              call.clone(call.type, ImmutableList.of(a, literal2)),
+              unknownAs);
         }
+      } else if (sarg.isPoints() && sarg.pointCount <= 1) {
+        // Expand "SEARCH(x, Sarg([point])" to "x = point"
+        // and "SEARCH(x, Sarg([])" to "false"
+        return RexUtil.expandSearch(rexBuilder, null, call);
       }
     }
     return call;
@@ -2597,7 +2604,8 @@ public class RexSimplify {
             ((RexCall) e).operands.get(1), e.getKind(), newTerms);
       case IS_NULL:
         if (negate) {
-          return false;
+//          assert false;
+//          return false;
         }
         final RexNode arg = ((RexCall) e).operands.get(0);
         return accept1(arg, e.getKind(),
@@ -2674,10 +2682,13 @@ public class RexSimplify {
         b.addSarg(sarg, negate, literal.getType());
         return true;
       case IS_NULL:
-        if (negate) {
-          throw new AssertionError("negate is not supported for IS_NULL");
+        if (negate) { // TODO
+//          throw new AssertionError("negate is not supported for IS_NULL");
+          ++b.notNullTermCount;
+        } else {
+          b.containsNull = true;
+          ++b.nullTermCount;
         }
-        b.containsNull = true;
         return true;
       default:
         throw new AssertionError("unexpected " + kind);
@@ -2690,7 +2701,7 @@ public class RexSimplify {
       if (term instanceof RexSargBuilder) {
         RexSargBuilder sargBuilder = (RexSargBuilder) term;
         return rexBuilder.makeCall(SqlStdOperatorTable.SEARCH, sargBuilder.ref,
-            rexBuilder.makeSearchArgumentLiteral(sargBuilder.build(negate),
+            rexBuilder.makeSearchArgumentLiteral(sargBuilder.build(),
                 term.getType()));
       }
       return term;
@@ -2707,21 +2718,24 @@ public class RexSimplify {
   static class RexSargBuilder extends RexNode {
     final RexNode ref;
     private final RexBuilder rexBuilder;
+    private boolean negate;
     private List<RelDataType> types = new ArrayList<>();
     final RangeSet<Comparable> rangeSet = TreeRangeSet.create();
-    boolean containsNull;
-    private int termCount;
-    private int nullCount;
+    boolean containsNull; // TODO: remove
+    int notNullTermCount;
+    int nullTermCount;
 
     RexSargBuilder(RexNode ref, RexBuilder rexBuilder, boolean negate) {
       this.ref = Objects.requireNonNull(ref);
       this.rexBuilder = Objects.requireNonNull(rexBuilder);
+      this.negate = negate;
       this.containsNull = false;
     }
 
     @Override public String toString() {
-      return "SEARCH(" + ref + ", " + rangeSet
-          + (containsNull ? " + null)" : ")");
+      return "SEARCH(" + ref + ", " + (negate ? "NOT " : "") + rangeSet
+          + ", " + (nullTermCount + notNullTermCount)
+          + " terms of which " + nullTermCount + " allow null)";
     }
 
     /** Returns a rough estimate of whether it is worth converting to a Sarg.
@@ -2734,25 +2748,41 @@ public class RexSimplify {
      * </ul>
      */
     int complexity() {
-      int complexity = 0;
+      return build(false).complexity();
+    }
+
+    int complexity0() {
+      int complexity;
       if (rangeSet.asRanges().size() == 2
           && rangeSet.complement().asRanges().size() == 1
           && RangeSets.isPoint(
               Iterables.getOnlyElement(rangeSet.complement().asRanges()))) {
-        complexity++;
+        complexity = 1;
       } else {
-        complexity += rangeSet.asRanges().size();
+        complexity = rangeSet.asRanges().size();
       }
       if (containsNull) {
         ++complexity;
       }
+      if (complexity != complexity0()) {
+        throw new AssertionError(this + " has complexity " + complexity
+            + ", alternative is " + complexity0());
+      }
       return complexity;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked", "UnstableApiUsage"})
+    <C extends Comparable<C>> Sarg<C> build() {
+      return build(negate);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked", "UnstableApiUsage"})
     <C extends Comparable<C>> Sarg<C> build(boolean negate) {
-      final RangeSet rangeSet =
-          negate ? this.rangeSet.complement() : this.rangeSet;
-      return Sarg.of(containsNull, rangeSet);
+      if (negate) {
+        return Sarg.of(notNullTermCount == 0, (RangeSet) this.rangeSet.complement());
+      } else {
+        return Sarg.of(nullTermCount > 0, (RangeSet) this.rangeSet);
+      }
     }
 
     @Override public RelDataType getType() {
@@ -2785,15 +2815,16 @@ public class RexSimplify {
     void addRange(Range<Comparable> range, RelDataType type) {
       types.add(type);
       rangeSet.add(range);
-      ++termCount;
+      ++notNullTermCount;
     }
 
     void addSarg(Sarg sarg, boolean negate, RelDataType type) {
       types.add(type);
       rangeSet.addAll(negate ? sarg.rangeSet.complement() : sarg.rangeSet);
-      ++termCount;
       if (sarg.containsNull) {
-        ++nullCount;
+        ++nullTermCount;
+      } else {
+        ++notNullTermCount;
       }
       containsNull |= sarg.containsNull;
     }

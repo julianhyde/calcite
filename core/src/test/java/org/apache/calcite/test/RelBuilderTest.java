@@ -551,7 +551,7 @@ public class RelBuilderTest {
   }
 
   /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-1297">[CALCITE-4325]
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4325">[CALCITE-4325]
    * RexSimplify incorrectly simplifies complex expressions with Sarg and
    * NULL</a>. */
   @Test void testFilterAndOrWithNull() {
@@ -563,7 +563,7 @@ public class RelBuilderTest {
     //   SELECT *
     //   FROM emp
     //   WHERE deptno = 10
-    // With CALCITE-4325, incorrectly is incorrectly simplified to:
+    // With [CALCITE-4325], is incorrectly simplified to:
     //   SELECT *
     //   FROM emp
     //   WHERE deptno = 10 OR deptno IS NULL
@@ -589,27 +589,21 @@ public class RelBuilderTest {
     //   WHERE (deptno = 20 OR deptno IS NULL) AND deptno = 10
     // Should be simplified to:
     //   No rows (WHERE FALSE)
-    // But it currently simplified to:
+    // With [CALCITE-4325], is incorrectly simplified to:
     //   SELECT *
     //   FROM emp
     //   WHERE deptno IS NULL
-    final RelBuilder builder = RelBuilder.create(config().build());
-
-    RelNode query = builder
-        .scan("EMP")
-        .filter(
-            builder.and(
-                builder.or(
-                    builder.equals(builder.field("DEPTNO"), builder.literal(20)),
-                    builder.isNull(builder.field("DEPTNO"))
-                ),
-                builder.equals(builder.field("DEPTNO"), builder.literal(10))
-            )
-        )
-        .build();
+    final Function<RelBuilder, RelNode> f = b ->
+        b.scan("EMP")
+            .filter(
+                b.and(
+                    b.or(b.equals(b.field("DEPTNO"), b.literal(20)),
+                        b.isNull(b.field("DEPTNO"))),
+                    b.equals(b.field("DEPTNO"), b.literal(10))))
+            .build();
 
     final String expected = "LogicalValues(tuples=[[]])\n";
-    assertThat(query, hasTree(expected));
+    assertThat(f.apply(createBuilder()), hasTree(expected));
   }
 
   @Test void testBadFieldName() {
