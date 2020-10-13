@@ -4561,29 +4561,24 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testIfFunc() {
-    final SqlTester testerBigQuery = tester(SqlLibrary.BIG_QUERY);
-    testerBigQuery.setFor(SqlLibraryOperators.IF);
-    testerBigQuery.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
-    testerBigQuery.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz",
-        "CHAR(3) NOT NULL");
-    testerBigQuery.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')",
-        "abc", "CHAR(3) NOT NULL");
+    checkIf(tester(SqlLibrary.BIG_QUERY));
+    checkIf(tester(SqlLibrary.HIVE));
+    checkIf(tester(SqlLibrary.SPARK));
+  }
 
-    final SqlTester testerHive = tester(SqlLibrary.HIVE);
-    testerHive.setFor(SqlLibraryOperators.IF);
-    testerHive.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
-    testerHive.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz",
+  private void checkIf(SqlTester tester) {
+    tester.setFor(SqlLibraryOperators.IF);
+    tester.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
+    tester.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz",
         "CHAR(3) NOT NULL");
-    testerHive.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')",
-        "abc", "CHAR(3) NOT NULL");
-
-    final SqlTester testerSpark = tester(SqlLibrary.SPARK);
-    testerSpark.setFor(SqlLibraryOperators.IF);
-    testerSpark.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
-    testerSpark.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz",
+    tester.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')", "abc",
         "CHAR(3) NOT NULL");
-    testerSpark.checkString("if(substring('abc',1,2)='ab', 'abc', 'xyz')",
-        "abc", "CHAR(3) NOT NULL");
+    tester.checkString("if(substring('abc',1,2)='ab', 'abc', 'wxyz')", "abc ",
+        "CHAR(4) NOT NULL");
+    // TRUE yields first arg, FALSE and UNKNOWN yield second arg
+    tester.checkScalar("if(nullif(true,false), 5, 10)", 5, "INTEGER NOT NULL");
+    tester.checkScalar("if(nullif(true,true), 5, 10)", 10, "INTEGER NOT NULL");
+    tester.checkScalar("if(nullif(true,true), 5, 10)", 10, "INTEGER NOT NULL");
   }
 
   @Test void testUpperFunc() {

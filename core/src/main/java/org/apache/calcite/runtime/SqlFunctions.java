@@ -354,15 +354,6 @@ public class SqlFunctions {
     return buf.reverse().toString();
   }
 
-  /** SQL IF(boolean, object, object) function. */
-  public static Object ifFunction(boolean a, Object b, Object c) {
-    if (a) {
-      return b;
-    } else {
-      return c;
-    }
-  }
-
   /** SQL ASCII(string) function. */
   public static int ascii(String s) {
     return s.isEmpty()

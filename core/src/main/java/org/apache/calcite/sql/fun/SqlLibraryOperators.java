@@ -22,6 +22,7 @@ import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
@@ -31,6 +32,7 @@ import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
+import org.apache.calcite.util.Litmus;
 
 import com.google.common.collect.ImmutableList;
 
@@ -96,7 +98,8 @@ public abstract class SqlLibraryOperators {
   /** The "IF(condition, thenValue, elseValue)" function. */
   @LibraryOperator(libraries = {BIG_QUERY, HIVE, SPARK})
   public static final SqlFunction IF =
-      new SqlFunction("IF", SqlKind.IF, ReturnTypes.ARG1_NULLABLE, null,
+      new SqlFunction("IF", SqlKind.IF, SqlLibraryOperators::inferIfReturnType,
+          null,
           OperandTypes.and(
               OperandTypes.family(SqlTypeFamily.BOOLEAN, SqlTypeFamily.ANY,
                   SqlTypeFamily.ANY),
@@ -107,7 +110,20 @@ public abstract class SqlLibraryOperators {
                   return ImmutableList.of(1, 2);
                 }
               }),
-          SqlFunctionCategory.SYSTEM);
+          SqlFunctionCategory.SYSTEM) {
+        @Override public boolean validRexOperands(int count, Litmus litmus) {
+          // IF is translated to RexNode by expanding to CASE.
+          return litmus.fail("not a rex operator");
+        }
+      };
+
+  /** Infers the return type of {@code IF(b, x, y)},
+   * namely the least restrictive of the types of x and y.
+   * Similar to {@link ReturnTypes#LEAST_RESTRICTIVE}. */
+  private static RelDataType inferIfReturnType(SqlOperatorBinding opBinding) {
+    return opBinding.getTypeFactory()
+        .leastRestrictive(opBinding.collectOperandTypes().subList(1, 3));
+  }
 
   /** The "NVL(value, value)" function. */
   @LibraryOperator(libraries = {ORACLE})
