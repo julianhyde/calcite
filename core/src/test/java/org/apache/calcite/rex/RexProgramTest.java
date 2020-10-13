@@ -1546,7 +1546,7 @@ class RexProgramTest extends RexProgramTestBase {
             eq(aRef, literal(3)),
             or(eq(aRef, literal(3)),
                 eq(aRef, literal(4)))),
-        "AND(=(?0.b, 2), =(?0.a, 3))");
+        "AND(SEARCH(?0.b, Sarg[2]), SEARCH(?0.a, Sarg[3]))");
 
     checkSimplify3(
         or(lt(vInt(), nullInt),
@@ -1644,6 +1644,19 @@ class RexProgramTest extends RexProgramTestBase {
     final String simplified =
         "OR(SEARCH($1, Sarg[, null]), SEARCH($0, Sarg[1, 2]))";
     final String expanded = "OR(IS NULL($1), OR(=($0, 1), =($0, 2)))";
+    checkSimplify(expr, simplified)
+        .expandedSearch(expanded);
+  }
+
+  @Test void testSimplifyRange7() {
+    final RexNode aRef = input(tInt(true), 0);
+    // a is not null and a > 3 and a < 10
+    RexNode expr = and(
+        isNotNull(aRef),
+        gt(aRef, literal(3)),
+        lt(aRef, literal(10)));
+    final String simplified = "SEARCH($0, Sarg[(3..10)])";
+    final String expanded = "AND(>($0, 3), <($0, 10))";
     checkSimplify(expr, simplified)
         .expandedSearch(expanded);
   }

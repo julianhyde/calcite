@@ -2603,10 +2603,7 @@ public class RexSimplify {
         return accept2(((RexCall) e).operands.get(0),
             ((RexCall) e).operands.get(1), e.getKind(), newTerms);
       case IS_NULL:
-        if (negate) {
-//          assert false;
-//          return false;
-        }
+      case IS_NOT_NULL:
         final RexNode arg = ((RexCall) e).operands.get(0);
         return accept1(arg, e.getKind(),
             rexBuilder.makeNullLiteral(arg.getType()), newTerms);
@@ -2677,18 +2674,23 @@ public class RexSimplify {
         b.addRange(Range.lessThan(value), literal.getType());
         b.addRange(Range.greaterThan(value), literal.getType());
         return true;
+      case IS_NULL:
+        if (negate) {
+          ++b.notNullTermCount;
+        } else {
+          ++b.nullTermCount;
+        }
+        return true;
+      case IS_NOT_NULL:
+        if (negate) {
+          ++b.nullTermCount;
+        } else {
+          ++b.notNullTermCount;
+        }
+        return true;
       case SEARCH:
         final Sarg sarg = literal.getValueAs(Sarg.class);
         b.addSarg(sarg, negate, literal.getType());
-        return true;
-      case IS_NULL:
-        if (negate) { // TODO
-//          throw new AssertionError("negate is not supported for IS_NULL");
-          ++b.notNullTermCount;
-        } else {
-          b.containsNull = true;
-          ++b.nullTermCount;
-        }
         return true;
       default:
         throw new AssertionError("unexpected " + kind);
@@ -2715,13 +2717,12 @@ public class RexSimplify {
    * <p>The {@link SargCollector#fix} method converts it to an immutable
    * literal. */
   @SuppressWarnings("BetaApi")
-  static class RexSargBuilder extends RexNode {
+  private static class RexSargBuilder extends RexNode {
     final RexNode ref;
-    private final RexBuilder rexBuilder;
-    private boolean negate;
-    private List<RelDataType> types = new ArrayList<>();
+    final RexBuilder rexBuilder;
+    final boolean negate;
+    final List<RelDataType> types = new ArrayList<>();
     final RangeSet<Comparable> rangeSet = TreeRangeSet.create();
-    boolean containsNull; // TODO: remove
     int notNullTermCount;
     int nullTermCount;
 
@@ -2729,7 +2730,6 @@ public class RexSimplify {
       this.ref = Objects.requireNonNull(ref);
       this.rexBuilder = Objects.requireNonNull(rexBuilder);
       this.negate = negate;
-      this.containsNull = false;
     }
 
     @Override public String toString() {
@@ -2740,48 +2740,26 @@ public class RexSimplify {
 
     /** Returns a rough estimate of whether it is worth converting to a Sarg.
      *
-     * <p>Examples:
-     * <ul>
-     *   <li>{@code x = 1}, {@code x <> 1}, {@code x > 1} have complexity 1
-     *   <li>{@code x > 1 or x is null} has complexity 2
-     *   <li>{@code x in (2, 4, 6) or x > 20} has complexity 4
-     * </ul>
+     * @see Sarg#complexity()
      */
     int complexity() {
+      // Ignore 'negate' just to be compatible with previous versions of this
+      // method. "build().complexity()" would be a better estimate, if we could
+      // switch to it breaking lots of plans.
       return build(false).complexity();
     }
 
-    int complexity0() {
-      int complexity;
-      if (rangeSet.asRanges().size() == 2
-          && rangeSet.complement().asRanges().size() == 1
-          && RangeSets.isPoint(
-              Iterables.getOnlyElement(rangeSet.complement().asRanges()))) {
-        complexity = 1;
-      } else {
-        complexity = rangeSet.asRanges().size();
-      }
-      if (containsNull) {
-        ++complexity;
-      }
-      if (complexity != complexity0()) {
-        throw new AssertionError(this + " has complexity " + complexity
-            + ", alternative is " + complexity0());
-      }
-      return complexity;
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked", "UnstableApiUsage"})
     <C extends Comparable<C>> Sarg<C> build() {
       return build(negate);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked", "UnstableApiUsage"})
+    @SuppressWarnings({"unchecked", "UnstableApiUsage"})
     <C extends Comparable<C>> Sarg<C> build(boolean negate) {
       if (negate) {
-        return Sarg.of(notNullTermCount == 0, (RangeSet) this.rangeSet.complement());
+        return Sarg.of(notNullTermCount == 0,
+            (RangeSet<C>) rangeSet.complement());
       } else {
-        return Sarg.of(nullTermCount > 0, (RangeSet) this.rangeSet);
+        return Sarg.of(nullTermCount > 0, (RangeSet<C>) rangeSet);
       }
     }
 
@@ -2826,7 +2804,6 @@ public class RexSimplify {
       } else {
         ++notNullTermCount;
       }
-      containsNull |= sarg.containsNull;
     }
   }
 }
