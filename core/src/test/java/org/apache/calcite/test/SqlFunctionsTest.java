@@ -130,7 +130,6 @@ class SqlFunctionsTest {
     assertThat(posixRegex("abc", "[[:xdigit:]]", false), is(true));
     assertThat(posixRegex("abc", "[[:xdigit:]]+", false), is(true));
     assertThat(posixRegex("abcq", "[[:xdigit:]]", false), is(true));
-
   }
 
   @Test void testRegexpReplace() {
