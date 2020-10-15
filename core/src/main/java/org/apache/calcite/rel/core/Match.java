@@ -232,12 +232,6 @@ public abstract class Match extends SingleRel {
       case MIN:
         aggFunction = new SqlMinMaxAggFunction(call.getKind());
         break;
-      case BOOL_AND:
-        aggFunction = SqlStdOperatorTable.BOOL_AND;
-        break;
-      case BOOL_OR:
-        aggFunction = SqlStdOperatorTable.BOOL_OR;
-        break;
       case COUNT:
         aggFunction = SqlStdOperatorTable.COUNT;
         break;

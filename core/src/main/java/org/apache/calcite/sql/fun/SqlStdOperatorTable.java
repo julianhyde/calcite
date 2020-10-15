@@ -971,33 +971,13 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>BOOL_AND</code> aggregate function.
    */
   public static final SqlAggFunction BOOL_AND =
-      new SqlAggFunction("BOOL_AND",
-          null,
-          SqlKind.BOOL_AND,
-          ReturnTypes.ARG0_NULLABLE_IF_EMPTY,
-          null,
-          OperandTypes.BOOLEAN,
-          SqlFunctionCategory.SYSTEM,
-          false,
-          false,
-          Optionality.FORBIDDEN) {
-      };
+      new SqlMinMaxAggFunction("BOOL_AND", SqlKind.MIN, OperandTypes.BOOLEAN);
 
   /**
    * <code>BOOL_OR</code> aggregate function.
    */
   public static final SqlAggFunction BOOL_OR =
-      new SqlAggFunction("BOOL_OR",
-          null,
-          SqlKind.BOOL_OR,
-          ReturnTypes.ARG0_NULLABLE_IF_EMPTY,
-          null,
-          OperandTypes.BOOLEAN,
-          SqlFunctionCategory.SYSTEM,
-          false,
-          false,
-          Optionality.FORBIDDEN) {
-      };
+      new SqlMinMaxAggFunction("BOOL_OR", SqlKind.MAX, OperandTypes.BOOLEAN);
 
   /**
    * <code>LAST_VALUE</code> aggregate function.

@@ -9132,7 +9132,11 @@ public abstract class SqlOperatorBaseTest {
         0d);
   }
 
-  @Test public void testBoolAndFunc() {
+  @Test void testBoolAndFunc() {
+    checkBoolAndFunc(libraryTester(SqlLibrary.POSTGRESQL));
+  }
+
+  void checkBoolAndFunc(SqlTester tester) {
     tester.setFor(SqlStdOperatorTable.BOOL_AND, VM_EXPAND);
 
     tester.checkFails(
@@ -9163,7 +9167,15 @@ public abstract class SqlOperatorBaseTest {
     tester.checkAgg("bool_and(x)", values4, null, 0d);
   }
 
-  @Test public void testBoolOrFunc() {
+  @Test void testBoolOrFunc() {
+    // not in standard dialect
+    final String[] values1 = {"true", "true", "null"};
+    tester.checkAggFails("bool_or(x)", values1, "xx", false);
+
+    checkBoolOrFunc(libraryTester(SqlLibrary.POSTGRESQL));
+  }
+
+  void checkBoolOrFunc(SqlTester tester) {
     tester.setFor(SqlStdOperatorTable.BOOL_OR, VM_EXPAND);
 
     tester.checkFails(
