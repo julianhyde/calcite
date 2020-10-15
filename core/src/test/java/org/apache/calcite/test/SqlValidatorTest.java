@@ -8094,19 +8094,25 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testBoolAndBoolOrFunction() {
-    sql("SELECT bool_and(true) from emp").ok();
-    sql("SELECT bool_or(true) from emp").ok();
+    final Sql s = sql("?")
+        .withOperatorTable(operatorTableFor(SqlLibrary.POSTGRESQL));
+    s.sql("SELECT bool_and(true) from emp").ok();
+    s.sql("SELECT bool_or(true) from emp").ok();
 
-    sql("select bool_and(col) from (values(true), (false), (true)) as tbl(col)").ok();
-    sql("select bool_or(col) from (values(true), (false), (true)) as tbl(col)").ok();
+    s.sql("select bool_and(col)\n"
+        + "from (values(true), (false), (true)) as tbl(col)").ok();
+    s.sql("select bool_or(col)\n"
+        + "from (values(true), (false), (true)) as tbl(col)").ok();
 
-    sql("select bool_and(col) from (values(true), (false), (null)) as tbl(col)").ok();
-    sql("select bool_or(col) from (values(true), (false), (null)) as tbl(col)").ok();
+    s.sql("select bool_and(col)\n"
+        + "from (values(true), (false), (null)) as tbl(col)").ok();
+    s.sql("select bool_or(col)\n"
+        + "from (values(true), (false), (null)) as tbl(col)").ok();
 
-    sql("SELECT ^bool_and(ename)^ from emp")
+    s.sql("SELECT ^bool_and(ename)^ from emp")
         .fails("(?s).*Cannot apply 'BOOL_AND' to arguments of type "
             + "'BOOL_AND\\(<VARCHAR\\(20\\)>\\)'.*");
-    sql("SELECT ^bool_or(ename)^ from emp")
+    s.sql("SELECT ^bool_or(ename)^ from emp")
         .fails("(?s).*Cannot apply 'BOOL_OR' to arguments of type "
             + "'BOOL_OR\\(<VARCHAR\\(20\\)>\\)'.*");
   }

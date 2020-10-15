@@ -67,8 +67,6 @@ public class AggregateUnionTransposeRule
     SUPPORTED_AGGREGATES.put(SqlCountAggFunction.class, true);
     SUPPORTED_AGGREGATES.put(SqlSumAggFunction.class, true);
     SUPPORTED_AGGREGATES.put(SqlSumEmptyIsZeroAggFunction.class, true);
-    SUPPORTED_AGGREGATES.put(SqlStdOperatorTable.BOOL_OR.getClass(), true);
-    SUPPORTED_AGGREGATES.put(SqlStdOperatorTable.BOOL_AND.getClass(), true);
     SUPPORTED_AGGREGATES.put(SqlAnyValueAggFunction.class, true);
     SUPPORTED_AGGREGATES.put(SqlBitOpAggFunction.class, true);
   }
