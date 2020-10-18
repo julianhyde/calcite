@@ -705,8 +705,8 @@ public class JdbcRules {
               + aggCall.getAggregation());
         }
         if (aggCall.hasFilter() && !dialect.supportsAggregateFunctionFilter()) {
-          throw new InvalidRelException("dialect does not support aggregate functions FILTER " +
-              "clauses");
+          throw new InvalidRelException("dialect does not support aggregate "
+              + "functions FILTER clauses");
         }
       }
     }
