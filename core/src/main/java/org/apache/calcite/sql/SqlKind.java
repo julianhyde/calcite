@@ -802,6 +802,9 @@ public enum SqlKind {
   /** The {@code LISTAGG} aggregate function. */
   LISTAGG,
 
+  /** The {@code STRING_AGG} aggregate function. */
+  STRING_AGG,
+
   /** The {@code COLLECT} aggregate function. */
   COLLECT,
 

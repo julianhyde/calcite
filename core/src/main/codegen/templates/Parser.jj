@@ -3863,12 +3863,7 @@ SqlNode StringAggFunctionCall() :
     )*
     [
         orderBy = OrderBy(true) {
-            // Replace the last argument with ORDER BY, so that the expression
-            // looks right when unparsed.
-            SqlNode arg = args.remove(args.size() - 1);
-            args.add(
-                new SqlOrderBy(orderBy.getParserPosition(), arg, orderBy, null,
-                    null));
+            args.add(orderBy);
         }
     ]
     <RPAREN>

@@ -2518,6 +2518,7 @@ Dialect-specific aggregate functions.
 | p | BOOL_OR(condition)                             | Synonym for `SOME`
 | b | LOGICAL_AND(condition)                         | Synonym for `EVERY`
 | b | LOGICAL_OR(condition)                          | Synonym for `SOME`
+| b p | STRING_AGG( [ ALL &#124; DISTINCT ] value [, separator] [ ORDER BY orderItem [, orderItem ]* ] ) | Synonym for `LISTAGG`
 
 Usage Examples:
 

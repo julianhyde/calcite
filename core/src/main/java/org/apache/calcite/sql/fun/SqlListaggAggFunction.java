@@ -29,8 +29,8 @@ import org.apache.calcite.util.Optionality;
  * returns the concatenation of its group rows.
  */
 class SqlListaggAggFunction extends SqlAggFunction {
-  SqlListaggAggFunction(String name) {
-    super(name, null, SqlKind.LISTAGG, ReturnTypes.ARG0_NULLABLE,
+  SqlListaggAggFunction(SqlKind kind) {
+    super(kind.name(), null, kind, ReturnTypes.ARG0_NULLABLE,
         null, OperandTypes.or(OperandTypes.STRING, OperandTypes.STRING_STRING),
         SqlFunctionCategory.SYSTEM, false, false, Optionality.OPTIONAL);
   }

@@ -136,6 +136,7 @@ import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
 import org.apache.calcite.sql.fun.SqlInOperator;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -5451,6 +5452,22 @@ public class SqlToRelConverter {
       case RESPECT_NULLS:
         translateAgg(call.operand(0), filter, orderList, ignoreNulls,
             outerCall);
+        return;
+      case STRING_AGG:
+        // Translate "STRING_AGG(s, sep ORDER BY x, y)"
+        // as if it were "LISTAGG(s, sep) WITHIN GROUP (ORDER BY x, y)";
+        // and  "STRING_AGG(s, sep)" as "LISTAGG(s, sep)".
+        List<SqlNode> operands = call.getOperandList();
+        if (!operands.isEmpty()
+            && Util.last(operands) instanceof SqlNodeList) {
+          orderList = (SqlNodeList) Util.last(operands);
+          operands = Util.skipLast(operands);
+        }
+        final SqlCall call2 =
+            SqlStdOperatorTable.LISTAGG.createCall(
+                call.getFunctionQuantifier(), call.getParserPosition(),
+                operands);
+        translateAgg(call2, filter, orderList, ignoreNulls, outerCall);
         return;
       default:
         break;
