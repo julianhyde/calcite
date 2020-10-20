@@ -268,6 +268,13 @@ public abstract class SqlLibraryOperators {
   public static final SqlAggFunction LOGICAL_OR =
       new SqlMinMaxAggFunction("LOGICAL_OR", SqlKind.MAX, OperandTypes.BOOLEAN);
 
+  /** The "STRING_AGG(value [, separator ] [ ORDER BY ...])" aggregate function,
+   * BigQuery and PostgreSQL's equivalent of
+   * {@link SqlStdOperatorTable#LISTAGG}. */
+  @LibraryOperator(libraries = {POSTGRESQL, BIG_QUERY})
+  public static final SqlAggFunction STRING_AGG =
+      new SqlListaggAggFunction("STRING_AGG");
+
   /** The "DATE(string)" function, equivalent to "CAST(string AS DATE). */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction DATE =

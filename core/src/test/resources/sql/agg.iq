@@ -2874,4 +2874,19 @@ from emp group by gender;
 
 !ok
 
+# STRING_AGG (BigQuery and PostgreSQL) is very similar to LISTAGG.
+select
+  string_agg(ename order by deptno, ename) as default_string_agg_sep,
+  string_agg(ename, '; ' order by deptno, ename desc) as custom_string_agg_sep
+from emp group by gender;
++----------------------------------+---------------------------------------+
+| DEFAULT_LISTAGG_SEP              | CUSTOM_LISTAGG_SEP                    |
++----------------------------------+---------------------------------------+
+| Bob,Eric,Adam                    | Bob; Eric; Adam                       |
+| Jane,Alice,Susan,Eve,Grace,Wilma | Jane; Susan; Alice; Eve; Grace; Wilma |
++----------------------------------+---------------------------------------+
+(2 rows)
+
+!ok
+
 # End agg.iq

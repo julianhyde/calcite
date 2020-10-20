@@ -299,6 +299,7 @@ parser: {
     "SQL_VARCHAR"
     "STATE"
     "STATEMENT"
+    "STRING_AGG"
     "STRUCTURE"
     "STYLE"
     "SUBCLASS_ORIGIN"

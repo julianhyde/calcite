@@ -8830,6 +8830,19 @@ public class SqlParserTest {
     sql(sql).ok(expected);
   }
 
+  @Test void testStringAgg() {
+    final String sql = "select\n"
+        + "  string_agg(ename order by deptno, ename) as c1,\n"
+        + "  string_agg(ename, '; ' order by deptno, ename desc) as c2\n"
+        + "from emp group by gender";
+    final String expected = "SELECT STRING_AGG(`ENAME`\n"
+        + "ORDER BY `DEPTNO`, `ENAME`) AS `C1`,"
+        + " STRING_AGG(`ENAME`, '; ' ORDER BY `DEPTNO`, `ENAME` DESC) AS `C2`\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY `GENDER`";
+    sql(sql).ok(expected);
+  }
+
   @Test void testJsonValueExpressionOperator() {
     expr("foo format json")
         .ok("`FOO` FORMAT JSON");

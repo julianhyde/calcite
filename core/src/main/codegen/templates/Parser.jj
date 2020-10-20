@@ -870,23 +870,16 @@ List UnquantifiedFunctionParameterList(
 List FunctionParameterList(
     ExprContext exprContext) :
 {
-    SqlNode e = null;
-    List list = new ArrayList();
+    final SqlLiteral qualifier;
+    final List list = new ArrayList();
 }
 {
     <LPAREN>
-    [
-        <DISTINCT> {
-            e = SqlSelectKeyword.DISTINCT.symbol(getPos());
-        }
+    (
+        qualifier = AllOrDistinct() { list.add(qualifier); }
     |
-        <ALL> {
-            e = SqlSelectKeyword.ALL.symbol(getPos());
-        }
-    ]
-    {
-        list.add(e);
-    }
+        { list.add(null); }
+    )
     Arg0(list, exprContext)
     (
         <COMMA> {
@@ -899,6 +892,15 @@ List FunctionParameterList(
     {
         return list;
     }
+}
+
+SqlLiteral AllOrDistinct() :
+{
+}
+{
+    <DISTINCT> { return SqlSelectKeyword.DISTINCT.symbol(getPos()); }
+|
+    <ALL> { return SqlSelectKeyword.ALL.symbol(getPos()); }
 }
 
 void Arg0(List list, ExprContext exprContext) :
@@ -1269,6 +1271,7 @@ SqlNode TableRefWithHintsOpt() :
 SqlSelect SqlSelect() :
 {
     final List<SqlLiteral> keywords = new ArrayList<SqlLiteral>();
+    final SqlLiteral keyword;
     final SqlNodeList keywordList;
     List<SqlNode> selectList;
     final SqlNode fromClause;
@@ -1296,12 +1299,7 @@ SqlSelect SqlSelect() :
         }
     )?
     (
-        <DISTINCT> {
-            keywords.add(SqlSelectKeyword.DISTINCT.symbol(getPos()));
-        }
-    |   <ALL> {
-            keywords.add(SqlSelectKeyword.ALL.symbol(getPos()));
-        }
+        keyword = AllOrDistinct() { keywords.add(keyword); }
     )?
     {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
@@ -3838,6 +3836,49 @@ SqlNode RowExpressionExtension() :
 }
 
 /**
+ * Parses a call to the STRING_AGG aggregate function.
+ */
+SqlNode StringAggFunctionCall() :
+{
+    final SqlIdentifier p;
+    final List<SqlNode> args = new ArrayList();
+    final SqlLiteral qualifier;
+    final SqlNodeList orderBy;
+}
+{
+    <STRING_AGG> { p = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos()); }
+    <LPAREN>
+    (
+        qualifier = AllOrDistinct()
+    |
+        { qualifier = null; }
+    )
+    Arg(args, ExprContext.ACCEPT_SUB_QUERY)
+    (
+        <COMMA> {
+            // a comma-list can't appear where only a query is expected
+            checkNonQueryExpression(ExprContext.ACCEPT_SUB_QUERY);
+        }
+        Arg(args, ExprContext.ACCEPT_SUB_QUERY)
+    )*
+    [
+        orderBy = OrderBy(true) {
+            // Replace the last argument with ORDER BY, so that the expression
+            // looks right when unparsed.
+            SqlNode arg = args.remove(args.size() - 1);
+            args.add(
+                new SqlOrderBy(orderBy.getParserPosition(), arg, orderBy, null,
+                    null));
+        }
+    ]
+    <RPAREN>
+    {
+        return SqlLibraryOperators.STRING_AGG.createCall(qualifier,
+            p.getParserPosition().plus(getPos()), args);
+    }
+}
+
+/**
  * Parses an atomic row expression.
  */
 SqlNode AtomicRowExpression() :
@@ -5803,6 +5844,8 @@ SqlNode BuiltinFunctionCall() :
     |
         node = TimestampDiffFunctionCall() { return node; }
     |
+        node = StringAggFunctionCall() { return node; }
+    |
 <#list (parser.builtinFunctionCallMethods!default.parser.builtinFunctionCallMethods) as method>
         node = ${method} { return node; }
     |
@@ -6285,7 +6328,7 @@ SqlNodeList JsonArrayAggOrderByClause() :
 SqlCall JsonArrayAggFunctionCall() :
 {
     final SqlNode valueExpr;
-    SqlNodeList orderList = null;
+    final SqlNodeList orderList;
     List<SqlNode> list;
     final Span span;
     SqlJsonConstructorNullClause nullClause =
@@ -7657,6 +7700,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
 |   < STREAM: "STREAM" >
+|   < STRING_AGG: "STRING_AGG" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >
 |   < SUBCLASS_ORIGIN: "SUBCLASS_ORIGIN" >
