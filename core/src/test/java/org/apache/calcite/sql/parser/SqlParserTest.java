@@ -8833,11 +8833,15 @@ public class SqlParserTest {
   @Test void testStringAgg() {
     final String sql = "select\n"
         + "  string_agg(ename order by deptno, ename) as c1,\n"
-        + "  string_agg(ename, '; ' order by deptno, ename desc) as c2\n"
+        + "  string_agg(ename, '; ' order by deptno, ename desc) as c2,\n"
+        + "  string_agg(ename) as c3,\n"
+        + "  string_agg(ename, ':') as c4\n"
         + "from emp group by gender";
-    final String expected = "SELECT STRING_AGG(`ENAME`\n"
-        + "ORDER BY `DEPTNO`, `ENAME`) AS `C1`,"
-        + " STRING_AGG(`ENAME`, '; ' ORDER BY `DEPTNO`, `ENAME` DESC) AS `C2`\n"
+    final String expected = "SELECT"
+        + " STRING_AGG(`ENAME` ORDER BY `DEPTNO`, `ENAME`) AS `C1`,"
+        + " STRING_AGG(`ENAME`, '; ' ORDER BY `DEPTNO`, `ENAME` DESC) AS `C2`,"
+        + " STRING_AGG(`ENAME`) AS `C3`,"
+        + " STRING_AGG(`ENAME`, ':') AS `C4`\n"
         + "FROM `EMP`\n"
         + "GROUP BY `GENDER`";
     sql(sql).ok(expected);

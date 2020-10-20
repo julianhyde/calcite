@@ -19,8 +19,10 @@ package org.apache.calcite.sql.fun;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.util.Util;
@@ -38,7 +40,7 @@ import java.util.List;
  * @see SqlListaggAggFunction
  */
 class SqlStringAggAggFunction extends SqlListaggAggFunction {
-  public SqlStringAggAggFunction() {
+  SqlStringAggAggFunction() {
     super(SqlKind.STRING_AGG);
   }
 
@@ -55,5 +57,25 @@ class SqlStringAggAggFunction extends SqlListaggAggFunction {
     return super.deriveType(validator, scope,
         createCall(call.getFunctionQuantifier(), call.getParserPosition(),
             operandList));
+  }
+
+  @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
+      int rightPrec) {
+    writer.keyword(getName());
+    final SqlWriter.Frame frame =
+        writer.startList(SqlWriter.FrameTypeEnum.FUN_CALL, "(", ")");
+    final SqlLiteral quantifier = call.getFunctionQuantifier();
+    if (quantifier != null) {
+      quantifier.unparse(writer, 0, 0);
+    }
+    for (SqlNode operand : call.getOperandList()) {
+      if (operand instanceof SqlNodeList) {
+        writer.sep("ORDER BY");
+      } else {
+        writer.sep(",");
+      }
+      operand.unparse(writer, 0, 0);
+    }
+    writer.endList(frame);
   }
 }
