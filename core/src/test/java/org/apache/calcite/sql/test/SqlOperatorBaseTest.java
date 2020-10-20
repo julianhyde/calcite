@@ -7091,6 +7091,36 @@ public abstract class SqlOperatorBaseTest {
     tester.checkAgg("listagg(cast(x as CHAR))", values2, "0,1,2,3", (double) 0);
   }
 
+  @Test void testStringAggFunc() {
+    checkStringAggFunc(libraryTester(SqlLibrary.POSTGRESQL));
+    checkStringAggFunc(libraryTester(SqlLibrary.BIG_QUERY));
+    checkStringAggFuncFails(libraryTester(SqlLibrary.MYSQL));
+  }
+
+  private void checkStringAggFunc(SqlTester t) {
+    final String[] values = {"'x'", "null", "'yz'"};
+    t.checkAgg("string_agg(x)", values, "x,yz", 0);
+    t.checkAgg("string_agg(x,':')", values, "x:yz", 0);
+    t.checkAgg("string_agg(x,':' order by x)", values, "x:yz", 0);
+    t.checkAgg("string_agg(x order by char_length(x) desc)", values,
+        "yz,x", 0);
+  }
+
+  private void checkStringAggFuncFails(SqlTester t) {
+    final String[] values = {"'x'", "'y'"};
+    t.checkAggFails("^string_agg(x)^", values,
+        "No match found for function signature STRING_AGG\\(<CHARACTER>\\)",
+        false);
+    t.checkAggFails("^string_agg(x, ',')^", values,
+        "No match found for function signature STRING_AGG\\(<CHARACTER>, "
+            + "<CHARACTER>\\)",
+        false);
+    t.checkAggFails("^string_agg(x, ',' order by x desc)^", values,
+        "No match found for function signature STRING_AGG\\(<CHARACTER>, "
+            + "<CHARACTER>\\)",
+        false);
+  }
+
   @Test void testFusionFunc() {
     tester.setFor(SqlStdOperatorTable.FUSION, VM_FENNEL, VM_JAVA);
     tester.checkFails("fusion(^*^)", "Unknown identifier '\\*'", false);
