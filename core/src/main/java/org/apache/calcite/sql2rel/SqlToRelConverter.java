@@ -5374,6 +5374,8 @@ public class SqlToRelConverter {
     @Override public Void visit(SqlCall call) {
       switch (call.getKind()) {
       case FILTER:
+      case IGNORE_NULLS:
+      case RESPECT_NULLS:
       case WITHIN_GROUP:
         translateAgg(call);
         return null;
@@ -5434,6 +5436,7 @@ public class SqlToRelConverter {
         SqlNodeList orderList, boolean ignoreNulls, SqlCall outerCall) {
       assert bb.agg == this;
       assert outerCall != null;
+      final List<SqlNode> operands = call.getOperandList();
       switch (call.getKind()) {
       case FILTER:
         assert filter == null;
@@ -5455,19 +5458,38 @@ public class SqlToRelConverter {
       case STRING_AGG:
         // Translate "STRING_AGG(s, sep ORDER BY x, y)"
         // as if it were "LISTAGG(s, sep) WITHIN GROUP (ORDER BY x, y)";
-        // and  "STRING_AGG(s, sep)" as "LISTAGG(s, sep)".
-        List<SqlNode> operands = call.getOperandList();
+        // and "STRING_AGG(s, sep)" as "LISTAGG(s, sep)".
+        final List<SqlNode> operands2;
         if (!operands.isEmpty()
             && Util.last(operands) instanceof SqlNodeList) {
           orderList = (SqlNodeList) Util.last(operands);
-          operands = Util.skipLast(operands);
+          operands2 = Util.skipLast(operands);
+        } else {
+          operands2 = operands;
         }
         final SqlCall call2 =
             SqlStdOperatorTable.LISTAGG.createCall(
                 call.getFunctionQuantifier(), call.getParserPosition(),
-                operands);
+                operands2);
         translateAgg(call2, filter, orderList, ignoreNulls, outerCall);
         return;
+      case ARRAY_AGG:
+      case ARRAY_CONCAT_AGG:
+        // Translate "ARRAY_AGG(s ORDER BY x, y)"
+        // as if it were "ARRAY_AGG(s) WITHIN GROUP (ORDER BY x, y)";
+        // similarly "ARRAY_CONCAT_AGG".
+        if (!operands.isEmpty()
+            && Util.last(operands) instanceof SqlNodeList) {
+          orderList = (SqlNodeList) Util.last(operands);
+          final SqlCall call3 =
+              call.getOperator().createCall(
+                  call.getFunctionQuantifier(), call.getParserPosition(),
+                  Util.skipLast(operands));
+          translateAgg(call3, filter, orderList, ignoreNulls, outerCall);
+          return;
+        }
+        // "ARRAY_AGG" and "ARRAY_CONCAT_AGG" without "ORDER BY"
+        // are handled normally; fall through.
       default:
         break;
       }

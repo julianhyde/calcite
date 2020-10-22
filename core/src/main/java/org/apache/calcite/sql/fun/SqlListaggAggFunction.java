@@ -20,7 +20,7 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.OperandTypes;
-import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.util.Optionality;
 
 /**
@@ -28,8 +28,9 @@ import org.apache.calcite.util.Optionality;
  * returns the concatenation of its group rows.
  */
 class SqlListaggAggFunction extends SqlAggFunction {
-  SqlListaggAggFunction(SqlKind kind) {
-    super(kind.name(), null, kind, ReturnTypes.ARG0_NULLABLE,
+  SqlListaggAggFunction(SqlKind kind,
+      SqlReturnTypeInference returnTypeInference) {
+    super(kind.name(), null, kind, returnTypeInference,
         null, OperandTypes.or(OperandTypes.STRING, OperandTypes.STRING_STRING),
         SqlFunctionCategory.SYSTEM, false, false, Optionality.OPTIONAL);
   }

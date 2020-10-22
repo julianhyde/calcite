@@ -388,6 +388,8 @@ ALWAYS,
 APPLY,
 **ARE**,
 **ARRAY**,
+ARRAY_AGG,
+ARRAY_CONCAT_AGG,
 **ARRAY_MAX_CARDINALITY**,
 **AS**,
 ASC,
@@ -2514,6 +2516,8 @@ Dialect-specific aggregate functions.
 
 | C | Operator syntax                                | Description
 |:- |:-----------------------------------------------|:-----------
+| b p | ARRAY_AGG( [ ALL &#124; DISTINCT ] value [ RESPECT NULLS &#124; IGNORE NULLS ] [ ORDER BY orderItem [, orderItem ]* ] ) | Gathers values into arrays
+| b p | ARRAY_CONCAT_AGG( [ ALL &#124; DISTINCT ] value [ ORDER BY orderItem [, orderItem ]* ] ) | Concatenates arrays into arrays
 | p | BOOL_AND(condition)                            | Synonym for `EVERY`
 | p | BOOL_OR(condition)                             | Synonym for `SOME`
 | b | LOGICAL_AND(condition)                         | Synonym for `EVERY`

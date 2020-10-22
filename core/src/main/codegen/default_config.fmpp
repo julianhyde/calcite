@@ -39,6 +39,8 @@ parser: {
     "AFTER"
     "ALWAYS"
     "APPLY"
+    "ARRAY_AGG"
+    "ARRAY_CONCAT_AGG"
     "ASC"
     "ASSERTION"
     "ASSIGNMENT"
