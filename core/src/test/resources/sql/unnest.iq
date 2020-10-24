@@ -199,4 +199,28 @@ from (values ('apple'), ('banana')) as fruit;
 
 !ok
 
+select upper(f)
+from (values 'apple', 'banana', 'pear') as f;
++--------+
+| EXPR$0 |
++--------+
+| APPLE  |
+| BANANA |
+| PEAR   |
++--------+
+(3 rows)
+
+!ok
+
+SELECT AVG(x) as "avg"
+FROM UNNEST(array [0, 2, 4, 4, 5]) as x;
++-----+
+| avg |
++-----+
+|   3 |
++-----+
+(1 row)
+
+!ok
+
 # End unnest.iq
