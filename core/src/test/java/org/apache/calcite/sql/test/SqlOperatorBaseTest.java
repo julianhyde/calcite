@@ -25,6 +25,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
@@ -1349,6 +1350,37 @@ public abstract class SqlOperatorBaseTest {
         "cast(cast(TIMESTAMP '1945-02-24 12:42:25.34' as DATE) as TIMESTAMP)",
         "1945-02-24 00:00:00",
         "TIMESTAMP(0) NOT NULL");
+  }
+
+  @Test void testCastFormatFraction() {
+    checkCastFormatFraction(1);
+    checkCastFormatFraction(2);
+    checkCastFormatFraction(3);
+    checkCastFormatFraction(4);
+    checkCastFormatFraction(5);
+    checkCastFormatFraction(6);
+    checkCastFormatFraction(7);
+    checkCastFormatFraction(8);
+    checkCastFormatFraction(9);
+  }
+
+  private void checkCastFormatFraction(int length) {
+    final int maxLength = 9;
+    String fractionPart = "";
+    for (int x = 0; x < length; x++) {
+      fractionPart += Integer.toString(x + 1);
+      final String templateInput =
+          "cast('2019-11-08 %s' as timestamp FORMAT 'YYYY-MM-DD FF%s')";
+      String input = String.format(templateInput, fractionPart, length);
+
+      String expected = "2019-11-08 00:00:00." + fractionPart
+          + SqlFunctions.repeat("0", (maxLength - length));
+      tester.checkScalar(input, expected, "xx");
+
+      String input2 = String.format(templateInput,
+          fractionPart + (length + 1), length);
+      tester.checkScalar(input2, null, "xx");
+    }
   }
 
   @Test void testCastStringToDateTime() {
