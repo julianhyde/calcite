@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hive.common.format.datetime;
+package org.apache.calcite.util;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -26,8 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hive.common.type.Date;
-import org.apache.hadoop.hive.common.type.Timestamp;
 
 import java.io.Serializable;
 import java.time.DateTimeException;
@@ -58,342 +56,458 @@ import java.util.stream.Collectors;
 /**
  * Formatter using SQL:2016 datetime patterns.
  *
- * For all tokens:
- * - Patterns are case-insensitive, except AM/PM, T/Z and nested strings. See these sections for more
+ * <p>For all tokens:
+ * <ul>
+ * <li>Patterns are case-insensitive, except AM/PM, T/Z and nested strings. See these sections for more
  *   details.
- * - For string to datetime conversion, no duplicate format tokens are allowed, including tokens
+ * <li>For string to datetime conversion, no duplicate format tokens are allowed, including tokens
  *   that have the same meaning but different lengths ("Y" and "YY" conflict) or different
  *   behaviors ("RR" and "YY" conflict).
+ * </ul>
  *
- * For all numeric tokens:
- * - The "expected length" of input/output is the number of tokens in the character (e.g. "YYY": 3,
+ * <p>For all numeric tokens:
+ * <ul>
+ * <li>The "expected length" of input/output is the number of tokens in the character (e.g. "YYY": 3,
  *   "Y": 1, and so on), with some exceptions (see map SPECIAL_LENGTHS).
- * - For string to datetime conversion, inputs of fewer digits than expected are accepted if
+ * <li>For string to datetime conversion, inputs of fewer digits than expected are accepted if
  *   followed by a delimiter, e.g. format="YYYY-MM-DD", input="19-1-1", output=2019-01-01 00:00:00.
  *   This is modified by format modifier FX (format exact). See FX for details.
- * - For datetime to string conversion, output is left padded with zeros, e.g. format="DD SSSSS",
+ * <li>For datetime to string conversion, output is left padded with zeros, e.g. format="DD SSSSS",
  *   input=2019-01-01 00:00:03, output="01 00003".
  *   This is modified by format modifier FM (fill mode). See FM for details.
+ * </ul>
  *
  *
- * Accepted format tokens:
- * Note: - "|" means "or".
- *       - "Delimiter" for numeric tokens means any non-numeric character or end of input.
- *       - The words token and pattern are used interchangeably.
+ * <p>Accepted format tokens:
  *
- * A.1. Numeric temporal tokens
- * YYYY
- * 4-digit year
- * - For string to datetime conversion, prefix digits for 1, 2, and 3-digit inputs are obtained
- *   from current date
- *   E.g. input=‘9-01-01’, pattern =‘YYYY-MM-DD’, current year=2020, output=2029-01-01 00:00:00
+ * <p>Note:
+ * <ul>
+ * <li>"|" means "or".
+ * <li>"Delimiter" for numeric tokens means any non-numeric character or end of input.
+ * <li>The words token and pattern are used interchangeably.
+ * </ul>
  *
- * YYY
- * Last 3 digits of a year
- * - Gets the prefix digit from current date.
- * - Can accept fewer digits than 3, similarly to YYYY.
+ * <p>A.1. Numeric temporal tokens
  *
- * YY
- * Last 2 digits of a year
- * - Gets the 2 prefix digits from current date.
- * - Can accept fewer digits than 2, similarly to YYYY.
+ * <dl>
  *
- * Y
- * Last digit of a year
- * - Gets the 3 prefix digits from current date.
+ * <dt>YYYY</dt>
+ * <dd>4-digit year.
+ * <p>For string to datetime conversion, prefix digits for 1, 2, and 3-digit inputs are obtained
+ * from current date,
+ * E.g. input=‘9-01-01’, pattern =‘YYYY-MM-DD’, current year=2020, output=2029-01-01 00:00:00
+ * </dd>
  *
- * RRRR
- * 4-digit rounded year
- * - String to datetime conversion:
- *   - If 2 digits are provided then acts like RR.
- *   - If 1,3 or 4 digits provided then acts like YYYY.
- * - For datetime to string conversion, acts like YYYY.
+ * <dt>YYY</dt>
+ * <dd>Last 3 digits of a year.
+ * <p>Gets the prefix digit from current date.
+ * <p>Can accept fewer digits than 3, similarly to YYYY.
+ * </dd>
  *
- * RR
- * 2-digit rounded year
- * -String to datetime conversion:
- *   - Semantics:
- *     Input:     Last 2 digits of current year:   First 2 digits of output:
- *     0 to 49    00 to 49                         First 2 digits of current year
- *     0 to 49    50 to 99                         First 2 digits of current year + 1
- *     50 to 99   00 to 49                         First 2 digits of current year - 1
- *     50 to 99   50 to 99                         First 2 digits of current year
- *   - If 1-digit year is provided followed by a delimiter, falls back to YYYY with 1-digit year
+ * <dt>YY</dt>
+ * <dd>Last 2 digits of a year
+ * <p>Gets the 2 prefix digits from current date.
+ * <p>Can accept fewer digits than 2, similarly to YYYY.
+ * </dd>
+ *
+ * <dt>Y</dt>
+ * <dd>Last digit of a year
+ * <p>Gets the 3 prefix digits from current date.
+ * </dd>
+ *
+ * <dt>RRRR</dt>
+ * <dd>4-digit rounded year
+ * <p>String to datetime conversion:
+ * <ul>
+ *   <li>If 2 digits are provided then acts like RR.
+ *   <li>If 1,3 or 4 digits provided then acts like YYYY.
+ * </ul>
+ * For datetime to string conversion, acts like YYYY.
+ * </dd>
+ *
+ * <dt>RR</dt>
+ * <dd>2-digit rounded year
+ * <p>String to datetime conversion:
+ * <ul>
+ *   <li>Semantics:
+ *     <table >
+ *     <caption>Semantics of 2-digit year conversion</caption>
+ *     <tr><th>Input</th>    <th>Last 2 digits of current year</th><th>First 2 digits of output</th></tr>
+ *     <tr><td>0 to 49</td>  <td>00 to 49</td> <td>First 2 digits of current year</td></tr>
+ *     <tr><td>0 to 49</td>  <td>50 to 99</td> <td>First 2 digits of current year + 1</td></tr>
+ *     <tr><td>50 to 99</td> <td>00 to 49</td> <td>First 2 digits of current year - 1</td></tr>
+ *     <tr><td>50 to 99</td> <td>50 to 99</td> <td>First 2 digits of current year</td></tr>
+ *     </table>
+ *   <li>If 1-digit year is provided followed by a delimiter, falls back to YYYY with 1-digit year
  *     input.
- * - For datetime to string conversion, acts like YY.
+ * </ul>
+ * <p>For datetime to string conversion, acts like YY.
+ * </dd>
  *
- * MM
- * Month (1-12)
- * - For string to datetime conversion, conflicts with DDD, MONTH, MON.
+ * <dt>MM</dt>
+ * <dd>Month (1-12)
+ * <p>For string to datetime conversion, conflicts with DDD, MONTH, MON.
+ * </dd>
  *
- * DD
- * Day of month (1-31)
- * - For string to datetime conversion, conflicts with DDD.
+ * <dt>DD</dt>
+ * <dd>Day of month (1-31)
+ * <p>For string to datetime conversion, conflicts with DDD.
+ * </dd>
  *
- * DDD
- * Day of year (1-366)
- * - For string to datetime conversion, conflicts with DD and MM.
+ * <dt>DDD</dt>
+ * <dd>Day of year (1-366)
+ * <p>For string to datetime conversion, conflicts with DD and MM.
+ * </dd>
  *
- * HH
- * Hour of day (1-12)
- * - If no AM/PM provided then defaults to AM.
- * - In string to datetime conversion, conflicts with SSSSS and HH24.
+ * <dt>HH</dt>
+ * <dd>Hour of day (1-12)
+ * <p>If no AM/PM provided then defaults to AM.
+ * <p>In string to datetime conversion, conflicts with SSSSS and HH24.
+ * </dd>
  *
- * HH12
- * Hour of day (1-12)
- * See HH.
+ * <dt>HH12</dt>
+ * <dd>Hour of day (1-12)
+ * <p>See HH.
+ * </dd>
  *
- * HH24
- * Hour of day (0-23)
- * - In string to datetime conversion, conflicts with SSSSS, HH12 and AM/PM.
+ * <dt>HH24</dt>
+ * <dd>Hour of day (0-23)
+ * <p>In string to datetime conversion, conflicts with SSSSS, HH12 and AM/PM.
+ * </dd>
  *
- * MI
- * Minute of hour (0-59)
- * - In string to datetime conversion, conflicts with SSSSS.
+ * <dt>MI</dt>
+ * <dd>Minute of hour (0-59)
+ * <p>In string to datetime conversion, conflicts with SSSSS.
+ * </dd>
  *
- * SS
- * Second of minute (0-59)
- * - In string to datetime conversion, conflicts with SSSSS.
+ * <dt>SS</dt>
+ * <dd>Second of minute (0-59)
+ * <p>In string to datetime conversion, conflicts with SSSSS.
+ * </dd>
  *
- * SSSSS
- * Second of Day (0-86399)
- * - In string to datetime conversion, conflicts with SS, HH, HH12, HH24, MI, AM/PM.
+ * <dt>SSSSS</dt>
+ * <dd>Second of Day (0-86399)
+ * <p>In string to datetime conversion, conflicts with SS, HH, HH12, HH24, MI, AM/PM.
+ * </dd>
  *
- * FF[1..9]
- * Fraction of second
- * - 1..9 indicates the number of decimal digits. "FF" (no number of digits specified) is also
+ * <dt>FF[1..9]</dt>
+ * <dd>Fraction of second
+ * <p>1..9 indicates the number of decimal digits. "FF" (no number of digits specified) is also
  *   accepted.
- * - In datetime to string conversion, "FF" will omit trailing zeros, or output "0" if subsecond
+ * <p>In datetime to string conversion, "FF" will omit trailing zeros, or output "0" if subsecond
  *   value is 0.
- * - In string to datetime conversion, fewer digits than expected are accepted if followed by a
+ * <p>In string to datetime conversion, fewer digits than expected are accepted if followed by a
  *   delimiter. "FF" acts like "FF9".
+ * </dd>
  *
- * AM|A.M.|PM|P.M.
- * Meridiem indicator (or AM/PM)
- * - Datetime to string conversion:
- *   - AM and PM mean the exact same thing in the pattern.
+ * <dt>AM|A.M.|PM|P.M.</dt>
+ * <dd>Meridiem indicator (or AM/PM)
+ * <p>Datetime to string conversion:
+ * <ul>
+ * <li>AM and PM mean the exact same thing in the pattern.
  *     e.g. input=2019-01-01 20:00, format=“AM”, output=“PM”.
- *   - Retains the exact format (capitalization and length) provided in the pattern string. If p.m.
+ * <li>Retains the exact format (capitalization and length) provided in the pattern string. If p.m.
  *     is in the pattern, we expect a.m. or p.m. in the output; if AM is in the pattern, we expect
  *     AM or PM in the output. If the case is mixed (Am or aM) then the output case will match the
- *     case of the pattern's first character (Am => AM, aM => am).
- * - String to datetime conversion:
- *   - Conflicts with HH24 and SSSSS.
- *   - It doesn't matter which meridian indicator is in the pattern.
+ *     case of the pattern's first character (Am &rarr; AM, aM &rarr; am).
+ * </ul>
+ *
+ * <p>String to datetime conversion:
+ * <ul>
+ * <li>Conflicts with HH24 and SSSSS.
+ * <li>It doesn't matter which meridian indicator is in the pattern.
  *     E.g. input="2019-01-01 11:00 p.m.", pattern="YYYY-MM-DD HH12:MI AM",
  *          output=2019-01-01 23:00:00
- *   - If FX is enabled, input length has to match the pattern's length. e.g. pattern=AM input=A.M.
+ * <li>If FX is enabled, input length has to match the pattern's length. e.g. pattern=AM input=A.M.
  *     is not accepted, but input=pm is.
- * - Not listed as a character temporal because of special status: does not get padded with spaces
+ * </ul>
+ *
+ * <p>Not listed as a character temporal because of special status: does not get padded with spaces
  *   upon formatting, and case is handled differently at datetime to string conversion.
+ * </dd>
  *
- * D
- * Day of week (1-7)
- * - 1 means Sunday, 2 means Monday, and so on.
- * - Not allowed in string to datetime conversion.
+ * <dt>D</dt>
+ * <dd>Day of week (1-7)
+ * <p>1 means Sunday, 2 means Monday, and so on.
+ * <p>Not allowed in string to datetime conversion.
+ * </dd>
  *
- * Q
- * Quarter of year (1-4)
- * - Not allowed in string to datetime conversion.
+ * <dt>Q</dt>
+ * <dd>Quarter of year (1-4)
+ * <p>Not allowed in string to datetime conversion.
+ * </dd>
  *
- * WW
- * Aligned week of year (1-53)
- * - 1st week begins on January 1st and ends on January 7th, and so on.
- * - Not allowed in string to datetime conversion.
+ * <dt>WW</dt>
+ * <dd>Aligned week of year (1-53)
+ * <p>1st week begins on January 1st and ends on January 7th, and so on.
+ * <p>Not allowed in string to datetime conversion.
+ * </dd>
  *
- * W
- * Aligned week of month (1-5)
- * - 1st week starts on the 1st of the month and ends on the 7th, and so on.
- * - Not allowed in string to datetime conversion.
+ * <dt>W</dt>
+ * <dd>Aligned week of month (1-5)
+ * <p>1st week starts on the 1st of the month and ends on the 7th, and so on.
+ * <p>Not allowed in string to datetime conversion.
+ * </dd>
  *
- * IYYY
- * 4-digit ISO 8601 week-numbering year
- * - Returns the year relating to the ISO week number (IW), which is the full week (Monday to
+ * <dt>IYYY</dt>
+ * <dd>4-digit ISO 8601 week-numbering year
+ * <p>Returns the year relating to the ISO week number (IW), which is the full week (Monday to
  *   Sunday) which contains January 4 of the Gregorian year.
- * - Behaves similarly to YYYY in that for datetime to string conversion, prefix digits for 1, 2,
+ * <p>Behaves similarly to YYYY in that for datetime to string conversion, prefix digits for 1, 2,
  *   and 3-digit inputs are obtained from current week-numbering year.
- * - For string to datetime conversion, requires IW and ID|DAY|DY. Conflicts with all other date
+ * <p>For string to datetime conversion, requires IW and ID|DAY|DY. Conflicts with all other date
  *   patterns (see "List of Date-Based Patterns").
+ * </dd>
  *
- * IYY
- * Last 3 digits of ISO 8601 week-numbering year
- * - See IYYY.
- * - Behaves similarly to YYY in that for datetime to string conversion, prefix digit is obtained
+ * <dt>IYY</dt>
+ * <dd>Last 3 digits of ISO 8601 week-numbering year
+ * <p>See IYYY.
+ * <p>Behaves similarly to YYY in that for datetime to string conversion, prefix digit is obtained
  *   from current week-numbering year and can accept 1 or 2-digit input.
+ * </dd>
  *
- * IY
- * Last 2 digits of ISO 8601 week-numbering year
- * - See IYYY.
- * - Behaves similarly to YY in that for datetime to string conversion, prefix digits are obtained
+ * <dt>IY</dt>
+ * <dd>Last 2 digits of ISO 8601 week-numbering year
+ * <p>See IYYY.
+ * <p>Behaves similarly to YY in that for datetime to string conversion, prefix digits are obtained
  *   from current week-numbering year and can accept 1-digit input.
+ * </dd>
  *
- * I
- * Last digit of ISO 8601 week-numbering year
- * - See IYYY.
- * - Behaves similarly to Y in that for datetime to string conversion, prefix digits are obtained
+ * <dt>I</dt>
+ * <dd>Last digit of ISO 8601 week-numbering year
+ * <p>See IYYY.
+ * <p>Behaves similarly to Y in that for datetime to string conversion, prefix digits are obtained
  *   from current week-numbering year.
+ * </dd>
  *
- * IW
- * ISO 8601 week of year (1-53)
- * - Begins on the Monday closest to January 1 of the year.
- * - For string to datetime conversion, if the input week does not exist in the input year, an
+ * <dt>IW</dt>
+ * <dd>ISO 8601 week of year (1-53)
+ * <p>Begins on the Monday closest to January 1 of the year.
+ * <p>For string to datetime conversion, if the input week does not exist in the input year, an
  *   error will be thrown. e.g. the 2019 week-year has 52 weeks; with pattern="iyyy-iw-id"
  *   input="2019-53-2" is not accepted.
- * - For string to datetime conversion, requires IYYY|IYY|IY|I and ID|DAY|DY. Conflicts with all other
+ * <p>For string to datetime conversion, requires IYYY|IYY|IY|I and ID|DAY|DY. Conflicts with all other
  *   date patterns (see "List of Date-Based Patterns").
+ * </dd>
  *
- * ID
- * ISO 8601 day of week (1-7)
- * - 1 is Monday, and so on.
- * - For string to datetime conversion, requires IYYY|IYY|IY|I and IW. Conflicts with all other
+ * <dt>ID</dt>
+ * <dd>ISO 8601 day of week (1-7)
+ * <p>1 is Monday, and so on.
+ * <p>For string to datetime conversion, requires IYYY|IYY|IY|I and IW. Conflicts with all other
  *   date patterns (see "List of Date-Based Patterns").
+ * </dd>
+ * </dl>
  *
- * A.2. Character temporals
- * Temporal elements, but spelled out.
- * - Output is right padded with trailing spaces unless the pattern is marked with the fill mode
+ * <p>A.2. Character temporals
+ *
+ * <p>Temporal elements, but spelled out.
+ *
+ * <p>Output is right padded with trailing spaces unless the pattern is marked with the fill mode
  *   modifier (FM). Capitalization happens as follows:
- *   - If the first letter of the pattern is lowercase then the output is lowercase:
- *     'mONTH' -> 'may'
- *   - If the first two letters of the pattern are uppercase then the output is uppercase:
- *     'MOnth' -> 'MAY'
- *   - If the first letter of the pattern is uppercase and the second is lowercase then the output
- *     is capitalized: 'Month' -> 'May'.
- * - For string to datetime conversion, the case of the pattern does not matter.
+ *   <ul>
+ *   <li>If the first letter of the pattern is lowercase then the output is lowercase:
+ *     'mONTH' &rarr; 'may'
+ *   <li>If the first two letters of the pattern are uppercase then the output is uppercase:
+ *     'MOnth' &rarr; 'MAY'
+ *   <li>If the first letter of the pattern is uppercase and the second is lowercase then the output
+ *     is capitalized: 'Month' &rarr; 'May'.
+ *   </ul>
+ * <p>For string to datetime conversion, the case of the pattern does not matter.
  *
- * MONTH|Month|month
- * Name of month of year
- * - For datetime to string conversion, will include trailing spaces up to length 9 (length of
+ * <dl>
+ * <dt>MONTH|Month|month</dt>
+ * <dd>Name of month of year
+ * <p>For datetime to string conversion, will include trailing spaces up to length 9 (length of
  *   longest month of year name: "September"). Case is taken into account according to the
- *   following example (pattern => output):
- *   - MONTH => JANUARY
- *   - Month => January
- *   - month => january
- * - For string to datetime conversion, neither the case of the pattern nor the case of the input
+ *   following example (pattern &rarr; output):
+ *   <ul>
+ *   <li>MONTH &rarr; JANUARY
+ *   <li>Month &rarr; January
+ *   <li>month &rarr; january
+ *   </ul>
+ *
+ * <p>For string to datetime conversion, neither the case of the pattern nor the case of the input
  *   are taken into account.
- * - For string to datetime conversion, conflicts with MM and MON.
  *
+ * <p>For string to datetime conversion, conflicts with MM and MON.
+ * </dd>
  *
- * MON|Mon|mon
- * Abbreviated name of month of year
- * - For datetime to string conversion, case is taken into account according to the following
- *   example (pattern => output):
- *   - MON => JAN
- *   - Mon => Jan
- *   - mon => jan
- * - For string to datetime conversion, neither the case of the pattern nor the case of the input
+ * <dt>MON|Mon|mon</dt>
+ * <dd>Abbreviated name of month of year
+ * <p>For datetime to string conversion, case is taken into account according to the following
+ *   example (pattern &rarr; output):
+ *   <ul>
+ *   <li>MON &rarr; JAN
+ *   <li>Mon &rarr; Jan
+ *   <li>mon &rarr; jan
+ *   </ul>
+ *
+ * <p>For string to datetime conversion, neither the case of the pattern nor the case of the input
  *   are taken into account.
- * - For string to datetime conversion, conflicts with MM and MONTH.
  *
+ * <p>For string to datetime conversion, conflicts with MM and MONTH.
+ * </dd>
  *
- * DAY|Day|day
- * Name of day of week
- * - For datetime to string conversion, will include trailing spaces until length is 9 (length of
+ * <dt>DAY|Day|day</dt>
+ * <dd>Name of day of week
+ *
+ * <p>For datetime to string conversion, will include trailing spaces until length is 9 (length of
  *   longest day of week name: "Wednesday"). Case is taken into account according to the following
- *   example (pattern => output):
- *   - DAY = SUNDAY
- *   - Day = Sunday
- *   - day = sunday
- * - For string to datetime conversion, neither the case of the pattern nor the case of the input
- *   are taken into account.
- * - Not allowed in string to datetime conversion except with IYYY|IYY|IY|I and IW.
+ *   example (pattern &rarr; output):
+ *   <ul>
+ *   <li>DAY &rarr; SUNDAY
+ *   <li>Day &rarr; Sunday
+ *   <li>day &rarr; sunday
+ *   </ul>
  *
- * DY|Dy|dy
- * Abbreviated name of day of week
- * - For datetime to string conversion, case is taken into account according to the following
- *   example (pattern => output):
- *   - DY = SUN
- *   - Dy = Sun
- *   - dy = sun
- * - For string to datetime conversion, neither the case of the pattern nor the case of the input
+ * <p>For string to datetime conversion, neither the case of the pattern nor the case of the input
  *   are taken into account.
- * - Not allowed in string to datetime conversion except with IYYY|IYY|IY|I and IW.
  *
- * B. Time zone tokens
- * TZH
- * Time zone offset hour (-15 to +15)
- * - 3-character-long input is expected: 1 character for the sign and 2 digits for the value.
+ * <p>Not allowed in string to datetime conversion except with IYYY|IYY|IY|I and IW.
+ * </dd>
+ *
+ * <dt>DY|Dy|dy</dt>
+ * <dd>Abbreviated name of day of week
+ *
+ * <p>For datetime to string conversion, case is taken into account according to the following
+ *   example (pattern &rarr; output):
+ *   <ul>
+ *   <li>DY &rarr; SUN
+ *   <li>Dy &rarr; Sun
+ *   <li>dy &rarr; sun
+ *   </ul>
+ *
+ * <p>For string to datetime conversion, neither the case of the pattern nor the case of the input
+ *   are taken into account.
+ *
+ * <p>Not allowed in string to datetime conversion except with IYYY|IYY|IY|I and IW.
+ * </dd>
+ * </dl>
+ *
+ * <p>B. Time zone tokens
+ *
+ * <dl>
+ * <dt>TZH</dt>
+ * <dd>Time zone offset hour (-15 to +15)
+ * <p>3-character-long input is expected: 1 character for the sign and 2 digits for the value.
  *   e.g. “+10”, “-05”
- * - 2-digit input is accepted without the sign, e.g. “04”.
- * - Both these 2 and 3-digit versions are accepted even if not followed by separators.
- * - Disabled for timestamp to string and date to string conversion, as timestamp and date are time
+ * <p>2-digit input is accepted without the sign, e.g. “04”.
+ * <p>Both these 2 and 3-digit versions are accepted even if not followed by separators.
+ * <p>Disabled for timestamp to string and date to string conversion, as timestamp and date are time
  *   zone agnostic.
+ * </dd>
  *
- * TZM
- * Time zone offset minute (0-59)
- * - For string to datetime conversion:
- *   - TZH token is required.
- *   - Unsigned; sign comes from TZH.
- *   - Therefore time zone offsets like “-30” minutes should be expressed thus: input=“-00:30”
+ * <dt>TZM</dt>
+ * <dd>Time zone offset minute (0-59)
+ * <p>For string to datetime conversion:
+ *   <ul>
+ *   <li>TZH token is required.
+ *   <li>Unsigned; sign comes from TZH.
+ *   <li>Therefore time zone offsets like “-30” minutes should be expressed thus: input=“-00:30”
  *     pattern=“TZH:TZM”.
- * - Disabled for timestamp to string and date to string conversion, as timestamp and date are time
- *   zone agnostic.
+ *   </ul>
  *
- * C. Separators
- * -|.|/|,|'|;|:|<space>
- * Separator
- * - Uses loose matching. Existence of a sequence of separators in the format should match the
+ * <p>Disabled for timestamp to string and date to string conversion, as timestamp and date are time
+ *   zone agnostic.
+ * </dd>
+ * </dl>
+ *
+ * <p>C. Separators
+ *
+ * <dl>
+ * <dt>-|.|/|,|'|;|:|&lt;space&gt;</dt>
+ * <dd>Separator
+ *
+ * <p>Uses loose matching. Existence of a sequence of separators in the format should match the
  *   existence of a sequence of separators in the input regardless of the types of the separator or
  *   the length of the sequence where length > 1. E.g. input=“2019-. ;10/10”, pattern=“YYYY-MM-DD”
  *   is valid; input=“20191010”, pattern=“YYYY-MM-DD” is not valid.
- * - If the last separator character in the separator substring is "-" and is immediately followed
+ *
+ * <p>If the last separator character in the separator substring is "-" and is immediately followed
  *   by a time zone hour (tzh) token, it's a negative sign and not counted as a separator, UNLESS
  *   this is the only possible separator character in the separator substring (in which case it is
  *   not counted as the tzh's negative sign).
- * - If the whole pattern string is delimited by single quotes (''), then the apostrophe separator
+ *
+ * <p>If the whole pattern string is delimited by single quotes (''), then the apostrophe separator
  *   (') must be escaped with a single backslash: (\').
+ * </dd>
+ * </dl>
  *
- * D. ISO 8601 delimiters
- * T|Z
- * ISO 8601 delimiter
- * - Serves as a delimiter.
- * - Function is to support formats like “YYYY-MM-DDTHH24:MI:SS.FF9Z”, “YYYY-MM-DD-HH24:MI:SSZ”
- * - For datetime to string conversion, output is always capitalized ("T"), even if lowercase ("t")
+ * <p>D. ISO 8601 delimiters
+ *
+ * <dl>
+ * <dt>T|Z</dt>
+ * <dd>ISO 8601 delimiter
+ * <p>Serves as a delimiter.
+ * <p>Function is to support formats like “YYYY-MM-DDTHH24:MI:SS.FF9Z”, “YYYY-MM-DD-HH24:MI:SSZ”
+ * <p>For datetime to string conversion, output is always capitalized ("T"), even if lowercase ("t")
  *   is provided in the pattern.
- * - For string to datetime conversion, case of input and pattern may differ.
+ * <p>For string to datetime conversion, case of input and pattern may differ.
+ * </dl>
  *
- * E. Nested strings (Text)
- * – Surround with double quotes (") in the pattern. Note, if the whole pattern string is delimited
+ * <p>E. Nested strings (Text)
+ *
+ * <p>Surround with double quotes (") in the pattern. Note, if the whole pattern string is delimited
  *   by double quotes, then the double quotes must be escaped with a single backslash: (\").
- * - In order to include a literal double quote character within the nested string, the double
+ *
+ * <p>In order to include a literal double quote character within the nested string, the double
  *   quote character must be escaped with a double backslash: (\\”). If the whole pattern string is
  *   delimited by double quotes, then escape with a triple backslash: (\\\")
- * - If the whole pattern string is delimited by single quotes, literal single
+ *
+ * <p>If the whole pattern string is delimited by single quotes, literal single
  *   quotes/apostrophes (') in the nested string must be escaped with a single backslash: (\')
- * - For datetime to string conversion, we simply include the string in the output, preserving the
+ *
+ * <p>For datetime to string conversion, we simply include the string in the output, preserving the
  *   characters' case.
- * - For string to datetime conversion, the information is lost as the nested string won’t be part
+ *
+ * <p>For string to datetime conversion, the information is lost as the nested string won’t be part
  *   of the resulting datetime object. However, the nested string has to match the related part of
  *   the input string, except case may differ.
  *
- * F. Format modifier tokens
- * FM
- * Fill mode modifier
- * - Default for string to datetime conversion. Inputs of fewer digits than expected are accepted
+ * <p>F. Format modifier tokens
+ *
+ * <dl>
+ * <dt>FM</dt>
+ * <dd>Fill mode modifier
+ *
+ * <p>Default for string to datetime conversion. Inputs of fewer digits than expected are accepted
  *   if followed by a delimiter:
  *   e.g. format="YYYY-MM-DD", input="19-1-1", output=2019-01-01 00:00:00
- * - For datetime to string conversion, padding (trailing spaces for text data and leading zeroes
+ *
+ * <p>For datetime to string conversion, padding (trailing spaces for text data and leading zeroes
  *   for numeric data) is omitted for the temporal element immediately following an "FM" in the
  *   pattern string. If the element following is not a temporal element (for example, if "FM"
  *   precedes a separator), an error will be thrown.
  *   e.g. pattern=FMHH12:MI:FMSS, input=2019-01-01 01:01:01, output=1:01:1
- * - Modifies FX so that lack of leading zeroes are accepted for the element immediately following
+ *
+ * <p>Modifies FX so that lack of leading zeroes are accepted for the element immediately following
  *   an "FM" in the pattern string.
+ * </dd>
  *
- * FX
- * Format exact modifier
- * - Default for datetime to string conversion. Numeric output is left padded with zeros, and
+ * <dt>FX</dt>
+ * <dd>Format exact modifier
+ *
+ * <p>Default for datetime to string conversion. Numeric output is left padded with zeros, and
  *   non-numeric output except for AM/PM is right padded with spaces up to expected length.
- * - Applies to the whole pattern.
- * - Rules applied at string to datetime conversion:
- *   - Separators must match exactly, down to the character.
- *   - Numeric input can't omit leading zeroes. This rule does not apply to elements (tokens)
- *     immediately preceded by an "FM."
- *   - AM/PM input length has to match the pattern's length. e.g. pattern=AM input=A.M. is not
- *     accepted, but input=pm is.
  *
- * Appendix:
- * List of Date-Based Patterns
- * These are patterns that help define a date as opposed to a time.
+ * <p>Applies to the whole pattern.
+ *
+ * <p>Rules applied at string to datetime conversion:
+ * <ul>
+ *   <li>Separators must match exactly, down to the character.
+ *   <li>Numeric input can't omit leading zeroes. This rule does not apply to elements (tokens)
+ *     immediately preceded by an "FM."
+ *   <li>AM/PM input length has to match the pattern's length. e.g. pattern=AM input=A.M. is not
+ *     accepted, but input=pm is.
+ * </ul>
+ * </dd>
+ * </dl>
+ *
+ * <p>Appendix:
+ *
+ * <p>List of Date-Based Patterns
+ *
+ * <p>These are patterns that help define a date as opposed to a time.
  * YYYY, YYY, YY, Y, RRRR, RR,
  * MM, MON, MONTH,
  * DD, DDD, D, DY, DAY,
@@ -421,9 +535,12 @@ public class HiveSqlDateTimeFormatter implements Serializable {
 
   private static final Map<String, TemporalField> NUMERIC_TEMPORAL_TOKENS =
       ImmutableMap.<String, TemporalField>builder()
-          .put("yyyy", ChronoField.YEAR).put("yyy", ChronoField.YEAR)
-          .put("yy", ChronoField.YEAR).put("y", ChronoField.YEAR)
-          .put("rrrr", ChronoField.YEAR).put("rr", ChronoField.YEAR)
+          .put("yyyy", ChronoField.YEAR)
+          .put("yyy", ChronoField.YEAR)
+          .put("yy", ChronoField.YEAR)
+          .put("y", ChronoField.YEAR)
+          .put("rrrr", ChronoField.YEAR)
+          .put("rr", ChronoField.YEAR)
           .put("mm", ChronoField.MONTH_OF_YEAR)
           .put("d", WeekFields.SUNDAY_START.dayOfWeek())
           .put("dd", ChronoField.DAY_OF_MONTH)
@@ -434,18 +551,29 @@ public class HiveSqlDateTimeFormatter implements Serializable {
           .put("mi", ChronoField.MINUTE_OF_HOUR)
           .put("ss", ChronoField.SECOND_OF_MINUTE)
           .put("sssss", ChronoField.SECOND_OF_DAY)
-          .put("ff1", ChronoField.NANO_OF_SECOND).put("ff2", ChronoField.NANO_OF_SECOND)
-          .put("ff3", ChronoField.NANO_OF_SECOND).put("ff4", ChronoField.NANO_OF_SECOND)
-          .put("ff5", ChronoField.NANO_OF_SECOND).put("ff6", ChronoField.NANO_OF_SECOND)
-          .put("ff7", ChronoField.NANO_OF_SECOND).put("ff8", ChronoField.NANO_OF_SECOND)
-          .put("ff9", ChronoField.NANO_OF_SECOND).put("ff", ChronoField.NANO_OF_SECOND)
-          .put("a.m.", ChronoField.AMPM_OF_DAY).put("am", ChronoField.AMPM_OF_DAY)
-          .put("p.m.", ChronoField.AMPM_OF_DAY).put("pm", ChronoField.AMPM_OF_DAY)
-          .put("ww", ChronoField.ALIGNED_WEEK_OF_YEAR).put("w", ChronoField.ALIGNED_WEEK_OF_MONTH)
+          .put("ff1", ChronoField.NANO_OF_SECOND)
+          .put("ff2", ChronoField.NANO_OF_SECOND)
+          .put("ff3", ChronoField.NANO_OF_SECOND)
+          .put("ff4", ChronoField.NANO_OF_SECOND)
+          .put("ff5", ChronoField.NANO_OF_SECOND)
+          .put("ff6", ChronoField.NANO_OF_SECOND)
+          .put("ff7", ChronoField.NANO_OF_SECOND)
+          .put("ff8", ChronoField.NANO_OF_SECOND)
+          .put("ff9", ChronoField.NANO_OF_SECOND)
+          .put("ff", ChronoField.NANO_OF_SECOND)
+          .put("a.m.", ChronoField.AMPM_OF_DAY)
+          .put("am", ChronoField.AMPM_OF_DAY)
+          .put("p.m.", ChronoField.AMPM_OF_DAY)
+          .put("pm", ChronoField.AMPM_OF_DAY)
+          .put("ww", ChronoField.ALIGNED_WEEK_OF_YEAR)
+          .put("w", ChronoField.ALIGNED_WEEK_OF_MONTH)
           .put("q", IsoFields.QUARTER_OF_YEAR)
-          .put("iyyy", IsoFields.WEEK_BASED_YEAR).put("iyy", IsoFields.WEEK_BASED_YEAR)
-          .put("iy", IsoFields.WEEK_BASED_YEAR).put("i", IsoFields.WEEK_BASED_YEAR)
-          .put("iw", IsoFields.WEEK_OF_WEEK_BASED_YEAR).put("id", ChronoField.DAY_OF_WEEK)
+          .put("iyyy", IsoFields.WEEK_BASED_YEAR)
+          .put("iyy", IsoFields.WEEK_BASED_YEAR)
+          .put("iy", IsoFields.WEEK_BASED_YEAR)
+          .put("i", IsoFields.WEEK_BASED_YEAR)
+          .put("iw", IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+          .put("id", ChronoField.DAY_OF_WEEK)
           .build();
 
   private static final Map<String, TemporalField> CHARACTER_TEMPORAL_TOKENS =
@@ -458,7 +586,9 @@ public class HiveSqlDateTimeFormatter implements Serializable {
 
   private static final Map<String, TemporalUnit> TIME_ZONE_TOKENS =
       ImmutableMap.<String, TemporalUnit>builder()
-          .put("tzh", ChronoUnit.HOURS).put("tzm", ChronoUnit.MINUTES).build();
+          .put("tzh", ChronoUnit.HOURS)
+          .put("tzm", ChronoUnit.MINUTES)
+          .build();
 
   private static final List<String> VALID_ISO_8601_DELIMITERS =
       ImmutableList.of("t", "z");
@@ -470,10 +600,24 @@ public class HiveSqlDateTimeFormatter implements Serializable {
       ImmutableList.of("fm", "fx");
 
   private static final Map<String, Integer> SPECIAL_LENGTHS = ImmutableMap.<String, Integer>builder()
-      .put("hh12", 2).put("hh24", 2).put("tzm", 2).put("am", 4).put("pm", 4)
-      .put("ff1", 1).put("ff2", 2).put("ff3", 3).put("ff4", 4).put("ff5", 5)
-      .put("ff6", 6).put("ff7", 7).put("ff8", 8).put("ff9", 9).put("ff", 9)
-      .put("month", 9).put("day", 9).put("dy", 3)
+      .put("hh12", 2)
+      .put("hh24", 2)
+      .put("tzm", 2)
+      .put("am", 4)
+      .put("pm", 4)
+      .put("ff1", 1)
+      .put("ff2", 2)
+      .put("ff3", 3)
+      .put("ff4", 4)
+      .put("ff5", 5)
+      .put("ff6", 6)
+      .put("ff7", 7)
+      .put("ff8", 8)
+      .put("ff9", 9)
+      .put("ff", 9)
+      .put("month", 9)
+      .put("day", 9)
+      .put("dy", 3)
       .build();
 
   private static final List<TemporalField> ISO_8601_TEMPORAL_FIELDS =
@@ -1501,5 +1645,53 @@ public class HiveSqlDateTimeFormatter implements Serializable {
 
   private static String capitalize(String substring) {
     return StringUtils.capitalize(substring.toLowerCase());
+  }
+
+  /** Stub version of  org.apache.hadoop.hive.common.type.Timestamp. */
+  private static class Timestamp {
+    private final long epochSecond;
+    private final int nanos;
+
+    private Timestamp(long epochSecond, int nanos) {
+      this.epochSecond = epochSecond;
+      this.nanos = nanos;
+    }
+
+    public static Timestamp ofEpochSecond(long epochSecond) {
+      return new Timestamp(epochSecond, 0);
+    }
+
+    public static Timestamp ofEpochSecond(long epochSecond, int nano) {
+      return new Timestamp(epochSecond, nano);
+    }
+
+    public long toEpochSecond() {
+      return epochSecond;
+    }
+
+    public int getNanos() {
+      return nanos;
+    }
+
+    public long toEpochMilli() {
+      return epochSecond * 1000L + nanos / 1000_1000L;
+    }
+  }
+
+  /** Stub version of  org.apache.hadoop.hive.common.type.Date. */
+  private static class Date {
+    private final long epochMilli;
+
+    private Date(long epochMilli) {
+      this.epochMilli = epochMilli;
+    }
+
+    static Date ofEpochMilli(long epochMilli) {
+      return new Date(epochMilli);
+    }
+
+    public long toEpochSecond() {
+      return epochMilli / 1000;
+    }
   }
 }
