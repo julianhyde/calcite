@@ -528,11 +528,6 @@ public class HiveSqlDateTimeFormatter implements Serializable {
   public static final int PM = 1;
   public static final DateTimeFormatter DAY_OF_WEEK_FORMATTER = DateTimeFormatter.ofPattern("EEE");
 
-  private final String pattern;
-  private final List<Token> tokens;
-  private final Optional<LocalDateTime> now;
-  private boolean formatExact = false;
-
   private static final Map<String, TemporalField> NUMERIC_TEMPORAL_TOKENS =
       ImmutableMap.<String, TemporalField>builder()
           .put("yyyy", ChronoField.YEAR)
@@ -594,120 +589,59 @@ public class HiveSqlDateTimeFormatter implements Serializable {
       ImmutableList.of("t", "z");
 
   private static final List<String> VALID_SEPARATORS =
-      ImmutableList.of("-", ":", " ", ".", "/", ";", "\'", ",");
+      ImmutableList.of("-", ":", " ", ".", "/", ";", "'", ",");
 
   private static final List<String> VALID_FORMAT_MODIFIERS =
       ImmutableList.of("fm", "fx");
 
-  private static final Map<String, Integer> SPECIAL_LENGTHS = ImmutableMap.<String, Integer>builder()
-      .put("hh12", 2)
-      .put("hh24", 2)
-      .put("tzm", 2)
-      .put("am", 4)
-      .put("pm", 4)
-      .put("ff1", 1)
-      .put("ff2", 2)
-      .put("ff3", 3)
-      .put("ff4", 4)
-      .put("ff5", 5)
-      .put("ff6", 6)
-      .put("ff7", 7)
-      .put("ff8", 8)
-      .put("ff9", 9)
-      .put("ff", 9)
-      .put("month", 9)
-      .put("day", 9)
-      .put("dy", 3)
-      .build();
+  private static final Map<String, Integer> SPECIAL_LENGTHS =
+      ImmutableMap.<String, Integer>builder()
+          .put("hh12", 2)
+          .put("hh24", 2)
+          .put("tzm", 2)
+          .put("am", 4)
+          .put("pm", 4)
+          .put("ff1", 1)
+          .put("ff2", 2)
+          .put("ff3", 3)
+          .put("ff4", 4)
+          .put("ff5", 5)
+          .put("ff6", 6)
+          .put("ff7", 7)
+          .put("ff8", 8)
+          .put("ff9", 9)
+          .put("ff", 9)
+          .put("month", 9)
+          .put("day", 9)
+          .put("dy", 3)
+          .build();
 
   private static final List<TemporalField> ISO_8601_TEMPORAL_FIELDS =
       ImmutableList.of(ChronoField.DAY_OF_WEEK,
           IsoFields.WEEK_OF_WEEK_BASED_YEAR,
           IsoFields.WEEK_BASED_YEAR);
 
-  /**
-   * Represents broad categories of tokens.
-   */
-  public enum TokenType {
-    NUMERIC_TEMPORAL,
-    CHARACTER_TEMPORAL,
-    SEPARATOR,
-    TIMEZONE,
-    ISO_8601_DELIMITER,
-    TEXT
-  }
+  public final String pattern;
+  public final List<Token> tokens;
+  private final boolean formatExact;
+  private final Optional<LocalDateTime> now;
 
   /**
-   * Token representation.
-   */
-  public static class Token implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    TokenType type;
-    TemporalField temporalField; // for type TEMPORAL e.g. ChronoField.YEAR
-    TemporalUnit temporalUnit; // for type TIMEZONE e.g. ChronoUnit.HOURS
-    String string; // pattern string, e.g. "yyy"
-    int length; // length (e.g. YYY: 3, FF8: 8)
-    boolean fillMode; //FM, applies to type TEMPORAL only (later should apply to TIMEZONE as well)
-
-    public Token(TokenType tokenType, TemporalField temporalField, String string, int length,
-        boolean fillMode) {
-      this(tokenType, temporalField, null, string, length, fillMode);
-    }
-
-    public Token(TemporalUnit temporalUnit, String string, int length, boolean fillMode) {
-      this(TokenType.TIMEZONE, null, temporalUnit, string, length, fillMode);
-    }
-
-    public Token(TokenType tokenType, String string) {
-      this(tokenType, null, null, string, string.length(), false);
-    }
-
-    public Token(TokenType tokenType, TemporalField temporalField, TemporalUnit temporalUnit,
-        String string, int length, boolean fillMode) {
-      this.type = tokenType;
-      this.temporalField = temporalField;
-      this.temporalUnit = temporalUnit;
-      this.string = string;
-      this.length = length;
-      this.fillMode = fillMode;
-    }
-
-    @Override public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append(string);
-      sb.append(" type: ");
-      sb.append(type);
-      if (temporalField != null) {
-        sb.append(" temporalField: ");
-        sb.append(temporalField);
-      } else if (temporalUnit != null) {
-        sb.append(" temporalUnit: ");
-        sb.append(temporalUnit);
-      }
-      return sb.toString();
-    }
-
-    public void removeBackslashes() {
-      string = string.replaceAll("\\\\", "");
-      length = string.length();
-    }
-  }
-
-  /**
-   * Construct a new instance.
+   * Creates a HiveSqlDateTimeFormatter.
    *
    * @param pattern Pattern to use for parsing or formatting
    * @param forParsing Flag to indicate use of pattern
    * @throws IllegalArgumentException if pattern is invalid
    */
-  public HiveSqlDateTimeFormatter(final String pattern, final boolean forParsing) {
-    this(pattern, forParsing, Optional.absent());
+  public static HiveSqlDateTimeFormatter create(final String pattern,
+      final boolean forParsing) {
+    return create(pattern, forParsing, Optional.absent());
   }
 
   /**
-   * Construct a new instance. An optional LocalDateTime can be provided when
+   * Creates a HiveSqlDateTimeFormatter, optionally specifying 'now'.
+   *
+   * <p>An optional LocalDateTime can be provided when
    * parsing must populate a field provided in the format string does not
    * specify the date and time to use. If none is provided, the current
    * {@link LocalDateTime#now()} will be used for each call to parse and format.
@@ -718,340 +652,49 @@ public class HiveSqlDateTimeFormatter implements Serializable {
    * @throws IllegalArgumentException if pattern is invalid
    */
   @VisibleForTesting
-  HiveSqlDateTimeFormatter(final String pattern, final boolean forParsing, final Optional<LocalDateTime> now) {
+  static HiveSqlDateTimeFormatter create(final String pattern,
+      final boolean forParsing, final Optional<LocalDateTime> now) {
+    return new Builder(pattern, now, forParsing).build();
+  }
+
+  HiveSqlDateTimeFormatter(String pattern, boolean forParsing,
+      Optional<LocalDateTime> now, List<Token> tokens, boolean formatExact) {
     this.pattern = Objects.requireNonNull(pattern, "Pattern cannot be null");
     this.now = Objects.requireNonNull(now);
-
-    this.tokens = new ArrayList<>();
-
-    Preconditions.checkArgument(pattern.length() < LONGEST_ACCEPTED_PATTERN, "The input format is too long");
-
-    parsePatternToTokens(pattern);
-
-    if (forParsing) {
-      verifyForParse();
-    } else {
-      verifyForFormat();
-    }
+    this.tokens = ImmutableList.copyOf(tokens);
+    this.formatExact = formatExact;
   }
 
-  /**
-   * Parse pattern to list of tokens.
-   */
-  private void parsePatternToTokens(String pattern) {
-    tokens.clear();
-    String originalPattern = pattern;
-    pattern = pattern.toLowerCase();
-
-    // indexes of the substring we will check (includes begin, does not include end)
-    int begin=0, end=0;
-    String candidate;
-    Token lastAddedToken = null;
-    boolean fillMode = false;
-
-    while (begin < pattern.length()) {
-      // if begin hasn't progressed, then pattern is not parsable
-      if (begin != end) {
-        tokens.clear();
-        throw new IllegalArgumentException("Bad date/time conversion pattern: " + pattern);
-      }
-
-      // find next token
-      for (int i = LONGEST_TOKEN_LENGTH; i > 0; i--) {
-        end = begin + i;
-        if (end > pattern.length()) { // don't go past the end of the pattern string
-          continue;
-        }
-        candidate = pattern.substring(begin, end);
-        if (isSeparator(candidate)) {
-          lastAddedToken = parseSeparatorToken(candidate, lastAddedToken, fillMode, begin);
-          begin = end;
-          break;
-        }
-        if (isIso8601Delimiter(candidate)) {
-          lastAddedToken = parseIso8601DelimiterToken(candidate, fillMode, begin);
-          begin = end;
-          break;
-        }
-        if (isNumericTemporalToken(candidate)) {
-          lastAddedToken = parseTemporalToken(originalPattern, candidate, fillMode, begin);
-          fillMode = false;
-          begin = end;
-          break;
-        }
-        if (isCharacterTemporalToken(candidate)) {
-          lastAddedToken = parseCharacterTemporalToken(originalPattern, candidate, fillMode, begin);
-          fillMode = false;
-          begin = end;
-          break;
-        }
-        if (isTimeZoneToken(candidate)) {
-          lastAddedToken = parseTimeZoneToken(candidate, fillMode, begin);
-          begin = end;
-          break;
-        }
-        if (isTextToken(candidate)) {
-          lastAddedToken = parseTextToken(originalPattern, fillMode, begin);
-          end = begin + lastAddedToken.length + 2; // skip 2 quotation marks
-          lastAddedToken.removeBackslashes();
-          begin = end;
-          break;
-        }
-        if (isFormatModifierToken(candidate)) {
-          checkFillModeOff(fillMode, begin);
-          fillMode = isFm(candidate);
-          if (!fillMode) {
-            formatExact = true;
-          }
-          begin = end;
-          break;
-        }
-      }
-    }
-  }
-
-  private boolean isSeparator(String candidate) {
+  private static boolean isSeparator(String candidate) {
     return candidate.length() == 1 && VALID_SEPARATORS.contains(candidate);
   }
 
-  private boolean isIso8601Delimiter(String candidate) {
+  private static boolean isIso8601Delimiter(String candidate) {
     return candidate.length() == 1 && VALID_ISO_8601_DELIMITERS.contains(candidate);
   }
 
-  private boolean isNumericTemporalToken(String candidate) {
+  private static boolean isNumericTemporalToken(String candidate) {
     return NUMERIC_TEMPORAL_TOKENS.containsKey(candidate);
   }
 
-  private boolean isCharacterTemporalToken(String candidate) {
+  private static boolean isCharacterTemporalToken(String candidate) {
     return CHARACTER_TEMPORAL_TOKENS.containsKey(candidate);
   }
 
-  private boolean isTimeZoneToken(String pattern) {
+  private static boolean isTimeZoneToken(String pattern) {
     return TIME_ZONE_TOKENS.containsKey(pattern);
   }
 
-  private boolean isTextToken(String candidate) {
+  private static boolean isTextToken(String candidate) {
     return candidate.startsWith("\"");
   }
 
-  private boolean isFormatModifierToken(String candidate) {
+  private static boolean isFormatModifierToken(String candidate) {
     return candidate.length() == 2 && VALID_FORMAT_MODIFIERS.contains(candidate);
   }
 
-  private boolean isFm(String candidate) {
+  private static boolean isFm(String candidate) {
     return "fm".equals(candidate);
-  }
-
-  private Token parseSeparatorToken(String candidate, Token lastAddedToken, boolean fillMode,
-      int begin) {
-    checkFillModeOff(fillMode, begin);
-    // try to clump separator with immediately preceding separators (e.g. "---" counts as one
-    // separator)
-    if (lastAddedToken != null && lastAddedToken.type == TokenType.SEPARATOR) {
-      lastAddedToken.string += candidate;
-      lastAddedToken.length += 1;
-    } else {
-      lastAddedToken = new Token(TokenType.SEPARATOR, candidate);
-      tokens.add(lastAddedToken);
-    }
-    return lastAddedToken;
-  }
-
-  private Token parseIso8601DelimiterToken(String candidate, boolean fillMode, int begin) {
-    checkFillModeOff(fillMode, begin);
-    Token lastAddedToken;
-    lastAddedToken = new Token(TokenType.ISO_8601_DELIMITER, candidate.toUpperCase());
-    tokens.add(lastAddedToken);
-    return lastAddedToken;
-  }
-
-  private Token parseTemporalToken(String originalPattern, String candidate, boolean fillMode,
-      int begin) {
-    // for AM/PM, keep original case
-    if (NUMERIC_TEMPORAL_TOKENS.get(candidate) == ChronoField.AMPM_OF_DAY) {
-      int subStringEnd = begin + candidate.length();
-      candidate = originalPattern.substring(begin, subStringEnd);
-    }
-    Token lastAddedToken = new Token(TokenType.NUMERIC_TEMPORAL,
-        NUMERIC_TEMPORAL_TOKENS.get(candidate.toLowerCase()), candidate,
-        getTokenStringLength(candidate), fillMode);
-    tokens.add(lastAddedToken);
-    return lastAddedToken;
-  }
-
-  private Token parseCharacterTemporalToken(String originalPattern, String candidate,
-      boolean fillMode, int begin) {
-    // keep original case
-    candidate = originalPattern.substring(begin, begin + candidate.length());
-
-    Token lastAddedToken = new Token(TokenType.CHARACTER_TEMPORAL,
-        CHARACTER_TEMPORAL_TOKENS.get(candidate.toLowerCase()), candidate,
-        getTokenStringLength(candidate), fillMode);
-    tokens.add(lastAddedToken);
-    return lastAddedToken;
-  }
-
-  private Token parseTimeZoneToken(String candidate, boolean fillMode, int begin) {
-    checkFillModeOff(fillMode, begin);
-    Token lastAddedToken = new Token(TIME_ZONE_TOKENS.get(candidate), candidate,
-        getTokenStringLength(candidate), false);
-    tokens.add(lastAddedToken);
-    return lastAddedToken;
-  }
-
-  private Token parseTextToken(String fullPattern, boolean fillMode, int begin) {
-    checkFillModeOff(fillMode, begin);
-    int end = begin;
-    do {
-      end = fullPattern.indexOf('\"', end + 1);
-      if (end == -1) {
-        throw new IllegalArgumentException(
-            "Missing closing double quote (\") opened at index " + begin);
-      }
-      // if double quote is escaped with a backslash, keep looking for the closing quotation mark
-    } while ("\\".equals(fullPattern.substring(end - 1, end)));
-    Token lastAddedToken = new Token(TokenType.TEXT, fullPattern.substring(begin + 1, end));
-    tokens.add(lastAddedToken);
-    return lastAddedToken;
-  }
-
-  private void checkFillModeOff(boolean fillMode, int index) {
-    if (fillMode) {
-      throw new IllegalArgumentException("Bad date/time conversion pattern: " + pattern +
-          ". Error at index " + index + ": Fill mode modifier (FM) must "
-          + "be followed by a temporal token.");
-    }
-  }
-
-  private int getTokenStringLength(String candidate) {
-    Integer length = SPECIAL_LENGTHS.get(candidate.toLowerCase());
-    if (length != null) {
-      return length;
-    }
-    return candidate.length();
-  }
-
-  /**
-   * Make sure the generated list of tokens is valid for parsing strings to datetime objects.
-   */
-  private void verifyForParse() {
-
-    // create a list of tokens' temporal fields
-    List<TemporalField> temporalFields = new ArrayList<>();
-    List<TemporalUnit> timeZoneTemporalUnits = new ArrayList<>();
-    int roundYearCount=0, yearCount=0;
-    boolean containsIsoFields=false, containsGregorianFields=false;
-    for (Token token : tokens) {
-      if (token.temporalField != null) {
-        temporalFields.add(token.temporalField);
-        if (token.temporalField == ChronoField.YEAR) {
-          if (token.string.startsWith("r")) {
-            roundYearCount += 1;
-          } else {
-            yearCount += 1;
-          }
-        }
-        if (token.temporalField.isDateBased() && token.temporalField != ChronoField.DAY_OF_WEEK) {
-          if (ISO_8601_TEMPORAL_FIELDS.contains(token.temporalField)) {
-            containsIsoFields = true;
-          } else {
-            containsGregorianFields = true;
-          }
-        }
-      } else if (token.temporalUnit != null) {
-        timeZoneTemporalUnits.add(token.temporalUnit);
-      }
-    }
-
-    //check for illegal temporal fields
-    if (temporalFields.contains(IsoFields.QUARTER_OF_YEAR)) {
-      throw new IllegalArgumentException("Illegal field: q (" + IsoFields.QUARTER_OF_YEAR + ")");
-    }
-    if (temporalFields.contains(WeekFields.SUNDAY_START.dayOfWeek())) {
-      throw new IllegalArgumentException("Illegal field: d (" + WeekFields.SUNDAY_START.dayOfWeek() + ")");
-    }
-    if (temporalFields.contains(ChronoField.DAY_OF_WEEK) && containsGregorianFields) {
-      throw new IllegalArgumentException("Illegal field: dy/day (" + ChronoField.DAY_OF_WEEK + ")");
-    }
-    if (temporalFields.contains(ChronoField.ALIGNED_WEEK_OF_MONTH)) {
-      throw new IllegalArgumentException("Illegal field: w (" + ChronoField.ALIGNED_WEEK_OF_MONTH + ")");
-    }
-    if (temporalFields.contains(ChronoField.ALIGNED_WEEK_OF_YEAR)) {
-      throw new IllegalArgumentException("Illegal field: ww (" + ChronoField.ALIGNED_WEEK_OF_YEAR + ")");
-    }
-
-    if (containsGregorianFields && containsIsoFields) {
-      throw new IllegalArgumentException("Pattern cannot contain both ISO and Gregorian tokens");
-    }
-    if (!(temporalFields.contains(ChronoField.YEAR)
-        || temporalFields.contains(IsoFields.WEEK_BASED_YEAR))) {
-      throw new IllegalArgumentException("Missing year token.");
-    }
-    if (containsGregorianFields &&
-        !(temporalFields.contains(ChronoField.MONTH_OF_YEAR) &&
-            temporalFields.contains(ChronoField.DAY_OF_MONTH) ||
-            temporalFields.contains(ChronoField.DAY_OF_YEAR))) {
-      throw new IllegalArgumentException("Missing day of year or (month of year + day of month)"
-          + " tokens.");
-    }
-    if (containsIsoFields &&
-        !(temporalFields.contains(IsoFields.WEEK_OF_WEEK_BASED_YEAR) &&
-            temporalFields.contains(ChronoField.DAY_OF_WEEK))) {
-      throw new IllegalArgumentException("Missing week of year (iw) or day of week (id) tokens.");
-    }
-    if (roundYearCount > 0 && yearCount > 0) {
-      throw new IllegalArgumentException("Invalid duplication of format element: Both year and"
-          + "round year are provided");
-    }
-    for (TemporalField tokenType : temporalFields) {
-      if (Collections.frequency(temporalFields, tokenType) > 1) {
-        throw new IllegalArgumentException(
-            "Invalid duplication of format element: multiple " + tokenType
-                + " tokens provided.");
-      }
-    }
-    if (temporalFields.contains(ChronoField.AMPM_OF_DAY) &&
-        !(temporalFields.contains(ChronoField.HOUR_OF_DAY) ||
-            temporalFields.contains(ChronoField.HOUR_OF_AMPM))) {
-      throw new IllegalArgumentException("AM/PM provided but missing hour token.");
-    }
-    if (temporalFields.contains(ChronoField.AMPM_OF_DAY) &&
-        temporalFields.contains(ChronoField.HOUR_OF_DAY)) {
-      throw new IllegalArgumentException("Conflict between median indicator and hour token.");
-    }
-    if (temporalFields.contains(ChronoField.HOUR_OF_AMPM) &&
-        temporalFields.contains(ChronoField.HOUR_OF_DAY)) {
-      throw new IllegalArgumentException("Conflict between hour of day and hour of am/pm token.");
-    }
-    if (temporalFields.contains(ChronoField.DAY_OF_YEAR) &&
-        (temporalFields.contains(ChronoField.DAY_OF_MONTH) ||
-            temporalFields.contains(ChronoField.MONTH_OF_YEAR))) {
-      throw new IllegalArgumentException("Day of year provided with day or month token.");
-    }
-    if (temporalFields.contains(ChronoField.SECOND_OF_DAY) &&
-        (temporalFields.contains(ChronoField.HOUR_OF_DAY) ||
-            temporalFields.contains(ChronoField.HOUR_OF_AMPM) ||
-            temporalFields.contains(ChronoField.MINUTE_OF_HOUR) ||
-            temporalFields.contains(ChronoField.SECOND_OF_MINUTE))) {
-      throw new IllegalArgumentException(
-          "Second of day token conflicts with other token(s).");
-    }
-    if (timeZoneTemporalUnits.contains(ChronoUnit.MINUTES) &&
-        !timeZoneTemporalUnits.contains(ChronoUnit.HOURS)) {
-      throw new IllegalArgumentException("Time zone minute token provided without time zone hour token.");
-    }
-  }
-
-  /**
-   * Make sure the generated list of tokens is valid for formatting datetime objects to strings.
-   */
-  private void verifyForFormat() {
-    for (Token token : tokens) {
-      if (token.type == TokenType.TIMEZONE) {
-        throw new IllegalArgumentException(token.string.toUpperCase() + " not a valid format for "
-            + "timestamp or date.");
-      }
-    }
   }
 
   public String format(Timestamp ts) {
@@ -1191,7 +834,7 @@ public class HiveSqlDateTimeFormatter implements Serializable {
     String substring;
     int index = 0;
     int value;
-    int timeZoneHours = 0, timeZoneMinutes = 0;
+    int timeZoneHours, timeZoneMinutes;
     int iyyy = 0, iw = 0;
     List<Integer> temporalValues = new ArrayList<>();
 
@@ -1266,7 +909,7 @@ public class HiveSqlDateTimeFormatter implements Serializable {
 
     checkForInvalidIsoWeek(iyyy, iw);
 
-    return getTimestampFromValues(tokens, temporalValues);
+    return getTimestampFromValues(temporalValues);
   }
 
   /**
@@ -1307,24 +950,25 @@ public class HiveSqlDateTimeFormatter implements Serializable {
    * Create a timestamp from the list of values parsed from the input and the list of tokens
    * parsed from the pattern input.
    *
-   * We need to be able to parse input like "29.02.2000" (with pattern "dd.mm.yyyy")
+   * <p>We need to be able to parse input like "29.02.2000" (with pattern "dd.mm.yyyy")
    * correctly – if we assigned the day value to the timestamp before the year value, then
    * output would be 2000-02-28. So before creating the Timestamp we have to:
    *
-   *  - Make a list of pairs.
+   * <ul>
+   * <li>Make a list of pairs.
    *    Left value: only the Tokens that represent a temporal value
    *    Right value: their corresponding int values parsed from the input
-   *  - Sort this list by length of base unit, in descending order (years before months, etc.).
-   *  - Then create the parsed output Timestamp object by creating a LocalDateTime object using the
+   * <li>Sort this list by length of base unit, in descending order (years before months, etc.).
+   * <li>Then create the parsed output Timestamp object by creating a LocalDateTime object using the
    *    token's TemporalField and the value.
+   * </ul>
    *
-   * @param tokens list of tokens of any type, in order of pattern input
    * @param temporalValues list of integer values parsed from the input, in order of input
    * @return the parsed Timestamp
    * @throws IllegalStateException if temporal values list and tokens in tokens list sizes are not
    * equal
    */
-  private Timestamp getTimestampFromValues(List<Token> tokens, List<Integer> temporalValues) {
+  private Timestamp getTimestampFromValues(List<Integer> temporalValues) {
 
     // Get list of temporal Tokens
     List<Token> temporalTokens = tokens.stream()
@@ -1543,10 +1187,6 @@ public class HiveSqlDateTimeFormatter implements Serializable {
    * @throws IllegalArgumentException if input length doesn't match expected (token) length
    */
   private void checkFormatExact(String substring, Token token) {
-    // AM/PM defaults to length 4 but make it 2 for FX check if the pattern actually has length 2
-    if (formatExact && token.temporalField == ChronoField.AMPM_OF_DAY) {
-      token.length = token.string.length();
-    }
     if (formatExact
         && !(token.fillMode || token.temporalField == ChronoField.NANO_OF_SECOND)
         && token.length != substring.length()) {
@@ -1560,7 +1200,7 @@ public class HiveSqlDateTimeFormatter implements Serializable {
    * Parse the next separator(s). At least one separator character is expected. Separator
    * characters are interchangeable.
    *
-   * Caveat: If the last separator character in the separator substring is "-" and is immediately
+   * <p>Caveat: If the last separator character in the separator substring is "-" and is immediately
    *     followed by a time zone hour (tzh) token, it's a negative sign and not counted as a
    *     separator, UNLESS this is the only separator character in the separator substring (in
    *     which case it is not counted as the negative sign).
@@ -1569,7 +1209,7 @@ public class HiveSqlDateTimeFormatter implements Serializable {
    * match the expected separator pattern exactly
    */
   private int parseSeparator(String fullInput, int index, Token token) {
-    int begin = index;
+    final int begin = index;
     String s;
     StringBuilder separatorsFound = new StringBuilder();
 
@@ -1632,19 +1272,411 @@ public class HiveSqlDateTimeFormatter implements Serializable {
         || isCharacterTemporalToken(pattern) && CHARACTER_TEMPORAL_TOKENS.get(pattern) == nextToken.temporalField);
   }
 
-  public String getPattern() {
-    return pattern;
+  private static String capitalize(String substring) {
+    return StringUtils.capitalize(substring.toLowerCase());
   }
 
   /**
-   * @return a copy of token list
+   * Represents broad categories of tokens.
    */
-  protected List<Token> getTokens() {
-    return new ArrayList<>(tokens);
+  enum TokenType {
+    NUMERIC_TEMPORAL,
+    CHARACTER_TEMPORAL,
+    SEPARATOR,
+    TIMEZONE,
+    ISO_8601_DELIMITER,
+    TEXT
   }
 
-  private static String capitalize(String substring) {
-    return StringUtils.capitalize(substring.toLowerCase());
+  /**
+   * Token representation.
+   */
+  static class Token implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    final TokenType type;
+    final TemporalField temporalField; // for type TEMPORAL e.g. ChronoField.YEAR
+    final TemporalUnit temporalUnit; // for type TIMEZONE e.g. ChronoUnit.HOURS
+    final String string; // pattern string, e.g. "yyy"
+    final int length; // length (e.g. YYY: 3, FF8: 8)
+    final boolean fillMode; //FM, applies to type TEMPORAL only (later should apply to TIMEZONE as well)
+
+    Token(TokenType tokenType, TemporalField temporalField, String string,
+        int length, boolean fillMode) {
+      this(tokenType, temporalField, null, string, length, fillMode);
+    }
+
+    Token(TokenType tokenType, String string) {
+      this(tokenType, null, null, string, string.length(), false);
+    }
+
+    Token(TokenType tokenType, TemporalField temporalField,
+        TemporalUnit temporalUnit, String string, int length,
+        boolean fillMode) {
+      this.type = tokenType;
+      this.temporalField = temporalField;
+      this.temporalUnit = temporalUnit;
+      this.string = string;
+      this.length = length;
+      this.fillMode = fillMode;
+    }
+
+    @Override public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(string);
+      sb.append(" type: ");
+      sb.append(type);
+      if (temporalField != null) {
+        sb.append(" temporalField: ");
+        sb.append(temporalField);
+      } else if (temporalUnit != null) {
+        sb.append(" temporalUnit: ");
+        sb.append(temporalUnit);
+      }
+      return sb.toString();
+    }
+
+    Token removeBackslashes() {
+      return new Token(type, temporalField, string.replaceAll("\\\\", ""),
+          string.length(), fillMode);
+    }
+
+    Token plus(String candidate) {
+      return new Token(type, temporalField, string + candidate, length + 1,
+          fillMode);
+    }
+
+    Token normalizeLength() {
+      return new Token(type, temporalField, string, string.length(), fillMode);
+    }
+  }
+
+  static class Builder {
+    final String pattern; // TODO remove field
+    final Optional<LocalDateTime> now;
+    final boolean forParsing;
+    boolean formatExact = false;
+
+    Builder(String pattern, Optional<LocalDateTime> now, boolean forParsing) {
+      this.pattern = Objects.requireNonNull(pattern, "Pattern cannot be null");
+      this.now = Objects.requireNonNull(now);
+      this.forParsing = forParsing;
+      Preconditions.checkArgument(pattern.length() < LONGEST_ACCEPTED_PATTERN,
+          "The input format is too long");
+    }
+
+    HiveSqlDateTimeFormatter build() {
+      final List<Token> tokens = new ArrayList<>();
+      parsePatternToTokens(tokens, pattern);
+
+      if (forParsing) {
+        verifyForParse(tokens);
+      } else {
+        verifyForFormat(tokens);
+      }
+      return new HiveSqlDateTimeFormatter(pattern, forParsing, now, tokens,
+          formatExact);
+    }
+
+    /**
+     * Parse pattern to list of tokens.
+     */
+    private void parsePatternToTokens(List<Token> tokens,
+        final String originalPattern) {
+      final String pattern = originalPattern.toLowerCase();
+
+      // indexes of the substring we will check (includes begin, does not include end)
+      int begin = 0, end = 0;
+      boolean fillMode = false;
+
+      while (begin < pattern.length()) {
+        // if begin hasn't progressed, then pattern is not parsable
+        if (begin != end) {
+          tokens.clear();
+          throw new IllegalArgumentException("Bad date/time conversion pattern: "
+              + pattern);
+        }
+
+        // find next token
+        for (int i = LONGEST_TOKEN_LENGTH; i > 0; i--) {
+          end = begin + i;
+          if (end > pattern.length()) { // don't go past the end of the pattern string
+            continue;
+          }
+          final String candidate = pattern.substring(begin, end);
+          if (isSeparator(candidate)) {
+            parseSeparatorToken(candidate, tokens, fillMode, begin);
+            begin = end;
+            break;
+          }
+          if (isIso8601Delimiter(candidate)) {
+            parseIso8601DelimiterToken(tokens, candidate, fillMode, begin);
+            begin = end;
+            break;
+          }
+          if (isNumericTemporalToken(candidate)) {
+            parseTemporalToken(tokens, originalPattern, candidate, fillMode,
+                begin);
+            fillMode = false;
+            begin = end;
+            break;
+          }
+          if (isCharacterTemporalToken(candidate)) {
+            parseCharacterTemporalToken(tokens, originalPattern, candidate,
+                fillMode, begin);
+            fillMode = false;
+            begin = end;
+            break;
+          }
+          if (isTimeZoneToken(candidate)) {
+            parseTimeZoneToken(tokens, candidate, fillMode, begin);
+            begin = end;
+            break;
+          }
+          if (isTextToken(candidate)) {
+            parseTextToken(tokens, originalPattern, fillMode, begin);
+            final Token token = Util.last(tokens);
+            end = begin + token.length + 2; // skip 2 quotation marks
+            tokens.set(tokens.size() - 1, token.removeBackslashes());
+            begin = end;
+            break;
+          }
+          if (isFormatModifierToken(candidate)) {
+            checkFillModeOff(fillMode, begin);
+            fillMode = isFm(candidate);
+            if (!fillMode) {
+              formatExact = true;
+            }
+            begin = end;
+            break;
+          }
+        }
+      }
+
+      if (formatExact) {
+        // AM/PM defaults to length 4 but make it 2 for FX check if the pattern
+        // actually has length 2
+        for (int i = 0; i < tokens.size(); i++) {
+          Token token = tokens.get(i);
+          if (token.temporalField == ChronoField.AMPM_OF_DAY
+              && token.length != token.string.length()) {
+            tokens.set(i, token.normalizeLength());
+          }
+        }
+      }
+    }
+
+    void parseSeparatorToken(String candidate, List<Token> tokens,
+        boolean fillMode, int begin) {
+      checkFillModeOff(fillMode, begin);
+      // try to clump separator with immediately preceding separators (e.g. "---" counts as one
+      // separator)
+      if (tokens.size() > 0 && Util.last(tokens).type == TokenType.SEPARATOR) {
+        final Token token = Util.last(tokens);
+        tokens.set(tokens.size() - 1, token.plus(candidate));
+      } else {
+        tokens.add(new Token(TokenType.SEPARATOR, candidate));
+      }
+    }
+
+    void parseIso8601DelimiterToken(List<Token> tokens, String candidate,
+        boolean fillMode, int begin) {
+      checkFillModeOff(fillMode, begin);
+      final Token token =
+          new Token(TokenType.ISO_8601_DELIMITER, candidate.toUpperCase());
+      tokens.add(token);
+    }
+
+    void parseTemporalToken(List<Token> tokens, String originalPattern,
+        String candidate, boolean fillMode, int begin) {
+      // for AM/PM, keep original case
+      if (NUMERIC_TEMPORAL_TOKENS.get(candidate) == ChronoField.AMPM_OF_DAY) {
+        int subStringEnd = begin + candidate.length();
+        candidate = originalPattern.substring(begin, subStringEnd);
+      }
+      Token token = new Token(TokenType.NUMERIC_TEMPORAL,
+          NUMERIC_TEMPORAL_TOKENS.get(candidate.toLowerCase()), candidate,
+          getTokenStringLength(candidate), fillMode);
+      tokens.add(token);
+    }
+
+    void parseCharacterTemporalToken(List<Token> tokens, String originalPattern,
+        String candidate, boolean fillMode, int begin) {
+      // keep original case
+      candidate = originalPattern.substring(begin, begin + candidate.length());
+
+      Token token = new Token(TokenType.CHARACTER_TEMPORAL,
+          CHARACTER_TEMPORAL_TOKENS.get(candidate.toLowerCase()), candidate,
+          getTokenStringLength(candidate), fillMode);
+      tokens.add(token);
+    }
+
+    void parseTimeZoneToken(List<Token> tokens, String candidate,
+        boolean fillMode, int begin) {
+      checkFillModeOff(fillMode, begin);
+      Token token = new Token(TokenType.TIMEZONE, null,
+          TIME_ZONE_TOKENS.get(candidate), candidate,
+          getTokenStringLength(candidate), false);
+      tokens.add(token);
+    }
+
+    void parseTextToken(List<Token> tokens, String fullPattern,
+        boolean fillMode, int begin) {
+      checkFillModeOff(fillMode, begin);
+      int end = begin;
+      do {
+        end = fullPattern.indexOf('\"', end + 1);
+        if (end == -1) {
+          throw new IllegalArgumentException(
+              "Missing closing double quote (\") opened at index " + begin);
+        }
+        // if double quote is escaped with a backslash, keep looking for the
+        // closing quotation mark
+      } while ("\\".equals(fullPattern.substring(end - 1, end)));
+      tokens.add(
+          new Token(TokenType.TEXT, fullPattern.substring(begin + 1, end)));
+    }
+
+    private void checkFillModeOff(boolean fillMode, int index) {
+      if (fillMode) {
+        throw new IllegalArgumentException("Bad date/time conversion pattern: "
+            + pattern + ". Error at index " + index
+            + ": Fill mode modifier (FM) must be followed by a temporal token.");
+      }
+    }
+
+    private int getTokenStringLength(String candidate) {
+      Integer length = SPECIAL_LENGTHS.get(candidate.toLowerCase());
+      if (length != null) {
+        return length;
+      }
+      return candidate.length();
+    }
+
+    /**
+     * Make sure the generated list of tokens is valid for parsing strings to
+     * datetime objects.
+     */
+    private void verifyForParse(List<Token> tokens) {
+
+      // create a list of tokens' temporal fields
+      List<TemporalField> temporalFields = new ArrayList<>();
+      List<TemporalUnit> timeZoneTemporalUnits = new ArrayList<>();
+      int roundYearCount=0, yearCount=0;
+      boolean containsIsoFields=false, containsGregorianFields=false;
+      for (Token token : tokens) {
+        if (token.temporalField != null) {
+          temporalFields.add(token.temporalField);
+          if (token.temporalField == ChronoField.YEAR) {
+            if (token.string.startsWith("r")) {
+              roundYearCount += 1;
+            } else {
+              yearCount += 1;
+            }
+          }
+          if (token.temporalField.isDateBased() && token.temporalField != ChronoField.DAY_OF_WEEK) {
+            if (ISO_8601_TEMPORAL_FIELDS.contains(token.temporalField)) {
+              containsIsoFields = true;
+            } else {
+              containsGregorianFields = true;
+            }
+          }
+        } else if (token.temporalUnit != null) {
+          timeZoneTemporalUnits.add(token.temporalUnit);
+        }
+      }
+
+      //check for illegal temporal fields
+      if (temporalFields.contains(IsoFields.QUARTER_OF_YEAR)) {
+        throw new IllegalArgumentException("Illegal field: q (" + IsoFields.QUARTER_OF_YEAR + ")");
+      }
+      if (temporalFields.contains(WeekFields.SUNDAY_START.dayOfWeek())) {
+        throw new IllegalArgumentException("Illegal field: d (" + WeekFields.SUNDAY_START.dayOfWeek() + ")");
+      }
+      if (temporalFields.contains(ChronoField.DAY_OF_WEEK) && containsGregorianFields) {
+        throw new IllegalArgumentException("Illegal field: dy/day (" + ChronoField.DAY_OF_WEEK + ")");
+      }
+      if (temporalFields.contains(ChronoField.ALIGNED_WEEK_OF_MONTH)) {
+        throw new IllegalArgumentException("Illegal field: w (" + ChronoField.ALIGNED_WEEK_OF_MONTH + ")");
+      }
+      if (temporalFields.contains(ChronoField.ALIGNED_WEEK_OF_YEAR)) {
+        throw new IllegalArgumentException("Illegal field: ww (" + ChronoField.ALIGNED_WEEK_OF_YEAR + ")");
+      }
+
+      if (containsGregorianFields && containsIsoFields) {
+        throw new IllegalArgumentException("Pattern cannot contain both ISO and Gregorian tokens");
+      }
+      if (!(temporalFields.contains(ChronoField.YEAR)
+          || temporalFields.contains(IsoFields.WEEK_BASED_YEAR))) {
+        throw new IllegalArgumentException("Missing year token.");
+      }
+      if (containsGregorianFields &&
+          !(temporalFields.contains(ChronoField.MONTH_OF_YEAR) &&
+              temporalFields.contains(ChronoField.DAY_OF_MONTH) ||
+              temporalFields.contains(ChronoField.DAY_OF_YEAR))) {
+        throw new IllegalArgumentException("Missing day of year or (month of year + day of month)"
+            + " tokens.");
+      }
+      if (containsIsoFields &&
+          !(temporalFields.contains(IsoFields.WEEK_OF_WEEK_BASED_YEAR) &&
+              temporalFields.contains(ChronoField.DAY_OF_WEEK))) {
+        throw new IllegalArgumentException("Missing week of year (iw) or day of week (id) tokens.");
+      }
+      if (roundYearCount > 0 && yearCount > 0) {
+        throw new IllegalArgumentException("Invalid duplication of format element: Both year and"
+            + "round year are provided");
+      }
+      for (TemporalField tokenType : temporalFields) {
+        if (Collections.frequency(temporalFields, tokenType) > 1) {
+          throw new IllegalArgumentException(
+              "Invalid duplication of format element: multiple " + tokenType
+                  + " tokens provided.");
+        }
+      }
+      if (temporalFields.contains(ChronoField.AMPM_OF_DAY) &&
+          !(temporalFields.contains(ChronoField.HOUR_OF_DAY) ||
+              temporalFields.contains(ChronoField.HOUR_OF_AMPM))) {
+        throw new IllegalArgumentException("AM/PM provided but missing hour token.");
+      }
+      if (temporalFields.contains(ChronoField.AMPM_OF_DAY) &&
+          temporalFields.contains(ChronoField.HOUR_OF_DAY)) {
+        throw new IllegalArgumentException("Conflict between median indicator and hour token.");
+      }
+      if (temporalFields.contains(ChronoField.HOUR_OF_AMPM) &&
+          temporalFields.contains(ChronoField.HOUR_OF_DAY)) {
+        throw new IllegalArgumentException("Conflict between hour of day and hour of am/pm token.");
+      }
+      if (temporalFields.contains(ChronoField.DAY_OF_YEAR) &&
+          (temporalFields.contains(ChronoField.DAY_OF_MONTH) ||
+              temporalFields.contains(ChronoField.MONTH_OF_YEAR))) {
+        throw new IllegalArgumentException("Day of year provided with day or month token.");
+      }
+      if (temporalFields.contains(ChronoField.SECOND_OF_DAY) &&
+          (temporalFields.contains(ChronoField.HOUR_OF_DAY) ||
+              temporalFields.contains(ChronoField.HOUR_OF_AMPM) ||
+              temporalFields.contains(ChronoField.MINUTE_OF_HOUR) ||
+              temporalFields.contains(ChronoField.SECOND_OF_MINUTE))) {
+        throw new IllegalArgumentException(
+            "Second of day token conflicts with other token(s).");
+      }
+      if (timeZoneTemporalUnits.contains(ChronoUnit.MINUTES) &&
+          !timeZoneTemporalUnits.contains(ChronoUnit.HOURS)) {
+        throw new IllegalArgumentException("Time zone minute token provided without time zone hour token.");
+      }
+    }
+
+    /**
+     * Make sure the generated list of tokens is valid for formatting datetime objects to strings.
+     * @param tokens
+     */
+    private void verifyForFormat(List<Token> tokens) {
+      for (Token token : tokens) {
+        if (token.type == TokenType.TIMEZONE) {
+          throw new IllegalArgumentException(token.string.toUpperCase()
+              + " not a valid format for timestamp or date.");
+        }
+      }
+    }
   }
 
   /** Stub version of  org.apache.hadoop.hive.common.type.Timestamp. */

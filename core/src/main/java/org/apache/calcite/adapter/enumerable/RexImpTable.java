@@ -85,6 +85,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -676,6 +677,10 @@ public class RexImpTable {
     tvfImplementorMap.put(SESSION, SessionImplementor::new);
   }
 
+  public static Expression callFormat(Method method, Expression operand, Expression format) {
+    return null;
+  }
+
   private <T> Supplier<T> constructorSupplier(Class<T> klass) {
     final Constructor<T> constructor;
     try {
@@ -845,6 +850,24 @@ public class RexImpTable {
               NULL_EXPR,
               expression));
     }
+  }
+
+  static Expression optimizeCall(Method method, Expression... operands) {
+    // Skip operands that are null. (Null expressions. Not expressions that
+    // the null literal or expressions that evaluate to null.)
+    final List<Expression> operandList = Arrays.stream(operands)
+        .filter(Objects::nonNull).collect(Collectors.toList());
+    Expression e = optimize(Expressions.call(method, operandList));
+    for (Expression operand : operandList) {
+      if (Primitive.is(operand.getType())) {
+        // Primitive values cannot be null
+        continue;
+      }
+      e = optimize(
+          Expressions.condition(Expressions.equal(operand, NULL_EXPR),
+              NULL_EXPR, e));
+    }
+    return e;
   }
 
   private static RelDataType toSql(RelDataTypeFactory typeFactory,
@@ -2455,9 +2478,10 @@ public class RexImpTable {
 
       // Short-circuit if no cast is required
       RexNode arg = call.getOperands().get(0);
+      final Expression arg0 = argValueList.get(0);
       if (call.getType().equals(sourceType)) {
         // No cast required, omit cast
-        return argValueList.get(0);
+        return arg0;
       }
       if (SqlTypeUtil.equalSansNullability(translator.typeFactory,
           call.getType(), arg.getType())
@@ -2466,10 +2490,12 @@ public class RexImpTable {
             (RexLiteral) translator.deref(arg), call.getType(),
             translator.typeFactory, NullAs.NULL);
       }
+      final Expression arg1 =
+          argValueList.size() <= 1 ? null : argValueList.get(1);
       final RelDataType targetType =
           nullifyType(translator.typeFactory, call.getType(), false);
       return translator.translateCast(sourceType,
-              targetType, argValueList.get(0));
+              targetType, arg0, arg1);
     }
 
     private RelDataType nullifyType(JavaTypeFactory typeFactory,
