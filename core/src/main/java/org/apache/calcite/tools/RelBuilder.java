@@ -359,6 +359,9 @@ public class RelBuilder {
   }
 
   private Frame peek_(int n) {
+    if (n == 0) {
+      return stack.peek(); // more efficient than starting an iterator
+    }
     return Iterables.get(stack, n);
   }
 
