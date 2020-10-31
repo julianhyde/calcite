@@ -8608,23 +8608,25 @@ public abstract class SqlOperatorBaseTest {
     tester.checkType("countif(true)", "BIGINT NOT NULL");
     tester.checkType("countif(nullif(true,true))", "BIGINT NOT NULL");
     tester.checkType("countif(false) filter (where true)", "BIGINT NOT NULL");
+
     final String expectedError = "Invalid number of arguments to function "
         + "'COUNTIF'. Was expecting 1 arguments";
     tester.checkFails("^COUNTIF()^", expectedError, false);
     tester.checkFails("^COUNTIF(true, false)^", expectedError, false);
-    tester.checkFails("^COUNTIF(1)^",
-        "Invalid number of arguments to function 'COUNT'. Was expecting 1 arguments",
-        false);
-    final String sql = "select"
-        + "  countif(a > 0) + countif(a > 1) + countif(c > 1)"
-        + "from"
-        + "  (select 1 as a, 2 as b, 3 as c)";
-    tester.check(sql, new SqlTests.StringTypeChecker("INTEGER NOT NULL"), "2",
-        0);
-    final String[] values = {"TRUE", "FALSE", "TRUE", "UNKNOWN"};
-    tester.checkAgg("countif(x)", values, 2, 0d);
-    tester.checkAgg("countif(not x)", values, 2, 0d);
-    tester.checkAgg("countif(x) filter (where not x)", values, 0, 0d);
+    final String expectedError2 = "Cannot apply 'COUNTIF' to arguments of "
+        + "type 'COUNTIF\\(<INTEGER>\\)'\\. Supported form\\(s\\): "
+        + "'COUNTIF\\(<BOOLEAN>\\)'";
+    tester.checkFails("^COUNTIF(1)^", expectedError2, false);
+
+    final String[] values = {"1", "2", "CAST(NULL AS INTEGER)", "1"};
+    tester.checkAgg("countif(x > 0)", values, 3, 0d);
+    tester.checkAgg("countif(x < 2)", values, 2, 0d);
+    tester.checkAgg("countif(x is not null) filter (where x < 2)",
+        values, 2, 0d);
+    tester.checkAgg("countif(x < 2) filter (where x is not null)",
+        values, 2, 0d);
+    tester.checkAgg("countif(x between 1 and 2)", values, 3, 0d);
+    tester.checkAgg("countif(x < 0)", values, 0, 0d);
   }
 
   @Test void testApproxCountDistinctFunc() {

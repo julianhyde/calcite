@@ -210,7 +210,7 @@ public abstract class OperandTypes {
     };
   }
 
-  public static final FamilyOperandTypeChecker BOOLEAN =
+  public static final SqlSingleOperandTypeChecker BOOLEAN =
       family(SqlTypeFamily.BOOLEAN);
 
   public static final SqlSingleOperandTypeChecker BOOLEAN_BOOLEAN =
