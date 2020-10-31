@@ -144,8 +144,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     registerOp(SqlLibraryOperators.DECODE,
         StandardConvertletTable::convertDecode);
     registerOp(SqlLibraryOperators.IF, StandardConvertletTable::convertIf);
-//    registerOp(SqlLibraryOperators.COUNTIF,
-//        StandardConvertletTable::convertCountif);
 
     // Expand "x NOT LIKE y" into "NOT (x LIKE y)"
     registerOp(SqlStdOperatorTable.NOT_LIKE,
@@ -263,17 +261,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             return cx.getRexBuilder().makeFieldAccess(expr, 0);
           });
     }
-  }
-
-  /** Converts a call to the COUNTIF aggregate function. */
-  private static RexNode convertCountif(SqlRexContext cx, SqlCall call) {
-    assert call.operandCount() == 1;
-    final SqlNode arg = call.operand(0);
-    final SqlParserPos pos = call.getParserPosition();
-    final SqlNode sum =
-        SqlStdOperatorTable.FILTER.createCall(pos,
-            SqlStdOperatorTable.COUNT.createCall(pos), arg);
-    return cx.convertExpression(sum);
   }
 
   /** Converts a call to the NVL function. */
