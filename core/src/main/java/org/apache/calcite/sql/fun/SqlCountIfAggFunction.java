@@ -30,34 +30,30 @@ import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlOperandCountRanges;
-import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Optionality;
 
 import java.util.List;
 
 /**
- * Definition of the SQL <code>COUNTIF</code> aggregation function.
+ * Definition of the SQL <code>COUNTIF</code> aggregate function.
  *
- * <p><code>COUNTIF</code> is an aggregator which returns the number of rows which
- * fulfil its boolean expression.
+ * <p><code>COUNTIF</code> returns the number of rows for which its boolean
+ * expression evaluates to TRUE. {@code COUNTIF(b)} is equivalent to
+ * {@code COUNT(*) FILTER (WHERE b)}.
  */
 public class SqlCountIfAggFunction extends SqlAggFunction {
   //~ Constructors -----------------------------------------------------------
 
   public SqlCountIfAggFunction(String name) {
-    this(name, OperandTypes.BOOLEAN);
-  }
-
-  public SqlCountIfAggFunction(String name,
-      SqlOperandTypeChecker sqlOperandTypeChecker) {
-    super(name, null, SqlKind.COUNT_IF, ReturnTypes.BIGINT, null,
-        sqlOperandTypeChecker, SqlFunctionCategory.NUMERIC, false, false,
+    super(name, null, SqlKind.COUNTIF, ReturnTypes.BIGINT, null,
+        OperandTypes.BOOLEAN, SqlFunctionCategory.NUMERIC, false, false,
         Optionality.FORBIDDEN);
   }
 
   //~ Methods ----------------------------------------------------------------
 
+  /*
   @Override public SqlNode rewriteCall(SqlValidator validator, SqlCall call) {
     List<SqlNode> operands = call.getOperandList();
     SqlParserPos pos = call.getParserPosition();
@@ -74,12 +70,16 @@ public class SqlCountIfAggFunction extends SqlAggFunction {
     return SqlCase.createSwitched(pos, null, whenList, thenList,
         SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO));
   }
+   */
 
+  /*
   @Override public SqlOperandCountRange getOperandCountRange() {
     return SqlOperandCountRanges.of(1);
   }
+   */
 
-  @Override public boolean checkOperandTypes(
+//  @Override
+  public boolean checkOperandTypes_(
       SqlCallBinding callBinding,
       boolean throwOnFailure) {
     final SqlNode node = callBinding.operand(0);

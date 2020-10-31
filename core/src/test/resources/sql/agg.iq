@@ -2890,4 +2890,17 @@ from emp group by gender;
 
 !ok
 
+# COUNTIF(b) (BigQuery) is equivalent to COUNT(*) FILTER (WHERE b)
+select * from emp;
+!ok
+
+select deptno, countif(length(name) = 4) as c
+from emp
+group by deptno;
+!ok
+
+select countif(length(name) = 4) filter (where deptno = 10) as c
+from emp;
+!ok
+
 # End agg.iq

@@ -274,6 +274,12 @@ public abstract class SqlLibraryOperators {
   public static final SqlAggFunction LOGICAL_OR =
       new SqlMinMaxAggFunction("LOGICAL_OR", SqlKind.MAX, OperandTypes.BOOLEAN);
 
+  /** The "COUNTIF(condition) [OVER (...)]" function, in BigQuery,
+   * returns the count of TRUE values for expression. */
+  @LibraryOperator(libraries = {BIG_QUERY})
+  public static final SqlFunction COUNTIF =
+      new SqlCountIfAggFunction("COUNTIF");
+
   /** The "ARRAY_AGG(value [ ORDER BY ...])" aggregate function,
    * in BigQuery and PostgreSQL, gathers values into arrays. */
   @LibraryOperator(libraries = {POSTGRESQL, BIG_QUERY})
@@ -598,12 +604,4 @@ public abstract class SqlLibraryOperators {
   @LibraryOperator(libraries = { POSTGRESQL })
   public static final SqlOperator INFIX_CAST =
       new SqlCastOperator();
-
-  /** The "COUNTIF(expression)  [OVER (...)]" function;
-   * Returns the count of TRUE values for expression. Returns 0 if there are
-   * zero input rows, or if expression evaluates to FALSE or NULL for all rows.
-    */
-  @LibraryOperator(libraries = {BIG_QUERY})
-  public static final SqlFunction COUNTIF =
-      new SqlCountIfAggFunction("COUNTIF", null);
 }
