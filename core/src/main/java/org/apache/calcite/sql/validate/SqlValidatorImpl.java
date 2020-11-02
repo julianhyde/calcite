@@ -5171,9 +5171,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
     assert targetWindow.getWindowCall() == null;
-    targetWindow.setWindowCall(call);
+    targetWindow.setWindowCall(call); // TODO remove this mutation
     targetWindow.validate(this, scope);
-    targetWindow.setWindowCall(null);
+    targetWindow.setWindowCall(null); // TODO remove this mutation
     call.validate(this, scope);
 
     validateAggregateParams(call, null, null, scope);
@@ -5568,7 +5568,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
 
-    final SqlAggFunction op = (SqlAggFunction) aggCall.getOperator();
+    final SqlAggFunction op = SqlWindow.aggOperator(aggCall);
     switch (op.requiresGroupOrder()) {
     case MANDATORY:
       if (orderList == null || orderList.size() == 0) {

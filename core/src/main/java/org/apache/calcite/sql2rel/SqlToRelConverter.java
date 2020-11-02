@@ -1956,58 +1956,68 @@ public class SqlToRelConverter {
   }
 
   private RexNode convertOver(Blackboard bb, SqlNode node) {
-    SqlCall call = (SqlCall) node;
-    SqlCall aggCall = call.operand(0);
-    boolean ignoreNulls = false;
-    switch (aggCall.getKind()) {
-    case IGNORE_NULLS:
-      ignoreNulls = true;
-      // fall through
-    case RESPECT_NULLS:
-      aggCall = aggCall.operand(0);
-      break;
-    default:
-      break;
-    }
-
-    SqlNode windowOrRef = call.operand(1);
+    final SqlCall call = (SqlCall) node;
+    final RelDataType type = validator.getValidatedNodeType(call);
+    final SqlNode windowOrRef = call.operand(1);
     final SqlWindow window =
         validator.resolveWindow(windowOrRef, bb.scope);
 
-    SqlNode sqlLowerBound = window.getLowerBound();
-    SqlNode sqlUpperBound = window.getUpperBound();
-    boolean rows = window.isRows();
-    SqlNodeList orderList = window.getOrderList();
+    try {
+      Preconditions.checkArgument(bb.window == null,
+          "already in window agg mode");
+      bb.window = window;
+      return convertOver2(bb, type, call.operand(0), false, null,
+          window.getPartitionList(), window.getOrderList(), window.isRows(),
+          window.getLowerBound(), window.getUpperBound(),
+          window.isAllowPartial());
+    } finally {
+      bb.window = null;
+    }
+  }
 
-    if (!aggCall.getOperator().allowsFraming()) {
+  private RexNode convertOver2(Blackboard bb, RelDataType type, SqlCall call,
+      boolean ignoreNulls, SqlNode filter, SqlNodeList partitionList,
+      SqlNodeList orderList, boolean rows,
+      SqlNode lowerBound, SqlNode upperBound, boolean allowPartial) {
+    switch (call.getKind()) {
+    case FILTER:
+      final SqlNode filter2 = call.operand(1);
+      return convertOver2(bb, type, call.operand(0), ignoreNulls, filter2,
+          partitionList, orderList, rows, lowerBound, upperBound, allowPartial);
+    case IGNORE_NULLS:
+      return convertOver2(bb, type, call.operand(0), true, filter,
+          partitionList, orderList, rows, lowerBound, upperBound, allowPartial);
+    case RESPECT_NULLS:
+      return convertOver2(bb, type, call.operand(0), false, filter,
+          partitionList, orderList, rows, lowerBound, upperBound, allowPartial);
+    }
+
+    if (!call.getOperator().allowsFraming()) {
       // If the operator does not allow framing, bracketing is implicitly
       // everything up to the current row.
-      sqlLowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
-      sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
-      if (aggCall.getKind() == SqlKind.ROW_NUMBER) {
+      lowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
+      upperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
+      if (call.getKind() == SqlKind.ROW_NUMBER) {
         // ROW_NUMBER() expects specific kind of framing.
         rows = true;
       }
     } else if (orderList.size() == 0) {
       // Without ORDER BY, there must be no bracketing.
-      sqlLowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
-      sqlUpperBound = SqlWindow.createUnboundedFollowing(SqlParserPos.ZERO);
-    } else if (sqlLowerBound == null && sqlUpperBound == null) {
-      sqlLowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
-      sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
-    } else if (sqlUpperBound == null) {
-      sqlUpperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
-    } else if (sqlLowerBound == null) {
-      sqlLowerBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
+      lowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
+      upperBound = SqlWindow.createUnboundedFollowing(SqlParserPos.ZERO);
+    } else if (lowerBound == null && upperBound == null) {
+      lowerBound = SqlWindow.createUnboundedPreceding(SqlParserPos.ZERO);
+      upperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
+    } else if (upperBound == null) {
+      upperBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
+    } else if (lowerBound == null) {
+      lowerBound = SqlWindow.createCurrentRow(SqlParserPos.ZERO);
     }
-    final SqlNodeList partitionList = window.getPartitionList();
     final ImmutableList.Builder<RexNode> partitionKeys =
         ImmutableList.builder();
     for (SqlNode partition : partitionList) {
       partitionKeys.add(bb.convertExpression(partition));
     }
-    final RexNode lowerBound = bb.convertExpression(sqlLowerBound);
-    final RexNode upperBound = bb.convertExpression(sqlUpperBound);
     if (orderList.size() == 0 && !rows) {
       // A logical range requires an ORDER BY clause. Use the implicit
       // ordering of this relation. There must be one, otherwise it would
@@ -2028,36 +2038,36 @@ public class SqlToRelConverter {
               RelFieldCollation.NullDirection.UNSPECIFIED));
     }
 
-    try {
-      Preconditions.checkArgument(bb.window == null,
-          "already in window agg mode");
-      bb.window = window;
-      RexNode rexAgg = exprConverter.convertCall(bb, aggCall);
-      rexAgg =
-          rexBuilder.ensureType(
-              validator.getValidatedNodeType(call), rexAgg, false);
+    final RexNode rexLowerBound = bb.convertExpression(lowerBound);
+    final RexNode rexUpperBound = bb.convertExpression(upperBound);
 
-      // Walk over the tree and apply 'over' to all agg functions. This is
-      // necessary because the returned expression is not necessarily a call
-      // to an agg function. For example, AVG(x) becomes SUM(x) / COUNT(x).
+    final SqlLiteral q = call.getFunctionQuantifier();
+    final boolean isDistinct = q != null
+        && q.getValue() == SqlSelectKeyword.DISTINCT;
 
-      final SqlLiteral q = aggCall.getFunctionQuantifier();
-      final boolean isDistinct = q != null
-          && q.getValue() == SqlSelectKeyword.DISTINCT;
+    return convertOver3(bb, type, call, isDistinct, ignoreNulls, null,
+        partitionKeys.build(), orderKeys.build(),
+        RexWindowBounds.create(lowerBound, rexLowerBound),
+        RexWindowBounds.create(upperBound, rexUpperBound),
+        rows, allowPartial);
+  }
 
-      final RexShuttle visitor =
-          new HistogramShuttle(
-              partitionKeys.build(), orderKeys.build(),
-              RexWindowBounds.create(sqlLowerBound, lowerBound),
-              RexWindowBounds.create(sqlUpperBound, upperBound),
-              rows,
-              window.isAllowPartial(),
-              isDistinct,
-              ignoreNulls);
-      return rexAgg.accept(visitor);
-    } finally {
-      bb.window = null;
-    }
+  RexNode convertOver3(Blackboard bb, RelDataType type, SqlCall aggCall,
+      boolean isDistinct, boolean ignoreNulls, RexNode filter,
+      List<RexNode> partitionKeys, ImmutableList<RexFieldCollation> orderKeys,
+      RexWindowBound lowerBound, RexWindowBound upperBound,
+      boolean rows, boolean allowPartial) {
+    RexNode rexAgg = exprConverter.convertCall(bb, aggCall);
+    rexAgg = rexBuilder.ensureType(type, rexAgg, false);
+
+    // Walk over the tree and apply 'over' to all agg functions. This is
+    // necessary because the returned expression is not necessarily a call
+    // to an agg function. For example, AVG(x) becomes SUM(x) / COUNT(x).
+
+    final RexShuttle visitor =
+        new HistogramShuttle(partitionKeys, orderKeys, lowerBound, upperBound,
+            rows, allowPartial, isDistinct, ignoreNulls);
+    return rexAgg.accept(visitor);
   }
 
   protected void convertFrom(

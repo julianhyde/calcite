@@ -69,22 +69,18 @@ public class SqlFilterOperator extends SqlBinaryOperator {
       SqlValidatorScope operandScope) {
     assert call.getOperator() == this;
     assert call.operandCount() == 2;
-    SqlCall aggCall = getAggCall(call);
-    if (!aggCall.getOperator().isAggregator()) {
-      throw validator.newValidationError(aggCall,
+    final SqlOverOperator.OverArgs overArgs = SqlOverOperator.OverArgs.of(call);
+    if (!overArgs.aggCall.getOperator().isAggregator()) {
+      throw validator.newValidationError(overArgs.aggCall,
           RESOURCE.filterNonAggregate());
     }
-    final SqlNode condition = call.operand(1);
-    SqlNodeList orderList = null;
-    if (hasWithinGroupCall(call)) {
-      SqlCall withinGroupCall = getWithinGroupCall(call);
-      orderList = withinGroupCall.operand(1);
-    }
-    validator.validateAggregateParams(aggCall, condition, orderList, scope);
+    final SqlNodeList orderList = overArgs.orderList;
+    validator.validateAggregateParams(overArgs.aggCall, overArgs.filter,
+        orderList, scope);
 
-    final RelDataType type = validator.deriveType(scope, condition);
+    final RelDataType type = validator.deriveType(scope, overArgs.filter);
     if (!SqlTypeUtil.inBooleanFamily(type)) {
-      throw validator.newValidationError(condition,
+      throw validator.newValidationError(overArgs.filter,
           RESOURCE.condMustBeBoolean("FILTER"));
     }
   }
@@ -97,49 +93,21 @@ public class SqlFilterOperator extends SqlBinaryOperator {
     validateOperands(validator, scope, call);
 
     // Assume the first operand is an aggregate call and derive its type.
-    final SqlCall aggCall = getAggCall(call);
+    final SqlOverOperator.OverArgs overArgs = SqlOverOperator.OverArgs.of(call);
 
     // Pretend that group-count is 0. This tells the aggregate function that it
     // might be invoked with 0 rows in a group. Most aggregate functions will
     // return NULL in this case.
-    SqlCallBinding opBinding = new SqlCallBinding(validator, scope, aggCall) {
-      @Override public int getGroupCount() {
-        return 0;
-      }
-    };
+    SqlCallBinding opBinding =
+        new SqlCallBinding(validator, scope, overArgs.aggCall) {
+          @Override public int getGroupCount() {
+            return 0;
+          }
+        };
 
-    RelDataType ret = aggCall.getOperator().inferReturnType(opBinding);
+    RelDataType ret = overArgs.aggCall.getOperator().inferReturnType(opBinding);
+    overArgs.setValidatedNodeType(validator, ret);
 
-    // Copied from validateOperands
-    ((SqlValidatorImpl) validator).setValidatedNodeType(call, ret);
-    ((SqlValidatorImpl) validator).setValidatedNodeType(aggCall, ret);
-    if (hasWithinGroupCall(call)) {
-      ((SqlValidatorImpl) validator).setValidatedNodeType(getWithinGroupCall(call), ret);
-    }
     return ret;
-  }
-
-  private static SqlCall getAggCall(SqlCall call) {
-    assert call.getOperator().getKind() == SqlKind.FILTER;
-    call = call.operand(0);
-    if (call.getOperator().getKind() == SqlKind.WITHIN_GROUP) {
-      call = call.operand(0);
-    }
-    return call;
-  }
-
-  private static SqlCall getWithinGroupCall(SqlCall call) {
-    assert call.getOperator().getKind() == SqlKind.FILTER;
-    call = call.operand(0);
-    if (call.getOperator().getKind() == SqlKind.WITHIN_GROUP) {
-      return call;
-    }
-    throw new AssertionError();
-  }
-
-  private static boolean hasWithinGroupCall(SqlCall call) {
-    assert call.getOperator().getKind() == SqlKind.FILTER;
-    call = call.operand(0);
-    return call.getOperator().getKind() == SqlKind.WITHIN_GROUP;
   }
 }

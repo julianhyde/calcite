@@ -78,6 +78,38 @@ from emp;
 
 !ok
 
+# FILTER and OVER
+# Succeeds on PostgreSQL;
+# fails on Oracle due to lack of FILTER;
+# fails on hsqldb due to lack of OVER.
+select empno, deptno,
+  count(*) over (order by empno rows unbounded preceding) as c1,
+  count(*) filter (where deptno = 10)
+           over (order by empno rows unbounded preceding) as c2
+from emp
+order by empno;
++-------+--------+----+----+
+| EMPNO | DEPTNO | C1 | C2 |
++-------+--------+----+----+
+|  7369 |     20 |  1 |  0 |
+|  7499 |     30 |  2 |  0 |
+|  7521 |     30 |  3 |  0 |
+|  7566 |     20 |  4 |  0 |
+|  7654 |     30 |  5 |  0 |
+|  7698 |     30 |  6 |  0 |
+|  7782 |     10 |  7 |  1 |
+|  7788 |     20 |  8 |  1 |
+|  7839 |     10 |  9 |  2 |
+|  7844 |     30 | 10 |  2 |
+|  7876 |     20 | 11 |  2 |
+|  7900 |     30 | 12 |  2 |
+|  7902 |     20 | 13 |  2 |
+|  7934 |     10 | 14 |  3 |
++-------+--------+----+----+
+(14 rows)
+
+!ok
+
 !use post
 # [CALCITE-1540] Support multiple columns in PARTITION BY clause of window function
 select gender,deptno,

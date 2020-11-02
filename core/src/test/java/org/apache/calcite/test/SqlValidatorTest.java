@@ -4176,6 +4176,37 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     winSql(sql2).fails("Expression 'EMPNO' is not being grouped");
   }
 
+  @Test void testFilterOver() {
+    final String sql = "select sum(sal) filter (where deptno = 10) over ()\n"
+        + "from emp";
+    winSql(sql).ok();
+    final String sql2 = "select sum(sal) filter (where ^bad^ = 10) over ()\n"
+        + "from emp";
+    winSql(sql2).fails("Column 'BAD' not found in any table");
+    final String sql3 = "select ^sum(sal)^ respect nulls\n"
+        + "  filter (where true) over ()\n"
+        + "from emp";
+    winSql(sql3)
+        .fails("Cannot specify IGNORE NULLS or RESPECT NULLS following 'SUM'");
+    final String sql4 = "select ^sum(sal)^ respect nulls over ()\n"
+        + "from emp";
+    winSql(sql4)
+        .fails("Cannot specify IGNORE NULLS or RESPECT NULLS following 'SUM'");
+    final String sql5 = "select ^collect(ename)^ respect nulls\n"
+        + " within group (order by empno) over ()\n"
+        + "from emp";
+    winSql(sql5)
+        .fails("Cannot specify IGNORE NULLS or RESPECT NULLS following "
+            + "'COLLECT'");
+    final String sql6 = "select collect(ename) within group (order by empno)\n"
+        + "from emp";
+    winSql(sql6).ok();
+    final String sql7 = "select upper(ename) respect nulls\n"
+        + " within group (order by empno)\n"
+        + "from emp";
+    winSql(sql7).ok();
+  }
+
   @Test void testAggregateInsideOverClause() {
     final String sql = "select ^empno^,\n"
         + "  sum(empno) over (partition by min(sal)) empno_sum\n"

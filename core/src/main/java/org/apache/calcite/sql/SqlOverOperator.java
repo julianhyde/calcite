@@ -64,21 +64,8 @@ public class SqlOverOperator extends SqlBinaryOperator {
       SqlValidatorScope operandScope) {
     assert call.getOperator() == this;
     assert call.operandCount() == 2;
-    SqlCall aggCall = call.operand(0);
-    switch (aggCall.getKind()) {
-    case RESPECT_NULLS:
-    case IGNORE_NULLS:
-      validator.validateCall(aggCall, scope);
-      aggCall = aggCall.operand(0);
-      break;
-    default:
-      break;
-    }
-    if (!aggCall.getOperator().isAggregator()) {
-      throw validator.newValidationError(aggCall, RESOURCE.overNonAggregate());
-    }
-    final SqlNode window = call.operand(1);
-    validator.validateWindow(window, scope, aggCall);
+    final OverArgs overArgs = OverArgs.of(call);
+    overArgs.validate(scope);
   }
 
   @Override public RelDataType deriveType(
@@ -115,8 +102,8 @@ public class SqlOverOperator extends SqlBinaryOperator {
     RelDataType ret = aggCall.getOperator().inferReturnType(opBinding);
 
     // Copied from validateOperands
-    ((SqlValidatorImpl) validator).setValidatedNodeType(call, ret);
-    ((SqlValidatorImpl) validator).setValidatedNodeType(agg, ret);
+    validator.setValidatedNodeType(call, ret);
+    validator.setValidatedNodeType(agg, ret);
     return ret;
   }
 
@@ -145,6 +132,94 @@ public class SqlOverOperator extends SqlBinaryOperator {
       }
     } else {
       super.acceptCall(visitor, call, onlyExpressions, argHandler);
+    }
+  }
+
+  /** Gathers the arguments of a windowed aggregate call. */
+  static class OverArgs {
+    final SqlNode window;
+    final SqlCall respectNullsCall;
+    final boolean respectNulls;
+    final SqlCall filterCall;
+    final SqlNode filter;
+    final SqlCall withinGroupCall;
+    final SqlNodeList orderList;
+    final SqlCall aggCall;
+
+    private OverArgs(SqlNode window, SqlCall respectNullsCall,
+        boolean respectNulls, SqlCall filterCall, SqlNode filter,
+        SqlCall withinGroupCall, SqlNodeList orderList, SqlCall aggCall) {
+      this.window = window;
+      this.respectNullsCall = respectNullsCall;
+      this.respectNulls = respectNulls;
+      this.filterCall = filterCall;
+      this.filter = filter;
+      this.withinGroupCall = withinGroupCall;
+      this.orderList = orderList;
+      this.aggCall = aggCall;
+    }
+
+    static OverArgs of(SqlCall call) {
+      return new OverArgs(null, null, false, null, null, null, null, null)
+          .apply(call);
+    }
+
+    OverArgs apply(SqlCall call) {
+      switch (call.getKind()) {
+      case OVER:
+        return new OverArgs(call.operand(1), respectNullsCall, respectNulls,
+            filterCall, filter, withinGroupCall, orderList, aggCall)
+            .apply(call.operand(0));
+      case FILTER:
+        return new OverArgs(window, respectNullsCall, respectNulls,
+            call, call.operand(1), withinGroupCall, orderList, aggCall)
+            .apply(call.operand(0));
+      case WITHIN_GROUP:
+        return new OverArgs(window, respectNullsCall, respectNulls,
+            filterCall, filter, call, call.operand(1), aggCall)
+            .apply(call.operand(0));
+      case RESPECT_NULLS:
+        return new OverArgs(window, call, true, filterCall, filter,
+            withinGroupCall, orderList, aggCall).apply(call.operand(0));
+      case IGNORE_NULLS:
+        return new OverArgs(window, call, false, filterCall, filter,
+            withinGroupCall, orderList, aggCall).apply(call.operand(0));
+      default:
+        return new OverArgs(window, respectNullsCall, respectNulls,
+            filterCall, filter, withinGroupCall, orderList, call);
+      }
+    }
+
+    void validate(SqlValidatorScope scope) {
+      final SqlValidator validator = scope.getValidator();
+      if (!aggCall.getOperator().isAggregator()) {
+        throw validator.newValidationError(aggCall,
+            RESOURCE.overNonAggregate());
+      }
+      validator.validateWindow(window, scope, aggCall);
+      aggCall.validate(validator, scope);
+      if (filter != null) {
+        filter.validate(validator, scope);
+      }
+      if (orderList != null) {
+        orderList.validate(validator, scope);
+      }
+      if (respectNullsCall != null) {
+        respectNullsCall.validate(validator, scope);
+      }
+    }
+
+    public void setValidatedNodeType(SqlValidator validator, RelDataType type) {
+      validator.setValidatedNodeType(aggCall, type);
+      if (filter != null) {
+        validator.setValidatedNodeType(filterCall, type);
+      }
+      if (orderList != null) {
+        validator.setValidatedNodeType(withinGroupCall, type);
+      }
+      if (respectNullsCall != null) {
+        validator.setValidatedNodeType(respectNullsCall, type);
+      }
     }
   }
 }

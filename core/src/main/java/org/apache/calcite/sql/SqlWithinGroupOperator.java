@@ -59,10 +59,11 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
       SqlValidatorScope operandScope) {
     assert call.getOperator() == this;
     assert call.operandCount() == 2;
-    SqlCall aggCall = call.operand(0);
-    if (!aggCall.getOperator().isAggregator()) {
+    final SqlOverOperator.OverArgs overArgs = SqlOverOperator.OverArgs.of(call);
+    if (!overArgs.aggCall.getOperator().isAggregator()) {
       throw validator.newValidationError(call,
-          RESOURCE.withinGroupNotAllowed(aggCall.getOperator().getName()));
+          RESOURCE.withinGroupNotAllowed(
+              overArgs.aggCall.getOperator().getName()));
     }
     final SqlNodeList orderList = call.operand(1);
     for (SqlNode order : orderList) {
@@ -70,7 +71,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
           validator.deriveType(scope, order);
       assert nodeType != null;
     }
-    validator.validateAggregateParams(aggCall, null, orderList, scope);
+    validator.validateAggregateParams(overArgs.aggCall, null, orderList, scope);
   }
 
   @Override public RelDataType deriveType(

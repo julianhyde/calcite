@@ -115,7 +115,7 @@ public abstract class SqlTests {
 
   public static String generateAggQuery(String expr, String[] inputValues) {
     StringBuilder buf = new StringBuilder();
-    buf.append("SELECT ").append(expr).append(" FROM ");
+    buf.append("SELECT ").append(expr).append(" OVER () FROM ");
     if (inputValues.length == 0) {
       buf.append("(VALUES 1) AS t(x) WHERE false");
     } else {

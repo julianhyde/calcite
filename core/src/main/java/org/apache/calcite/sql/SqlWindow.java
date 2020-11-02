@@ -287,7 +287,7 @@ public class SqlWindow extends SqlCall {
   public void setWindowCall(SqlCall windowCall) {
     this.windowCall = windowCall;
     assert windowCall == null
-        || windowCall.getOperator() instanceof SqlAggFunction;
+        || aggOperator(windowCall).isAggregator();
   }
 
   public SqlCall getWindowCall() {
@@ -580,14 +580,14 @@ public class SqlWindow extends SqlCall {
     if (orderList.size() == 0
         && !SqlValidatorUtil.containsMonotonic(scope)
         && windowCall != null
-        && windowCall.getOperator().requiresOrder()) {
+        && aggOperator(windowCall).requiresOrder()) {
       throw validator.newValidationError(this, RESOURCE.funcNeedsOrderBy());
     }
 
     // Run framing checks if there are any
     if (upperBound != null || lowerBound != null) {
       // 6.10 Rule 6a RANK & DENSE_RANK do not allow ROWS or RANGE
-      if (windowCall != null && !windowCall.getOperator().allowsFraming()) {
+      if (windowCall != null && !aggOperator(windowCall).allowsFraming()) {
         throw validator.newValidationError(isRows, RESOURCE.rankWithFrame());
       }
       SqlTypeFamily orderTypeFam = null;
@@ -635,13 +635,29 @@ public class SqlWindow extends SqlCall {
     } else if (orderList.size() == 0
         && !SqlValidatorUtil.containsMonotonic(scope)
         && windowCall != null
-        && windowCall.getOperator().requiresOrder()) {
+        && aggOperator(windowCall).requiresOrder()) {
       throw validator.newValidationError(this, RESOURCE.overMissingOrderBy());
     }
 
     if (!isRows() && !isAllowPartial()) {
       throw validator.newValidationError(allowPartial,
           RESOURCE.cannotUseDisallowPartialWithRange());
+    }
+  }
+
+  /**
+   * <p>TODO: refactor
+   *
+   * <p>Unify with {@link SqlFilterOperator#getAggCall(SqlCall)},
+   * {@link SqlFilterOperator#getWithinGroupCall(SqlCall)},
+   * {@link SqlOverOperator#isAggregateCall(SqlCall)}?
+   */
+  public static SqlAggFunction aggOperator(SqlCall windowCall) {
+    switch (windowCall.getKind()) {
+    case FILTER:
+      return aggOperator(windowCall.operand(0));
+    default:
+      return (SqlAggFunction) windowCall.getOperator();
     }
   }
 
