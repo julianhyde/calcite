@@ -197,7 +197,6 @@ public class SqlOverOperator extends SqlBinaryOperator {
             RESOURCE.overNonAggregate());
       }
       validator.validateWindow(window, scope, aggCall);
-      aggCall.validate(validator, scope);
       if (filter != null) {
         filter.validate(validator, scope);
       }
