@@ -66,6 +66,95 @@ select * from "scott".emp where not sal > 1300 and not sal < 1200;
 
 !ok
 
+# [CALCITE-4405] SEARCH operator (with Sarg literal) handles UNKNOWN incorrectly
+select empno, ename, job, comm,
+  comm between 1000 and 2000 as b,
+  case
+  when (comm between 1000 and 2000) is unknown then 'u'
+  when (comm between 1000 and 2000) is true then 't'
+  when (comm between 1000 and 2000) is false then 'f'
+  else '?'
+  end as truth,
+  comm in (0, 100, 200, 300) as b2,
+  comm in (0, 100, 200, 300, null) as b3
+from "scott".emp
+where deptno = 30
+order by empno;
++-------+--------+----------+---------+-------+-------+-------+------+
+| EMPNO | ENAME  | JOB      | COMM    | B     | TRUTH | B2    | B3   |
++-------+--------+----------+---------+-------+-------+-------+------+
+|  7499 | ALLEN  | SALESMAN |  300.00 | false | f     | true  | true |
+|  7521 | WARD   | SALESMAN |  500.00 | false | f     | false |      |
+|  7654 | MARTIN | SALESMAN | 1400.00 | true  | t     | false |      |
+|  7698 | BLAKE  | MANAGER  |         |       | u     |       |      |
+|  7844 | TURNER | SALESMAN |    0.00 | false | f     | true  | true |
+|  7900 | JAMES  | CLERK    |         |       | u     |       |      |
++-------+--------+----------+---------+-------+-------+-------+------+
+(6 rows)
+
+!ok
+
+select empno, ename, job, comm
+from "scott".emp
+where deptno = 30
+  and not (comm between 1000 and 2000)
+order by empno;
++-------+--------+----------+--------+
+| EMPNO | ENAME  | JOB      | COMM   |
++-------+--------+----------+--------+
+|  7499 | ALLEN  | SALESMAN | 300.00 |
+|  7521 | WARD   | SALESMAN | 500.00 |
+|  7844 | TURNER | SALESMAN |   0.00 |
++-------+--------+----------+--------+
+(3 rows)
+
+!ok
+
+select empno, ename, job, comm
+from "scott".emp
+where deptno = 30
+  and not (comm between 1000 and 2000)
+order by empno;
++-------+--------+----------+--------+
+| EMPNO | ENAME  | JOB      | COMM   |
++-------+--------+----------+--------+
+|  7499 | ALLEN  | SALESMAN | 300.00 |
+|  7521 | WARD   | SALESMAN | 500.00 |
+|  7844 | TURNER | SALESMAN |   0.00 |
++-------+--------+----------+--------+
+(3 rows)
+
+!ok
+
+select empno, ename, job, comm
+from "scott".emp
+where deptno = 30
+  and not (comm between 1000 and 2000 or comm is null)
+order by empno;
++-------+--------+----------+--------+
+| EMPNO | ENAME  | JOB      | COMM   |
++-------+--------+----------+--------+
+|  7499 | ALLEN  | SALESMAN | 300.00 |
+|  7521 | WARD   | SALESMAN | 500.00 |
+|  7844 | TURNER | SALESMAN |   0.00 |
++-------+--------+----------+--------+
+(3 rows)
+
+!ok
+
+select empno, ename, job, comm
+from "scott".emp
+where deptno = 30
+  and not (comm between 1000 and 2000 or comm is not null)
+order by empno;
++-------+--------+----------+--------+
+| EMPNO | ENAME  | JOB      | COMM   |
++-------+--------+----------+--------+
++-------+--------+----------+--------+
+(0 rows)
+
+!ok
+
 # MULTISET EXCEPT
 values multiset ['a', 'c', 'a'] multiset except multiset ['a'];
 +--------+
