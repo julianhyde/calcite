@@ -144,7 +144,9 @@ class InterpreterTest {
     final FrameworkConfig config = Frameworks.newConfigBuilder()
         .parserConfig(SqlParser.Config.DEFAULT)
         .defaultSchema(
-            CalciteAssert.addSchema(rootSchema, CalciteAssert.SchemaSpec.HR))
+            CalciteAssert.addSchema(rootSchema,
+                CalciteAssert.SchemaSpec.JDBC_SCOTT,
+                CalciteAssert.SchemaSpec.HR))
         .build();
     planner = Frameworks.getPlanner(config);
     dataContext = new MyDataContext(planner);
@@ -512,5 +514,10 @@ class InterpreterTest {
     } catch (NullPointerException e) {
       assertThat(e.getMessage(), equalTo("NULL value for unnest."));
     }
+  }
+
+  @Test void testInterpretJdbc() {
+    sql("select empno, hiredate from jdbc_scott.emp")
+        .returnsRows("xx", "xx");
   }
 }
