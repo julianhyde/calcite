@@ -746,7 +746,16 @@ public class CalciteAssert {
     throw new AssertionError("method " + methodName + " not found");
   }
 
-  public static SchemaPlus addSchema(SchemaPlus rootSchema, SchemaSpec schema) {
+  public static SchemaPlus addSchema(SchemaPlus rootSchema,
+      SchemaSpec... schemas) {
+    SchemaPlus s = rootSchema;
+    for (SchemaSpec schema : schemas) {
+      s = addSchema_(rootSchema, schema);
+    }
+    return s;
+  }
+
+  static SchemaPlus addSchema_(SchemaPlus rootSchema, SchemaSpec schema) {
     final SchemaPlus foodmart;
     final SchemaPlus jdbcScott;
     final SchemaPlus scott;
