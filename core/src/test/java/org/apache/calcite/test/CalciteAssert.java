@@ -745,6 +745,8 @@ public class CalciteAssert {
     throw new AssertionError("method " + methodName + " not found");
   }
 
+  /** Adds a schema specification (or specifications) to the root schema,
+   * returning the last one created. */
   public static SchemaPlus addSchema(SchemaPlus rootSchema,
       SchemaSpec... schemas) {
     SchemaPlus s = rootSchema;

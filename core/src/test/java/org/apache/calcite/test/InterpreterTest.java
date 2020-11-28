@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.interpreter.Interpreter;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -26,6 +27,8 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -46,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -123,8 +127,7 @@ class InterpreterTest {
         SqlNode validate = planner.validate(parse);
         final RelRoot root = planner.rel(validate);
         RelNode convert = project ? root.project() : root.rel;
-        final Interpreter interpreter = new Interpreter(dataContext, convert);
-        assertRows(interpreter, unordered, rows);
+        assertInterpret(convert, dataContext, unordered, rows);
         return this;
       } catch (ValidationException
           | SqlParseException
@@ -191,11 +194,21 @@ class InterpreterTest {
     sql(sql).withProject(true).returnsRows("[[a, b, c]]");
   }
 
+  private static void assertInterpret(RelNode rel, DataContext dataContext,
+      boolean unordered, String... rows) {
+    final Interpreter interpreter = new Interpreter(dataContext, rel);
+    final List<RelDataType> fieldTypes =
+        Util.transform(rel.getRowType().getFieldList(),
+            RelDataTypeField::getType);
+    assertRows(interpreter, EnumUtils.toExternal(fieldTypes), unordered, rows);
+  }
+
   private static void assertRows(Interpreter interpreter,
+      Function<Object[], List<Object>> converter,
       boolean unordered, String... rows) {
     final List<String> list = new ArrayList<>();
     for (Object[] row : interpreter) {
-      list.add(Arrays.toString(row));
+      list.add(converter.apply(row).toString());
     }
     final List<String> expected = Arrays.asList(rows);
     if (unordered) {
@@ -435,8 +448,7 @@ class InterpreterTest {
       final HepPlanner hepPlanner = new HepPlanner(program);
       hepPlanner.setRoot(convert);
       final RelNode relNode = hepPlanner.findBestExp();
-      final Interpreter interpreter = new Interpreter(dataContext, relNode);
-      assertRows(interpreter, true, "[1, a]", "[3, c]");
+      assertInterpret(relNode, dataContext, true, "[1, a]", "[3, c]");
     } catch (ValidationException
         | SqlParseException
         | RelConversionException e) {
@@ -518,6 +530,10 @@ class InterpreterTest {
 
   @Test void testInterpretJdbc() {
     sql("select empno, hiredate from jdbc_scott.emp")
-        .returnsRows("xx", "xx");
+        .returnsRows("[7369, 1980-12-16]", "[7499, 1981-02-19]",
+            "[7521, 1981-02-21]", "[7566, 1981-02-03]", "[7654, 1981-09-27]",
+            "[7698, 1981-01-04]", "[7782, 1981-06-08]", "[7788, 1987-04-18]",
+            "[7839, 1981-11-16]", "[7844, 1981-09-07]", "[7876, 1987-05-22]",
+            "[7900, 1981-12-02]", "[7902, 1981-12-02]", "[7934, 1982-01-22]");
   }
 }
