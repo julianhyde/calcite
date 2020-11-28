@@ -180,7 +180,7 @@ public class JdbcTable extends AbstractQueryableTable
     final JavaTypeFactory typeFactory = root.getTypeFactory();
     final SqlString sql = generateSql();
     return ResultSetEnumerable.of(jdbcSchema.getDataSource(), sql.getSql(),
-        JdbcUtils.ObjectArrayRowBuilder.factory(fieldClasses(typeFactory)));
+        JdbcUtils.rowBuilderFactory2(fieldClasses(typeFactory)));
   }
 
   @Override public Collection getModifiableCollection() {
@@ -216,11 +216,12 @@ public class JdbcTable extends AbstractQueryableTable
       final JavaTypeFactory typeFactory =
           ((CalciteConnection) queryProvider).getTypeFactory();
       final SqlString sql = generateSql();
-      //noinspection unchecked
-      final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of(
-          jdbcSchema.getDataSource(),
-          sql.getSql(),
-          JdbcUtils.ObjectArrayRowBuilder.factory(fieldClasses(typeFactory)));
+      final List<Pair<ColumnMetaData.Rep, Integer>> pairs =
+          fieldClasses(typeFactory);
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      final Enumerable<T> enumerable =
+          (Enumerable) ResultSetEnumerable.of(jdbcSchema.getDataSource(),
+              sql.getSql(), JdbcUtils.rowBuilderFactory2(pairs));
       return enumerable.enumerator();
     }
   }

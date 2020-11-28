@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -60,6 +61,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -69,6 +73,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
@@ -1120,5 +1125,40 @@ public class EnumUtils {
             Expressions.constant(locale.getCountry()),
             Expressions.constant(locale.getVariant())),
         Expressions.constant(strength));
+  }
+
+  /** Returns a function that converts an internal value to an external
+   * value. */
+  public static Function<Object, Object> toExternal(RelDataType type) {
+    switch (type.getSqlTypeName()) {
+    case DATE:
+      return o -> new Date((Integer) o * DateTimeUtils.MILLIS_PER_DAY);
+    case TIME:
+      return o -> new Time((Integer) o % DateTimeUtils.MILLIS_PER_DAY);
+    case TIMESTAMP:
+      return o -> new Timestamp((Long) o);
+    default:
+      return Function.identity();
+    }
+  }
+
+  /** Returns a function that converts an array of internal values to
+   * a list of external values. */
+  @SuppressWarnings("unchecked")
+  public static Function<Object[], List<Object>> toExternal(
+      List<RelDataType> types) {
+    final Function<Object, Object>[] functions = new Function[types.size()];
+    for (int i = 0; i < types.size(); i++) {
+      functions[i] = toExternal(types.get(i));
+    }
+    final Object[] objects = new Object[types.size()];
+    return values -> {
+      for (int i = 0; i < values.length; i++) {
+        objects[i] = values[i] == null
+            ? null
+            : functions[i].apply(values[i]);
+      }
+      return Arrays.asList(objects.clone());
+    };
   }
 }

@@ -232,6 +232,9 @@ class ColumnLoader<T> {
    * {@link Integer}. */
   private static List wrap(ColumnMetaData.Rep rep, List list,
       RelDataType type) {
+    if (true) {
+      return list;
+    }
     switch (type.getSqlTypeName()) {
     case TIMESTAMP:
       switch (rep) {
