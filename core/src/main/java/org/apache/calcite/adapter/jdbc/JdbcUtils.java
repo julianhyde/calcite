@@ -78,24 +78,6 @@ final class JdbcUtils {
     return resultSet -> new ObjectArrayRowBuilder2(resultSet, reps, types);
   }
 
-  static long timestampToLong(Timestamp v) {
-    long time = v.getTime();
-    int offset = TimeZone.getDefault().getOffset(time);
-    return time + offset;
-  }
-
-  static long timeToLong(Time v) {
-    long time = v.getTime();
-    int offset = TimeZone.getDefault().getOffset(time);
-    return (time + offset) % DateTimeUtils.MILLIS_PER_DAY;
-  }
-
-  static long dateToLong(Date v) {
-    long time = v.getTime();
-    int offset = TimeZone.getDefault().getOffset(time);
-    return time + offset;
-  }
-
   /** Pool of dialects. */
   static class DialectPool {
     public static final DialectPool INSTANCE = new DialectPool();
@@ -176,11 +158,25 @@ final class JdbcUtils {
      * @param i Ordinal of column (1-based, per JDBC)
      */
     protected abstract @Nullable Object value(int i) throws SQLException;
+
+    long timestampToLong(Timestamp v) {
+      return v.getTime();
+    }
+
+    long timeToLong(Time v) {
+      return v.getTime();
+    }
+
+    long dateToLong(Date v) {
+      return v.getTime();
+    }
   }
 
   /** Row builder that shifts DATE, TIME, TIMESTAMP values into local time
    * zone. */
   static class ObjectArrayRowBuilder1 extends ObjectArrayRowBuilder {
+    final TimeZone timeZone = TimeZone.getDefault();
+
     ObjectArrayRowBuilder1(ResultSet resultSet, ColumnMetaData.Rep[] reps,
         int[] types) {
       super(resultSet, reps, types);
@@ -204,6 +200,24 @@ final class JdbcUtils {
         break;
       }
       return reps[i].jdbcGet(resultSet, i + 1);
+    }
+
+    long timestampToLong(Timestamp v) {
+      long time = v.getTime();
+      int offset = timeZone.getOffset(time);
+      return time + offset;
+    }
+
+    long timeToLong(Time v) {
+      long time = v.getTime();
+      int offset = timeZone.getOffset(time);
+      return (time + offset) % DateTimeUtils.MILLIS_PER_DAY;
+    }
+
+    long dateToLong(Date v) {
+      long time = v.getTime();
+      int offset = timeZone.getOffset(time);
+      return time + offset;
     }
   }
 
