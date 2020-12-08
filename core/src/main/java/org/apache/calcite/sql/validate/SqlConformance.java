@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.sql.validate;
 
+import org.apache.calcite.sql.fun.SqlLibrary;
+
 /**
  * Enumeration of valid SQL compatibility modes.
  *
@@ -502,4 +504,17 @@ public interface SqlConformance {
    */
   boolean allowQualifyingCommonColumn();
 
+  /**
+   * Whether negative values for the {@code start} argument to the
+   * {@code SUBSTRING} function count from the end.
+   *
+   * <p>For example, {@code SUBSTRING('abcde' FROM -3 FOR 2}} returns 'cd' in
+   * BigQuery, and 'ab' in ISO standard SQL.
+   *
+   * <p>Among the built-in conformance levels, true in
+   * {@link SqlConformanceEnum#BIG_QUERY};
+   * false otherwise.
+   * @return
+   */
+  SqlLibrary semantics();
 }

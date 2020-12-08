@@ -1302,6 +1302,7 @@ Not implemented:
 | Operator syntax | Description
 |:--------------- |:-----------
 | binary &#124;&#124; binary | Concatenates two binary strings
+| OCTET_LENGTH(binary) | Returns the number of bytes in *binary*
 | POSITION(binary1 IN binary2) | Returns the position of the first occurrence of *binary1* in *binary2*
 | POSITION(binary1 IN binary2 FROM integer) | Returns the position of the first occurrence of *binary1* in *binary2* starting at a given point (not standard SQL)
 | OVERLAY(binary1 PLACING binary2 FROM integer [ FOR integer2 ]) | Replaces a substring of *binary1* with *binary2*
