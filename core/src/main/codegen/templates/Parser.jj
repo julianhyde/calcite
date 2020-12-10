@@ -2934,7 +2934,7 @@ void UnpivotValue(List<SqlNode> list) :
             final SqlNodeList valueList = SqlParserUtil.stripRow(values);
             list.add(
                 SqlStdOperatorTable.AS.createCall(Span.of(columnList).end(this),
-                    valueList, columnList));
+                    columnList, valueList));
         }
     |
         { list.add(columnList); }

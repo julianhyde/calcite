@@ -17,15 +17,22 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.sql.util.SqlVisitor;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableNullableList;
+import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 /**
- * Parse tree node that represents a PIVOT applied to a table reference
+ * Parse tree node that represents UNPIVOT applied to a table reference
  * (or sub-query).
  *
  * <p>Syntax:
@@ -107,7 +114,50 @@ public class SqlUnpivot extends SqlCall {
     writer.endList(frame);
   }
 
-  /** Pivot operator. */
+  /** Returns the aggregate list as (alias, call) pairs.
+   * If there is no 'AS', alias is null. */
+  public void forEachAgg(BiConsumer<@Nullable String, SqlNode> consumer) {
+    for (SqlNode agg : fooList) {
+      final SqlNode call = SqlUtil.stripAs(agg);
+      final String alias = SqlValidatorUtil.getAlias(agg, -1);
+      consumer.accept(alias, call);
+    }
+  }
+
+  /** Returns the value list as (alias, node list) pairs. */
+  public void forEachNameValues(BiConsumer<String, SqlNodeList> consumer) {
+    for (SqlNode node : inList) {
+      String alias;
+      if (node.getKind() == SqlKind.AS) {
+        final List<SqlNode> operands = ((SqlCall) node).getOperandList();
+        alias = ((SqlIdentifier) operands.get(1)).getSimple();
+        node = operands.get(0);
+      } else {
+        alias = SqlPivot.pivotAlias(node);
+      }
+      consumer.accept(alias, SqlPivot.toNodes(node));
+    }
+  }
+
+  /** Returns the set of columns that are referenced as an argument to an
+   * aggregate function or in a column in the {@code FOR} clause. All columns
+   * that are not used will be part of the returned row. */
+  public Set<String> usedColumnNames() {
+    final Set<String> columnNames = new HashSet<>();
+    final SqlVisitor<Void> nameCollector = new SqlBasicVisitor<Void>() {
+      @Override public Void visit(SqlIdentifier id) {
+        columnNames.add(Util.last(id.names));
+        return super.visit(id);
+      }
+    };
+    forEachAgg((alias, call) -> call.accept(nameCollector));
+    for (SqlNode axis : axisList) {
+      axis.accept(nameCollector);
+    }
+    return columnNames;
+  }
+
+  /** Unpivot operator. */
   static class Operator extends SqlSpecialOperator {
     Operator(SqlKind kind) {
       super(kind.name(), kind);

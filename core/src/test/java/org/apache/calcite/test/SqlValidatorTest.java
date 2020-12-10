@@ -1898,6 +1898,19 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "FOR columns \\(2\\)");
   }
 
+  @Disabled // TODO: implement
+  @Test void testUnpivot() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT INCLUDE NULLS (remuneration\n"
+        + "  FOR remuneration_type IN (comm AS 'commission',\n"
+        + "                            sal as 'salary'))";
+    sql(sql).type("RecordType(INTEGER NOT NULL EMPNO,"
+        + " VARCHAR(20) NOT NULL ENAME, INTEGER MGR,"
+        + " TIMESTAMP(0) NOT NULL HIREDATE, INTEGER NOT NULL COMM,"
+        + " INTEGER NOT NULL DEPTNO, BOOLEAN NOT NULL SLACKER,"
+        + " INTEGER C_SS, INTEGER M_SS) NOT NULL");
+  }
+
   @Test void testMatchRecognizeWithDistinctAggregation() {
     final String sql = "SELECT *\n"
         + "FROM emp\n"

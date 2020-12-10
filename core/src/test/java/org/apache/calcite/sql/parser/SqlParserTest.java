@@ -8074,9 +8074,9 @@ public class SqlParserTest {
         + "FROM `EMP_PIVOTED` "
         + "UNPIVOT ((`SUM_SAL`, `COUNT_STAR`)"
         + " FOR (`JOB`, `DEPTNO`)"
-        + " IN (('CLERK', 10) AS (`C10_SS`, `C10_C`),"
-        + " ('CLERK', 20) AS (`C20_SS`, `C20_C`),"
-        + " ('ANALYST', 20) AS (`A20_SS`, `A20_C`)))";
+        + " IN ((`C10_SS`, `C10_C`) AS ('CLERK', 10),"
+        + " (`C20_SS`, `C20_C`) AS ('CLERK', 20),"
+        + " (`A20_SS`, `A20_C`) AS ('ANALYST', 20)))";
     sql(sql).ok(expected);
   }
 

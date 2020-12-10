@@ -452,4 +452,38 @@ CROSS JOIN (VALUES ('CLERK', 10),
 
 !ok
 
+# Single measure; include nulls; IN has duplicate columns and duplicate values
+!if (false) {
+SELECT *
+FROM (
+  SELECT *
+  FROM (
+     SELECT deptno, job, sal,
+       CASE WHEN ename < 'F' THEN 'F' ELSE 'M' END AS gender
+     FROM emp)
+  PIVOT (sum(sal) AS ss, count(*) AS c
+         FOR (job, deptno)
+         IN (('CLERK', 10) AS C10,
+             ('CLERK', 20) AS C20,
+             ('ANALYST', 20) AS A20)))
+UNPIVOT INCLUDE NULLS (
+  (sum_sal)
+  FOR (job, deptno)
+  IN ((c10_ss) AS ('CLERK', 10),
+      (c20_ss) AS ('CLERK', 20),
+      (c20_ss) AS ('CLERK', 20),
+      (c10_ss) AS ('ANALYST', 20)));
+
+GENDER	C10_C	C20_C	A20_SS	A20_C	JOB	DEPTNO	SUM_SAL
+M	1	1	6000	2	CLERK	10	1300
+M	1	1	6000	2	CLERK	20	800
+M	1	1	6000	2	CLERK	20	800
+M	1	1	6000	2	ANALYST	20	1300
+F	0	1	(null)	0	CLERK	10	(null)
+F	0	1	(null)	0	CLERK	20	1100
+F	0	1	(null)	0	CLERK	20	1100
+F	0	1	(null)	0	ANALYST	20	(null)
+!ok
+!}
+
 # End pivot.iq

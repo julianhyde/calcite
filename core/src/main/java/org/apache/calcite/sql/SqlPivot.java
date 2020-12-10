@@ -152,7 +152,7 @@ public class SqlPivot extends SqlCall {
     }
   }
 
-  private static String pivotAlias(SqlNode node) {
+  static String pivotAlias(SqlNode node) {
     if (node instanceof SqlNodeList) {
       return ((SqlNodeList) node).stream()
           .map(SqlPivot::pivotAlias).collect(Collectors.joining("_"));
@@ -161,7 +161,7 @@ public class SqlPivot extends SqlCall {
   }
 
   /** Converts a SqlNodeList to a list, and other nodes to a singleton list. */
-  private static SqlNodeList toNodes(SqlNode node) {
+  static SqlNodeList toNodes(SqlNode node) {
     if (node instanceof SqlNodeList) {
       return (SqlNodeList) node;
     } else {
