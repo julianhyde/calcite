@@ -16,36 +16,32 @@
  */
 package org.apache.calcite.sql;
 
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.util.SqlBasicVisitor;
-import org.apache.calcite.sql.util.SqlVisitor;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableNullableList;
-import org.apache.calcite.util.Util;
-
-import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 /**
  * Parse tree node that represents a PIVOT applied to a table reference
  * (or sub-query).
  *
  * <p>Syntax:
- * <blockquote>{@code
+ * <blockquote><pre>{@code
  * SELECT *
  * FROM query
  * UNPIVOT [ { INCLUDE | EXCLUDE } NULLS ] (
  *   columns FOR columns IN ( columns [ AS values ], ...))
- * </blockquote>
+ *
+ * where:
+ *
+ * columns: column
+ *        | '(' column, ... ')'
+ * values:  value
+ *        | '(' value, ... ')'
+ * }</pre></blockquote>
  */
 public class SqlUnpivot extends SqlCall {
 
@@ -98,11 +94,13 @@ public class SqlUnpivot extends SqlCall {
       writer.print(includeNulls ? "INCLUDE NULLS" : "EXCLUDE NULLS");
     }
     final SqlWriter.Frame frame = writer.startList("(", ")");
-    fooList.unparse(writer, 0, 0);
+    // force parentheses if there is more than one foo
+    final int leftPrec1 = fooList.size() > 1 ? 1 : 0;
+    fooList.unparse(writer, leftPrec1, 0);
     writer.sep("FOR");
     // force parentheses if there is more than one axis
-    final int leftPrec1 = axisList.size() > 1 ? 1 : 0;
-    axisList.unparse(writer, leftPrec1, 0);
+    final int leftPrec2 = axisList.size() > 1 ? 1 : 0;
+    axisList.unparse(writer, leftPrec2, 0);
     writer.sep("IN");
     writer.list(SqlWriter.FrameTypeEnum.PARENTHESES, SqlWriter.COMMA,
         SqlPivot.stripList(inList));

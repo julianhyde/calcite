@@ -2178,9 +2178,11 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = ExtendedTableRef()
     )
     [
+        LOOKAHEAD(2)
         tableRef = Pivot(tableRef)
     ]
     [
+        LOOKAHEAD(2)
         tableRef = Unpivot(tableRef)
     ]
     [
@@ -2909,8 +2911,10 @@ SqlNode Unpivot(SqlNode tableRef) :
     <LPAREN>
     fooList = SimpleIdentifierOrList()
     <FOR> axisList = SimpleIdentifierOrList()
-    <IN> <LPAREN> { s2 = span(); }
+    <IN>
+    <LPAREN> { s2 = span(); }
     UnpivotValue(values) ( <COMMA> UnpivotValue(values) )*
+    <RPAREN>
     { valueList = new SqlNodeList(values, s2.end(this)); }
     <RPAREN> {
         return new SqlUnpivot(s.end(this), tableRef, includeNulls, fooList,
@@ -2920,20 +2924,20 @@ SqlNode Unpivot(SqlNode tableRef) :
 
 void UnpivotValue(List<SqlNode> list) :
 {
-    final SqlNode e;
-    final SqlNodeList tuple;
-    final SqlIdentifier alias;
+    final SqlNodeList columnList;
+    final SqlNode values;
 }
 {
-    e = RowConstructor() { tuple = SqlParserUtil.stripRow(e); }
+    columnList = SimpleIdentifierOrList()
     (
-        [ <AS> ] alias = SimpleIdentifier() {
+        <AS> values = RowConstructor() {
+            final SqlNodeList valueList = SqlParserUtil.stripRow(values);
             list.add(
-                SqlStdOperatorTable.AS.createCall(Span.of(tuple).end(this),
-                    tuple, alias));
+                SqlStdOperatorTable.AS.createCall(Span.of(columnList).end(this),
+                    valueList, columnList));
         }
     |
-        { list.add(tuple); }
+        { list.add(columnList); }
     )
 }
 

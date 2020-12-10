@@ -8070,7 +8070,13 @@ public class SqlParserTest {
         + "  IN ((c10_ss, c10_c) AS ('CLERK', 10),\n"
         + "      (c20_ss, c20_c) AS ('CLERK', 20),\n"
         + "      (a20_ss, a20_c) AS ('ANALYST', 20)))";
-    final String expected = "";
+    final String expected = "SELECT *\n"
+        + "FROM `EMP_PIVOTED` "
+        + "UNPIVOT ((`SUM_SAL`, `COUNT_STAR`)"
+        + " FOR (`JOB`, `DEPTNO`)"
+        + " IN (('CLERK', 10) AS (`C10_SS`, `C10_C`),"
+        + " ('CLERK', 20) AS (`C20_SS`, `C20_C`),"
+        + " ('ANALYST', 20) AS (`A20_SS`, `A20_C`)))";
     sql(sql).ok(expected);
   }
 
