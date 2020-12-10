@@ -8061,6 +8061,19 @@ public class SqlParserTest {
     sql(sql).ok(expected);
   }
 
+  @Test void testUnpivot() {
+    final String sql = "SELECT *\n"
+        + "FROM emp_pivoted\n"
+        + "UNPIVOT (\n"
+        + "  (sum_sal, count_star)\n"
+        + "  FOR (job, deptno)\n"
+        + "  IN ((c10_ss, c10_c) AS ('CLERK', 10),\n"
+        + "      (c20_ss, c20_c) AS ('CLERK', 20),\n"
+        + "      (a20_ss, a20_c) AS ('ANALYST', 20)))";
+    final String expected = "";
+    sql(sql).ok(expected);
+  }
+
   @Test void testMatchRecognize1() {
     final String sql = "select *\n"
         + "  from t match_recognize\n"

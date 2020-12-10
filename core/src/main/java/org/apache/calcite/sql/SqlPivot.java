@@ -102,7 +102,7 @@ public class SqlPivot extends SqlCall {
     writer.endList(frame);
   }
 
-  private static SqlNodeList stripList(SqlNodeList list) {
+  static SqlNodeList stripList(SqlNodeList list) {
     return list.stream().map(SqlPivot::strip)
         .collect(SqlNode.toList(list.pos));
   }

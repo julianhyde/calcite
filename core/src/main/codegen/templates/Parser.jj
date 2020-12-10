@@ -98,6 +98,7 @@ import org.apache.calcite.sql.SqlTimeLiteral;
 import org.apache.calcite.sql.SqlTimestampLiteral;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUnnestOperator;
+import org.apache.calcite.sql.SqlUnpivot;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
@@ -2180,6 +2181,9 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = Pivot(tableRef)
     ]
     [
+        tableRef = Unpivot(tableRef)
+    ]
+    [
         [ <AS> ] alias = SimpleIdentifier()
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
@@ -2864,6 +2868,57 @@ void PivotAgg(List<SqlNode> list) :
 }
 
 void PivotValue(List<SqlNode> list) :
+{
+    final SqlNode e;
+    final SqlNodeList tuple;
+    final SqlIdentifier alias;
+}
+{
+    e = RowConstructor() { tuple = SqlParserUtil.stripRow(e); }
+    (
+        [ <AS> ] alias = SimpleIdentifier() {
+            list.add(
+                SqlStdOperatorTable.AS.createCall(Span.of(tuple).end(this),
+                    tuple, alias));
+        }
+    |
+        { list.add(tuple); }
+    )
+}
+
+/** Parses an UNPIVOT clause following a table expression. */
+SqlNode Unpivot(SqlNode tableRef) :
+{
+    final Span s;
+    final Boolean includeNulls;
+    final SqlNodeList fooList;
+    final SqlNodeList axisList;
+    final Span s2;
+    final List<SqlNode> values = new ArrayList<SqlNode>();
+    final SqlNodeList valueList;
+}
+{
+    <UNPIVOT> { s = span(); }
+    (
+        ( <INCLUDE> { includeNulls = true; }
+        | <EXCLUDE> { includeNulls = false; }
+        ) <NULLS>
+    |
+        { includeNulls = null; }
+    )
+    <LPAREN>
+    fooList = SimpleIdentifierOrList()
+    <FOR> axisList = SimpleIdentifierOrList()
+    <IN> <LPAREN> { s2 = span(); }
+    UnpivotValue(values) ( <COMMA> UnpivotValue(values) )*
+    { valueList = new SqlNodeList(values, s2.end(this)); }
+    <RPAREN> {
+        return new SqlUnpivot(s.end(this), tableRef, includeNulls, fooList,
+            axisList, valueList);
+    }
+}
+
+void UnpivotValue(List<SqlNode> list) :
 {
     final SqlNode e;
     final SqlNodeList tuple;
@@ -7395,6 +7450,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < IMPLEMENTATION: "IMPLEMENTATION" >
 |   < IMPORT: "IMPORT" >
 |   < IN: "IN" >
+|   < INCLUDE: "INCLUDE" >
 |   < INCLUDING: "INCLUDING" >
 |   < INCREMENT: "INCREMENT" >
 |   < INDICATOR: "INDICATOR" >
@@ -7785,6 +7841,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UNION: "UNION" >
 |   < UNIQUE: "UNIQUE" >
 |   < UNKNOWN: "UNKNOWN" >
+|   < UNPIVOT: "UNPIVOT" >
 |   < UNNAMED: "UNNAMED" >
 |   < UNNEST: "UNNEST" >
 |   < UPDATE: "UPDATE" > { beforeTableName(); }
