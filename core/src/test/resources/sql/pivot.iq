@@ -339,36 +339,44 @@ PIVOT (sum(sal + deptno + 1)
 # Sample PIVOT query
 SELECT *
 FROM (
-  SELECT *
-  FROM (
-     SELECT deptno, job, sal,
-       CASE WHEN ename < 'F' THEN 'F' ELSE 'M' END AS gender
-     FROM emp)
-  PIVOT (sum(sal) AS ss, count(*) AS c
-         FOR (job, deptno) IN (('CLERK', 10) AS C10,
-                               ('CLERK', 20) AS C20,
-                               ('ANALYST', 20) AS A20)));
-GENDER	C10_SS	C10_C	C20_SS	C20_C	A20_SS	A20_C
-M	1300	1	800	1	6000	2
-F	(null)	0	1100	1	(null)	0
+ SELECT deptno, job, sal,
+   CASE WHEN ename < 'F' THEN 'F' ELSE 'M' END AS gender
+ FROM emp)
+PIVOT (sum(sal) AS ss, count(*) AS c
+     FOR (job, deptno) IN (('CLERK', 10) AS C10,
+                           ('CLERK', 20) AS C20,
+                           ('ANALYST', 20) AS A20));
++--------+---------+-------+---------+-------+---------+-------+
+| GENDER | C10_SS  | C10_C | C20_SS  | C20_C | A20_SS  | A20_C |
++--------+---------+-------+---------+-------+---------+-------+
+| F      |         |     0 | 1100.00 |     1 |         |     0 |
+| M      | 1300.00 |     1 |  800.00 |     1 | 6000.00 |     2 |
++--------+---------+-------+---------+-------+---------+-------+
+(2 rows)
+
 !ok
 
 # This was the input
 SELECT CASE WHEN ename < 'F' THEN 'F' ELSE 'M' END AS gender,
     deptno, job, sal
 FROM emp
-where (job, deptno) in (('CLERK', 10), ('CLERK', 20), ('ANALYST', 20))
-order by gender, deptno, job;
+WHERE (job, deptno) IN (('CLERK', 10), ('CLERK', 20), ('ANALYST', 20))
+ORDER BY gender, deptno, job;
++--------+--------+---------+---------+
+| GENDER | DEPTNO | JOB     | SAL     |
++--------+--------+---------+---------+
+| F      |     20 | CLERK   | 1100.00 |
+| M      |     10 | CLERK   | 1300.00 |
+| M      |     20 | ANALYST | 3000.00 |
+| M      |     20 | ANALYST | 3000.00 |
+| M      |     20 | CLERK   |  800.00 |
++--------+--------+---------+---------+
+(5 rows)
+
 !ok
 
-GENDER	DEPTNO	JOB	SAL
-F	20	CLERK	1100
-M	10	CLERK	1300
-M	20	ANALYST	3000
-M	20	ANALYST	3000
-M	20	CLERK	800
-
 # Unpivot it
+!if (false) {
 SELECT *
 FROM (
   SELECT *
@@ -388,13 +396,60 @@ UNPIVOT (
       (c20_ss, c20_c) AS ('CLERK', 20),
       (a20_ss, a20_c) AS ('ANALYST', 20)));
 
-GENDER	JOB	DEPTNO	SUM_SAL	COUNT_STAR
-M	CLERK	10	1300	1
-M	CLERK	20	800	1
-M	ANALYST	20	6000	2
-F	CLERK	10	(null)	0
-F	CLERK	20	1100	1
-F	ANALYST	20	(null)	0
++--------+---------+--------+---------+------------+
+| GENDER | JOB     | DEPTNO | SUM_SAL | COUNT_STAR |
++--------+---------+--------+---------+------------+
+| F      | ANALYST |     20 |         |          0 |
+| F      | CLERK   |     10 |         |          0 |
+| F      | CLERK   |     20 | 1100.00 |          1 |
+| M      | ANALYST |     20 | 6000.00 |          2 |
+| M      | CLERK   |     10 | 1300.00 |          1 |
+| M      | CLERK   |     20 |  800.00 |          1 |
++--------+---------+--------+---------+------------+
+(6 rows)
+
+!ok
+!}
+
+# Unpivot long-hand
+SELECT e.gender,
+    t.job,
+    t.deptno,
+    CASE
+      WHEN t.job = 'CLERK' AND t.deptno = 10 THEN c10_ss
+      WHEN t.job = 'CLERK' AND t.deptno = 20 THEN c20_ss
+      WHEN t.job = 'ANALYST' AND t.deptno = 20 THEN a20_ss
+    END AS sum_sal,
+    CASE
+      WHEN t.job = 'CLERK' AND t.deptno = 10 THEN c10_c
+      WHEN t.job = 'CLERK' AND t.deptno = 20 THEN c20_c
+      WHEN t.job = 'ANALYST' AND t.deptno = 20 THEN a20_c
+    END AS count_star
+FROM (
+  SELECT *
+  FROM (
+    SELECT deptno, job, sal,
+        CASE WHEN ename < 'F' THEN 'F' ELSE 'M' END AS gender
+    FROM emp)
+  PIVOT (sum(sal) AS ss, count(*) AS c
+     FOR (job, deptno) IN (('CLERK', 10) AS C10,
+                           ('CLERK', 20) AS C20,
+                           ('ANALYST', 20) AS A20))) AS e
+CROSS JOIN (VALUES ('CLERK', 10),
+                   ('CLERK', 20),
+                   ('ANALYST', 20)) AS t (job, deptno);
++--------+---------+--------+---------+------------+
+| GENDER | JOB     | DEPTNO | SUM_SAL | COUNT_STAR |
++--------+---------+--------+---------+------------+
+| F      | ANALYST |     20 |         |          0 |
+| F      | CLERK   |     10 |         |          0 |
+| F      | CLERK   |     20 | 1100.00 |          1 |
+| M      | ANALYST |     20 | 6000.00 |          2 |
+| M      | CLERK   |     10 | 1300.00 |          1 |
+| M      | CLERK   |     20 |  800.00 |          1 |
++--------+---------+--------+---------+------------+
+(6 rows)
+
 !ok
 
 # End pivot.iq

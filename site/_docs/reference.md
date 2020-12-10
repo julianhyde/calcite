@@ -229,6 +229,7 @@ tableReference:
       tablePrimary
       [ FOR SYSTEM_TIME AS OF expression ]
       [ pivot ]
+      [ unpivot ]
       [ matchRecognize ]
       [ [ AS ] alias [ '(' columnAlias [, columnAlias ]* ')' ] ]
 
@@ -245,20 +246,20 @@ columnDecl:
 
 hint:
       hintName
-  |   hintName '(' hintOptions ')'
+   |  hintName '(' hintOptions ')'
 
 hintOptions:
       hintKVOption [, hintKVOption]*
-  |   optionName [, optionName]*
-  |   optionValue [, optionValue]*
+   |  optionName [, optionName]*
+   |  optionValue [, optionValue]*
 
 hintKVOption:
       optionName '=' stringLiteral
-  |   stringLiteral '=' stringLiteral
+   |  stringLiteral '=' stringLiteral
 
 optionValue:
       stringLiteral
-  |   numericLiteral
+   |  numericLiteral
 
 pivot:
       PIVOT '('
@@ -280,6 +281,25 @@ pivotExpr:
       | '(' expr [, expr ]* ')'
       }
       [ [ AS ] alias ]
+
+unpivot:
+      UNPIVOT [ INCLUDING NULLS | EXCLUDING NULLS ] '('
+      unpivotMeasureList
+      FOR unpivotAxisList
+      IN '(' unpivotValue [, unpivotValue ]* ')'
+      ')'
+
+unpivotMeasureList:
+      column
+   |  '(' column [, column ]* ')'
+
+unpivotAxisList:
+      column
+   |  '(' column [, column ]* ')'
+
+unpivotValue:
+      column [ AS literal ]
+   |  '(' column [, column ]* ')' [ AS '(' literal [, literal ]* ')' ]
 
 values:
       VALUES expression [, expression ]*
@@ -615,6 +635,7 @@ IMMEDIATELY,
 IMPLEMENTATION,
 **IMPORT**,
 **IN**,
+INCLUDE,
 INCLUDING,
 INCREMENT,
 **INDICATOR**,
@@ -1007,6 +1028,7 @@ UNDER,
 **UNKNOWN**,
 UNNAMED,
 **UNNEST**,
+UNPIVOT,
 **UPDATE**,
 **UPPER**,
 **UPSERT**,
@@ -2830,31 +2852,31 @@ Calcite supports basically two kinds of hints:
 * Table Hint: right after the referenced table name.
 
 {% highlight sql %}
-query :
+query:
       SELECT /*+ hints */
       ...
-      from
+      FROM
           tableName /*+ hints */
-          JOIN
+      JOIN
           tableName /*+ hints */
       ...
 
-hints :
-      hintItem[, hintItem ]*
+hints:
+      hint [, hint ]*
 
-hintItem :
+hint:
       hintName
-  |   hintName(optionKey=optionVal[, optionKey=optionVal ]*)
-  |   hintName(hintOption [, hintOption ]*)
+   |  hintName '(' optionKey '=' optionVal [, optionKey '=' optionVal ]* ')'
+   |  hintName '(' hintOption [, hintOption ]* ')'
 
-optionKey :
+optionKey:
       simpleIdentifier
-  |   stringLiteral
+   |  stringLiteral
 
-optionVal :
+optionVal:
       stringLiteral
 
-hintOption :
+hintOption:
       simpleIdentifier
    |  numericLiteral
    |  stringLiteral
