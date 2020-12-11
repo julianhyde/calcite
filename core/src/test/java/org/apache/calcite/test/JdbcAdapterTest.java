@@ -445,30 +445,32 @@ class JdbcAdapterTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1382">[CALCITE-1382]
    * ClassCastException in JDBC adapter</a>. */
   @Test public void testJoinPlan3() {
-    final String sql = "SELECT count(*) FROM (\n"
-        + "  SELECT count(emp.empno) `Count Emp`, dept.dname `Department Name`\n"
+    final String sql = "SELECT count(*) AS c FROM (\n"
+        + "  SELECT count(emp.empno) `Count Emp`,\n"
+        + "      dept.dname `Department Name`\n"
         + "  FROM emp emp\n"
         + "  JOIN dept dept ON emp.deptno = dept.deptno\n"
         + "  JOIN salgrade salgrade ON emp.comm = salgrade.hisal\n"
-        + "  WHERE dept.dname LIKE '%A%' GROUP BY emp.deptno, dept.dname)";
-    final String expected = "SELECT COUNT(*) FROM (\n"
-        + "SELECT count(\"emp\".empno) AS \"Count Emp\", \"dept\".dname AS \"Department Name\"\n"
-        + "FROM emp AS \"emp\"\n"
-        + "INNER JOIN (\n"
-        + "SELECT deptno, dname\n"
-        + "FROM dept\n"
-        + "WHERE dname LIKE '%A%'\n"
-        + ") AS \"dept\" ON \"emp\".deptno = \"dept\".deptno\n"
-        + "INNER JOIN (\n"
-        + "SELECT hisal \n"
-        + "FROM salgrade \n"
-        + ") AS \"salgrade\" ON \"emp\".comm = \"salgrade\".hisal "
-        + "GROUP BY \"emp\".deptno, \"dept\".dname"
-        + ") AS \"t\"";
+        + "  WHERE dept.dname LIKE '%A%'\n"
+        + "  GROUP BY emp.deptno, dept.dname)";
+    final String expected = "c=1\n";
+    final String expectedSql = "SELECT COUNT(*) AS \"c\"\n"
+        + "FROM (SELECT \"t0\".\"DEPTNO\", \"t2\".\"DNAME\"\n"
+        + "FROM (SELECT \"HISAL\"\n"
+        + "FROM \"SCOTT\".\"SALGRADE\") AS \"t\"\n"
+        + "INNER JOIN ((SELECT \"COMM\", \"DEPTNO\"\n"
+        + "FROM \"SCOTT\".\"EMP\") AS \"t0\" "
+        + "INNER JOIN (SELECT \"DEPTNO\", \"DNAME\"\n"
+        + "FROM \"SCOTT\".\"DEPT\"\n"
+        + "WHERE \"DNAME\" LIKE '%A%') AS \"t2\" "
+        + "ON \"t0\".\"DEPTNO\" = \"t2\".\"DEPTNO\") "
+        + "ON \"t\".\"HISAL\" = \"t0\".\"COMM\"\n"
+        + "GROUP BY \"t0\".\"DEPTNO\", \"t2\".\"DNAME\") AS \"t3\"";
     CalciteAssert.model(JdbcTest.SCOTT_MODEL)
         .with(Lex.MYSQL)
         .query(sql)
-        .returns(expected);
+        .returns(expected)
+        .planHasSql(expectedSql);
   }
 
   /** Test case for
@@ -510,7 +512,7 @@ class JdbcAdapterTest {
         .prepareStatement("select 10 * count(ID) from t2").executeQuery();
 
     assertThat(rs.next(), is(true));
-    assertThat((Long) rs.getObject(1), equalTo(20L));
+    assertThat(rs.getObject(1), equalTo(20L));
     assertThat(rs.next(), is(false));
 
     rs.close();
@@ -982,7 +984,7 @@ class JdbcAdapterTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1572">[CALCITE-1572]
    * JdbcSchema throws exception when detecting nullable columns</a>. */
-  @Test void testColumnNullability() throws Exception {
+  @Test void testColumnNullability() {
     final String sql = "select \"employee_id\", \"position_id\"\n"
         + "from \"foodmart\".\"employee\" limit 10";
     CalciteAssert.model(JdbcTest.FOODMART_MODEL)
@@ -992,13 +994,11 @@ class JdbcAdapterTest {
         .typeIs("[employee_id INTEGER NOT NULL, position_id INTEGER]");
   }
 
-  @Test void pushBindParameters() throws Exception {
+  @Test void pushBindParameters() {
     final String sql = "select empno, ename from emp where empno = ?";
     CalciteAssert.model(JdbcTest.SCOTT_MODEL)
         .query(sql)
-        .consumesPreparedStatement(p -> {
-          p.setInt(1, 7566);
-        })
+        .consumesPreparedStatement(p -> p.setInt(1, 7566))
         .returnsCount(1)
         .planHasSql("SELECT \"EMPNO\", \"ENAME\"\nFROM \"SCOTT\".\"EMP\"\nWHERE \"EMPNO\" = ?");
   }
