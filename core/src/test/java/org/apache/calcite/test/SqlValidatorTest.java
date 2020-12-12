@@ -1898,17 +1898,68 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "FOR columns \\(2\\)");
   }
 
-  @Disabled // TODO: implement
   @Test void testUnpivot() {
     final String sql = "SELECT * FROM emp\n"
         + "UNPIVOT INCLUDE NULLS (remuneration\n"
         + "  FOR remuneration_type IN (comm AS 'commission',\n"
         + "                            sal as 'salary'))";
     sql(sql).type("RecordType(INTEGER NOT NULL EMPNO,"
-        + " VARCHAR(20) NOT NULL ENAME, INTEGER MGR,"
-        + " TIMESTAMP(0) NOT NULL HIREDATE, INTEGER NOT NULL COMM,"
-        + " INTEGER NOT NULL DEPTNO, BOOLEAN NOT NULL SLACKER,"
-        + " INTEGER C_SS, INTEGER M_SS) NOT NULL");
+        + " VARCHAR(20) NOT NULL ENAME, VARCHAR(10) NOT NULL JOB, INTEGER MGR,"
+        + " TIMESTAMP(0) NOT NULL HIREDATE, INTEGER NOT NULL DEPTNO,"
+        + " BOOLEAN NOT NULL SLACKER, CHAR(10) NOT NULL REMUNERATION_TYPE,"
+        + " INTEGER NOT NULL REMUNERATION) NOT NULL");
+  }
+
+  @Test void testUnpivotInvalidColumn() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT (remuneration\n"
+        + "  FOR remuneration_type IN (comm AS 'commission',\n"
+        + "                            ^unknownCol^ as 'salary'))";
+    sql(sql).fails("Column 'UNKNOWNCOL' not found in any table");
+  }
+
+  @Test void testUnpivotCannotDeriveMeasureType() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT (remuneration\n"
+        + "  FOR remuneration_type IN (^comm^ AS 'commission',\n"
+        + "                            ename as 'salary'))";
+    sql(sql).fails("In UNPIVOT, cannot derive type for measure 'REMUNERATION'"
+        + " because source columns have different data types");
+  }
+
+  @Test void testUnpivotValueMismatch() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT (remuneration\n"
+        + "  FOR remuneration_type IN (comm AS 'commission',\n"
+        + "                            sal AS ^('salary', 1)^))";
+    String expected = "Value count in UNPIVOT \\(2\\) must match "
+        + "number of FOR columns \\(1\\)";
+    sql(sql).fails(expected);
+  }
+
+  @Test void testUnpivotDuplicateName() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT ((remuneration, ^remuneration^)\n"
+        + "  FOR remuneration_type\n"
+        + "  IN ((comm, comm) AS 'commission',\n"
+        + "      (sal, sal) AS 'salary'))";
+    sql(sql).fails("Duplicate column name 'REMUNERATION' in UNPIVOT");
+  }
+
+  @Test void testUnpivotDuplicateName2() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT (remuneration\n"
+        + "  FOR ^remuneration^ IN (comm AS 'commission',\n"
+        + "                         sal AS 'salary'))";
+    sql(sql).fails("Duplicate column name 'REMUNERATION' in UNPIVOT");
+  }
+
+  @Test void testUnpivotDuplicateName3() {
+    final String sql = "SELECT * FROM emp\n"
+        + "UNPIVOT (remuneration\n"
+        + "  FOR ^deptno^ IN (comm AS 'commission',\n"
+        + "                         sal AS 'salary'))";
+    sql(sql).fails("Duplicate column name 'DEPTNO' in UNPIVOT");
   }
 
   @Test void testMatchRecognizeWithDistinctAggregation() {

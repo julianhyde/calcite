@@ -5687,78 +5687,121 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validateUnpivot(SqlUnpivot unpivot) {
-    final UnpivotScope scope = (UnpivotScope) requireNonNull(getJoinScope(unpivot),
-        () -> "scope for " + unpivot);
+    final UnpivotScope scope =
+        (UnpivotScope) requireNonNull(getJoinScope(unpivot), () ->
+            "scope for " + unpivot);
 
     final UnpivotNamespace ns =
         getNamespaceOrThrow(unpivot).unwrap(UnpivotNamespace.class);
     assert ns.rowType == null;
 
-    // TODO FIXME:
     // Given
-    //   query PIVOT (agg1 AS a, agg2 AS b, ...
+    //   query UNPIVOT ((measure1, ..., measureM)
     //   FOR (axis1, ..., axisN)
-    //   IN ((v11, ..., v1N) AS label1,
-    //       (v21, ..., v2N) AS label2, ...))
+    //   IN ((c11, ..., c1M) AS (value11, ..., value1N),
+    //       (c21, ..., c2M) AS (value21, ..., value2N), ...)
     // the type is
-    //   k1, ... kN, a_label1, b_label1, ..., a_label2, b_label2, ...
+    //   k1, ... kN, axis1, ..., axisN, measure1, ..., measureM
     // where k1, ... kN are columns that are not referenced as an argument to
     // an aggregate or as an axis.
 
-    // Aggregates, e.g. "PIVOT (sum(x) AS sum_x, count(*) AS c)"
-    final List<Pair<@Nullable String, RelDataType>> aggNames = new ArrayList<>();
-    unpivot.forEachAgg((alias, call) -> {
-      call.validate(this, scope);
-      final RelDataType type = deriveType(scope, call);
-      aggNames.add(Pair.of(alias, type));
-      if (!(call instanceof SqlCall)
-          || !(((SqlCall) call).getOperator() instanceof SqlAggFunction)) {
-        throw newValidationError(call, RESOURCE.pivotAggMalformed());
+    // First, And make sure that each
+    final int measureCount = unpivot.fooList.size();
+    final int axisCount = unpivot.axisList.size();
+    unpivot.forEachNameValues((aliasList, valueList) -> {
+      // Make sure that each (ci1, ... ciM) list has the same arity as
+      // (measure1, ..., measureM).
+      if (aliasList.size() != measureCount) {
+        throw newValidationError(aliasList,
+            RESOURCE.unpivotValueArityMismatch(aliasList.size(),
+                measureCount));
       }
+
+      // Make sure that each (vi1, ... viN) list has the same arity as
+      // (axis1, ..., measureN).
+      if (valueList.size() != axisCount) {
+        throw newValidationError(valueList,
+            RESOURCE.unpivotValueArityMismatch(valueList.size(),
+                axisCount));
+      }
+
+      // Make sure that each alias is a valid column from the input.
+      aliasList.forEach(alias -> alias.validate(this, scope));
     });
 
-    // Axes, e.g. "FOR (JOB, DEPTNO)"
-    final List<RelDataType> axisTypes = new ArrayList<>();
-    final List<SqlIdentifier> axisIdentifiers = new ArrayList<>();
-    for (SqlNode axis : unpivot.axisList) {
-      SqlIdentifier identifier = (SqlIdentifier) axis;
-      identifier.validate(this, scope);
-      final RelDataType type = deriveType(scope, identifier);
-      axisTypes.add(type);
-      axisIdentifiers.add(identifier);
-    }
+    // What columns from the input are not referenced by an alias?
+    final SqlValidatorNamespace inputNs =
+        Objects.requireNonNull(getNamespace(unpivot.query));
+    final Set<String> unusedColumnNames =
+        catalogReader.nameMatcher().createSet();
+    unusedColumnNames.addAll(inputNs.getRowType().getFieldNames());
+    unusedColumnNames.removeAll(unpivot.usedColumnNames());
+
+    // What columns will be present in the output row type?
+    final Set<String> columnNames = catalogReader.nameMatcher().createSet();
+    columnNames.addAll(unusedColumnNames);
+
+    // Gather the name and type of each measure.
+    final List<Pair<String, RelDataType>> measureNameTypes = new ArrayList<>();
+    Ord.forEach(unpivot.fooList, (measure, i) -> {
+      final String measureName = ((SqlIdentifier) measure).getSimple();
+      final List<RelDataType> types = new ArrayList<>();
+      final List<SqlNode> aliases = new ArrayList<>();
+      unpivot.forEachNameValues((aliasList, valueList) -> {
+        final SqlNode alias = aliasList.get(i);
+        aliases.add(alias);
+        types.add(deriveType(scope, alias));
+      });
+      final RelDataType type = typeFactory.leastRestrictive(types);
+      if (type == null) {
+        throw newValidationError(aliases.get(0),
+            RESOURCE.unpivotCannotDeriveMeasureType(measureName));
+      }
+      if (!columnNames.add(measureName)) {
+        throw newValidationError(measure,
+            RESOURCE.unpivotDuplicate(measureName));
+      }
+      measureNameTypes.add(Pair.of(measureName, type));
+    });
+
+    // Gather the name and type of each axis.
+    // Consider
+    //   FOR (job, deptno)
+    //   IN (a AS ('CLERK', 10),
+    //       b AS ('ANALYST', 20))
+    // There are two axes, (job, deptno), and so each value list ('CLERK', 10),
+    // ('ANALYST', 20) must have arity two.
+    //
+    // The type of 'job' is derived as the least restrictive type of the values
+    // ('CLERK', 'ANALYST'), namely VARCHAR(7). The derived type of 'deptno' is
+    // the type of values (10, 20), namely INTEGER.
+    final List<Pair<String, RelDataType>> axisNameTypes = new ArrayList<>();
+    Ord.forEach(unpivot.axisList, (axis, i) -> {
+      final String axisName = ((SqlIdentifier) axis).getSimple();
+      final List<RelDataType> types = new ArrayList<>();
+      unpivot.forEachNameValues((aliasList, valueList) ->
+          types.add(deriveType(scope, valueList.get(i))));
+      final RelDataType type = typeFactory.leastRestrictive(types);
+      if (type == null) {
+        throw newValidationError(axis,
+            RESOURCE.unpivotCannotDeriveAxisType(axisName));
+      }
+      if (!columnNames.add(axisName)) {
+        throw newValidationError(axis, RESOURCE.unpivotDuplicate(axisName));
+      }
+      axisNameTypes.add(Pair.of(axisName, type));
+    });
 
     // Columns that have been seen as arguments to aggregates or as axes
     // do not appear in the output.
-    final Set<String> columnNames = unpivot.usedColumnNames();
     final RelDataTypeFactory.Builder typeBuilder = typeFactory.builder();
     scope.getChild().getRowType().getFieldList().forEach(field -> {
-      if (!columnNames.contains(field.getName())) {
+      if (unusedColumnNames.contains(field.getName())) {
         typeBuilder.add(field);
       }
     });
-
-    // Values, e.g. "IN (('CLERK', 10) AS c10, ('MANAGER, 20) AS m20)"
-    unpivot.forEachNameValues((alias, nodeList) -> {
-      if (nodeList.size() != axisTypes.size()) {
-        throw newValidationError(nodeList,
-            RESOURCE.pivotValueArityMismatch(nodeList.size(),
-                axisTypes.size()));
-      }
-      final SqlOperandTypeChecker typeChecker =
-          OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
-      Pair.forEach(axisIdentifiers, nodeList, (identifier, subNode) -> {
-        subNode.validate(this, scope);
-        typeChecker.checkOperandTypes(
-            new SqlCallBinding(this, scope,
-                SqlStdOperatorTable.EQUALS.createCall(
-                    subNode.getParserPosition(), identifier, subNode)),
-            true);
-      });
-      Pair.forEach(aggNames, (aggAlias, aggType) ->
-          typeBuilder.add(aggAlias == null ? alias : alias + "_" + aggAlias,
-              aggType));
-    });
+    typeBuilder.addAll(axisNameTypes);
+    typeBuilder.addAll(measureNameTypes);
 
     final RelDataType rowType = typeBuilder.build();
     ns.setType(rowType);

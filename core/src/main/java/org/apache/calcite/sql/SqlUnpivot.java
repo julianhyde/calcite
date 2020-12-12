@@ -19,7 +19,6 @@ package org.apache.calcite.sql;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.apache.calcite.sql.util.SqlVisitor;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableNullableList;
 import org.apache.calcite.util.Util;
 
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Parse tree node that represents UNPIVOT applied to a table reference
@@ -98,7 +98,7 @@ public class SqlUnpivot extends SqlCall {
     query.unparse(writer, leftPrec, 0);
     writer.keyword("UNPIVOT");
     if (includeNulls != null) {
-      writer.print(includeNulls ? "INCLUDE NULLS" : "EXCLUDE NULLS");
+      writer.keyword(includeNulls ? "INCLUDE NULLS" : "EXCLUDE NULLS");
     }
     final SqlWriter.Frame frame = writer.startList("(", ")");
     // force parentheses if there is more than one foo
@@ -114,34 +114,25 @@ public class SqlUnpivot extends SqlCall {
     writer.endList(frame);
   }
 
-  /** Returns the aggregate list as (alias, call) pairs.
-   * If there is no 'AS', alias is null. */
-  public void forEachAgg(BiConsumer<@Nullable String, SqlNode> consumer) {
-    for (SqlNode agg : fooList) {
-      final SqlNode call = SqlUtil.stripAs(agg);
-      final String alias = SqlValidatorUtil.getAlias(agg, -1);
-      consumer.accept(alias, call);
-    }
+  /** Returns the measure list as SqlIdentifiers. */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public void forEachMeasure(Consumer<SqlIdentifier> consumer) {
+    ((List<SqlIdentifier>) (List) fooList).forEach(consumer);
   }
 
-  /** Returns the value list as (alias, node list) pairs. */
-  public void forEachNameValues(BiConsumer<String, SqlNodeList> consumer) {
+  /** Returns the value list as (aliasList, valueList) pairs. */
+  public void forEachNameValues(
+      BiConsumer<SqlNodeList, SqlNodeList> consumer) {
     for (SqlNode node : inList) {
-      String alias;
-      if (node.getKind() == SqlKind.AS) {
-        final List<SqlNode> operands = ((SqlCall) node).getOperandList();
-        alias = ((SqlIdentifier) operands.get(1)).getSimple();
-        node = operands.get(0);
-      } else {
-        alias = SqlPivot.pivotAlias(node);
-      }
-      consumer.accept(alias, SqlPivot.toNodes(node));
+      assert node.getKind() == SqlKind.AS;
+      final SqlCall call = (SqlCall) node;
+      assert call.getOperandList().size() == 2;
+      consumer.accept(call.operand(0), call.operand(1));
     }
   }
 
-  /** Returns the set of columns that are referenced as an argument to an
-   * aggregate function or in a column in the {@code FOR} clause. All columns
-   * that are not used will be part of the returned row. */
+  /** Returns the set of columns that are referenced in the {@code FOR}
+   * clause. All columns that are not used will be part of the returned row. */
   public Set<String> usedColumnNames() {
     final Set<String> columnNames = new HashSet<>();
     final SqlVisitor<Void> nameCollector = new SqlBasicVisitor<Void>() {
@@ -150,10 +141,8 @@ public class SqlUnpivot extends SqlCall {
         return super.visit(id);
       }
     };
-    forEachAgg((alias, call) -> call.accept(nameCollector));
-    for (SqlNode axis : axisList) {
-      axis.accept(nameCollector);
-    }
+    forEachNameValues((aliasList, valueList) ->
+        aliasList.accept(nameCollector));
     return columnNames;
   }
 

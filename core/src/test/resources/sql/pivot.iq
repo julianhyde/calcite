@@ -486,4 +486,15 @@ F	0	1	(null)	0	ANALYST	20	(null)
 !ok
 !}
 
+# Dimension column 'sal' has same name as input column 'sal'.
+# Oracle allows this. It's valid because 'sal' is removed, then added.
+# 'FOR deptno' would not be valid, because 'deptno' has not been removed.
+!if (false) {
+SELECT * FROM emp
+UNPIVOT (remuneration
+  FOR sal IN (comm AS 'commission',
+                sal as 'salary'));
+!ok
+!}
+
 # End pivot.iq
