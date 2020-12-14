@@ -452,6 +452,37 @@ CROSS JOIN (VALUES ('CLERK', 10),
 
 !ok
 
+# Unpivot long-hand using CROSS APPLY VALUES
+# (Functional programmers would recognize this as 'flatMap'.)
+SELECT e.gender, t.*
+FROM (
+  SELECT *
+  FROM (
+    SELECT deptno, job, sal,
+        CASE WHEN ename < 'F' THEN 'F' ELSE 'M' END AS gender
+    FROM emp)
+  PIVOT (sum(sal) AS ss, count(*) AS c
+     FOR (job, deptno) IN (('CLERK', 10) AS C10,
+                           ('CLERK', 20) AS C20,
+                           ('ANALYST', 20) AS A20))) AS e
+CROSS JOIN LATERAL (VALUES
+   ('CLERK', 10, e.c10_ss, e.c10_c),
+   ('CLERK', 20, e.c20_ss, e.c20_c),
+   ('ANALYST', 20, e.a20_ss, e.a20_c)) AS t (job, deptno, sum_sal, count_star);
++--------+---------+--------+---------+------------+
+| GENDER | JOB     | DEPTNO | SUM_SAL | COUNT_STAR |
++--------+---------+--------+---------+------------+
+| F      | ANALYST |     20 |         |          0 |
+| F      | CLERK   |     10 |         |          0 |
+| F      | CLERK   |     20 | 1100.00 |          1 |
+| M      | ANALYST |     20 | 6000.00 |          2 |
+| M      | CLERK   |     10 | 1300.00 |          1 |
+| M      | CLERK   |     20 |  800.00 |          1 |
++--------+---------+--------+---------+------------+
+(6 rows)
+
+!ok
+
 # Single measure; include nulls; IN has duplicate columns and duplicate values
 !if (false) {
 SELECT *

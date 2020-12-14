@@ -3001,6 +3001,86 @@ public class RelBuilder {
   }
 
   /**
+   * Creates an Unpivot.
+   *
+   * <p>To achieve the same effect as the SQL
+   *
+   * <blockquote><pre>{@code
+   * SELECT *
+   * FROM (SELECT deptno, job, sal, comm FROM emp)
+   *   UNPIVOT INCLUDE NULLS (remuneration
+   *     FOR remuneration_type IN (comm AS 'commission',
+   *                               sal AS 'salary'))
+   * }</pre></blockquote>
+   *
+   * <p>use the builder as follows:
+   *
+   * <blockquote><pre>{@code
+   * RelBuilder b;
+   * b.scan("EMP");
+   * final List<String> measureNames = Arrays.asList("REMUNERATION");
+   * final List<String> dimensionNames = Arrays.asList("REMUNERATION_TYPE");
+   * final Map<List<RexNode>, List<RexNode>> dimensionValues =
+   *     ImmutableMap.<List<RexNode>, List<RexNode>>builder()
+   *         .put(Arrays.asList(b.field("COMM")),
+   *             Arrays.asList("commission"))
+   *         .put(Arrays.asList(b.field("SAL")),
+   *             Arrays.asList("salary"))
+   *         .build();
+   * b.unpivot(true, measureNames, dimensionNames, dimensionValues);
+   * }</pre></blockquote>
+   *
+   * @param includeNulls Whether to include NULL values in the output
+   * @param measureNames Names of columns to be generated to hold pivoted
+   *                    measures
+   * @param dimensionNames Names of columns to be generated to hold qualifying
+   *                       values
+   * @param dimensionMap Mapping from the columns that hold measures to the
+   *                     values that the dimension columns will hold in the
+   *                     generated rows
+   * @return This RelBuilder
+   */
+  public RelBuilder unpivot(boolean includeNulls,
+      Iterable<String> measureNames, Iterable<String> dimensionNames,
+      Map<? extends Iterable<? extends RexNode>,
+          ? extends Iterable<Object>> dimensionMap) {
+    // Make immutable copies of all arguments.
+    final List<String> measureNameList = ImmutableList.copyOf(measureNames);
+    final List<String> dimensionNameList = ImmutableList.copyOf(dimensionNames);
+    final ImmutableMap.Builder<List<RexNode>, List<Object>> mapBuilder =
+        ImmutableMap.builder();
+    dimensionMap.forEach((aliasList, valueList) ->
+        mapBuilder.put(ImmutableList.copyOf(aliasList),
+            ImmutableList.copyOf(valueList)));
+    final Map<List<RexNode>, List<Object>> map = mapBuilder.build();
+
+    // Check that counts match.
+    map.forEach((aliasList, valueList) -> {
+      if (aliasList.size() != measureNameList.size()) {
+        throw new IllegalArgumentException("Number of measures ("
+            + aliasList.size() + ") should match number of measure names ("
+            + measureNameList.size() + ")");
+      }
+      if (valueList.size() != dimensionNameList.size()) {
+        throw new IllegalArgumentException("Number of dimension values ("
+            + valueList.size() + ") should match number of dimension names ("
+            + dimensionNameList.size() + ")");
+      }
+    });
+
+    // Create "VALUES (('commission'), ('salary')) AS t (remuneration_type)"
+    final List<Object> valueList = new ArrayList<>();
+    map.values().forEach(valueList::addAll);
+    values(dimensionNameList.toArray(new String[0]), valueList);
+
+    join(JoinRelType.INNER);
+
+    // TODO
+
+    return this;
+  }
+
+  /**
    * Attaches an array of hints to the stack top relational expression.
    *
    * <p>The redundant hints would be eliminated.

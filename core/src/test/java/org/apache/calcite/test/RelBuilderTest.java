@@ -3312,6 +3312,41 @@ public class RelBuilderTest {
     assertThat(f.apply(createBuilder()), hasTree(expected));
   }
 
+  @Test void testUnpivot() {
+    // Equivalent SQL:
+    //   SELECT *
+    //   FROM (SELECT deptno, job, sal, comm FROM emp)
+    //   UNPIVOT INCLUDE NULLS (remuneration
+    //     FOR remuneration_type IN (comm AS 'commission',
+    //                               sal AS 'salary'))
+    //
+    // translates to
+    //   SELECT e.deptno, e.job,
+    //     CASE t.remuneration_type
+    //     WHEN 'commission' THEN comm
+    //     ELSE sal
+    //     END AS remuneration
+    //   FROM emp
+    //   CROSS JOIN VALUES ('commission', 'salary') AS t (remuneration_type)
+    //
+    final Function<RelBuilder, RelNode> f = b ->
+        b.scan("EMP")
+            .unpivot(true, ImmutableList.of("REMUNERATION"),
+                ImmutableList.of("REMUNERATION_TYPE"),
+                ImmutableMap.<List<RexNode>, List<Object>>builder()
+                    .put(ImmutableList.of(b.field("COMM")),
+                        ImmutableList.of("commission"))
+                    .put(ImmutableList.of(b.field("SAL")),
+                        ImmutableList.of("salary"))
+                    .build())
+                .build();
+    final String expected = ""
+        + "LogicalAggregate(group=[{0}], C10_SS=[SUM($1) FILTER $2], "
+        + "C10_C=[COUNT() FILTER $2], M20_SS=[SUM($1) FILTER $3], "
+        + "M20_C=[COUNT() FILTER $3])\n";
+    assertThat(f.apply(createBuilder()), hasTree(expected));
+  }
+
   @Test void testMatchRecognize() {
     // Equivalent SQL:
     //   SELECT *
