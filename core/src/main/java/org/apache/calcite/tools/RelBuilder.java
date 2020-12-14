@@ -119,6 +119,8 @@ import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -2544,6 +2546,12 @@ public class RelBuilder {
     }
     final ImmutableList<ImmutableList<RexLiteral>> tupleList =
         tupleList(fieldNames.length, values);
+    assert tupleList.size() == rowCount;
+    return values(tupleList, Arrays.asList(fieldNames));
+  }
+
+  private RelBuilder values(List<? extends List<RexLiteral>> tupleList,
+      List<String> fieldNames) {
     final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
     final RelDataTypeFactory.Builder builder = typeFactory.builder();
     for (final Ord<@Nullable String> fieldName : Ord.zip(fieldNames)) {
@@ -2556,7 +2564,7 @@ public class RelBuilder {
             }
 
             @Override public int size() {
-              return rowCount;
+              return tupleList.size();
             }
           });
       assert type != null : "can't infer type for field " + fieldName.i + ", " + fieldName.e;
@@ -3019,63 +3027,111 @@ public class RelBuilder {
    * RelBuilder b;
    * b.scan("EMP");
    * final List<String> measureNames = Arrays.asList("REMUNERATION");
-   * final List<String> dimensionNames = Arrays.asList("REMUNERATION_TYPE");
-   * final Map<List<RexNode>, List<RexNode>> dimensionValues =
-   *     ImmutableMap.<List<RexNode>, List<RexNode>>builder()
-   *         .put(Arrays.asList(b.field("COMM")),
-   *             Arrays.asList("commission"))
-   *         .put(Arrays.asList(b.field("SAL")),
-   *             Arrays.asList("salary"))
+   * final List<String> axisNames = Arrays.asList("REMUNERATION_TYPE");
+   * final Map<List<RexLiteral>, List<RexNode>> axisMap =
+   *     ImmutableMap.<List<RexLiteral>, List<RexNode>>builder()
+   *         .put(Arrays.asList(b.literal("commission")),
+   *             Arrays.asList(b.field("COMM")))
+   *         .put(Arrays.asList(b.literal("salary")),
+   *             Arrays.asList(b.field("SAL")))
    *         .build();
-   * b.unpivot(true, measureNames, dimensionNames, dimensionValues);
+   * b.unpivot(false, measureNames, axisNames, axisMap);
    * }</pre></blockquote>
+   *
+   * <p>The query generates two columns: {@code remuneration_type} (an axis
+   * column) and {@code remuneration} (a measure column). Axis columns contain
+   * values to indicate the source of the row (in this case, {@code 'salary'}
+   * if the row came from the {@code sal} column, and {@code 'commission'}
+   * if the row came from the {@code comm} column).
    *
    * @param includeNulls Whether to include NULL values in the output
    * @param measureNames Names of columns to be generated to hold pivoted
    *                    measures
-   * @param dimensionNames Names of columns to be generated to hold qualifying
-   *                       values
-   * @param dimensionMap Mapping from the columns that hold measures to the
-   *                     values that the dimension columns will hold in the
-   *                     generated rows
+   * @param axisNames Names of columns to be generated to hold qualifying values
+   * @param axisMap Mapping from the columns that hold measures to the values
+   *           that the axis columns will hold in the generated rows
    * @return This RelBuilder
    */
   public RelBuilder unpivot(boolean includeNulls,
-      Iterable<String> measureNames, Iterable<String> dimensionNames,
-      Map<? extends Iterable<? extends RexNode>,
-          ? extends Iterable<Object>> dimensionMap) {
+      Iterable<String> measureNames, Iterable<String> axisNames,
+      Map<? extends Iterable<? extends RexLiteral>,
+          ? extends Iterable<? extends RexNode>> axisMap) {
     // Make immutable copies of all arguments.
     final List<String> measureNameList = ImmutableList.copyOf(measureNames);
-    final List<String> dimensionNameList = ImmutableList.copyOf(dimensionNames);
-    final ImmutableMap.Builder<List<RexNode>, List<Object>> mapBuilder =
+    final List<String> axisNameList = ImmutableList.copyOf(axisNames);
+    final ImmutableMap.Builder<List<RexLiteral>, List<RexNode>> mapBuilder =
         ImmutableMap.builder();
-    dimensionMap.forEach((aliasList, valueList) ->
+    axisMap.forEach((aliasList, valueList) ->
         mapBuilder.put(ImmutableList.copyOf(aliasList),
             ImmutableList.copyOf(valueList)));
-    final Map<List<RexNode>, List<Object>> map = mapBuilder.build();
+    final Map<List<RexLiteral>, List<RexNode>> map = mapBuilder.build();
 
     // Check that counts match.
-    map.forEach((aliasList, valueList) -> {
-      if (aliasList.size() != measureNameList.size()) {
+    map.forEach((valueList, inputMeasureList) -> {
+      if (inputMeasureList.size() != measureNameList.size()) {
         throw new IllegalArgumentException("Number of measures ("
-            + aliasList.size() + ") should match number of measure names ("
+            + inputMeasureList.size() + ") must match number of measure names ("
             + measureNameList.size() + ")");
       }
-      if (valueList.size() != dimensionNameList.size()) {
-        throw new IllegalArgumentException("Number of dimension values ("
-            + valueList.size() + ") should match number of dimension names ("
-            + dimensionNameList.size() + ")");
+      if (valueList.size() != axisNameList.size()) {
+        throw new IllegalArgumentException("Number of axis values ("
+            + valueList.size() + ") match match number of axis names ("
+            + axisNameList.size() + ")");
       }
     });
 
+    final RelDataType leftRowType = peek().getRowType();
+    final BitSet usedFields = new BitSet();
+    axisMap.values().forEach(nodes ->
+        nodes.forEach(node -> {
+          if (node instanceof RexInputRef) {
+            usedFields.set(((RexInputRef) node).getIndex());
+          }
+        }));
+
     // Create "VALUES (('commission'), ('salary')) AS t (remuneration_type)"
-    final List<Object> valueList = new ArrayList<>();
-    map.values().forEach(valueList::addAll);
-    values(dimensionNameList.toArray(new String[0]), valueList);
+    values(ImmutableList.copyOf(map.keySet()), axisNameList);
 
     join(JoinRelType.INNER);
 
-    // TODO
+    final ImmutableBitSet unusedFields =
+        ImmutableBitSet.range(leftRowType.getFieldCount())
+            .except(ImmutableBitSet.fromBitSet(usedFields));
+    final List<RexNode> projects = new ArrayList<>(fields(unusedFields));
+    Ord.forEach(axisNameList, (dimensionName, d) ->
+        projects.add(
+            alias(field(leftRowType.getFieldCount() + d),
+                dimensionName)));
+
+    final List<RexNode> conditions = new ArrayList<>();
+    Ord.forEach(measureNameList, (measureName, m) -> {
+      final List<RexNode> caseOperands = new ArrayList<>();
+      map.forEach((literals, nodes) -> {
+        Ord.forEach(literals, (literal, d) ->
+            conditions.add(
+                call(SqlStdOperatorTable.EQUALS,
+                    field(leftRowType.getFieldCount() + d), literal)));
+        caseOperands.add(and(conditions));
+        conditions.clear();
+        caseOperands.add(nodes.get(m));
+      });
+      caseOperands.add(literal(null));
+      projects.add(
+          alias(call(SqlStdOperatorTable.CASE, caseOperands),
+              measureName));
+    });
+    project(projects);
+
+    if (!includeNulls) {
+      // Add 'WHERE m1 IS NOT NULL AND m2 IS NOT NULL'
+      Ord.forEach(measureNameList, (measureName, m) ->
+          conditions.add(
+              isNotNull(
+                  field(unusedFields.cardinality() + axisNameList.size()
+                      + m))));
+      filter(conditions);
+      conditions.clear();
+    }
 
     return this;
   }

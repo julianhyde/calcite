@@ -44,6 +44,7 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldCollation;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexWindowBounds;
@@ -3329,22 +3330,30 @@ public class RelBuilderTest {
     //   FROM emp
     //   CROSS JOIN VALUES ('commission', 'salary') AS t (remuneration_type)
     //
-    final Function<RelBuilder, RelNode> f = b ->
+    final BiFunction<RelBuilder, Boolean, RelNode> f = (b, includeNulls) ->
         b.scan("EMP")
-            .unpivot(true, ImmutableList.of("REMUNERATION"),
+            .unpivot(includeNulls, ImmutableList.of("REMUNERATION"),
                 ImmutableList.of("REMUNERATION_TYPE"),
-                ImmutableMap.<List<RexNode>, List<Object>>builder()
-                    .put(ImmutableList.of(b.field("COMM")),
-                        ImmutableList.of("commission"))
-                    .put(ImmutableList.of(b.field("SAL")),
-                        ImmutableList.of("salary"))
+                ImmutableMap.<List<RexLiteral>, List<RexNode>>builder()
+                    .put(ImmutableList.of(b.literal("commission")),
+                        ImmutableList.of(b.field("COMM")))
+                    .put(ImmutableList.of(b.literal("salary")),
+                        ImmutableList.of(b.field("SAL")))
                     .build())
-                .build();
-    final String expected = ""
-        + "LogicalAggregate(group=[{0}], C10_SS=[SUM($1) FILTER $2], "
-        + "C10_C=[COUNT() FILTER $2], M20_SS=[SUM($1) FILTER $3], "
-        + "M20_C=[COUNT() FILTER $3])\n";
-    assertThat(f.apply(createBuilder()), hasTree(expected));
+            .build();
+    final String expectedIncludeNulls = ""
+        + "LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], "
+        + "HIREDATE=[$4], DEPTNO=[$7], REMUNERATION_TYPE=[$8], "
+        + "REMUNERATION=[CASE(=($8, 'commission'), $6, =($8, 'salary'), $5, "
+        + "null:NULL)])\n"
+        + "  LogicalJoin(condition=[true], joinType=[inner])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n"
+        + "    LogicalValues(tuples=[[{ 'commission' }, { 'salary' }]])\n";
+    final String expectedExcludeNulls =
+        "LogicalFilter(condition=[IS NOT NULL($7)])\n"
+            + "  " + expectedIncludeNulls.replace("\n  ", "\n    ");
+    assertThat(f.apply(createBuilder(), true), hasTree(expectedIncludeNulls));
+    assertThat(f.apply(createBuilder(), false), hasTree(expectedExcludeNulls));
   }
 
   @Test void testMatchRecognize() {
