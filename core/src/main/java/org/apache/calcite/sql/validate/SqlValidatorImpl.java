@@ -5706,7 +5706,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // an aggregate or as an axis.
 
     // First, And make sure that each
-    final int measureCount = unpivot.fooList.size();
+    final int measureCount = unpivot.measureList.size();
     final int axisCount = unpivot.axisList.size();
     unpivot.forEachNameValues((aliasList, valueList) -> {
       // Make sure that each (ci1, ... ciM) list has the same arity as
@@ -5718,8 +5718,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
 
       // Make sure that each (vi1, ... viN) list has the same arity as
-      // (axis1, ..., measureN).
-      if (valueList.size() != axisCount) {
+      // (axis1, ..., axisN).
+      if (valueList != null && valueList.size() != axisCount) {
         throw newValidationError(valueList,
             RESOURCE.unpivotValueArityMismatch(valueList.size(),
                 axisCount));
@@ -5743,7 +5743,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     // Gather the name and type of each measure.
     final List<Pair<String, RelDataType>> measureNameTypes = new ArrayList<>();
-    Ord.forEach(unpivot.fooList, (measure, i) -> {
+    Ord.forEach(unpivot.measureList, (measure, i) -> {
       final String measureName = ((SqlIdentifier) measure).getSimple();
       final List<RelDataType> types = new ArrayList<>();
       final List<SqlNode> aliases = new ArrayList<>();
@@ -5780,7 +5780,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       final String axisName = ((SqlIdentifier) axis).getSimple();
       final List<RelDataType> types = new ArrayList<>();
       unpivot.forEachNameValues((aliasList, valueList) ->
-          types.add(deriveType(scope, valueList.get(i))));
+          types.add(
+              valueList == null
+                  ? typeFactory.createSqlType(SqlTypeName.VARCHAR,
+                        aliasValue(aliasList).length())
+                  : deriveType(scope, valueList.get(i))));
       final RelDataType type = typeFactory.leastRestrictive(types);
       if (type == null) {
         throw newValidationError(axis,
@@ -5805,6 +5809,23 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     final RelDataType rowType = typeBuilder.build();
     ns.setType(rowType);
+  }
+
+  /** Computes an alias. In the query fragment
+   * <blockquote>
+   *   {@code UNPIVOT ... FOR ... IN ((c1, c2) AS 'c1_c2', (c3, c4))}
+   * </blockquote>
+   * note that {@code (c3, c4)} has no {@code AS}. The computed alias is
+   * 'C3_C4'. */
+  private static String aliasValue(SqlNodeList aliasList) {
+    final StringBuilder b = new StringBuilder();
+    aliasList.forEach(alias -> {
+      if (b.length() > 0) {
+        b.append('_');
+      }
+      b.append(Util.last(((SqlIdentifier) alias).names));
+    });
+    return b.toString();
   }
 
   /** Returns the alias of a "expr AS alias" expression. */

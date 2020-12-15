@@ -8072,7 +8072,7 @@ public class SqlParserTest {
         + "      (a20_ss, a20_c) AS ('ANALYST', 20)))";
     final String expected = "SELECT *\n"
         + "FROM `EMP_PIVOTED` "
-        + "UNPIVOT ((`SUM_SAL`, `COUNT_STAR`)"
+        + "UNPIVOT EXCLUDE NULLS ((`SUM_SAL`, `COUNT_STAR`)"
         + " FOR (`JOB`, `DEPTNO`)"
         + " IN ((`C10_SS`, `C10_C`) AS ('CLERK', 10),"
         + " (`C20_SS`, `C20_C`) AS ('CLERK', 20),"

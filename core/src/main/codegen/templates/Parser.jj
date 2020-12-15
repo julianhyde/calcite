@@ -2892,33 +2892,31 @@ void PivotValue(List<SqlNode> list) :
 SqlNode Unpivot(SqlNode tableRef) :
 {
     final Span s;
-    final Boolean includeNulls;
-    final SqlNodeList fooList;
+    final boolean includeNulls;
+    final SqlNodeList measureList;
     final SqlNodeList axisList;
     final Span s2;
     final List<SqlNode> values = new ArrayList<SqlNode>();
-    final SqlNodeList valueList;
+    final SqlNodeList inList;
 }
 {
     <UNPIVOT> { s = span(); }
     (
-        ( <INCLUDE> { includeNulls = true; }
-        | <EXCLUDE> { includeNulls = false; }
-        ) <NULLS>
-    |
-        { includeNulls = null; }
+        <INCLUDE> <NULLS> { includeNulls = true; }
+    |   <EXCLUDE> <NULLS> { includeNulls = false; }
+    |   { includeNulls = false; }
     )
     <LPAREN>
-    fooList = SimpleIdentifierOrList()
+    measureList = SimpleIdentifierOrList()
     <FOR> axisList = SimpleIdentifierOrList()
     <IN>
     <LPAREN> { s2 = span(); }
     UnpivotValue(values) ( <COMMA> UnpivotValue(values) )*
     <RPAREN>
-    { valueList = new SqlNodeList(values, s2.end(this)); }
+    { inList = new SqlNodeList(values, s2.end(this)); }
     <RPAREN> {
-        return new SqlUnpivot(s.end(this), tableRef, includeNulls, fooList,
-            axisList, valueList);
+        return new SqlUnpivot(s.end(this), tableRef, includeNulls, measureList,
+            axisList, inList);
     }
 }
 

@@ -1962,6 +1962,34 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql(sql).fails("Duplicate column name 'DEPTNO' in UNPIVOT");
   }
 
+  @Test void testUnpivotMissingAs() {
+    final String sql = "SELECT *\n"
+        + "FROM (\n"
+        + "  SELECT *\n"
+        + "  FROM (VALUES (0, 1, 2, 3, 4),\n"
+        + "              (10, 11, 12, 13, 14)) AS t (c0, c1, c2, c3, c4))\n"
+        + "UNPIVOT ((m0, m1, m2)\n"
+        + "    FOR (a0, a1)\n"
+        + "     IN ((c1, c2, c3) AS ('col1','col2'),\n"
+        + "         (c2, c3, c4)))";
+    sql(sql).type("RecordType(INTEGER NOT NULL C0, VARCHAR(8) NOT NULL A0,"
+        + " VARCHAR(8) NOT NULL A1, INTEGER NOT NULL M0, INTEGER NOT NULL M1,"
+        + " INTEGER NOT NULL M2) NOT NULL");
+  }
+
+  @Test void testUnpivotMissingAs2() {
+    final String sql = "SELECT *\n"
+        + "FROM (\n"
+        + "  SELECT *\n"
+        + "  FROM (VALUES (0, 1, 2, 3, 4),\n"
+        + "              (10, 11, 12, 13, 14)) AS t (c0, c1, c2, c3, c4))\n"
+        + "UNPIVOT ((m0, m1, m2)\n"
+        + "    FOR (^a0^, a1)\n"
+        + "     IN ((c1, c2, c3) AS (6, true),\n"
+        + "         (c2, c3, c4)))";
+    sql(sql).fails("In UNPIVOT, cannot derive type for axis 'A0'");
+  }
+
   @Test void testMatchRecognizeWithDistinctAggregation() {
     final String sql = "SELECT *\n"
         + "FROM emp\n"

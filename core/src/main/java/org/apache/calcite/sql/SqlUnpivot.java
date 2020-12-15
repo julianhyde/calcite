@@ -53,8 +53,8 @@ import java.util.function.Consumer;
 public class SqlUnpivot extends SqlCall {
 
   public SqlNode query;
-  public final @Nullable Boolean includeNulls;
-  public final SqlNodeList fooList;
+  public final boolean includeNulls;
+  public final SqlNodeList measureList;
   public final SqlNodeList axisList;
   public final SqlNodeList inList;
 
@@ -62,12 +62,12 @@ public class SqlUnpivot extends SqlCall {
 
   //~ Constructors -----------------------------------------------------------
 
-  public SqlUnpivot(SqlParserPos pos, SqlNode query, Boolean includeNulls,
-      SqlNodeList fooList, SqlNodeList axisList, SqlNodeList inList) {
+  public SqlUnpivot(SqlParserPos pos, SqlNode query, boolean includeNulls,
+      SqlNodeList measureList, SqlNodeList axisList, SqlNodeList inList) {
     super(pos);
     this.query = Objects.requireNonNull(query);
     this.includeNulls = includeNulls;
-    this.fooList = Objects.requireNonNull(fooList);
+    this.measureList = Objects.requireNonNull(measureList);
     this.axisList = Objects.requireNonNull(axisList);
     this.inList = Objects.requireNonNull(inList);
   }
@@ -79,7 +79,7 @@ public class SqlUnpivot extends SqlCall {
   }
 
   @Override public List<SqlNode> getOperandList() {
-    return ImmutableNullableList.of(query, fooList, axisList, inList);
+    return ImmutableNullableList.of(query, measureList, axisList, inList);
   }
 
   @SuppressWarnings("nullness")
@@ -97,13 +97,11 @@ public class SqlUnpivot extends SqlCall {
   @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
     query.unparse(writer, leftPrec, 0);
     writer.keyword("UNPIVOT");
-    if (includeNulls != null) {
-      writer.keyword(includeNulls ? "INCLUDE NULLS" : "EXCLUDE NULLS");
-    }
+    writer.keyword(includeNulls ? "INCLUDE NULLS" : "EXCLUDE NULLS");
     final SqlWriter.Frame frame = writer.startList("(", ")");
     // force parentheses if there is more than one foo
-    final int leftPrec1 = fooList.size() > 1 ? 1 : 0;
-    fooList.unparse(writer, leftPrec1, 0);
+    final int leftPrec1 = measureList.size() > 1 ? 1 : 0;
+    measureList.unparse(writer, leftPrec1, 0);
     writer.sep("FOR");
     // force parentheses if there is more than one axis
     final int leftPrec2 = axisList.size() > 1 ? 1 : 0;
@@ -117,17 +115,23 @@ public class SqlUnpivot extends SqlCall {
   /** Returns the measure list as SqlIdentifiers. */
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void forEachMeasure(Consumer<SqlIdentifier> consumer) {
-    ((List<SqlIdentifier>) (List) fooList).forEach(consumer);
+    ((List<SqlIdentifier>) (List) measureList).forEach(consumer);
   }
 
   /** Returns the value list as (aliasList, valueList) pairs. */
   public void forEachNameValues(
-      BiConsumer<SqlNodeList, SqlNodeList> consumer) {
+      BiConsumer<SqlNodeList, @Nullable SqlNodeList> consumer) {
     for (SqlNode node : inList) {
-      assert node.getKind() == SqlKind.AS;
-      final SqlCall call = (SqlCall) node;
-      assert call.getOperandList().size() == 2;
-      consumer.accept(call.operand(0), call.operand(1));
+      switch (node.getKind()) {
+      case AS:
+        final SqlCall call = (SqlCall) node;
+        assert call.getOperandList().size() == 2;
+        consumer.accept(call.operand(0), call.operand(1));
+        break;
+      default:
+        final SqlNodeList nodeList = (SqlNodeList) node;
+        consumer.accept(nodeList, null);
+      }
     }
   }
 
