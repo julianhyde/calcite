@@ -135,6 +135,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.sql.SqlKind.UNION;
@@ -3054,20 +3055,21 @@ public class RelBuilder {
    */
   public RelBuilder unpivot(boolean includeNulls,
       Iterable<String> measureNames, Iterable<String> axisNames,
-      Map<? extends Iterable<? extends RexLiteral>,
-          ? extends Iterable<? extends RexNode>> axisMap) {
+      Iterable<? extends Map.Entry<? extends List<? extends RexLiteral>,
+          ? extends List<? extends RexNode>>> axisMap) {
     // Make immutable copies of all arguments.
     final List<String> measureNameList = ImmutableList.copyOf(measureNames);
     final List<String> axisNameList = ImmutableList.copyOf(axisNames);
-    final ImmutableMap.Builder<List<RexLiteral>, List<RexNode>> mapBuilder =
-        ImmutableMap.builder();
-    axisMap.forEach((aliasList, valueList) ->
-        mapBuilder.put(ImmutableList.copyOf(aliasList),
-            ImmutableList.copyOf(valueList)));
-    final Map<List<RexLiteral>, List<RexNode>> map = mapBuilder.build();
+    final List<Pair<List<RexLiteral>, List<RexNode>>> map =
+        StreamSupport.stream(axisMap.spliterator(), false)
+            .map(pair ->
+                Pair.<List<RexLiteral>, List<RexNode>>of(
+                    ImmutableList.<RexLiteral>copyOf(pair.getKey()),
+                    ImmutableList.<RexNode>copyOf(pair.getValue())))
+            .collect(Util.toImmutableList());
 
     // Check that counts match.
-    map.forEach((valueList, inputMeasureList) -> {
+    Pair.forEach(map, (valueList, inputMeasureList) -> {
       if (inputMeasureList.size() != measureNameList.size()) {
         throw new IllegalArgumentException("Number of measures ("
             + inputMeasureList.size() + ") must match number of measure names ("
@@ -3082,7 +3084,7 @@ public class RelBuilder {
 
     final RelDataType leftRowType = peek().getRowType();
     final BitSet usedFields = new BitSet();
-    axisMap.values().forEach(nodes ->
+    Pair.forEach(map, (aliases, nodes) ->
         nodes.forEach(node -> {
           if (node instanceof RexInputRef) {
             usedFields.set(((RexInputRef) node).getIndex());
@@ -3090,7 +3092,7 @@ public class RelBuilder {
         }));
 
     // Create "VALUES (('commission'), ('salary')) AS t (remuneration_type)"
-    values(ImmutableList.copyOf(map.keySet()), axisNameList);
+    values(ImmutableList.copyOf(Pair.left(map)), axisNameList);
 
     join(JoinRelType.INNER);
 
@@ -3106,7 +3108,7 @@ public class RelBuilder {
     final List<RexNode> conditions = new ArrayList<>();
     Ord.forEach(measureNameList, (measureName, m) -> {
       final List<RexNode> caseOperands = new ArrayList<>();
-      map.forEach((literals, nodes) -> {
+      Pair.forEach(map, (literals, nodes) -> {
         Ord.forEach(literals, (literal, d) ->
             conditions.add(
                 call(SqlStdOperatorTable.EQUALS,

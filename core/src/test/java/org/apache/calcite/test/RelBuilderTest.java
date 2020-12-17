@@ -44,7 +44,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldCollation;
 import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexWindowBounds;
@@ -64,6 +63,7 @@ import org.apache.calcite.tools.RelRunner;
 import org.apache.calcite.tools.RelRunners;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
@@ -3334,12 +3334,11 @@ public class RelBuilderTest {
         b.scan("EMP")
             .unpivot(includeNulls, ImmutableList.of("REMUNERATION"),
                 ImmutableList.of("REMUNERATION_TYPE"),
-                ImmutableMap.<List<RexLiteral>, List<RexNode>>builder()
-                    .put(ImmutableList.of(b.literal("commission")),
-                        ImmutableList.of(b.field("COMM")))
-                    .put(ImmutableList.of(b.literal("salary")),
-                        ImmutableList.of(b.field("SAL")))
-                    .build())
+                Pair.zip(
+                    Arrays.asList(ImmutableList.of(b.literal("commission")),
+                        ImmutableList.of(b.literal("salary"))),
+                    Arrays.asList(ImmutableList.of(b.field("COMM")),
+                        ImmutableList.of(b.field("SAL")))))
             .build();
     final String expectedIncludeNulls = ""
         + "LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], "

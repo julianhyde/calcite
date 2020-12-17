@@ -2540,8 +2540,8 @@ public class SqlToRelConverter {
     final List<String> axisNames =  unpivot.axisList.stream()
         .map(node -> ((SqlIdentifier) node).getSimple())
         .collect(Util.toImmutableList());
-    final ImmutableMap.Builder<List<RexLiteral>, List<RexNode>> axisMap =
-        ImmutableMap.builder();
+    final ImmutableList.Builder<Pair<List<RexLiteral>, List<RexNode>>> axisMap =
+        ImmutableList.builder();
     unpivot.forEachNameValues((nodeList, valueList) -> {
       if (valueList == null) {
         valueList = new SqlNodeList(
@@ -2558,7 +2558,7 @@ public class SqlToRelConverter {
       final List<RexNode> nodes = nodeList.stream()
           .map(unpivotBb::convertExpression)
           .collect(Util.toImmutableList());
-      axisMap.put(literals, nodes);
+      axisMap.add(Pair.of(literals, nodes));
     });
     relBuilder.unpivot(unpivot.includeNulls, measureNames, axisNames,
         axisMap.build());

@@ -2173,7 +2173,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     // parse input query
     SqlNode expr = call.query;
-    SqlNode newExpr = registerFrom(scope, scope, true, expr,
+    SqlNode newExpr = registerFrom(parentScope, scope, true, expr,
         expr, null, null, forceNullable, false);
     if (expr != newExpr) {
       call.setOperand(0, newExpr);
@@ -5609,6 +5609,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     mr.setOperand(SqlMatchRecognize.OPERAND_PATTERN_DEFINES, list);
   }
 
+  /** Returns the alias of a "expr AS alias" expression. */
+  private static String alias(SqlNode item) {
+    assert item instanceof SqlCall;
+    assert item.getKind() == SqlKind.AS;
+    final SqlIdentifier identifier = ((SqlCall) item).operand(1);
+    return identifier.getSimple();
+  }
+
   public void validatePivot(SqlPivot pivot) {
     final PivotScope scope = (PivotScope) requireNonNull(getJoinScope(pivot),
         () -> "joinScope for " + pivot);
@@ -5708,12 +5716,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // First, And make sure that each
     final int measureCount = unpivot.measureList.size();
     final int axisCount = unpivot.axisList.size();
-    unpivot.forEachNameValues((aliasList, valueList) -> {
+    unpivot.forEachNameValues((nodeList, valueList) -> {
       // Make sure that each (ci1, ... ciM) list has the same arity as
       // (measure1, ..., measureM).
-      if (aliasList.size() != measureCount) {
-        throw newValidationError(aliasList,
-            RESOURCE.unpivotValueArityMismatch(aliasList.size(),
+      if (nodeList.size() != measureCount) {
+        throw newValidationError(nodeList,
+            RESOURCE.unpivotValueArityMismatch(nodeList.size(),
                 measureCount));
       }
 
@@ -5725,11 +5733,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 axisCount));
       }
 
-      // Make sure that each alias is a valid column from the input.
-//      aliasList.forEach(alias -> deriveType(scope, alias));
+      // Make sure that each IN expression is a valid column from the input.
+      nodeList.forEach(node -> deriveType(scope, node));
     });
 
-    // What columns from the input are not referenced by an alias?
+    // What columns from the input are not referenced by a column in the IN
+    // list?
     final SqlValidatorNamespace inputNs =
         Objects.requireNonNull(getNamespace(unpivot.query));
     final Set<String> unusedColumnNames =
@@ -5746,15 +5755,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     Ord.forEach(unpivot.measureList, (measure, i) -> {
       final String measureName = ((SqlIdentifier) measure).getSimple();
       final List<RelDataType> types = new ArrayList<>();
-      final List<SqlNode> aliases = new ArrayList<>();
-      unpivot.forEachNameValues((aliasList, valueList) -> {
-        final SqlNode alias = aliasList.get(i);
-        aliases.add(alias);
+      final List<SqlNode> nodes = new ArrayList<>();
+      unpivot.forEachNameValues((nodeList, valueList) -> {
+        final SqlNode alias = nodeList.get(i);
+        nodes.add(alias);
         types.add(deriveType(scope, alias));
       });
       final RelDataType type0 = typeFactory.leastRestrictive(types);
       if (type0 == null) {
-        throw newValidationError(aliases.get(0),
+        throw newValidationError(nodes.get(0),
             RESOURCE.unpivotCannotDeriveMeasureType(measureName));
       }
       final RelDataType type =
@@ -5814,14 +5823,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     final RelDataType rowType = typeBuilder.build();
     ns.setType(rowType);
-  }
-
-  /** Returns the alias of a "expr AS alias" expression. */
-  private static String alias(SqlNode item) {
-    assert item instanceof SqlCall;
-    assert item.getKind() == SqlKind.AS;
-    final SqlIdentifier identifier = ((SqlCall) item).operand(1);
-    return identifier.getSimple();
   }
 
   /** Checks that all pattern variables within a function are the same,
