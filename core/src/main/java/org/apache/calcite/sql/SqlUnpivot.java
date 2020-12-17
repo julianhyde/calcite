@@ -118,7 +118,8 @@ public class SqlUnpivot extends SqlCall {
     ((List<SqlIdentifier>) (List) measureList).forEach(consumer);
   }
 
-  /** Returns the value list as (aliasList, valueList) pairs. */
+  /** Returns contents of the IN clause {@code (nodeList, valueList)} pairs.
+   * {@code valueList} is null if the entry has no {@code AS} clause. */
   public void forEachNameValues(
       BiConsumer<SqlNodeList, @Nullable SqlNodeList> consumer) {
     for (SqlNode node : inList) {
@@ -126,11 +127,13 @@ public class SqlUnpivot extends SqlCall {
       case AS:
         final SqlCall call = (SqlCall) node;
         assert call.getOperandList().size() == 2;
-        consumer.accept(call.operand(0), call.operand(1));
+        final SqlNodeList nodeList = call.operand(0);
+        final SqlNodeList valueList = call.operand(1);
+        consumer.accept(nodeList, valueList);
         break;
       default:
-        final SqlNodeList nodeList = (SqlNodeList) node;
-        consumer.accept(nodeList, null);
+        final SqlNodeList nodeList2 = (SqlNodeList) node;
+        consumer.accept(nodeList2, null);
       }
     }
   }
@@ -148,6 +151,23 @@ public class SqlUnpivot extends SqlCall {
     forEachNameValues((aliasList, valueList) ->
         aliasList.accept(nameCollector));
     return columnNames;
+  }
+
+  /** Computes an alias. In the query fragment
+   * <blockquote>
+   *   {@code UNPIVOT ... FOR ... IN ((c1, c2) AS 'c1_c2', (c3, c4))}
+   * </blockquote>
+   * note that {@code (c3, c4)} has no {@code AS}. The computed alias is
+   * 'C3_C4'. */
+  public static String aliasValue(SqlNodeList aliasList) {
+    final StringBuilder b = new StringBuilder();
+    aliasList.forEach(alias -> {
+      if (b.length() > 0) {
+        b.append('_');
+      }
+      b.append(Util.last(((SqlIdentifier) alias).names));
+    });
+    return b.toString();
   }
 
   /** Unpivot operator. */

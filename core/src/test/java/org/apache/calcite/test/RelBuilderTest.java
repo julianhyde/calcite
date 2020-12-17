@@ -3349,9 +3349,12 @@ public class RelBuilderTest {
         + "  LogicalJoin(condition=[true], joinType=[inner])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n"
         + "    LogicalValues(tuples=[[{ 'commission' }, { 'salary' }]])\n";
-    final String expectedExcludeNulls =
-        "LogicalFilter(condition=[IS NOT NULL($7)])\n"
-            + "  " + expectedIncludeNulls.replace("\n  ", "\n    ");
+    final String expectedExcludeNulls = ""
+        + "LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], "
+        + "HIREDATE=[$4], DEPTNO=[$5], REMUNERATION_TYPE=[$6], "
+        + "REMUNERATION=[CAST($7):DECIMAL(7, 2) NOT NULL])\n"
+        + "  LogicalFilter(condition=[IS NOT NULL($7)])\n"
+        + "    " + expectedIncludeNulls.replace("\n  ", "\n      ");
     assertThat(f.apply(createBuilder(), true), hasTree(expectedIncludeNulls));
     assertThat(f.apply(createBuilder(), false), hasTree(expectedExcludeNulls));
   }

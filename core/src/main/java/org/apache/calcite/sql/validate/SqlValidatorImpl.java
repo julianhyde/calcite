@@ -2130,24 +2130,24 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   private void registerPivot(
       SqlValidatorScope parentScope,
       SqlValidatorScope usingScope,
-      SqlPivot call,
+      SqlPivot pivot,
       SqlNode enclosingNode,
       @Nullable String alias,
       boolean forceNullable) {
     final PivotNamespace namespace =
-        createPivotNameSpace(call, enclosingNode);
+        createPivotNameSpace(pivot, enclosingNode);
     registerNamespace(usingScope, alias, namespace, forceNullable);
 
     final SqlValidatorScope scope =
-        new PivotScope(parentScope, call);
-    scopes.put(call, scope);
+        new PivotScope(parentScope, pivot);
+    scopes.put(pivot, scope);
 
     // parse input query
-    SqlNode expr = call.query;
-    SqlNode newExpr = registerFrom(scope, scope, true, expr,
+    SqlNode expr = pivot.query;
+    SqlNode newExpr = registerFrom(parentScope, scope, true, expr,
         expr, null, null, forceNullable, false);
     if (expr != newExpr) {
-      call.setOperand(0, newExpr);
+      pivot.setOperand(0, newExpr);
     }
   }
 
@@ -5726,7 +5726,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
 
       // Make sure that each alias is a valid column from the input.
-      aliasList.forEach(alias -> alias.validate(this, scope));
+//      aliasList.forEach(alias -> deriveType(scope, alias));
     });
 
     // What columns from the input are not referenced by an alias?
@@ -5752,11 +5752,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         aliases.add(alias);
         types.add(deriveType(scope, alias));
       });
-      final RelDataType type = typeFactory.leastRestrictive(types);
-      if (type == null) {
+      final RelDataType type0 = typeFactory.leastRestrictive(types);
+      if (type0 == null) {
         throw newValidationError(aliases.get(0),
             RESOURCE.unpivotCannotDeriveMeasureType(measureName));
       }
+      final RelDataType type =
+          typeFactory.createTypeWithNullability(type0,
+              unpivot.includeNulls || unpivot.measureList.size() > 1);
+      setValidatedNodeType(measure, type);
       if (!columnNames.add(measureName)) {
         throw newValidationError(measure,
             RESOURCE.unpivotDuplicate(measureName));
@@ -5783,13 +5787,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           types.add(
               valueList == null
                   ? typeFactory.createSqlType(SqlTypeName.VARCHAR,
-                        aliasValue(aliasList).length())
+                        SqlUnpivot.aliasValue(aliasList).length())
                   : deriveType(scope, valueList.get(i))));
       final RelDataType type = typeFactory.leastRestrictive(types);
       if (type == null) {
         throw newValidationError(axis,
             RESOURCE.unpivotCannotDeriveAxisType(axisName));
       }
+      setValidatedNodeType(axis, type);
       if (!columnNames.add(axisName)) {
         throw newValidationError(axis, RESOURCE.unpivotDuplicate(axisName));
       }
@@ -5809,23 +5814,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     final RelDataType rowType = typeBuilder.build();
     ns.setType(rowType);
-  }
-
-  /** Computes an alias. In the query fragment
-   * <blockquote>
-   *   {@code UNPIVOT ... FOR ... IN ((c1, c2) AS 'c1_c2', (c3, c4))}
-   * </blockquote>
-   * note that {@code (c3, c4)} has no {@code AS}. The computed alias is
-   * 'C3_C4'. */
-  private static String aliasValue(SqlNodeList aliasList) {
-    final StringBuilder b = new StringBuilder();
-    aliasList.forEach(alias -> {
-      if (b.length() > 0) {
-        b.append('_');
-      }
-      b.append(Util.last(((SqlIdentifier) alias).names));
-    });
-    return b.toString();
   }
 
   /** Returns the alias of a "expr AS alias" expression. */

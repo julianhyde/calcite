@@ -3123,13 +3123,27 @@ public class RelBuilder {
     project(projects);
 
     if (!includeNulls) {
-      // Add 'WHERE m1 IS NOT NULL AND m2 IS NOT NULL'
-      Ord.forEach(measureNameList, (measureName, m) ->
-          conditions.add(
-              isNotNull(
-                  field(unusedFields.cardinality() + axisNameList.size()
-                      + m))));
-      filter(conditions);
+      // Add 'WHERE m1 IS NOT NULL OR m2 IS NOT NULL'
+      final BitSet notNullFields = new BitSet();
+      Ord.forEach(measureNameList, (measureName, m) -> {
+        final int f = unusedFields.cardinality() + axisNameList.size() + m;
+        conditions.add(isNotNull(field(f)));
+        notNullFields.set(f);
+      });
+      filter(or(conditions));
+      if (measureNameList.size() == 1) {
+        // If there is one field, EXCLUDE NULLS will have converted it to NOT
+        // NULL.
+        final RelDataTypeFactory.Builder builder = getTypeFactory().builder();
+        peek().getRowType().getFieldList().forEach(field -> {
+          final RelDataType type = field.getType();
+          builder.add(field.getName(),
+              notNullFields.get(field.getIndex())
+                  ? getTypeFactory().createTypeWithNullability(type, false)
+                  : type);
+        });
+        convert(builder.build(), false);
+      }
       conditions.clear();
     }
 

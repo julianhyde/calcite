@@ -1900,7 +1900,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testUnpivot() {
     final String sql = "SELECT * FROM emp\n"
-        + "UNPIVOT INCLUDE NULLS (remuneration\n"
+        + "UNPIVOT (remuneration\n"
         + "  FOR remuneration_type IN (comm AS 'commission',\n"
         + "                            sal as 'salary'))";
     sql(sql).type("RecordType(INTEGER NOT NULL EMPNO,"
@@ -1973,8 +1973,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "     IN ((c1, c2, c3) AS ('col1','col2'),\n"
         + "         (c2, c3, c4)))";
     sql(sql).type("RecordType(INTEGER NOT NULL C0, VARCHAR(8) NOT NULL A0,"
-        + " VARCHAR(8) NOT NULL A1, INTEGER NOT NULL M0, INTEGER NOT NULL M1,"
-        + " INTEGER NOT NULL M2) NOT NULL");
+        + " VARCHAR(8) NOT NULL A1, INTEGER M0, INTEGER M1,"
+        + " INTEGER M2) NOT NULL");
   }
 
   @Test void testUnpivotMissingAs2() {
