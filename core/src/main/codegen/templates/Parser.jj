@@ -106,6 +106,7 @@ import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.fun.SqlCase;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
@@ -3892,11 +3893,12 @@ SqlNode RowExpressionExtension() :
 }
 
 /**
- * Parses a call to the STRING_AGG aggregate function.
+ * Parses a call to the STRING_AGG aggregate function (or to an aggregate
+ * function with similar syntax: ARRAY_AGG, ARRAY_CONCAT_AGG, GROUP_CONCAT).
  */
 SqlCall StringAggFunctionCall() :
 {
-    final Span s;
+    final Span s, s2;
     final SqlOperator op;
     final List<SqlNode> args = new ArrayList();
     final SqlLiteral qualifier;
@@ -3936,9 +3938,8 @@ SqlCall StringAggFunctionCall() :
         }
     ]
     [
-
-        separator = separatorItem() {
-            args.add(separator);
+        <SEPARATOR> { s2 = span(); } separator = StringLiteral() {
+            args.add(SqlInternalOperators.SEPARATOR.createCall(s2.end(this), separator));
         }
     ]
     <RPAREN>
@@ -3949,22 +3950,6 @@ SqlCall StringAggFunctionCall() :
             call = nullTreatment.right.createCall(nullTreatment.left, call);
         }
         return call;
-    }
-}
-
-/**
-* Parses a separator clause
-*/
-SqlCall separatorItem() : {
-    final SqlNode p;
-    final Span s;
-}
-{
-    <SEPARATOR> {
-        s = span();
-    }
-    p = StringLiteral() {
-        return SqlStdOperatorTable.SEPARATOR.createCall(s.end(this), p);
     }
 }
 
