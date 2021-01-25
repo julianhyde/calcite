@@ -30,6 +30,9 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.TableFunction;
+import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.schema.impl.TableFunctionImpl;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -38,6 +41,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.util.Smalls;
 import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -535,5 +539,35 @@ class InterpreterTest {
             "[7698, 1981-01-04]", "[7782, 1981-06-08]", "[7788, 1987-04-18]",
             "[7839, 1981-11-16]", "[7844, 1981-09-07]", "[7876, 1987-05-22]",
             "[7900, 1981-12-02]", "[7902, 1981-12-02]", "[7934, 1982-01-22]");
+  }
+
+  /** Tests a table function. */
+  @Test void testInterpretTableFunction() {
+    SchemaPlus schema = rootSchema.add("s", new AbstractSchema());
+    final TableFunction table1 = TableFunctionImpl.create(Smalls.MAZE_METHOD);
+    schema.add("Maze", table1);
+    final String sql = "select *\n"
+        + "from table(\"s\".\"Maze\"(5, 3, 1))";
+    String[] rows = {"[abcde]", "[xyz]", "[generate(w=5, h=3, s=1)]"};
+    sql(sql).returnsRows(rows);
+  }
+
+  /** Tests a table function that takes zero arguments.
+   *
+   * <p>Note that we use {@link Smalls#FIBONACCI_LIMIT_100_TABLE_METHOD}; if we
+   * used {@link Smalls#FIBONACCI_TABLE_METHOD}, even with {@code LIMIT 6},
+   * we would run out of memory, due to
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4478">[CALCITE-4478]
+   * In interpreter, support infinite relations</a>. */
+  @Test void testInterpretNilaryTableFunction() {
+    SchemaPlus schema = rootSchema.add("s", new AbstractSchema());
+    final TableFunction table1 =
+        TableFunctionImpl.create(Smalls.FIBONACCI_LIMIT_100_TABLE_METHOD);
+    schema.add("fibonacciLimit100", table1);
+    final String sql = "select *\n"
+        + "from table(\"s\".\"fibonacciLimit100\"())\n"
+        + "limit 6";
+    String[] rows = {"[1]", "[1]", "[2]", "[3]", "[5]", "[8]"};
+    sql(sql).returnsRows(rows);
   }
 }

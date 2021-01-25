@@ -92,7 +92,9 @@ public class Smalls {
         int.class, Integer.class);
   public static final Method FIBONACCI_TABLE_METHOD =
       Types.lookupMethod(Smalls.class, "fibonacciTable");
-  public static final Method FIBONACCI2_TABLE_METHOD =
+  public static final Method FIBONACCI_LIMIT_100_TABLE_METHOD =
+      Types.lookupMethod(Smalls.class, "fibonacciTableWithLimit100");
+  public static final Method FIBONACCI_LIMIT_TABLE_METHOD =
       Types.lookupMethod(Smalls.class, "fibonacciTableWithLimit", long.class);
   public static final Method VIEW_METHOD =
       Types.lookupMethod(Smalls.class, "view", String.class);
@@ -234,9 +236,18 @@ public class Smalls {
   }
 
   /** A function that generates the Fibonacci sequence.
-   * Interesting because it has one column and no arguments. */
+   *
+   * <p>Interesting because it has one column and no arguments,
+   * and because it is infinite. */
   public static ScannableTable fibonacciTable() {
     return fibonacciTableWithLimit(-1L);
+  }
+
+  /** A function that generates the first 100 terms of the Fibonacci sequence.
+   *
+   * <p>Interesting because it has one column and no arguments. */
+  public static ScannableTable fibonacciTableWithLimit100() {
+    return fibonacciTableWithLimit(100L);
   }
 
   /** A function that generates the Fibonacci sequence.
