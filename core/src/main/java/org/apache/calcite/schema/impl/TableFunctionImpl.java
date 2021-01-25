@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.schema.impl;
 
-import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.CallImplementor;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.adapter.enumerable.ReflectiveCallNotNullImplementor;
@@ -49,8 +48,8 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * Implementation of {@link org.apache.calcite.schema.TableFunction} based on a
  * method.
 */
-public class TableFunctionImpl extends ReflectiveFunctionBase implements
-    TableFunction, ImplementableFunction {
+public class TableFunctionImpl extends ReflectiveFunctionBase
+    implements TableFunction, ImplementableFunction {
   private final CallImplementor implementor;
 
   /** Private constructor; use {@link #create}. */
@@ -125,7 +124,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements
               Expression queryable = Expressions.call(
                   Expressions.convert_(expr, QueryableTable.class),
                   BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
-                  Expressions.call(DataContext.ROOT,
+                  Expressions.call(translator.getRoot(),
                       BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method),
                   Expressions.constant(null, SchemaPlus.class),
                   Expressions.constant(call.getOperator().getName(), String.class));
@@ -133,7 +132,8 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements
                   BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);
             } else {
               expr = Expressions.call(expr,
-                  BuiltInMethod.SCANNABLE_TABLE_SCAN.method, DataContext.ROOT);
+                  BuiltInMethod.SCANNABLE_TABLE_SCAN.method,
+                  translator.getRoot());
             }
             return expr;
           }
@@ -148,7 +148,6 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements
             method.getDeclaringClass().getConstructor();
         o = constructor.newInstance();
       }
-      //noinspection unchecked
       final Object table = method.invoke(o, arguments.toArray());
       return (Table) table;
     } catch (IllegalArgumentException e) {
