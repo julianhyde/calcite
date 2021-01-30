@@ -4585,6 +4585,53 @@ class RelToSqlConverterTest {
         .withBigQuery().ok(expectedBigQuery);
   }
 
+  @Test void testOmitRedundantAliasLowerTableLowerColumn() {
+    final String sql = "select \"salary\" AS \"SALARY\",\n"
+        + "  \"gender\" AS \"gender\",\n"
+        + "  \"end_date\" as \"end_Date\"\n"
+        + "from \"employee\" AS \"employee\"";
+    final String expectedMySql = "SELECT"
+        + " `salary` AS `SALARY`, `gender`, `end_date` AS `end_Date`\n"
+        + "FROM `foodmart`.`employee`";
+    final String expectedPostgresql = "SELECT"
+        + " \"salary\" AS \"SALARY\", \"gender\", \"end_date\" AS \"end_Date\"\n"
+        + "FROM \"foodmart\".\"employee\"";
+    // REVIEW: should DB2 quote identifiers?
+    final String expectedDb2 = "SELECT"
+        + " employee.salary AS SALARY, employee.gender, employee.end_date AS end_Date\n"
+        + "FROM foodmart.employee AS employee";
+    // In BigQuery, column name matching is case-insensitive, but we still want
+    // to generate aliases in the correct case (for JDBC etc.)
+    final String expectedBigQuery = "SELECT"
+        + " salary AS SALARY, gender, end_date AS end_Date\n"
+        + "FROM `foodmart`.`employee`";
+    sql(sql)
+        .schema(CalciteAssert.SchemaSpec.JDBC_FOODMART)
+        .withMysql().ok(expectedMySql)
+        .withPostgresql().ok(expectedPostgresql)
+        .withDb2().ok(expectedDb2)
+        .withBigQuery().ok(expectedBigQuery);
+  }
+
+  @Test void testOmitRedundantAliasUpperColAlias() {
+    final String sql = "select \"end_date\" AS end_date\n"
+        + "from \"employee\"";
+    final String expectedMySql = "SELECT end_date AS END_DATE\n"
+        + "FROM foodmart.employee";
+    final String expectedPostgresql = "SELECT end_date AS END_DATE\n"
+        + "FROM foodmart.employee";
+    final String expectedDb2 = "SELECT end_date AS END_DATE\n"
+        + "FROM foodmart.employee";
+    final String expectedBigQuery = "SELECT end_date AS END_DATE\n"
+        + "FROM foodmart.employee";
+    sql(sql)
+        .schema(CalciteAssert.SchemaSpec.JDBC_FOODMART)
+        .withMysql().ok(expectedMySql)
+        .withPostgresql().ok(expectedPostgresql)
+        .withDb2().ok(expectedDb2)
+        .withBigQuery().ok(expectedBigQuery);
+  }
+
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2118">[CALCITE-2118]
    * RelToSqlConverter should only generate "*" if field names match</a>. */

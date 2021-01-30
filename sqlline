@@ -45,6 +45,6 @@ fi
 
 export JAVA_OPTS=-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl
 
-exec java -Xmx1g $VM_OPTS $JAVA_OPTS -jar build/libs/sqllineClasspath.jar "$@"
+exec java -Xmx1g $VM_OPTS $JAVA -cp /Users/julianhyde/Downloads/SimbaJDBCDriverforGoogleBigQuery42_1.2.4.1007/GoogleBigQueryJDBC42.jar_OPTS -jar build/libs/sqllineClasspath.jar "$@"
 
 # End sqlline
