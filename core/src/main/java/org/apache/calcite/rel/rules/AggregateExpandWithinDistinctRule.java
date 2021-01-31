@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -219,7 +220,7 @@ public class AggregateExpandWithinDistinctRule
       }
 
       int field(int field) {
-        return args.get(field);
+        return Objects.requireNonNull(args.get(field));
       }
 
       int register(int field) {
@@ -239,7 +240,7 @@ public class AggregateExpandWithinDistinctRule
       }
 
       int getAgg(int i) {
-        return aggs.get(i);
+        return Objects.requireNonNull(aggs.get(i));
       }
     }
 
