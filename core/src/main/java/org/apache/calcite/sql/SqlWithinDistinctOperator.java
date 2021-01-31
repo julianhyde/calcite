@@ -69,11 +69,8 @@ public class SqlWithinDistinctOperator extends SqlBinaryOperator {
           RESOURCE.withinDistinctNotAllowed(
               flat.aggregateCall.getOperator().getName()));
     }
-    for (SqlNode order
-        : Objects.requireNonNull(flat.distinctList, "flat.distinctList")) {
-      RelDataType nodeType =
-          validator.deriveType(scope, order);
-      Objects.requireNonNull(nodeType, "nodeType");
+    for (SqlNode order : Objects.requireNonNull(flat.distinctList)) {
+      Objects.requireNonNull(validator.deriveType(scope, order));
     }
     validator.validateAggregateParams(flat.aggregateCall, flat.filter,
         flat.distinctList, flat.orderList, scope);
