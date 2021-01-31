@@ -5663,10 +5663,6 @@ public class SqlToRelConverter {
       final List<Integer> args = new ArrayList<>();
       int filterArg = -1;
       final ImmutableBitSet distinctKeys;
-      final List<RelDataType> argTypes =
-          call.getOperator() instanceof SqlCountAggFunction
-              ? new ArrayList<>(call.getOperandList().size())
-              : null;
       try {
         // switch out of agg mode
         bb.agg = null;
@@ -5682,16 +5678,11 @@ public class SqlToRelConverter {
             }
           }
           RexNode convertedExpr = bb.convertExpression(operand);
-          assert convertedExpr != null;
-          if (argTypes != null) {
-            argTypes.add(convertedExpr.getType());
-          }
           args.add(lookupOrCreateGroupExpr(convertedExpr));
         }
 
         if (filter != null) {
           RexNode convertedExpr = bb.convertExpression(filter);
-          assert convertedExpr != null;
           if (convertedExpr.getType().isNullable()) {
             convertedExpr =
                 rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE, convertedExpr);
@@ -5706,7 +5697,6 @@ public class SqlToRelConverter {
               ImmutableBitSet.builder();
           for (SqlNode distinct : distinctList) {
             RexNode e = bb.convertExpression(distinct);
-            assert e != null;
             distinctBuilder.set(lookupOrCreateGroupExpr(e));
           }
           distinctKeys = distinctBuilder.build();
