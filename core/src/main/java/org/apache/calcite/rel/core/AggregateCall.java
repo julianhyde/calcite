@@ -278,6 +278,13 @@ public class AggregateCall {
     return argList;
   }
 
+  /** Withs {@link #getArgList()}. */
+  public AggregateCall withArgList(List<Integer> argList) {
+    return this.argList.equals(argList) ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
+  }
+
   /**
    * Returns the result type.
    *
@@ -296,17 +303,11 @@ public class AggregateCall {
     return name;
   }
 
-  /**
-   * Creates an equivalent AggregateCall that has a new name.
-   *
-   * @param name New name (may be null)
-   */
+  /** Withs {@link #name}. */
   public AggregateCall rename(@Nullable String name) {
-    if (Objects.equals(this.name, name)) {
-      return this;
-    }
-    return new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
-        argList, filterArg, distinctKeys, RelCollations.EMPTY, type, name);
+    return Objects.equals(this.name, name) ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
   }
 
   @Override public String toString() {

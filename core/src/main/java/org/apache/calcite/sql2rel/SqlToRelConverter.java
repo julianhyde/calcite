@@ -5766,7 +5766,7 @@ public class SqlToRelConverter {
               groupExprs.size(),
               aggCalls,
               aggCallMapping,
-              argTypes);
+              i -> convertedInputExprs.get(i).left.getType().isNullable());
       aggMapping.put(outerCall, rex);
     }
 
