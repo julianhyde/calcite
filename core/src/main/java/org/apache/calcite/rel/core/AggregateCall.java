@@ -246,6 +246,13 @@ public class AggregateCall {
     return approximate;
   }
 
+  /** Withs {@link #isApproximate()}. */
+  public AggregateCall withApproximate(boolean approximate) {
+    return approximate == this.approximate ? this
+        : new AggregateCall(aggFunction, distinct, approximate, approximate,
+            argList, filterArg, distinctKeys, collation, type, name);
+  }
+
   /**
    * Returns whether this AggregateCall ignores nulls.
    *
@@ -253,6 +260,13 @@ public class AggregateCall {
    */
   public final boolean ignoreNulls() {
     return ignoreNulls;
+  }
+
+  /** Withs {@link #ignoreNulls()}. */
+  public AggregateCall withIgnoreNulls(boolean ignoreNulls) {
+    return ignoreNulls == this.ignoreNulls ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
   }
 
   /**
@@ -274,6 +288,13 @@ public class AggregateCall {
     return collation;
   }
 
+  /** Withs {@link #getCollation()}. */
+  public AggregateCall withCollation(RelCollation collation) {
+    return collation.equals(this.collation) ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
+  }
+
   /**
    * Returns the ordinals of the arguments to this call.
    *
@@ -287,7 +308,7 @@ public class AggregateCall {
 
   /** Withs {@link #getArgList()}. */
   public AggregateCall withArgList(List<Integer> argList) {
-    return this.argList.equals(argList) ? this
+    return argList.equals(this.argList) ? this
         : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
             argList, filterArg, distinctKeys, collation, type, name);
   }
@@ -319,10 +340,15 @@ public class AggregateCall {
   }
 
   /** Withs {@link #name}. */
-  public AggregateCall rename(@Nullable String name) {
-    return Objects.equals(this.name, name) ? this
+  public AggregateCall withName(@Nullable String name) {
+    return Objects.equals(name, this.name) ? this
         : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
             argList, filterArg, distinctKeys, collation, type, name);
+  }
+
+  @Deprecated // to be removed before 2.0
+  public AggregateCall rename(@Nullable String name) {
+    return withName(name);
   }
 
   @Override public String toString() {
@@ -368,6 +394,13 @@ public class AggregateCall {
     return filterArg >= 0;
   }
 
+  /** Withs {@link #filterArg}. */
+  public AggregateCall withFilter(int filterArg) {
+    return filterArg == this.filterArg ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
+  }
+
   @Override public boolean equals(@Nullable Object o) {
     return o == this
         || o instanceof AggregateCall
@@ -409,29 +442,24 @@ public class AggregateCall {
    * @param args Arguments
    * @return AggregateCall that suits new inputs and GROUP BY columns
    */
+  @Deprecated // to be removed before 2.0
   public AggregateCall copy(List<Integer> args, int filterArg,
-      @Nullable ImmutableBitSet distinctKeys, RelCollation collation) {
+      RelCollation collation) {
+    // ignoring distinctKeys is error-prone
     return new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
         args, filterArg, distinctKeys, collation, type, name);
   }
 
   @Deprecated // to be removed before 2.0
-  public AggregateCall copy(List<Integer> args, int filterArg,
-      RelCollation collation) {
-    // ignoring distinctKeys is error-prone
-    return copy(args, filterArg, distinctKeys, collation);
-  }
-
-  @Deprecated // to be removed before 2.0
   public AggregateCall copy(List<Integer> args, int filterArg) {
     // ignoring distinctKeys, collation is error-prone
-    return copy(args, filterArg, distinctKeys, collation);
+    return copy(args, filterArg, collation);
   }
 
   @Deprecated // to be removed before 2.0
   public AggregateCall copy(List<Integer> args) {
     // ignoring filterArg, distinctKeys, collation is error-prone
-    return copy(args, filterArg, distinctKeys, collation);
+    return copy(args, filterArg, collation);
   }
 
   /**
@@ -463,9 +491,22 @@ public class AggregateCall {
   /** Creates a copy of this aggregate call, applying a mapping to its
    * arguments. */
   public AggregateCall transform(Mappings.TargetMapping mapping) {
-    return copy(Mappings.apply2((Mapping) mapping, argList),
-        hasFilter() ? Mappings.apply(mapping, filterArg) : -1,
-        distinctKeys == null ? null : distinctKeys.permute(mapping),
-        RelCollations.permute(collation, mapping));
+    final int filterArg =
+        this.filterArg < 0 ? -1
+            : Mappings.apply(mapping, this.filterArg);
+    @Nullable ImmutableBitSet distinctKeys =
+        this.distinctKeys == null ? null
+            : this.distinctKeys.permute(mapping);
+    final List<Integer> argList =
+        Mappings.apply2((Mapping) mapping, this.argList);
+    final RelCollation collation =
+        RelCollations.permute(this.collation, mapping);
+    return filterArg == this.filterArg
+        && Objects.equals(distinctKeys, this.distinctKeys)
+        && argList.equals(this.argList)
+        && collation.equals(this.collation)
+        ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
   }
 }
