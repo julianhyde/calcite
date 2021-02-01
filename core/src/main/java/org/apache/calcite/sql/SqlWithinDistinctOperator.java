@@ -55,7 +55,7 @@ public class SqlWithinDistinctOperator extends SqlBinaryOperator {
     writer.endList(orderFrame);
   }
 
-  public void validateCall(
+  @Override public void validateCall(
       SqlCall call,
       SqlValidator validator,
       SqlValidatorScope scope,
@@ -76,7 +76,7 @@ public class SqlWithinDistinctOperator extends SqlBinaryOperator {
         flat.distinctList, flat.orderList, scope);
   }
 
-  public RelDataType deriveType(
+  @Override public RelDataType deriveType(
       SqlValidator validator,
       SqlValidatorScope scope,
       SqlCall call) {
