@@ -785,4 +785,29 @@ order by o.payment;
 
 !ok
 
+
+# One simple table, illustrating the difference between agg(x),
+# agg(DISTINCT x), agg(x) WITHIN DISTINCT (x), etc.
+
+WITH t AS (SELECT * FROM (VALUES (2, 3), (2, 4), (2, 4), (4, 5)) AS t (x, y))
+SELECT COUNT(x) AS cx,
+  COUNT(DISTINCT x) AS cdx,
+  COUNT(x) WITHIN DISTINCT (x) AS cx_x,
+  COUNT(x) WITHIN DISTINCT (x, y) AS cx_xy,
+  COUNT(x) WITHIN DISTINCT (y) AS cx_y,
+  SUM(x) AS sx,
+  SUM(DISTINCT x) AS sdx,
+  SUM(x) WITHIN DISTINCT (x) AS sx_x,
+  SUM(x) WITHIN DISTINCT (y) AS sx_y,
+  SUM(DISTINCT x) WITHIN DISTINCT (y) AS sdx_y
+FROM t;
++----+-----+------+-------+------+----+-----+------+------+-------+
+| CX | CDX | CX_X | CX_XY | CX_Y | SX | SDX | SX_X | SX_Y | SDX_Y |
++----+-----+------+-------+------+----+-----+------+------+-------+
+|  4 |   2 |    2 |     3 |    3 | 10 |   6 |    6 |    8 |     6 |
++----+-----+------+-------+------+----+-----+------+------+-------+
+(1 row)
+
+!ok
+
 # End within-distinct.iq

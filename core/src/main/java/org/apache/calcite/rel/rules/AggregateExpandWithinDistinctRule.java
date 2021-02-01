@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -42,6 +43,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 import static org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule.groupValue;
 import static org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule.remap;
@@ -109,9 +112,6 @@ public class AggregateExpandWithinDistinctRule
            .noneMatch(CoreRules.AGGREGATE_REDUCE_FUNCTIONS::canReduce)
         // Don't know that we can handle FILTER yet
         && aggregate.getAggCallList().stream().noneMatch(c -> c.filterArg >= 0)
-        // Don't know that we can handle DISTINCT yet
-        && aggregate.getAggCallList().stream()
-            .noneMatch(AggregateCall::isDistinct)
         // Don't think we can handle GROUPING SETS yet
         && aggregate.getGroupType() == Aggregate.Group.SIMPLE;
   }
@@ -140,13 +140,24 @@ public class AggregateExpandWithinDistinctRule
     //     FROM emp
     //     GROUP BY GROUPING SETS ((deptno), (deptno, job)))
     //   GROUP BY deptno
-
-    // TODO: convert "agg(distinct x)" to "agg(x) within distinct (x)";
-    // in particular, "count(distinct x)"
-    // becomes "count(x) within distinct (x)",
-    // or "count(*) within distinct (x)" if x is not null
+    //
+    // This rewrite also handles DISTINCT aggregates. We treat
+    //
+    //   SUM(DISTINCT sal)
+    //   SUM(DISTINCT sal) WITHIN DISTINCT (job)
+    //
+    // as if the user had written
+    //
+    //   SUM(sal) WITHIN DISTINCT (sal)
+    //
 
     // TODO: handle "agg(x) filter (b)"
+
+    final List<AggregateCall> aggCallList =
+        aggregate.getAggCallList()
+            .stream()
+            .map(c -> unDistinct(c, aggregate.getInput()::fieldIsNullable))
+            .collect(Util.toImmutableList());
 
     // Find all within-distinct expressions.
     final Multimap<ImmutableBitSet, AggregateCall> argLists =
@@ -155,7 +166,7 @@ public class AggregateExpandWithinDistinctRule
     // Different from "WITHIN DISTINCT ()".
     final ImmutableBitSet notDistinct =
         ImmutableBitSet.of(aggregate.getInput().getRowType().getFieldCount());
-    for (AggregateCall aggCall : aggregate.getAggCallList()) {
+    for (AggregateCall aggCall : aggCallList) {
       ImmutableBitSet distinctKeys = aggCall.distinctKeys;
       if (distinctKeys == null) {
         distinctKeys = notDistinct;
@@ -245,7 +256,7 @@ public class AggregateExpandWithinDistinctRule
     }
 
     final Registrar registrar = new Registrar();
-    Ord.forEach(aggregate.getAggCallList(), (c, i) -> {
+    Ord.forEach(aggCallList, (c, i) -> {
       if (c.distinctKeys == null) {
         registrar.registerAgg(i,
             b.aggregateCall(c.getAggregation(),
@@ -277,7 +288,7 @@ public class AggregateExpandWithinDistinctRule
     //       Scan(emp)
 
     aggCalls.clear();
-    Ord.forEach(aggregate.getAggCallList(), (c, i) -> {
+    Ord.forEach(aggCallList, (c, i) -> {
       final RelBuilder.AggCall aggCall;
       if (c.distinctKeys == null) {
         aggCall = b.aggregateCall(SqlStdOperatorTable.MIN,
@@ -303,6 +314,35 @@ public class AggregateExpandWithinDistinctRule
         aggCalls);
     b.convert(aggregate.getRowType(), false);
     call.transformTo(b.build());
+  }
+
+  /** Converts a {@code DISTINCT} aggregate call into an equivalent one with
+   * {@code WITHIN DISTINCT}.
+   *
+   * <p>Examples:
+   * <ul>
+   * <li>{@code SUM(DISTINCT x)} &rarr;
+   *     {@code SUM(x) WITHIN DISTINCT (x)} has distinct key (x);
+   * <li>{@code SUM(DISTINCT x)} WITHIN DISTINCT (y) &rarr;
+   *     {@code SUM(x) WITHIN DISTINCT (x)} has distinct key (x);
+   * <li>{@code SUM(x)} WITHIN DISTINCT (y, z) has distinct key (y, z);
+   * <li>{@code SUM(x)} has no distinct key.
+   * </ul>
+   */
+  private static AggregateCall unDistinct(AggregateCall aggregateCall,
+      IntPredicate isNullable) {
+    if (aggregateCall.isDistinct()) {
+      final List<Integer> newArgList = aggregateCall.getArgList()
+          .stream()
+          .filter(i ->
+              aggregateCall.getAggregation().getKind() != SqlKind.COUNT
+                  || isNullable.test(i))
+          .collect(Collectors.toList());
+      return aggregateCall.withDistinct(false)
+          .withDistinctKeys(ImmutableBitSet.of(aggregateCall.getArgList()))
+          .withArgList(newArgList);
+    }
+    return aggregateCall;
   }
 
   private ImmutableBitSet union(ImmutableBitSet s0,

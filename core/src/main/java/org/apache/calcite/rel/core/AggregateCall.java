@@ -229,6 +229,13 @@ public class AggregateCall {
     return distinct;
   }
 
+  /** Withs {@link #isDistinct()}. */
+  public AggregateCall withDistinct(boolean distinct) {
+    return distinct == this.distinct ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
+  }
+
   /**
    * Returns whether this AggregateCall is approximate, as in <code>
    * APPROX_COUNT_DISTINCT(empno)</code>.
@@ -281,6 +288,14 @@ public class AggregateCall {
   /** Withs {@link #getArgList()}. */
   public AggregateCall withArgList(List<Integer> argList) {
     return this.argList.equals(argList) ? this
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
+            argList, filterArg, distinctKeys, collation, type, name);
+  }
+
+  /** Withs {@link #distinctKeys}. */
+  public AggregateCall withDistinctKeys(
+      @Nullable ImmutableBitSet distinctKeys) {
+    return Objects.equals(distinctKeys, this.distinctKeys) ? this
         : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
             argList, filterArg, distinctKeys, collation, type, name);
   }
