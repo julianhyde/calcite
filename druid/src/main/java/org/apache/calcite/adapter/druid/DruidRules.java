@@ -675,8 +675,7 @@ public class DruidRules {
                 && allHaveFilters) // filters get extracted
             || aggCall.hasFilter()
             && project.getProjects().get(aggCall.filterArg).isAlwaysTrue()) {
-          aggCall = aggCall.copy(aggCall.getArgList(), -1,
-              aggCall.distinctKeys, aggCall.collation);
+          aggCall = aggCall.withFilter(-1);
         }
         newCalls.add(aggCall);
       }
