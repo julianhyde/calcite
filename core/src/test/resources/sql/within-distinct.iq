@@ -810,4 +810,52 @@ FROM t;
 
 !ok
 
+# Famous Five example, as given in [CALCITE-4483].
+CREATE TABLE Friends AS
+SELECT * FROM (VALUES
+  ('Julian', 16),
+  ('Dick', 15),
+  ('Anne', 13),
+  ('George', 15),
+  ('Timmy', 4)) AS Friends (name, age);
+(0 rows modified)
+
+!update
+
+CREATE TABLE Jobs AS
+SELECT * FROM (VALUES
+  ('Julian', 'Programmer'),
+  ('Anne', 'Car wash'),
+  ('George', 'Lifeguard'),
+  ('George', 'Dog walker')) AS Jobs (name, title);
+(0 rows modified)
+
+!update
+
+SELECT SUM(age) AS sa, SUM(DISTINCT age) AS sda
+FROM Friends;
++----+-----+
+| SA | SDA |
++----+-----+
+| 63 |  48 |
++----+-----+
+(1 row)
+
+!ok
+
+SELECT SUM(age) AS sa,
+  SUM(DISTINCT age) AS sda,
+  SUM(age) WITHIN DISTINCT (name) AS sa_n,
+  COUNT(j.title) AS c
+FROM Friends AS f
+LEFT JOIN Jobs AS j USING (name);
++----+-----+------+---+
+| SA | SDA | SA_N | C |
++----+-----+------+---+
+| 78 |  48 |   63 | 4 |
++----+-----+------+---+
+(1 row)
+
+!ok
+
 # End within-distinct.iq
