@@ -785,4 +785,77 @@ order by o.payment;
 
 !ok
 
+
+# One simple table, illustrating the difference between agg(x),
+# agg(DISTINCT x), agg(x) WITHIN DISTINCT (x), etc.
+
+WITH t AS (SELECT * FROM (VALUES (2, 3), (2, 4), (2, 4), (4, 5)) AS t (x, y))
+SELECT COUNT(x) AS cx,
+  COUNT(DISTINCT x) AS cdx,
+  COUNT(x) WITHIN DISTINCT (x) AS cx_x,
+  COUNT(x) WITHIN DISTINCT (x, y) AS cx_xy,
+  COUNT(x) WITHIN DISTINCT (y) AS cx_y,
+  SUM(x) AS sx,
+  SUM(DISTINCT x) AS sdx,
+  SUM(x) WITHIN DISTINCT (x) AS sx_x,
+  SUM(x) WITHIN DISTINCT (y) AS sx_y,
+  SUM(DISTINCT x) WITHIN DISTINCT (y) AS sdx_y
+FROM t;
++----+-----+------+-------+------+----+-----+------+------+-------+
+| CX | CDX | CX_X | CX_XY | CX_Y | SX | SDX | SX_X | SX_Y | SDX_Y |
++----+-----+------+-------+------+----+-----+------+------+-------+
+|  4 |   2 |    2 |     3 |    3 | 10 |   6 |    6 |    8 |     6 |
++----+-----+------+-------+------+----+-----+------+------+-------+
+(1 row)
+
+!ok
+
+# Famous Five example, as given in [CALCITE-4483].
+CREATE TABLE Friends AS
+SELECT * FROM (VALUES
+  ('Julian', 16),
+  ('Dick', 15),
+  ('Anne', 13),
+  ('George', 15),
+  ('Timmy', 4)) AS Friends (name, age);
+(0 rows modified)
+
+!update
+
+CREATE TABLE Jobs AS
+SELECT * FROM (VALUES
+  ('Julian', 'Programmer'),
+  ('Anne', 'Car wash'),
+  ('George', 'Lifeguard'),
+  ('George', 'Dog walker')) AS Jobs (name, title);
+(0 rows modified)
+
+!update
+
+SELECT SUM(age) AS sa, SUM(DISTINCT age) AS sda
+FROM Friends;
++----+-----+
+| SA | SDA |
++----+-----+
+| 63 |  48 |
++----+-----+
+(1 row)
+
+!ok
+
+SELECT SUM(age) AS sa,
+  SUM(DISTINCT age) AS sda,
+  SUM(age) WITHIN DISTINCT (name) AS sa_n,
+  COUNT(j.title) AS c
+FROM Friends AS f
+LEFT JOIN Jobs AS j USING (name);
++----+-----+------+---+
+| SA | SDA | SA_N | C |
++----+-----+------+---+
+| 78 |  48 |   63 | 4 |
++----+-----+------+---+
+(1 row)
+
+!ok
+
 # End within-distinct.iq
