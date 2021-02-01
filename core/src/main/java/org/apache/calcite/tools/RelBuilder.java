@@ -3323,11 +3323,11 @@ public class RelBuilder {
     private final boolean distinct;
     private final boolean approximate;
     private final boolean ignoreNulls;
-    private final @Nullable RexNode filter; // may be null
-    private final @Nullable String alias; // may be null
-    private final ImmutableList<RexNode> operands; // may be empty, never null
+    private final @Nullable RexNode filter;
+    private final @Nullable String alias;
+    private final ImmutableList<RexNode> operands; // may be empty
     private final @Nullable ImmutableList<RexNode> distinctKeys; // may be empty or null
-    private final ImmutableList<RexNode> orderKeys; // may be empty, never null
+    private final ImmutableList<RexNode> orderKeys; // may be empty
 
     AggCallImpl(SqlAggFunction aggFunction, boolean distinct,
         boolean approximate, boolean ignoreNulls, @Nullable RexNode filter,
