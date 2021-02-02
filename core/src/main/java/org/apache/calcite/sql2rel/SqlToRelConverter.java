@@ -204,9 +204,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.sql.SqlUtil.stripAs;
@@ -2503,8 +2503,8 @@ public class SqlToRelConverter {
     // 3. Build aggregate expressions, for example
     // PIVOT (sum(a) AS alias1, min(b) AS alias2, ... FOR ... IN ...)
     final List<RelBuilder.AggCall> aggCalls = new ArrayList<>();
-    Pair.forEach(aggAliasList, aggConverter.aggCalls, (alias, aggregateCall) ->
-        aggCalls.add(relBuilder.aggregateCall(aggregateCall).as(alias)));
+    Pair.forEach(aggAliasList, aggConverter.aggCalls, (alias, aggCall) ->
+        aggCalls.add(aggCall.as(alias)));
 
     // 4. Build values, for example
     // IN ((v11, v12, ...) AS label1, (v21, v22, ...) AS label2, ...)
@@ -3347,8 +3347,11 @@ public class SqlToRelConverter {
    * @return LogicalAggregate
    */
   protected RelNode createAggregate(Blackboard bb, ImmutableBitSet groupSet,
-      ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+      ImmutableList<ImmutableBitSet> groupSets,
+      List<RelBuilder.AggCall> aggCalls) {
     relBuilder.push(bb.root());
+    final ImmutableList<RexNode> fields = relBuilder.fields();
+    relBuilder.project(fields, Collections.nCopies(fields.size(), null), true);
     final RelBuilder.GroupKey groupKey =
         relBuilder.groupKey(groupSet, (Iterable<ImmutableBitSet>) groupSets);
     return relBuilder.aggregate(groupKey, aggCalls)
@@ -5144,6 +5147,28 @@ public class SqlToRelConverter {
       }
     }
 
+    RexNode convertSortExpression2(SqlNode expr,
+        RelFieldCollation.Direction direction,
+        RelFieldCollation.NullDirection nullDirection) {
+      final RexFieldCollation fc =
+          convertSortExpression(expr, direction, nullDirection);
+      RexNode e = fc.left;
+      for (SqlKind kind : fc.right) {
+        switch (kind) {
+        case DESCENDING:
+          e = relBuilder.desc(e);
+          break;
+        case NULLS_FIRST:
+          e = relBuilder.nullsFirst(e);
+          break;
+        case NULLS_LAST:
+          e = relBuilder.nullsLast(e);
+          break;
+        }
+      }
+      return e;
+    }
+
     /**
      * Determines whether a RexNode corresponds to a sub-query that's been
      * converted to a constant.
@@ -5357,9 +5382,9 @@ public class SqlToRelConverter {
      * aggregate's hash table. This is when group functions such as TUMBLE
      * cause rows to be expanded. */
 
-    private final List<AggregateCall> aggCalls = new ArrayList<>();
+    private final List<RelBuilder.AggCall> aggCalls = new ArrayList<>();
     private final Map<SqlNode, RexNode> aggMapping = new HashMap<>();
-    private final Map<AggregateCall, RexNode> aggCallMapping =
+    private final Map<RelBuilder.AggCall, RexNode> aggCallMapping =
         new HashMap<>();
 
     /** Whether we are directly inside a windowed aggregate. */
@@ -5659,9 +5684,9 @@ public class SqlToRelConverter {
       default:
         break;
       }
-      final List<Integer> args = new ArrayList<>();
-      int filterArg = -1;
-      final ImmutableBitSet distinctKeys;
+      final List<RexNode> args = new ArrayList<>();
+      @Nullable RexNode filterArg = null;
+      final @Nullable ImmutableList<RexNode> distinctKeys;
       try {
         // switch out of agg mode
         bb.agg = null;
@@ -5677,7 +5702,7 @@ public class SqlToRelConverter {
             }
           }
           RexNode convertedExpr = bb.convertExpression(operand);
-          args.add(lookupOrCreateGroupExpr(convertedExpr));
+          args.add(convertedExpr);
         }
 
         if (filter != null) {
@@ -5686,18 +5711,17 @@ public class SqlToRelConverter {
             convertedExpr =
                 rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE, convertedExpr);
           }
-          filterArg = lookupOrCreateGroupExpr(convertedExpr);
+          filterArg = convertedExpr;
         }
 
         if (distinctList == null) {
           distinctKeys = null;
         } else {
-          final ImmutableBitSet.Builder distinctBuilder =
-              ImmutableBitSet.builder();
+          final ImmutableList.Builder<RexNode> distinctBuilder =
+              ImmutableList.builder();
           for (SqlNode distinct : distinctList) {
             RexNode e = bb.convertExpression(distinct);
-            assert e != null;
-            distinctBuilder.set(lookupOrCreateGroupExpr(e));
+            distinctBuilder.add(e);
           }
           distinctKeys = distinctBuilder.build();
         }
@@ -5721,43 +5745,42 @@ public class SqlToRelConverter {
         distinct = true;
         approximate = true;
       }
-      final RelCollation collation;
-      if (orderList == null || orderList.size() == 0) {
-        collation = RelCollations.EMPTY;
-      } else {
-        collation = RelCollations.of(
-            orderList.stream()
-                .map(order ->
-                    bb.convertSortExpression(order,
-                        RelFieldCollation.Direction.ASCENDING,
-                        RelFieldCollation.NullDirection.UNSPECIFIED))
-                .map(fieldCollation ->
-                    new RelFieldCollation(
-                        lookupOrCreateGroupExpr(fieldCollation.left),
-                        fieldCollation.getDirection(),
-                        fieldCollation.getNullDirection()))
-                .collect(Collectors.toList()));
-      }
-      final AggregateCall aggCall =
-          AggregateCall.create(
-              aggFunction,
-              distinct,
-              approximate,
-              ignoreNulls,
-              args,
-              filterArg,
-              distinctKeys,
-              collation,
-              type,
-              nameMap.get(outerCall.toString()));
+      final List<RexNode> orderKeys =
+          orderList == null ? ImmutableList.of()
+              : Util.transform(orderList, order ->
+                  bb.convertSortExpression2(order,
+                      RelFieldCollation.Direction.ASCENDING,
+                      RelFieldCollation.NullDirection.UNSPECIFIED));
+      final RelBuilder.AggCall aggCall =
+          relBuilder.aggregateCall(aggFunction, args)
+              .distinct(distinct)
+              .approximate(approximate)
+              .ignoreNulls(ignoreNulls)
+              .filter(filterArg)
+              .unique(distinctKeys)
+              .sort(orderKeys)
+              .as(nameMap.get(outerCall.toString()));
       RexNode rex =
-          rexBuilder.addAggCall(
-              aggCall,
-              groupExprs.size(),
-              aggCalls,
+          addAggCall(aggCall, type, groupExprs.size(), aggCalls,
               aggCallMapping,
               i -> convertedInputExprs.get(i).left.getType().isNullable());
       aggMapping.put(outerCall, rex);
+    }
+
+    /** As {@link RexBuilder#addAggCall(AggregateCall, int, List, Map, IntPredicate)},
+     * but for {@link RelBuilder.AggCall}. */
+    RexNode addAggCall(RelBuilder.AggCall aggCall, RelDataType type,
+        int groupCount, List<RelBuilder.AggCall> aggCalls,
+        Map<RelBuilder.AggCall, RexNode> aggCallMapping,
+        IntPredicate isNullable) {
+      RexNode rex = aggCallMapping.get(aggCall);
+      if (rex == null) {
+        int index = aggCalls.size() + groupCount;
+        aggCalls.add(aggCall);
+        rex = rexBuilder.makeInputRef(type, index);
+        aggCallMapping.put(aggCall, rex);
+      }
+      return rex;
     }
 
     private int lookupOrCreateGroupExpr(RexNode expr) {
@@ -5811,7 +5834,7 @@ public class SqlToRelConverter {
       return convertedInputExprs;
     }
 
-    public List<AggregateCall> getAggCalls() {
+    public List<RelBuilder.AggCall> getAggCalls() {
       return aggCalls;
     }
 

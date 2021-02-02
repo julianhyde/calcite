@@ -115,8 +115,7 @@ public abstract class SqlToRelTestBase {
         c.withTrimUnusedFields(true)
             .withExpand(true)
             .addRelBuilderConfigTransform(b ->
-                b.withAggregateUnique(true)
-                    .withPruneInputOfAggregate(false)));
+                b.withAggregateUnique(true)));
   }
 
   protected Tester getTesterWithDynamicTable() {

@@ -566,29 +566,23 @@ public class RelBuilder {
 
   /** Returns references to fields for a given collation. */
   public ImmutableList<RexNode> fields(RelCollation collation) {
-    final ImmutableList.Builder<RexNode> nodes = ImmutableList.builder();
-    for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
-      RexNode node = field(fieldCollation.getFieldIndex());
-      switch (fieldCollation.direction) {
-      case DESCENDING:
-        node = desc(node);
-        break;
-      default:
-        break;
-      }
-      switch (fieldCollation.nullDirection) {
-      case FIRST:
-        node = nullsFirst(node);
-        break;
-      case LAST:
-        node = nullsLast(node);
-        break;
-      default:
-        break;
-      }
-      nodes.add(node);
+    return collation.getFieldCollations().stream().map(this::toNode)
+        .collect(Util.toImmutableList());
+  }
+
+  private RexNode toNode(RelFieldCollation fieldCollation) {
+    RexNode node = field(fieldCollation.getFieldIndex());
+    if (fieldCollation.direction == RelFieldCollation.Direction.DESCENDING) {
+      node = desc(node);
     }
-    return nodes.build();
+    switch (fieldCollation.nullDirection) {
+    case FIRST:
+      return nullsFirst(node);
+    case LAST:
+      return nullsLast(node);
+    default:
+      return node;
+    }
   }
 
   /** Returns references to fields for a given list of input ordinals. */
