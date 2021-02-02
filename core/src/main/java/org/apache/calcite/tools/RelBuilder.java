@@ -82,6 +82,7 @@ import org.apache.calcite.schema.impl.ListTransientTable;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlCountAggFunction;
 import org.apache.calcite.sql.fun.SqlLikeOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -3247,7 +3248,9 @@ public class RelBuilder {
     AggCall distinct(boolean distinct);
 
     /** Returns a copy of this AggCall that is distinct. */
-    AggCall distinct();
+    default AggCall distinct() {
+      return distinct(true);
+    }
   }
 
   /** Internal methods shared by all implementations of {@link AggCall}. */
@@ -3402,7 +3405,7 @@ public class RelBuilder {
 
     @Override public AggregateCall aggregateCall(Registrar registrar,
         ImmutableBitSet groupSet, RelNode r) {
-      final List<Integer> args =
+      List<Integer> args =
           registrar.registerExpressions(this.operands);
       final int filterArg = this.filter == null ? -1
           : registrar.registerExpression(this.filter);
@@ -3424,6 +3427,11 @@ public class RelBuilder {
                   collation(orderKey, RelFieldCollation.Direction.ASCENDING,
                       null, Collections.emptyList()))
               .collect(Collectors.toList()));
+      if (aggFunction instanceof SqlCountAggFunction && !distinct) {
+        args = args.stream()
+            .filter(r::fieldIsNullable)
+            .collect(Util.toImmutableList());
+      }
       return AggregateCall.create(aggFunction, distinct, approximate,
           ignoreNulls, args, filterArg, distinctKeys, collation,
           groupSet.cardinality(), r, null, alias);
@@ -3488,10 +3496,6 @@ public class RelBuilder {
           ? this
           : new AggCallImpl(aggFunction, distinct, approximate, ignoreNulls,
               filter, alias, operands, distinctKeys, orderKeys);
-    }
-
-    @Override public AggCall distinct() {
-      return distinct(true);
     }
 
     @Override public AggCall ignoreNulls(boolean ignoreNulls) {
@@ -3561,10 +3565,6 @@ public class RelBuilder {
     }
 
     @Override public AggCall distinct(boolean distinct) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override public AggCall distinct() {
       throw new UnsupportedOperationException();
     }
 
