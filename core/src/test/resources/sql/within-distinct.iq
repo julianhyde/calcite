@@ -858,4 +858,21 @@ LEFT JOIN Jobs AS j USING (name);
 
 !ok
 
+# If age is not functionally dependent on name, throw.
+# Note that George has ages 15 and 2.
+WITH FriendJobs
+AS (SELECT * FROM (VALUES
+  ('Julian', 16, 'Programmer'),
+  ('Dick', 15, null),
+  ('Anne', 13, 'Car wash'),
+  ('George', 15, 'Lifeguard'),
+  ('George', 2, 'Dog walker'),
+  ('Timmy', 4, null)) AS FriendJobs (name, age, title))
+SELECT SUM(age) AS sa,
+  SUM(DISTINCT age) AS sda,
+  SUM(age) WITHIN DISTINCT (name) AS sa_n,
+  COUNT(title) AS c
+FROM FriendJobs;
+!ok
+
 # End within-distinct.iq
