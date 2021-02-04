@@ -249,7 +249,7 @@ public class AggregateCall {
   /** Withs {@link #isApproximate()}. */
   public AggregateCall withApproximate(boolean approximate) {
     return approximate == this.approximate ? this
-        : new AggregateCall(aggFunction, distinct, approximate, approximate,
+        : new AggregateCall(aggFunction, distinct, approximate, ignoreNulls,
             argList, filterArg, distinctKeys, collation, type, name);
   }
 
