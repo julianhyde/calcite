@@ -1985,16 +1985,18 @@ public class SqlToRelConverter {
   }
 
   private RexNode convertOver(Blackboard bb, SqlNode node) {
+    return convertOver(bb, node, null);
+  }
+
+  private RexNode convertOver(Blackboard bb, SqlNode node,
+      @Nullable Boolean ignoreNulls) {
     SqlCall call = (SqlCall) node;
     SqlCall aggCall = call.operand(0);
-    boolean ignoreNulls = false;
     switch (aggCall.getKind()) {
     case IGNORE_NULLS:
-      ignoreNulls = true;
-      // fall through
+      return convertOver(bb, aggCall.operand(0), true);
     case RESPECT_NULLS:
-      aggCall = aggCall.operand(0);
-      break;
+      return convertOver(bb, aggCall.operand(0), false);
     default:
       break;
     }
@@ -5543,14 +5545,13 @@ public class SqlToRelConverter {
     }
 
     private void translateAgg(SqlCall call) {
-      translateAgg(call, null, null, null, false, call);
+      translateAgg(call, null, null, null, null, call);
     }
 
     private void translateAgg(SqlCall call, @Nullable SqlNode filter,
         @Nullable SqlNodeList distinctList, @Nullable SqlNodeList orderList,
-        boolean ignoreNulls, SqlCall outerCall) {
+        @Nullable Boolean ignoreNulls, SqlCall outerCall) {
       assert bb.agg == this;
-      assert outerCall != null;
       final List<SqlNode> operands = call.getOperandList();
       final SqlParserPos pos = call.getParserPosition();
       final SqlCall call2;
@@ -5571,11 +5572,12 @@ public class SqlToRelConverter {
             ignoreNulls, outerCall);
         return;
       case IGNORE_NULLS:
-        ignoreNulls = true;
-        // fall through
+        translateAgg(call.operand(0), filter, distinctList, orderList,
+            true, outerCall);
+        return;
       case RESPECT_NULLS:
         translateAgg(call.operand(0), filter, distinctList, orderList,
-            ignoreNulls, outerCall);
+            false, outerCall);
         return;
 
       case COUNTIF:
@@ -5706,8 +5708,6 @@ public class SqlToRelConverter {
         bb.agg = this;
       }
 
-      SqlAggFunction aggFunction =
-          (SqlAggFunction) call.getOperator();
       final RelDataType type = validator().deriveType(bb.scope(), call);
       boolean distinct = false;
       SqlLiteral quantifier = call.getFunctionQuantifier();
@@ -5715,11 +5715,15 @@ public class SqlToRelConverter {
           && (quantifier.getValue() == SqlSelectKeyword.DISTINCT)) {
         distinct = true;
       }
-      boolean approximate = false;
-      if (aggFunction == SqlStdOperatorTable.APPROX_COUNT_DISTINCT) {
+      final SqlAggFunction aggFunction;
+      final boolean approximate;
+      if (call.getOperator() == SqlStdOperatorTable.APPROX_COUNT_DISTINCT) {
         aggFunction = SqlStdOperatorTable.COUNT;
-        distinct = true;
         approximate = true;
+        distinct = true;
+      } else {
+        aggFunction = (SqlAggFunction) call.getOperator();
+        approximate = false;
       }
       final RelCollation collation;
       if (orderList == null || orderList.size() == 0) {
@@ -5738,12 +5742,14 @@ public class SqlToRelConverter {
                         fieldCollation.getNullDirection()))
                 .collect(Collectors.toList()));
       }
+      final boolean ignoreNulls2 =
+          Util.first(ignoreNulls, aggFunction.ignoresNulls());
       final AggregateCall aggCall =
           AggregateCall.create(
               aggFunction,
               distinct,
               approximate,
-              ignoreNulls,
+              ignoreNulls2,
               args,
               filterArg,
               distinctKeys,
@@ -5896,7 +5902,7 @@ public class SqlToRelConverter {
     private final boolean rows;
     private final boolean allowPartial;
     private final boolean distinct;
-    private final boolean ignoreNulls;
+    private final @Nullable Boolean ignoreNulls;
 
     HistogramShuttle(
         List<RexNode> partitionKeys,
@@ -5905,7 +5911,7 @@ public class SqlToRelConverter {
         boolean rows,
         boolean allowPartial,
         boolean distinct,
-        boolean ignoreNulls) {
+        @Nullable Boolean ignoreNulls) {
       this.partitionKeys = partitionKeys;
       this.orderKeys = orderKeys;
       this.lowerBound = lowerBound;
@@ -5950,18 +5956,14 @@ public class SqlToRelConverter {
               : rexBuilder.makeCast(histogramType, exprs.get(0)));
         }
 
+        final SqlAggFunction aggFunction = SqlStdOperatorTable.HISTOGRAM_AGG;
         RexCallBinding bind =
-            new RexCallBinding(
-                rexBuilder.getTypeFactory(),
-                SqlStdOperatorTable.HISTOGRAM_AGG,
-                exprs,
-                ImmutableList.of());
+            new RexCallBinding(rexBuilder.getTypeFactory(), aggFunction,
+                exprs, ImmutableList.of());
 
         RexNode over =
-            rexBuilder.makeOver(
-                SqlStdOperatorTable.HISTOGRAM_AGG
-                    .inferReturnType(bind),
-                SqlStdOperatorTable.HISTOGRAM_AGG,
+            rexBuilder.makeOver(aggFunction.inferReturnType(bind),
+                aggFunction,
                 exprs,
                 partitionKeys,
                 orderKeys,

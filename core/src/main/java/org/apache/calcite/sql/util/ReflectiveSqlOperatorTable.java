@@ -67,17 +67,17 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
    */
   public final void init() {
     // Use reflection to register the expressions stored in public fields.
+    // Skip fields if they are deprecated, or do not have type SqlOperator.
+    //
+    // We do not currently skip the JSON_ functions (e.g. JSON_DEPTH) even
+    // though they are marked deprecated.
     for (Field field : getClass().getFields()) {
       try {
-        if (SqlFunction.class.isAssignableFrom(field.getType())) {
-          SqlFunction op = (SqlFunction) field.get(this);
-          if (op != null) {
-            register(op);
-          }
-        } else if (
-            SqlOperator.class.isAssignableFrom(field.getType())) {
+        if (SqlOperator.class.isAssignableFrom(field.getType())) {
           SqlOperator op = (SqlOperator) field.get(this);
-          if (op != null) {
+          final Deprecated deprecated = field.getAnnotation(Deprecated.class);
+          if (op != null
+              && (deprecated == null || op.getName().startsWith("JSON_"))) {
             register(op);
           }
         }

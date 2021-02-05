@@ -22,6 +22,7 @@ import org.apache.calcite.adapter.enumerable.WinAggImplementor;
 import org.apache.calcite.adapter.enumerable.WinAggResultContext;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.rel.core.AggregateCall;
 
 import java.util.List;
 import java.util.function.Function;
@@ -42,20 +43,11 @@ public abstract class WinAggResultContextImpl extends AggResultContextImpl
    * @param accumulator accumulator variables that store the intermediate
    *                    aggregate state
    */
-  protected WinAggResultContextImpl(BlockBuilder block,
+  protected WinAggResultContextImpl(AggregateCall call, BlockBuilder block,
       List<Expression> accumulator,
       Function<BlockBuilder, WinAggFrameResultContext> frameContextBuilder) {
-    super(block, null, accumulator, null, null);
+    super(call, block, accumulator, null, null);
     this.frame = frameContextBuilder;
-  }
-
-  @SuppressWarnings("Guava")
-  @Deprecated // to be removed before 2.0
-  protected WinAggResultContextImpl(BlockBuilder block,
-      List<Expression> accumulator,
-      com.google.common.base.Function<BlockBuilder, WinAggFrameResultContext> frameContextBuilder) {
-    this(block, accumulator,
-        (Function<BlockBuilder, WinAggFrameResultContext>) frameContextBuilder::apply);
   }
 
   private WinAggFrameResultContext getFrame() {

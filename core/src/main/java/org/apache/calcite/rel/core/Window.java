@@ -399,6 +399,7 @@ public abstract class Window extends SingleRel {
       this.ordinal = ordinal;
       this.distinct = distinct;
       this.ignoreNulls = ignoreNulls;
+      assert ignoreNulls; // TODO
     }
 
     @Override public boolean equals(@Nullable Object o) {

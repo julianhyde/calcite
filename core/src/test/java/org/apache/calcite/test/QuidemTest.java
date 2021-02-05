@@ -241,6 +241,7 @@ public abstract class QuidemTest {
             .connect();
       case "scott":
         return CalciteAssert.that()
+            .with(CalciteConnectionProperty.FUN, "calcite")
             .with(CalciteAssert.Config.SCOTT)
             .connect();
       case "jdbc_scott":

@@ -136,7 +136,7 @@ public interface SqlSplittableAggFunction {
     @Override public @Nullable AggregateCall other(RelDataTypeFactory typeFactory,
         AggregateCall e) {
       return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-          false, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
+          true, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
           typeFactory.createSqlType(SqlTypeName.BIGINT), null);
     }
 
@@ -280,7 +280,7 @@ public interface SqlSplittableAggFunction {
     @Override public @Nullable AggregateCall other(RelDataTypeFactory typeFactory,
         AggregateCall e) {
       return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-          false, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
+          true, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
           typeFactory.createSqlType(SqlTypeName.BIGINT), null);
     }
 

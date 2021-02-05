@@ -203,9 +203,19 @@ public abstract class SqlAggFunction extends SqlFunction implements Context {
     return true;
   }
 
-  /** Returns whether this aggregate function allows specifying null treatment
+  /** Returns whether this aggregate function allows a call to override
+   * {@link #ignoresNulls()} with null treatment clause
    * ({@code RESPECT NULLS} or {@code IGNORE NULLS}). */
   public boolean allowsNullTreatment() {
     return false;
+  }
+
+  /** Returns whether this aggregate function ignores nulls by default.
+   *
+   * <p>If {@link #allowsNullTreatment()}, behavior can be overridden using
+   * {@code RESPECT NULLS} or {@code IGNORE NULLS}. Default is true (as if
+   * {@code IGNORE NULLS} were specified). */
+  public boolean ignoresNulls() {
+    return true;
   }
 }

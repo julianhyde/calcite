@@ -199,7 +199,7 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
       results.add(
           agg.implementor.implementResult(
               requireNonNull(agg.context, () -> "agg.context is null for " + agg),
-              new AggResultContextImpl(resultBlock, agg.call,
+              new AggResultContextImpl(agg.call, resultBlock,
                   requireNonNull(agg.state, () -> "agg.state is null for " + agg),
                   key_,
                   keyPhysType)));

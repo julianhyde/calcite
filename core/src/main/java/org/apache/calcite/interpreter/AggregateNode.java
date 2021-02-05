@@ -226,7 +226,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
       agg.state = accumulator;
 
       AggAddContext addContext =
-          new AggAddContextImpl(builder2, accumulator) {
+          new AggAddContextImpl(agg.call, builder2, accumulator) {
             @Override public List<RexNode> rexArguments() {
               List<RexNode> args = new ArrayList<>();
               for (int index : agg.call.getArgList()) {

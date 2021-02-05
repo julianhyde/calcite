@@ -47,6 +47,8 @@ public enum SqlLibrary {
   STANDARD("", "standard"),
   /** Geospatial operators. */
   SPATIAL("s", "spatial"),
+  /** Calcite extended operators. */
+  CALCITE("c", "calcite"),
   /** A collection of operators that are in Google BigQuery but not in standard
    * SQL. */
   BIG_QUERY("b", "bigquery"),

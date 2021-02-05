@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.calcite.sql.fun.SqlLibrary.BIG_QUERY;
+import static org.apache.calcite.sql.fun.SqlLibrary.CALCITE;
 import static org.apache.calcite.sql.fun.SqlLibrary.HIVE;
 import static org.apache.calcite.sql.fun.SqlLibrary.MYSQL;
 import static org.apache.calcite.sql.fun.SqlLibrary.ORACLE;
@@ -64,6 +65,31 @@ import static org.apache.calcite.sql.fun.SqlLibrary.SPARK;
 public abstract class SqlLibraryOperators {
   private SqlLibraryOperators() {
   }
+
+  /** The "{@code ANY_VALUE(x)}" aggregate function;
+   * non-deterministically returns one of the input values. Behaves as if
+   * {@code RESPECT NULLS} is specified, and therefore may return NULL if one
+   * of the input values is NULL. */
+  @LibraryOperator(libraries = {CALCITE, MYSQL})
+  public static final SqlAggFunction ANY_VALUE =
+      new SqlAnyValueAggFunction(SqlKind.ANY_VALUE);
+
+  /** The "{@code SINGLE_VALUE(x)}" aggregate function. Throws if there are two
+   * or more input values. */
+  @LibraryOperator(libraries = {CALCITE})
+  public static final SqlAggFunction SINGLE_VALUE =
+      new SqlSingleValueAggFunction();
+
+  /** The "{@code UNIQUE_VALUE(x)}" aggregate function. Throws if there are two
+   * or more distinct input values. Behaves as if {@code RESPECT NULLS} is
+   * specified, and therefore throws if input has a mixture of NULL and non-NULL
+   * values. */
+  @LibraryOperator(libraries = {CALCITE})
+  public static final SqlAggFunction UNIQUE_VALUE =
+      SqlBasicAggFunction.create(SqlKind.UNIQUE_VALUE,
+          ReturnTypes.ARG0.andThen(SqlTypeTransforms::toNullableIfFilter),
+          OperandTypes.ANY)
+      .withAllowsNullTreatment(true);
 
   /** The "CONVERT_TIMEZONE(tz1, tz2, datetime)" function;
    * converts the timezone of {@code datetime} from {@code tz1} to {@code tz2}.

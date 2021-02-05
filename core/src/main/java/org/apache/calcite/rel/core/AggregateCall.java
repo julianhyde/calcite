@@ -111,6 +111,7 @@ public class AggregateCall {
     this.distinct = distinct;
     this.approximate = approximate;
     this.ignoreNulls = ignoreNulls;
+    assert ignoreNulls; // TODO
     Preconditions.checkArgument(
         aggFunction.getDistinctOptionality() != Optionality.IGNORED || !distinct,
         "DISTINCT has no effect for this aggregate function, so must be false");
@@ -257,6 +258,8 @@ public class AggregateCall {
    * Returns whether this AggregateCall ignores nulls.
    *
    * @return whether ignore nulls
+   *
+   * @see SqlAggFunction#ignoresNulls()
    */
   public final boolean ignoreNulls() {
     return ignoreNulls;
@@ -369,6 +372,9 @@ public class AggregateCall {
       buf.append(arg);
     }
     buf.append(")");
+    if (ignoreNulls != aggFunction.ignoresNulls()) {
+      buf.append(ignoreNulls ? " IGNORE NULLS" : " RESPECT NULLS");
+    }
     if (distinctKeys != null) {
       buf.append(" WITHIN DISTINCT (");
       for (Ord<Integer> key : Ord.zip(distinctKeys)) {

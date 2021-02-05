@@ -991,8 +991,9 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   /**
    * <code>ANY_VALUE</code> aggregate function.
    */
+  @Deprecated // to be removed before 2.0
   public static final SqlAggFunction ANY_VALUE =
-      new SqlAnyValueAggFunction(SqlKind.ANY_VALUE);
+      SqlLibraryOperators.ANY_VALUE;
 
   /**
    * <code>FIRST_VALUE</code> aggregate function.
@@ -1027,8 +1028,9 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   /**
    * <code>SINGLE_VALUE</code> aggregate function.
    */
+  @Deprecated // to be removed before 2.0
   public static final SqlAggFunction SINGLE_VALUE =
-      new SqlSingleValueAggFunction(castNonNull(null));
+      SqlLibraryOperators.SINGLE_VALUE;
 
   /**
    * <code>AVG</code> aggregate function.

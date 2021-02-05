@@ -4991,6 +4991,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonPretty() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     tester.checkString("json_pretty('{\"foo\":100}')",
         "{\n  \"foo\" : 100\n}", "VARCHAR(2000)");
     tester.checkString("json_pretty('[1,2,3]')",
@@ -5006,6 +5008,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonStorageSize() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     tester.checkString("json_storage_size('[100, \"sakila\", [1, 3, 5], 425.05]')",
         "29", "INTEGER");
     tester.checkString("json_storage_size('{\"a\": 1000,\"b\": \"aa\", \"c\": \"[1, 3, 5]\"}')",
@@ -5029,6 +5033,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonType() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     tester.setFor(SqlLibraryOperators.JSON_TYPE);
     tester.checkString("json_type('\"1\"')",
         "STRING", "VARCHAR(20)");
@@ -5058,6 +5064,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonDepth() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     tester.setFor(SqlLibraryOperators.JSON_DEPTH);
     tester.checkString("json_depth('1')",
         "1", "INTEGER");
@@ -5092,6 +5100,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonLength() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     // no path context
     tester.checkString("json_length('{}')",
         "0", "INTEGER");
@@ -5152,6 +5162,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonKeys() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     // no path context
     tester.checkString("json_keys('{}')",
         "[]", "VARCHAR(2000)");
@@ -5208,6 +5220,8 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testJsonRemove() {
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    final SqlTester strictTester = tester.enableTypeCoercion(false);
     tester.checkString("json_remove('{\"foo\":100}', '$.foo')",
         "{}", "VARCHAR(2000)");
     tester.checkString("json_remove('{\"foo\":100, \"foo1\":100}', '$.foo')",
@@ -7470,11 +7484,11 @@ public abstract class SqlOperatorBaseTest {
   }
 
   private void checkArrayAggFunc(SqlTester t) {
-    t.setFor(SqlLibraryOperators.ARRAY_CONCAT_AGG, VM_FENNEL, VM_JAVA);
+    t.setFor(SqlLibraryOperators.ARRAY_AGG, VM_FENNEL, VM_JAVA);
     final String[] values = {"'x'", "null", "'yz'"};
     t.checkAgg("array_agg(x)", values, "[x, yz]", 0);
     t.checkAgg("array_agg(x ignore nulls)", values, "[x, yz]", 0);
-    t.checkAgg("array_agg(x respect nulls)", values, "[x, yz]", 0);
+    t.checkAgg("array_agg(x respect nulls)", values, "[x, null, yz]", 0);
     final String expectedError = "Invalid number of arguments "
         + "to function 'ARRAY_AGG'. Was expecting 1 arguments";
     t.checkAggFails("^array_agg(x,':')^", values, expectedError, false);
@@ -9573,9 +9587,9 @@ public abstract class SqlOperatorBaseTest {
         0d);
   }
 
-
   @Test void testAnyValueFunc() {
-    tester.setFor(SqlStdOperatorTable.ANY_VALUE, VM_EXPAND);
+    final SqlTester tester = tester(SqlLibrary.MYSQL);
+    tester.setFor(SqlLibraryOperators.ANY_VALUE, VM_EXPAND);
     tester.checkFails(
         "any_value(^*^)",
         "Unknown identifier '\\*'",
@@ -9615,6 +9629,41 @@ public abstract class SqlOperatorBaseTest {
         values,
         "0",
         0d);
+  }
+
+  @Test void testUniqueValueFunc() {
+    final SqlTester tester = tester(SqlLibrary.CALCITE);
+    tester.setFor(SqlLibraryOperators.UNIQUE_VALUE, VM_EXPAND);
+    tester.checkFails("unique_value(^*^)", "Unknown identifier '\\*'", false);
+    tester.checkType("unique_value(1)", "INTEGER NOT NULL");
+    tester.checkType("unique_value(1.2)", "DECIMAL(2, 1) NOT NULL");
+    tester.checkType("unique_value(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
+    final String expectedError = "Invalid number of arguments to function "
+        + "'UNIQUE_VALUE'. Was expecting 1 arguments";
+    tester.checkFails("^unique_value()^", expectedError, false);
+    tester.checkFails("^unique_value(1, 2)^", expectedError, false);
+    final String[] values0n22 = {"0", "CAST(null AS INTEGER)", "2", "2"};
+    final String[] values2 = {"2"};
+    final String[] values22 = {"2", "2"};
+    final String[] values0nn = {"0", "CAST(null AS INTEGER)",
+        "CAST(null AS INTEGER)"};
+    tester.checkAgg("unique_value(x)", values2, "2", 0d);
+    tester.checkAgg("unique_value(x)", values22, "2", 0d);
+    tester.checkAggFails("unique_value(x)", values0n22,
+        "(?s).*more than one distinct value in agg UNIQUE_VALUE", true);
+
+    // The following 3 are identical, except null treatment;
+    // note that the default is IGNORE NULLS.
+    tester.checkAggFails("unique_value(x) RESPECT NULLS", values0nn,
+        "(?s).*more than one distinct value in agg UNIQUE_VALUE", true);
+    tester.checkAgg("unique_value(x) IGNORE NULLS", values0nn, "0", 0d);
+    tester.checkAgg("unique_value(x)", values0nn, "0", 0d);
+
+    tester.checkAgg("unique_value(CASE x WHEN 3 THEN 4 END)", values0n22, null,
+        0d);
+    tester.checkAgg("unique_value(CASE x WHEN 0 THEN 2 END) IGNORE NULLS",
+        values0n22, "2", 0d);
+    tester.checkAgg("unique_value(DISTINCT x)", values22, "2", 0d);
   }
 
   @Test void testBoolAndFunc() {

@@ -866,7 +866,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       final DeclarationStatement jDecl) {
     for (final AggImpState agg : aggs) {
       final WinAggAddContext addContext =
-          new WinAggAddContextImpl(builder7, requireNonNull(agg.state, "agg.state"), frame) {
+          new WinAggAddContextImpl(agg.call, builder7,
+              requireNonNull(agg.state, "agg.state"), frame) {
             @Override public Expression currentPosition() {
               return jDecl.parameter;
             }
@@ -901,8 +902,10 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         continue;
       }
       nonEmpty = true;
-      Expression res = agg.implementor.implementResult(requireNonNull(agg.context, "agg.context"),
-          new WinAggResultContextImpl(builder, requireNonNull(agg.state, "agg.state"), frame) {
+      Expression res = agg.implementor.implementResult(
+          requireNonNull(agg.context, "agg.context"),
+          new WinAggResultContextImpl(agg.call, builder,
+              requireNonNull(agg.state, "agg.state"), frame) {
             @Override public List<RexNode> rexArguments() {
               return rexArguments.apply(agg);
             }
