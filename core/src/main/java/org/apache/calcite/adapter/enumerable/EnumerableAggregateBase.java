@@ -257,7 +257,7 @@ public abstract class EnumerableAggregateBase extends Aggregate {
       stateOffset += stateSize;
 
       AggAddContext addContext =
-          new AggAddContextImpl(builder2, accumulator) {
+          new AggAddContextImpl(agg.call, builder2, accumulator) {
             @Override public List<RexNode> rexArguments() {
               List<RelDataTypeField> inputTypes =
                   inputPhysType.getRowType().getFieldList();
@@ -327,7 +327,7 @@ public abstract class EnumerableAggregateBase extends Aggregate {
       agg.state = decls;
       initExpressions.addAll(decls);
       agg.implementor.implementReset(agg.context,
-          new AggResultContextImpl(initBlock, agg.call, decls, null, null));
+          new AggResultContextImpl(agg.call, initBlock, decls, null, null));
     }
     return aggStateTypes;
   }

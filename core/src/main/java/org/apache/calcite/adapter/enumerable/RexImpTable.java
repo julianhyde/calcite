@@ -73,8 +73,6 @@ import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -104,6 +102,7 @@ import static org.apache.calcite.linq4j.tree.ExpressionType.NotEqual;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Subtract;
 import static org.apache.calcite.linq4j.tree.ExpressionType.UnaryPlus;
 import static org.apache.calcite.sql.fun.SqlInternalOperators.THROW_UNLESS;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.ANY_VALUE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.ARRAY_AGG;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.ARRAY_CONCAT_AGG;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.BOOL_AND;
@@ -139,6 +138,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SHA1;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.SINGLE_VALUE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SINH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SOUNDEX;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.SPACE;
@@ -149,6 +149,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MILLIS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_SECONDS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_BASE64;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIQUE_VALUE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MICROS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MILLIS;
@@ -157,7 +158,6 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.XML_TRANSFORM;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ABS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ACOS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.AND;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ANY_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ASCII;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ASIN;
@@ -291,7 +291,6 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SESSION_USER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIGN;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIMILAR_TO;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SINGLE_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SLICE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SOME;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.STRUCT_ACCESS;
@@ -636,12 +635,11 @@ public class RexImpTable {
     map.put(LOCALTIME, systemFunctionImplementor);
     map.put(LOCALTIMESTAMP, systemFunctionImplementor);
 
-    aggMap.put(COUNT, constructorSupplier(CountImplementor.class));
-    aggMap.put(REGR_COUNT, constructorSupplier(CountImplementor.class));
-    aggMap.put(SUM0, constructorSupplier(SumImplementor.class));
-    aggMap.put(SUM, constructorSupplier(SumImplementor.class));
-    Supplier<MinMaxImplementor> minMax =
-        constructorSupplier(MinMaxImplementor.class);
+    aggMap.put(COUNT, CountImplementor::new);
+    aggMap.put(REGR_COUNT, CountImplementor::new);
+    aggMap.put(SUM0, SumImplementor::new);
+    aggMap.put(SUM, SumImplementor::new);
+    Supplier<MinMaxImplementor> minMax = MinMaxImplementor::new;
     aggMap.put(MIN, minMax);
     aggMap.put(MAX, minMax);
     aggMap.put(ANY_VALUE, minMax);
@@ -651,34 +649,32 @@ public class RexImpTable {
     aggMap.put(BOOL_OR, minMax);
     aggMap.put(LOGICAL_AND, minMax);
     aggMap.put(LOGICAL_OR, minMax);
-    final Supplier<BitOpImplementor> bitop =
-        constructorSupplier(BitOpImplementor.class);
+    final Supplier<BitOpImplementor> bitop = BitOpImplementor::new;
     aggMap.put(BIT_AND, bitop);
     aggMap.put(BIT_OR, bitop);
     aggMap.put(BIT_XOR, bitop);
-    aggMap.put(SINGLE_VALUE, constructorSupplier(SingleValueImplementor.class));
-    aggMap.put(COLLECT, constructorSupplier(CollectImplementor.class));
-    aggMap.put(ARRAY_AGG, constructorSupplier(CollectImplementor.class));
-    aggMap.put(LISTAGG, constructorSupplier(ListaggImplementor.class));
-    aggMap.put(FUSION, constructorSupplier(FusionImplementor.class));
-    aggMap.put(ARRAY_CONCAT_AGG, constructorSupplier(FusionImplementor.class));
-    aggMap.put(INTERSECTION, constructorSupplier(IntersectionImplementor.class));
-    final Supplier<GroupingImplementor> grouping =
-        constructorSupplier(GroupingImplementor.class);
+    aggMap.put(SINGLE_VALUE, SingleValueImplementor::new);
+    aggMap.put(UNIQUE_VALUE, UniqueValueImplementor::new);
+    aggMap.put(COLLECT, CollectImplementor::new);
+    aggMap.put(ARRAY_AGG, CollectImplementor::new);
+    aggMap.put(LISTAGG, ListaggImplementor::new);
+    aggMap.put(FUSION, FusionImplementor::new);
+    aggMap.put(ARRAY_CONCAT_AGG, FusionImplementor::new);
+    aggMap.put(INTERSECTION, IntersectionImplementor::new);
+    final Supplier<GroupingImplementor> grouping = GroupingImplementor::new;
     aggMap.put(GROUPING, grouping);
     aggMap.put(GROUPING_ID, grouping);
-    winAggMap.put(RANK, constructorSupplier(RankImplementor.class));
-    winAggMap.put(DENSE_RANK, constructorSupplier(DenseRankImplementor.class));
-    winAggMap.put(ROW_NUMBER, constructorSupplier(RowNumberImplementor.class));
-    winAggMap.put(FIRST_VALUE,
-        constructorSupplier(FirstValueImplementor.class));
-    winAggMap.put(NTH_VALUE, constructorSupplier(NthValueImplementor.class));
-    winAggMap.put(LAST_VALUE, constructorSupplier(LastValueImplementor.class));
-    winAggMap.put(LEAD, constructorSupplier(LeadImplementor.class));
-    winAggMap.put(LAG, constructorSupplier(LagImplementor.class));
-    winAggMap.put(NTILE, constructorSupplier(NtileImplementor.class));
-    winAggMap.put(COUNT, constructorSupplier(CountWinImplementor.class));
-    winAggMap.put(REGR_COUNT, constructorSupplier(CountWinImplementor.class));
+    winAggMap.put(RANK, RankImplementor::new);
+    winAggMap.put(DENSE_RANK, DenseRankImplementor::new);
+    winAggMap.put(ROW_NUMBER, RowNumberImplementor::new);
+    winAggMap.put(FIRST_VALUE, FirstValueImplementor::new);
+    winAggMap.put(NTH_VALUE, NthValueImplementor::new);
+    winAggMap.put(LAST_VALUE, LastValueImplementor::new);
+    winAggMap.put(LEAD, LeadImplementor::new);
+    winAggMap.put(LAG, LagImplementor::new);
+    winAggMap.put(NTILE, NtileImplementor::new);
+    winAggMap.put(COUNT, CountWinImplementor::new);
+    winAggMap.put(REGR_COUNT, CountWinImplementor::new);
 
     // Functions for MATCH_RECOGNIZE
     matchMap.put(CLASSIFIER, ClassifierImplementor::new);
@@ -687,25 +683,6 @@ public class RexImpTable {
     tvfImplementorMap.put(TUMBLE, TumbleImplementor::new);
     tvfImplementorMap.put(HOP, HopImplementor::new);
     tvfImplementorMap.put(SESSION, SessionImplementor::new);
-  }
-
-  private static <T> Supplier<T> constructorSupplier(Class<T> klass) {
-    final Constructor<T> constructor;
-    try {
-      constructor = klass.getDeclaredConstructor();
-    } catch (NoSuchMethodException e) {
-      throw new IllegalArgumentException(
-          klass + " should implement zero arguments constructor");
-    }
-    return () -> {
-      try {
-        return constructor.newInstance();
-      } catch (InstantiationException | IllegalAccessException
-          | InvocationTargetException e) {
-        throw new IllegalStateException(
-            "Error while creating aggregate implementor " + constructor, e);
-      }
-    };
   }
 
   public static CallImplementor createImplementor(
@@ -1119,6 +1096,8 @@ public class RexImpTable {
     }
 
     @Override public void implementReset(AggContext info, AggResetContext reset) {
+      // Generate java:
+      //   acc.flag = false; acc.value = 0;
       List<Expression> acc = reset.accumulator();
       reset.currentBlock().add(
           Expressions.statement(
@@ -1130,6 +1109,12 @@ public class RexImpTable {
     }
 
     @Override public void implementAdd(AggContext info, AggAddContext add) {
+      // Generate java:
+      //   if (acc.flag) {
+      //     throw new IllegalStateException("more than one value in agg");
+      //   }
+      //   acc.flag = true;
+      //   acc.value = arg$0;
       List<Expression> acc = add.accumulator();
       Expression flag = acc.get(0);
       add.currentBlock().add(
@@ -1147,6 +1132,60 @@ public class RexImpTable {
     }
 
     @Override public Expression implementResult(AggContext info,
+        AggResultContext result) {
+      return EnumUtils.convert(result.accumulator().get(1),
+          info.returnType());
+    }
+  }
+
+  /** Implementor for the {@code UNIQUE_VALUE} aggregate function. */
+  static class UniqueValueImplementor extends StrictAggImplementor {
+    @Override public List<Type> getNotNullState(AggContext info) {
+      return Arrays.asList(boolean.class, info.returnType());
+    }
+
+    @Override protected void implementNotNullReset(AggContext info,
+        AggResetContext reset) {
+      List<Expression> acc = reset.accumulator();
+      reset.currentBlock().add(
+          Expressions.statement(
+              Expressions.assign(acc.get(0), Expressions.constant(false))));
+      reset.currentBlock().add(
+          Expressions.statement(
+              Expressions.assign(acc.get(1),
+                  getDefaultValue(acc.get(1).getType()))));
+    }
+
+    @Override public void implementNotNullAdd(AggContext info,
+        AggAddContext add) {
+      // Generate java:
+      //   if (!acc.flag) {
+      //     acc.flag = true;
+      //     acc.value = arg$0;
+      //   } else if (!Objects.equals(acc.value, arg$0)) {
+      //     throw new IllegalStateException(
+      //         "more than one distinct value in agg");
+      //   }
+      final List<Expression> acc = add.accumulator();
+      final Expression flag = acc.get(0);
+      final Expression value = acc.get(1);
+      add.currentBlock().add(
+          Expressions.ifThenElse(Expressions.not(flag),
+              Expressions.block(
+                  Expressions.statement(
+                      Expressions.assign(flag, Expressions.constant(true))),
+                  Expressions.statement(
+                      Expressions.assign(value, add.arguments().get(0)))),
+              Expressions.ifThen(
+                  Expressions.notEqual(value, add.arguments().get(0)),
+                  Expressions.throw_(
+                      Expressions.new_(IllegalStateException.class,
+                          Expressions.constant(
+                              "more than one distinct value in agg "
+                                  + info.aggregation()))))));
+    }
+
+    @Override public Expression implementNotNullResult(AggContext info,
         AggResultContext result) {
       return EnumUtils.convert(result.accumulator().get(1),
           info.returnType());

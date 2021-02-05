@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class AggResultContextImpl extends AggResetContextImpl
     implements AggResultContext {
-  private final @Nullable AggregateCall call;
+  private final AggregateCall call;
   private final @Nullable ParameterExpression key;
   private final @Nullable PhysType keyPhysType;
 
@@ -48,11 +48,11 @@ public class AggResultContextImpl extends AggResetContextImpl
    *                    aggregate state
    * @param key Key
    */
-  public AggResultContextImpl(BlockBuilder block, @Nullable AggregateCall call,
+  public AggResultContextImpl(AggregateCall call, BlockBuilder block,
       List<Expression> accumulator, @Nullable ParameterExpression key,
       @Nullable PhysType keyPhysType) {
     super(block, accumulator);
-    this.call = call; // null for AggAddContextImpl
+    this.call = call;
     this.key = key;
     this.keyPhysType = keyPhysType; // null for AggAddContextImpl
   }
@@ -67,6 +67,6 @@ public class AggResultContextImpl extends AggResetContextImpl
   }
 
   @Override public AggregateCall call() {
-    return requireNonNull(call, "call");
+    return call;
   }
 }

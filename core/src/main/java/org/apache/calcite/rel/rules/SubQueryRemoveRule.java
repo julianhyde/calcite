@@ -37,6 +37,7 @@ import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.RelDecorrelator;
@@ -119,7 +120,7 @@ public class SubQueryRemoveRule
         ImmutableBitSet.of());
     if (unique == null || !unique) {
       builder.aggregate(builder.groupKey(),
-          builder.aggregateCall(SqlStdOperatorTable.SINGLE_VALUE,
+          builder.aggregateCall(SqlLibraryOperators.SINGLE_VALUE,
               builder.field(0)));
     }
     builder.join(JoinRelType.LEFT, builder.literal(true), variablesSet);

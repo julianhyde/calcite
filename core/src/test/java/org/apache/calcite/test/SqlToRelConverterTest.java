@@ -3223,8 +3223,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select collect(skill) as collect_skill,\n"
         + "  count(skill) as count_skill, count(*) as count_star,\n"
         + "  approx_count_distinct(skill) as approx_count_distinct_skill,\n"
-        + "  max(skill) as max_skill, min(skill) as min_skill,\n"
-        + "  any_value(skill) as any_value_skill\n"
+        + "  max(skill) as max_skill, min(skill) as min_skill\n"
         + "from sales.dept_nested";
     sql(sql).ok();
   }
@@ -3233,8 +3232,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select collect(skill) as collect_skill,\n"
         + "  count(skill) as count_skill, count(*) as count_star,\n"
         + "  approx_count_distinct(skill) as approx_count_distinct_skill,\n"
-        + "  max(skill) as max_skill, min(skill) as min_skill,\n"
-        + "  any_value(skill) as any_value_skill\n"
+        + "  max(skill) as max_skill, min(skill) as min_skill\n"
         + "from sales.dept_nested group by name";
     sql(sql).ok();
   }
@@ -3438,19 +3436,6 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         return true;
       }
     }).with(getTesterWithDynamicTable()).ok();
-  }
-
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-2366">[CALCITE-2366]
-   * Add support for ANY_VALUE aggregate function</a>. */
-  @Test void testAnyValueAggregateFunctionNoGroupBy() {
-    final String sql = "SELECT any_value(empno) as anyempno FROM emp AS e";
-    sql(sql).ok();
-  }
-
-  @Test void testAnyValueAggregateFunctionGroupBy() {
-    final String sql = "SELECT any_value(empno) as anyempno FROM emp AS e group by e.sal";
-    sql(sql).ok();
   }
 
   @Test void testSomeAndEveryAggregateFunctions() {

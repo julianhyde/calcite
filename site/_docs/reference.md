@@ -45,7 +45,6 @@ here to appease testAllFunctionsAreDocumented:
 | PRECEDES       | Documented as a period operator
 | PREV()         | Documented with MATCH_RECOGNIZE
 | RUNNING        | TODO: document with MATCH_RECOGNIZE
-| SINGLE_VALUE() | Internal (but should it be?)
 | SUCCEEDS       | Documented as a period operator
 | TABLE          | Documented as part of FROM syntax
 | VARIANCE()     | In SqlStdOperatorTable, but not fully implemented
@@ -1834,7 +1833,6 @@ and `LISTAGG`).
 | SUM( [ ALL &#124; DISTINCT ] numeric)         | Returns the sum of *numeric* across all input values
 | MAX( [ ALL &#124; DISTINCT ] value)           | Returns the maximum value of *value* across all input values
 | MIN( [ ALL &#124; DISTINCT ] value)           | Returns the minimum value of *value* across all input values
-| ANY_VALUE( [ ALL &#124; DISTINCT ] value)     | Returns one of the values of *value* across all input values; this is NOT specified in the SQL standard
 | SOME(condition)                               | Returns TRUE if one or more of the values of *condition* is TRUE
 | EVERY(condition)                              | Returns TRUE if all of the values of *condition* are TRUE
 | BIT_AND( [ ALL &#124; DISTINCT ] value)       | Returns the bitwise AND of all non-null input values, or null if none; integer and binary types are supported
@@ -2483,6 +2481,7 @@ connect string parameter.
 
 The 'C' (compatibility) column contains value:
 * 'b' for Google BigQuery ('fun=bigquery' in the connect string),
+* 'c' for Calcite ('fun=calcite' in the connect string),
 * 'h' for Apache Hive ('fun=hive' in the connect string),
 * 'm' for MySQL ('fun=mysql' in the connect string),
 * 'o' for Oracle ('fun=oracle' in the connect string),
@@ -2589,6 +2588,9 @@ Dialect-specific aggregate functions.
 | b | LOGICAL_AND(condition)                         | Synonym for `EVERY`
 | b | LOGICAL_OR(condition)                          | Synonym for `SOME`
 | b p | STRING_AGG( [ ALL &#124; DISTINCT ] value [, separator] [ ORDER BY orderItem [, orderItem ]* ] ) | Synonym for `LISTAGG`
+| c m | ANY_VALUE( [ ALL &#124; DISTINCT ] value)    | Returns one of the values of *value* across all input values
+| c | SINGLE_VALUE( [ ALL &#124; DISTINCT ] value)   | Returns *value* if there is one input value, otherwise throws
+| c | UNIQUE_VALUE( [ ALL &#124; DISTINCT ] value)   | Returns *value* if all inputs value are the same, otherwise throws
 
 Usage Examples:
 

@@ -2099,6 +2099,96 @@ EnumerableCalc(expr#0..2=[{inputs}], JOB=[$t0], SUM_SAL=[$t2], DEPTNO=[$t1])
 !plan
 !}
 
+# SINGLE_VALUE throws if it sees more than one row
+SELECT DISTINCT deptno, job
+FROM "scott".emp
+WHERE job NOT IN ('CLERK', 'MANAGER');
++--------+-----------+
+| DEPTNO | JOB       |
++--------+-----------+
+|     10 | PRESIDENT |
+|     20 | ANALYST   |
+|     30 | SALESMAN  |
++--------+-----------+
+(3 rows)
+
+!ok
+
+SELECT deptno, SINGLE_VALUE(job) AS job
+FROM (
+  SELECT DISTINCT deptno, job
+  FROM "scott".emp
+  WHERE job NOT IN ('CLERK', 'MANAGER'))
+GROUP BY deptno;
++--------+-----------+
+| DEPTNO | JOB       |
++--------+-----------+
+|     10 | PRESIDENT |
+|     20 | ANALYST   |
+|     30 | SALESMAN  |
++--------+-----------+
+(3 rows)
+
+!ok
+
+SELECT deptno, SINGLE_VALUE(job) AS job
+FROM "scott".emp
+GROUP BY deptno;
+more than one value in agg SINGLE_VALUE
+!error
+
+# UNIQUE_VALUE throws if there is more than one distinct value
+SELECT deptno, UNIQUE_VALUE(job) AS job
+FROM "scott".emp
+WHERE job NOT IN ('CLERK', 'MANAGER')
+GROUP BY deptno;
++--------+-----------+
+| DEPTNO | JOB       |
++--------+-----------+
+|     10 | PRESIDENT |
+|     20 | ANALYST   |
+|     30 | SALESMAN  |
++--------+-----------+
+(3 rows)
+
+!ok
+
+# As above, using FILTER
+SELECT deptno,
+  UNIQUE_VALUE(job) FILTER (WHERE job NOT IN ('CLERK', 'MANAGER')) AS job
+FROM "scott".emp
+GROUP BY deptno;
++--------+-----------+
+| DEPTNO | JOB       |
++--------+-----------+
+|     10 | PRESIDENT |
+|     20 | ANALYST   |
+|     30 | SALESMAN  |
++--------+-----------+
+(3 rows)
+
+!ok
+
+SELECT deptno, UNIQUE_VALUE(job) AS job
+FROM "scott".emp
+WHERE job NOT IN ('MANAGER')
+GROUP BY deptno;
+more than one distinct value in agg UNIQUE_VALUE
+!error
+
+# Throws because there is more than one NULL value.
+# If we (wrongly) filter NULL values, it will not throw (which would be wrong).
+SELECT UNIQUE_VALUE(comm) AS comm
+FROM "scott".emp
+WHERE comm IS NULL OR comm < 400;
+more than one distinct value in agg UNIQUE_VALUE
+!error
+
+SELECT UNIQUE_VALUE(comm) AS comm
+FROM "scott".emp
+WHERE comm < 400;
+!ok
+
 !use orinoco
 
 # FLOOR to achieve a 2-hour window

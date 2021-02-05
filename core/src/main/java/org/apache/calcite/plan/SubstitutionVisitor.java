@@ -2003,7 +2003,7 @@ public class SubstitutionVisitor {
         || aggregation == SqlLibraryOperators.LOGICAL_AND
         || aggregation == SqlLibraryOperators.LOGICAL_OR
         || aggregation == SqlStdOperatorTable.SUM0
-        || aggregation == SqlStdOperatorTable.ANY_VALUE) {
+        || aggregation == SqlLibraryOperators.ANY_VALUE) {
       return aggregation;
     } else if (aggregation == SqlStdOperatorTable.COUNT) {
       return SqlStdOperatorTable.SUM0;

@@ -48,6 +48,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlMinMaxAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -869,7 +870,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     if (aggregation == SqlStdOperatorTable.SUM
         || aggregation == SqlStdOperatorTable.SUM0
         || aggregation instanceof SqlMinMaxAggFunction
-        || aggregation == SqlStdOperatorTable.ANY_VALUE) {
+        || aggregation == SqlLibraryOperators.ANY_VALUE) {
       return aggregation;
     } else if (aggregation == SqlStdOperatorTable.COUNT) {
       return SqlStdOperatorTable.SUM0;

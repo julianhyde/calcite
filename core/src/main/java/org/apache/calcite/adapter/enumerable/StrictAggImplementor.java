@@ -117,8 +117,12 @@ public abstract class StrictAggImplementor implements AggImplementor {
     final List<RexNode> args = add.rexArguments();
     final RexToLixTranslator translator = add.rowTranslator();
     final List<Expression> conditions = new ArrayList<>();
-    conditions.addAll(
-        translator.translateList(args, RexImpTable.NullAs.IS_NOT_NULL));
+    if (add.call().ignoreNulls()) {
+      conditions.addAll(
+          translator.translateList(args, RexImpTable.NullAs.IS_NOT_NULL));
+    } else {
+      assert false;
+    }
     RexNode filterArgument = add.rexFilterArgument();
     if (filterArgument != null) {
       conditions.add(

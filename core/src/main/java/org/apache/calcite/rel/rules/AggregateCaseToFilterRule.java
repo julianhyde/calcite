@@ -210,7 +210,7 @@ public class AggregateCaseToFilterRule
 
     // Four styles supported:
     //
-    // A1: AGG(CASE WHEN x = 'foo' THEN cnt END)
+    // A1: AGG(CASE WHEN x = 'foo' THEN cnt END) IGNORE NULLS
     //   => operands (x = 'foo', cnt, null)
     // A2: SUM(CASE WHEN x = 'foo' THEN cnt ELSE 0 END)
     //   => operands (x = 'foo', cnt, 0); must be SUM
@@ -225,7 +225,7 @@ public class AggregateCaseToFilterRule
         && RexLiteral.isNullLiteral(arg2)) {
       newProjects.add(filter);
       return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-          false, ImmutableList.of(), newProjects.size() - 1, null,
+          true, ImmutableList.of(), newProjects.size() - 1, null,
           RelCollations.EMPTY, aggregateCall.getType(),
           aggregateCall.getName());
     } else if (kind == SqlKind.SUM // Case B
@@ -241,7 +241,8 @@ public class AggregateCaseToFilterRule
           false, ImmutableList.of(), newProjects.size() - 1, null,
           RelCollations.EMPTY, dataType, aggregateCall.getName());
     } else if ((RexLiteral.isNullLiteral(arg2) // Case A1
-            && aggregateCall.getAggregation().allowsFilter())
+            && aggregateCall.getAggregation().allowsFilter()
+            && aggregateCall.ignoreNulls())
         || (kind == SqlKind.SUM // Case A2
             && isIntLiteral(arg2, BigDecimal.ZERO))) {
       newProjects.add(arg1);

@@ -19,6 +19,7 @@ package org.apache.calcite.adapter.enumerable.impl;
 import org.apache.calcite.adapter.enumerable.AggAddContext;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.rel.core.AggregateCall;
 
 import java.util.List;
 
@@ -28,8 +29,9 @@ import java.util.List;
  */
 public abstract class AggAddContextImpl extends AggResultContextImpl
     implements AggAddContext {
-  protected AggAddContextImpl(BlockBuilder block, List<Expression> accumulator) {
-    super(block, null, accumulator, null, null);
+  protected AggAddContextImpl(AggregateCall call, BlockBuilder block,
+      List<Expression> accumulator) {
+    super(call, block, accumulator, null, null);
   }
 
   @Override public final List<Expression> arguments() {

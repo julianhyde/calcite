@@ -262,7 +262,7 @@ public class EnumerableAggregate extends EnumerableAggregateBase implements Enum
     for (final AggImpState agg : aggs) {
       results.add(
           agg.implementor.implementResult(requireNonNull(agg.context, "agg.context"),
-              new AggResultContextImpl(resultBlock, agg.call,
+              new AggResultContextImpl(agg.call, resultBlock,
                   requireNonNull(agg.state, "agg.state"), key_,
                   keyPhysType)));
     }

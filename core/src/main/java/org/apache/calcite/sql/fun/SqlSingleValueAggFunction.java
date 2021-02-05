@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
+
 /**
  * <code>SINGLE_VALUE</code> aggregate function returns the input value if there
  * is only one value in the input; Otherwise it triggers a run-time error.
@@ -41,8 +43,17 @@ public class SqlSingleValueAggFunction extends SqlAggFunction {
 
   //~ Constructors -----------------------------------------------------------
 
+  @Deprecated // to be removed before 2.0
   public SqlSingleValueAggFunction(
       RelDataType type) {
+    this(type, true);
+  }
+
+  public SqlSingleValueAggFunction() {
+    this(castNonNull(null), true);
+  }
+
+  private SqlSingleValueAggFunction(RelDataType type, boolean unused) {
     super(
         "SINGLE_VALUE",
         null,

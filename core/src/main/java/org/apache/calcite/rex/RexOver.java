@@ -74,6 +74,7 @@ public class RexOver extends RexCall {
     this.window = Objects.requireNonNull(window, "window");
     this.distinct = distinct;
     this.ignoreNulls = ignoreNulls;
+    assert ignoreNulls; // TODO
   }
 
   //~ Methods ----------------------------------------------------------------

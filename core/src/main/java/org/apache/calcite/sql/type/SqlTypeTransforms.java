@@ -193,4 +193,18 @@ public abstract class SqlTypeTransforms {
         assert fields.size() == 1;
         return fields.get(0).getType();
       };
+
+  /** Converts a type to nullable if the aggregate function has a filter. */
+  public static RelDataType toNullableIfFilter(SqlOperatorBinding opBinding,
+      RelDataType type) {
+    return opBinding.hasFilter()
+        ? opBinding.getTypeFactory().createTypeWithNullability(type, true)
+        : type;
+  }
+
+  /** Make sure that methods implement the interfaces they should. */
+  @SuppressWarnings("unused")
+  private static void check() {
+    SqlTypeTransform t = SqlTypeTransforms::toNullableIfFilter;
+  }
 }

@@ -87,6 +87,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.MultisetSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -948,7 +949,7 @@ public abstract class RelOptUtil {
 
     for (int i = 0; i < aggCallCnt; i++) {
       aggCalls.add(
-          AggregateCall.create(SqlStdOperatorTable.SINGLE_VALUE, false, false,
+          AggregateCall.create(SqlLibraryOperators.SINGLE_VALUE, false, false,
               false, ImmutableList.of(i), -1, null, RelCollations.EMPTY, 0, rel,
               null, null));
     }

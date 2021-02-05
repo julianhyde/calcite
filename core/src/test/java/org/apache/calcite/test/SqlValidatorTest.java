@@ -8236,7 +8236,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testAnyValueFunction() {
-    sql("SELECT any_value(ename) from emp").ok();
+    sql("SELECT any_value(ename) from emp")
+        .withOperatorTable(operatorTableFor(SqlLibrary.MYSQL))
+        .ok();
   }
 
   @Test void testBoolAndBoolOrFunction() {

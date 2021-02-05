@@ -875,6 +875,7 @@ LEFT JOIN Jobs AS j USING (name);
 
 # If age is not functionally dependent on name, throw.
 # Note that George has ages 15 and 2.
+!if (false) {
 WITH FriendJobs
 AS (SELECT * FROM (VALUES
   ('Julian', 16, 'Programmer'),
