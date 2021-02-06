@@ -97,4 +97,7 @@ public class SqlLeadLagAggFunction extends SqlAggFunction {
     return true;
   }
 
+  @Override public boolean ignoresNulls() {
+    return false;
+  }
 }

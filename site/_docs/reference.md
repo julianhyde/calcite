@@ -1739,7 +1739,7 @@ period:
 | {fn INSERT(string1, start, length, string2)} | Inserts *string2* into a slot in *string1*
 | {fn LCASE(string)} | Returns a string in which all alphabetic characters in *string* have been converted to lower case
 | {fn LENGTH(string)} | Returns the number of characters in a string
-| {fn LOCATE(string1, string2 [, integer])} | Returns the position in *string2* of the first occurrence of *string1*. Searches from the beginning of *string2*, unless *integer* is specified.
+| {fn LOCATE(string1, string2 [, integer] )} | Returns the position in *string2* of the first occurrence of *string1*. Searches from the beginning of *string2*, unless *integer* is specified.
 | {fn LEFT(string, length)} | Returns the leftmost *length* characters from *string*
 | {fn LTRIM(string)} | Returns *string* with leading space characters removed
 | {fn REPLACE(string, search, replacement)} | Returns a string in which all the occurrences of *search* in *string* are replaced with *replacement*; if *replacement* is the empty string, the occurrences of *search* are removed
@@ -1823,7 +1823,7 @@ and `LISTAGG`).
 | Operator syntax                    | Description
 |:---------------------------------- |:-----------
 | COLLECT( [ ALL &#124; DISTINCT ] value)       | Returns a multiset of the values
-| LISTAGG( [ ALL &#124; DISTINCT ] value [, separator]) | Returns values concatenated into a string, delimited by separator (default ',')
+| LISTAGG( [ ALL &#124; DISTINCT ] value [, separator] ) | Returns values concatenated into a string, delimited by separator (default ',')
 | COUNT( [ ALL &#124; DISTINCT ] value [, value ]*) | Returns the number of input rows for which *value* is not null (wholly not null if *value* is composite)
 | COUNT(*)                           | Returns the number of input rows
 | FUSION(multiset)                   | Returns the multiset union of *multiset* across all input values
@@ -1865,13 +1865,17 @@ Syntax:
 {% highlight sql %}
 windowedAggregateCall:
       agg '(' [ ALL | DISTINCT ] value [, value ]* ')'
-      [ RESPECT NULLS | IGNORE NULLS ]
+      [ nullTreatment ]
       [ WITHIN GROUP '(' ORDER BY orderItem [, orderItem ]* ')' ]
       [ FILTER '(' WHERE condition ')' ]
       OVER window
   |   agg '(' '*' ')'
       [ FILTER  '(' WHERE condition ')' ]
       OVER window
+
+nullTreatment:
+      RESPECT NULLS
+   |  IGNORE NULLS
 {% endhighlight %}
 
 where *agg* is one of the operators in the following table, or a user-defined
@@ -1939,7 +1943,7 @@ sometimes is named as "fixed windowing".
 
 | Operator syntax      | Description
 |:-------------------- |:-----------
-| TUMBLE(data, DESCRIPTOR(timecol), size [, offset ]) | Indicates a tumbling window of *size* interval for *timecol*, optionally aligned at *offset*.
+| TUMBLE(data, DESCRIPTOR(timecol), size [, offset ] ) | Indicates a tumbling window of *size* interval for *timecol*, optionally aligned at *offset*.
 
 Here is an example:
 
@@ -1971,7 +1975,7 @@ on a timestamp column. Windows assigned could have overlapping so hopping someti
 
 | Operator syntax      | Description
 |:-------------------- |:-----------
-| HOP(data, DESCRIPTOR(timecol), slide, size [, offset ]) | Indicates a hopping window for *timecol*, covering rows within the interval of *size*, shifting every *slide* and optionally aligned at *offset*.
+| HOP(data, DESCRIPTOR(timecol), slide, size [, offset ] ) | Indicates a hopping window for *timecol*, covering rows within the interval of *size*, shifting every *slide* and optionally aligned at *offset*.
 
 Here is an example:
 
@@ -2049,9 +2053,9 @@ For example, if a query is grouped using
 
 | Operator syntax      | Description
 |:-------------------- |:-----------
-| HOP(datetime, slide, size [, time ]) | Indicates a hopping window for *datetime*, covering rows within the interval of *size*, shifting every *slide*, and optionally aligned at *time*
-| SESSION(datetime, interval [, time ]) | Indicates a session window of *interval* for *datetime*, optionally aligned at *time*
-| TUMBLE(datetime, interval [, time ]) | Indicates a tumbling window of *interval* for *datetime*, optionally aligned at *time*
+| HOP(datetime, slide, size [, time ] ) | Indicates a hopping window for *datetime*, covering rows within the interval of *size*, shifting every *slide*, and optionally aligned at *time*
+| SESSION(datetime, interval [, time ] ) | Indicates a session window of *interval* for *datetime*, optionally aligned at *time*
+| TUMBLE(datetime, interval [, time ] ) | Indicates a tumbling window of *interval* for *datetime*, optionally aligned at *time*
 
 ### Grouped auxiliary functions
 
@@ -2060,12 +2064,12 @@ by a grouped window function.
 
 | Operator syntax      | Description
 |:-------------------- |:-----------
-| HOP_END(expression, slide, size [, time ]) | Returns the value of *expression* at the end of the window defined by a `HOP` function call
-| HOP_START(expression, slide, size [, time ]) | Returns the value of *expression* at the beginning of the window defined by a `HOP` function call
-| SESSION_END(expression, interval [, time]) | Returns the value of *expression* at the end of the window defined by a `SESSION` function call
-| SESSION_START(expression, interval [, time]) | Returns the value of *expression* at the beginning of the window defined by a `SESSION` function call
-| TUMBLE_END(expression, interval [, time ]) | Returns the value of *expression* at the end of the window defined by a `TUMBLE` function call
-| TUMBLE_START(expression, interval [, time ]) | Returns the value of *expression* at the beginning of the window defined by a `TUMBLE` function call
+| HOP_END(expression, slide, size [, time ] ) | Returns the value of *expression* at the end of the window defined by a `HOP` function call
+| HOP_START(expression, slide, size [, time ] ) | Returns the value of *expression* at the beginning of the window defined by a `HOP` function call
+| SESSION_END(expression, interval [, time] ) | Returns the value of *expression* at the end of the window defined by a `SESSION` function call
+| SESSION_START(expression, interval [, time] ) | Returns the value of *expression* at the beginning of the window defined by a `SESSION` function call
+| TUMBLE_END(expression, interval [, time ] ) | Returns the value of *expression* at the end of the window defined by a `TUMBLE` function call
+| TUMBLE_START(expression, interval [, time ] ) | Returns the value of *expression* at the beginning of the window defined by a `TUMBLE` function call
 
 ### Spatial functions
 
@@ -2097,13 +2101,13 @@ implements the OpenGIS Simple Features Implementation Specification for SQL,
 |:- |:-------------------- |:-----------
 | p | ST_AsText(geom) | Synonym for `ST_AsWKT`
 | o | ST_AsWKT(geom) | Converts *geom* → WKT
-| o | ST_GeomFromText(wkt [, srid ]) | Returns a specified GEOMETRY value from WKT representation
-| o | ST_LineFromText(wkt [, srid ]) | Converts WKT → LINESTRING
-| o | ST_MLineFromText(wkt [, srid ]) | Converts WKT → MULTILINESTRING
-| o | ST_MPointFromText(wkt [, srid ]) | Converts WKT → MULTIPOINT
-| o | ST_MPolyFromText(wkt [, srid ]) Converts WKT → MULTIPOLYGON
-| o | ST_PointFromText(wkt [, srid ]) | Converts WKT → POINT
-| o | ST_PolyFromText(wkt [, srid ]) | Converts WKT → POLYGON
+| o | ST_GeomFromText(wkt [, srid ] ) | Returns a specified GEOMETRY value from WKT representation
+| o | ST_LineFromText(wkt [, srid ] ) | Converts WKT → LINESTRING
+| o | ST_MLineFromText(wkt [, srid ] ) | Converts WKT → MULTILINESTRING
+| o | ST_MPointFromText(wkt [, srid ] ) | Converts WKT → MULTIPOINT
+| o | ST_MPolyFromText(wkt [, srid ] ) Converts WKT → MULTIPOLYGON
+| o | ST_PointFromText(wkt [, srid ] ) | Converts WKT → POINT
+| o | ST_PolyFromText(wkt [, srid ] ) | Converts WKT → POLYGON
 
 Not implemented:
 
@@ -2579,7 +2583,7 @@ Dialect-specific aggregate functions.
 
 | C | Operator syntax                                | Description
 |:- |:-----------------------------------------------|:-----------
-| b p | ARRAY_AGG( [ ALL &#124; DISTINCT ] value [ RESPECT NULLS &#124; IGNORE NULLS ] [ ORDER BY orderItem [, orderItem ]* ] ) | Gathers values into arrays
+| b p | ARRAY_AGG( [ ALL &#124; DISTINCT ] value [ nullTreatment ] [ ORDER BY orderItem [, orderItem ]* ] ) | Gathers values into arrays
 | b p | ARRAY_CONCAT_AGG( [ ALL &#124; DISTINCT ] value [ ORDER BY orderItem [, orderItem ]* ] ) | Concatenates arrays into arrays
 | p | BOOL_AND(condition)                            | Synonym for `EVERY`
 | p | BOOL_OR(condition)                             | Synonym for `SOME`
@@ -2590,7 +2594,7 @@ Dialect-specific aggregate functions.
 | b p | STRING_AGG( [ ALL &#124; DISTINCT ] value [, separator] [ ORDER BY orderItem [, orderItem ]* ] ) | Synonym for `LISTAGG`
 | c m | ANY_VALUE( [ ALL &#124; DISTINCT ] value)    | Returns one of the values of *value* across all input values
 | c | SINGLE_VALUE( [ ALL &#124; DISTINCT ] value)   | Returns *value* if there is one input value, otherwise throws
-| c | UNIQUE_VALUE( [ ALL &#124; DISTINCT ] value)   | Returns *value* if all inputs value are the same, otherwise throws
+| c | UNIQUE_VALUE( [ ALL &#124; DISTINCT ] value) [ nullTreatment ] | Returns *value* if all inputs value are the same, otherwise throws
 
 Usage Examples:
 

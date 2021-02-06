@@ -2177,16 +2177,36 @@ more than one distinct value in agg UNIQUE_VALUE
 !error
 
 # Throws because there is more than one NULL value.
-# If we (wrongly) filter NULL values, it will not throw (which would be wrong).
-SELECT UNIQUE_VALUE(comm) AS comm
+# UNIQUE_VALUE must not filter NULL values; if it did, the statement would not throw.
+SELECT UNIQUE_VALUE(comm) RESPECT NULLS AS comm
 FROM "scott".emp
-WHERE comm IS NULL OR comm < 400;
+WHERE comm IS NULL OR comm > 1000;
 more than one distinct value in agg UNIQUE_VALUE
 !error
 
+# Ignore nulls by default
 SELECT UNIQUE_VALUE(comm) AS comm
 FROM "scott".emp
-WHERE comm < 400;
+WHERE comm IS NULL OR comm > 1000;
++---------+
+| COMM    |
++---------+
+| 1400.00 |
++---------+
+(1 row)
+
+!ok
+
+SELECT UNIQUE_VALUE(comm) RESPECT NULLS AS comm
+FROM "scott".emp
+WHERE comm > 1000;
++---------+
+| COMM    |
++---------+
+| 1400.00 |
++---------+
+(1 row)
+
 !ok
 
 !use orinoco

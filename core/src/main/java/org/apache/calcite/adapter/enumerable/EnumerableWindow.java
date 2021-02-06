@@ -21,6 +21,7 @@ import org.apache.calcite.adapter.enumerable.impl.WinAggResetContextImpl;
 import org.apache.calcite.adapter.enumerable.impl.WinAggResultContextImpl;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteSystemProperty;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -37,7 +38,6 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -219,14 +219,12 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       final Expression iterator_ = partitionIterator.right;
 
       List<AggImpState> aggs = new ArrayList<>();
-      List<AggregateCall> aggregateCalls = group.getAggregateCalls(this);
-      for (int aggIdx = 0; aggIdx < aggregateCalls.size(); aggIdx++) {
-        AggregateCall call = aggregateCalls.get(aggIdx);
-        if (call.ignoreNulls()) {
+      Ord.forEach(group.getAggregateCalls(this), (call, i) -> {
+        if (call.ignoreNulls() && !call.getAggregation().ignoresNulls()) {
           throw new UnsupportedOperationException("IGNORE NULLS not supported");
         }
-        aggs.add(new AggImpState(aggIdx, call, true));
-      }
+        aggs.add(new AggImpState(i, call, true));
+      });
 
       // The output from this stage is the input plus the aggregate functions.
       final RelDataTypeFactory.Builder typeBuilder = typeFactory.builder();

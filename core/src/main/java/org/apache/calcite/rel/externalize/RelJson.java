@@ -556,7 +556,7 @@ public class RelJson {
               requireNonNull(lowerBound, "lowerBound"),
               requireNonNull(upperBound, "upperBound"),
               physical,
-              true, false, distinct, false);
+              true, false, distinct, null);
         } else {
           final SqlOperator operator = requireNonNull(toOp(opMap), "operator");
           final RelDataType type;

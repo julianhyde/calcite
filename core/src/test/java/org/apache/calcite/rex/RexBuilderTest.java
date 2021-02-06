@@ -642,7 +642,7 @@ class RexBuilderTest {
                 builder.makeInputRef(type, 2), ImmutableSet.of())),
         RexWindowBounds.UNBOUNDED_PRECEDING,
         RexWindowBounds.CURRENT_ROW,
-        true, true, false, false, false);
+        true, true, false, false, null);
     final RexNode copy = builder.copy(node);
     assertTrue(copy instanceof RexOver);
 
