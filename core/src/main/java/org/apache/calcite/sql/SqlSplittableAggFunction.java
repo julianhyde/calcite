@@ -136,7 +136,7 @@ public interface SqlSplittableAggFunction {
     @Override public @Nullable AggregateCall other(RelDataTypeFactory typeFactory,
         AggregateCall e) {
       return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-          true, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
+          null, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
           typeFactory.createSqlType(SqlTypeName.BIGINT), null);
     }
 
@@ -165,7 +165,7 @@ public interface SqlSplittableAggFunction {
       }
       int ordinal = extra.register(node);
       return AggregateCall.create(SqlStdOperatorTable.SUM0, false, false,
-          false, ImmutableList.of(ordinal), -1, aggregateCall.distinctKeys,
+          null, ImmutableList.of(ordinal), -1, aggregateCall.distinctKeys,
           aggregateCall.collation, aggregateCall.type, aggregateCall.name);
     }
 
@@ -204,7 +204,7 @@ public interface SqlSplittableAggFunction {
           && (top.getAggregation().getKind() == SqlKind.SUM
               || top.getAggregation().getKind() == SqlKind.SUM0)) {
         return AggregateCall.create(bottom.getAggregation(),
-            bottom.isDistinct(), bottom.isApproximate(), false,
+            bottom.isDistinct(), bottom.isApproximate(), null,
             bottom.getArgList(), bottom.filterArg,
             bottom.distinctKeys, bottom.getCollation(),
             bottom.getType(), top.getName());
@@ -249,7 +249,7 @@ public interface SqlSplittableAggFunction {
     @Override public @Nullable AggregateCall merge(AggregateCall top, AggregateCall bottom) {
       if (top.getAggregation().getKind() == bottom.getAggregation().getKind()) {
         return AggregateCall.create(bottom.getAggregation(),
-            bottom.isDistinct(), bottom.isApproximate(), false,
+            bottom.isDistinct(), bottom.isApproximate(), null,
             bottom.getArgList(), bottom.filterArg,
             bottom.distinctKeys, bottom.getCollation(),
             bottom.getType(), top.getName());
@@ -280,7 +280,7 @@ public interface SqlSplittableAggFunction {
     @Override public @Nullable AggregateCall other(RelDataTypeFactory typeFactory,
         AggregateCall e) {
       return AggregateCall.create(SqlStdOperatorTable.COUNT, false, false,
-          true, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
+          null, ImmutableIntList.of(), -1, null, RelCollations.EMPTY,
           typeFactory.createSqlType(SqlTypeName.BIGINT), null);
     }
 
@@ -311,7 +311,7 @@ public interface SqlSplittableAggFunction {
       }
       int ordinal = extra.register(node);
       return AggregateCall.create(getMergeAggFunctionOfTopSplit(), false, false,
-          false, ImmutableList.of(ordinal), -1,
+          null, ImmutableList.of(ordinal), -1,
           aggregateCall.distinctKeys, aggregateCall.collation,
           aggregateCall.type, aggregateCall.name);
     }
@@ -322,7 +322,7 @@ public interface SqlSplittableAggFunction {
           && (topKind == SqlKind.SUM
               || topKind == SqlKind.SUM0)) {
         return AggregateCall.create(bottom.getAggregation(),
-            bottom.isDistinct(), bottom.isApproximate(), false,
+            bottom.isDistinct(), bottom.isApproximate(), null,
             bottom.getArgList(), bottom.filterArg,
             bottom.distinctKeys, bottom.getCollation(),
             bottom.getType(), top.getName());

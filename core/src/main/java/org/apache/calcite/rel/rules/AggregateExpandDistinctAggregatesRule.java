@@ -464,7 +464,7 @@ public final class AggregateExpandDistinctAggregatesRule
     }
 
     distinctAggCalls.add(
-        AggregateCall.create(SqlStdOperatorTable.GROUPING, false, false, false,
+        AggregateCall.create(SqlStdOperatorTable.GROUPING, false, false, null,
             ImmutableIntList.copyOf(fullGroupSet), -1,
             null, RelCollations.EMPTY,
             groupSets.size(), relBuilder.peek(), null, "$g"));

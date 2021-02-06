@@ -1213,10 +1213,10 @@ public class SqlToRelConverter {
                 null,
                 ImmutableList.of(
                     AggregateCall.create(SqlStdOperatorTable.COUNT, false,
-                        false, false, ImmutableList.of(), -1, null,
+                        false, null, ImmutableList.of(), -1, null,
                         RelCollations.EMPTY, longType, null),
                     AggregateCall.create(SqlStdOperatorTable.COUNT, false,
-                        false, false, args, -1, null,
+                        false, null, args, -1, null,
                         RelCollations.EMPTY, longType, null)));
         LogicalJoin join =
             LogicalJoin.create(bb.root(), aggregate, ImmutableList.of(),
@@ -1985,23 +1985,23 @@ public class SqlToRelConverter {
   }
 
   private RexNode convertOver(Blackboard bb, SqlNode node) {
-    return convertOver(bb, node, null);
-  }
-
-  private RexNode convertOver(Blackboard bb, SqlNode node,
-      @Nullable Boolean ignoreNulls) {
     SqlCall call = (SqlCall) node;
     SqlCall aggCall = call.operand(0);
+    SqlNode windowOrRef = call.operand(1);
+    return convertOver(bb, call, aggCall, windowOrRef, null);
+  }
+
+  private RexNode convertOver(Blackboard bb, SqlCall call, SqlCall aggCall,
+      SqlNode windowOrRef, @Nullable Boolean ignoreNulls) {
     switch (aggCall.getKind()) {
     case IGNORE_NULLS:
-      return convertOver(bb, aggCall.operand(0), true);
+      return convertOver(bb, call, aggCall.operand(0), windowOrRef, true);
     case RESPECT_NULLS:
-      return convertOver(bb, aggCall.operand(0), false);
+      return convertOver(bb, call, aggCall.operand(0), windowOrRef, false);
     default:
       break;
     }
 
-    SqlNode windowOrRef = call.operand(1);
     final SqlWindow window =
         validator().resolveWindow(windowOrRef, bb.scope());
 
@@ -5742,14 +5742,12 @@ public class SqlToRelConverter {
                         fieldCollation.getNullDirection()))
                 .collect(Collectors.toList()));
       }
-      final boolean ignoreNulls2 =
-          Util.first(ignoreNulls, aggFunction.ignoresNulls());
       final AggregateCall aggCall =
           AggregateCall.create(
               aggFunction,
               distinct,
               approximate,
-              ignoreNulls2,
+              ignoreNulls,
               args,
               filterArg,
               distinctKeys,

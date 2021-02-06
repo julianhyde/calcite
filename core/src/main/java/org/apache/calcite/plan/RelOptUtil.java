@@ -950,7 +950,7 @@ public abstract class RelOptUtil {
     for (int i = 0; i < aggCallCnt; i++) {
       aggCalls.add(
           AggregateCall.create(SqlLibraryOperators.SINGLE_VALUE, false, false,
-              false, ImmutableList.of(i), -1, null, RelCollations.EMPTY, 0, rel,
+              null, ImmutableList.of(i), -1, null, RelCollations.EMPTY, 0, rel,
               null, null));
     }
 

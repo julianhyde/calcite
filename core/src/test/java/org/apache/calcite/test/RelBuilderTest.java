@@ -961,7 +961,7 @@ public class RelBuilderTest {
                 ImmutableList.of(), ImmutableList.of(), fieldCollations,
                 RexWindowBounds.UNBOUNDED_PRECEDING,
                 RexWindowBounds.UNBOUNDED_FOLLOWING, true, true, false,
-                false, false), alias);
+                false, null), alias);
   }
 
   @Test void testRename() {

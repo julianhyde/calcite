@@ -456,10 +456,10 @@ class RelWriterTest {
                   null,
                   ImmutableList.of(
                       AggregateCall.create(SqlStdOperatorTable.COUNT,
-                          true, false, false, ImmutableList.of(1), -1, null,
+                          true, false, null, ImmutableList.of(1), -1, null,
                           RelCollations.EMPTY, bigIntType, "c"),
                       AggregateCall.create(SqlStdOperatorTable.COUNT,
-                          false, false, false, ImmutableList.of(), -1, null,
+                          false, false, null, ImmutableList.of(), -1, null,
                           RelCollations.EMPTY, bigIntType, "d")));
           aggregate.explain(writer);
           return writer.asString();
@@ -499,7 +499,7 @@ class RelWriterTest {
                                   rexBuilder.makeInputRef(scan, 1), ImmutableSet.of())),
                           RexWindowBounds.UNBOUNDED_PRECEDING,
                           RexWindowBounds.CURRENT_ROW,
-                          true, true, false, false, false),
+                          true, true, false, false, null),
                       rexBuilder.makeOver(bigIntType,
                           SqlStdOperatorTable.SUM,
                           ImmutableList.of(rexBuilder.makeInputRef(scan, 0)),
@@ -1005,7 +1005,7 @@ class RelWriterTest {
                 ImmutableList.copyOf(orderKeys),
                 RexWindowBounds.UNBOUNDED_PRECEDING,
                 RexWindowBounds.CURRENT_ROW,
-                true, true, false, false, false))
+                true, true, false, false, null))
         .build();
     return rel;
   }
