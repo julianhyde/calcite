@@ -207,7 +207,7 @@ The `git_commits` table is based upon the `git log` command.
 {% endhighlight %}
 
 Note that `group by y` is possible because `sqlsh` uses Calcite's
-[lenient mode]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#isGroupByAlias--).
+[lenient mode]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#isGroupByAlias%28%29).
 
 ## Example: stdin
 
