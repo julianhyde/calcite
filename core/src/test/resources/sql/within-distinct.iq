@@ -16,93 +16,6 @@
 # limitations under the License.
 #
 !set outputformat mysql
-!use scott
-
-# Distinct on a field (job) that is not used elsewhere in the query.
-SELECT deptno, SUM(sal), SUM(sal) WITHIN DISTINCT (job)
-FROM "scott".emp
-GROUP BY deptno;
-+--------+----------+---------+
-| DEPTNO | EXPR$1   | EXPR$2  |
-+--------+----------+---------+
-|     10 |  8750.00 | 8750.00 |
-|     20 | 10875.00 | 6775.00 |
-|     30 |  9400.00 | 5050.00 |
-+--------+----------+---------+
-(3 rows)
-
-!ok
-
-# The same query, expanded by hand, same result.
-SELECT deptno,
-  MIN(sumSal) FILTER (WHERE g = 1),
-  SUM(minSal) FILTER (WHERE g = 0)
-FROM (
-  SELECT deptno, job, SUM(sal) AS sumSal, MIN(sal) AS minSal,
-    GROUPING(deptno, job) AS g
-  FROM "scott".emp
-  GROUP BY GROUPING SETS (deptno, (deptno, job)))
-GROUP BY deptno;
-+--------+----------+---------+
-| DEPTNO | EXPR$1   | EXPR$2  |
-+--------+----------+---------+
-|     10 |  8750.00 | 8750.00 |
-|     20 | 10875.00 | 6775.00 |
-|     30 |  9400.00 | 5050.00 |
-+--------+----------+---------+
-(3 rows)
-
-!ok
-
-# COUNT
-SELECT deptno,
-  count(comm) WITHIN DISTINCT (job) AS count_comm,
-  count(*) WITHIN DISTINCT (job) AS count_star
-FROM "scott".emp
-GROUP BY deptno;
-+--------+------------+------------+
-| DEPTNO | COUNT_COMM | COUNT_STAR |
-+--------+------------+------------+
-|     10 |          0 |          3 |
-|     20 |          0 |          3 |
-|     30 |          1 |          3 |
-+--------+------------+------------+
-(3 rows)
-
-!ok
-
-# COUNT, with and without WITHIN DISTINCT
-SELECT deptno,
-  count(comm) WITHIN DISTINCT (job) AS count_comm_job,
-  count(*) WITHIN DISTINCT (job) AS count_star_job,
-  count(comm) AS count_comm,
-  count(*) AS count_star
-FROM "scott".emp
-GROUP BY deptno;
-+--------+----------------+----------------+------------+------------+
-| DEPTNO | COUNT_COMM_JOB | COUNT_STAR_JOB | COUNT_COMM | COUNT_STAR |
-+--------+----------------+----------------+------------+------------+
-|     10 |              0 |              3 |          0 |          3 |
-|     20 |              0 |              3 |          0 |          5 |
-|     30 |              1 |              3 |          4 |          6 |
-+--------+----------------+----------------+------------+------------+
-(3 rows)
-
-!ok
-
-# No GROUP BY
-SELECT sum(sal) WITHIN DISTINCT (job) AS sum_sal,
-  count(comm) WITHIN DISTINCT (job) AS count_comm,
-  count(*) WITHIN DISTINCT (job) AS count_star
-FROM "scott".emp;
-+----------+------------+------------+
-| SUM_SAL  | COUNT_COMM | COUNT_STAR |
-+----------+------------+------------+
-| 12500.00 |          1 |          5 |
-+----------+------------+------------+
-(1 row)
-
-!ok
 
 !use foodmart
 !if (false) {
@@ -237,8 +150,13 @@ select * from emp order by deptno, job;
 
 !ok
 
+# Table 'emp3' is the same as 'emp', but updated so that
+# 'mgr' is functionally dependent on (job, deptno),
+# 'sal' is functionally dependent on job.
 CREATE TABLE emp3 AS
-SELECT empno, ename, job, mgr, hiredate,
+SELECT empno, ename, job,
+ (select min(mgr) from emp where (job, deptno) = (e.job, e.deptno)) AS mgr,
+ hiredate,
  (select min(sal) from emp where job = e.job) AS sal,
  comm, deptno
 FROM emp AS e;
@@ -255,7 +173,7 @@ select * from emp3 order by deptno, job;
 |  7839 | KING   | PRESIDENT |      | 1981-11-17 | 5000.00 |         |     10 |
 |  7788 | SCOTT  | ANALYST   | 7566 | 1987-04-19 | 3000.00 |         |     20 |
 |  7902 | FORD   | ANALYST   | 7566 | 1981-12-03 | 3000.00 |         |     20 |
-|  7369 | SMITH  | CLERK     | 7902 | 1980-12-17 |  800.00 |         |     20 |
+|  7369 | SMITH  | CLERK     | 7788 | 1980-12-17 |  800.00 |         |     20 |
 |  7876 | ADAMS  | CLERK     | 7788 | 1987-05-23 |  800.00 |         |     20 |
 |  7566 | JONES  | MANAGER   | 7839 | 1981-02-04 | 2450.00 |         |     20 |
 |  7900 | JAMES  | CLERK     | 7698 | 1981-12-03 |  800.00 |         |     30 |
@@ -269,7 +187,125 @@ select * from emp3 order by deptno, job;
 
 !ok
 
-select deptno, avg(sal) as avg_sal, avg(sal) within distinct (job) as avg_job_sal
+# Distinct on a field (job) that is not used elsewhere in the query.
+SELECT deptno, SUM(sal), SUM(sal) WITHIN DISTINCT (job)
+FROM emp3
+GROUP BY deptno;
++--------+----------+---------+
+| DEPTNO | EXPR$1   | EXPR$2  |
++--------+----------+---------+
+|     10 |  8250.00 | 8250.00 |
+|     20 | 10050.00 | 6250.00 |
+|     30 |  8250.00 | 4500.00 |
++--------+----------+---------+
+(3 rows)
+
+!ok
+
+# The same query, expanded by hand, same result.
+SELECT deptno,
+  MIN(sumSal) FILTER (WHERE g = 1),
+  SUM(minSal) FILTER (WHERE g = 0)
+FROM (
+  SELECT deptno, job, SUM(sal) AS sumSal, MIN(sal) AS minSal,
+    GROUPING(deptno, job) AS g
+  FROM emp3
+  GROUP BY GROUPING SETS (deptno, (deptno, job)))
+GROUP BY deptno;
++--------+----------+---------+
+| DEPTNO | EXPR$1   | EXPR$2  |
++--------+----------+---------+
+|     10 |  8250.00 | 8250.00 |
+|     20 | 10050.00 | 6250.00 |
+|     30 |  8250.00 | 4500.00 |
++--------+----------+---------+
+(3 rows)
+
+!ok
+
+# COUNT
+SELECT deptno,
+  count(mgr) WITHIN DISTINCT (job) AS count_mgr,
+  count(*) WITHIN DISTINCT (job) AS count_star
+FROM emp3
+GROUP BY deptno;
++--------+-----------+------------+
+| DEPTNO | COUNT_MGR | COUNT_STAR |
++--------+-----------+------------+
+|     10 |         2 |          3 |
+|     20 |         3 |          3 |
+|     30 |         3 |          3 |
++--------+-----------+------------+
+(3 rows)
+
+!ok
+
+# COUNT, with and without WITHIN DISTINCT
+SELECT deptno,
+  count(mgr) WITHIN DISTINCT (job) AS count_mgr_job,
+  count(*) WITHIN DISTINCT (job) AS count_star_job,
+  count(mgr) AS count_mgr,
+  count(*) AS count_star
+FROM emp3
+GROUP BY deptno;
++--------+---------------+----------------+-----------+------------+
+| DEPTNO | COUNT_MGR_JOB | COUNT_STAR_JOB | COUNT_MGR | COUNT_STAR |
++--------+---------------+----------------+-----------+------------+
+|     10 |             2 |              3 |         2 |          3 |
+|     20 |             3 |              3 |         5 |          5 |
+|     30 |             3 |              3 |         6 |          6 |
++--------+---------------+----------------+-----------+------------+
+(3 rows)
+
+!ok
+
+# No GROUP BY
+SELECT sum(sal) WITHIN DISTINCT (job) AS sum_sal,
+  count(sal) WITHIN DISTINCT (job) AS count_sal,
+  count(*) WITHIN DISTINCT (job) AS count_star
+FROM emp3;
++----------+-----------+------------+
+| SUM_SAL  | COUNT_SAL | COUNT_STAR |
++----------+-----------+------------+
+| 12500.00 |         5 |          5 |
++----------+-----------+------------+
+(1 row)
+
+!ok
+
+# Adding 'mgr' to previous query gives error because 'mgr'
+# is functionally dependent on (deptno, job) but not on (job) alone.
+SELECT sum(sal) WITHIN DISTINCT (job) AS sum_sal,
+  count(sal) WITHIN DISTINCT (job) AS count_sal,
+  count(mgr) WITHIN DISTINCT (job) AS count_mgr,
+  count(*) WITHIN DISTINCT (job) AS count_star
+FROM emp3;
+more than one distinct value in agg UNIQUE_VALUE
+!error
+
+# The "No GROUP BY" query but with grouping sets
+!if (false) {
+SELECT deptno,
+  job,
+  sum(sal) WITHIN DISTINCT (job) AS sum_sal,
+  count(sal) WITHIN DISTINCT (job) AS count_sal,
+  count(*) WITHIN DISTINCT (job) AS count_star
+FROM emp3
+GROUP BY ROLLUP(deptno, job)
+ORDER BY 1, 2;
++----------+-----------+------------+
+| SUM_SAL  | COUNT_SAL | COUNT_STAR |
++----------+-----------+------------+
+| 12500.00 |         5 |          5 |
++----------+-----------+------------+
+(1 row)
+
+!ok
+!}
+
+SELECT deptno,
+  avg(sal) AS avg_sal,
+  avg(sal) WITHIN DISTINCT (job) AS avg_job_sal
 from emp3
 group by deptno
 order by deptno;
@@ -329,33 +365,11 @@ select deptno, avg(sal) as avg_sal, avg(sal) within distinct (job) as avg_job_sa
 from emp
 group by deptno
 order by deptno;
-+--------+-------------------+-------------------+
-| DEPTNO | AVG_SAL           | AVG_JOB_SAL       |
-+--------+-------------------+-------------------+
-|     10 | 2916.666666666667 | 2916.666666666667 |
-|     20 |           2175.00 | 2258.333333333333 |
-|     30 | 1566.666666666667 | 1683.333333333333 |
-+--------+-------------------+-------------------+
-(3 rows)
+more than one distinct value in agg UNIQUE_VALUE
+!error
 
-!ok
-
-# As previous, but without "avg(sal) as avg_sal"
-select deptno, avg(sal) within distinct (job) as avg_job_sal
-from emp
-group by deptno
-order by deptno;
-+--------+-------------------+
-| DEPTNO | AVG_JOB_SAL       |
-+--------+-------------------+
-|     10 | 2916.666666666667 |
-|     20 | 2258.333333333333 |
-|     30 | 1683.333333333333 |
-+--------+-------------------+
-(3 rows)
-
-!ok
-
+#####################################################################
+# The following tests are based on a new schema with many-to-one-to-one.
 #
 # +-------------+      +--------+      +-----------+
 # | order_items |>-----| orders |>-----| customers |
@@ -810,6 +824,7 @@ FROM t;
 
 !ok
 
+#####################################################################
 # Famous Five example, as given in [CALCITE-4483].
 CREATE TABLE Friends AS
 SELECT * FROM (VALUES
@@ -860,7 +875,6 @@ LEFT JOIN Jobs AS j USING (name);
 
 # If age is not functionally dependent on name, throw.
 # Note that George has ages 15 and 2.
-!if (false) {
 WITH FriendJobs
 AS (SELECT * FROM (VALUES
   ('Julian', 16, 'Programmer'),
@@ -874,7 +888,7 @@ SELECT SUM(age) AS sa,
   SUM(age) WITHIN DISTINCT (name) AS sa_n,
   COUNT(title) AS c
 FROM FriendJobs;
-!ok
-!}
+more than one distinct value in agg UNIQUE_VALUE
+!error
 
 # End within-distinct.iq

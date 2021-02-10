@@ -1522,6 +1522,8 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
+  /** Tests {@link AggregateExpandWithinDistinctRule}. The generated query
+   * throws if arguments are not functionally dependent on the distinct key. */
   @Test void testWithinDistinct() {
     final String sql = "SELECT deptno, SUM(sal), SUM(sal) WITHIN DISTINCT (job)\n"
         + "FROM emp\n"
@@ -1529,6 +1531,22 @@ class RelOptRulesTest extends RelOptTestBase {
     HepProgram program = new HepProgramBuilder()
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
+        .build();
+    sql(sql).with(program).check();
+  }
+
+  /** As {@link #testWithinDistinct()}, but the generated query does not throw
+   * if arguments are not functionally dependent on the distinct key.
+   *
+   * @see AggregateExpandWithinDistinctRule.Config#throwIfNotUnique() */
+  @Test void testWithinDistinctNoThrow() {
+    final String sql = "SELECT deptno, SUM(sal), SUM(sal) WITHIN DISTINCT (job)\n"
+        + "FROM emp\n"
+        + "GROUP BY deptno";
+    HepProgram program = new HepProgramBuilder()
+        .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
+        .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT
+            .config.withThrowIfNotUnique(false).toRule())
         .build();
     sql(sql).with(program).check();
   }
@@ -1545,7 +1563,8 @@ class RelOptRulesTest extends RelOptTestBase {
         + "GROUP BY deptno";
     HepProgram program = new HepProgramBuilder()
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
-        .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
+        .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT
+            .config.withThrowIfNotUnique(false).toRule())
         .build();
     sql(sql).with(program).check();
   }
