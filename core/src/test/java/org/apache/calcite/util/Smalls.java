@@ -96,6 +96,8 @@ public class Smalls {
       Types.lookupMethod(Smalls.class, "fibonacciTableWithLimit100");
   public static final Method FIBONACCI_LIMIT_TABLE_METHOD =
       Types.lookupMethod(Smalls.class, "fibonacciTableWithLimit", long.class);
+  public static final Method FIBONACCI_INSTANCE_TABLE_METHOD =
+      Types.lookupMethod(Smalls.FibonacciTableFunction.class, "eval");
   public static final Method VIEW_METHOD =
       Types.lookupMethod(Smalls.class, "view", String.class);
   public static final Method STR_METHOD =
@@ -487,6 +489,22 @@ public class Smalls {
 
     public static int eval(int x) {
       return x * 2;
+    }
+  }
+
+  /** Example of a UDF with non-default constructor.
+   *
+   * <p>Not used; we do not currently have a way to instantiate function
+   * objects other than via their default constructor. */
+  public static class FibonacciTableFunction {
+    private final int limit;
+
+    public FibonacciTableFunction(int limit) {
+      this.limit = limit;
+    }
+
+    public ScannableTable eval() {
+      return fibonacciTableWithLimit(limit);
     }
   }
 
