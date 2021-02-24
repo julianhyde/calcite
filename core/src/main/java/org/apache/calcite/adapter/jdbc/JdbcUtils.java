@@ -34,7 +34,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.primitives.Ints;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -220,39 +219,6 @@ final class JdbcUtils {
       return time + offset;
     }
   }
-
-    /** Returns a timestamp shifted by the default time-zone's offset;
-     * null if and only if {@code v} is null. */
-    private static @PolyNull Timestamp shift(@PolyNull Timestamp v) {
-      if (v == null) {
-        return null;
-      }
-      long time = v.getTime();
-      int offset = TimeZone.getDefault().getOffset(time);
-      return new Timestamp(time + offset);
-    }
-
-    /** Returns a time shifted by the default time-zone's offset;
-     * null if and only if {@code v} is null. */
-    private static @PolyNull Time shift(@PolyNull Time v) {
-      if (v == null) {
-        return null;
-      }
-      long time = v.getTime();
-      int offset = TimeZone.getDefault().getOffset(time);
-      return new Time((time + offset) % DateTimeUtils.MILLIS_PER_DAY);
-    }
-
-    /** Returns a date shifted by the default time-zone's offset;
-     * null if and only if {@code v} is null. */
-    private static @PolyNull Date shift(@PolyNull Date v) {
-      if (v == null) {
-        return null;
-      }
-      long time = v.getTime();
-      int offset = TimeZone.getDefault().getOffset(time);
-      return new Date(time + offset);
-    }
 
   /** Row builder that converts JDBC values into internal values. */
   static class ObjectArrayRowBuilder2 extends ObjectArrayRowBuilder {
