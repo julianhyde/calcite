@@ -68,14 +68,18 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexCallBinding;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexExecutor;
+import org.apache.calcite.rex.RexFieldCollation;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.schema.impl.ListTransientTable;
@@ -124,6 +128,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -805,6 +810,43 @@ public class RelBuilder {
   /** Converts a sort expression to nulls first. */
   public RexNode nullsFirst(RexNode node) {
     return call(SqlStdOperatorTable.NULLS_FIRST, node);
+  }
+
+  // Methods that create window bounds
+
+  /** Creates an {@code UNBOUNDED PRECEDING} window bound,
+   * for use in methods such as {@link OverCall#rowsFrom(RexWindowBound)}
+   * and {@link OverCall#rangeBetween(RexWindowBound, RexWindowBound)}. */
+  public RexWindowBound unboundedPreceding() {
+    return RexWindowBounds.UNBOUNDED_PRECEDING;
+  }
+
+  /** Creates a {@code bound PRECEDING} window bound,
+   * for use in methods such as {@link OverCall#rowsFrom(RexWindowBound)}
+   * and {@link OverCall#rangeBetween(RexWindowBound, RexWindowBound)}. */
+  public RexWindowBound preceding(RexNode bound) {
+    return RexWindowBounds.preceding(bound);
+  }
+
+  /** Creates a {@code CURRENT ROW} window bound,
+   * for use in methods such as {@link OverCall#rowsFrom(RexWindowBound)}
+   * and {@link OverCall#rangeBetween(RexWindowBound, RexWindowBound)}. */
+  public RexWindowBound currentRow() {
+    return RexWindowBounds.CURRENT_ROW;
+  }
+
+  /** Creates a {@code bound FOLLOWING} window bound,
+   * for use in methods such as {@link OverCall#rowsFrom(RexWindowBound)}
+   * and {@link OverCall#rangeBetween(RexWindowBound, RexWindowBound)}. */
+  public RexWindowBound following(RexNode bound) {
+    return RexWindowBounds.following(bound);
+  }
+
+  /** Creates an {@code UNBOUNDED FOLLOWING} window bound,
+   * for use in methods such as {@link OverCall#rowsFrom(RexWindowBound)}
+   * and {@link OverCall#rangeBetween(RexWindowBound, RexWindowBound)}. */
+  public RexWindowBound unboundedFollowing() {
+    return RexWindowBounds.UNBOUNDED_FOLLOWING;
   }
 
   // Methods that create group keys and aggregate calls
@@ -2838,7 +2880,8 @@ public class RelBuilder {
 
   private static RelFieldCollation collation(RexNode node,
       RelFieldCollation.Direction direction,
-      RelFieldCollation.@Nullable NullDirection nullDirection, List<RexNode> extraNodes) {
+      RelFieldCollation.@Nullable NullDirection nullDirection,
+      List<RexNode> extraNodes) {
     switch (node.getKind()) {
     case INPUT_REF:
       return new RelFieldCollation(((RexInputRef) node).getIndex(), direction,
@@ -2858,6 +2901,34 @@ public class RelBuilder {
       extraNodes.add(node);
       return new RelFieldCollation(fieldIndex, direction,
           Util.first(nullDirection, direction.defaultNullDirection()));
+    }
+  }
+
+  private static RexFieldCollation rexCollation(RexNode node,
+      RelFieldCollation.Direction direction,
+      RelFieldCollation.@Nullable NullDirection nullDirection) {
+    switch (node.getKind()) {
+    case DESCENDING:
+      return rexCollation(((RexCall) node).operands.get(0),
+          RelFieldCollation.Direction.DESCENDING, nullDirection);
+    case NULLS_LAST:
+      return rexCollation(((RexCall) node).operands.get(0),
+          direction, RelFieldCollation.NullDirection.LAST);
+    case NULLS_FIRST:
+      return rexCollation(((RexCall) node).operands.get(0),
+          direction, RelFieldCollation.NullDirection.FIRST);
+    default:
+      final Set<SqlKind> flags = EnumSet.noneOf(SqlKind.class);
+      if (direction == RelFieldCollation.Direction.DESCENDING) {
+        flags.add(SqlKind.DESCENDING);
+      }
+      if (nullDirection == RelFieldCollation.NullDirection.FIRST) {
+        flags.add(SqlKind.NULLS_FIRST);
+      }
+      if (nullDirection == RelFieldCollation.NullDirection.LAST) {
+        flags.add(SqlKind.NULLS_LAST);
+      }
+      return new RexFieldCollation(node, flags);
     }
   }
 
@@ -3265,6 +3336,8 @@ public class RelBuilder {
     default AggCall distinct() {
       return distinct(true);
     }
+
+    OverCall over();
   }
 
   /** Internal methods shared by all implementations of {@link AggCall}. */
@@ -3462,6 +3535,10 @@ public class RelBuilder {
       registrar.registerExpressions(orderKeys);
     }
 
+    @Override public OverCall over() {
+      return new OverCallImpl(this);
+    }
+
     @Override public AggCall sort(Iterable<RexNode> orderKeys) {
       final ImmutableList<RexNode> orderKeyList =
           ImmutableList.copyOf(orderKeys);
@@ -3522,11 +3599,15 @@ public class RelBuilder {
 
   /** Implementation of {@link AggCall} that wraps an
    * {@link AggregateCall}. */
-  private static class AggCallImpl2 implements AggCallPlus {
+  private class AggCallImpl2 implements AggCallPlus {
     private final AggregateCall aggregateCall;
 
     AggCallImpl2(AggregateCall aggregateCall) {
       this.aggregateCall = requireNonNull(aggregateCall, "aggregateCall");
+    }
+
+    @Override public OverCall over() {
+      return new OverCallImpl(this);
     }
 
     @Override public String toString() {
@@ -3584,6 +3665,206 @@ public class RelBuilder {
 
     @Override public AggCall ignoreNulls(boolean ignoreNulls) {
       throw new UnsupportedOperationException();
+    }
+  }
+
+  /** Call to a windowed aggregate function.
+   *
+   * <p>Created using {@link AggCall#over()}, for example
+   *
+   * <blockquote><pre>
+   *      b.scan("EMP")
+   *         .project(b.field("DEPTNO"),
+   *            b.aggregateCall(SqlStdOperatorTable.ROW_NUMBER)
+   *               .over()
+   *               .partitionBy()
+   *               .orderBy(b.field("EMPNO"))
+   *               .rowsUnbounded()
+   *               .allowPartial(true)
+   *               .nullWhenCountZero(false)
+   *               .as("x"))
+   * </pre>
+   * </blockquote> */
+  public interface OverCall {
+    /** Sets the PARTITION BY clause to an array of expressions. */
+    OverCall partitionBy(RexNode... expressions);
+
+    /** Sets the PARTITION BY clause to a list of expressions. */
+    OverCall partitionBy(Iterable<? extends RexNode> expressions);
+
+    /** Sets the ORDER BY BY clause to an array of expressions.
+     *
+     * <p>Use {@link #desc(RexNode)}, {@link #nullsFirst(RexNode)},
+     * {@link #nullsLast(RexNode)} to control the sort order. */
+    OverCall orderBy(RexNode... expressions);
+
+    /** Sets the ORDER BY BY clause to a list of expressions.
+     *
+     * <p>Use {@link #desc(RexNode)}, {@link #nullsFirst(RexNode)},
+     * {@link #nullsLast(RexNode)} to control the sort order. */
+    OverCall orderBy(Iterable<? extends RexNode> expressions);
+
+    /** Sets an unbounded ROWS window. */
+    default OverCall rowsUnbounded() {
+      return rowsBetween(RexWindowBounds.UNBOUNDED_PRECEDING,
+          RexWindowBounds.UNBOUNDED_FOLLOWING);
+    }
+
+    /** Sets a ROWS window with a lower bound. */
+    default OverCall rowsFrom(RexWindowBound lower) {
+      return rowsBetween(lower, RexWindowBounds.UNBOUNDED_FOLLOWING);
+    }
+
+    /** Sets a ROWS window with an upper bound. */
+    default OverCall rowsTo(RexWindowBound upper) {
+      return rowsBetween(RexWindowBounds.UNBOUNDED_PRECEDING, upper);
+    }
+
+    /** Sets a ROWS window with lower and upper bounds. */
+    OverCall rowsBetween(RexWindowBound lower, RexWindowBound upper);
+
+    /** Sets an unbounded RANGE window. */
+    default OverCall rangeUnbounded() {
+      return rangeBetween(RexWindowBounds.UNBOUNDED_PRECEDING,
+          RexWindowBounds.UNBOUNDED_FOLLOWING);
+    }
+
+    /** Sets a RANGE window with a lower bound. */
+    default OverCall rangeFrom(RexWindowBound lower) {
+      return rangeBetween(lower, RexWindowBounds.UNBOUNDED_FOLLOWING);
+    }
+
+    /** Sets a RANGE window with an upper bound. */
+    default OverCall rangeTo(RexWindowBound upper) {
+      return rangeBetween(RexWindowBounds.UNBOUNDED_PRECEDING, upper);
+    }
+
+    /** Sets a RANGE window with upper and lower bounds. */
+    OverCall rangeBetween(RexWindowBound lower, RexWindowBound upper);
+
+    /** Sets whether to allow partial width windows; default true. */
+    OverCall allowPartial(boolean allowPartial);
+
+    /** Sets whether the aggregate function should evaluate to null if no rows
+     * are in the window; default false. */
+    OverCall nullWhenCountZero(boolean nullWhenCountZero);
+
+    /** Sets the alias of this expression, and converts it to a {@link RexNode};
+     * default is the alias that was set via {@link AggCall#as(String)}. */
+    RexNode as(String alias);
+
+    /** Converts this expression to a {@link RexNode}. */
+    RexNode toRex();
+  }
+
+  /** Implementation of {@link OverCall}. */
+  private class OverCallImpl implements OverCall {
+    private final AggCallPlus aggCall;
+    private final @Nullable String alias;
+    private final boolean nullWhenCountZero;
+    private final boolean allowPartial;
+    private final boolean rows;
+    private final RexWindowBound lowerBound;
+    private final RexWindowBound upperBound;
+    private final ImmutableList<RexNode> partitionKeys;
+    private final ImmutableList<RexFieldCollation> sortKeys;
+
+    private OverCallImpl(AggCallPlus aggCall, @Nullable String alias,
+        ImmutableList<RexNode> partitionKeys,
+        ImmutableList<RexFieldCollation> sortKeys, boolean rows,
+        RexWindowBound lowerBound, RexWindowBound upperBound,
+        boolean nullWhenCountZero, boolean allowPartial) {
+      this.aggCall = aggCall;
+      this.alias = alias;
+      this.partitionKeys = partitionKeys;
+      this.sortKeys = sortKeys;
+      this.nullWhenCountZero = nullWhenCountZero;
+      this.allowPartial = allowPartial;
+      this.rows = rows;
+      this.lowerBound = lowerBound;
+      this.upperBound = upperBound;
+    }
+
+    /** Creates an OverCallImpl with default settings. */
+    OverCallImpl(AggCallPlus aggCall) {
+      this(aggCall, aggCall.alias(), ImmutableList.of(), ImmutableList.of(),
+          true, RexWindowBounds.UNBOUNDED_PRECEDING,
+          RexWindowBounds.UNBOUNDED_FOLLOWING, false, true);
+    }
+
+    @Override public OverCall partitionBy(
+        Iterable<? extends RexNode> expressions) {
+      return partitionBy_(ImmutableList.copyOf(expressions));
+    }
+
+    @Override public OverCall partitionBy(RexNode... expressions) {
+      return partitionBy_(ImmutableList.copyOf(expressions));
+    }
+
+    private OverCall partitionBy_(ImmutableList<RexNode> partitionKeys) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+    }
+
+    private OverCall orderBy_(ImmutableList<RexFieldCollation> sortKeys) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+    }
+
+    @Override public OverCall orderBy(Iterable<? extends RexNode> sortKeys) {
+      ImmutableList.Builder<RexFieldCollation> fieldCollations =
+          ImmutableList.builder();
+      sortKeys.forEach(sortKey ->
+          fieldCollations.add(
+              rexCollation(sortKey, RelFieldCollation.Direction.ASCENDING,
+                  null)));
+      return orderBy_(fieldCollations.build());
+    }
+
+    @Override public OverCall orderBy(RexNode... sortKeys) {
+      return orderBy(Arrays.asList(sortKeys));
+    }
+
+    @Override public OverCall rowsBetween(RexWindowBound lowerBound,
+        RexWindowBound upperBound) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, true,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+    }
+
+    @Override public OverCall rangeBetween(RexWindowBound lowerBound,
+        RexWindowBound upperBound) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, false,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+    }
+
+    @Override public OverCall allowPartial(boolean allowPartial) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+    }
+
+    @Override public OverCall nullWhenCountZero(boolean nullWhenCountZero) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+    }
+
+    @Override public RexNode as(String alias) {
+      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
+          lowerBound, upperBound, nullWhenCountZero, allowPartial).toRex();
+    }
+
+    @Override public RexNode toRex() {
+      final AggregateCall aggregateCall = aggCall.aggregateCall();
+      final List<RexNode> operands = fields(aggregateCall.getArgList());
+      final RexCallBinding bind =
+          new RexCallBinding(getTypeFactory(), aggCall.op(),
+              operands, ImmutableList.of());
+      final RelDataType type = aggCall.op().inferReturnType(bind);
+      final RexNode over = getRexBuilder()
+          .makeOver(type, aggCall.op(), operands,
+              partitionKeys, sortKeys, lowerBound, upperBound, rows,
+              allowPartial, nullWhenCountZero, aggregateCall.isDistinct(),
+              aggregateCall.ignoreNulls());
+      return alias == null ? over : alias(over, alias);
     }
   }
 

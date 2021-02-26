@@ -921,10 +921,22 @@ public class RelBuilderTest {
                         ImmutableSet.of())),
                 "x"))
         .build();
+    final Function<RelBuilder, RelNode> f2 = b -> b.scan("EMP")
+        .project(b.field("DEPTNO"),
+            b.aggregateCall(SqlStdOperatorTable.ROW_NUMBER)
+                .over()
+                .partitionBy()
+                .orderBy(b.field("EMPNO"))
+                .rowsUnbounded()
+                .allowPartial(true)
+                .nullWhenCountZero(false)
+                .as("x"))
+        .build();
     final String expected = ""
         + "LogicalProject(DEPTNO=[$7], x=[ROW_NUMBER() OVER (ORDER BY $0)])\n"
         + "  LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(f.apply(createBuilder()), hasTree(expected));
+    assertThat(f2.apply(createBuilder()), hasTree(expected));
   }
 
   /** Tests that RelBuilder does not merge a Project that contains a windowed
