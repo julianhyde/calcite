@@ -1151,10 +1151,15 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     // If necessary, swap the sets, so we're always merging the newer set
     // into the older or merging parent set into child set.
+    boolean swap = false;
     if (set2.getChildSets(this).contains(set)) {
-      // No-op
-    } else if (set.getChildSets(this).contains(set2)
-        || set.id > set2.id) {
+      if (set.getChildSets(this).contains(set2) && set.id > set2.id) {
+        swap = true;
+      }
+    } else if (set.getChildSets(this).contains(set2) || set.id > set2.id) {
+      swap = true;
+    }
+    if (swap) {
       RelSet t = set;
       set = set2;
       set2 = t;
