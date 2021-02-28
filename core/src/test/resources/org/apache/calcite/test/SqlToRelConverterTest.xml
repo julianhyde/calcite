@@ -1776,10 +1776,9 @@ LogicalProject(EXPR$0=[LEAD($7, 1) OVER (ORDER BY $0)], EXPR$1=[LEAD($7, 2) IGNO
     </TestCase>
     <TestCase name="testOverOrderFollowingWindow">
         <Resource name="sql">
-            <![CDATA[select
-  last_value(deptno) over (order by empno rows 2 following)
+            <![CDATA[select last_value(deptno) over w
 from emp
-]]>
+window w as (order by empno rows 2 following)]]>
         </Resource>
         <Resource name="plan">
             <![CDATA[
@@ -6443,7 +6442,7 @@ order by row_number() over(partition by empno order by deptno)]]>
             <![CDATA[
 LogicalProject(DEPTNO=[$0], EXPR$1=[$1])
   LogicalSort(sort0=[$2], dir0=[ASC-nulls-first])
-    LogicalProject(DEPTNO=[$7], EXPR$1=[RANK() OVER (PARTITION BY $0 ORDER BY $7 NULLS FIRST)], EXPR$2=[ROW_NUMBER() OVER (PARTITION BY $0 ORDER BY $7 NULLS FIRST)])
+    LogicalProject(DEPTNO=[$7], EXPR$1=[RANK() OVER (PARTITION BY $0 ORDER BY $7)], EXPR$2=[ROW_NUMBER() OVER (PARTITION BY $0 ORDER BY $7)])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
         </Resource>

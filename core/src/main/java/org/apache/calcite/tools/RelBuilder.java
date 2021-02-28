@@ -86,6 +86,7 @@ import org.apache.calcite.schema.impl.ListTransientTable;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
 import org.apache.calcite.sql.fun.SqlLikeOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -240,7 +241,7 @@ public class RelBuilder {
     return new RelBuilder(context, cluster, relOptSchema);
   }
 
-  /** Performs an action on this RelBuilder if a condition is true.
+  /** Performs an action on this RelBuilder.
    *
    * <p>For example, consider the following code:
    *
@@ -1833,7 +1834,11 @@ public class RelBuilder {
   public RelBuilder aggregate(GroupKey groupKey, List<AggregateCall> aggregateCalls) {
     return aggregate(groupKey,
         aggregateCalls.stream()
-            .map(AggCallImpl2::new)
+            .map(aggregateCall ->
+                new AggCallImpl2(aggregateCall,
+                    aggregateCall.getArgList().stream()
+                        .map(this::field)
+                        .collect(Util.toImmutableList())))
             .collect(Collectors.toList()));
   }
 
@@ -3536,7 +3541,8 @@ public class RelBuilder {
     }
 
     @Override public OverCall over() {
-      return new OverCallImpl(this);
+      return new OverCallImpl(aggFunction, distinct, operands, ignoreNulls,
+          alias);
     }
 
     @Override public AggCall sort(Iterable<RexNode> orderKeys) {
@@ -3601,13 +3607,17 @@ public class RelBuilder {
    * {@link AggregateCall}. */
   private class AggCallImpl2 implements AggCallPlus {
     private final AggregateCall aggregateCall;
+    private final ImmutableList<RexNode> operands;
 
-    AggCallImpl2(AggregateCall aggregateCall) {
+    AggCallImpl2(AggregateCall aggregateCall, ImmutableList<RexNode> operands) {
       this.aggregateCall = requireNonNull(aggregateCall, "aggregateCall");
+      this.operands = requireNonNull(operands, "operands");
     }
 
     @Override public OverCall over() {
-      return new OverCallImpl(this);
+      return new OverCallImpl(aggregateCall.getAggregation(),
+          aggregateCall.isDistinct(), operands, aggregateCall.ignoreNulls(),
+          aggregateCall.name);
     }
 
     @Override public String toString() {
@@ -3686,6 +3696,11 @@ public class RelBuilder {
    * </pre>
    * </blockquote> */
   public interface OverCall {
+    /** Performs an action on this OverCall. */
+    default <R> R let(Function<OverCall, R> consumer) {
+      return consumer.apply(this);
+    }
+
     /** Sets the PARTITION BY clause to an array of expressions. */
     OverCall partitionBy(RexNode... expressions);
 
@@ -3704,42 +3719,52 @@ public class RelBuilder {
      * {@link #nullsLast(RexNode)} to control the sort order. */
     OverCall orderBy(Iterable<? extends RexNode> expressions);
 
-    /** Sets an unbounded ROWS window. */
+    /** Sets an unbounded ROWS window,
+     * equivalent to SQL {@code ROWS BETWEEN UNBOUNDED PRECEDING AND
+     * UNBOUNDED FOLLOWING}. */
     default OverCall rowsUnbounded() {
       return rowsBetween(RexWindowBounds.UNBOUNDED_PRECEDING,
           RexWindowBounds.UNBOUNDED_FOLLOWING);
     }
 
-    /** Sets a ROWS window with a lower bound. */
+    /** Sets a ROWS window with a lower bound,
+     * equivalent to SQL {@code ROWS BETWEEN lower AND CURRENT ROW}. */
     default OverCall rowsFrom(RexWindowBound lower) {
       return rowsBetween(lower, RexWindowBounds.UNBOUNDED_FOLLOWING);
     }
 
-    /** Sets a ROWS window with an upper bound. */
+    /** Sets a ROWS window with an upper bound,
+     * equivalent to SQL {@code ROWS BETWEEN CURRENT ROW AND upper}. */
     default OverCall rowsTo(RexWindowBound upper) {
       return rowsBetween(RexWindowBounds.UNBOUNDED_PRECEDING, upper);
     }
 
-    /** Sets a ROWS window with lower and upper bounds. */
+    /** Sets a RANGE window with lower and upper bounds,
+     * equivalent to SQL {@code ROWS BETWEEN lower ROW AND upper}. */
     OverCall rowsBetween(RexWindowBound lower, RexWindowBound upper);
 
-    /** Sets an unbounded RANGE window. */
+    /** Sets an unbounded RANGE window,
+     * equivalent to SQL {@code RANGE BETWEEN UNBOUNDED PRECEDING AND
+     * UNBOUNDED FOLLOWING}. */
     default OverCall rangeUnbounded() {
       return rangeBetween(RexWindowBounds.UNBOUNDED_PRECEDING,
           RexWindowBounds.UNBOUNDED_FOLLOWING);
     }
 
-    /** Sets a RANGE window with a lower bound. */
+    /** Sets a RANGE window with a lower bound,
+     * equivalent to SQL {@code RANGE BETWEEN lower AND CURRENT ROW}. */
     default OverCall rangeFrom(RexWindowBound lower) {
-      return rangeBetween(lower, RexWindowBounds.UNBOUNDED_FOLLOWING);
+      return rangeBetween(lower, RexWindowBounds.CURRENT_ROW);
     }
 
-    /** Sets a RANGE window with an upper bound. */
+    /** Sets a RANGE window with an upper bound,
+     * equivalent to SQL {@code RANGE BETWEEN CURRENT ROW AND upper}. */
     default OverCall rangeTo(RexWindowBound upper) {
       return rangeBetween(RexWindowBounds.UNBOUNDED_PRECEDING, upper);
     }
 
-    /** Sets a RANGE window with upper and lower bounds. */
+    /** Sets a RANGE window with lower and upper bounds,
+     * equivalent to SQL {@code RANGE BETWEEN lower ROW AND upper}. */
     OverCall rangeBetween(RexWindowBound lower, RexWindowBound upper);
 
     /** Sets whether to allow partial width windows; default true. */
@@ -3759,7 +3784,8 @@ public class RelBuilder {
 
   /** Implementation of {@link OverCall}. */
   private class OverCallImpl implements OverCall {
-    private final AggCallPlus aggCall;
+    private final ImmutableList<RexNode> operands;
+    private final boolean ignoreNulls;
     private final @Nullable String alias;
     private final boolean nullWhenCountZero;
     private final boolean allowPartial;
@@ -3768,13 +3794,19 @@ public class RelBuilder {
     private final RexWindowBound upperBound;
     private final ImmutableList<RexNode> partitionKeys;
     private final ImmutableList<RexFieldCollation> sortKeys;
+    private final SqlAggFunction op;
+    private final boolean distinct;
 
-    private OverCallImpl(AggCallPlus aggCall, @Nullable String alias,
-        ImmutableList<RexNode> partitionKeys,
+    private OverCallImpl(SqlAggFunction op, boolean distinct,
+        ImmutableList<RexNode> operands, boolean ignoreNulls,
+        @Nullable String alias, ImmutableList<RexNode> partitionKeys,
         ImmutableList<RexFieldCollation> sortKeys, boolean rows,
         RexWindowBound lowerBound, RexWindowBound upperBound,
         boolean nullWhenCountZero, boolean allowPartial) {
-      this.aggCall = aggCall;
+      this.op = op;
+      this.distinct = distinct;
+      this.operands = operands;
+      this.ignoreNulls = ignoreNulls;
       this.alias = alias;
       this.partitionKeys = partitionKeys;
       this.sortKeys = sortKeys;
@@ -3786,9 +3818,11 @@ public class RelBuilder {
     }
 
     /** Creates an OverCallImpl with default settings. */
-    OverCallImpl(AggCallPlus aggCall) {
-      this(aggCall, aggCall.alias(), ImmutableList.of(), ImmutableList.of(),
-          true, RexWindowBounds.UNBOUNDED_PRECEDING,
+    OverCallImpl(SqlAggFunction op, boolean distinct,
+        ImmutableList<RexNode> operands, boolean ignoreNulls,
+        @Nullable String alias) {
+      this(op, distinct, operands, ignoreNulls, alias, ImmutableList.of(),
+          ImmutableList.of(), true, RexWindowBounds.UNBOUNDED_PRECEDING,
           RexWindowBounds.UNBOUNDED_FOLLOWING, false, true);
     }
 
@@ -3802,13 +3836,15 @@ public class RelBuilder {
     }
 
     private OverCall partitionBy_(ImmutableList<RexNode> partitionKeys) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, rows, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial);
     }
 
     private OverCall orderBy_(ImmutableList<RexFieldCollation> sortKeys) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, rows, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial);
     }
 
     @Override public OverCall orderBy(Iterable<? extends RexNode> sortKeys) {
@@ -3817,7 +3853,7 @@ public class RelBuilder {
       sortKeys.forEach(sortKey ->
           fieldCollations.add(
               rexCollation(sortKey, RelFieldCollation.Direction.ASCENDING,
-                  null)));
+                  RelFieldCollation.NullDirection.UNSPECIFIED)));
       return orderBy_(fieldCollations.build());
     }
 
@@ -3827,43 +3863,49 @@ public class RelBuilder {
 
     @Override public OverCall rowsBetween(RexWindowBound lowerBound,
         RexWindowBound upperBound) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, true,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, true, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial);
     }
 
     @Override public OverCall rangeBetween(RexWindowBound lowerBound,
         RexWindowBound upperBound) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, false,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, false, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial);
     }
 
     @Override public OverCall allowPartial(boolean allowPartial) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, rows, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial);
     }
 
     @Override public OverCall nullWhenCountZero(boolean nullWhenCountZero) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial);
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, rows, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial);
     }
 
     @Override public RexNode as(String alias) {
-      return new OverCallImpl(aggCall, alias, partitionKeys, sortKeys, rows,
-          lowerBound, upperBound, nullWhenCountZero, allowPartial).toRex();
+      return new OverCallImpl(op, distinct, operands, ignoreNulls, alias,
+          partitionKeys, sortKeys, rows, lowerBound, upperBound,
+          nullWhenCountZero, allowPartial).toRex();
     }
 
     @Override public RexNode toRex() {
-      final AggregateCall aggregateCall = aggCall.aggregateCall();
-      final List<RexNode> operands = fields(aggregateCall.getArgList());
       final RexCallBinding bind =
-          new RexCallBinding(getTypeFactory(), aggCall.op(),
-              operands, ImmutableList.of());
-      final RelDataType type = aggCall.op().inferReturnType(bind);
+          new RexCallBinding(getTypeFactory(), op, operands,
+              ImmutableList.of()) {
+            @Override public int getGroupCount() {
+              return SqlWindow.isAlwaysNonEmpty(lowerBound, upperBound) ? 1 : 0;
+            }
+          };
+      final RelDataType type = op.inferReturnType(bind);
       final RexNode over = getRexBuilder()
-          .makeOver(type, aggCall.op(), operands,
-              partitionKeys, sortKeys, lowerBound, upperBound, rows,
-              allowPartial, nullWhenCountZero, aggregateCall.isDistinct(),
-              aggregateCall.ignoreNulls());
+          .makeOver(type, op, operands, partitionKeys, sortKeys,
+              lowerBound, upperBound, rows, allowPartial, nullWhenCountZero,
+              distinct, ignoreNulls);
       return alias == null ? over : alias(over, alias);
     }
   }
