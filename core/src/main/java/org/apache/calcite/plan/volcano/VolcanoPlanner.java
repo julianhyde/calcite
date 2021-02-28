@@ -1139,12 +1139,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   private RelSet merge(RelSet set1, RelSet set2) {
     assert set1 != set2 : "pre: set != set2";
 
-    // Find the root of set2's equivalence tree.
+    // Find the root of each set's equivalence tree.
     set1 = equivRoot(set1);
     set2 = equivRoot(set2);
 
-    // Looks like set2 was already marked as equivalent to set1. Nothing
-    // to do.
+    // If set1 and set2 are equivalent, there's nothing to do.
     if (set2 == set1) {
       return set1;
     }
@@ -1198,8 +1197,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     return set1;
   }
 
-  /** Returns whether {@code set1 is less popular than {@code set2} (or smaller,
-   * or younger). If so, it will be more efficient to merge set1 into set2. */
+  /** Returns whether {@code set1} is less popular than {@code set2}
+   * (or smaller, or younger). If so, it will be more efficient to merge set1
+   * into set2 than set2 into set1. */
   private boolean isSmaller(RelSet set1, RelSet set2) {
     if (set1.parents.size() < set2.parents.size()) {
       return true; // set1 is less popular than set2
