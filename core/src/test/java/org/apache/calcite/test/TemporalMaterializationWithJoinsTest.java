@@ -14,10 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.test;
-
-import com.google.common.collect.Lists;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -47,6 +44,8 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
+
+import com.google.common.collect.Lists;
 
 import org.junit.jupiter.api.Test;
 
@@ -232,8 +231,7 @@ public class TemporalMaterializationWithJoinsTest extends SqlToRelTestBase {
     System.out.println(RelOptUtil.toString(rel)+"- - - - -\n");
   }
 
-  @Test
-  void materializationWithJoinQueryOptimizes(){
+  @Test void materializationWithJoinQueryOptimizes(){
 
     boolean debug = true;
 
