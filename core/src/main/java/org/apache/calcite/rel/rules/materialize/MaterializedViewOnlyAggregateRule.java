@@ -64,6 +64,7 @@ public class MaterializedViewOnlyAggregateRule
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
+//    assert false; // TODO
     final Aggregate aggregate = call.rel(0);
     perform(call, null, aggregate);
   }

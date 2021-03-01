@@ -519,11 +519,11 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
         }
         if (targetIdx >= viewAggregate.getRowType().getFieldCount()) {
           RexNode targetNode = rollupNodes.get(
-              targetIdx - viewInputFieldCount - viewInputDifferenceViewFieldCount);
+              targetIdx - viewInputFieldCount - viewInputDifferenceViewFieldCount); // is FLOOR(6, YEAR), should be FLOOR(5, YEAR)
           // We need to rollup this expression
           final Multimap<RexNode, Integer> exprsLineage = ArrayListMultimap.create();
           for (int ref : RelOptUtil.InputFinder.bits(targetNode)) {
-            final int k = find(topViewProject.getProjects(), ref);
+            final int k = find(topViewProject.getProjects(), ref); // TODO: k is 1, should be 7; should be looking for $5 not $6
             if (k < 0) {
               // No matching column needed for computed expression, bail out
               return null;
@@ -588,7 +588,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       }
       // Create aggregate on top of input
       final RelNode prevNode = relBuilder.peek();
-      if (inputViewExprs.size() > relBuilder.peek().getRowType().getFieldCount()) {
+      if (inputViewExprs.size() > prevNode.getRowType().getFieldCount()) {
         relBuilder.project(inputViewExprs);
       }
       relBuilder
@@ -723,7 +723,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
           tableMapping.inverse(),
           equivalenceClassesMap);
       exprsLineage.put(expr, i);
-      System.out.println("i=" + i + ", e=" + e + ", simplified=" + simplified + ", expr=" + expr); // TODO
+      System.out.println("i=" + i + ", e=" + e + ", simplified=" + simplified
+          + ", expr=" + expr); // TODO
       SqlTypeName sqlTypeName = expr.getType().getSqlTypeName();
       if (sqlTypeName == SqlTypeName.TIMESTAMP
           || sqlTypeName == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE) {
