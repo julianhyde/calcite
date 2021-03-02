@@ -533,19 +533,21 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
           return null;
         }
         if (targetIdx >= viewAggregate.getRowType().getFieldCount()) {
-          RexNode targetNode = rollupNodes.get(
-              targetIdx - viewInputFieldCount - viewInputDifferenceViewFieldCount); // is FLOOR(6, YEAR), should be FLOOR(5, YEAR)
+          RexNode targetNode =
+              rollupNodes.get(targetIdx - viewInputFieldCount
+                  - viewInputDifferenceViewFieldCount);
           // We need to rollup this expression
           final Multimap<RexNode, Integer> exprsLineage = ArrayListMultimap.create();
-          for (int ref : RelOptUtil.InputFinder.bits(targetNode)) {
-            final int k = find(topViewProject.getProjects(), ref); // TODO: k is 1, should be 7; should be looking for $5 not $6
+          for (int r : RelOptUtil.InputFinder.bits(targetNode)) {
+            final int j = find(viewNode, r);
+            final int k = find(topViewProject, j);
             if (k < 0) {
               // No matching column needed for computed expression, bail out
               return null;
             }
-            exprsLineage.put(
-                relBuilder.with(topViewProject.getInput(), b -> b.field(ref)),
-                k);
+            final RexInputRef ref =
+                relBuilder.with(viewNode.getInput(0), b -> b.field(r));
+            exprsLineage.put(ref, k);
           }
           // We create the new node pointing to the index
           groupSetB.set(inputViewExprs.size());
@@ -560,7 +562,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
           inputViewExprs.add(rollupExpression);
         } else {
           // This expression should be referenced directly
-          final int k = find(topViewProject.getProjects(), targetIdx);
+          final int k = find(topViewProject, targetIdx);
           if (k < 0) {
             // No matching group by column, we bail out
             return null;
@@ -583,7 +585,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
           // No matching aggregation column, we bail out
           return null;
         }
-        final int k = find(topViewProject.getProjects(), targetIdx);
+        final int k = find(topViewProject, targetIdx);
         if (k < 0) {
           // No matching aggregation column, we bail out
           return null;
@@ -694,11 +696,37 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     }
   }
 
-  private static int find(List<RexNode> projects, int ref) {
-    for (Ord<RexNode> project : Ord.zip(projects)) {
-      if (project.e instanceof RexInputRef
-          && ((RexInputRef) project.e).getIndex() == ref) {
-        return project.i;
+  /** Given a relational expression with a single input (such as a Project or
+   * Aggregate) and the ordinal of an input field, returns the ordinal of the
+   * output field that references the input field. Or -1 if the field is not
+   * propagated.
+   *
+   * <p>For example, if {@code rel} is {@code Project(c0, c2)} (on input with
+   * columns (c0, c1, c2)), then {@code find(rel, 2)} returns 1 (c2);
+   * {@code find(rel, 1)} returns -1 (because c1 is not projected).
+   *
+   * <p>If {@code rel2} is {@code Aggregate([0, 2], sum(1))}, then
+   * {@code find(rel2, 2)} returns 1, and {@code find(rel2, 1)} returns -1.
+   *
+   * @param rel Relational expression
+   * @param ref Ordinal of output field
+   * @return Ordinal of input field, or -1
+   */
+  private int find(RelNode rel, int ref) {
+    if (rel instanceof Project) {
+      Project project = (Project) rel;
+      for (Ord<RexNode> p : Ord.zip(project.getProjects())) {
+        if (p.e instanceof RexInputRef
+            && ((RexInputRef) p.e).getIndex() == ref) {
+          return p.i;
+        }
+      }
+    }
+    if (rel instanceof Aggregate) {
+      Aggregate aggregate = (Aggregate) rel;
+      int k = aggregate.getGroupSet().indexOf(ref);
+      if (k >= 0) {
+        return k;
       }
     }
     return -1;
