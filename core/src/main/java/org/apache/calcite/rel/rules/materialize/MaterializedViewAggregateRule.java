@@ -705,14 +705,14 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
    * columns (c0, c1, c2)), then {@code find(rel, 2)} returns 1 (c2);
    * {@code find(rel, 1)} returns -1 (because c1 is not projected).
    *
-   * <p>If {@code rel2} is {@code Aggregate([0, 2], sum(1))}, then
-   * {@code find(rel2, 2)} returns 1, and {@code find(rel2, 1)} returns -1.
+   * <p>If {@code rel} is {@code Aggregate([0, 2], sum(1))}, then
+   * {@code find(rel, 2)} returns 1, and {@code find(rel, 1)} returns -1.
    *
    * @param rel Relational expression
    * @param ref Ordinal of output field
    * @return Ordinal of input field, or -1
    */
-  private int find(RelNode rel, int ref) {
+  private static int find(RelNode rel, int ref) {
     if (rel instanceof Project) {
       Project project = (Project) rel;
       for (Ord<RexNode> p : Ord.zip(project.getProjects())) {
