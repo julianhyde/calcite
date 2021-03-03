@@ -31,8 +31,10 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 /**
- * Unit test for extensions of AbstractMaterializedViewRule,
- * in which materialized view gets matched by using structual information of plan.
+ * Unit test for
+ * {@link org.apache.calcite.rel.rules.materialize.MaterializedViewRule} and its
+ * sub-classes, in which materialized views are matched to the structure of a
+ * plan.
  */
 public class MaterializedViewRelOptRulesTest extends AbstractMaterializedViewTest {
 
