@@ -7886,6 +7886,7 @@ public class JdbcTest {
   public static class Department {
     public final int deptno;
     public final String name;
+    public final Timestamp inceptionDate;
 
     @org.apache.calcite.adapter.java.Array(component = Employee.class)
     public final List<Employee> employees;
@@ -7897,6 +7898,7 @@ public class JdbcTest {
       this.name = name;
       this.employees = employees;
       this.location = location;
+      this.inceptionDate = new Timestamp(0);
     }
 
     @Override public String toString() {

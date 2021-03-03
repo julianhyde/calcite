@@ -759,6 +759,35 @@ public class MaterializedViewRelOptRulesTest extends AbstractMaterializedViewTes
         .ok();
   }
 
+  @Test void testJoinAggregateMaterializationAggregateFuncs15() {
+    final String matSql = "    SELECT\n" +
+        "    \"deptno\",\n" +
+        "        COUNT(*) AS \"dept_size\",\n" +
+        "        SUM(\"salary\") AS \"dept_budget\"\n" +
+        "    FROM\n" +
+        "    \"emps\" \n" +
+        "    GROUP BY\n" +
+        "    \"deptno\"";
+
+    final String querySql = "    SELECT\n" +
+        "       FLOOR(\"CREATED_AT\" TO YEAR) AS by_year,\n" +
+        "       COUNT(*) AS \"num_emps\"\n" +
+        "    FROM\n" +
+        "        (SELECT\n" +
+        "            \"deptno\"\n" +
+        "            FROM\n" +
+        "            \"emps\") AS \"t\"\n" +
+        "    JOIN (SELECT\n" +
+        "        \"deptno\",\n" +
+        "        \"inceptionDate\" as \"CREATED_AT\"\n" +
+        "    FROM \"depts\") using (\"deptno\")\n" +
+        "    GROUP BY\n" +
+        "    FLOOR(\"CREATED_AT\" TO YEAR)";
+    sql(matSql, querySql)
+        .withChecker(resultContains("EnumerableAggregate(group=[{8}], num_emps=[$SUM0($1)])"))
+        .ok();
+  }
+
   @Test void testJoinMaterialization1() {
     String q = "select *\n"
         + "from (select * from \"emps\" where \"empid\" < 300)\n"
