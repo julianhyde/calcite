@@ -7886,7 +7886,6 @@ public class JdbcTest {
   public static class Department {
     public final int deptno;
     public final String name;
-    public final Timestamp inceptionDate;
 
     @org.apache.calcite.adapter.java.Array(component = Employee.class)
     public final List<Employee> employees;
@@ -7898,7 +7897,6 @@ public class JdbcTest {
       this.name = name;
       this.employees = employees;
       this.location = location;
-      this.inceptionDate = new Timestamp(0);
     }
 
     @Override public String toString() {
@@ -7910,6 +7908,16 @@ public class JdbcTest {
       return obj == this
           || obj instanceof Department
           && deptno == ((Department) obj).deptno;
+    }
+  }
+
+  public static class DepartmentPlus extends Department {
+    public final Timestamp inceptionDate;
+
+    public DepartmentPlus(int deptno, String name, List<Employee> employees,
+        Location location, Timestamp inceptionDate) {
+      super(deptno, name, employees, location);
+      this.inceptionDate = inceptionDate;
     }
   }
 

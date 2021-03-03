@@ -377,7 +377,7 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       RelMetadataQuery mq,
       MatchModality matchModality,
       boolean unionRewriting,
-      final RelNode input,
+      RelNode input,
       @Nullable Project topProject,
       RelNode node,
       @Nullable Project topViewProject0,
@@ -503,7 +503,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     final Project topViewProject = topViewProject0 != null
         ? topViewProject0
         : (Project) relBuilder.push(viewNode)
-            .project(relBuilder.fields(), ImmutableList.of(), true).build();
+            .project(relBuilder.fields(), ImmutableList.of(), true)
+            .build();
 
     // Generate result rewriting
     final List<RexNode> additionalViewExprs = new ArrayList<>();
@@ -769,13 +770,10 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
           tableMapping.inverse(),
           equivalenceClassesMap);
       exprsLineage.put(expr, i);
-      System.out.println("i=" + i + ", e=" + e + ", simplified=" + simplified
-          + ", expr=" + expr); // TODO
       SqlTypeName sqlTypeName = expr.getType().getSqlTypeName();
       if (sqlTypeName == SqlTypeName.TIMESTAMP
           || sqlTypeName == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE) {
         timestampExprs.add(expr);
-        System.out.println("timestamp"); // TODO
       }
     }
 
