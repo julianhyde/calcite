@@ -45,7 +45,7 @@ public class DataContexts {
   }
 
   /** Returns an instance of {@link DataContext} with the given function. */
-  public static DataContext of(Function<String, Object> fn) {
+  public static DataContext of(Function<String, ? extends @Nullable Object> fn) {
     return new FunctionDataContext(fn);
   }
 
