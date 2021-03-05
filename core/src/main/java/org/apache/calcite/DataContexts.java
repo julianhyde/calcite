@@ -27,6 +27,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
 
 /** Utilities for {@link DataContext}. */
 public class DataContexts {
@@ -39,6 +42,11 @@ public class DataContexts {
   /** Returns an instance of {@link DataContext} with the given map. */
   public static DataContext of(Map<String, Object> map) {
     return new MapDataContext(map);
+  }
+
+  /** Returns an instance of {@link DataContext} with the given function. */
+  public static DataContext of(Function<String, Object> fn) {
+    return new FunctionDataContext(fn);
   }
 
   /** Returns an instance of {@link DataContext} with the given connection
@@ -82,16 +90,29 @@ public class DataContexts {
     }
   }
 
+  /** Implementation of {@link DataContext} backed by a Function. */
+  private static class FunctionDataContext extends EmptyDataContext {
+    private final Function<String, Object> fn;
+
+    FunctionDataContext(Function<String, Object> fn) {
+      this.fn = requireNonNull(fn, "fn");
+    }
+
+    @Override public @Nullable Object get(String name) {
+      return fn.apply(name);
+    }
+  }
+
   /** Implementation of {@link DataContext} backed by a Map. */
   private static class DataContextImpl extends MapDataContext {
     private CalciteConnection connection;
-    private SchemaPlus rootSchema;
+    private @Nullable SchemaPlus rootSchema;
 
     DataContextImpl(CalciteConnection connection,
         @Nullable SchemaPlus rootSchema, Map<String, Object> map) {
       super(map);
-      this.connection = connection;
-      this.rootSchema = rootSchema;
+      this.connection = requireNonNull(connection, "connection");
+      this.rootSchema = requireNonNull(rootSchema, "rootSchema");
     }
 
     @Override public JavaTypeFactory getTypeFactory() {

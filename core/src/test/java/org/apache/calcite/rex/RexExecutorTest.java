@@ -17,12 +17,10 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.DataContexts;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlKind;
@@ -42,7 +40,6 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +78,9 @@ class RexExecutorTest {
   @Test void testVariableExecution() throws Exception {
     check((rexBuilder, executor) -> {
       Object[] values = new Object[1];
-      final DataContext testContext = new TestDataContext(values);
+      final DataContext testContext =
+          DataContexts.of(name ->
+              name.equals("inputRecord") ? values : fail("unknown: " + name));
       final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
       final RelDataType varchar =
           typeFactory.createSqlType(SqlTypeName.VARCHAR);
@@ -212,7 +211,9 @@ class RexExecutorTest {
       final RexBuilder rexBuilder = cluster.getRexBuilder();
       final RexExecutorImpl executor =
           new RexExecutorImpl(
-              new SingleValueDataContext(variable.camelName, value));
+              DataContexts.of(name ->
+                  name.equals(variable.camelName) ? value
+                      : fail("unknown: " + name)));
       try {
         checkConstant(value, builder -> {
           final List<RexNode> output = new ArrayList<>();
@@ -376,48 +377,5 @@ class RexExecutorTest {
    * a list, then check that the results are as expected. */
   interface Action {
     void check(RexBuilder rexBuilder, RexExecutorImpl executor);
-  }
-
-  /**
-   * ArrayList-based DataContext to check Rex execution.
-   */
-  public static class TestDataContext extends SingleValueDataContext {
-    private TestDataContext(Object[] values) {
-      super("inputRecord", values);
-    }
-  }
-
-  /**
-   * Context that holds a value for a particular context name.
-   */
-  static class SingleValueDataContext implements DataContext {
-    private final String name;
-    private final Object value;
-
-    SingleValueDataContext(String name, Object value) {
-      this.name = name;
-      this.value = value;
-    }
-
-    public SchemaPlus getRootSchema() {
-      throw new RuntimeException("Unsupported");
-    }
-
-    public @Nullable JavaTypeFactory getTypeFactory() {
-      throw new RuntimeException("Unsupported");
-    }
-
-    public @Nullable QueryProvider getQueryProvider() {
-      throw new RuntimeException("Unsupported");
-    }
-
-    public @Nullable Object get(String name) {
-      if (this.name.equals(name)) {
-        return value;
-      } else {
-        fail("Wrong DataContext access");
-        return null;
-      }
-    }
   }
 }
