@@ -40,7 +40,7 @@ public class DataContexts {
   public static final DataContext EMPTY = new EmptyDataContext();
 
   /** Returns an instance of {@link DataContext} with the given map. */
-  public static DataContext of(Map<String, ? extends Object> map) {
+  public static DataContext of(Map<String, ?> map) {
     return new MapDataContext(map);
   }
 
@@ -77,11 +77,15 @@ public class DataContexts {
     }
   }
 
-  /** Implementation of {@link DataContext} backed by a Map. */
+  /** Implementation of {@link DataContext} backed by a Map.
+   *
+   * <p>Keys and values in the map must not be null. Rather than storing a null
+   * value for a key, remove the key from the map; the effect will be the
+   * same. */
   private static class MapDataContext extends EmptyDataContext {
-    private final ImmutableMap<String, Object> map;
+    private final ImmutableMap<String, ?> map;
 
-    MapDataContext(Map<String, Object> map) {
+    MapDataContext(Map<String, ?> map) {
       this.map = ImmutableMap.copyOf(map);
     }
 
@@ -92,9 +96,9 @@ public class DataContexts {
 
   /** Implementation of {@link DataContext} backed by a Function. */
   private static class FunctionDataContext extends EmptyDataContext {
-    private final Function<String, Object> fn;
+    private final Function<String, ? extends @Nullable Object> fn;
 
-    FunctionDataContext(Function<String, Object> fn) {
+    FunctionDataContext(Function<String, ? extends @Nullable Object> fn) {
       this.fn = requireNonNull(fn, "fn");
     }
 
