@@ -28,15 +28,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.Serializable;
 import java.util.Map;
 
-/**
- * Utilities for {@link DataContext}.
- */
+/** Utilities for {@link DataContext}. */
 public class DataContexts {
   private DataContexts() {
   }
 
   /** Instance of {@link DataContext} that has no variables. */
-  public static DataContext EMPTY = new EmptyDataContext();
+  public static final DataContext EMPTY = new EmptyDataContext();
 
   /** Returns an instance of {@link DataContext} with the given map. */
   public static DataContext of(Map<String, Object> map) {

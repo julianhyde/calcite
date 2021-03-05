@@ -82,8 +82,11 @@ public class SqlSelectOperator extends SqlOperator {
         (SqlNodeList) operands[10]);
   }
 
-  /** @deprecated Use
-   * {@link #createCall(SqlLiteral, SqlParserPos, SqlNode...)}. */
+  /**
+   * Creates a call to the <code>SELECT</code> operator.
+   *
+   * @deprecated Use {@link #createCall(SqlLiteral, SqlParserPos, SqlNode...)}.
+   */
   @Deprecated // to be removed before 2.0
   public SqlSelect createCall(
       SqlNodeList keywordList,
