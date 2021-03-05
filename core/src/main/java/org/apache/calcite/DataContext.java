@@ -29,6 +29,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -36,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Runtime context allowing access to the tables in a database.
+ *
+ * @see DataContexts
  */
 public interface DataContext {
   ParameterExpression ROOT =
@@ -49,12 +52,12 @@ public interface DataContext {
   /**
    * Returns the type factory.
    */
-  @Nullable JavaTypeFactory getTypeFactory();
+  JavaTypeFactory getTypeFactory();
 
   /**
    * Returns the query provider.
    */
-  @Nullable QueryProvider getQueryProvider();
+  QueryProvider getQueryProvider();
 
   /**
    * Returns a context variable.

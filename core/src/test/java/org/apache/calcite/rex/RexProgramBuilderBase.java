@@ -17,6 +17,7 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.DataContexts;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -87,41 +88,16 @@ public abstract class RexProgramBuilderBase {
   // It maps non-nullable type to struct of (10 nullable, 10 non-nullable) fields
   private Map<RelDataType, RexDynamicParam> dynamicParams;
 
-  /**
-   * Dummy data context for test.
-   */
-  private static class DummyTestDataContext implements DataContext {
-    private final ImmutableMap<String, Object> map;
-
-    DummyTestDataContext() {
-      this.map =
-          ImmutableMap.of(
-              Variable.TIME_ZONE.camelName, TimeZone.getTimeZone("America/Los_Angeles"),
-              Variable.CURRENT_TIMESTAMP.camelName, 1311120000000L);
-    }
-
-    public SchemaPlus getRootSchema() {
-      return null;
-    }
-
-    public @Nullable JavaTypeFactory getTypeFactory() {
-      return null;
-    }
-
-    public @Nullable QueryProvider getQueryProvider() {
-      return null;
-    }
-
-    public @Nullable Object get(String name) {
-      return map.get(name);
-    }
-  }
-
   @BeforeEach public void setUp() {
     typeFactory = new JavaTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     rexBuilder = new RexBuilder(typeFactory);
-    executor =
-        new RexExecutorImpl(new DummyTestDataContext());
+    final DataContext dataContext =
+        DataContexts.of(
+            ImmutableMap.of(DataContext.Variable.TIME_ZONE.camelName,
+                TimeZone.getTimeZone("America/Los_Angeles"),
+                DataContext.Variable.CURRENT_TIMESTAMP.camelName,
+                1311120000000L));
+    executor = new RexExecutorImpl(dataContext);
     simplify =
         new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, executor)
             .withParanoid(true);
