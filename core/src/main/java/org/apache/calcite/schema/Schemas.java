@@ -374,7 +374,7 @@ public final class Schemas {
       final CalciteConnectionConfig config =
           mutate(connection.config(), propValues);
       return makeContext(config, connection.getTypeFactory(),
-          createDataContext(connection, schema.root().plus()), schema,
+          DataContexts.of(connection, schema.root().plus()), schema,
           schemaPath, objectPath);
     }
   }
