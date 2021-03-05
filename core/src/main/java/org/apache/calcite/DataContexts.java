@@ -40,7 +40,7 @@ public class DataContexts {
   public static final DataContext EMPTY = new EmptyDataContext();
 
   /** Returns an instance of {@link DataContext} with the given map. */
-  public static DataContext of(Map<String, Object> map) {
+  public static DataContext of(Map<String, ? extends Object> map) {
     return new MapDataContext(map);
   }
 
