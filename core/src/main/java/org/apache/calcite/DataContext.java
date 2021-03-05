@@ -29,7 +29,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.util.Locale;
 import java.util.TimeZone;
