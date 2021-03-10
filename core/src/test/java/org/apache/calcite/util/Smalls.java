@@ -30,6 +30,7 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Parameter;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.rel.externalize.RelJsonReader;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexLiteral;
@@ -98,6 +99,9 @@ public class Smalls {
       Types.lookupMethod(Smalls.class, "fibonacciTableWithLimit", long.class);
   public static final Method FIBONACCI_INSTANCE_TABLE_METHOD =
       Types.lookupMethod(Smalls.FibonacciTableFunction.class, "eval");
+  public static final Method DYNAMIC_ROW_TYPE_TABLE_METHOD =
+      Types.lookupMethod(Smalls.class, "dynamicRowTypeTable", String.class,
+          int.class);
   public static final Method VIEW_METHOD =
       Types.lookupMethod(Smalls.class, "view", String.class);
   public static final Method STR_METHOD =
@@ -310,6 +314,33 @@ public class Smalls {
         return true;
       }
     };
+  }
+
+  public static ScannableTable dynamicRowTypeTable(String jsonRowType,
+      int rowCount) {
+    return new DynamicRowTypeTable(jsonRowType, rowCount);
+  }
+
+  /** A table whose row type is determined by parsing a JSON argument. */
+  private static class DynamicRowTypeTable extends AbstractTable
+      implements ScannableTable {
+    private final String jsonRowType;
+
+    DynamicRowTypeTable(String jsonRowType, int count) {
+      this.jsonRowType = jsonRowType;
+    }
+
+    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+      try {
+        return RelJsonReader.readType(typeFactory, jsonRowType);
+      } catch (IOException e) {
+        throw Util.throwAsRuntime(e);
+      }
+    }
+
+    @Override public Enumerable<@Nullable Object[]> scan(DataContext root) {
+      return Linq4j.emptyEnumerable();
+    }
   }
 
   /** Table function that adds a number to the first column of input cursor. */

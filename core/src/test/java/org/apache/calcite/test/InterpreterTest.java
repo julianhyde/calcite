@@ -570,4 +570,21 @@ class InterpreterTest {
     String[] rows = {"[1]", "[1]", "[2]", "[3]", "[5]", "[8]"};
     sql(sql).returnsRows(rows);
   }
+
+  /** Tests a table function whose row type is determined by parsing a JSON
+   * argument. */
+  @Test void testInterpretTableFunctionWithDynamicType() {
+    SchemaPlus schema = rootSchema.add("s", new AbstractSchema());
+    final TableFunction table1 =
+        TableFunctionImpl.create(Smalls.DYNAMIC_ROW_TYPE_TABLE_METHOD);
+    schema.add("dynamicRowTypeTable", table1);
+    final String sql = "select *\n"
+        + "from table(\"s\".\"dynamicRowTypeTable\"('"
+        + "{\"nullable\":false,\"fields\":["
+        + "  {\"name\":\"i\",\"type\":\"INTEGER\",\"nullable\":false},"
+        + "  {\"name\":\"d\",\"type\":\"DATE\",\"nullable\":true}"
+        + "]}', 0))\n"
+        + "where \"i\" < 0 and \"d\" is not null";
+    sql(sql).returnsRows();
+  }
 }
