@@ -1164,13 +1164,13 @@ public class EnumUtils {
   /** Returns a function that converts an array of internal values to
    * a list of external values. */
   @SuppressWarnings("unchecked")
-  public static Function<Object[], List<Object>> toExternal(
+  public static Function<@Nullable Object[], List<@Nullable Object>> toExternal(
       List<RelDataType> types) {
     final Function<Object, Object>[] functions = new Function[types.size()];
     for (int i = 0; i < types.size(); i++) {
       functions[i] = toExternal(types.get(i));
     }
-    final Object[] objects = new Object[types.size()];
+    final @Nullable Object[] objects = new @Nullable Object[types.size()];
     return values -> {
       for (int i = 0; i < values.length; i++) {
         objects[i] = values[i] == null

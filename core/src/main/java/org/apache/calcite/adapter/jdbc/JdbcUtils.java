@@ -57,10 +57,10 @@ final class JdbcUtils {
 
   /** Returns a function that, given a {@link ResultSet}, returns a function
    * that will yield successive rows from that result set. */
-  static Function1<ResultSet, Function0<Object[]>> rowBuilderFactory(
+  static Function1<ResultSet, Function0<@Nullable Object[]>> rowBuilderFactory(
       final List<Pair<ColumnMetaData.Rep, Integer>> list) {
     ColumnMetaData.Rep[] reps =
-        Pair.left(list).toArray(new ColumnMetaData.Rep[list.size()]);
+        Pair.left(list).toArray(new ColumnMetaData.Rep[0]);
     int[] types = Ints.toArray(Pair.right(list));
     return resultSet -> new ObjectArrayRowBuilder1(resultSet, reps, types);
   }
@@ -69,10 +69,10 @@ final class JdbcUtils {
    * that will yield successive rows from that result set;
    * as {@link #rowBuilderFactory(List)} except that values are in Calcite's
    * internal format (e.g. DATE represented as int). */
-  static Function1<ResultSet, Function0<Object[]>> rowBuilderFactory2(
+  static Function1<ResultSet, Function0<@Nullable Object[]>> rowBuilderFactory2(
       final List<Pair<ColumnMetaData.Rep, Integer>> list) {
     ColumnMetaData.Rep[] reps =
-        Pair.left(list).toArray(new ColumnMetaData.Rep[list.size()]);
+        Pair.left(list).toArray(new ColumnMetaData.Rep[0]);
     int[] types = Ints.toArray(Pair.right(list));
     return resultSet -> new ObjectArrayRowBuilder2(resultSet, reps, types);
   }
@@ -201,19 +201,19 @@ final class JdbcUtils {
       return reps[i].jdbcGet(resultSet, i + 1);
     }
 
-    long timestampToLong(Timestamp v) {
+    @Override long timestampToLong(Timestamp v) {
       long time = v.getTime();
       int offset = timeZone.getOffset(time);
       return time + offset;
     }
 
-    long timeToLong(Time v) {
+    @Override long timeToLong(Time v) {
       long time = v.getTime();
       int offset = timeZone.getOffset(time);
       return (time + offset) % DateTimeUtils.MILLIS_PER_DAY;
     }
 
-    long dateToLong(Date v) {
+    @Override long dateToLong(Date v) {
       long time = v.getTime();
       int offset = timeZone.getOffset(time);
       return time + offset;
