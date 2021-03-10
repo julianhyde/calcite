@@ -221,7 +221,7 @@ final class JdbcUtils {
   }
 
   /** Row builder that converts JDBC values into internal values. */
-  static class ObjectArrayRowBuilder2 extends ObjectArrayRowBuilder {
+  static class ObjectArrayRowBuilder2 extends ObjectArrayRowBuilder1 {
     ObjectArrayRowBuilder2(ResultSet resultSet, ColumnMetaData.Rep[] reps,
         int[] types) {
       super(resultSet, reps, types);
