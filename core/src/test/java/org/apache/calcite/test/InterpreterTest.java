@@ -19,6 +19,7 @@ package org.apache.calcite.test;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.interpreter.Interpreter;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -204,7 +205,9 @@ class InterpreterTest {
     final List<RelDataType> fieldTypes =
         Util.transform(rel.getRowType().getFieldList(),
             RelDataTypeField::getType);
-    assertRows(interpreter, EnumUtils.toExternal(fieldTypes), unordered, rows);
+    assertRows(interpreter,
+        EnumUtils.toExternal(fieldTypes, DateTimeUtils.DEFAULT_ZONE), unordered,
+        rows);
   }
 
   private static void assertRows(Interpreter interpreter,
@@ -534,11 +537,11 @@ class InterpreterTest {
 
   @Test void testInterpretJdbc() {
     sql("select empno, hiredate from jdbc_scott.emp")
-        .returnsRows("[7369, 1980-12-16]", "[7499, 1981-02-19]",
-            "[7521, 1981-02-21]", "[7566, 1981-02-03]", "[7654, 1981-09-27]",
-            "[7698, 1981-01-04]", "[7782, 1981-06-08]", "[7788, 1987-04-18]",
-            "[7839, 1981-11-16]", "[7844, 1981-09-07]", "[7876, 1987-05-22]",
-            "[7900, 1981-12-02]", "[7902, 1981-12-02]", "[7934, 1982-01-22]");
+        .returnsRows("[7369, 1980-12-17]", "[7499, 1981-02-20]",
+            "[7521, 1981-02-22]", "[7566, 1981-02-04]", "[7654, 1981-09-28]",
+            "[7698, 1981-01-05]", "[7782, 1981-06-09]", "[7788, 1987-04-19]",
+            "[7839, 1981-11-17]", "[7844, 1981-09-08]", "[7876, 1987-05-23]",
+            "[7900, 1981-12-03]", "[7902, 1981-12-03]", "[7934, 1982-01-23]");
   }
 
   /** Tests a table function. */

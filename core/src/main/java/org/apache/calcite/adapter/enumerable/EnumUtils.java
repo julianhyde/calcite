@@ -76,6 +76,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -1147,15 +1148,37 @@ public class EnumUtils {
   }
 
   /** Returns a function that converts an internal value to an external
-   * value. */
-  public static Function<Object, Object> toExternal(RelDataType type) {
+   * value.
+   *
+   * <p>Datetime values' internal representations have no time zone,
+   * and their external values are moments (relative to UTC epoch),
+   * so the {@code timeZone} parameter supplies the implicit time zone of
+   * the internal representation. If you specify the local time zone of the
+   * JVM, then {@link Timestamp#toString}, {@link Date#toString()}, and
+   * {@link Time#toString()} on the external values will give a value
+   * consistent with the internal values. */
+  public static Function<Object, Object> toExternal(RelDataType type,
+      TimeZone timeZone) {
     switch (type.getSqlTypeName()) {
     case DATE:
-      return o -> new Date((Integer) o * DateTimeUtils.MILLIS_PER_DAY);
+      return o -> {
+        int d = (Integer) o;
+        long v = d * DateTimeUtils.MILLIS_PER_DAY;
+        v -= timeZone.getOffset(v);
+        return new Date(v);
+      };
     case TIME:
-      return o -> new Time((Integer) o % DateTimeUtils.MILLIS_PER_DAY);
+      return o -> {
+        long v = (Integer) o;
+        v -= timeZone.getOffset(v);
+        return new Time(v % DateTimeUtils.MILLIS_PER_DAY);
+      };
     case TIMESTAMP:
-      return o -> new Timestamp((Long) o);
+      return o -> {
+        long v = (Long) o;
+        v -= timeZone.getOffset(v);
+        return new Timestamp(v);
+      };
     default:
       return Function.identity();
     }
@@ -1165,10 +1188,10 @@ public class EnumUtils {
    * a list of external values. */
   @SuppressWarnings("unchecked")
   public static Function<@Nullable Object[], List<@Nullable Object>> toExternal(
-      List<RelDataType> types) {
+      List<RelDataType> types, TimeZone timeZone) {
     final Function<Object, Object>[] functions = new Function[types.size()];
     for (int i = 0; i < types.size(); i++) {
-      functions[i] = toExternal(types.get(i));
+      functions[i] = toExternal(types.get(i), timeZone);
     }
     final @Nullable Object[] objects = new @Nullable Object[types.size()];
     return values -> {
