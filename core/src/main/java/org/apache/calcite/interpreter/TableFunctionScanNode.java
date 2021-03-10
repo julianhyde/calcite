@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.interpreter;
 
-import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.core.TableFunctionScan;
@@ -35,13 +34,11 @@ import com.google.common.collect.ImmutableList;
  * {@link TableFunctionScan}.
  */
 public class TableFunctionScanNode implements Node {
-  private final DataContext root;
   private final Scalar scalar;
   private final Context context;
   private final Sink sink;
 
   private TableFunctionScanNode(Compiler compiler, TableFunctionScan rel) {
-    this.root = compiler.getDataContext();
     this.scalar =
         compiler.compile(ImmutableList.of(rel.getCall()), rel.getRowType());
     this.context = compiler.createContext();
