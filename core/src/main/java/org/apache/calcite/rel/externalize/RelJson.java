@@ -291,12 +291,12 @@ public class RelJson {
           new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
 
     case ARRAY:
-      component = map.get("component");
+      component = requireNonNull(map.get("component"), "component");
       componentType = toType(typeFactory, component);
       return typeFactory.createArrayType(componentType, -1);
 
     case MULTISET:
-      component = map.get("component");
+      component = requireNonNull(map.get("component"), "component");
       componentType = toType(typeFactory, component);
       return typeFactory.createMultisetType(componentType, -1);
 
