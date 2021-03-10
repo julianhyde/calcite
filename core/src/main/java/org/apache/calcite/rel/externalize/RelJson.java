@@ -373,15 +373,16 @@ public class RelJson {
 
   private Object toJson(RelDataType node) {
     final Map<String, @Nullable Object> map = jsonBuilder().map();
-    map.put("nullable", node.isNullable());
     if (node.isStruct()) {
       final List<@Nullable Object> list = jsonBuilder().list();
       for (RelDataTypeField field : node.getFieldList()) {
         list.add(toJson(field));
       }
       map.put("fields", list);
+      map.put("nullable", node.isNullable());
     } else {
       map.put("type", node.getSqlTypeName().name());
+      map.put("nullable", node.isNullable());
       if (node.getComponentType() != null) {
         map.put("component", toJson(node.getComponentType()));
       }
