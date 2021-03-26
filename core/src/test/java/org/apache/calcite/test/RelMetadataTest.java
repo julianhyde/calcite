@@ -196,6 +196,11 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   //~ Methods ----------------------------------------------------------------
 
+  /** Creates a tester. */
+  Sql sql(String sql) {
+    return new Sql(tester, sql);
+  }
+
   // ----------------------------------------------------------------------
   // Tests for getPercentageOriginalRows
   // ----------------------------------------------------------------------
@@ -536,6 +541,33 @@ public class RelMetadataTest extends SqlToRelTestBase {
         false);
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4192">[CALCITE-4192]
+   * RelMdColumnOrigins get the wrong index of group by columns after RelNode
+   * was optimized by AggregateProjectMergeRule rule</a>. */
+  @Test void testColumnOriginAfterAggProjectMergeRule() {
+    final String sql = "select count(ename), SAL from emp group by SAL";
+    final RelNode rel = tester.convertSqlToRel(sql).rel;
+    final HepProgramBuilder programBuilder = HepProgram.builder();
+    programBuilder.addRuleInstance(CoreRules.AGGREGATE_PROJECT_MERGE);
+    final HepPlanner planner = new HepPlanner(programBuilder.build());
+    planner.setRoot(rel);
+    final RelNode optimizedRel = planner.findBestExp();
+
+    Set<RelColumnOrigin> origins = RelMetadataQuery.instance()
+        .getColumnOrigins(optimizedRel, 1);
+    assertThat(origins.size(), equalTo(1));
+
+    RelColumnOrigin columnOrigin = origins.iterator().next();
+    assertThat(columnOrigin.getOriginColumnOrdinal(), equalTo(5));
+    assertThat(columnOrigin.getOriginTable().getRowType().getFieldNames().get(5),
+        equalTo("SAL"));
+  }
+
+  // ----------------------------------------------------------------------
+  // Tests for getRowCount, getMinRowCount, getMaxRowCount
+  // ----------------------------------------------------------------------
+
   private void checkRowCount(String sql, double expected, double expectedMin,
       double expectedMax) {
     RelNode rel = convertSql(sql);
@@ -647,7 +679,6 @@ public class RelMetadataTest extends SqlToRelTestBase {
     checkRowCount(sql, 1D, // 0, rounded up to row count's minimum 1
         0D, 0D); // 0 * 4
   }
-
 
   @Test void testRowCountJoinEmptyEmpty() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
@@ -811,6 +842,69 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final String sql = "select count(*) from (select * from emp limit 0)";
     checkRowCount(sql, 1D, 1D, 1D);
   }
+
+  // ----------------------------------------------------------------------
+  // Tests for computeSelfCost.cpu
+  // ----------------------------------------------------------------------
+
+  @Test void testSortCpuCostOffsetLimit() {
+    final String sql = "select ename, deptno from emp\n"
+        + "order by ename limit 5 offset 5";
+    // inputRows = EMP_SIZE = 14
+    // offset + fetch = 5 + 5 = 10
+    // rowBytes = (2 real columns + 3 virtual columns) * 4 bytes per column
+    //   = 5 * 4
+    //   = 20
+    double cpuCost = Util.nLogM(EMP_SIZE, 10) * 5 * 4;
+    sql(sql).assertCpuCost(is(cpuCost), "offset + fetch smaller than table size "
+        + "=> cpu cost should be: inputRows * log(offset + fetch) * rowBytes");
+  }
+
+  @Test void testSortCpuCostLimit() {
+    final String sql = "select ename, deptno from emp limit 10";
+    final double cpuCost = 10 * 5 * 4;
+    sql(sql).assertCpuCost(is(cpuCost), "no order by clause "
+        + "=> cpu cost should be min(fetch + offset, inputRows) * rowBytes");
+  }
+
+  @Test void testSortCpuCostOffset() {
+    final String sql = "select ename from emp order by ename offset 10";
+    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4 * 4;
+    sql(sql).assertCpuCost(is(cpuCost), "offset smaller than table size "
+        + "=> cpu cost should be: inputRows * log(inputRows) * rowBytes");
+  }
+
+  @Test void testSortCpuCostLargeOffset() {
+    final String sql = "select ename from emp order by ename offset 100";
+    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4 * 4;
+    sql(sql).assertCpuCost(is(cpuCost), "offset larger than table size "
+        + "=> cpu cost should be: inputRows * log(inputRows) * rowBytes");
+  }
+
+  @Test void testSortCpuCostLimit0() {
+    final String sql = "select ename from emp order by ename limit 0";
+    sql(sql).assertCpuCost(is(0d), "fetch zero => cpu cost should be 0");
+  }
+
+  @Test void testSortCpuCostLimit1() {
+    final String sql = "select ename, deptno from emp\n"
+        + "order by ename limit 1";
+    double cpuCost = EMP_SIZE * 5 * 4;
+    sql(sql).assertCpuCost(is(cpuCost), "fetch 1 "
+        + "=> cpu cost should be inputRows * rowBytes");
+  }
+
+  @Test void testSortCpuCostLargeLimit() {
+    final String sql = "select ename, deptno from emp\n"
+        + "order by ename limit 10000";
+    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 5 * 4;
+    sql(sql).assertCpuCost(is(cpuCost), "sort limit exceeds table size "
+        + "=> cpu cost should be dominated by table size");
+  }
+
+  // ----------------------------------------------------------------------
+  // Tests for getSelectivity
+  // ----------------------------------------------------------------------
 
   private void checkFilterSelectivity(
       String sql,
@@ -3275,6 +3369,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
     });
   }
 
+  //~ Inner classes and interfaces -------------------------------------------
+
   /** Custom metadata interface. */
   public interface ColType extends Metadata {
     Method METHOD = Types.lookupMethod(ColType.class, "getColType", int.class);
@@ -3360,8 +3456,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   /**
    * Dummy rel node used for testing.
    */
-  private class DummyRelNode extends SingleRel {
-
+  private static class DummyRelNode extends SingleRel {
     /**
      * Creates a <code>DummyRelNode</code>.
      */
@@ -3373,8 +3468,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
   /**
    * Mocked catalog reader for registering table with composite keys.
    */
-  private class CompositeKeysCatalogReader extends MockCatalogReaderSimple {
-
+  private static class CompositeKeysCatalogReader
+      extends MockCatalogReaderSimple {
     CompositeKeysCatalogReader(RelDataTypeFactory typeFactory, boolean caseSensitive) {
       super(typeFactory, caseSensitive);
     }
@@ -3394,95 +3489,30 @@ public class RelMetadataTest extends SqlToRelTestBase {
     }
   }
 
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-4192">[CALCITE-4192]
-   * RelMdColumnOrigins get the wrong index of group by columns after RelNode was optimized by
-   * AggregateProjectMergeRule rule</a>. */
-  @Test void testColumnOriginAfterAggProjectMergeRule() {
-    final String sql = "select count(ename), SAL from emp group by SAL";
-    final RelNode rel = tester.convertSqlToRel(sql).rel;
-    final HepProgramBuilder programBuilder = HepProgram.builder();
-    programBuilder.addRuleInstance(CoreRules.AGGREGATE_PROJECT_MERGE);
-    final HepPlanner planner = new HepPlanner(programBuilder.build());
-    planner.setRoot(rel);
-    final RelNode optimizedRel = planner.findBestExp();
+  /** Parameters for a test. */
+  private static class Sql {
+    private final Tester tester;
+    private final String sql;
 
-    Set<RelColumnOrigin> origins = RelMetadataQuery.instance()
-        .getColumnOrigins(optimizedRel, 1);
-    assertThat(origins.size(), equalTo(1));
+    Sql(Tester tester, String sql) {
+      this.tester = tester;
+      this.sql = sql;
+    }
 
-    RelColumnOrigin columnOrigin = origins.iterator().next();
-    assertThat(columnOrigin.getOriginColumnOrdinal(), equalTo(5));
-    assertThat(columnOrigin.getOriginTable().getRowType().getFieldNames().get(5),
-        equalTo("SAL"));
-  }
+    Sql assertCpuCost(Matcher<Double> matcher, String reason) {
+      RelNode rel = convertSql(tester, sql);
+      RelOptCost cost = computeRelSelfCost(rel);
+      assertThat(reason + "\n"
+          + "sql:" + sql + "\n"
+          + "plan:" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES),
+          cost.getCpu(), matcher);
+      return this;
+    }
 
-  @Test void testSortCpuCostOffsetLimit() {
-    final String sql = "select ename, deptno from emp\n"
-        + "order by ename limit 5 offset 5";
-    // inputRows = EMP_SIZE = 14
-    // offset + fetch = 5 + 5 = 10
-    // rowBytes = (2 real columns + 3 virtual columns) * 4 bytes per column
-    //   = 5 * 4
-    //   = 20
-    double cpuCost = Util.nLogM(EMP_SIZE, 10) * 5 * 4;
-    checkCpuCost(sql, cpuCost, "offset + fetch smaller than table size "
-        + "=> cpu cost should be: inputRows * log(offset + fetch) * rowBytes");
-  }
-
-  @Test void testSortCpuCostLimit() {
-    final String sql = "select ename, deptno from emp limit 10";
-    final double cpuCost = 10 * 5 * 4;
-    checkCpuCost(sql, cpuCost, "no order by clause "
-        + "=> cpu cost should be min(fetch + offset, inputRows) * rowBytes");
-  }
-
-  @Test void testSortCpuCostOffset() {
-    final String sql = "select ename from emp order by ename offset 10";
-    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4 * 4;
-    checkCpuCost(sql, cpuCost, "offset smaller than table size "
-        + "=> cpu cost should be: inputRows * log(inputRows) * rowBytes");
-  }
-
-  @Test void testSortCpuCostLargeOffset() {
-    final String sql = "select ename from emp order by ename offset 100";
-    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4 * 4;
-    checkCpuCost(sql, cpuCost, "offset larger than table size "
-        + "=> cpu cost should be: inputRows * log(inputRows) * rowBytes");
-  }
-
-  @Test void testSortCpuCostLimit0() {
-    final String sql = "select ename from emp order by ename limit 0";
-    checkCpuCost(sql, 0d, "fetch zero => cpu cost should be 0");
-  }
-
-  @Test void testSortCpuCostLimit1() {
-    final String sql = "select ename, deptno from emp\n"
-        + "order by ename limit 1";
-    double cpuCost = EMP_SIZE * 5 * 4;
-    checkCpuCost(sql, cpuCost, "fetch 1 "
-        + "=> cpu cost should be inputRows * rowBytes");
-  }
-
-  @Test void testSortCpuCostLargeLimit() {
-    final String sql = "select ename, deptno from emp\n"
-        + "order by ename limit 10000";
-    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 5 * 4;
-    checkCpuCost(sql, cpuCost, "sort limit exceeds table size "
-        + "=> cpu cost should be dominated by table size");
-  }
-
-  private void checkCpuCost(String sql, double expected, String reason) {
-    RelNode rel = convertSql(sql);
-    RelOptCost cost = computeRelSelfCost(rel);
-    final double result = cost.getCpu();
-    assertEquals(expected, result, () -> reason + "\nsql:" + sql + "\nplan:"
-        + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES));
-  }
-
-  private static RelOptCost computeRelSelfCost(RelNode rel) {
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    RelOptPlanner planner = new VolcanoPlanner();
-    return rel.computeSelfCost(planner, mq);
+    private static RelOptCost computeRelSelfCost(RelNode rel) {
+      final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+      RelOptPlanner planner = new VolcanoPlanner();
+      return rel.computeSelfCost(planner, mq);
+    }
   }
 }
