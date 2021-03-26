@@ -124,23 +124,65 @@ public abstract class Sort extends SingleRel {
   public abstract Sort copy(RelTraitSet traitSet, RelNode newInput,
       RelCollation newCollation, @Nullable RexNode offset, @Nullable RexNode fetch);
 
+  /** {@inheritDoc}
+   *
+   * <p>The CPU cost of a Sort has three main cases:
+   *
+   * <ul>
+   * <li>If {@code fetch} is zero, CPU cost is zero; otherwise,
+   *
+   * <li>if the sort keys are empty, we don't need to sort, only step over
+   * the rows, and therefore the CPU cost is
+   * {@code min(fetch + offset, inputRowCount) * bytesPerRow}; otherwise
+   *
+   * <li>we need to read and sort {@code inputRowCount} rows, with at most
+   * {@code min(fetch + offset, inputRowCount)} of them in the sort data
+   * structure at a time, giving a CPU cost of {@code inputRowCount *
+   * log(min(fetch + offset, inputRowCount)) * bytesPerRow}.
+   * </ul>
+   *
+   * <p>The cost model factors in row width via {@code bytesPerRow}, because
+   * sorts need to move rows around, not just compare them; by making the cost
+   * higher if rows are wider, we discourage pushing a Project through a Sort.
+   * We assume that each field is 4 bytes, and we add 3 'virtual fields' to
+   * represent the per-row overhead. Thus a 1-field row is (1 + 3) * 4 = 32
+   * bytes; a 5-field row is (1 + 4) * 4 = 64 bytes.
+   *
+   * <p>The cost model does not consider a 5-field sort to be more expensive
+   * than a 2-field sort, because both sorts will compare just one field most
+   * of the time. */
   @Override public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner,
       RelMetadataQuery mq) {
-    final double rowCount = mq.getRowCount(this);
-    double fetchValue = getValue(fetch, rowCount);
-    if (fetchValue <= 0) {
-      return planner.getCostFactory().makeCost(rowCount, 0, 0);
-    }
-    double inCount = mq.getRowCount(input);
-    // Higher cost if rows are wider discourages pushing a project through a
-    // sort.
-    final double bytesPerRow = getRowType().getFieldCount() * 4;
-    double offsetValue = getValue(offset, 0);
+    final double offsetValue = Util.first(doubleValue(offset), 0d);
     assert offsetValue >= 0 : "offset should not be negative:" + offsetValue;
-    double toSort = Math.min(inCount, offsetValue + fetchValue);
-    final double cpu = collation.getFieldCollations().isEmpty() ? toSort * bytesPerRow
-        : Util.nLogM(inCount, toSort) * bytesPerRow;
-    return planner.getCostFactory().makeCost(rowCount, cpu, 0);
+
+    final double inCount = mq.getRowCount(input);
+    @Nullable Double fetchValue = doubleValue(fetch);
+    final double readCount;
+    if (fetchValue == null) {
+      readCount = inCount;
+    } else if (fetchValue <= 0) {
+      // Case 1. Read zero rows from input, therefore CPU cost is zero.
+      return planner.getCostFactory().makeCost(inCount, 0, 0);
+    } else {
+      readCount = Math.min(inCount, offsetValue + fetchValue);
+    }
+
+    final double bytesPerRow = (3 + getRowType().getFieldCount()) * 4;
+
+    final double cpu;
+    if (collation.getFieldCollations().isEmpty()) {
+      // Case 2. If sort keys are empty, CPU cost is cheaper because we are just
+      // stepping over the first "readCount" rows, rather than sorting all
+      // "inCount" them. (Presumably we are applying FETCH and/or OFFSET,
+      // otherwise this Sort is a no-op.)
+      cpu = readCount * bytesPerRow;
+    } else {
+      // Case 3. Read and sort all "inCount" rows, keeping "readCount" in the
+      // sort data structure at a time.
+      cpu = Util.nLogM(inCount, readCount) * bytesPerRow;
+    }
+    return planner.getCostFactory().makeCost(readCount, cpu, 0);
   }
 
   @Override public RelNode accept(RexShuttle shuttle) {
@@ -205,11 +247,10 @@ public abstract class Sort extends SingleRel {
     return pw;
   }
 
-  private static double getValue(@Nullable RexNode r, double defaultValue) {
-    if (r == null || r instanceof RexDynamicParam) {
-      return defaultValue;
-    }
-    Comparable<?> value = RexLiteral.value(r);
-    return value instanceof Number ? ((Number) value).doubleValue() : defaultValue;
+  /** Returns the double value of a node if it is a literal, otherwise null. */
+  private static @Nullable Double doubleValue(@Nullable RexNode r) {
+    return r instanceof RexLiteral
+        ? ((RexLiteral) r).getValueAs(Double.class)
+        : null;
   }
 }

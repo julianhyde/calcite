@@ -3418,16 +3418,37 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testSortCpuCostOffsetLimit() {
-    final String sql = "select ename from emp order by ename limit 5 offset 5";
-    double cpuCost = Util.nLogM(EMP_SIZE, 10) * 4;
+    final String sql = "select ename, deptno from emp\n"
+        + "order by ename limit 5 offset 5";
+    // inputRows = EMP_SIZE = 14
+    // offset + fetch = 5 + 5 = 10
+    // rowBytes = (2 real columns + 3 virtual columns) * 4 bytes per column
+    //   = 5 * 4
+    //   = 20
+    double cpuCost = Util.nLogM(EMP_SIZE, 10) * 5 * 4;
     checkCpuCost(sql, cpuCost, "offset + fetch smaller than table size "
-        + "=> cpu cost should be: input_size * log(offset + fetch) * row_bytes");
+        + "=> cpu cost should be: inputRows * log(offset + fetch) * rowBytes");
   }
 
   @Test void testSortCpuCostLimit() {
-    final String sql = "select ename from emp limit 10";
-    checkCpuCost(sql, 40d, "no order by clause => "
-        + "cpu cost should be min(fetch + offset, input_size) * row_bytes");
+    final String sql = "select ename, deptno from emp limit 10";
+    final double cpuCost = 10 * 5 * 4;
+    checkCpuCost(sql, cpuCost, "no order by clause "
+        + "=> cpu cost should be min(fetch + offset, inputRows) * rowBytes");
+  }
+
+  @Test void testSortCpuCostOffset() {
+    final String sql = "select ename from emp order by ename offset 10";
+    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4 * 4;
+    checkCpuCost(sql, cpuCost, "offset smaller than table size "
+        + "=> cpu cost should be: inputRows * log(inputRows) * rowBytes");
+  }
+
+  @Test void testSortCpuCostLargeOffset() {
+    final String sql = "select ename from emp order by ename offset 100";
+    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4 * 4;
+    checkCpuCost(sql, cpuCost, "offset larger than table size "
+        + "=> cpu cost should be: inputRows * log(inputRows) * rowBytes");
   }
 
   @Test void testSortCpuCostLimit0() {
@@ -3436,14 +3457,17 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testSortCpuCostLimit1() {
-    final String sql = "select ename from emp order by ename limit 1";
-    double cpuCost = EMP_SIZE * 4;
-    checkCpuCost(sql, cpuCost, "fetch 1 => cpu cost should be input_size * row_bytes");
+    final String sql = "select ename, deptno from emp\n"
+        + "order by ename limit 1";
+    double cpuCost = EMP_SIZE * 5 * 4;
+    checkCpuCost(sql, cpuCost, "fetch 1 "
+        + "=> cpu cost should be inputRows * rowBytes");
   }
 
   @Test void testSortCpuCostLargeLimit() {
-    final String sql = "select ename from emp order by ename limit 10000";
-    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 4;
+    final String sql = "select ename, deptno from emp\n"
+        + "order by ename limit 10000";
+    double cpuCost = Util.nLogM(EMP_SIZE, EMP_SIZE) * 5 * 4;
     checkCpuCost(sql, cpuCost, "sort limit exceeds table size "
         + "=> cpu cost should be dominated by table size");
   }
