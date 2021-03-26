@@ -21,5 +21,7 @@ package org.apache.calcite.interpreter;
  */
 public interface Node extends AutoCloseable {
   void run() throws InterruptedException;
-  @Override void close();
+
+  @Override default void close() {
+  }
 }
