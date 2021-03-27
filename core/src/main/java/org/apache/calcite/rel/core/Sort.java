@@ -144,12 +144,12 @@ public abstract class Sort extends SingleRel {
    * sorts need to move rows around, not just compare them; by making the cost
    * higher if rows are wider, we discourage pushing a Project through a Sort.
    * We assume that each field is 4 bytes, and we add 3 'virtual fields' to
-   * represent the per-row overhead. Thus a 1-field row is (1 + 3) * 4 = 32
-   * bytes; a 5-field row is (1 + 4) * 4 = 64 bytes.
+   * represent the per-row overhead. Thus a 1-field row is (3 + 1) * 4 = 16
+   * bytes; a 5-field row is (3 + 5) * 4 = 32 bytes.
    *
    * <p>The cost model does not consider a 5-field sort to be more expensive
-   * than a 2-field sort, because both sorts will compare just one field most
-   * of the time. */
+   * than, say, a 2-field sort, because both sorts will compare just one field
+   * most of the time. */
   @Override public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner,
       RelMetadataQuery mq) {
     final double offsetValue = Util.first(doubleValue(offset), 0d);
