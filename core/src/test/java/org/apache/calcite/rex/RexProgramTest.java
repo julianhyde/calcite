@@ -3182,4 +3182,40 @@ class RexProgramTest extends RexProgramTestBase {
   @Test void testSimplifyVarbinary() {
     checkSimplifyUnchanged(cast(cast(vInt(), tVarchar(true, 100)), tVarbinary(true)));
   }
+
+  /** Tests {@link RexRules#LIKE}. Illustrates a rule with overloads (2 and 3
+   * argument variables of LIKE). */
+  @Test void testLikeRule() {
+    final RexNode ref = input(tVarchar(true, 10), 0);
+    final RexRuleProgram program = program(RexRules.LIKE);
+    checkRule(program, like(ref, literal("%")), "IS NOT NULL($0)");
+    checkRule(program, like(ref, literal("%"), literal("#")),
+        "IS NOT NULL($0)");
+    checkRule(program, or(isNull(ref), like(ref, literal("%"))),
+        "true");
+    checkRule(program, or(isNull(ref), like(ref, literal("%"), literal("#"))),
+        "true");
+    checkRuleUnchanged(program, like(ref, literal("%A")));
+    checkRuleUnchanged(program, like(ref, literal("%A"), literal("#")));
+  }
+
+  /** Tests {@link RexRules#NULLIF_IS_NULL}. Illustrates a rule with a
+   * side-condition (is not applied if x allows nulls). */
+  @Test void testNullifIsNullRule() {
+    final RexNode ref = input(tInt(false), 0);
+    final RexNode nullableRef = input(tInt(true), 1);
+    final RexLiteral five = literal(5);
+    final RexLiteral ten = literal(10);
+    final RexRuleProgram program = program(RexRules.NULLIF_IS_NULL);
+    checkRule(program, isNull(nullIf(ref, ref)), "=($0, $0)");
+    checkRule(program, isNull(nullIf(ref, five)), "=($0, 5)");
+    checkRuleUnchanged(program, isNull(nullIf(nullableRef, five)));
+    checkRule(program, isNull(nullIf(five, ref)), "=(5, $0)");
+    checkRule(program, isNull(nullIf(five, nullableRef)), "=(5, $1)");
+    checkRule(program, isNull(nullIf(five, ten)), "=(5, 10)");
+  }
+
+  private static RexRuleProgram program(RexRule... rules) {
+    return RexRuleProgram.of(ImmutableList.copyOf(rules));
+  }
 }

@@ -17,6 +17,7 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.plan.RelOptPredicateList;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.Matchers;
@@ -187,6 +188,42 @@ class RexProgramTestBase extends RexProgramBuilderBase {
         new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR)
             .withParanoid(true);
     return simplify.simplifyUnknownAs(e, RexUnknownAs.UNKNOWN);
+  }
+
+  /** Applies a rule to an expression and checks that the result is as
+   * expected. */
+  protected SimplifiedNode checkRuleUnchanged(RexRuleProgram program,
+      RexNode node) {
+    final String nodeString = node.toString();
+    return checkRule(program, node, is(nodeString));
+  }
+
+  /** Applies a rule to an expression and checks that the result is as
+   * expected. */
+  protected SimplifiedNode checkRule(RexRuleProgram program, RexNode node,
+      String expected) {
+    final String nodeString = node.toString();
+    if (expected.equals(nodeString)) {
+      throw new AssertionError("expected == node.toString(); "
+          + "use checkSimplifyUnchanged");
+    }
+    return checkRule(program, node, is(expected));
+  }
+
+  protected SimplifiedNode checkRule(RexRuleProgram program, RexNode node,
+      Matcher<String> matcher) {
+    final RexRule.Context cx = new RexRule.Context() {
+      @Override public RelDataTypeFactory typeFactory() {
+        return rexBuilder.typeFactory;
+      }
+
+      @Override public RexBuilder rexBuilder() {
+        return rexBuilder;
+      }
+    };
+    final RexNode simplified = program.apply(cx, node);
+    assertThat("simplify: " + node, simplified.toString(), matcher);
+    return new SimplifiedNode(rexBuilder, node, simplified);
   }
 
   /** Fluent test. */
