@@ -28,15 +28,21 @@ public abstract class RexRules {
   private RexRules() {
   }
 
-  /** Rule that converts "x LIKE '%'" to "x IS NOT NULL". */
+  /** Matches a character literal whose value is '%'. */
+  static RexRule.Done isPercentLiteral(RexRule.OperandBuilder b) {
+    return b.isLiteral(literal ->
+        Objects.equals(literal.getValueAs(String.class), "%"));
+  }
+
+  /** Rule that converts "x LIKE '%'" or "x LIKE '%' ESCAPE y"
+   * to "x IS NOT NULL". */
   public static final RexRule LIKE =
       new RexRule() {
         @Override public Done describe(OperandBuilder b) {
           return b.ofKind(SqlKind.LIKE)
-//              .overloads() // TODO
-              .inputs(OperandBuilder::any,
-                  b3 -> b3.isLiteral(literal ->
-                      Objects.equals(literal.getValueAs(String.class), "%")));
+              .overloadedInputs(OperandBuilder::any, RexRules::isPercentLiteral)
+              .inputs(OperandBuilder::any, RexRules::isPercentLiteral,
+                  OperandBuilder::any);
         }
 
         @Override public RexNode apply(Context cx, RexNode e) {

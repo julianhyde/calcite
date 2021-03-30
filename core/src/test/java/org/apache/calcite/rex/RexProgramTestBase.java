@@ -17,8 +17,8 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.plan.RelOptPredicateList;
-import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.Matchers;
