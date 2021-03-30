@@ -88,7 +88,7 @@ public abstract class RexRule {
     /** Indicates that the RexRule matches a {@link RexCall} to an
      * {@link SqlOperator} that is an instance of a given class
      * (or sub-class). */
-    OperandBuilder callTo(Class<? extends SqlOperator> operatorClass);
+    OperandDetailBuilder callTo(Class<? extends SqlOperator> operatorClass);
   }
 
   /** Indicates that an operand is complete.
@@ -102,21 +102,34 @@ public abstract class RexRule {
     /** Sets the predicate of this call. */
     OperandDetailBuilder predicate(Predicate<? super RexCall> predicate);
 
-    /** Indicates that this operand has a single input. */
-    Done oneInput(OperandTransform transform);
-
-    /** Indicates that this operand has several inputs. */
-    Done inputs(OperandTransform... transforms);
-
-    /** Indicates that this operand has several overloads. */
-//    Done overloads(OperandDetailBuilder... detailBuilders);
-
-    /** Indicates that this operand takes any number or type of inputs. */
-    Done anyInputs();
-
-    /** Indicates that this operand takes no inputs. */
+    /** Indicates that this call takes no operands. */
     default Done noInputs() {
       return inputs();
     }
+
+    /** Indicates that this call has a single operand. */
+    default Done oneInput(OperandTransform transform) {
+      return inputs(transform);
+    }
+
+    /** Indicates that this call has several operands. */
+    Done inputs(OperandTransform... transforms);
+
+    /** Indicates that this call has several overloads.
+     *
+     * <p>For example, the following matches a call to operator X with 2, 3 or 4
+     * arguments:
+     *
+     * <blockquote><pre>
+     *   b.callTo(SqlKind.X)
+     *       .overloadedInputs(RexRule::any, RexRule::any)
+     *       .overloadedInputs(RexRule::any, RexRule::any, RexRule::any)
+     *       .inputs(RexRule::any, RexRule::any, RexRule::any, RexRule::any)
+     * </pre></blockquote>
+     */
+    OperandDetailBuilder overloadedInputs(OperandTransform... transforms);
+
+    /** Indicates that this call takes any number or type of operands. */
+    Done anyInputs();
   }
 }

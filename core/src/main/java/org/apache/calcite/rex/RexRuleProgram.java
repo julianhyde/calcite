@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -131,16 +132,23 @@ public class RexRuleProgram {
   }
 
   /** Operand that matches nodes of a given {@link SqlKind}. */
-  static class KindOperand extends ParentOperand {
-    final SqlKind kind;
+  static class PredicateOperand extends ParentOperand {
+    private final String description;
+    private final Predicate<RexNode> predicate;
 
-    KindOperand(SqlKind kind, List<Operand> operands) {
+    PredicateOperand(String description, Predicate<RexNode> predicate,
+        List<Operand> operands) {
       super(operands);
-      this.kind = kind;
+      this.description = description;
+      this.predicate = predicate;
+    }
+
+    @Override public String toString() {
+      return description;
     }
 
     @Override boolean matches(RexNode e) {
-      return e.getKind() == kind
+      return predicate.test(e)
           && super.matches(e);
     }
   }
@@ -172,26 +180,40 @@ public class RexRuleProgram {
 
     @Override public OperandDetailBuilder ofKind(SqlKind kind) {
       return new OperandDetailBuilderImpl(operands ->
-          resultIs(new KindOperand(kind, operands)));
+          new PredicateOperand("kind=" + kind, e -> e.getKind() == kind,
+              operands),
+          operands::add);
     }
 
     @Override public OperandDetailBuilder callTo(SqlOperator operator) {
-      throw new AssertionError("TODO");
+      return new OperandDetailBuilderImpl(operands ->
+          new PredicateOperand("op=" + operator, e ->
+              e instanceof RexCall
+                  && ((RexCall) e).getOperator() == operator,
+              operands),
+          operands::add);
     }
 
-    @Override public OperandBuilder callTo(
+    @Override public OperandDetailBuilder callTo(
         Class<? extends SqlOperator> operatorClass) {
-      throw new AssertionError("TODO");
+      return new OperandDetailBuilderImpl(operands ->
+          new PredicateOperand("opClass=" + operatorClass, e ->
+              e instanceof RexCall
+                  && operatorClass.isInstance(((RexCall) e).getOperator()),
+              operands),
+          operands::add);
     }
 
     /** Implementation of {@link OperandDetailBuilder}. */
     private static class OperandDetailBuilderImpl
         implements OperandDetailBuilder {
-      final List<Operand> operands = new ArrayList<>();
-      final Function<List<Operand>, Done> completer;
+      private final Function<List<Operand>, Operand> operandFactory;
+      private final Consumer<Operand> consumer;
 
-      OperandDetailBuilderImpl(Function<List<Operand>, Done> completer) {
-        this.completer = completer;
+      OperandDetailBuilderImpl(Function<List<Operand>, Operand> operandFactory,
+          Consumer<Operand> consumer) {
+        this.operandFactory = operandFactory;
+        this.consumer = consumer;
       }
 
       @Override public OperandDetailBuilder predicate(
@@ -199,25 +221,76 @@ public class RexRuleProgram {
         throw new AssertionError("TODO");
       }
 
-      @Override public Done oneInput(OperandTransform transform) {
-        return inputs(transform);
+      private Operand inputs0(OperandTransform[] transforms) {
+        final List<Operand> operands = new ArrayList<>();
+        final OperandBuilderImpl operandBuilder =
+            new OperandBuilderImpl(operands);
+        for (OperandTransform transform : transforms) {
+          final Done done = transform.apply(operandBuilder);
+          assert done != null;
+        }
+        return operandFactory.apply(operands);
       }
 
       @Override public Done inputs(OperandTransform... transforms) {
-        final OperandBuilderImpl operandBuilder = new OperandBuilderImpl(operands);
-        for (OperandTransform transform : transforms) {
-          transform.apply(operandBuilder);
-        }
-        return finish();
+        final Operand operand = inputs0(transforms);
+        consumer.accept(operand);
+        return DoneImpl.INSTANCE;
       }
 
-      protected Done finish() {
-        return completer.apply(operands);
+      @Override public OperandDetailBuilder overloadedInputs(
+          OperandTransform... transforms) {
+        final Operand operand0 = inputs0(transforms);
+        return new OperandDetailBuilderImpl(operandFactory,
+            operand -> consumer.accept(OverloadOperand.of(operand0, operand)));
       }
 
       @Override public Done anyInputs() {
         throw new AssertionError("TODO");
       }
+    }
+  }
+
+  /** Operand that allows several overloads. */
+  private static class OverloadOperand extends Operand {
+    private final ImmutableList<Operand> operands;
+
+    OverloadOperand(ImmutableList<Operand> operands) {
+      this.operands = operands;
+    }
+
+    static Operand of(Operand... operands) {
+      final List<Operand> flatOperands = new ArrayList<>();
+      for (Operand operand : operands) {
+        flatten(flatOperands, operand);
+      }
+      switch (flatOperands.size()) {
+      case 0:
+        return new NoOperand();
+      case 1:
+        return flatOperands.get(0);
+      default:
+        return new OverloadOperand(ImmutableList.copyOf(flatOperands));
+      }
+    }
+
+    private static void flatten(List<Operand> flatOperands, Operand operand) {
+      if (operand instanceof OverloadOperand) {
+        for (Operand o : ((OverloadOperand) operand).operands) {
+          flatten(flatOperands, o);
+        }
+      } else {
+        flatOperands.add(operand);
+      }
+    }
+
+    @Override boolean matches(RexNode e) {
+      for (Operand operand : operands) {
+        if (operand.matches(e)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 
@@ -248,6 +321,13 @@ public class RexRuleProgram {
   private static class AnyOperand extends Operand {
     @Override boolean matches(RexNode e) {
       return true;
+    }
+  }
+
+  /** Operand that matches no expressions. */
+  private static class NoOperand extends Operand {
+    @Override boolean matches(RexNode e) {
+      return false;
     }
   }
 
