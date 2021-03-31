@@ -306,7 +306,7 @@ public class RexSimplify {
     case SEARCH:
       return simplifySearch((RexCall) e, unknownAs);
     case LIKE:
-      return simplifyLike((RexCall) e);
+      return simplifyLike((RexCall) e, unknownAs);
     case MINUS_PREFIX:
       return simplifyUnaryMinus((RexCall) e, unknownAs);
     case PLUS_PREFIX:
@@ -332,16 +332,14 @@ public class RexSimplify {
     return rexBuilder.makeCall(e.getType(), e.getOperator(), operands);
   }
 
-  private RexNode simplifyLike(RexCall e) {
+  private RexNode simplifyLike(RexCall e, RexUnknownAs unknownAs) {
     if (e.operands.get(1) instanceof RexLiteral) {
       final RexLiteral literal = (RexLiteral) e.operands.get(1);
       if ("%".equals(literal.getValueAs(String.class))) {
-        RexNode x = e.operands.get(0);
-        // "x LIKE '%'" simplifies to "UNKNOWN OR x IS NOT NULL"
-        return simplify(
-            rexBuilder.makeCall(SqlStdOperatorTable.OR,
-                rexBuilder.makeNullLiteral(e.getType()),
-                rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, x)));
+        // "x LIKE '%'" simplifies to "x = x"
+        final RexNode x = e.operands.get(0);
+        return simplify(rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, x, x),
+            unknownAs);
       }
     }
     return simplifyGenericNode(e);
