@@ -3111,6 +3111,29 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplify(
         or(like(refMandatory, literal("%")),
             like(refMandatory, literal("% %"))), "true");
+
+    // NOT LIKE and NOT SIMILAR TO are not allowed in Rex land
+    try {
+      rexBuilder.makeCall(SqlStdOperatorTable.NOT_LIKE, ref, literal("%"));
+    } catch (AssertionError e) {
+      assertThat(e.getMessage(), is("unsupported negated operator NOT LIKE"));
+    }
+    try {
+      rexBuilder.makeCall(SqlStdOperatorTable.NOT_SIMILAR_TO, ref, literal("%"));
+    } catch (AssertionError e) {
+      assertThat(e.getMessage(),
+          is("unsupported negated operator NOT SIMILAR TO"));
+    }
+
+    // NOT(LIKE)
+    checkSimplify3(not(like(ref, literal("%"))),
+        "NOT(OR(null, IS NOT NULL($0)))", "false", "NOT(IS NOT NULL($0))");
+    // SIMILAR TO is not optimized
+    checkSimplifyUnchanged(
+        rexBuilder.makeCall(SqlStdOperatorTable.SIMILAR_TO, ref, literal("%")));
+    // NOT(SIMILAR TO) is not optimized
+    checkSimplifyUnchanged(
+        not(rexBuilder.makeCall(SqlStdOperatorTable.SIMILAR_TO, ref, literal("%"))));
   }
 
   @Test void testSimplifyNonDeterministicFunction() {
