@@ -2928,6 +2928,11 @@ class RexProgramTest extends RexProgramTestBase {
         "?0.bool0");
   }
 
+  @Test void testSimplifyIsTrue() {
+    final RexNode ref = input(tVarchar(true, 10), 0);
+    checkSimplify(isTrue(like(ref, literal("%"))), "IS NOT NULL($0)");
+  }
+
   /** Unit tests for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2438">[CALCITE-2438]
    * RexCall#isAlwaysTrue returns incorrect result</a>. */
