@@ -47,8 +47,17 @@ public class BlockBuilder {
 
   private final boolean optimizing;
   private final @Nullable BlockBuilder parent;
+  private final boolean removeUnused;
 
   private static final Shuttle OPTIMIZE_SHUTTLE = new OptimizeShuttle();
+
+  /** Private constructor. */
+  private BlockBuilder(boolean optimizing, @Nullable BlockBuilder parent,
+      boolean removeUnused) {
+    this.optimizing = optimizing;
+    this.parent = parent;
+    this.removeUnused = removeUnused;
+  }
 
   /**
    * Creates a non-optimizing BlockBuilder.
@@ -72,8 +81,7 @@ public class BlockBuilder {
    * @param optimizing Whether to eliminate common sub-expressions
    */
   public BlockBuilder(boolean optimizing, @Nullable BlockBuilder parent) {
-    this.optimizing = optimizing;
-    this.parent = parent;
+    this(optimizing, parent, true);
   }
 
   /**
@@ -242,7 +250,8 @@ public class BlockBuilder {
    */
   protected boolean isSimpleExpression(@Nullable Expression expr) {
     if (expr instanceof ParameterExpression
-        || expr instanceof ConstantExpression) {
+        || expr instanceof ConstantExpression
+        && isSmallConstant(((ConstantExpression) expr).value)) {
       return true;
     }
     if (expr instanceof UnaryExpression) {
@@ -251,6 +260,19 @@ public class BlockBuilder {
           && isSimpleExpression(una.expression);
     }
     return false;
+  }
+
+  /** Returns whether a constant is "small" enough to be included inline
+   * without harming readability.
+   *
+   * <p>We deem a string that is longer than 20 characters to be "large".
+   * The effect is that string constants tend to be stored in static final
+   * fields. The runtime performance is the same, but the code is less
+   * cluttered. */
+  protected boolean isSmallConstant(Object value) {
+    return !(value instanceof String
+        && ((String) value).length() > 20
+        && ((String) value).startsWith("SELECT"));
   }
 
   protected boolean isSafeForReuse(DeclarationStatement decl) {
@@ -322,7 +344,7 @@ public class BlockBuilder {
    * Returns a block consisting of the current list of statements.
    */
   public BlockStatement toBlock() {
-    if (optimizing) {
+    if (optimizing && removeUnused) {
       // We put an artificial limit of 10 iterations just to prevent an endless
       // loop. Optimize should not loop forever, however it is hard to prove if
       // it always finishes in reasonable time.
@@ -508,6 +530,10 @@ public class BlockBuilder {
   public BlockBuilder append(Expression expression) {
     add(expression);
     return this;
+  }
+
+  public BlockBuilder withRemoveUnused(boolean removeUnused) {
+    return new BlockBuilder(optimizing, parent, removeUnused);
   }
 
   /** Substitute Variable Visitor. */
