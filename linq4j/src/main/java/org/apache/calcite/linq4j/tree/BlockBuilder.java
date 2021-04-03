@@ -250,8 +250,7 @@ public class BlockBuilder {
    */
   protected boolean isSimpleExpression(@Nullable Expression expr) {
     if (expr instanceof ParameterExpression
-        || expr instanceof ConstantExpression
-        && isSmallConstant(((ConstantExpression) expr).value)) {
+        || expr instanceof ConstantExpression) {
       return true;
     }
     if (expr instanceof UnaryExpression) {
@@ -260,19 +259,6 @@ public class BlockBuilder {
           && isSimpleExpression(una.expression);
     }
     return false;
-  }
-
-  /** Returns whether a constant is "small" enough to be included inline
-   * without harming readability.
-   *
-   * <p>We deem a string that is longer than 20 characters to be "large".
-   * The effect is that string constants tend to be stored in static final
-   * fields. The runtime performance is the same, but the code is less
-   * cluttered. */
-  protected boolean isSmallConstant(Object value) {
-    return !(value instanceof String
-        && ((String) value).length() > 20
-        && ((String) value).startsWith("SELECT"));
   }
 
   protected boolean isSafeForReuse(DeclarationStatement decl) {
