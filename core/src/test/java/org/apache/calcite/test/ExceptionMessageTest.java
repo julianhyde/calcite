@@ -26,6 +26,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelRunner;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -46,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class ExceptionMessageTest {
   private Connection conn;
-  private RelBuilder builder;
 
   /**
    * Simple reflective schema that provides valid and invalid entries.
@@ -84,11 +85,16 @@ public class ExceptionMessageTest {
     SchemaPlus rootSchema = calciteConnection.getRootSchema();
     rootSchema.add("test", new ReflectiveSchema(new TestSchema()));
     calciteConnection.setSchema("test");
-    FrameworkConfig config = Frameworks.newConfigBuilder()
-        .defaultSchema(rootSchema)
-        .build();
     this.conn = calciteConnection;
-    this.builder = RelBuilder.create(config);
+  }
+
+  @AfterEach
+  public void tearDown() throws SQLException {
+    if (conn != null) {
+      Connection c = conn;
+      conn = null;
+      c.close();
+    }
   }
 
   private void runQuery(String sql) throws SQLException {
@@ -106,8 +112,21 @@ public class ExceptionMessageTest {
     }
   }
 
-  private void runQuery(RelNode relNode) throws SQLException {
-    RelRunner relRunner = conn.unwrap(RelRunner.class);
+  /** Performs an action that requires a {@link RelBuilder}, and returns the
+   * result. */
+  private <T> T withRelBuilder(Function<RelBuilder, T> fn) throws SQLException {
+    final SchemaPlus rootSchema =
+        conn.unwrap(CalciteConnection.class).getRootSchema();
+    final FrameworkConfig config = Frameworks.newConfigBuilder()
+        .defaultSchema(rootSchema)
+        .build();
+    RelBuilder relBuilder = RelBuilder.create(config);
+    return fn.apply(relBuilder);
+  }
+
+  private void runQuery(Function<RelBuilder, RelNode> relFn) throws SQLException {
+    final RelRunner relRunner = conn.unwrap(RelRunner.class);
+    final RelNode relNode = withRelBuilder(relFn);
     PreparedStatement preparedStatement = relRunner.prepare(relNode);
     try {
       preparedStatement.executeQuery();
@@ -168,31 +187,36 @@ public class ExceptionMessageTest {
     }
   }
 
+  /** Runs a query via {@link RelRunner}. */
   @Test void testValidRelNodeQuery() throws SQLException {
-    // Ensure that the relNode test case runs successfully
-    final RelNode relNode = builder
-        .scan("test", "entries")
-        .project(builder.field("name"))
-        .build();
-    runQuery(relNode);
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("test", "entries")
+            .project(b.field("name"))
+            .build();
+    runQuery(relFn);
   }
 
+  /** Runs a query via {@link RelRunner} that is expected to fail,
+   * and checks that the exception correctly describes the RelNode tree.
+   *
+   * <p>Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4585">[CALCITE-4585]
+   * If a query is executed via RelRunner.prepare(RelNode) and fails, the
+   * exception should report the RelNode plan, not the SQL</a>. */
   @Test void testRelNodeQueryException() throws SQLException {
-    // Just by the incorrect function usage to verify exception log
     try {
-      final RelNode relNode = builder
-          .scan("test", "entries")
-          .project(builder.call(SqlStdOperatorTable.ABS, builder.field("name")))
-          .build();
-      runQuery(relNode);
+      final Function<RelBuilder, RelNode> relFn = b ->
+          b.scan("test", "entries")
+              .project(b.call(SqlStdOperatorTable.ABS, b.field("name")))
+              .build();
+      runQuery(relFn);
       fail("RelNode query about entries should result in an exception");
     } catch (RuntimeException e) {
-      assertThat(
-          e.getMessage(), Matchers.isLinux("java.sql.SQLException: "
-              + "Error while preparing plan ["
-              + "LogicalProject($f0=[ABS($1)])\n"
-              + "  LogicalTableScan(table=[[test, entries]])\n"
-              + "]"));
+      String message = "java.sql.SQLException: Error while preparing plan ["
+          + "LogicalProject($f0=[ABS($1)])\n"
+          + "  LogicalTableScan(table=[[test, entries]])\n"
+          + "]";
+      assertThat(e.getMessage(), Matchers.isLinux(message));
     }
   }
 }
