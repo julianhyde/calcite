@@ -204,7 +204,7 @@ public class ExceptionMessageTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4585">[CALCITE-4585]
    * If a query is executed via RelRunner.prepare(RelNode) and fails, the
    * exception should report the RelNode plan, not the SQL</a>. */
-  @Test void testRelNodeQueryException() throws SQLException {
+  @Test void testRelNodeQueryException() {
     try {
       final Function<RelBuilder, RelNode> relFn = b ->
           b.scan("test", "entries")
@@ -212,8 +212,8 @@ public class ExceptionMessageTest {
               .build();
       runQuery(relFn);
       fail("RelNode query about entries should result in an exception");
-    } catch (RuntimeException e) {
-      String message = "java.sql.SQLException: Error while preparing plan ["
+    } catch (SQLException e) {
+      String message = "Error while preparing plan ["
           + "LogicalProject($f0=[ABS($1)])\n"
           + "  LogicalTableScan(table=[[test, entries]])\n"
           + "]";
