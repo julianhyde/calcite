@@ -120,14 +120,15 @@ public class ExceptionMessageTest {
     final FrameworkConfig config = Frameworks.newConfigBuilder()
         .defaultSchema(rootSchema)
         .build();
-    RelBuilder relBuilder = RelBuilder.create(config);
+    final RelBuilder relBuilder = RelBuilder.create(config);
     return fn.apply(relBuilder);
   }
 
   private void runQuery(Function<RelBuilder, RelNode> relFn) throws SQLException {
     final RelRunner relRunner = conn.unwrap(RelRunner.class);
     final RelNode relNode = withRelBuilder(relFn);
-    PreparedStatement preparedStatement = relRunner.prepare(relNode);
+    final PreparedStatement preparedStatement =
+        relRunner.prepareStatement(relNode);
     try {
       preparedStatement.executeQuery();
     } finally {
