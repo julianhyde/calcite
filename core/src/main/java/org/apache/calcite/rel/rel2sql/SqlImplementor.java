@@ -1534,8 +1534,10 @@ public abstract class SqlImplementor {
           final SqlOperator op2 = requireNonNull(call.getOperator().reverse());
           return (RexCall) rexBuilder.makeCall(op2, op1, op0);
         }
+        // fall through
+      default:
+        return call;
       }
-      return call;
     }
   }
 
