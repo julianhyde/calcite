@@ -276,14 +276,12 @@ public abstract class SqlImplementor {
    * @param node            Join condition
    * @param leftContext     Left context
    * @param rightContext    Right context
-   * @param leftFieldCount  Number of fields on left result
+   *
    * @return SqlNode that represents the condition
    */
   public static SqlNode convertConditionToSqlNode(RexNode node,
       Context leftContext,
-      Context rightContext,
-      int leftFieldCount,
-      SqlDialect dialect) {
+      Context rightContext) {
     if (node.isAlwaysTrue()) {
       return SqlLiteral.createBoolean(true, POS);
     }
@@ -292,12 +290,6 @@ public abstract class SqlImplementor {
     }
     final Context joinContext =
         leftContext.implementor().joinContext(leftContext, rightContext);
-    if (node instanceof RexInputRef) {
-      return joinContext.toSql(null, node);
-    }
-    if (!(node instanceof RexCall)) {
-      throw new AssertionError(node);
-    }
     return joinContext.toSql(null, node);
   }
 
