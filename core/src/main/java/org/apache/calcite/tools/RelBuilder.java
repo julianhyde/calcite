@@ -3342,6 +3342,7 @@ public class RelBuilder {
       return distinct(true);
     }
 
+    /** Converts this aggregate call to a windowed aggregate call. */
     OverCall over();
   }
 
@@ -3680,9 +3681,11 @@ public class RelBuilder {
 
   /** Call to a windowed aggregate function.
    *
-   * <p>Created using {@link AggCall#over()}, for example
+   * <p>To create an {@code OverCall}, start with an {@link AggCall} (created
+   * by a method such as {@link #aggregateCall}, {@link #sum} or {@link #count})
+   * and call its {@link AggCall#over()} method. For example,
    *
-   * <blockquote><pre>
+   * <pre>{@code
    *      b.scan("EMP")
    *         .project(b.field("DEPTNO"),
    *            b.aggregateCall(SqlStdOperatorTable.ROW_NUMBER)
@@ -3693,8 +3696,14 @@ public class RelBuilder {
    *               .allowPartial(true)
    *               .nullWhenCountZero(false)
    *               .as("x"))
-   * </pre>
-   * </blockquote> */
+   * }</pre>
+   *
+   * <p>Unlike an aggregate call, a windowed aggregate call is an expression
+   * that you can use in a {@link Project} or {@link Filter}. So, to finish,
+   * call {@link OverCall#toRex()} to convert the {@code OverCall} to a
+   * {@link RexNode}; the {@link OverCall#as} method (used in the above example)
+   * does the same but also assigns an column alias.
+   */
   public interface OverCall {
     /** Performs an action on this OverCall. */
     default <R> R let(Function<OverCall, R> consumer) {
