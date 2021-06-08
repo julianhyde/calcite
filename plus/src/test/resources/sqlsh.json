@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "defaultSchema": "os",
+   "schemas": [
+     {
+       "name": "os",
+       "tables": [ {
+         "name": "du",
+         "type": "view",
+         "sql": "select *, \"size_k\" * 1024 as \"size_b\"from table(\"du\"(true))"
+       }, {
+         "name": "files",
+         "type": "view",
+         "sql": "select * from table(\"files\"('.'))"
+       }, {
+         "name": "git_commits",
+         "type": "view",
+         "sql": "select * from table(\"git_commits\"(true))"
+       }, {
+         "name": "jps",
+         "type": "view",
+         "sql": "select * from table(\"jps\"(true))"
+       }, {
+         "name": "ps",
+         "type": "view",
+         "sql": "select * from table(\"ps\"(true))"
+       }, {
+         "name": "stdin",
+         "type": "view",
+         "sql": "select * from table(\"stdin\"(true))"
+       }, {
+         "name": "vmstat",
+         "type": "view",
+         "sql": "select * from table(\"vmstat\"(true))"
+       } ],
+       "functions": [ {
+         "name": "du",
+         "className": "org.apache.calcite.adapter.os.DuTableFunction"
+       }, {
+         "name": "files",
+         "className": "org.apache.calcite.adapter.os.FilesTableFunction"
+       }, {
+         "name": "git_commits",
+         "className": "org.apache.calcite.adapter.os.GitCommitsTableFunction"
+       }, {
+         "name": "jps",
+         "className": "org.apache.calcite.adapter.os.JpsTableFunction"
+       }, {
+         "name": "ps",
+         "className": "org.apache.calcite.adapter.os.PsTableFunction"
+       }, {
+         "name": "stdin",
+         "className": "org.apache.calcite.adapter.os.StdinTableFunction"
+       }, {
+         "name": "vmstat",
+         "className": "org.apache.calcite.adapter.os.VmstatTableFunction"
+       } ]
+     }
+   ]
+}
