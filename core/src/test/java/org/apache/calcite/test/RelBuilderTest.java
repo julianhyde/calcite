@@ -4313,4 +4313,45 @@ public class RelBuilderTest {
       };
     }
   }
+
+  void example1(RelBuilder builder) {
+    RelNode root = builder.scan("EMP")
+        .filter(
+            builder.in(
+                builder.scan("DEPT")
+                    .filter(
+                        builder.call(SqlStdOperatorTable.EQUALS,
+                            builder.field("DNAME"),
+                            builder.literal("AAA")))
+                    .project(builder.field("DEPTNO"))
+                    .build(),
+                ImmutableList.of(builder.field("DEPTNO"))))
+        .build();
+  }
+
+  void example2(RelBuilder builder) {
+    RelNode root = builder.scan("EMP")
+        .let(b -> b.scan("DEPT")
+            .filter(
+                builder.call(SqlStdOperatorTable.EQUALS,
+                    builder.field("DNAME"),
+                    builder.literal("AAA")))
+            .project(builder.field("DEPTNO")))
+        .filter(builder.inQuery(builder.field("DEPTNO")))
+        .build();
+  }
+
+  void example3(RelBuilder builder) {
+    RelNode root = builder.scan("EMP")
+        .filter(
+            builder.in(builder.field("DEPTNO"),
+                b -> b.scan("DEPT")
+                    .filter(
+                        builder.call(SqlStdOperatorTable.EQUALS,
+                            builder.field("DNAME"),
+                            builder.literal("AAA")))
+                    .project(builder.field("DEPTNO"))
+                    .build()))
+        .build();
+  }
 }

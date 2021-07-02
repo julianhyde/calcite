@@ -688,6 +688,16 @@ public class RelBuilder {
   }
 
   /** Creates an IN. */
+  public RexNode in(RelNode r, Iterable<? extends RexNode> args) {
+    return null;
+  }
+
+  /** Creates an IN. */
+  public RexNode in(RexNode arg, Function<RelBuilder, RelNode> f) {
+    return null;
+  }
+
+  /** Creates an IN. */
   public RexNode in(RexNode arg, RexNode... ranges) {
     return in(arg, ImmutableList.copyOf(ranges));
   }
@@ -2361,6 +2371,10 @@ public class RelBuilder {
         struct.repeatUnionFactory.createRepeatUnion(seed, iterative, all,
             iterationLimit);
     return push(repeatUnion);
+  }
+
+  public RexNode inQuery(RexNode deptno) {
+    return null;
   }
 
   /**
