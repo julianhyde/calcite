@@ -1432,6 +1432,26 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).conformance(SqlConformanceEnum.PRESTO).ok();
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4680">[CALCITE-4680]
+   * Query with UNNEST in correlated NOT IN sub-query throws AssertionError
+   * "contains $cor1"</a>. */
+  @Test void testUnnestCorrelated() {
+    // Test case is minimal: if you change 'NOT IN' to 'IN', or remove the
+    // second 'WHERE', or add '.expand(false)', the problem goes away.
+    final String sql = "WITH tab (field1, field2) AS\n"
+        + "  (VALUES (1, ARRAY[ ROW(1), ROW(NULL)]),\n"
+        + "    (3, ARRAY[ ROW(NULL)]))\n"
+        + "SELECT field1\n"
+        + "FROM tab t1\n"
+        + "WHERE t1.field1 NOT IN (\n"
+        + "  SELECT subfield\n"
+        + "  FROM tab t2,\n"
+        + "    UNNEST(t2.field2) AS L(subfield)\n"
+        + "	WHERE t1.field1 = t2.field1)";
+    sql(sql).ok();
+  }
+
   @Test void testArrayOfRecord() {
     sql("select employees[1].detail.skills[2+3].desc from dept_nested").ok();
   }
