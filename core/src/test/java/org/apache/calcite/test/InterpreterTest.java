@@ -713,4 +713,38 @@ class InterpreterTest {
                 .build())
         .returnsRows("[]", "[]");
   }
+
+  /** Tests uncorrelated IN. */
+  @Test void testIn() {
+    final String sql = "select \"name\", \"deptno\"\n"
+        + "from \"hr\".\"emps\"\n"
+        + "where \"deptno\" in (\n"
+        + "  select \"deptno\"\n"
+        + "  from \"hr\".\"depts\"\n"
+        + "  where \"name\" = 'Sales')";
+    sql(sql).returnsRows("[Bill, 10]", "[Sebastian, 10]", "[Theodore, 10]");
+  }
+
+  /** Tests correlated IN. */
+  @Test void testCorrelatedIn() {
+    final String sql = "select \"name\", \"deptno\"\n"
+        + "from \"hr\".\"emps\" as e\n"
+        + "where \"deptno\" * 2 in (\n"
+        + "  select \"deptno\" + \"deptno\"\n"
+        + "  from \"hr\".\"depts\"\n"
+        + "  where \"deptno\" = e.\"deptno\")";
+    sql(sql).returnsRows("[Bill, 10]", "[Sebastian, 10]", "[Theodore, 10]");
+  }
+
+  /** Tests correlated EXISTS. */
+  @Test void testExists() {
+    final String sql = "select \"name\", \"deptno\"\n"
+        + "from \"hr\".\"emps\" as e\n"
+        + "where exists (\n"
+        + "  select null\n"
+        + "  from \"hr\".\"depts\"\n"
+        + "  where \"deptno\" = e.\"deptno\"\n"
+        + "  and \"name\" = 'Sales')";
+    sql(sql).returnsRows("[Bill, 10]", "[Sebastian, 10]", "[Theodore, 10]");
+  }
 }
