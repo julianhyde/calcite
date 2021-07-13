@@ -139,7 +139,7 @@ class RexLosslessCastTest extends RexProgramTestBase {
     checkSimplifyUnchanged(cast(cast(vVarchar(), tInt()), tVarchar()));
   }
 
-  @Test void removeLosslesssCastInt() {
+  @Test void removeLosslessCastInt() {
     checkSimplifyUnchanged(cast(vInt(), tBigInt()));
     // A.1
     checkSimplify(cast(cast(vInt(), tBigInt()), tInt()), "CAST(?0.int0):INTEGER NOT NULL");
@@ -153,7 +153,7 @@ class RexLosslessCastTest extends RexProgramTestBase {
         "?0.notNullInt0");
   }
 
-  @Test void removeLosslesssCastChar() {
+  @Test void removeLosslessCastChar() {
     checkSimplifyUnchanged(cast(vVarchar(), tChar(3)));
     checkSimplifyUnchanged(cast(cast(vVarchar(), tChar(3)), tVarchar(5)));
 

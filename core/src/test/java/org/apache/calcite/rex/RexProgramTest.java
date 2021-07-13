@@ -838,6 +838,39 @@ class RexProgramTest extends RexProgramTestBase {
                                and(gRef, or(trueLiteral, falseLiteral)))))))));
   }
 
+  @Test void testDummy() { // TODO
+    final RelDataType booleanType =
+        typeFactory.createSqlType(SqlTypeName.BOOLEAN);
+    final RelDataType intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
+    final RelDataType intNullableType =
+        typeFactory.createTypeWithNullability(intType, true);
+    final RelDataType rowType = typeFactory.builder()
+        .add("a", booleanType)
+        .add("b", booleanType)
+        .add("c", booleanType)
+        .add("d", booleanType)
+        .add("e", booleanType)
+        .add("f", booleanType)
+        .add("g", booleanType)
+        .add("h", intType)
+        .add("i", intNullableType)
+        .add("j", intType)
+        .add("k", intType)
+        .build();
+
+    final RexDynamicParam range = rexBuilder.makeDynamicParam(rowType, 0);
+    final RexNode aRef = rexBuilder.makeFieldAccess(range, 0);
+    final RexNode bRef = rexBuilder.makeFieldAccess(range, 1);
+    final RexNode cRef = rexBuilder.makeFieldAccess(range, 2);
+
+    // case: trailing false and null, no simplification
+    checkSimplify3(
+        case_(aRef, trueLiteral, bRef, trueLiteral, cRef, falseLiteral, nullBool),
+        "OR(?0.a, ?0.b, AND(null, NOT(?0.a), NOT(?0.b), NOT(?0.c)))",
+        "OR(?0.a, ?0.b)",
+        "OR(?0.a, ?0.b, NOT(?0.c))");
+  }
+
   @Test void testSimplify() {
     final RelDataType booleanType =
         typeFactory.createSqlType(SqlTypeName.BOOLEAN);

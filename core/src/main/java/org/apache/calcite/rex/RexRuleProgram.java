@@ -17,6 +17,7 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexRule.Done;
 import org.apache.calcite.rex.RexRule.OperandBuilder;
 import org.apache.calcite.rex.RexRule.OperandDetailBuilder;
@@ -25,14 +26,16 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.util.Pair;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -70,28 +73,37 @@ public class RexRuleProgram {
   }
 
   /** Applies the program to an expression. */
-  public RexNode apply(RexRule.Context cx, RexNode e) {
+  public RexNode apply(RexRule.Context cx, RexNode e, RexUnknownAs unknownAs) {
     return e.accept(
         new RexShuttle() {
           // TODO: more methods need to be overloaded
 
           @Override public RexNode visitLiteral(RexLiteral literal) {
-            return applyRules(cx, literal);
+            return applyRules(cx, literal, unknownAs);
           }
 
           @Override public RexNode visitCall(RexCall call) {
-            return applyRules(cx, call);
+            // Apply rules bottom-up until things stop changing.
+            for (;;) {
+              boolean[] update = {false};
+              List<RexNode> clonedOperands = visitList(call.operands, update);
+              if (!update[0]) {
+                return applyRules(cx, call, unknownAs);
+              }
+              call = cx.rexBuilder().copyCall(call, clonedOperands);
+            }
           }
         });
   }
 
   /** Applies all rules to an expression. */
-  private RexNode applyRules(RexRule.Context cx, RexNode e) {
+  private RexNode applyRules(RexRule.Context cx, RexNode e,
+      RexUnknownAs unknownAs) {
     for (Map.Entry<RexRule, Operand> entry : ruleOperands.entrySet()) {
       final RexRule rule = entry.getKey();
       final Operand operand = entry.getValue();
       if (operand.matches(e)) {
-        e = rule.apply(cx, e);
+        e = rule.apply(cx, e, unknownAs);
       }
     }
     return e;
@@ -108,13 +120,20 @@ public class RexRuleProgram {
    * and the expression's operands must match the child operands. */
   abstract static class ParentOperand extends Operand {
     final List<Operand> operands;
+    final boolean any;
 
-    ParentOperand(List<Operand> operands) {
+    ParentOperand(List<Operand> operands, boolean any) {
       this.operands = ImmutableList.copyOf(operands);
+      this.any = any;
+      Preconditions.checkArgument(!any || operands.isEmpty(),
+          "If 'any', 'operands' must be empty");
     }
 
     @Override boolean matches(RexNode e) {
       if (e instanceof RexCall) {
+        if (any) {
+          return true;
+        }
         final List<RexNode> operands = ((RexCall) e).operands;
         if (operands.size() != this.operands.size()) {
           return false;
@@ -137,8 +156,8 @@ public class RexRuleProgram {
     private final Predicate<RexNode> predicate;
 
     PredicateOperand(String description, Predicate<RexNode> predicate,
-        List<Operand> operands) {
-      super(operands);
+        List<Operand> operands, boolean any) {
+      super(operands, any);
       this.description = description;
       this.predicate = predicate;
     }
@@ -178,39 +197,58 @@ public class RexRuleProgram {
       return resultIs(new LiteralOperand(predicate));
     }
 
-    @Override public OperandDetailBuilder ofKind(SqlKind kind) {
-      return new OperandDetailBuilderImpl(operands ->
-          new PredicateOperand("kind=" + kind, e -> e.getKind() == kind,
-              operands),
-          operands::add);
+    @Override public OperandDetailBuilder ofKind(SqlKind... kinds) {
+      switch (kinds.length) {
+      case 0:
+        throw new IllegalArgumentException("need at least one SqlKind");
+
+      case 1:
+        final SqlKind kind = kinds[0];
+        return new OperandDetailBuilderImpl((operands, any) ->
+            new PredicateOperand("kind=" + kind,
+                e -> e.getKind() == kind, operands, any),
+            operands::add);
+
+      default:
+        final Set<SqlKind> kindSet = ImmutableSet.copyOf(kinds);
+        return new OperandDetailBuilderImpl((operands, any) ->
+            new PredicateOperand("kinds=" + kindSet,
+                e -> kindSet.contains(e.getKind()), operands, any),
+            operands::add);
+      }
     }
 
     @Override public OperandDetailBuilder callTo(SqlOperator operator) {
-      return new OperandDetailBuilderImpl(operands ->
+      return new OperandDetailBuilderImpl((operands, any) ->
           new PredicateOperand("op=" + operator, e ->
               e instanceof RexCall
                   && ((RexCall) e).getOperator() == operator,
-              operands),
+              operands, any),
           operands::add);
     }
 
     @Override public OperandDetailBuilder callTo(
         Class<? extends SqlOperator> operatorClass) {
-      return new OperandDetailBuilderImpl(operands ->
+      return new OperandDetailBuilderImpl((operands, any) ->
           new PredicateOperand("opClass=" + operatorClass, e ->
               e instanceof RexCall
                   && operatorClass.isInstance(((RexCall) e).getOperator()),
-              operands),
+              operands, any),
           operands::add);
+    }
+
+    /** Creates operands from a specification. */
+    private interface OperandFactory {
+      Operand apply(List<Operand> operands, boolean any);
     }
 
     /** Implementation of {@link OperandDetailBuilder}. */
     private static class OperandDetailBuilderImpl
         implements OperandDetailBuilder {
-      private final Function<List<Operand>, Operand> operandFactory;
+      private final OperandFactory operandFactory;
       private final Consumer<Operand> consumer;
 
-      OperandDetailBuilderImpl(Function<List<Operand>, Operand> operandFactory,
+      OperandDetailBuilderImpl(OperandFactory operandFactory,
           Consumer<Operand> consumer) {
         this.operandFactory = operandFactory;
         this.consumer = consumer;
@@ -229,7 +267,7 @@ public class RexRuleProgram {
           final Done done = transform.apply(operandBuilder);
           assert done != null;
         }
-        return operandFactory.apply(operands);
+        return operandFactory.apply(operands, false);
       }
 
       @Override public Done inputs(OperandTransform... transforms) {
@@ -246,7 +284,9 @@ public class RexRuleProgram {
       }
 
       @Override public Done anyInputs() {
-        throw new AssertionError("TODO");
+        Operand operand = operandFactory.apply(ImmutableList.of(), true);
+        consumer.accept(operand);
+        return DoneImpl.INSTANCE;
       }
     }
   }

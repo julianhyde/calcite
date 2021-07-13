@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 
 import com.google.common.collect.ImmutableList;
@@ -111,6 +112,7 @@ public class RelOptRuleOperand {
       RelOptRuleOperandChildPolicy childPolicy,
       ImmutableList<RelOptRuleOperand> children) {
     assert clazz != null;
+    assert !(clazz == RelSubset.class);
     switch (childPolicy) {
     case ANY:
       break;

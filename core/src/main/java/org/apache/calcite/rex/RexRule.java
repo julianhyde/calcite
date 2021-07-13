@@ -16,11 +16,13 @@
  */
 package org.apache.calcite.rex;
 
+import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,6 +35,57 @@ import java.util.function.Predicate;
  */
 public abstract class RexRule {
 
+  /** Creates a rule that simplifies a {@link RexNode} from two lambdas. */
+  public static RexRule of(Function<OperandBuilder, Done> descriptor,
+      RexNodeTransformer transformer) {
+    return new RexRule() {
+      @Override public Done describe(OperandBuilder b) {
+        return descriptor.apply(b);
+      }
+
+      @Override public RexNode apply(Context cx, RexNode e,
+          RexUnknownAs unknownAs) {
+        return transformer.apply(cx, e);
+      }
+    };
+  }
+
+  /** Creates a rule that simplifies a {@link RexCall} from two lambdas.
+   *
+   * <p>You can write rules of this type for strong operators (those that
+   * return NULL if and only if one of their arguments return NULL).
+   * If an operator is not strong, you should use {@link #ofWeakCall}
+   * and interface {@link RexWeakCallTransformer}. */
+  public static RexRule ofCall(Function<OperandBuilder, Done> descriptor,
+      RexCallTransformer transformer) {
+    return new RexRule() {
+      @Override public Done describe(OperandBuilder b) {
+        return descriptor.apply(b);
+      }
+
+      @Override public RexNode apply(Context cx, RexNode e,
+          RexUnknownAs unknownAs) {
+        return transformer.apply(cx, (RexCall) e);
+      }
+    };
+  }
+
+  /** Creates a rule that simplifies a {@link RexCall} to a non-strong operator
+   * from two lambdas. */
+  public static RexRule ofWeakCall(Function<OperandBuilder, Done> descriptor,
+      RexWeakCallTransformer transformer) {
+    return new RexRule() {
+      @Override public Done describe(OperandBuilder b) {
+        return descriptor.apply(b);
+      }
+
+      @Override public RexNode apply(Context cx, RexNode e,
+          RexUnknownAs unknownAs) {
+        return transformer.apply(cx, (RexCall) e, unknownAs);
+      }
+    };
+  }
+
   /** Asks the rule to build a description of what operands it matches.
    *
    * <p>That description will be used by the {@link RexRuleProgram} to index
@@ -43,12 +96,27 @@ public abstract class RexRule {
    *
    * <p>Returns the transformed expression, or {@code e} if the rule does not
    * apply. */
-  public abstract RexNode apply(Context cx, RexNode e);
+  public abstract RexNode apply(Context cx, RexNode e, RexUnknownAs unknownAs);
 
   /** Context in which a RexRule is applied. */
-  interface Context {
-    RelDataTypeFactory typeFactory();
+  public interface Context {
+    default RelDataTypeFactory typeFactory() {
+      return rexBuilder().typeFactory;
+    }
+
     RexBuilder rexBuilder();
+
+    RexExecutor executor();
+
+    RexUnknownAs unknownAs();
+
+    Context withPredicates(RelOptPredicateList predicateList);
+
+    RexNode simplify(RexNode e, RexUnknownAs unknownAs);
+
+    RexNode simplify(RexNode e);
+
+    RexNode isTrue(RexNode e);
   }
 
   /** Function that creates an operand.
@@ -77,9 +145,9 @@ public abstract class RexRule {
     Done isLiteral(Predicate<RexLiteral> predicate);
 
     /** Indicates that the rule matches a {@link RexNode} of a given
-     * {@link SqlKind}. The matched expression may or may not be a
+     * {@link SqlKind} or kinds. The matched expression may or may not be a
      * {@link RexCall}; if not a {@code RexCall}, it will have zero inputs. */
-    OperandDetailBuilder ofKind(SqlKind kind);
+    OperandDetailBuilder ofKind(SqlKind... kinds);
 
     /** Indicates that the rule matches a {@link RexCall} to a given
      * {@link SqlOperator} instance. */
@@ -131,5 +199,24 @@ public abstract class RexRule {
 
     /** Indicates that this call takes any number or type of operands. */
     Done anyInputs();
+  }
+
+  /** Transforms a {@link RexNode}. */
+  @FunctionalInterface
+  public interface RexNodeTransformer
+      extends BiFunction<Context, RexNode, RexNode> {
+  }
+
+  /** Transforms a {@link RexCall}. */
+  @FunctionalInterface
+  public interface RexCallTransformer
+      extends BiFunction<Context, RexCall, RexNode> {
+  }
+
+  /** Transforms a {@link RexCall}, how its caller prefers to receive NULL
+   * values. */
+  @FunctionalInterface
+  public interface RexWeakCallTransformer {
+    RexNode apply(Context context, RexCall call, RexUnknownAs unknownAs);
   }
 }

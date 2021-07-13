@@ -32,7 +32,9 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserUtil;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.CompositeList;
 import org.apache.calcite.util.ConversionUtil;
 import org.apache.calcite.util.DateString;
@@ -232,6 +234,61 @@ public class RexLiteral extends RexNode {
     Preconditions.checkArgument((value == null) == type.isNullable());
     Preconditions.checkArgument(typeName != SqlTypeName.ANY);
     this.digest = computeDigest(RexDigestIncludeType.OPTIONAL);
+  }
+
+  /** Returns whether a cast to a given type would have no effect. */
+  public boolean canRemoveCast(RelDataType toType) {
+    final SqlTypeName sqlType = toType.getSqlTypeName();
+    if (value == null) {
+      return true;
+    }
+    if (!valueMatchesType(value, sqlType, false)) {
+      return false;
+    }
+    if (toType.getSqlTypeName() != typeName
+        && SqlTypeFamily.DATETIME.getTypeNames().contains(typeName)) {
+      return false;
+    }
+    switch (toType.getSqlTypeName()) {
+    case CHAR:
+    case VARCHAR:
+    case BINARY:
+    case VARBINARY:
+      return valueFitsType(toType, valueLength(toType));
+
+    case DECIMAL:
+      final BigDecimal decimalValue = getValueAs(BigDecimal.class);
+      return SqlTypeUtil.isValidDecimalValue(decimalValue, toType);
+
+    default:
+      return true;
+    }
+  }
+
+  private static boolean valueFitsType(RelDataType toType, int length) {
+    switch (toType.getSqlTypeName()) {
+    case CHAR:
+    case BINARY:
+      return SqlTypeUtil.comparePrecision(toType.getPrecision(), length) == 0;
+    case VARCHAR:
+    case VARBINARY:
+      return SqlTypeUtil.comparePrecision(toType.getPrecision(), length) >= 0;
+    default:
+      throw new AssertionError(toType);
+    }
+  }
+
+  private int valueLength(RelDataType toType) {
+    switch (toType.getSqlTypeName()) {
+    case BINARY:
+    case VARBINARY:
+      return getValueAs(ByteString.class).length();
+    case CHAR:
+    case VARCHAR:
+      return getValueAs(NlsString.class).getValue().length();
+    default:
+      throw new AssertionError(toType);
+    }
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -938,6 +995,10 @@ public class RexLiteral extends RexNode {
       return value;
     }
   }
+
+  /**
+   * Returns whether we could remove a cast.
+   */
 
   /**
    * Returns the value of this literal, in the form that the calculator

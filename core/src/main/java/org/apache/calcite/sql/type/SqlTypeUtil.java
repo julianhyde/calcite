@@ -1200,6 +1200,17 @@ public abstract class SqlTypeUtil {
   }
 
   /**
+   * Returns whether {@code type2} is the same as {@code type1},
+   * or at most narrows the nullability.
+   */
+  public static boolean equalOrNarrowsNullability(RelDataTypeFactory typeFactory,
+      RelDataType type1, RelDataType type2) {
+    return type1.equals(type2)
+        || (equalSansNullability(typeFactory, type1, type2)
+        && type1.isNullable());
+  }
+
+  /**
    * Returns whether two collection types are equal, ignoring nullability.
    *
    * <p>They need not come from the same factory.

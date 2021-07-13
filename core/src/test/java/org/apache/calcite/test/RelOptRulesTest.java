@@ -6393,6 +6393,12 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-2639">[CALCITE-2639]
+   * FilterReduceExpressionsRule causes ArithmeticException at execution
+   * time</a>. The simplified version must retain the {@code mgr > 0} condition
+   * in the {@code CASE} expression. We cannot rely on {@code mgr > 0} having
+   * been checked, because the {@code AND} may have been re-ordered. */
   @Test void testOversimplifiedCaseStatement() {
     String sql = "select * from emp "
         + "where MGR > 0 and "

@@ -17,9 +17,9 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.plan.RelOptPredicateList;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.Matchers;
 
@@ -214,16 +214,9 @@ class RexProgramTestBase extends RexProgramBuilderBase {
 
   protected SimplifiedNode checkRule(RexRuleProgram program, RexNode node,
       Matcher<String> matcher) {
-    final RexRule.Context cx = new RexRule.Context() {
-      @Override public RelDataTypeFactory typeFactory() {
-        return rexBuilder.typeFactory;
-      }
+    final RexRule.Context cx = new SimpleRuleContext(executor, rexBuilder);
 
-      @Override public RexBuilder rexBuilder() {
-        return rexBuilder;
-      }
-    };
-    final RexNode simplified = program.apply(cx, node);
+    final RexNode simplified = program.apply(cx, node, RexUnknownAs.UNKNOWN);
     assertThat("simplify: " + node, simplified.toString(), matcher);
     return new SimplifiedNode(rexBuilder, node, simplified);
   }
@@ -261,6 +254,46 @@ class RexProgramTestBase extends RexProgramBuilderBase {
      * with a given string representation. */
     public Node expandedSearch(String expected) {
       return expandedSearch(Matchers.hasRex(expected));
+    }
+  }
+
+  private static class SimpleRuleContext implements RexRule.Context {
+    private RexExecutor executor;
+    private RexBuilder rexBuilder;
+
+    public SimpleRuleContext(
+        RexExecutor executor, RexBuilder rexBuilder) {
+      this.executor = executor;
+      this.rexBuilder = rexBuilder;
+    }
+
+    @Override public RexBuilder rexBuilder() {
+      return rexBuilder;
+    }
+
+    @Override public RexExecutor executor() {
+      return executor;
+    }
+
+    @Override public RexUnknownAs unknownAs() {
+      return RexUnknownAs.UNKNOWN;
+    }
+
+    @Override public RexRule.Context withPredicates(
+        RelOptPredicateList predicateList) {
+      return this;
+    }
+
+    @Override public RexNode simplify(RexNode e, RexUnknownAs unknownAs) {
+      return e;
+    }
+
+    @Override public RexNode simplify(RexNode e) {
+      return e;
+    }
+
+    @Override public RexNode isTrue(RexNode e) {
+      return rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE, e);
     }
   }
 }

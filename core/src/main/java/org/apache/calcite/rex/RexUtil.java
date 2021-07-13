@@ -681,6 +681,18 @@ public class RexUtil {
     return node;
   }
 
+  /** Analyzes a given {@link RexNode} and decides whenever it is safe to
+   * unwind.
+  *
+  * <p>"Safe" means that it only contains a combination of known good operators.
+  *
+  * <p>Division is an unsafe operator; consider the following:
+  * <pre>case when a &gt; 0 then 1 / a else null end</pre>
+  */
+  public static boolean isSafeExpression(RexNode r) {
+    return r.accept(SafeRexVisitor.INSTANCE);
+  }
+
   /**
    * Walks over an expression and determines whether it is constant.
    */

@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.ArraySqlType;
 import org.apache.calcite.sql.type.MapSqlType;
@@ -556,9 +557,9 @@ public class RexBuilder {
     final SqlTypeName sqlType = type.getSqlTypeName();
     if (exp instanceof RexLiteral) {
       RexLiteral literal = (RexLiteral) exp;
-      Comparable value = literal.getValueAs(Comparable.class);
+      Comparable value;
       SqlTypeName typeName = literal.getTypeName();
-      if (canRemoveCastFromLiteral(type, value, typeName)) {
+      if (literal.canRemoveCast(type)) {
         switch (typeName) {
         case INTERVAL_YEAR:
         case INTERVAL_YEAR_MONTH:
@@ -573,7 +574,7 @@ public class RexBuilder {
         case INTERVAL_MINUTE:
         case INTERVAL_MINUTE_SECOND:
         case INTERVAL_SECOND:
-          assert value instanceof BigDecimal;
+          BigDecimal value2 = literal.getValueAs(BigDecimal.class);
           typeName = type.getSqlTypeName();
           switch (typeName) {
           case BIGINT:
@@ -583,7 +584,6 @@ public class RexBuilder {
           case FLOAT:
           case REAL:
           case DECIMAL:
-            BigDecimal value2 = (BigDecimal) value;
             final BigDecimal multiplier =
                 baseUnit(literal.getTypeName()).multiplier;
             final BigDecimal divider =
@@ -591,7 +591,9 @@ public class RexBuilder {
             value = value2.multiply(multiplier)
                 .divide(divider, 0, RoundingMode.HALF_DOWN);
             break;
+
           default:
+            value = literal.getValueAs(Comparable.class);
             break;
           }
 
@@ -604,7 +606,9 @@ public class RexBuilder {
             break;
           }
           break;
+
         default:
+          value = literal.getValueAs(Comparable.class);
           break;
         }
         final RexLiteral literal2 =
@@ -638,47 +642,6 @@ public class RexBuilder {
     } else {
       return TimeUnit.MILLISECOND;
     }
-  }
-
-  boolean canRemoveCastFromLiteral(RelDataType toType, @Nullable Comparable value,
-      SqlTypeName fromTypeName) {
-    final SqlTypeName sqlType = toType.getSqlTypeName();
-    if (!RexLiteral.valueMatchesType(value, sqlType, false)) {
-      return false;
-    }
-    if (toType.getSqlTypeName() != fromTypeName
-        && SqlTypeFamily.DATETIME.getTypeNames().contains(fromTypeName)) {
-      return false;
-    }
-    if (value instanceof NlsString) {
-      final int length = ((NlsString) value).getValue().length();
-      switch (toType.getSqlTypeName()) {
-      case CHAR:
-        return SqlTypeUtil.comparePrecision(toType.getPrecision(), length) == 0;
-      case VARCHAR:
-        return SqlTypeUtil.comparePrecision(toType.getPrecision(), length) >= 0;
-      default:
-        throw new AssertionError(toType);
-      }
-    }
-    if (value instanceof ByteString) {
-      final int length = ((ByteString) value).length();
-      switch (toType.getSqlTypeName()) {
-      case BINARY:
-        return SqlTypeUtil.comparePrecision(toType.getPrecision(), length) == 0;
-      case VARBINARY:
-        return SqlTypeUtil.comparePrecision(toType.getPrecision(), length) >= 0;
-      default:
-        throw new AssertionError(toType);
-      }
-    }
-
-    if (toType.getSqlTypeName() == SqlTypeName.DECIMAL) {
-      final BigDecimal decimalValue = (BigDecimal) value;
-      return SqlTypeUtil.isValidDecimalValue(decimalValue, toType);
-    }
-
-    return true;
   }
 
   private RexNode makeCastExactToBoolean(RelDataType toType, RexNode exp) {
@@ -1844,5 +1807,35 @@ public class RexBuilder {
       return s;
     }
     return new ByteString(Arrays.copyOf(s.getBytes(), length));
+  }
+
+  /** As {@link RexCall#clone(RelDataType, List)}, but re-derives type if
+   * operands have changed, and returns {@code call} if they have not. */
+  public RexCall copyCall(RexCall call, List<RexNode> operands) {
+    if (operands.equals(call.operands)) {
+      return call;
+    }
+    final RelDataType type2;
+    switch (call.getKind()) {
+    case SOME:
+      return RexSubQuery.some(((RexSubQuery) call).rel,
+          ImmutableList.copyOf(operands), (SqlQuantifyOperator) call.op);
+    case ALL:
+      // operands must be empty, so they can't possibly be different
+      throw new AssertionError("found ALL, expecting SOME: " + call);
+    case EXISTS:
+    case SCALAR_QUERY:
+      // operands must be empty, so they can't possibly be different
+      throw new AssertionError("operands should be empty: " + call);
+    case IN:
+      return RexSubQuery.in(((RexSubQuery) call).rel,
+          ImmutableList.copyOf(operands));
+    case CAST:
+      type2 = call.type;
+      break;
+    default:
+      type2 = deriveReturnType(call.op, operands);
+    }
+    return new RexCall(type2, call.op, operands);
   }
 }
