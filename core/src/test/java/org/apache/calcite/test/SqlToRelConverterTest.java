@@ -3843,56 +3843,6 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-4661">[CALCITE-4661]
-   * Add MODE aggregate function</a>. */
-  @Test void testModeFunction() {
-    final String sql = ""
-        + "select mode(deptno)\n"
-        + "from emp";
-    sql(sql).trim(true).ok();
-  }
-
-  @Test void testModeFunctionWithGroupBy() {
-    final String sql = ""
-        + "select mode(deptno)\n"
-        + "from emp\n"
-        + "group by job";
-    sql(sql).trim(true).ok();
-  }
-
-  @Test void testModeFunctionWithGroupByOrderBy() {
-    final String sql = ""
-        + "select mode(job)\n"
-        + "from emp\n"
-        + "group by deptno,sal\n"
-        + "order by sal";
-    sql(sql).trim(true).ok();
-  }
-
-  @Test void testModeFunctionWithGroupingSets() {
-    final String sql = ""
-        + "select deptno,mode(job)\n"
-        + "from emp\n"
-        + "group by grouping sets (deptno)";
-    sql(sql).trim(true).ok();
-  }
-
-  @Test void testModeFunctionWithDistinct() {
-    final String sql = ""
-        + "select deptno,mode(distinct job)\n"
-        + "from emp\n"
-        + "group by deptno";
-    sql(sql).trim(true).ok();
-  }
-
-  @Test void testModeFunctionWithWinAgg() {
-    final String sql = ""
-        + "select deptno,ename,mode(job) over (partition by deptno order by ename)\n"
-        + "from emp";
-    sql(sql).trim(true).ok();
-  }
-
   @Test void testWithinGroup1() {
     final String sql = "select deptno,\n"
         + " collect(empno) within group (order by deptno, hiredate desc)\n"
@@ -3919,6 +3869,19 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "from emp\n"
         + "group by deptno";
     sql(sql).ok();
+  }
+
+  @Test void testModeFunction() {
+    final String sql = "select mode(deptno)\n"
+        + "from emp";
+    sql(sql).trim(true).ok();
+  }
+
+  @Test void testModeFunctionWithWinAgg() {
+    final String sql = "select deptno, ename,\n"
+        + "  mode(job) over (partition by deptno order by ename)\n"
+        + "from emp";
+    sql(sql).trim(true).ok();
   }
 
   /** Test case for
