@@ -7616,8 +7616,8 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'MODE'. Was expecting 1 arguments",
         false);
     strictTester.checkFails(
-        "^mode(null)^",
-        "Argument to function 'MODE' must not be NULL",
+        "mode(^null^)",
+        "Illegal use of 'NULL'",
         false);
 
     tester.checkType("mode('name')", "CHAR(4)");

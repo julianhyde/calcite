@@ -8318,7 +8318,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * Add MODE aggregate function</a>. */
   @Test void testModeFunction() {
     sql("select MODE(sal) from emp").ok();
-    sql("select ^MODE(null)^ from emp").fails("Argument to function 'MODE' must not be NULL");
     sql("select MODE(sal) over (order by empno) from emp").ok();
     sql("select MODE(ename) from emp where sal=3000");
     sql("select MODE(sal) from emp group by deptno").ok();

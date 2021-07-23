@@ -958,7 +958,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlAggFunction MODE =
       SqlBasicAggFunction
           .create("MODE", SqlKind.MODE,
-              ReturnTypes.ARG0_NULLABLE_IF_EMPTY, OperandTypes.ANY_NOT_NULL)
+              ReturnTypes.ARG0_NULLABLE_IF_EMPTY, OperandTypes.ANY)
       .withGroupOrder(Optionality.FORBIDDEN)
       .withFunctionType(SqlFunctionCategory.SYSTEM);
 
