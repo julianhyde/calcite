@@ -5040,6 +5040,12 @@ public class SqlToRelConverter {
           root = convertQueryRecursive(query, false, null);
           return RexSubQuery.scalar(root.rel);
 
+        case ARRAY_QUERY_CONSTRUCTOR:
+          call = (SqlCall) expr;
+          query = Iterables.getOnlyElement(call.getOperandList());
+          root = convertQueryRecursive(query, false, null);
+          return RexSubQuery.array(root.rel);
+
         default:
           break;
         }
@@ -5065,6 +5071,9 @@ public class SqlToRelConverter {
       case SELECT:
       case EXISTS:
       case SCALAR_QUERY:
+      case ARRAY_QUERY_CONSTRUCTOR:
+      case MAP_QUERY_CONSTRUCTOR:
+      case MULTISET_QUERY_CONSTRUCTOR:
         subQuery = getSubQuery(expr);
         assert subQuery != null;
         rex = subQuery.expr;

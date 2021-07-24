@@ -121,8 +121,9 @@ public class RexSubQuery extends RexCall {
   /** Creates an ARRAY sub-query. */
   public static RexSubQuery array(RelNode rel) {
     final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
     final RelDataType type =
-        typeFactory.createArrayType(rel.getRowType(), -1L);
+        typeFactory.createTypeWithNullability(fieldList.get(0).getType(), true);
     return new RexSubQuery(type, SqlStdOperatorTable.ARRAY_QUERY,
         ImmutableList.of(), rel);
   }
@@ -130,8 +131,9 @@ public class RexSubQuery extends RexCall {
   /** Creates a MULTISET sub-query. */
   public static RexSubQuery multiset(RelNode rel) {
     final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
     final RelDataType type =
-        typeFactory.createMultisetType(rel.getRowType(), -1L);
+        typeFactory.createTypeWithNullability(fieldList.get(0).getType(), true);
     return new RexSubQuery(type, SqlStdOperatorTable.MULTISET_QUERY,
         ImmutableList.of(), rel);
   }
@@ -139,8 +141,10 @@ public class RexSubQuery extends RexCall {
   /** Creates a MAP sub-query. */
   public static RexSubQuery map(RelNode rel) {
     final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
     final RelDataType type =
-        typeFactory.createMultisetType(rel.getRowType(), -1L);
+        typeFactory.createMapType(fieldList.get(0).getType(),
+            fieldList.get(1).getType());
     return new RexSubQuery(type, SqlStdOperatorTable.MAP_QUERY,
         ImmutableList.of(), rel);
   }
