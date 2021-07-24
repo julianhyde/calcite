@@ -108,6 +108,36 @@ public class RexSubQuery extends RexCall {
         ImmutableList.of(), rel);
   }
 
+  /** Creates an ARRAY sub-query. */
+  public static RexSubQuery array(RelNode rel) {
+    final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
+    final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    final RelDataType type =
+        typeFactory.createTypeWithNullability(fieldList.get(0).getType(), true);
+    return new RexSubQuery(type, SqlStdOperatorTable.ARRAY_QUERY,
+        ImmutableList.of(), rel);
+  }
+
+  /** Creates an ARRAY sub-query. */
+  public static RexSubQuery map(RelNode rel) {
+    final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
+    final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    final RelDataType type =
+        typeFactory.createTypeWithNullability(fieldList.get(0).getType(), true);
+    return new RexSubQuery(type, SqlStdOperatorTable.ARRAY_QUERY,
+        ImmutableList.of(), rel);
+  }
+
+  /** Creates a MULTISET sub-query. */
+  public static RexSubQuery multiset(RelNode rel) {
+    final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
+    final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    final RelDataType type =
+        typeFactory.createTypeWithNullability(fieldList.get(0).getType(), true);
+    return new RexSubQuery(type, SqlStdOperatorTable.ARRAY_QUERY,
+        ImmutableList.of(), rel);
+  }
+
   @Override public <R> R accept(RexVisitor<R> visitor) {
     return visitor.visitSubQuery(this);
   }

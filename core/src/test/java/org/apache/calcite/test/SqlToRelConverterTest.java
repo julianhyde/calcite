@@ -1444,6 +1444,15 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql("select*from unnest(array(select*from dept))").ok();
   }
 
+  @Test void testUnnestArrayNoExpand() {
+    final String sql = "select name,\n"
+        + " array (select *\n"
+        + "        from emp\n"
+        + "        where deptno = dept.deptno) as a\n"
+        + "from dept";
+    sql(sql).expand(false).ok();
+  }
+
   @Test void testUnnestWithOrdinality() {
     final String sql =
         "select*from unnest(array(select*from dept)) with ordinality";
