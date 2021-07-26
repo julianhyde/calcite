@@ -18,7 +18,6 @@ package org.apache.calcite.sql2rel;
 
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSamplingParameters;
@@ -1107,9 +1106,14 @@ public class SqlToRelConverter {
       convertCursor(bb, subQuery);
       return;
 
-    case MULTISET_QUERY_CONSTRUCTOR:
-    case MULTISET_VALUE_CONSTRUCTOR:
     case ARRAY_QUERY_CONSTRUCTOR:
+    case MAP_QUERY_CONSTRUCTOR:
+    case MULTISET_QUERY_CONSTRUCTOR:
+      if (!config.isExpand()) {
+        return;
+      }
+      // fall through
+    case MULTISET_VALUE_CONSTRUCTOR:
       rel = convertMultisets(ImmutableList.of(subQuery.node), bb);
       subQuery.expr = bb.register(rel, JoinRelType.INNER);
       return;
@@ -1847,6 +1851,7 @@ public class SqlToRelConverter {
     case MULTISET_QUERY_CONSTRUCTOR:
     case MULTISET_VALUE_CONSTRUCTOR:
     case ARRAY_QUERY_CONSTRUCTOR:
+    case MAP_QUERY_CONSTRUCTOR:
     case CURSOR:
     case SCALAR_QUERY:
       if (!registerOnlyScalarSubQueries
@@ -4224,6 +4229,7 @@ public class SqlToRelConverter {
         break;
       case MULTISET_QUERY_CONSTRUCTOR:
       case ARRAY_QUERY_CONSTRUCTOR:
+      case MAP_QUERY_CONSTRUCTOR:
         final RelRoot root = convertQuery(call.operand(0), false, true);
         input = root.rel;
         break;
@@ -4236,13 +4242,14 @@ public class SqlToRelConverter {
         joinList.add(lastList);
       }
       lastList = new ArrayList<>();
-      Collect collect =
-          new Collect(
-              cluster,
-              cluster.traitSetOf(Convention.NONE),
-              requireNonNull(input, "input"),
-              castNonNull(validator().deriveAlias(call, i)));
-      joinList.add(collect);
+      final SqlTypeName typeName =
+          requireNonNull(validator, "validator")
+              .getValidatedNodeType(call)
+              .getSqlTypeName();
+      relBuilder.push(
+          Collect.create(requireNonNull(input, "input"),
+              typeName, castNonNull(validator().deriveAlias(call, i))));
+      joinList.add(relBuilder.build());
     }
 
     if (joinList.size() == 0) {
@@ -5036,6 +5043,18 @@ public class SqlToRelConverter {
           query = Iterables.getOnlyElement(call.getOperandList());
           root = convertQueryRecursive(query, false, null);
           return RexSubQuery.array(root.rel);
+
+        case MAP_QUERY_CONSTRUCTOR:
+          call = (SqlCall) expr;
+          query = Iterables.getOnlyElement(call.getOperandList());
+          root = convertQueryRecursive(query, false, null);
+          return RexSubQuery.map(root.rel);
+
+        case MULTISET_QUERY_CONSTRUCTOR:
+          call = (SqlCall) expr;
+          query = Iterables.getOnlyElement(call.getOperandList());
+          root = convertQueryRecursive(query, false, null);
+          return RexSubQuery.multiset(root.rel);
 
         default:
           break;
