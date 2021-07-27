@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.adapter.os;
 
-import org.apache.calcite.util.Sources;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
@@ -71,15 +70,8 @@ public class OsQueryTableUtils {
     this.type = OsQueryEnum.valueOf(type.toUpperCase(Locale.ROOT));
   }
 
-  private String foo(java.net.URL url) {
-    if (false) {
-      Sources.of(url).file().getPath();
-    }
-    return url.toExternalForm();
-  }
-
   private List<Object[]> systemInfo() throws Exception {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final CpuInfo[] infos = sigar.getCpuInfoList();
     for (CpuInfo info : infos) {
       Object[] objects = new Object[20];
@@ -117,7 +109,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> javaInfo() {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final Object[] objects = new Object[18];
     final Properties props = System.getProperties();
     objects[0] = props.getProperty("java.version");
@@ -143,7 +135,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> osInfo() {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final Object[] objects = new Object[11];
     OperatingSystem os = OperatingSystem.getInstance();
     objects[0] = os.getArch();
@@ -162,7 +154,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> memoryInfo() throws SigarException {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final Object[] objects = new Object[6];
     Mem mem = sigar.getMem();
     Swap swap = sigar.getSwap();
@@ -177,7 +169,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> cpuInfo() throws SigarException {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final CpuInfo[] infos = sigar.getCpuInfoList();
     final CpuPerc[] cpuList = sigar.getCpuPercList();
     for (int i = 0; i < infos.length; i++) {
@@ -201,7 +193,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> interfaceDetails() throws Exception {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final String[] ifNames = sigar.getNetInterfaceList();
     for (String name : ifNames) {
       Object[] objects = new Object[11];
@@ -228,7 +220,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> interfaceAddresses() throws SigarException {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final String[] ifaces = sigar.getNetInterfaceList();
     for (String iface : ifaces) {
       Object[] objects = new Object[6];
@@ -250,13 +242,12 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> mounts() throws Exception {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final FileSystem[] fslist = sigar.getFileSystemList();
     for (int i = 0; i < fslist.length; i++) {
       Object[] objects = new Object[14];
       FileSystem fs = fslist[i];
-      FileSystemUsage usage = null;
-      usage = sigar.getFileSystemUsage(fs.getDirName());
+      final FileSystemUsage usage = sigar.getFileSystemUsage(fs.getDirName());
       objects[0] = i;
       objects[1] = fs.getDevName();
       objects[2] = fs.getDirName();
@@ -301,7 +292,7 @@ public class OsQueryTableUtils {
   }
 
   private List<Object[]> whoUse() throws SigarException {
-    final List<Object[]> list = new ArrayList<Object[]>();
+    final List<Object[]> list = new ArrayList<>();
     final Who[] whos = sigar.getWhoList();
     if (whos != null && whos.length > 0) {
       for (Who who : whos) {
@@ -318,7 +309,7 @@ public class OsQueryTableUtils {
 
   public List<Object[]> getResultInfo() {
     this.sigar = new Sigar();
-    List<Object[]> objs = new ArrayList<Object[]>();
+    List<Object[]> objs = new ArrayList<>();
     try {
       switch (type) {
       case SYSTEM_INFO:

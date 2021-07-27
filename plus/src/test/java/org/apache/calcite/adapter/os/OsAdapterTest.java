@@ -37,9 +37,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import static org.apache.calcite.util.TestUtil.rethrow;
@@ -54,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Unit tests for the OS (operating system) adapter.
@@ -80,8 +82,8 @@ class OsAdapterTest {
    * directory between this directory and root. */
   private static boolean hasGit() {
     assumeToolExists("git");
-    final String path = Sources.of(Objects.requireNonNull(OsAdapterTest.class.getResource("/")))
-        .file().getAbsolutePath();
+    final URL url = requireNonNull(OsAdapterTest.class.getResource("/"));
+    final String path = Sources.of(url).file().getAbsolutePath();
     File f = new File(path);
     for (;;) {
       if (f == null || !f.exists()) {
@@ -99,12 +101,12 @@ class OsAdapterTest {
   /** Returns whether the current command is supported by the current operating
    * system. */
   private static boolean checkOperatingSystem() {
-    return OperatingSystem.isSupported(
-        OS_NAME.replaceAll(" ", ""));
+    String osName = OS_NAME.replaceAll(" ", "");
+    return OperatingSystem.isSupported(osName);
   }
 
   private static void assumeToolExists(String command) {
-    assumeTrue(checkProcessExists(command), command + " does not exist");
+    assumeTrue(checkProcessExists(command), () -> command + " does not exist");
   }
 
   private static boolean checkProcessExists(String command) {
@@ -400,8 +402,9 @@ class OsAdapterTest {
         .query(sql);
   }
 
-  private void testOsQuery(String tableName, int colSize) {
-    assumeTrue(checkOperatingSystem(), "Skip: the 'system_info' table does not work on " + OS_NAME);
+  private void checkOsQuery(String tableName, int colSize) {
+    assumeTrue(checkOperatingSystem(),
+        "Skip: the 'system_info' table does not work on " + OS_NAME);
     final String q = "select * from " + tableName;
     sql(q).returns(r -> {
       try {
@@ -419,34 +422,34 @@ class OsAdapterTest {
   }
 
   @Test void testSystemInfo() {
-    testOsQuery("system_info", 20);
+    checkOsQuery("system_info", 20);
   }
 
   @Test void testJavaInfo() {
-    testOsQuery("java_info", 18);
+    checkOsQuery("java_info", 18);
   }
 
   @Test void testOsVersion() {
-    testOsQuery("os_version", 11);
+    checkOsQuery("os_version", 11);
   }
 
   @Test void testMemoryInfo() {
-    testOsQuery("memory_info", 6);
+    checkOsQuery("memory_info", 6);
   }
 
   @Test void testCpuInfo() {
-    testOsQuery("cpu_info", 12);
+    checkOsQuery("cpu_info", 12);
   }
 
   @Test void testInterfaceDetails() {
-    testOsQuery("interface_details", 11);
+    checkOsQuery("interface_details", 11);
   }
 
   @Test void testInterfaceAddresses() {
-    testOsQuery("interface_addresses", 6);
+    checkOsQuery("interface_addresses", 6);
   }
 
   @Test void testMounts() {
-    testOsQuery("mounts", 14);
+    checkOsQuery("mounts", 14);
   }
 }

@@ -27,10 +27,14 @@ import org.apache.calcite.util.ImmutableBitSet;
 
 import com.google.common.collect.ImmutableList;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
- * The base class of TableFunctions.
+ * Abstract base class for implementations of OS table functions.
  */
 abstract class AbstractBaseScannableTable implements ScannableTable {
+  protected AbstractBaseScannableTable() {
+  }
 
   @Override public Statistic getStatistic() {
     return Statistics.of(1000d, ImmutableList.of(ImmutableBitSet.of(1)));
@@ -45,7 +49,7 @@ abstract class AbstractBaseScannableTable implements ScannableTable {
   }
 
   @Override public boolean rolledUpColumnValidInsideAgg(String column, SqlCall call,
-      SqlNode parent, CalciteConnectionConfig config) {
+      @Nullable SqlNode parent, @Nullable CalciteConnectionConfig config) {
     return true;
   }
 }
