@@ -16,9 +16,8 @@
  */
 package org.apache.calcite.adapter.os;
 
-import net.hydromatic.sigar.SigarLibraries;
-
 import org.apache.calcite.util.Sources;
+import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
 import org.hyperic.sigar.CpuInfo;
@@ -36,6 +35,7 @@ import org.hyperic.sigar.Swap;
 import org.hyperic.sigar.Who;
 import org.slf4j.Logger;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,18 +43,32 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import kamon.sigar.SigarProvisioner;
+
 /**
  * The Util of OsQuery.
  */
 public class OsQueryTableUtils {
   private static final Logger LOGGER = CalciteTrace.getParserTracer();
 
+  /** Where to install Sigar dynamic libraries. By default, under "build".
+   * The libraries will be swept away each time we clean. */
+  private static final File SIGAR_LIB_FOLDER =
+      new File(new File("build"), "native");
+
   private final OsQueryEnum type;
   private Sigar sigar;
 
+  static {
+    try {
+      SigarProvisioner.provision(SIGAR_LIB_FOLDER);
+    } catch (Exception e) {
+      throw Util.throwAsRuntime("Could not load sigar", e);
+    }
+  }
+
   public OsQueryTableUtils(String type) {
     this.type = OsQueryEnum.valueOf(type.toUpperCase(Locale.ROOT));
-    SigarLibraries.INSTANCE.load(this::foo);
   }
 
   private String foo(java.net.URL url) {
