@@ -16,10 +16,10 @@
  */
 package org.apache.calcite.adapter.os;
 
+import net.hydromatic.sigar.SigarLibraries;
+
 import org.apache.calcite.util.Sources;
 import org.apache.calcite.util.trace.CalciteTrace;
-
-import org.apache.commons.lang3.StringUtils;
 
 import org.hyperic.sigar.CpuInfo;
 import org.hyperic.sigar.CpuPerc;
@@ -37,7 +37,6 @@ import org.hyperic.sigar.Who;
 import org.slf4j.Logger;
 
 import java.net.InetAddress;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,15 +49,19 @@ import java.util.Properties;
 public class OsQueryTableUtils {
   private static final Logger LOGGER = CalciteTrace.getParserTracer();
 
-  private static final String SIGAR_PATH = "org.hyperic.sigar.path";
-  private static final String SIGAR_LIB_PATH = "/hyperic-sigar-1.6.4/sigar-bin/lib/";
-
   private final OsQueryEnum type;
   private Sigar sigar;
 
   public OsQueryTableUtils(String type) {
     this.type = OsQueryEnum.valueOf(type.toUpperCase(Locale.ROOT));
-    loadLibs();
+    SigarLibraries.INSTANCE.load(this::foo);
+  }
+
+  private String foo(java.net.URL url) {
+    if (false) {
+      Sources.of(url).file().getPath();
+    }
+    return url.toExternalForm();
   }
 
   private List<Object[]> systemInfo() throws Exception {
@@ -297,13 +300,6 @@ public class OsQueryTableUtils {
       }
     }
     return list;
-  }
-
-  private void loadLibs() {
-    if (StringUtils.isEmpty(System.getProperty(SIGAR_PATH))) {
-      URL sigarPathUrl = OsQueryTableUtils.class.getResource(SIGAR_LIB_PATH);
-      System.setProperty(SIGAR_PATH, Sources.of(sigarPathUrl).file().getPath());
-    }
   }
 
   public List<Object[]> getResultInfo() {

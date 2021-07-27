@@ -87,6 +87,7 @@ dependencies {
         apiv("net.hydromatic:foodmart-queries")
         apiv("net.hydromatic:quidem")
         apiv("net.hydromatic:scott-data-hsqldb")
+        apiv("net.hydromatic:sigar", "hydromatic.sigar")
         apiv("net.hydromatic:tpcds", "hydromatic.tpcds")
         apiv("net.java.dev.jna:jna")
         apiv("net.sf.opencsv:opencsv")
