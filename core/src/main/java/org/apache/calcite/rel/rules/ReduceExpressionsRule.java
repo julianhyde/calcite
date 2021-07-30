@@ -313,6 +313,7 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
             call.builder()
                 .push(project.getInput())
                 .project(expList, project.getRowType().getFieldNames())
+                .convert(project.getRowType(), false)
                 .build());
 
         // New plan is absolutely better than old plan.
@@ -723,7 +724,7 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
       RexSimplify simplify, RexUnknownAs unknownAs, List<RexNode> expList,
       RelOptPredicateList predicates) {
     // Replace predicates on CASE to CASE on predicates.
-    boolean changed = new CaseShuttle().mutate(expList);
+    final boolean changed = new CaseShuttle().mutate(expList);
 
     // Find reducible expressions.
     final List<RexNode> constExps = new ArrayList<>();

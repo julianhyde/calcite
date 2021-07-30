@@ -310,6 +310,11 @@ public class RexSimplify {
       // Apply simplification rules in the RexRule program
       e = ruleProgram.apply(ruleContext, e, unknownAs);
 
+      switch (e.getKind()) {
+      case NOT:
+        e = simplifyNot((RexCall) e, unknownAs); // TODO
+      }
+
       if (e.getClass() == RexCall.class) {
         return simplifyGenericNode((RexCall) e);
       } else {

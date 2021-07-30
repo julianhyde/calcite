@@ -125,8 +125,10 @@ public class RexCastRules {
       final List<RexNode> reducedValues = new ArrayList<>();
       final RexNode simplifiedExpr = rexBuilder.makeCast(e.getType(), operand);
       executor.reduce(rexBuilder, ImmutableList.of(simplifiedExpr), reducedValues);
-      return requireNonNull(
-          Iterables.getOnlyElement(reducedValues));
+      final RexNode e2 =
+          requireNonNull(Iterables.getOnlyElement(reducedValues));
+      return e.equals(e2) ? e : e2; // return the original if possible
+
     default:
       if (operand == e.getOperands().get(0)) {
         return e;

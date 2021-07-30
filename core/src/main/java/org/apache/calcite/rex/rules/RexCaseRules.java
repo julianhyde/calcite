@@ -139,7 +139,7 @@ public class RexCaseRules {
       if (result != null) {
         if (SqlTypeUtil.equalOrNarrowsNullability(typeFactory, caseType,
             result.getType())) {
-          return cx.simplify(result);
+          return cx.simplify(result, unknownAs);
         } else {
           // If the simplification would widen the nullability
           RexNode simplified = cx.simplify(result, UNKNOWN);

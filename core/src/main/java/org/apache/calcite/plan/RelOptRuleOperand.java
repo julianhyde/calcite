@@ -112,7 +112,6 @@ public class RelOptRuleOperand {
       RelOptRuleOperandChildPolicy childPolicy,
       ImmutableList<RelOptRuleOperand> children) {
     assert clazz != null;
-    assert !(clazz == RelSubset.class);
     switch (childPolicy) {
     case ANY:
       break;

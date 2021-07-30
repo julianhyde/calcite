@@ -84,9 +84,6 @@ public class RexCall extends RexNode {
     assert operator.getKind() != null : operator;
     assert operator.validRexOperands(operands.size(), Litmus.THROW) : this;
     assert operator.kind != SqlKind.IN || this instanceof RexSubQuery;
-    if (getKind() == SqlKind.OR || getKind() == SqlKind.AND) {
-      System.out.println(getKind() + " " + operands);
-    }
   }
 
   //~ Methods ----------------------------------------------------------------

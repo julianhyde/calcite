@@ -98,7 +98,7 @@ public class RexExecutorImpl implements RexExecutor {
             Expressions.newArrayInit(Object[].class, expressions)));
     final MethodDeclaration methodDecl =
         Expressions.methodDecl(Modifier.PUBLIC, Object[].class,
-            BuiltInMethod.FUNCTION1_APPLY.method.getName(),
+            BuiltInMethod.FUNCTION_APPLY.method.getName(),
             ImmutableList.of(root0_), blockBuilder.toBlock());
     String code = Expressions.toString(methodDecl);
     if (CalciteSystemProperty.DEBUG.value()) {
