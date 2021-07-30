@@ -191,7 +191,7 @@ public class RelBuilderTest {
   }
 
   /** Creates a RelBuilder with default config. */
-  static RelBuilder createBuilder() {
+  public static RelBuilder createBuilder() {
     return createBuilder(c -> c);
   }
 

@@ -20,6 +20,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.Strong;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.NullSentinel;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -34,6 +35,8 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeAssignmentRule;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.test.RelBuilderTest;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.NlsString;
@@ -63,8 +66,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.apache.calcite.test.Matchers.hasTree;
 import static org.apache.calcite.test.Matchers.isRangeSet;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -185,19 +190,45 @@ class RexProgramTest extends RexProgramTestBase {
 
   /**
    * Checks translation of AND(x, x).
-   */
+   *
+   * <p>Note: until
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4711">[CALCITE-4711]
+   * RexProgramBuilder should not simplify</a>, RexProgramBuilder could simplify
+   * AND(x, x) to x. Now it does not. This test now checks that RexSimplify and
+   * RelBuilder can do the simplification. */
   @Test void testDuplicateAnd() {
-    // RexProgramBuilder used to translate AND(x, x) to x.
-    // Now it translates it to AND(x, x).
-    // The optimization of AND(x, x) => x occurs at a higher level.
-    final RexProgramBuilder builder = createProg(2);
-    final String program = builder.getProgram(true).toString();
-    TestUtil.assertEqualsVerbose(
-        "(expr#0..1=[{inputs}], expr#2=[+($t0, $t1)], expr#3=[1], "
-            + "expr#4=[+($t0, $t3)], expr#5=[+($t2, $t4)], "
-            + "expr#6=[+($t0, $t0)], expr#7=[>($t2, $t0)], "
-            + "a=[$t5], b=[$t6], $condition=[$t7])",
-        program);
+    final Function<RelBuilder, RelNode> f = b -> {
+      b.scan("EMP");
+      final RexNode e0 = b.field("EMPNO");
+      final RexNode e1 = b.field("DEPTNO");
+      final RexNode e2 = plus(e0, e1);
+      final RexNode e4 = plus(e0, literal(1));
+      final RexNode e5 = plus(e2, e4);
+      final RexNode e6 = plus(e0, e0);
+      final RexNode e7 = gt(e2, e0);
+      final RexNode e8 = lt(e1, literal(5));
+      final RexNode e9 = and(e7, e8, e7);
+      return b.filter(e9)
+          .project(b.alias(e5, "a"), b.alias(e6, "b"))
+          .build();
+    };
+
+    // Apply RexSimplify to the filter expression
+    final RexNode e0 = vInt(0);
+    final RexNode e1 = vInt(1);
+    final RexNode e2 = plus(e0, e1);
+    final RexNode e7 = gt(e2, e0);
+    final RexNode e8 = and(e7, e7);
+    final RexNode e9 = and(e8, e7);
+    checkSimplify(e9, ">(+(?0.int0, ?0.int1), ?0.int0)");
+
+    // Use RelBuilder to simplify the filter expression and the project
+    // expressions.
+    final String expected = ""
+        + "LogicalProject(a=[+(+($0, $7), +($0, 1))], b=[+($0, $0)])\n"
+        + "  LogicalFilter(condition=[AND(>(+($0, $7), $0), <($7, 5))])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(f.apply(RelBuilderTest.createBuilder()), hasTree(expected));
   }
 
   /**
