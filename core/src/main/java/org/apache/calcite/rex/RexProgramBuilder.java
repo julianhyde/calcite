@@ -51,29 +51,18 @@ public class RexProgramBuilder {
   private final List<RexLocalRef> localRefList = new ArrayList<>();
   private final List<RexLocalRef> projectRefList = new ArrayList<>();
   private final List<@Nullable String> projectNameList = new ArrayList<>();
-  @SuppressWarnings("unused")
-  private final @Nullable RexSimplify simplify;
   private @Nullable RexLocalRef conditionRef = null;
   private boolean validating;
 
   //~ Constructors -----------------------------------------------------------
 
   /**
-   * Creates a program-builder that will not simplify.
-   */
-  public RexProgramBuilder(RelDataType inputRowType, RexBuilder rexBuilder) {
-    this(inputRowType, rexBuilder, null);
-  }
-
-  /**
    * Creates a program-builder.
    */
   @SuppressWarnings("method.invocation.invalid")
-  private RexProgramBuilder(RelDataType inputRowType, RexBuilder rexBuilder,
-      @Nullable RexSimplify simplify) {
+  private RexProgramBuilder(RelDataType inputRowType, RexBuilder rexBuilder) {
     this.inputRowType = requireNonNull(inputRowType, "inputRowType");
     this.rexBuilder = requireNonNull(rexBuilder, "rexBuilder");
-    this.simplify = simplify; // may be null
     this.validating = assertionsAreEnabled();
 
     // Pre-create an expression for each input field.
@@ -107,7 +96,7 @@ public class RexProgramBuilder {
       final RelDataType outputRowType,
       boolean normalize,
       @Nullable RexSimplify simplify) {
-    this(inputRowType, rexBuilder, simplify);
+    this(inputRowType, rexBuilder);
 
     // Create a shuttle for registering input expressions.
     final RexShuttle shuttle =
