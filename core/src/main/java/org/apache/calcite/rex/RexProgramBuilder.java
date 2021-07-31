@@ -60,7 +60,7 @@ public class RexProgramBuilder {
    * Creates a program-builder.
    */
   @SuppressWarnings("method.invocation.invalid")
-  private RexProgramBuilder(RelDataType inputRowType, RexBuilder rexBuilder) {
+  public RexProgramBuilder(RelDataType inputRowType, RexBuilder rexBuilder) {
     this.inputRowType = requireNonNull(inputRowType, "inputRowType");
     this.rexBuilder = requireNonNull(rexBuilder, "rexBuilder");
     this.validating = assertionsAreEnabled();
