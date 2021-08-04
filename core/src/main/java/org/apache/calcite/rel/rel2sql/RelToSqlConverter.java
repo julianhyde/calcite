@@ -245,6 +245,56 @@ public class RelToSqlConverter extends SqlImplementor
     return result(join, leftResult, rightResult);
   }
 
+  protected Result visitAntiOrSemiJoin(Join e) {
+    final Result leftResult = visitInput(e, 0).resetAlias();
+    final Result rightResult = visitInput(e, 1).resetAlias();
+    final Context leftContext = leftResult.qualifiedContext();
+    final Context rightContext = rightResult.qualifiedContext();
+
+    final SqlSelect sqlSelect = leftResult.asSelect();
+    SqlNode sqlCondition =
+        convertConditionToSqlNode(e.getCondition(), leftContext, rightContext);
+    if (leftResult.neededAlias != null) {
+      SqlShuttle visitor = new AliasReplacementShuttle(leftResult.neededAlias,
+          e.getLeft().getRowType(), sqlSelect.getSelectList());
+      sqlCondition = sqlCondition.accept(visitor);
+    }
+    SqlNode fromPart = rightResult.asFrom();
+    SqlSelect existsSqlSelect;
+    if (fromPart.getKind() == SqlKind.SELECT) {
+      existsSqlSelect = (SqlSelect) fromPart;
+      existsSqlSelect.setSelectList(
+          new SqlNodeList(ImmutableList.of(SqlLiteral.createExactNumeric("1", POS)), POS));
+      if (existsSqlSelect.getWhere() != null) {
+        sqlCondition = SqlStdOperatorTable.AND.createCall(POS,
+            existsSqlSelect.getWhere(),
+            sqlCondition);
+      }
+      existsSqlSelect.setWhere(sqlCondition);
+    } else {
+      existsSqlSelect =
+          new SqlSelect(POS, null,
+              new SqlNodeList(
+                  ImmutableList.of(SqlLiteral.createExactNumeric("1", POS)), POS),
+              fromPart, sqlCondition, null,
+              null, null, null, null, null, null);
+    }
+    sqlCondition = SqlStdOperatorTable.EXISTS.createCall(POS, existsSqlSelect);
+    if (e.getJoinType() == JoinRelType.ANTI) {
+      sqlCondition = SqlStdOperatorTable.NOT.createCall(POS, sqlCondition);
+    }
+    if (sqlSelect.getWhere() != null) {
+      sqlCondition = SqlStdOperatorTable.AND.createCall(POS,
+          sqlSelect.getWhere(),
+          sqlCondition);
+    }
+    sqlSelect.setWhere(sqlCondition);
+    final SqlNode resultNode =
+        leftResult.neededAlias == null ? sqlSelect
+            : as(sqlSelect, leftResult.neededAlias);
+    return result(resultNode, leftResult, rightResult);
+  }
+
   /** Returns whether this join should be unparsed as a {@link JoinType#COMMA}.
    *
    * <p>Comma-join is one possible syntax for {@code CROSS JOIN ... ON TRUE},
@@ -318,60 +368,6 @@ public class RelToSqlConverter extends SqlImplementor
       }
     }
     return true;
-  }
-
-  protected Result visitAntiOrSemiJoin(Join e) {
-    final Result leftResult = visitInput(e, 0).resetAlias();
-    final Result rightResult = visitInput(e, 1).resetAlias();
-    final Context leftContext = leftResult.qualifiedContext();
-    final Context rightContext = rightResult.qualifiedContext();
-
-    final SqlSelect sqlSelect = leftResult.asSelect();
-    SqlNode sqlCondition =
-        convertConditionToSqlNode(e.getCondition(), leftContext, rightContext);
-    if (leftResult.neededAlias != null) {
-      SqlShuttle visitor = new AliasReplacementShuttle(leftResult.neededAlias,
-          e.getLeft().getRowType(), sqlSelect.getSelectList());
-      sqlCondition = sqlCondition.accept(visitor);
-    }
-    SqlNode fromPart = rightResult.asFrom();
-    SqlSelect existsSqlSelect;
-    if (fromPart.getKind() == SqlKind.SELECT) {
-      existsSqlSelect = (SqlSelect) fromPart;
-      existsSqlSelect.setSelectList(
-          new SqlNodeList(ImmutableList.of(SqlLiteral.createExactNumeric("1", POS)), POS));
-      if (existsSqlSelect.getWhere() != null) {
-        sqlCondition = SqlStdOperatorTable.AND.createCall(POS,
-            existsSqlSelect.getWhere(),
-            sqlCondition);
-      }
-      existsSqlSelect.setWhere(sqlCondition);
-    } else {
-      existsSqlSelect =
-          new SqlSelect(POS, null,
-              new SqlNodeList(
-                  ImmutableList.of(SqlLiteral.createExactNumeric("1", POS)), POS),
-              fromPart, sqlCondition, null,
-              null, null, null, null, null, null);
-    }
-    sqlCondition = SqlStdOperatorTable.EXISTS.createCall(POS, existsSqlSelect);
-    if (e.getJoinType() == JoinRelType.ANTI) {
-      sqlCondition = SqlStdOperatorTable.NOT.createCall(POS, sqlCondition);
-    }
-    if (sqlSelect.getWhere() != null) {
-      sqlCondition = SqlStdOperatorTable.AND.createCall(POS,
-          sqlSelect.getWhere(),
-          sqlCondition);
-    }
-    sqlSelect.setWhere(sqlCondition);
-    final SqlNode resultNode =
-        leftResult.neededAlias == null ? sqlSelect
-            : as(sqlSelect, leftResult.neededAlias);
-    return result(resultNode, leftResult, rightResult);
-  }
-
-  private static boolean isCrossJoin(final Join e) {
-    return e.getJoinType() == JoinRelType.INNER && e.getCondition().isAlwaysTrue();
   }
 
   /** Visits a Correlate; called by {@link #dispatch} via reflection. */
