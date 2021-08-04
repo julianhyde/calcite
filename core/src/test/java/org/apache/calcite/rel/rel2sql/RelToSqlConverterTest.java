@@ -2611,6 +2611,53 @@ class RelToSqlConverterTest {
     sql(query).ok(expected);
   }
 
+  @Test void testCommaCrossJoin() {
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("tpch", "customer")
+            .aggregate(b.groupKey(b.field("nation_name")),
+                b.count().as("cnt1"))
+            .project(b.field("nation_name"), b.field("cnt1"))
+            .as("cust")
+            .scan("tpch", "lineitem")
+            .aggregate(b.groupKey(),
+                b.count().as("cnt2"))
+            .project(b.field("cnt2"))
+            .as("lineitem")
+            .join(JoinRelType.INNER)
+            .scan("tpch", "part")
+            .join(JoinRelType.LEFT,
+                b.equals(b.field(2, "cust", "nation_name"),
+                    b.field(2, "part", "p_brand")))
+            .project(b.field("cust", "nation_name"),
+                b.alias(
+                    b.call(SqlStdOperatorTable.MINUS,
+                        b.field("cnt1"),
+                        b.field("cnt2")),
+                    "f1"))
+            .build();
+
+    final String previousPostgresql = ""
+        + "SELECT \"t\".\"nation_name\", \"t\".\"cnt1\" - \"t0\".\"cnt2\" AS \"f1\"\n"
+        + "FROM (SELECT \"nation_name\", COUNT(*) AS \"cnt1\"\n"
+        + "FROM \"tpch\".\"customer\"\n"
+        + "GROUP BY \"nation_name\") AS \"t\",\n"
+        + "(SELECT COUNT(*) AS \"cnt2\"\n"
+        + "FROM \"tpch\".\"lineitem\") AS \"t0\"\n"
+        + "LEFT JOIN \"tpch\".\"part\" ON \"t\".\"nation_name\" = \"part\".\"p_brand\"";
+    final String expectedPostgresql = ""
+        + "SELECT \"t\".\"nation_name\", \"t\".\"cnt1\" - \"t0\".\"cnt2\" AS \"f1\"\n"
+        + "FROM (SELECT \"nation_name\", COUNT(*) AS \"cnt1\"\n"
+        + "FROM \"tpch\".\"customer\"\n"
+        + "GROUP BY \"nation_name\") AS \"t\"\n"
+        + "CROSS JOIN (SELECT COUNT(*) AS \"cnt2\"\n"
+        + "FROM \"tpch\".\"lineitem\") AS \"t0\"\n"
+        + "LEFT JOIN \"tpch\".\"part\" ON \"t\".\"nation_name\" = \"part\".\"p_brand\"";
+    relFn(relFn)
+        .schema(CalciteAssert.SchemaSpec.TPCH)
+        .withPostgresql()
+        .ok(expectedPostgresql);
+  }
+
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2652">[CALCITE-2652]
    * SqlNode to SQL conversion fails if the join condition references a BOOLEAN
