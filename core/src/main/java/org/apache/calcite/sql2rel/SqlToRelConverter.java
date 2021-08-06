@@ -1266,7 +1266,7 @@ public class SqlToRelConverter {
               : null;
       final Blackboard seekBb = createBlackboard(seekScope, null, false);
       final RelNode seekRel = convertQueryOrInList(seekBb, query, null);
-      requireNonNull(seekRel, () -> "seelkRel is null for query " + query);
+      requireNonNull(seekRel, () -> "seekRel is null for query " + query);
       // An EXIST sub-query whose inner child has at least 1 tuple
       // (e.g. an Aggregate with no grouping columns or non-empty Values
       // node) should be simplified to a Boolean constant expression.
@@ -1634,7 +1634,7 @@ public class SqlToRelConverter {
             : null;
     final Blackboard seekBb = createBlackboard(seekScope, null, false);
     RelNode seekRel = convertQueryOrInList(seekBb, seek, targetDataType);
-    requireNonNull(seekRel, () -> "seelkRel is null for query " + seek);
+    requireNonNull(seekRel, () -> "seekRel is null for query " + seek);
 
     return RelOptUtil.createExistsPlan(seekRel,
         subQueryType, logic, notIn, relBuilder);
@@ -2641,7 +2641,8 @@ public class SqlToRelConverter {
 
     RexNode rexCall = bb.convertExpression(call);
     final List<RelNode> inputs = bb.retrieveCursors();
-    Set<RelColumnMapping> columnMappings = getColumnMappings(operator);
+    Set<RelColumnMapping> columnMappings =
+        getColumnMappings(operator);
 
     LogicalTableFunctionScan callRel =
         LogicalTableFunctionScan.create(
@@ -2652,15 +2653,14 @@ public class SqlToRelConverter {
             validator().getValidatedNodeType(call),
             columnMappings);
 
-    final SqlValidatorScope selectScope = ((DelegatingScope) bb.scope()).getParent();
+    final SqlValidatorScope selectScope =
+        ((DelegatingScope) bb.scope()).getParent();
     final Blackboard seekBb = createBlackboard(selectScope, null, false);
 
-    final CorrelationUse corrUsage = getCorrelationUse(seekBb, callRel);
-
-    if (corrUsage != null) {
-      assert corrUsage.r instanceof LogicalTableFunctionScan;
-
-      callRel = (LogicalTableFunctionScan) corrUsage.r;
+    final CorrelationUse p = getCorrelationUse(seekBb, callRel);
+    if (p != null) {
+      assert p.r instanceof LogicalTableFunctionScan;
+      callRel = (LogicalTableFunctionScan) p.r;
     }
 
     bb.setRoot(callRel, true);

@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -1258,38 +1259,29 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql("select * from dept, lateral table(DEDUP(dept.deptno, dept.name))").ok();
   }
 
-  /**
-   * Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-4673">[CALCITE-4673]</a><br>
-   * Correlate variables deduplication is not triggered when collection table function is
-   * present in subquery i.e we expect {@code LogicalTableFunctionScan} with two identical
-   * correlates like: $cor0.DEPTNO, but obtain different ones: $cor0.DEPTNO, $cor1.DEPTNO.
-   */
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-4673">[CALCITE-4673]
+   * If arguments to a table function use correlation variables,
+   * SqlToRelConverter should eliminate duplicate variables</a>.
+   *
+   * <p>The {@code LogicalTableFunctionScan} should have two identical
+   * correlation variables like "{@code $cor0.DEPTNO}", but before this bug was
+   * fixed, we have different ones: "{@code $cor0.DEPTNO}" and
+   * "{@code $cor1.DEPTNO}". */
   @Test void testCorrelationCollectionTableInSubQuery() {
-    String sql = ""
-        + "select e.deptno, (select * from lateral table(DEDUP(e.deptno, e.deptno))) from emp e";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(true)
-            .withDecorrelationEnabled(true))
-        .convertsTo("${plan_extended}");
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(false)
-            .withDecorrelationEnabled(false))
-        .convertsTo("${plan_not_extended}");
-
-    sql = "select e.deptno, (select * from table(DEDUP(e.deptno, e.deptno))) from emp e";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(true)
-            .withDecorrelationEnabled(true))
-        .convertsTo("${plan_extended}");
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(false)
-            .withDecorrelationEnabled(false))
-        .convertsTo("${plan_not_extended}");
+    Consumer<String> fn = sql -> {
+      sql(sql).expand(true).decorrelate(true)
+          .convertsTo("${planExpanded}");
+      sql(sql).expand(false).decorrelate(false)
+          .convertsTo("${planNotExpanded}");
+    };
+    fn.accept("select e.deptno,\n"
+        + "  (select * from lateral table(DEDUP(e.deptno, e.deptno)))\n"
+        + "from emp e");
+    // same effect without LATERAL
+    fn.accept("select e.deptno,\n"
+        + "  (select * from table(DEDUP(e.deptno, e.deptno)))\n"
+        + "from emp e");
   }
 
   @Test void testCorrelationLateralSubQuery() {
@@ -1302,41 +1294,34 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "    WHERE deptno IN (t1.deptno, t1.deptno)\n"
         + "    AND   deptno = t1.deptno\n"
         + "    ORDER BY sal\n"
-        + "    DESC LIMIT 3\n"
-        + "  )";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(false)
-            .withDecorrelationEnabled(false)).convertsTo("${plan}");
+        + "    DESC LIMIT 3)";
+    sql(sql).expand(false).decorrelate(false).ok();
   }
 
   @Test void testCorrelationExistsWithSubQuery() {
-    String sql = ""
-        + "select emp.deptno, dept.deptno from emp, dept where exists (select * from emp where "
-        + "emp.deptno = dept.deptno and emp.deptno = dept.deptno and emp.deptno in "
-        + "(dept.deptno, dept.deptno))";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(false)
-            .withDecorrelationEnabled(false))
-        .convertsTo("${plan}");
+    String sql = "select emp.deptno, dept.deptno\n"
+        + "from emp, dept\n"
+        + "where exists (select * from emp\n"
+        + "  where emp.deptno = dept.deptno\n"
+        + "  and emp.deptno = dept.deptno\n"
+        + "  and emp.deptno in (dept.deptno, dept.deptno))";
+    sql(sql).expand(false).decorrelate(false).ok();
   }
 
   @Test void testCorrelationInWithSubQuery() {
-    String sql = "select deptno from emp where deptno in "
-        + "(select deptno from dept where emp.deptno = dept.deptno and emp.deptno = dept.deptno)";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(false)
-            .withDecorrelationEnabled(false))
-        .convertsTo("${plan}");
+    String sql = "select deptno\n"
+        + "from emp\n"
+        + "where deptno in (select deptno\n"
+        + "    from dept\n"
+        + "    where emp.deptno = dept.deptno\n"
+        + "    and emp.deptno = dept.deptno)";
+    sql(sql).expand(false).decorrelate(false).ok();
   }
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3847">[CALCITE-3847]
    * Decorrelation for join with lateral table outputs wrong plan if the join
    * condition contains correlation variables</a>. */
-
   @Test void testJoinLateralTableWithConditionCorrelated() {
     final String sql = "select deptno, r.num from dept join\n"
         + " lateral table(ramp(dept.deptno)) as r(num)\n"
@@ -4231,12 +4216,12 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         .withConfig(configBuilder -> configBuilder
             .withExpand(true)
             .withDecorrelationEnabled(true))
-        .convertsTo("${plan_extended}");
+        .convertsTo("${planExpanded}");
     sql(sql)
         .withConfig(configBuilder -> configBuilder
             .withExpand(false)
             .withDecorrelationEnabled(false))
-        .convertsTo("${plan_not_extended}");
+        .convertsTo("${planNotExpanded}");
   }
 
   @Test void testImplicitJoinExpandAndDecorrelation() {
@@ -4248,16 +4233,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "  FROM emp\n"
         + "  WHERE  emp.deptno = dept.deptno\n"
         + ")";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withDecorrelationEnabled(true)
-            .withExpand(true))
-        .convertsTo("${plan_extended}");
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withDecorrelationEnabled(false)
-            .withExpand(false))
-        .convertsTo("${plan_not_extended}");
+    sql(sql).expand(true).decorrelate(true)
+        .convertsTo("${planExpanded}");
+    sql(sql).expand(false).decorrelate(false)
+        .convertsTo("${planNotExpanded}");
   }
 
   /**
