@@ -338,7 +338,12 @@ public class RelToSqlConverter extends SqlImplementor
       return false;
     }
 
-    // Find the topmost enclosing Join
+    // Find the topmost enclosing Join. For example, if the tree is
+    //   Join((Join(a, b), Join(c, Join(d, e)))
+    // we get the same topJoin for a, b, c, d and e. Join. Stack is never empty,
+    // and frame.r on the first iteration is always "join".
+    assert !stack.isEmpty();
+    assert stack.peek().r == join;
     Join j = null;
     for (Frame frame : stack) {
       j = (Join) frame.r;
@@ -346,10 +351,13 @@ public class RelToSqlConverter extends SqlImplementor
         break;
       }
     }
+    final Join topJoin = requireNonNull(j, "top join");
 
-    // Flatten the join tree
+    // Flatten the join tree, using a breadth-first algorithm.
+    // After flattening, the list contains all of the joins that will make up
+    // the FROM clause.
     final List<Join> flatJoins = new ArrayList<>();
-    flatJoins.add(requireNonNull(j, "top join"));
+    flatJoins.add(topJoin);
     for (int i = 0; i < flatJoins.size();) {
       final Join j2 = flatJoins.get(i++);
       if (j2.getLeft() instanceof Join) {
@@ -360,7 +368,8 @@ public class RelToSqlConverter extends SqlImplementor
       }
     }
 
-    // If any joins are LEFT, RIGHT or FULL, we can't use COMMA
+    // If all joins are cross-joins (INNER JOIN ON TRUE), we can use
+    // we can use comma syntax "FROM a, b, c, d, e".
     for (Join j2 : flatJoins) {
       if (j2.getJoinType() != JoinRelType.INNER
           || !j2.getCondition().isAlwaysTrue()) {
