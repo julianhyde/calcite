@@ -257,12 +257,12 @@ class RexProgramTestBase extends RexProgramBuilderBase {
     }
   }
 
+  /** Simple implementation of {@link RexRule.Context}. */
   private static class SimpleRuleContext implements RexRule.Context {
-    private RexExecutor executor;
-    private RexBuilder rexBuilder;
+    private final RexExecutor executor;
+    private final RexBuilder rexBuilder;
 
-    public SimpleRuleContext(
-        RexExecutor executor, RexBuilder rexBuilder) {
+    SimpleRuleContext(RexExecutor executor, RexBuilder rexBuilder) {
       this.executor = executor;
       this.rexBuilder = rexBuilder;
     }

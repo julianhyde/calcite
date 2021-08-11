@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.plan;
 
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 
 import com.google.common.collect.ImmutableList;

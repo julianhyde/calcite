@@ -279,14 +279,6 @@ public class RexSimplify {
       return simplifyOr((RexCall) e, unknownAs);
     case NOT:
       return simplifyNot((RexCall) e, unknownAs);
-      /*
-    case CASE:
-      // CASE is already handled by rule; needs special treatment, per
-      // "[CALCITE-2639] FilterReduceExpressionsRule causes ArithmeticException
-      // at execution time"
-      return e;
-
-       */
     case IS_NULL:
     case IS_NOT_NULL:
     case IS_TRUE:

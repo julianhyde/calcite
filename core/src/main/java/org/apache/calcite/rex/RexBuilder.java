@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.calcite.sql.fun.SqlDatetimeSubtractionOperator;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.ArraySqlType;
@@ -1831,8 +1832,15 @@ public class RexBuilder {
       return RexSubQuery.in(((RexSubQuery) call).rel,
           ImmutableList.copyOf(operands));
     case CAST:
+    case REINTERPRET:
       type2 = call.type;
       break;
+    case MINUS:
+      if (call.op instanceof SqlDatetimeSubtractionOperator) {
+        type2 = call.type;
+        break;
+      }
+      // fall through
     default:
       type2 = deriveReturnType(call.op, operands);
     }

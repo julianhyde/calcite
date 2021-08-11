@@ -17,7 +17,6 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.plan.hep.HepProgram;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexRule.Done;
 import org.apache.calcite.rex.RexRule.OperandBuilder;
 import org.apache.calcite.rex.RexRule.OperandDetailBuilder;

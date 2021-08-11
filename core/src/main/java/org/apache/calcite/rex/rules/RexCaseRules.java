@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.rex.rules;
 
 import org.apache.calcite.plan.RelOptPredicateList;
@@ -43,6 +42,9 @@ import static org.apache.calcite.rex.RexUnknownAs.UNKNOWN;
 
 /** Rules relating to {@code CASE}, {@code COALESCE} and types. */
 public class RexCaseRules {
+  private RexCaseRules() {
+  }
+
   public static final RexRule CASE = RexRule.ofWeakCall(b ->
           b.ofKind(SqlKind.CASE).anyInputs(),
       RexCaseRules::simplifyCase);

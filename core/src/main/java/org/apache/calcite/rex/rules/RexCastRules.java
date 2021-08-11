@@ -14,11 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.rex.rules;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -33,6 +29,9 @@ import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +39,9 @@ import static java.util.Objects.requireNonNull;
 
 /** Rules relating to {@code CAST} and types. */
 public class RexCastRules {
+  private RexCastRules() {
+  }
+
   public static final RexRule CAST = RexRule.ofCall(b ->
           b.ofKind(SqlKind.CAST).anyInputs(),
       RexCastRules::simplifyCast);

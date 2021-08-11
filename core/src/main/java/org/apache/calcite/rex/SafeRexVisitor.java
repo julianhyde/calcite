@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.rex;
 
-import com.google.common.collect.Sets;
-
 import org.apache.calcite.sql.SqlKind;
+
+import com.google.common.collect.Sets;
 
 import java.util.EnumSet;
 import java.util.Set;
