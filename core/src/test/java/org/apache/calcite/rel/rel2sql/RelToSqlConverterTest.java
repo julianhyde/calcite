@@ -4764,7 +4764,12 @@ class RelToSqlConverterTest {
         + "SELECT 2 AS a, 'yy' AS b)";
     final String expectedSnowflake = expectedPostgresql;
     final String expectedRedshift = expectedPostgresql;
+    final String expectedClickHouse = "SELECT `a`\n"
+        + "FROM (SELECT 1 AS `a`, 'x ' AS `b`\n"
+        + "UNION ALL\n"
+        + "SELECT 2 AS `a`, 'yy' AS `b`)";
     sql(sql)
+        .withClickHouse().ok(expectedClickHouse)
         .withBigQuery().ok(expectedBigQuery)
         .withHive().ok(expectedHive)
         .withHsqldb().ok(expectedHsqldb)
@@ -4790,8 +4795,10 @@ class RelToSqlConverterTest {
     final String expectedPostgresql = "SELECT *\n"
         + "FROM (VALUES (NULL, NULL)) AS \"t\" (\"X\", \"Y\")\n"
         + "WHERE 1 = 0";
+    final String expectedClickHouse = expectedMysql;
     sql(sql)
         .optimize(rules, null)
+        .withClickHouse().ok(expectedClickHouse)
         .withMysql().ok(expectedMysql)
         .withOracle().ok(expectedOracle)
         .withPostgresql().ok(expectedPostgresql);
@@ -5875,7 +5882,7 @@ class RelToSqlConverterTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4724">[CALCITE-4724]
-   * As for ClickHouse do not support values in from clause.
+   * ClickHouseSqlDialect `supportsAliasedValues` should return false. </a>
    */
   @Test void testAliasedValueForClickHouse() {
     final String query = "select 1";
