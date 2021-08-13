@@ -682,7 +682,7 @@ LogicalProject(NAME=[$0])
     </Resource>
     <Resource name="sql">
       <![CDATA[select e.deptno,
-  (select * from lateral table(DEDUP(e.deptno, e.deptno)))
+  (select * from table(DEDUP(e.deptno, e.deptno)))
 from emp e]]>
     </Resource>
   </TestCase>
@@ -3841,6 +3841,36 @@ LogicalProject(START_MGR=[$0], BOTTOM_MGR=[$1], END_MGR=[$2])
 LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8])
   LogicalMatch(partition=[[]], order=[[]], outputFields=[[EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO, SLACKER]], allRows=[false], after=[SKIP TO LAST('DOWN')], pattern=[(('STRT', PATTERN_QUANTIFIER('DOWN', 1, -1, false)), PATTERN_QUANTIFIER('UP', 1, -1, false))], isStrictStarts=[false], isStrictEnds=[false], subsets=[[[DOWN, STRT]]], patternDefinitions=[[<(PREV(DOWN.$3, 0), PREV(DOWN.$3, 1)), >(PREV(UP.$3, 0), NEXT(PREV(UP.$3, 0), 1))]], inputFields=[[EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO, SLACKER]])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testMeasure1">
+    <Resource name="sql">
+      <![CDATA[select * from (
+  select deptno,
+    empno + 1 as measure e1,
+    e1 + deptno as measure e2
+  from emp)]]>
+    </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testMeasure2">
+    <Resource name="sql">
+      <![CDATA[select * from (
+  select deptno,
+    empno + 1 as e1,
+    e1 + deptno as measure e2
+  from emp)]]>
+    </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>
