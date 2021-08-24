@@ -4523,7 +4523,7 @@ LogicalProject(EXPR$0=[1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select*from emp
+      <![CDATA[select * from emp
 where not unique (select 1 from dept where deptno=55)]]>
     </Resource>
   </TestCase>
@@ -4540,7 +4540,7 @@ LogicalProject(EXPR$0=[1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select*from emp where not unique(
+      <![CDATA[select * from emp where not unique(
 select 1 from dept where emp.deptno = dept.deptno)]]>
     </Resource>
   </TestCase>
@@ -6863,7 +6863,7 @@ LogicalProject(DEPTNO=[$0], NAME=[$1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select*from emp where unique (
+      <![CDATA[select * from emp where unique (
 select * from dept)]]>
     </Resource>
   </TestCase>
@@ -6880,7 +6880,7 @@ LogicalProject(NAME=[$1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select*from emp where unique (
+      <![CDATA[select * from emp where unique (
 select name from dept where deptno=55)]]>
     </Resource>
   </TestCase>
@@ -6897,7 +6897,7 @@ LogicalProject(EXPR$0=[1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select*from emp where unique (
+      <![CDATA[select * from emp where unique (
 select 1 from dept where deptno=55)]]>
     </Resource>
   </TestCase>
