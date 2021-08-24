@@ -100,6 +100,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -109,6 +110,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -416,13 +418,9 @@ public class RelToSqlConverter extends SqlImplementor
           ImmutableSet.of(Clause.HAVING));
       parseCorrelTable(e, x);
       final Builder builder = x.builder(e);
-      SqlNode condition = builder.context.toSql(null, e.getCondition());
-      SqlNode existHaving = x.asSelect().getHaving();
-      // if input Aggregate RelNode contains existHaving, need
-      // to create AND expression with connect condition and existHaving
-      // then update input Aggregate's Having condition.
-      condition = SqlUtil.andExpressions(existHaving, condition);
-      x.asSelect().setHaving(condition);
+      x.asSelect().setHaving(
+          SqlUtil.andExpressions(x.asSelect().getHaving(),
+              builder.context.toSql(null, e.getCondition())));
       return builder.result();
     } else {
       final Result x = visitInput(e, 0, Clause.WHERE);
@@ -506,18 +504,13 @@ public class RelToSqlConverter extends SqlImplementor
     // groupSet contains at least one column that is not in any groupSet.
     // Set of clauses that we expect the builder need to add extra Clause.HAVING
     // then can add Having filter condition in buildAggregate.
+    final Set<Clause> clauseSet = new TreeSet<>(Arrays.asList(clauses));
     if (!e.getGroupSet().equals(ImmutableBitSet.union(e.getGroupSets()))) {
-      Clause[] newClauses = new Clause[clauses.length + 1];
-      for (int i = 0; i < clauses.length; i++) {
-        newClauses[i] = clauses[i];
-      }
-      newClauses[newClauses.length - 1] = Clause.HAVING;
-      clauses = newClauses;
+      clauseSet.add(Clause.HAVING);
     }
     // "select a, b, sum(x) from ( ... ) group by a, b"
     final boolean ignoreClauses = e.getInput() instanceof Project;
-    final Result x = visitInput(e, 0, isAnon(), ignoreClauses,
-        ImmutableSet.copyOf(clauses));
+    final Result x = visitInput(e, 0, isAnon(), ignoreClauses, clauseSet);
     final Builder builder = x.builder(e);
     final List<SqlNode> selectList = new ArrayList<>();
     final List<SqlNode> groupByList =

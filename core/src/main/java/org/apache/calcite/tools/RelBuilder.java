@@ -944,9 +944,9 @@ public class RelBuilder {
    * GROUPING SETS ((0, 1), 0)
    * }</pre>
    *
-   * column 2 does not appear in either grouping set. This is not valid SQL. We
-   * can approximate in actual SQL by adding an extra grouping set and filtering
-   * out using {@code HAVING}:
+   * <p>column 2 does not appear in either grouping set. This is not valid SQL.
+   * We can approximate in actual SQL by adding an extra grouping set and
+   * filtering out using {@code HAVING}, as follows:
    *
    * <pre>{@code
    * GROUP BY GROUPING SETS ((0, 1, 2), (0, 1), 0)

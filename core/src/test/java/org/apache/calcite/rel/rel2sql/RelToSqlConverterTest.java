@@ -463,10 +463,13 @@ class RelToSqlConverterTest {
         .project(b.field("JOB"))
         .build();
     final String expectedSql = "SELECT \"JOB\"\n"
-        + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\", SUM(\"SAL\") AS \"S\"\n"
+        + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\","
+        + " SUM(\"SAL\") AS \"S\"\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"), (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
-        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0 AND \"JOB\" = 'DEVELOP') AS \"t\"";
+        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
+        + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
+        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0"
+        + " AND \"JOB\" = 'DEVELOP') AS \"t\"";
     relFn(relFn).ok(expectedSql);
   }
 
@@ -489,10 +492,14 @@ class RelToSqlConverterTest {
         .build();
     final String expectedSql = "SELECT \"JOB\"\n"
         + "FROM (SELECT *\n"
-        + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\", SUM(\"SAL\") AS \"S\"\n"
+        + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\","
+        + " SUM(\"SAL\") AS \"S\"\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"), (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
-        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0 AND \"C\" > 10) AS \"t\") AS \"t0\"\n"
+        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
+        + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
+        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0"
+        + " AND \"C\" > 10) AS \"t\") "
+        + "AS \"t0\"\n"
         + "WHERE \"JOB\" = 'DEVELOP'";
     relFn(relFn).ok(expectedSql);
   }
@@ -521,10 +528,14 @@ class RelToSqlConverterTest {
         .build();
     final String expectedSql = "SELECT \"JOB\"\n"
         + "FROM (SELECT *\n"
-        + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\", SUM(\"SAL\") AS \"S\"\n"
+        + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\","
+        + " SUM(\"SAL\") AS \"S\"\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"), (\"EMPNO\", \"ENAME\"), \"EMPNO\", ())\n"
-        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0 AND (\"C\" > 10 OR \"S\" < 3000)) AS \"t\") AS \"t0\"\n"
+        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
+        + " (\"EMPNO\", \"ENAME\"), \"EMPNO\", ())\n"
+        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0"
+        + " AND (\"C\" > 10 OR \"S\" < 3000)) AS \"t\") "
+        + "AS \"t0\"\n"
         + "WHERE \"JOB\" = 'DEVELOP'";
     relFn(relFn).ok(expectedSql);
   }
@@ -545,7 +556,8 @@ class RelToSqlConverterTest {
         .build();
     final String expectedSql = "SELECT \"JOB\"\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"), (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
+        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
+        + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
         + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0";
     relFn(relFn).ok(expectedSql);
   }
@@ -567,7 +579,8 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT \"EMPNO\", \"ENAME\", \"JOB\","
         + " COUNT(*) AS \"C\", SUM(\"SAL\") AS \"S\"\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"), (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
+        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
+        + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
         + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0\n"
         + "ORDER BY COUNT(*)";
     relFn(relFn).ok(expectedSql);
@@ -594,8 +607,11 @@ class RelToSqlConverterTest {
         + "FROM (SELECT *\n"
         + "FROM (SELECT \"EMPNO\", \"ENAME\", \"JOB\", COUNT(*) AS \"C\", SUM(\"SAL\") AS \"S\"\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"), (\"EMPNO\", \"ENAME\"), \"EMPNO\", ())\n"
-        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0 AND GROUP_ID(\"EMPNO\") < 1) AS \"t\") AS \"t0\"\n"
+        + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
+        + " (\"EMPNO\", \"ENAME\"), \"EMPNO\", ())\n"
+        + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0"
+        + " AND GROUP_ID(\"EMPNO\") < 1) AS \"t\") "
+        + "AS \"t0\"\n"
         + "WHERE \"JOB\" = 'DEVELOP'";
     relFn(relFn).ok(expectedSql);
   }
