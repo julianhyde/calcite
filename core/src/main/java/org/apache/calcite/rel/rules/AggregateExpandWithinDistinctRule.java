@@ -184,10 +184,11 @@ public class AggregateExpandWithinDistinctRule
       argLists.put(distinctKeys, aggCall);
     }
 
-    // Compute the set of all grouping sets that will be used in the output query.
-    // For each WITHIN DISTINCT agg call, we will need a grouping set that is the union
-    // of the agg call's unique keys and the input query's overall grouping.
-    // Redundant grouping sets can be reused for multiple agg calls.
+    // Compute the set of all grouping sets that will be used in the output
+    // query. For each WITHIN DISTINCT aggregate call, we will need a grouping
+    // set that is the union of the aggregate call's unique keys and the input
+    // query's overall grouping. Redundant grouping sets can be reused for
+    // multiple aggregate calls.
     final Set<ImmutableBitSet> groupSetTreeSet =
         new TreeSet<>(ImmutableBitSet.ORDERING);
     for (ImmutableBitSet key : argLists.keySet()) {
@@ -227,13 +228,16 @@ public class AggregateExpandWithinDistinctRule
     // CHECKSTYLE: IGNORE 1
     class Registrar {
       final int g = fullGroupSet.cardinality();
-      // Map input fields (below the original aggregation) and filter args
-      // to inner query agg calls.
+      /** Map of input fields (below the original aggregation) and filter args
+       * to inner query aggregate calls. */
       final Map<IntPair, Integer> args = new HashMap<>();
-      // Map agg calls from the original aggregation to inner query agg calls.
+      /** Map of aggregate calls from the original aggregation to inner query
+       * aggregate calls. */
       final Map<Integer, Integer> aggs = new HashMap<>();
-      // Map agg calls from the original aggregation to inner-query `COUNT(*)` calls, which are only
-      // needed for filters in the outer agg when the original agg call does not ignore null inputs.
+      /** Map of aggregate calls from the original aggregation to inner-query
+       * {@code COUNT(*)} calls, which are only needed for filters in the outer
+       * aggregate when the original aggregate call does not ignore null
+       * inputs. */
       final Map<Integer, Integer> counts = new HashMap<>();
 
       List<Integer> fields(List<Integer> fields, int filterArg) {
@@ -244,19 +248,24 @@ public class AggregateExpandWithinDistinctRule
         return Objects.requireNonNull(args.get(IntPair.of(field, filterArg)));
       }
 
-      /**
-       * Computes an agg call argument's values for a {@code WITHIN DISTINCT} agg call.
+      /** Computes an aggregate call argument's values for a
+       * {@code WITHIN DISTINCT} aggregate call.
        *
-       * For example, to compute {@code SUM(x) WITHIN DISTINCT (y) GROUP BY (z)},
-       * the inner aggregation must first group {@code x} by {@code (y, z)} -- using {@code MIN}
-       * to select the (hopefully) unique value of {@code x} for each {@code (y, z)} group.
-       * Actually summing over the grouped {@code x} values must occur in an outer aggregation.
+       * <p>For example, to compute
+       * {@code SUM(x) WITHIN DISTINCT (y) GROUP BY (z)},
+       * the inner aggregate must first group {@code x} by {@code (y, z)}
+       * &mdash; using {@code MIN} to select the (hopefully) unique value of
+       * {@code x} for each {@code (y, z)} group. Actually summing over the
+       * grouped {@code x} values must occur in an outer aggregate.
        *
-       * @param field the index of an input field that's used in a {@code WITHIN DISTINCT} agg call
-       * @param filterArg the filter arg used in the original agg call, or {@code -1} if there is no
-       *                  filter. We use the same filter in the inner query.
-       * @return the index of the inner query agg call representing the grouped field,
-       *         which can be referenced in the outer query agg call
+       * @param field Index of an input field that's used in a
+       *         {@code WITHIN DISTINCT} aggregate call
+       * @param filterArg Filter arg used in the original aggregate call, or
+       *         {@code -1} if there is no filter. We use the same filter in
+       *         the inner query.
+       * @return Index of the inner query aggregate call representing the
+       *         grouped field, which can be referenced in the outer query
+       *         aggregate call
        */
       int register(int field, int filterArg) {
         return args.computeIfAbsent(IntPair.of(field, filterArg), j -> {
@@ -279,16 +288,17 @@ public class AggregateExpandWithinDistinctRule
         });
       }
 
-      /**
-       * Registers an agg call that is *not* a {@code WITHIN DISTINCT} call.
+      /** Registers an aggregate call that is <em>not</em> a
+       * {@code WITHIN DISTINCT} call.
        *
-       * Unlike the case handled by {@link #register(int, int)} above, agg calls
-       * without any distinct keys do not need a second round of aggregation in the outer query,
-       * so they can be computed "as-is" in the inner query.
+       * <p>Unlike the case handled by {@link #register(int, int)} above,
+       * aggregate calls without any distinct keys do not need a second round
+       * of aggregation in the outer query, so they can be computed "as-is" in
+       * the inner query.
        *
-       * @param i the index of the agg call in the original aggregation
-       * @param aggregateCall the original agg call
-       * @return the index of the agg call in the computed inner query
+       * @param i Index of the aggregate call in the original aggregation
+       * @param aggregateCall Original aggregate call
+       * @return Index of the aggregate call in the computed inner query
        */
       int registerAgg(int i, RelBuilder.AggCall aggregateCall) {
         final int ordinal = g + aggCalls.size();
@@ -301,23 +311,25 @@ public class AggregateExpandWithinDistinctRule
         return Objects.requireNonNull(aggs.get(i));
       }
 
-      /**
-       * Registers an extra {@code COUNT} agg call when it's needed to filter out null inputs in the
-       * outer aggregation.
+      /** Registers an extra {@code COUNT} aggregate call when it's needed to
+       * filter out null inputs in the outer aggregate.
        *
-       * This should only be called for agg calls with filters. It's possible that the filter would
-       * eliminate all input rows to the {@code MIN} call in the inner query, so calls in the outer
-       * agg may need to be aware of this. See usage of
+       * <p>This should only be called for aggregate calls with filters. It's
+       * possible that the filter would eliminate all input rows to the
+       * {@code MIN} call in the inner query, so calls in the outer
+       * aggregate may need to be aware of this. See usage of
        * {@link AggregateExpandWithinDistinctRule#mustBeCounted(AggregateCall)}.
        *
-       * @param filterArg the original agg call's filter; must be non-negative.
-       * @return the index of the {@code COUNT} call in the computed inner query
+       * @param filterArg The original aggregate call's filter; must be
+       *                 non-negative
+       * @return Index of the {@code COUNT} call in the computed inner query
        */
       int registerCount(int filterArg) {
         assert filterArg >= 0;
         return counts.computeIfAbsent(filterArg, i -> {
           final int ordinal = g + aggCalls.size();
-          aggCalls.add(b.aggregateCall(SqlStdOperatorTable.COUNT).filter(b.field(filterArg)));
+          aggCalls.add(b.aggregateCall(SqlStdOperatorTable.COUNT)
+              .filter(b.field(filterArg)));
           return ordinal;
         });
       }
@@ -342,9 +354,10 @@ public class AggregateExpandWithinDistinctRule
         }
       }
     });
-    // Add an additional `GROUPING()` agg call so we can select only the relevant inner-agg rows
-    // from the outer agg. If there is only 1 grouping set (i.e. every agg call has the same
-    // distinct keys), no `GROUPING()` call is necessary.
+    // Add an additional GROUPING() aggregate call so we can select only the
+    // relevant inner-aggregate rows from the outer aggregate. If there is only
+    // 1 grouping set (i.e. every aggregate call has the same distinct keys),
+    // no GROUPING() call is necessary.
     final int grouping =
         hasMultipleGroupSets
             ? registrar.registerAgg(-1,
@@ -394,12 +407,14 @@ public class AggregateExpandWithinDistinctRule
         aggCall = b.aggregateCall(SqlStdOperatorTable.MIN,
             b.field(registrar.getAgg(i)));
       } else {
-        // The inputs to this agg are outputs from `MIN()` calls from the inner agg, and `MIN()`
-        // returns null iff it has no non-null inputs, which can only happen if an original agg's
-        // filter causes all non-null input rows to be discarded for a particular group in the
-        // inner agg. In this case, it should be ignored by the outer agg as well.
-        // In case the agg call does not naturally ignore null inputs, we add a filter based on
-        // a `COUNT()` in the inner agg.
+        // The inputs to this aggregate are outputs from MIN() calls from the
+        // inner agg, and MIN() returns null iff it has no non-null inputs,
+        // which can only happen if an original aggregate's filter causes all
+        // non-null input rows to be discarded for a particular group in the
+        // inner aggregate. In this case, it should be ignored by the outer
+        // aggregate as well. In case the aggregate call does not naturally
+        // ignore null inputs, we add a filter based on a COUNT() in the inner
+        // aggregate.
         aggCall =
             b.aggregateCall(
                 c.getAggregation(),
@@ -441,14 +456,18 @@ public class AggregateExpandWithinDistinctRule
   }
 
   private static boolean mustBeCounted(AggregateCall aggCall) {
-    // Always count filtered inner aggs to be safe.
-    // It's possible that, for some agg calls (namely, those that completely ignore null inputs),
-    // we could neglect counting the grouped-and-filtered rows of the inner agg and filtering
-    // the empty ones out from the outer agg, since those empty groups would produce null values
-    // as the result of `MIN` and thus be ignored by the outer agg anyway.
-    // Note that Using `aggCall.ignoreNulls()` is not necessarily sufficient to determine when it's
-    // safe to do this, since for `COUNT` the value of `ignoreNulls()` should generally be true
-    // even though `COUNT(*)` will never ignore anything.
+    // Always count filtered inner aggregates to be safe.
+    //
+    // It's possible that, for some aggregate calls (namely, those that
+    // completely ignore null inputs), we could neglect counting the
+    // grouped-and-filtered rows of the inner aggregate and filtering the empty
+    // ones out from the outer aggregate, since those empty groups would produce
+    // null values as the result of MIN and thus be ignored by the outer
+    // aggregate anyway.
+    //
+    // Note that using "aggCall.ignoreNulls()" is not sufficient to determine
+    // when it's safe to do this, since for COUNT the value of ignoreNulls()
+    // should generally be true even though COUNT(*) will never ignore anything.
     return aggCall.hasFilter();
   }
 
