@@ -474,39 +474,41 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
   }
 
   /**
-   * Returns whether the rows of a given relational expression are distinct.
-   * This is derived by
-   * {@link BuiltInMetadata.RowCount#getRowCount()}
-   * get rowcount and applying the
+   * Returns whether the rows of a given relational expression are distinct,
+   * optionally ignoring NULL values.
+   *
+   * <p>This is derived by applying the
    * {@link BuiltInMetadata.ColumnUniqueness#areColumnsUnique(org.apache.calcite.util.ImmutableBitSet, boolean)}
-   * statistic over all columns.
+   * statistic over all columns. If
+   * {@link BuiltInMetadata.MaxRowCount#getMaxRowCount()}
+   * is less than or equal to one, we shortcut the process and declare the rows
+   * unique.
    *
    * @param rel     the relational expression
    * @param ignoreNulls if true, ignore null values when determining column
    *                    uniqueness
    *
-   * @return true or false depending on whether the rows are unique, or
+   * @return whether the rows are unique, or
    * null if not enough information is available to make that determination
    */
   public @Nullable Boolean areRowsUnique(RelNode rel, boolean ignoreNulls) {
-    if (this.getRowCount(rel) <= 1) {
+    Double maxRowCount = this.getMaxRowCount(rel);
+    if (maxRowCount != null && maxRowCount <= 1D) {
       return true;
     }
-    final ImmutableBitSet columns = ImmutableBitSet.range(rel.getRowType().getFieldCount());
+    final ImmutableBitSet columns =
+        ImmutableBitSet.range(rel.getRowType().getFieldCount());
     return areColumnsUnique(rel, columns, ignoreNulls);
   }
 
   /**
    * Returns whether the rows of a given relational expression are distinct.
-   * This is derived by
-   * {@link BuiltInMetadata.RowCount#getRowCount()}
-   * get rowcount and applying the
-   * {@link BuiltInMetadata.ColumnUniqueness#areColumnsUnique(org.apache.calcite.util.ImmutableBitSet, boolean)}
-   * statistic over all columns.
+   *
+   * <p>Derived by calling {@link #areRowsUnique(RelNode, boolean)}.
    *
    * @param rel     the relational expression
    *
-   * @return true or false depending on whether the rows are unique, or
+   * @return whether the rows are unique, or
    * null if not enough information is available to make that determination
    */
   public @Nullable Boolean areRowsUnique(RelNode rel) {

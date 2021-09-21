@@ -44,7 +44,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 
@@ -53,6 +52,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.apache.calcite.util.Util.last;
 
 /**
  * Transform that converts IN, EXISTS and scalar sub-queries into joins.
@@ -434,24 +435,25 @@ public class SubQueryRemoveRule
 
     builder.join(JoinRelType.LEFT, builder.literal(true), variablesSet);
 
-    return builder.isNotNull(Util.last(builder.fields()));
+    return builder.isNotNull(last(builder.fields()));
   }
 
   /**
    * Rewrites a UNIQUE RexSubQuery into an EXISTS RexSubQuery.
    *
-   * <p>For example UNIQUE sub-query:
+   * <p>For example, rewrites the UNIQUE sub-query:
+   *
    * <pre>{@code
    * UNIQUE (SELECT PUBLISHED_IN
    * FROM BOOK
    * WHERE AUTHOR_ID = 3)
    * }</pre>
    *
-   * rewrite to EXISTS sub-query:
+   * <p>to the following EXISTS sub-query:
    *
    * <pre>{@code
    * NOT EXISTS (
-   *   SELECT 1 FROM (
+   *   SELECT * FROM (
    *     SELECT PUBLISHED_IN
    *     FROM BOOK
    *     WHERE AUTHOR_ID = 3
@@ -467,8 +469,7 @@ public class SubQueryRemoveRule
    *
    * @return Expression that may be used to replace the RexSubQuery
    */
-  private static RexNode rewriteUnique(
-      RexSubQuery e, RelBuilder builder) {
+  private static RexNode rewriteUnique(RexSubQuery e, RelBuilder builder) {
     // if sub-query always return unique value.
     final RelMetadataQuery mq = e.rel.getCluster().getMetadataQuery();
     Boolean isUnique = mq.areRowsUnique(e.rel, true);
@@ -478,15 +479,13 @@ public class SubQueryRemoveRule
     builder.push(e.rel);
     List<RexNode> notNullCondition =
         builder.fields().stream()
-            .map(field -> builder.call(SqlStdOperatorTable.IS_NOT_NULL, field))
+            .map(builder::isNotNull)
             .collect(Collectors.toList());
     builder
         .filter(notNullCondition)
-        .aggregate(builder.groupKey(builder.fields()), builder.countStar("count"))
+        .aggregate(builder.groupKey(builder.fields()), builder.countStar("c"))
         .filter(
-            builder.call(SqlStdOperatorTable.GREATER_THAN, builder.field("count"),
-                builder.literal(1)))
-        .project(builder.literal(1));
+            builder.greaterThan(last(builder.fields()), builder.literal(1)));
     RelNode relNode = builder.build();
     return builder.call(SqlStdOperatorTable.NOT, RexSubQuery.exists(relNode));
   }
@@ -723,7 +722,7 @@ public class SubQueryRemoveRule
       operands.add(builder.isNotNull(builder.field("cs")),
           trueLiteral);
     } else {
-      operands.add(builder.isNotNull(Util.last(builder.fields())),
+      operands.add(builder.isNotNull(last(builder.fields())),
           trueLiteral);
     }
 
