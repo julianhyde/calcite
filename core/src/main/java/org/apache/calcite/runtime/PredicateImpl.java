@@ -40,5 +40,5 @@ public abstract class PredicateImpl<T> implements Predicate<T> {
   }
 
   /** Overrides {@code java.util.function.Predicate#test} in JDK8 and higher. */
-  @Override public abstract boolean test(@Nullable T t);
+  public abstract boolean test(@Nullable T t);
 }
