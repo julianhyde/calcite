@@ -32,7 +32,9 @@ matrix:
         - ./gradlew --no-parallel --no-daemon --scan -PenableCheckerframework :linq4j:classes :core:classes
     - jdk: openjdk11
       env:
-        - ERRORPRONE=Y
+        # Disable ErrorProne on Guava < 21; it complains about use of a Beta
+        # API (ImmutableSortedMultiset was Beta until Guava 21).
+        - ERRORPRONE=
       script:
         - export _JAVA_OPTIONS="-XX:GCTimeLimit=90 -XX:GCHeapFreeLimit=35"
         - ./gradlew --no-parallel --no-daemon --scan -PenableErrorprone classes
