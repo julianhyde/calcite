@@ -40,5 +40,8 @@ public abstract class PredicateImpl<T> implements Predicate<T> {
   }
 
   /** Overrides {@code java.util.function.Predicate#test} in JDK8 and higher. */
+  // Suppress ErrorProne's MissingOverride warning. Guava Predicate does not
+  // implement Java Predicate until Guava 21.
+  @SuppressWarnings("all")
   public abstract boolean test(@Nullable T t);
 }
