@@ -24,6 +24,10 @@ matrix:
     - jdk: openjdk8
       env:
         - TZ=America/New_York # flips between −05:00 and −04:00
+      script:
+        # Run using the oldest supported Guava version (19.0)
+        - export _JAVA_OPTIONS="-XX:GCTimeLimit=90 -XX:GCHeapFreeLimit=35"
+        - ./gradlew --no-daemon -Pguava.version=19.0 build
     - jdk: openjdk11
       env:
         - CHECKERFRAMEWORK=Y
@@ -32,9 +36,7 @@ matrix:
         - ./gradlew --no-parallel --no-daemon --scan -PenableCheckerframework :linq4j:classes :core:classes
     - jdk: openjdk11
       env:
-        # Disable ErrorProne on Guava < 21; it complains about use of a Beta
-        # API (ImmutableSortedMultiset was Beta until Guava 21).
-        - ERRORPRONE=
+        - ERRORPRONE=Y
       script:
         - export _JAVA_OPTIONS="-XX:GCTimeLimit=90 -XX:GCHeapFreeLimit=35"
         - ./gradlew --no-parallel --no-daemon --scan -PenableErrorprone classes
@@ -42,6 +44,10 @@ matrix:
       env:
         - TZ=Pacific/Chatham # flips between +12:45 and +13:45
     - jdk: openjdk15
+      script:
+        # Run using the newest supported Guava version (29.0-jre)
+        - export _JAVA_OPTIONS="-XX:GCTimeLimit=90 -XX:GCHeapFreeLimit=35"
+        - ./gradlew --no-daemon -Pguava.version=29.0-jre build
 branches:
   only:
     - master
