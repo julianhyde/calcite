@@ -132,7 +132,7 @@ public class SqlBasicCall extends SqlCall {
   }
 
   private static <E> List<@Nullable E> set(List<E> list, int i, @Nullable E e) {
-    if (i == 1 && list.size() == 1) {
+    if (i == 0 && list.size() == 1) {
       // short-cut case where the contents of the previous list can be ignored
       return ImmutableNullableList.of(e);
     }
