@@ -44,7 +44,7 @@ public class SqlBasicCall extends SqlCall {
 
   public SqlBasicCall(
       SqlOperator operator,
-      List<@Nullable SqlNode> operandList,
+      List<? extends @Nullable SqlNode> operandList,
       SqlParserPos pos) {
     this(operator, operandList, pos, null);
   }
@@ -62,7 +62,7 @@ public class SqlBasicCall extends SqlCall {
   /** Creates an unexpanded SqlBasicCall. */
   public SqlBasicCall(
       SqlOperator operator,
-      List<@Nullable SqlNode> operandList,
+      List<? extends @Nullable SqlNode> operandList,
       SqlParserPos pos,
       @Nullable SqlLiteral functionQualifier) {
     super(pos);
