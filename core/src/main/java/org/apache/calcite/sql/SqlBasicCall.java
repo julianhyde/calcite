@@ -111,7 +111,7 @@ public class SqlBasicCall extends SqlCall {
 
   @SuppressWarnings("nullness")
   @Override public List<SqlNode> getOperandList() {
-    return ImmutableNullableList.copyOf(operandList);
+    return operandList;
   }
 
   @SuppressWarnings("unchecked")
