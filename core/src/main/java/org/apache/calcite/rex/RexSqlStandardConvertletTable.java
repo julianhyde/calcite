@@ -166,9 +166,9 @@ public class RexSqlStandardConvertletTable
   private static @Nullable List<@Nullable SqlNode> convertExpressionList(
       RexToSqlNodeConverter converter,
       List<RexNode> nodes) {
-    final List<SqlNode> exprs = new ArrayList<>();
+    final List<@Nullable SqlNode> exprs = new ArrayList<>();
     for (RexNode node : nodes) {
-      SqlNode converted = converter.convertNode(node);
+      @Nullable SqlNode converted = converter.convertNode(node);
       if (converted == null) {
         return null;
       }

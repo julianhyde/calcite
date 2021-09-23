@@ -130,8 +130,9 @@ public class SqlBasicCall extends SqlCall {
   /** Sub-class of {@link org.apache.calcite.sql.SqlBasicCall}
    * for which {@link #isExpanded()} returns true. */
   private static class ExpandedBasicCall extends SqlBasicCall {
-    ExpandedBasicCall(SqlOperator operator, List<@Nullable SqlNode> operandList,
-        SqlParserPos pos, @Nullable SqlLiteral functionQualifier) {
+    ExpandedBasicCall(SqlOperator operator,
+        List<? extends @Nullable SqlNode> operandList, SqlParserPos pos,
+        @Nullable SqlLiteral functionQualifier) {
       super(operator, operandList, pos, functionQualifier);
     }
 
