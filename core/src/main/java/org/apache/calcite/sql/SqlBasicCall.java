@@ -33,7 +33,6 @@ public class SqlBasicCall extends SqlCall {
   private SqlOperator operator;
   private List<@Nullable SqlNode> operandList;
   private final @Nullable SqlLiteral functionQuantifier;
-  private final boolean expanded;
 
   @Deprecated // to be removed before 2.0
   public SqlBasicCall(
@@ -47,7 +46,7 @@ public class SqlBasicCall extends SqlCall {
       SqlOperator operator,
       List<@Nullable SqlNode> operandList,
       SqlParserPos pos) {
-    this(operator, operandList, pos, null, false);
+    this(operator, operandList, pos, null);
   }
 
   @Deprecated // to be removed before 2.0
@@ -57,7 +56,7 @@ public class SqlBasicCall extends SqlCall {
       SqlParserPos pos,
       @Nullable SqlLiteral functionQualifier) {
     this(operator, ImmutableNullableList.copyOf(operands), pos,
-        functionQualifier, false);
+        functionQualifier);
   }
 
   /** Creates an unexpanded SqlBasicCall. */
@@ -66,20 +65,9 @@ public class SqlBasicCall extends SqlCall {
       List<@Nullable SqlNode> operandList,
       SqlParserPos pos,
       @Nullable SqlLiteral functionQualifier) {
-    this(operator, operandList, pos, functionQualifier, false);
-  }
-
-  /** Private constructor. */
-  private SqlBasicCall(
-      SqlOperator operator,
-      List<@Nullable SqlNode> operandList,
-      SqlParserPos pos,
-      @Nullable SqlLiteral functionQualifier,
-      boolean expanded) {
     super(pos);
     this.operator = Objects.requireNonNull(operator, "operator");
     this.operandList = ImmutableNullableList.copyOf(operandList);
-    this.expanded = expanded;
     this.functionQuantifier = functionQualifier;
   }
 
@@ -87,14 +75,11 @@ public class SqlBasicCall extends SqlCall {
     return operator.getKind();
   }
 
-  @Override public boolean isExpanded() {
-    return expanded;
-  }
-
   public SqlCall withExpanded(boolean expanded) {
-    return expanded == this.expanded ? this
-        : new SqlBasicCall(operator, operandList, pos,
-            functionQuantifier, expanded);
+    return !expanded
+        ? this
+        : new ExpandedBasicCall(operator, operandList, pos,
+            functionQuantifier);
   }
 
   @Override public void setOperand(int i, @Nullable SqlNode operand) {
@@ -140,5 +125,25 @@ public class SqlBasicCall extends SqlCall {
     @Nullable E[] objects = (E[]) list.toArray();
     objects[i] = e;
     return ImmutableNullableList.copyOf(objects);
+  }
+
+  /** Sub-class of {@link org.apache.calcite.sql.SqlBasicCall}
+   * for which {@link #isExpanded()} returns true. */
+  private static class ExpandedBasicCall extends SqlBasicCall {
+    ExpandedBasicCall(SqlOperator operator, List<@Nullable SqlNode> operandList,
+        SqlParserPos pos, @Nullable SqlLiteral functionQualifier) {
+      super(operator, operandList, pos, functionQualifier);
+    }
+
+    @Override public boolean isExpanded() {
+      return true;
+    }
+
+    @Override public SqlCall withExpanded(boolean expanded) {
+      return expanded
+          ? this
+          : new SqlBasicCall(getOperator(), getOperandList(), pos,
+              getFunctionQuantifier());
+    }
   }
 }
