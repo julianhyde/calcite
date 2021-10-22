@@ -56,6 +56,8 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.SqlFunctions;
@@ -6777,6 +6779,28 @@ public class JdbcTest {
     CalciteAssert.that(CalciteAssert.Config.REGULAR)
         .query("select nvl(\"commission\", -99) as c from \"hr\".\"emps\"")
         .throws_("No match found for function signature NVL(<NUMERIC>, <NUMERIC>)");
+  }
+
+  /** Unit test for exception when XMLTRANSFORM function have wrong input. */
+  @Test void testFunXmltransformException() throws Exception {
+    final String sql = "SELECT XMLTRANSFORM('<',\n"
+        + " '<?xml version=\"1.0\"?><xsl:stylesheet version=\"1.0\"\n"
+        + " xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n"
+        + " </xsl:stylesheet>')";
+    CalciteAssert.that()
+        .with(CalciteAssert.Config.JDBC_FOODMART)
+        .with(CalciteConnectionProperty.FUN, "oracle")
+        .doWithConnection(connection -> {
+          try {
+            Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            rs.next();
+          } catch (CalciteException e) {
+            assertThat(e.getMessage(), containsString("Invalid input for XMLTRANSFORM xml: '<'"));
+          } catch (SQLException e) {
+            throw TestUtil.rethrow(e);
+          }
+        });
   }
 
   /** Unit test for LATERAL CROSS JOIN to table function. */
