@@ -184,6 +184,18 @@ public abstract class SqlTypeTransforms {
       (opBinding, typeToTransform) ->
           opBinding.getTypeFactory().createArrayType(typeToTransform, -1);
 
+  /** Parameter type-inference transform that transforms {@code T} to
+   * {@code MEASURE<T>} for some type T. */
+  public static final SqlTypeTransform TO_MEASURE =
+      (opBinding, typeToTransform) ->
+          MeasureSqlType.create(typeToTransform);
+
+  /** Parameter type-inference transform that transforms {@code MEASURE<T>} to
+   * {@code T} for some type T. Inverse of {@link #TO_MEASURE}. */
+  public static final SqlTypeTransform FROM_MEASURE =
+      (opBinding, typeToTransform) ->
+          ((MeasureSqlType) typeToTransform).types.get(0);
+
   /**
    * Parameter type-inference transform strategy that converts a two-field
    * record type to a MAP type.
