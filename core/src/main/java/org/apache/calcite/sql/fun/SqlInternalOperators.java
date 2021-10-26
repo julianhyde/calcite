@@ -107,8 +107,15 @@ public abstract class SqlInternalOperators {
   /** {@code M2A} aggregate function takes a measure as its argument and
    * returns a measure. It is used to propagate measures through the
    * {@code Aggregate} relational operator. */
-  public static final SqlOperator M2A =
-      SqlBasicAggFunction.create(SqlKind.M2A, ReturnTypes.ARG0,
+  public static final SqlOperator AGG_M2M =
+      SqlBasicAggFunction.create(SqlKind.AGG_M2M, ReturnTypes.ARG0,
+          OperandTypes.ANY);
+
+  /** {@code AGG_M2V} aggregate function takes a measure as its argument and
+   * returns value. */
+  public static final SqlOperator AGG_M2V =
+      SqlBasicAggFunction.create(SqlKind.AGG_M2V,
+          ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE),
           OperandTypes.ANY);
 
   /** An IN operator for Druid.
