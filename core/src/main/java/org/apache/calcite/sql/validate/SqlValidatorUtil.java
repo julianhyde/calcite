@@ -1273,7 +1273,7 @@ public class SqlValidatorUtil {
    * <p>For a measure, {@code selectItem} will have the form
    * {@code AS(MEASURE(exp), alias)} and this method returns {@code exp}. */
   @SuppressWarnings("SwitchStatementWithTooFewBranches")
-  public static SqlNode getMeasure(SqlNode selectItem) {
+  public static @Nullable SqlNode getMeasure(SqlNode selectItem) {
     switch (selectItem.getKind()) {
     case AS:
       final SqlBasicCall call = (SqlBasicCall) selectItem;
@@ -1371,6 +1371,7 @@ public class SqlValidatorUtil {
     /** Extra expressions, computed from the input as extra GROUP BY
      * expressions. For example, calls to the {@code TUMBLE} functions. */
     final List<SqlNode> extraExprs = new ArrayList<>();
+    final List<SqlNode> measureExprs = new ArrayList<>();
     final List<SqlNode> groupExprs = new ArrayList<>();
     final Map<Integer, Integer> groupExprProjection = new HashMap<>();
   }
