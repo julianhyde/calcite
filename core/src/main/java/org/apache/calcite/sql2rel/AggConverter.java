@@ -243,7 +243,7 @@ class AggConverter implements SqlVisitor<Void> {
   @Override public Void visit(SqlIdentifier id) {
     if (isMeasureExpr(id)) {
       final SqlCall call =
-          SqlInternalOperators.M2A.createCall(SqlParserPos.ZERO, id);
+          SqlInternalOperators.AGG_M2V.createCall(SqlParserPos.ZERO, id);
       final SqlValidator validator = bb.getValidator();
       validator.setValidatedNodeType(call,
           validator.getValidatedNodeType(id));
@@ -552,6 +552,14 @@ class AggConverter implements SqlVisitor<Void> {
             aggCallMapping,
             i -> convertedInputExprs.leftList().get(i).getType().isNullable());
     aggMapping.put(outerCall, rex);
+    if (aggFunction.kind == SqlKind.AGG_M2V
+        && !distinct
+        && filterArg < 0
+        && distinctKeys == null
+        && args.size() == 1) {
+      // Allow "AGG_M2V(m)" to also be accessed via "m"
+      aggMapping.put(outerCall.operand(0), rex);
+    }
   }
 
   private RelFieldCollation sortToFieldCollation(SqlNode expr,
