@@ -4520,6 +4520,14 @@ from (
   from emp)
 group by deptno]]>
     </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], COUNT_PLUS_10=[$1], MIN_JOB=[$2])
+  LogicalAggregate(group=[{0}], agg#0=[AGG_M2V($1)], MIN_JOB=[MIN($3)])
+    LogicalProject(DEPTNO=[$7], COUNT_PLUS_10=[V2M(+(COUNT(), 10))], E2=[V2M(+(CAST(+(COUNT(), 10)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9)))], JOB=[$2])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
   </TestCase>
   <TestCase name="testMeasureRef">
     <Resource name="sql">
