@@ -1838,7 +1838,7 @@ SqlNode SelectItem() :
     [
         [ <AS>
             [ <MEASURE> {
-                    e = SqlStdOperatorTable.MEASURE.createCall(
+                    e = SqlInternalOperators.MEASURE.createCall(
                         e.getParserPosition(), e);
                 }
             ]
