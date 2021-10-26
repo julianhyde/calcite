@@ -22,6 +22,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
@@ -38,10 +39,13 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.AggregatingSelectScope;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
@@ -237,6 +241,14 @@ class AggConverter implements SqlVisitor<Void> {
   }
 
   @Override public Void visit(SqlIdentifier id) {
+    if (isMeasureExpr(id)) {
+      final SqlCall call =
+          SqlInternalOperators.M2A.createCall(SqlParserPos.ZERO, id);
+      final SqlValidator validator = bb.getValidator();
+      validator.setValidatedNodeType(call,
+          validator.getValidatedNodeType(id));
+      translateAgg(call);
+    }
     return null;
   }
 

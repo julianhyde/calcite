@@ -21,6 +21,7 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlInternalOperator;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlMeasureOperator;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
@@ -30,6 +31,7 @@ import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.util.Litmus;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -86,6 +88,30 @@ public abstract class SqlInternalOperators {
    * if condition is not TRUE, otherwise returns TRUE. */
   public static final SqlInternalOperator THROW_UNLESS =
       new SqlInternalOperator("$THROW_UNLESS", SqlKind.OTHER);
+
+  /** <code>MEASURE</code> operator wraps an expression in the SELECT clause
+   * that is a measure. It always occurs inside a call to "AS". */
+  public static final SqlMeasureOperator MEASURE =
+      new SqlMeasureOperator();
+
+  /** {@code V2M} operator converts a measure to a value. */
+  public static final SqlOperator M2V =
+      new SqlInternalOperator("M2V", SqlKind.M2V, 2, true,
+          ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE), null,
+          OperandTypes.ANY);
+
+  /** {@code V2M} operator converts a value to a measure. */
+  public static final SqlOperator V2M =
+      new SqlInternalOperator("V2M", SqlKind.V2M, 2, true,
+          ReturnTypes.ARG0.andThen(SqlTypeTransforms.TO_MEASURE), null,
+          OperandTypes.ANY);
+
+  /** {@code M2A} aggregate function takes a measure as its argument and
+   * returns a measure. It is used to propagate measures through the
+   * {@code Aggregate} relational operator. */
+  public static final SqlOperator M2A =
+      SqlBasicAggFunction.create(SqlKind.M2A, ReturnTypes.ARG0,
+          OperandTypes.ANY);
 
   /** An IN operator for Druid.
    *
