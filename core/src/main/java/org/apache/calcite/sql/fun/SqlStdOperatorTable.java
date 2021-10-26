@@ -35,7 +35,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLateralOperator;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMatchFunction;
-import org.apache.calcite.sql.SqlMeasureOperator;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNullTreatmentOperator;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -183,13 +182,6 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * with an alias.
    */
   public static final SqlAsOperator AS = new SqlAsOperator();
-
-  /**
-   * <code>MEASURE</code> operator wraps an expression in the SELECT clause
-   * that is a measure. It always occurs inside a call to "AS".
-   */
-  public static final SqlMeasureOperator MEASURE =
-      new SqlMeasureOperator();
 
   /**
    * <code>ARGUMENT_ASSIGNMENT</code> operator (<code>=&lt;</code>)

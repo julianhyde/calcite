@@ -4633,7 +4633,6 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   /** As {@link #testMeasure1()} but uses an aggregate measure. */
-  @Disabled
   @Test void testMeasure3() {
     final String sql = "select deptno, count_plus_10, min(job) as min_job\n"
         + "from (\n"

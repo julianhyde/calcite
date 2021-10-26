@@ -319,6 +319,8 @@ public class RexSimplify {
     case TIMES:
     case DIVIDE:
       return simplifyArithmetic((RexCall) e);
+    case M2V:
+      return simplifyM2v((RexCall) e);
     default:
       if (e.getClass() == RexCall.class) {
         return simplifyGenericNode((RexCall) e);
@@ -2330,6 +2332,17 @@ public class RexSimplify {
       break;
     }
     return false;
+  }
+
+  private static RexNode simplifyM2v(RexCall e) {
+    final RexNode operand = e.getOperands().get(0);
+    switch (operand.getKind()) {
+    case V2M:
+      // M2V(V2M(x))  -->  x
+      return ((RexCall) operand).operands.get(0);
+    default:
+      return e;
+    }
   }
 
   /** Removes any casts that change nullability but not type.
