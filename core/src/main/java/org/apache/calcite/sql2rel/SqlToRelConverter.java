@@ -135,6 +135,7 @@ import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlInOperator;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -588,6 +589,7 @@ public class SqlToRelConverter {
 
     RelNode result = convertQueryRecursive(query, top, null).rel;
     if (top) {
+      result = unwrapMeasures(result);
       if (isStream(query)) {
         result = new LogicalDelta(cluster, result.getTraitSet(), result);
       }
@@ -620,6 +622,23 @@ public class SqlToRelConverter {
     return RelRoot.of(result, validatedRowType, query.getKind())
         .withCollation(collation)
         .withHints(hints);
+  }
+
+  /** If any of the fields of {@code r} are measures, wraps them in calls to
+   * the {@code M2V} function. */
+  private RelNode unwrapMeasures(RelNode r) {
+    if (r.getRowType().getFieldList().stream()
+        .anyMatch(f -> f.getType().getSqlTypeName() == SqlTypeName.MEASURE)) {
+      return relBuilder.push(r)
+          .project(relBuilder.fields()
+              .stream()
+              .map(e -> e.getType().getSqlTypeName() == SqlTypeName.MEASURE
+                  ? relBuilder.call(SqlInternalOperators.M2V, e)
+                  : e)
+          .collect(Util.toImmutableList()))
+          .build();
+    }
+    return r;
   }
 
   private static boolean isStream(SqlNode query) {
@@ -3208,8 +3227,11 @@ public class SqlToRelConverter {
         aggConverter.aggregatingSelectScope,
         "aggregatingSelectScope");
     final AggregatingSelectScope.Resolved r = scope.resolved.get();
-    for (SqlNode groupExpr : r.groupExprList) {
-      aggConverter.addGroupExpr(groupExpr);
+    for (SqlNode e : r.groupExprList) {
+      aggConverter.addGroupExpr(e);
+    }
+    for (SqlNode e : r.measureExprList) {
+      aggConverter.addMeasureExpr(e);
     }
 
     final RexNode havingExpr;
@@ -3324,11 +3346,9 @@ public class SqlToRelConverter {
       bb.agg = null;
     }
 
-    // implement HAVING (we have already checked that it is non-trivial)
-    relBuilder.push(bb.root());
-    if (havingExpr != null) {
-      relBuilder.filter(havingExpr);
-    }
+    // implement HAVING (no-ops if HAVING is TRUE)
+    relBuilder.push(bb.root())
+        .filter(havingExpr);
 
     // implement the SELECT list
     relBuilder.project(Pair.left(projects), Pair.right(projects))
@@ -4351,7 +4371,8 @@ public class SqlToRelConverter {
       final SqlNode measure = SqlValidatorUtil.getMeasure(expr);
       final RexNode e;
       if (measure != null) {
-        e = measureBb.convertExpression(measure);
+        final RexNode m = measureBb.convertExpression(measure);
+        e = rexBuilder.makeCall(SqlInternalOperators.V2M, m);
       } else {
         e = bb.convertExpression(expr);
       }
@@ -4980,11 +5001,17 @@ public class SqlToRelConverter {
         if (ref >= 0) {
           return rexBuilder.makeInputRef(root(), ref);
         }
+
         if (expr instanceof SqlCall) {
           final RexNode rex = agg.lookupAggregates((SqlCall) expr);
           if (rex != null) {
             return rex;
           }
+        }
+
+        final RexNode rex = agg.lookupMeasure(expandedGroupExpr);
+        if (rex != null) {
+          return rex;
         }
       }
 
@@ -5415,6 +5442,10 @@ public class SqlToRelConverter {
     private final Map<SqlNode, Ord<AuxiliaryConverter>> auxiliaryGroupExprs =
         new HashMap<>();
 
+    /** Measure expressions, in {@link SqlNode} format. */
+    private final SqlNodeList measureExprs =
+        new SqlNodeList(SqlParserPos.ZERO);
+
     /**
      * Input expressions for the group columns and aggregates, in
      * {@link RexNode} format. The first elements of the list correspond to the
@@ -5508,6 +5539,18 @@ public class SqlToRelConverter {
       auxiliaryGroupExprs.put(node, Ord.of(index, converter));
     }
 
+    public boolean addMeasureExpr(SqlNode expr) {
+      if (isMeasureExpr(expr)) {
+        return false; // already present
+      }
+      final int index = measureExprs.size();
+      measureExprs.add(expr);
+      String name = nameMap.get(expr.toString());
+      RexNode convExpr = bb.convertExpression(expr);
+      addExpr(convExpr, name);
+      return true;
+    }
+
     /**
      * Adds an expression, deducing an appropriate name if possible.
      *
@@ -5528,13 +5571,16 @@ public class SqlToRelConverter {
     }
 
     @Override public Void visit(SqlIdentifier id) {
+      if (isMeasureExpr(id)) {
+        SqlCall call = SqlInternalOperators.M2A.createCall(SqlParserPos.ZERO, id);
+        validator.setValidatedNodeType(call, validator.getValidatedNodeType(id));
+        translateAgg(call);
+      }
       return null;
     }
 
     @Override public Void visit(SqlNodeList nodeList) {
-      for (int i = 0; i < nodeList.size(); i++) {
-        nodeList.get(i).accept(this);
-      }
+      nodeList.forEach(this::visitNode);
       return null;
     }
 
@@ -5864,13 +5910,15 @@ public class SqlToRelConverter {
      * null.
      */
     public int lookupGroupExpr(SqlNode expr) {
-      for (int i = 0; i < groupExprs.size(); i++) {
-        SqlNode groupExpr = groupExprs.get(i);
-        if (expr.equalsDeep(groupExpr, Litmus.IGNORE)) {
-          return i;
-        }
-      }
-      return -1;
+      return SqlUtil.indexOfDeep(groupExprs, expr, Litmus.IGNORE);
+    }
+
+    public boolean isMeasureExpr(SqlNode expr) {
+      return SqlUtil.indexOfDeep(measureExprs, expr, Litmus.IGNORE) >= 0;
+    }
+
+    public @Nullable RexNode lookupMeasure(SqlNode expr) {
+      return aggMapping.get(expr);
     }
 
     public @Nullable RexNode lookupAggregates(SqlCall call) {

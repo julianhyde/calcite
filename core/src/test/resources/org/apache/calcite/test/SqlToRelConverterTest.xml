@@ -3854,7 +3854,7 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
+LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
@@ -3869,9 +3869,21 @@ LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 9), 
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], $f2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testMeasure3">
+    <Resource name="sql">
+      <![CDATA[select deptno, count_plus_10, min(job) as min_job
+from (
+  select deptno,
+    job,
+    count(*) + 10 as measure count_plus_10,
+    count_plus_10 + deptno as measure e2
+  from emp)
+group by deptno]]>
     </Resource>
   </TestCase>
   <TestCase name="testModeFunction">
