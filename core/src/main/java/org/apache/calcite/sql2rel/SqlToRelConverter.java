@@ -144,6 +144,7 @@ import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlInOperator;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -601,6 +602,7 @@ public class SqlToRelConverter {
 
     RelNode result = convertQueryRecursive(query, top, null).rel;
     if (top) {
+      result = unwrapMeasures(result);
       if (isStream(query)) {
         result = new LogicalDelta(cluster, result.getTraitSet(), result);
       }
@@ -638,6 +640,23 @@ public class SqlToRelConverter {
     return RelRoot.of(result, validatedRowType, query.getKind())
         .withCollation(collation)
         .withHints(hints);
+  }
+
+  /** If any of the fields of {@code r} are measures, wraps them in calls to
+   * the {@code M2V} function. */
+  private RelNode unwrapMeasures(RelNode r) {
+    if (r.getRowType().getFieldList().stream()
+        .anyMatch(f -> f.getType().getSqlTypeName() == SqlTypeName.MEASURE)) {
+      return relBuilder.push(r)
+          .project(relBuilder.fields()
+              .stream()
+              .map(e -> e.getType().getSqlTypeName() == SqlTypeName.MEASURE
+                  ? relBuilder.call(SqlInternalOperators.M2V, e)
+                  : e)
+          .collect(Util.toImmutableList()))
+          .build();
+    }
+    return r;
   }
 
   private static boolean isStream(SqlNode query) {
@@ -3516,9 +3535,9 @@ public class SqlToRelConverter {
       bb.agg = null;
     }
 
-    // implement HAVING (we have already checked that it is non-trivial)
-    relBuilder.push(bb.root());
-    relBuilder.filter(havingExpr);
+    // implement HAVING (no-ops if HAVING is TRUE)
+    relBuilder.push(bb.root())
+        .filter(havingExpr);
 
     // implement the SELECT list
     relBuilder.project(projects.leftList(), projects.rightList())
@@ -4300,7 +4319,7 @@ public class SqlToRelConverter {
       pv = identifier.names.get(0);
     }
 
-    final SqlNode measure = bb.lookupMeasure(identifier);
+    final @Nullable SqlNode measure = bb.lookupMeasure(identifier);
     if (measure != null) {
       return bb.convertExpression(measure);
     }
@@ -4537,7 +4556,8 @@ public class SqlToRelConverter {
       final SqlNode measure = SqlValidatorUtil.getMeasure(expr);
       final RexNode e;
       if (measure != null) {
-        e = measureBb.convertExpression(measure);
+        final RexNode m = measureBb.convertExpression(measure);
+        e = rexBuilder.makeCall(SqlInternalOperators.V2M, m);
       } else {
         e = bb.convertExpression(expr);
       }
@@ -5297,11 +5317,17 @@ public class SqlToRelConverter {
         if (ref >= 0) {
           return rexBuilder.makeInputRef(root(), ref);
         }
+
         if (expr instanceof SqlCall) {
           final RexNode rex = agg.lookupAggregates((SqlCall) expr);
           if (rex != null) {
             return rex;
           }
+        }
+
+        final RexNode rex = agg.lookupMeasure(expandedGroupExpr);
+        if (rex != null) {
+          return rex;
         }
       }
 
