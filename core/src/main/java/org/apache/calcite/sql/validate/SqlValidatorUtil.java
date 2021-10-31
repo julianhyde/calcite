@@ -1400,6 +1400,12 @@ public class SqlValidatorUtil {
     final List<SqlNode> measureExprs = new ArrayList<>();
     final List<SqlNode> groupExprs = new ArrayList<>();
     final Map<Integer, Integer> groupExprProjection = new HashMap<>();
+    final List<ImmutableBitSet> flatGroupSets = new ArrayList<>();
+
+    AggregatingSelectScope.Resolved finish() {
+      return new AggregatingSelectScope.Resolved(extraExprs, measureExprs,
+          groupExprs, flatGroupSets, groupExprProjection);
+    }
   }
 
   /**
