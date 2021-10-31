@@ -29,6 +29,8 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.SqlValidatorTestCase;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.sql.ResultSet;
 import java.util.function.UnaryOperator;
 
@@ -273,7 +275,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
   void check(
       String query,
       TypeChecker typeChecker,
-      Object result,
+      @Nullable Object result,
       double delta);
 
   /**
@@ -282,12 +284,10 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
    * and {@link ResultChecker} functors.
    *
    * @param query         SQL query
-   * @param typeChecker   Checks whether the result is the expected type; must
-   *                      not be null
+   * @param typeChecker   Checks whether the result is the expected type
    * @param parameterChecker Checks whether the parameters are of expected
    *                      types
-   * @param resultChecker Checks whether the result has the expected value;
-   *                      must not be null
+   * @param resultChecker Checks whether the result has the expected value
    */
   void check(
       String query,
@@ -439,7 +439,8 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
    * @see #forEachQueryValidateAndThen
    */
   interface ValidatedNodeConsumer {
-    void accept(String sql, SqlValidator validator, SqlNode validatedNode);
+    void accept(StringAndPos sap, SqlValidator validator,
+        SqlNode validatedNode);
   }
 
   /** A function to apply to the result of validation.
@@ -448,6 +449,6 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
    *
    * @see #validateAndApply */
   interface ValidatedNodeFunction<R> {
-    R apply(String sql, SqlValidator validator, SqlNode validatedNode);
+    R apply(StringAndPos sap, SqlValidator validator, SqlNode validatedNode);
   }
 }

@@ -19,6 +19,7 @@ package org.apache.calcite.sql.test;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.function.UnaryOperator;
 
@@ -64,12 +65,12 @@ class SqlRuntimeTester extends AbstractSqlTester {
 
   public void assertExceptionIsThrown(
       StringAndPos sap,
-      String expectedMsgPattern) {
+      @Nullable String expectedMsgPattern) {
     assertExceptionIsThrown(sap, expectedMsgPattern, false);
   }
 
   public void assertExceptionIsThrown(StringAndPos sap,
-      String expectedMsgPattern, boolean runtime) {
+      @Nullable String expectedMsgPattern, boolean runtime) {
     final SqlNode sqlNode;
     try {
       sqlNode = parseQuery(sap.sql);

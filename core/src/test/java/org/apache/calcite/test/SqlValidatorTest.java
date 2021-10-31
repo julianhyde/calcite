@@ -9130,8 +9130,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testFieldOrigin() {
-    tester.checkFieldOrigin("select * from emp join dept on true",
-        "{CATALOG.SALES.EMP.EMPNO,"
+    sql("select * from emp join dept on true")
+        .assertFieldOrigin(
+            is("{CATALOG.SALES.EMP.EMPNO,"
             + " CATALOG.SALES.EMP.ENAME,"
             + " CATALOG.SALES.EMP.JOB,"
             + " CATALOG.SALES.EMP.MGR,"
@@ -9141,15 +9142,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + " CATALOG.SALES.EMP.DEPTNO,"
             + " CATALOG.SALES.EMP.SLACKER,"
             + " CATALOG.SALES.DEPT.DEPTNO,"
-            + " CATALOG.SALES.DEPT.NAME}");
+            + " CATALOG.SALES.DEPT.NAME}"));
 
-    tester.checkFieldOrigin("select distinct emp.empno, hiredate, 1 as uno,\n"
-            + " emp.empno * 2 as twiceEmpno\n"
-            + "from emp join dept on true",
-        "{CATALOG.SALES.EMP.EMPNO,"
-            + " CATALOG.SALES.EMP.HIREDATE,"
-            + " null,"
-            + " null}");
+    sql("select distinct emp.empno, hiredate, 1 as uno,\n"
+        + " emp.empno * 2 as twiceEmpno\n"
+        + "from emp join dept on true")
+        .assertFieldOrigin(
+            is("{CATALOG.SALES.EMP.EMPNO,"
+                + " CATALOG.SALES.EMP.HIREDATE,"
+                + " null,"
+                + " null}"));
   }
 
   @Test void testBrackets() {
