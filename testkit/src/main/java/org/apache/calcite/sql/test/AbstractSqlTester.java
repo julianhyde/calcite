@@ -59,12 +59,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.UnaryOperator;
 
-import static java.util.Objects.requireNonNull;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Abstract implementation of
@@ -379,9 +379,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       ParameterChecker parameterChecker, ResultChecker resultChecker) {
     // This implementation does NOT check the result!
     // All it does is check the return type.
-    requireNonNull(typeChecker);
-    requireNonNull(parameterChecker);
-    requireNonNull(resultChecker);
+    requireNonNull(typeChecker, "typeChecker");
+    requireNonNull(parameterChecker, "parameterChecker");
+    requireNonNull(resultChecker, "resultChecker");
 
     // Parse and validate. There should be no errors.
     // There must be 1 column. Get its type.

@@ -19,6 +19,7 @@ package org.apache.calcite.sql.test;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlValidator;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.function.UnaryOperator;
