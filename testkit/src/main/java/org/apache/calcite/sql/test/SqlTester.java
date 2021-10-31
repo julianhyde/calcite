@@ -194,7 +194,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
    */
   void checkBoolean(
       String expression,
-      Boolean result);
+      @Nullable Boolean result);
 
   /**
    * Tests that a scalar SQL expression returns the expected string result.

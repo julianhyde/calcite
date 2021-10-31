@@ -57,7 +57,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static java.util.Objects.requireNonNull;
@@ -340,9 +339,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
   @Override public void checkBoolean(
       String expression,
-      Boolean result) {
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(), 0);
+      @Nullable Boolean result) {
+    if (null == result) {
+      checkNull(expression);
+    } else {
+      for (String sql : buildQueries(expression)) {
+        check(sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(), 0);
+      }
     }
   }
 
