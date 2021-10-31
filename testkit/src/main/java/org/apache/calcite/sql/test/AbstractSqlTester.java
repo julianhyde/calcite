@@ -48,6 +48,7 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 
 import java.util.ArrayList;
@@ -58,6 +59,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
+
+import static java.util.Objects.requireNonNull;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -78,8 +81,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
   public AbstractSqlTester(SqlTestFactory factory,
       UnaryOperator<SqlValidator> validatorTransform) {
-    this.factory = Objects.requireNonNull(factory, "factory");
-    this.validatorTransform = Objects.requireNonNull(validatorTransform, "validatorTransform");
+    this.factory = requireNonNull(factory, "factory");
+    this.validatorTransform = requireNonNull(validatorTransform, "validatorTransform");
   }
 
   @Override public final SqlTestFactory getFactory() {
@@ -104,7 +107,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   @Override public void assertExceptionIsThrown(StringAndPos sap,
-      String expectedMsgPattern) {
+      @Nullable String expectedMsgPattern) {
     final SqlValidator validator;
     final SqlNode sqlNode;
     try {
@@ -125,13 +128,15 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     SqlTests.checkEx(thrown, expectedMsgPattern, sap, SqlTests.Stage.VALIDATE);
   }
 
-  protected void checkParseEx(Throwable e, String expectedMsgPattern,
+  protected void checkParseEx(Throwable e, @Nullable String expectedMsgPattern,
       StringAndPos sap) {
     try {
       throw e;
     } catch (SqlParseException spe) {
       String errMessage = spe.getMessage();
-      if (errMessage == null
+      if (expectedMsgPattern == null) {
+        throw new RuntimeException("Error while parsing query:" + sap, spe);
+      } else if (errMessage == null
           || !errMessage.matches(expectedMsgPattern)) {
         throw new RuntimeException("Error did not match expected ["
             + expectedMsgPattern + "] while parsing query ["
@@ -143,9 +148,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   @Override public RelDataType getColumnType(String sql) {
-    return validateAndApply(sql, (sql1, validator, validatedNode) -> {
+    return validateAndApply(StringAndPos.of(sql), (sql1, validator, n) -> {
       final RelDataType rowType =
-          validator.getValidatedNodeType(validatedNode);
+          validator.getValidatedNodeType(n);
       final List<RelDataTypeField> fields = rowType.getFieldList();
       assertThat("expected query to return 1 field", fields.size(), is(1));
       return fields.get(0).getType();
@@ -153,8 +158,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   @Override public RelDataType getResultType(String sql) {
-    return validateAndApply(sql, (sql1, validator, validatedNode) ->
-        validator.getValidatedNodeType(validatedNode));
+    return validateAndApply(StringAndPos.of(sql), (sql1, validator, n) ->
+        validator.getValidatedNodeType(n));
   }
 
   @Override public SqlNode parseAndValidate(SqlValidator validator, String sql) {
@@ -173,7 +178,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   @Override public void checkColumnType(String sql, String expected) {
-    validateAndThen(sql, checkColumnTypeAction(is(expected)));
+    validateAndThen(StringAndPos.of(sql), checkColumnTypeAction(is(expected)));
   }
 
   private ValidatedNodeConsumer checkColumnTypeAction(Matcher<String> matcher) {
@@ -189,7 +194,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   }
 
   @Override public void checkType(String expression, String type) {
-    forEachQueryValidateAndThen(expression, checkColumnTypeAction(is(type)));
+    forEachQueryValidateAndThen(StringAndPos.of(expression),
+        checkColumnTypeAction(is(type)));
   }
 
   @Override public SqlTester withQuoting(Quoting quoting) {
@@ -360,7 +366,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   @Override public final void check(
       String query,
       TypeChecker typeChecker,
-      Object result,
+      @Nullable Object result,
       double delta) {
     check(query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
         SqlTests.createChecker(result, delta));
@@ -370,18 +376,16 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       ParameterChecker parameterChecker, ResultChecker resultChecker) {
     // This implementation does NOT check the result!
     // All it does is check the return type.
+    requireNonNull(typeChecker);
+    requireNonNull(parameterChecker);
+    requireNonNull(resultChecker);
 
-    if (typeChecker == null) {
-      // Parse and validate. There should be no errors.
-      Util.discard(getResultType(query));
-    } else {
-      // Parse and validate. There should be no errors.
-      // There must be 1 column. Get its type.
-      RelDataType actualType = getColumnType(query);
+    // Parse and validate. There should be no errors.
+    // There must be 1 column. Get its type.
+    RelDataType actualType = getColumnType(query);
 
-      // Check result type.
-      typeChecker.checkType(actualType);
-    }
+    // Check result type.
+    typeChecker.checkType(actualType);
 
     SqlValidator validator = getValidator();
     SqlNode n = parseAndValidate(validator, query);
@@ -389,24 +393,24 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     parameterChecker.checkParameters(parameterRowType);
   }
 
-  @Override public void validateAndThen(String query,
+  @Override public void validateAndThen(StringAndPos sap,
       ValidatedNodeConsumer consumer) {
     final SqlValidator validator = validatorTransform.apply(getValidator());
-    SqlNode rewrittenNode = parseAndValidate(validator, query);
-    consumer.accept(query, validator, rewrittenNode);
+    SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
+    consumer.accept(sap, validator, rewrittenNode);
   }
 
-  @Override public <R> R validateAndApply(String query,
+  @Override public <R> R validateAndApply(StringAndPos sap,
       ValidatedNodeFunction<R> function) {
     final SqlValidator validator = validatorTransform.apply(getValidator());
-    SqlNode rewrittenNode = parseAndValidate(validator, query);
-    return function.apply(query, validator, rewrittenNode);
+    SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
+    return function.apply(sap, validator, rewrittenNode);
   }
 
-  @Override public void forEachQueryValidateAndThen(String expression,
+  @Override public void forEachQueryValidateAndThen(StringAndPos expression,
       ValidatedNodeConsumer consumer) {
-    buildQueries(expression)
-        .forEach(query -> validateAndThen(query, consumer));
+    buildQueries(expression.addCarets())
+        .forEach(query -> validateAndThen(StringAndPos.of(query), consumer));
   }
 
   @Override public void checkFails(StringAndPos sap, String expectedError,

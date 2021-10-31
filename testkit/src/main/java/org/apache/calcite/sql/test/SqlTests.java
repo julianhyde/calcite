@@ -27,6 +27,8 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.Arrays;
@@ -345,8 +347,8 @@ public abstract class SqlTests {
    * @param sap                Query and (optional) position in query
    * @param stage              Query processing stage
    */
-  public static void checkEx(Throwable ex,
-      String expectedMsgPattern,
+  public static void checkEx(@Nullable Throwable ex,
+      @Nullable String expectedMsgPattern,
       StringAndPos sap,
       Stage stage) {
     if (null == ex) {
@@ -574,7 +576,7 @@ public abstract class SqlTests {
     }
   }
 
-  public static ResultChecker createChecker(Object result, double delta) {
+  public static ResultChecker createChecker(@Nullable Object result, double delta) {
     if (result instanceof Pattern) {
       return new PatternResultChecker((Pattern) result);
     } else if (delta != 0) {
