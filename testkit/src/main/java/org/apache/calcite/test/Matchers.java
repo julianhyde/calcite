@@ -37,6 +37,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.hamcrest.core.Is;
 import org.hamcrest.core.StringContains;
 
+import java.nio.charset.Charset;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -305,6 +306,25 @@ public class Matchers {
 
       @Override public void describeTo(Description description) {
         description.appendText("is ").appendText(expected.toString());
+      }
+    };
+  }
+
+  /**
+   * Creates a matcher that matches if the examined value has a given name.
+   *
+   * @param charsetName Name of character set
+   *
+   * @see Charset#forName
+   */
+  public static Matcher<Charset> isCharset(String charsetName) {
+    return new TypeSafeMatcher<Charset>() {
+      @Override public void describeTo(Description description) {
+        description.appendText("is charset ").appendText(charsetName);
+      }
+
+      @Override protected boolean matchesSafely(Charset item) {
+        return item.name().equals(charsetName);
       }
     };
   }
