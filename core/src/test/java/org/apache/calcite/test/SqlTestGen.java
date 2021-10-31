@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
@@ -31,7 +30,6 @@ import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -117,43 +115,11 @@ class SqlTestGen {
           }
         }
 
-        @Override public void checkColumnType(String sql, String expected) {
+        @Override public void validateAndThen(String query, ValidatedNodeConsumer consumer) {
         }
 
-        @Override public void checkResultType(String sql, String expected) {
-        }
-
-        public void checkType(
-            String sql,
-            String expected) {
-          // We could generate the SQL -- or maybe describe -- but
-          // ignore it for now.
-        }
-
-        public void checkCollation(
-            String expression,
-            String expectedCollationName,
-            SqlCollation.Coercibility expectedCoercibility) {
-          // We could generate the SQL -- or maybe describe -- but
-          // ignore it for now.
-        }
-
-        public void checkCharset(
-            String expression,
-            Charset expectedCharset) {
-          // We could generate the SQL -- or maybe describe -- but
-          // ignore it for now.
-        }
-
-        @Override public void checkIntervalConv(String sql, String expected) {
-        }
-
-        @Override public void checkRewrite(String query, String expectedRewrite) {
-        }
-
-        @Override public void checkFieldOrigin(
-            String sql,
-            String fieldOriginList) {
+        @Override public void forEachQueryValidateAndThen(String expression,
+            ValidatedNodeConsumer consumer) {
         }
       };
     }

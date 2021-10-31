@@ -20,34 +20,51 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCollation;
+import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.AbstractSqlTester;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
+import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.testlib.annotations.WithLex;
+import org.apache.calcite.util.TestUtil;
+import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
 
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
+import static org.apache.calcite.sql.SqlUtil.stripAs;
+
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * An abstract base class for implementing tests against {@link SqlValidator}.
@@ -138,6 +155,22 @@ public class SqlValidatorTestCase {
 
     SqlNode parseAndValidate(SqlValidator validator, String sql);
 
+    /** Parses and validates a query, then calls an action on the result. */
+    void validateAndThen(String query,
+        SqlTester.ValidatedNodeConsumer consumer);
+
+    /** Parses and validates a query, then applies a function to the result.
+     *
+     * @param <R> Result type */
+    <R> R validateAndApply(String query,
+        SqlTester.ValidatedNodeFunction<R> function);
+
+    /** Given an expression, generates several queries that include that
+     * expression, and for each, parses and validates, then calls an action on
+     * the result. */
+    void forEachQueryValidateAndThen(String expression,
+        SqlTester.ValidatedNodeConsumer consumer);
+
     SqlValidator getValidator();
 
     /**
@@ -179,15 +212,6 @@ public class SqlValidatorTestCase {
      */
     RelDataType getResultType(String sql);
 
-    void checkCollation(
-        String sql,
-        String expectedCollationName,
-        SqlCollation.Coercibility expectedCoercibility);
-
-    void checkCharset(
-        String sql,
-        Charset expectedCharset);
-
     /**
      * Checks that a query returns one column of an expected type. For
      * example, <code>checkType("VALUES (1 + 2)", "INTEGER NOT
@@ -201,46 +225,35 @@ public class SqlValidatorTestCase {
      * Given a SQL query, returns a list of the origins of each result
      * field.
      *
-     * @param sql             SQL query
+     * @param query           SQL query
      * @param fieldOriginList Field origin list, e.g.
      *                        "{(CATALOG.SALES.EMP.EMPNO, null)}"
      */
-    void checkFieldOrigin(String sql, String fieldOriginList);
-
-    /**
-     * Checks that a query gets rewritten to an expected form.
-     *
-     * @param query           query to test
-     * @param expectedRewrite expected SQL text after rewrite and unparse
-     */
-    void checkRewrite(String query, String expectedRewrite);
-
-    /**
-     * Checks that a query returns one column of an expected type. For
-     * example, <code>checkType("select empno, name from emp""{EMPNO INTEGER
-     * NOT NULL, NAME VARCHAR(10) NOT NULL}")</code>.
-     */
-    void checkResultType(
-        String sql,
-        String expected);
-
-    /**
-     * Checks if the interval value conversion to milliseconds is valid. For
-     * example, <code>checkIntervalConv(VALUES (INTERVAL '1' Minute),
-     * "60000")</code>.
-     */
-    void checkIntervalConv(
-        String sql,
-        String expected);
-
-    /**
-     * Given a SQL query, returns the monotonicity of the first item in the
-     * SELECT clause.
-     *
-     * @param sql SQL query
-     * @return Monotonicity
-     */
-    SqlMonotonicity getMonotonicity(String sql);
+    default void checkFieldOrigin(String query, String fieldOriginList) {
+      validateAndThen(query, (sql, validator, n) -> {
+        final List<List<String>> list = validator.getFieldOrigins(n);
+        final StringBuilder buf = new StringBuilder("{");
+        int i = 0;
+        for (List<String> strings : list) {
+          if (i++ > 0) {
+            buf.append(", ");
+          }
+          if (strings == null) {
+            buf.append("null");
+          } else {
+            int j = 0;
+            for (String s : strings) {
+              if (j++ > 0) {
+                buf.append('.');
+              }
+              buf.append(s);
+            }
+          }
+        }
+        buf.append("}");
+        assertEquals(fieldOriginList, buf.toString());
+      });
+    }
 
     SqlConformance getConformance();
   }
@@ -349,7 +362,11 @@ public class SqlValidatorTestCase {
      * @param expectedType Expected row type
      */
     public Sql type(String expectedType) {
-      tester.checkResultType(sap.sql, expectedType);
+      tester.validateAndThen(sap.sql, (sql1, validator, n) -> {
+        RelDataType actualType = validator.getValidatedNodeType(n);
+        String actual = SqlTests.getTypeString(actualType);
+        assertThat(actual, is(expectedType));
+      });
       return this;
     }
 
@@ -368,25 +385,55 @@ public class SqlValidatorTestCase {
       return this;
     }
 
-    public Sql monotonic(SqlMonotonicity expectedMonotonicity) {
-      tester.checkMonotonic(toSql(false).sql, expectedMonotonicity);
+    /**
+     * Tests that the first column of the query has a given monotonicity.
+     *
+     * @param matcher Expected monotonicity
+     */
+    public Sql assertMonotonicity(Matcher<SqlMonotonicity> matcher) {
+      tester.validateAndThen(toSql(false).sql,
+          (sql, validator, n) -> {
+            final RelDataType rowType = validator.getValidatedNodeType(n);
+            final SqlValidatorNamespace selectNamespace =
+                validator.getNamespace(n);
+            final String field0 = rowType.getFieldList().get(0).getName();
+            final SqlMonotonicity monotonicity =
+                selectNamespace.getMonotonicity(field0);
+            assertThat(monotonicity, matcher);
+          });
       return this;
     }
 
-    public Sql bindType(final String bindType) {
+    public Sql assertBindType(Matcher<String> matcher) {
       tester.check(sap.sql, null, parameterRowType ->
-          assertThat(parameterRowType.toString(), is(bindType)),
+          assertThat(parameterRowType.toString(), matcher),
           result -> { });
       return this;
     }
 
-    public void charset(Charset expectedCharset) {
-      tester.checkCharset(sap.sql, expectedCharset);
+    public void assertCharset(Matcher<Charset> charsetMatcher) {
+      tester.forEachQueryValidateAndThen(sap.sql, (sql, validator, n) -> {
+        final RelDataType rowType = validator.getValidatedNodeType(n);
+        final List<RelDataTypeField> fields = rowType.getFieldList();
+        assertThat("expected query to return 1 field", fields.size(), is(1));
+        RelDataType actualType = fields.get(0).getType();
+        Charset actualCharset = actualType.getCharset();
+        assertThat(actualCharset, charsetMatcher);
+      });
     }
 
-    public void collation(String expectedCollationName,
-        SqlCollation.Coercibility expectedCoercibility) {
-      tester.checkCollation(sap.sql, expectedCollationName, expectedCoercibility);
+    public void assertCollation(Matcher<String> collationMatcher,
+        Matcher<SqlCollation.Coercibility> coercibilityMatcher) {
+      tester.forEachQueryValidateAndThen(sap.sql, (sql, validator, n) -> {
+        RelDataType rowType = validator.getValidatedNodeType(n);
+        final List<RelDataTypeField> fields = rowType.getFieldList();
+        assertThat("expected query to return 1 field", fields.size(), is(1));
+        RelDataType actualType = fields.get(0).getType();
+        SqlCollation collation = actualType.getCollation();
+        assertThat(collation, notNullValue());
+        assertThat(collation.getCollationName(), collationMatcher);
+        assertThat(collation.getCoercibility(), coercibilityMatcher);
+      });
     }
 
     /**
@@ -397,8 +444,29 @@ public class SqlValidatorTestCase {
      *   <code>sql("VALUES (INTERVAL '1' Minute)").intervalConv("60000");</code>
      * </blockquote>
      */
-    public void intervalConv(String expected) {
-      tester.checkIntervalConv(toSql(false).sql, expected);
+    public void assertInterval(Matcher<Long> matcher) {
+      tester.validateAndThen(toSql(false).sql,
+          (sql, validator, validatedNode) -> {
+            final SqlCall n = (SqlCall) validatedNode;
+            SqlNode node = null;
+            for (int i = 0; i < n.operandCount(); i++) {
+              node = stripAs(n.operand(i));
+              if (node instanceof SqlCall) {
+                node = ((SqlCall) node).operand(0);
+                break;
+              }
+            }
+
+            assertNotNull(node);
+            SqlIntervalLiteral intervalLiteral = (SqlIntervalLiteral) node;
+            SqlIntervalLiteral.IntervalValue interval =
+                intervalLiteral.getValueAs(SqlIntervalLiteral.IntervalValue.class);
+            long l =
+                interval.getIntervalQualifier().isYearMonth()
+                    ? SqlParserUtil.intervalToMonths(interval)
+                    : SqlParserUtil.intervalToMillis(interval);
+            assertThat(l, matcher);
+          });
     }
 
     public Sql withCaseSensitive(boolean caseSensitive) {
@@ -437,7 +505,21 @@ public class SqlValidatorTestCase {
     }
 
     public Sql rewritesTo(String expected) {
-      tester.checkRewrite(toSql(false).sql, expected);
+      tester.validateAndThen(toSql(false).sql,
+          (sql, validator, validatedNode) -> {
+            String actualRewrite =
+                validatedNode.toSqlString(AnsiSqlDialect.DEFAULT, false)
+                    .getSql();
+            TestUtil.assertEqualsVerbose(expected, Util.toLinux(actualRewrite));
+          });
+      return this;
+    }
+
+    public Sql isAggregate(Matcher<Boolean> matcher) {
+      tester.validateAndThen(toSql(false).sql,
+          (sql, validator, validatedNode) ->
+              assertThat(validator.isAggregate((SqlSelect) validatedNode),
+                  matcher));
       return this;
     }
   }

@@ -72,7 +72,6 @@ import org.slf4j.LoggerFactory;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +79,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static org.apache.calcite.test.Matchers.isCharset;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -705,7 +706,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testConcatWithCharset() {
     sql("_UTF16'a'||_UTF16'b'||_UTF16'c'")
-        .charset(Charset.forName("UTF-16LE"));
+        .assertCharset(isCharset("UTF-16LE"));
   }
 
   @Test void testConcatFails() {
@@ -791,9 +792,11 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     expr("'s' collate latin1$en$1")
         .columnType("CHAR(1)");
     sql("'s'")
-        .collation("ISO-8859-1$en_US$primary", SqlCollation.Coercibility.COERCIBLE);
+        .assertCollation(is("ISO-8859-1$en_US$primary"),
+            is(SqlCollation.Coercibility.COERCIBLE));
     sql("'s' collate latin1$sv$3")
-        .collation("ISO-8859-1$sv$3", SqlCollation.Coercibility.EXPLICIT);
+        .assertCollation(is("ISO-8859-1$sv$3"),
+            is(SqlCollation.Coercibility.EXPLICIT));
   }
 
   public void _testCharsetAndCollateMismatch() {
@@ -820,11 +823,14 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   public void _testDyadicCollateOperator() {
     sql("'a' || 'b'")
-        .collation("ISO-8859-1$en_US$primary", SqlCollation.Coercibility.COERCIBLE);
+        .assertCollation(is("ISO-8859-1$en_US$primary"),
+            is(SqlCollation.Coercibility.COERCIBLE));
     sql("'a' collate latin1$sv$3 || 'b'")
-        .collation("ISO-8859-1$sv$3", SqlCollation.Coercibility.EXPLICIT);
+        .assertCollation(is("ISO-8859-1$sv$3"),
+            is(SqlCollation.Coercibility.EXPLICIT));
     sql("'a' collate latin1$sv$3 || 'b' collate latin1$sv$3")
-        .collation("ISO-8859-1$sv$3", SqlCollation.Coercibility.EXPLICIT);
+        .assertCollation(is("ISO-8859-1$sv$3"),
+            is(SqlCollation.Coercibility.EXPLICIT));
   }
 
   @Test void testCharLength() {
@@ -877,7 +883,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     if (TODO) {
       final SqlCollation.Coercibility expectedCoercibility = null;
       sql("trim('mustache' FROM 'beard')")
-          .collation("CHAR(5)", expectedCoercibility);
+          .assertCollation(is("CHAR(5)"), is(expectedCoercibility));
     }
   }
 
@@ -947,7 +953,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
     if (TODO) {
       sql("overlay('ABCdef' placing 'abc' collate latin1$sv from 1 for 3)")
-          .collation("ISO-8859-1$sv", SqlCollation.Coercibility.EXPLICIT);
+          .assertCollation(is("ISO-8859-1$sv"),
+              is(SqlCollation.Coercibility.EXPLICIT));
     }
   }
 
@@ -970,9 +977,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .columnType("VARBINARY(3) NOT NULL");
 
     sql("substring('10' FROM 1  FOR 2)")
-        .charset(Charset.forName("latin1"));
+        .assertCharset(isCharset("latin1"));
     sql("substring(_UTF16'10' FROM 1  FOR 2)")
-        .charset(Charset.forName("UTF-16LE"));
+        .assertCharset(isCharset("UTF-16LE"));
     expr("substring('a', 1)").ok();
     expr("substring('a', 1, 3)").ok();
     // Implicit type coercion.
@@ -2085,27 +2092,29 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testIntervalMonthsConversion() {
-    expr("INTERVAL '1' YEAR").intervalConv("12");
-    expr("INTERVAL '5' MONTH").intervalConv("5");
-    expr("INTERVAL '3-2' YEAR TO MONTH").intervalConv("38");
-    expr("INTERVAL '-5-4' YEAR TO MONTH").intervalConv("-64");
+    expr("INTERVAL '1' YEAR").assertInterval(is(12L));
+    expr("INTERVAL '5' MONTH").assertInterval(is(5L));
+    expr("INTERVAL '3-2' YEAR TO MONTH").assertInterval(is(38L));
+    expr("INTERVAL '-5-4' YEAR TO MONTH").assertInterval(is(-64L));
   }
 
   @Test void testIntervalMillisConversion() {
-    expr("INTERVAL '1' DAY").intervalConv("86400000");
-    expr("INTERVAL '1' HOUR").intervalConv("3600000");
-    expr("INTERVAL '1' MINUTE").intervalConv("60000");
-    expr("INTERVAL '1' SECOND").intervalConv("1000");
-    expr("INTERVAL '1:05' HOUR TO MINUTE").intervalConv("3900000");
-    expr("INTERVAL '1:05' MINUTE TO SECOND").intervalConv("65000");
-    expr("INTERVAL '1 1' DAY TO HOUR").intervalConv("90000000");
-    expr("INTERVAL '1 1:05' DAY TO MINUTE").intervalConv("90300000");
-    expr("INTERVAL '1 1:05:03' DAY TO SECOND").intervalConv("90303000");
-    expr("INTERVAL '1 1:05:03.12345' DAY TO SECOND").intervalConv("90303123");
-    expr("INTERVAL '1.12345' SECOND").intervalConv("1123");
-    expr("INTERVAL '1:05.12345' MINUTE TO SECOND").intervalConv("65123");
-    expr("INTERVAL '1:05:03' HOUR TO SECOND").intervalConv("3903000");
-    expr("INTERVAL '1:05:03.12345' HOUR TO SECOND").intervalConv("3903123");
+    expr("INTERVAL '1' DAY").assertInterval(is(86_400_000L));
+    expr("INTERVAL '1' HOUR").assertInterval(is(3_600_000L));
+    expr("INTERVAL '1' MINUTE").assertInterval(is(60_000L));
+    expr("INTERVAL '1' SECOND").assertInterval(is(1_000L));
+    expr("INTERVAL '1:05' HOUR TO MINUTE").assertInterval(is(3_900_000L));
+    expr("INTERVAL '1:05' MINUTE TO SECOND").assertInterval(is(65_000L));
+    expr("INTERVAL '1 1' DAY TO HOUR").assertInterval(is(90_000_000L));
+    expr("INTERVAL '1 1:05' DAY TO MINUTE").assertInterval(is(90_300_000L));
+    expr("INTERVAL '1 1:05:03' DAY TO SECOND").assertInterval(is(90_303_000L));
+    expr("INTERVAL '1 1:05:03.12345' DAY TO SECOND")
+        .assertInterval(is(90_303_123L));
+    expr("INTERVAL '1.12345' SECOND").assertInterval(is(1_123L));
+    expr("INTERVAL '1:05.12345' MINUTE TO SECOND").assertInterval(is(65_123L));
+    expr("INTERVAL '1:05:03' HOUR TO SECOND").assertInterval(is(3903000L));
+    expr("INTERVAL '1:05:03.12345' HOUR TO SECOND")
+        .assertInterval(is(3_903_123L));
   }
 
   /**
@@ -9911,30 +9920,35 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // VALUES
     final String sql0 = "insert into empnullables (empno, ename, deptno)\n"
         + "values (?, ?, ?)";
+    final String expectedType0 =
+        "RecordType(INTEGER ?0, VARCHAR(20) ?1, INTEGER ?2)";
     sql(sql0).ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1, INTEGER ?2)");
+        .assertBindType(is(expectedType0));
 
     // multiple VALUES
     final String sql1 = "insert into empnullables (empno, ename, deptno)\n"
         + "values (?, 'Pat', 1), (2, ?, ?), (3, 'Tod', ?), (4, 'Arthur', null)";
+    final String expectedType1 =
+        "RecordType(INTEGER ?0, VARCHAR(20) ?1, INTEGER ?2, INTEGER ?3)";
     sql(sql1).ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1, INTEGER ?2, INTEGER ?3)");
+        .assertBindType(is(expectedType1));
 
     // VALUES with expression
     sql("insert into empnullables (ename, empno) values (?, ? + 1)")
         .ok()
-        .bindType("RecordType(VARCHAR(20) ?0, INTEGER ?1)");
+        .assertBindType(is("RecordType(VARCHAR(20) ?0, INTEGER ?1)"));
 
     // SELECT
     sql("insert into empnullables (ename, empno) select ?, ? from (values (1))")
-        .ok().bindType("RecordType(VARCHAR(20) ?0, INTEGER ?1)");
+        .ok()
+        .assertBindType(is("RecordType(VARCHAR(20) ?0, INTEGER ?1)"));
 
     // WITH
     final String sql3 = "insert into empnullables (ename, empno)\n"
         + "with v as (values ('a'))\n"
         + "select ?, ? from (values (1))";
     sql(sql3).ok()
-        .bindType("RecordType(VARCHAR(20) ?0, INTEGER ?1)");
+        .assertBindType(is("RecordType(VARCHAR(20) ?0, INTEGER ?1)"));
 
     // UNION
     final String sql2 = "insert into empnullables (ename, empno)\n"
@@ -9943,7 +9957,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "select ?, ? from (values (time '1:2:3'))";
     final String expected2 = "RecordType(VARCHAR(20) ?0, INTEGER ?1,"
         + " VARCHAR(20) ?2, INTEGER ?3)";
-    sql(sql2).ok().bindType(expected2);
+    sql(sql2).ok().assertBindType(is(expected2));
   }
 
 
@@ -9951,10 +9965,12 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String sql0 = "insert into empnullables\n"
         + " (empno, ename, \"f.dc\" ^varchar(10)^)\n"
         + "values (?, ?, ?)";
+    final String expectedType0 =
+        "RecordType(INTEGER ?0, VARCHAR(20) ?1, VARCHAR(10) ?2)";
     sql(sql0).withExtendedCatalog()
         .withConformance(SqlConformanceEnum.LENIENT)
         .ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1, VARCHAR(10) ?2)")
+        .assertBindType(is(expectedType0))
         .withConformance(SqlConformanceEnum.PRAGMATIC_2003)
         .fails("Extended columns not allowed under "
             + "the current SQL conformance level");
@@ -9962,11 +9978,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String sql1 = "insert into empnullables\n"
         + " (empno, ename, dynamic_column ^double^ not null)\n"
         + "values (?, ?, ?)";
+    final String expectedType1 =
+        "RecordType(INTEGER ?0, VARCHAR(20) ?1, DOUBLE ?2)";
     sql(sql1)
         .withExtendedCatalog()
         .withConformance(SqlConformanceEnum.LENIENT)
         .ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1, DOUBLE ?2)")
+        .assertBindType(is(expectedType1))
         .withConformance(SqlConformanceEnum.PRAGMATIC_2003)
         .fails("Extended columns not allowed under "
             + "the current SQL conformance level");
@@ -9974,11 +9992,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String sql2 = "insert into struct.t_extend\n"
         + " (f0.c0, f1.c1, \"F2\".\"C2\" ^varchar(20)^ not null)\n"
         + "values (?, ?, ?)";
+    final String expectedType2 =
+        "RecordType(INTEGER ?0, INTEGER ?1, VARCHAR(20) ?2)";
     sql(sql2)
         .withExtendedCatalog()
         .withConformance(SqlConformanceEnum.LENIENT)
         .ok()
-        .bindType("RecordType(INTEGER ?0, INTEGER ?1, VARCHAR(20) ?2)")
+        .assertBindType(is(expectedType2))
         .withConformance(SqlConformanceEnum.PRAGMATIC_2003)
         .fails("Extended columns not allowed under "
             + "the current SQL conformance level");
@@ -9990,31 +10010,33 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // VALUES
     final String sql0 = "insert into empnullables\n"
         + "values (?, ?, ?)";
+    final String expectedType0 = "RecordType(INTEGER ?0, VARCHAR(20) ?1, VARCHAR(10) ?2)";
     s.sql(sql0).ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1, VARCHAR(10) ?2)");
+        .assertBindType(is(expectedType0));
 
     // multiple VALUES
     final String sql1 = "insert into empnullables\n"
         + "values (?, 'Pat', 'Tailor'), (2, ?, ?),\n"
         + " (3, 'Tod', ?), (4, 'Arthur', null)";
+    final String expectedType1 = "RecordType(INTEGER ?0, VARCHAR(20) ?1, VARCHAR(10) ?2, "
+        + "VARCHAR(10) ?3)";
     s.sql(sql1).ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1, VARCHAR(10) ?2, "
-            + "VARCHAR(10) ?3)");
+        .assertBindType(is(expectedType1));
 
     // VALUES with expression
     s.sql("insert into empnullables values (? + 1, ?)").ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1)");
+        .assertBindType(is("RecordType(INTEGER ?0, VARCHAR(20) ?1)"));
 
     // SELECT
     s.sql("insert into empnullables select ?, ? from (values (1))").ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1)");
+        .assertBindType(is("RecordType(INTEGER ?0, VARCHAR(20) ?1)"));
 
     // WITH
     final String sql3 = "insert into empnullables\n"
         + "with v as (values ('a'))\n"
         + "select ?, ? from (values (1))";
     s.sql(sql3).ok()
-        .bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1)");
+        .assertBindType(is("RecordType(INTEGER ?0, VARCHAR(20) ?1)"));
 
     // UNION
     final String sql2 = "insert into empnullables\n"
@@ -10023,14 +10045,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "select ?, ? from (values (time '1:2:3'))";
     final String expected2 = "RecordType(INTEGER ?0, VARCHAR(20) ?1,"
         + " INTEGER ?2, VARCHAR(20) ?3)";
-    s.sql(sql2).ok().bindType(expected2);
+    s.sql(sql2).ok().assertBindType(is(expected2));
   }
 
   @Test void testInsertBindView() {
     final String sql = "insert into EMP_MODIFIABLEVIEW (mgr, empno, ename)"
         + " values (?, ?, ?)";
+    final String expectedType =
+        "RecordType(INTEGER ?0, INTEGER ?1, VARCHAR(20) ?2)";
     sql(sql).withExtendedCatalog().ok()
-        .bindType("RecordType(INTEGER ?0, INTEGER ?1, VARCHAR(20) ?2)");
+        .assertBindType(is(expectedType));
   }
 
   @Test void testInsertModifiableViewPassConstraint() {
@@ -10422,9 +10446,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testInsertBindWithCustomInitializerExpressionFactory() {
     sql("insert into empdefaults (deptno) values (?)").ok()
-        .bindType("RecordType(INTEGER ?0)");
+        .assertBindType(is("RecordType(INTEGER ?0)"));
     sql("insert into empdefaults (ename, empno) values (?, ?)").ok()
-        .bindType("RecordType(VARCHAR(20) ?0, INTEGER ?1)");
+        .assertBindType(is("RecordType(VARCHAR(20) ?0, INTEGER ?1)"));
     sql("insert into empdefaults (ename, deptno) ^values (null, ?)^")
         .fails("Column 'ENAME' has no default value and does not allow NULLs");
     sql("insert into ^empdefaults^ values (null, ?)")
@@ -10435,7 +10459,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   @Test void testInsertBindSubsetWithCustomInitializerExpressionFactory() {
     final Sql s = sql("?").withConformance(SqlConformanceEnum.PRAGMATIC_2003);
     s.sql("insert into empdefaults values (101, ?)").ok()
-        .bindType("RecordType(VARCHAR(20) ?0)");
+        .assertBindType(is("RecordType(VARCHAR(20) ?0)"));
     s.sql("insert into empdefaults ^values (null, ?)^")
         .fails("Column 'EMPNO' has no default value and does not allow NULLs");
   }
@@ -10448,19 +10472,19 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String expected = "RecordType(VARCHAR(20) ?0, VARCHAR(20) ?1,"
         + " INTEGER ?2, BOOLEAN ?3, INTEGER ?4, INTEGER ?5, INTEGER ?6,"
         + " INTEGER ?7, INTEGER ?8)";
-    sql(sql).ok().bindType(expected);
+    sql(sql).ok().assertBindType(is(expected));
 
     final String sql2 =
         "insert into struct.t_nullables (c0, c2, c1) values (?, ?, ?)";
     final String expected2 =
         "RecordType(INTEGER ?0, INTEGER ?1, VARCHAR(20) ?2)";
-    sql(sql2).withConformance(pragmatic).ok().bindType(expected2);
+    sql(sql2).withConformance(pragmatic).ok().assertBindType(is(expected2));
 
     final String sql3 =
         "insert into struct.t_nullables (f1.c0, f1.c2, f0.c1) values (?, ?, ?)";
     final String expected3 =
         "RecordType(INTEGER ?0, INTEGER ?1, INTEGER ?2)";
-    sql(sql3).withConformance(pragmatic).ok().bindType(expected3);
+    sql(sql3).withConformance(pragmatic).ok().assertBindType(is(expected3));
 
     sql("insert into struct.t_nullables (c0, ^c4^, c1) values (?, ?, ?)")
         .withConformance(pragmatic)
@@ -10482,14 +10506,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String sql = "update emp\n"
         + "set ename = ?\n"
         + "where deptno = ?";
-    sql(sql).ok().bindType("RecordType(VARCHAR(20) ?0, INTEGER ?1)");
+    sql(sql).ok()
+        .assertBindType(is("RecordType(VARCHAR(20) ?0, INTEGER ?1)"));
   }
 
   @Test void testDeleteBind() {
     final String sql = "delete from emp\n"
         + "where deptno = ?\n"
         + "or ename = ?";
-    sql(sql).ok().bindType("RecordType(INTEGER ?0, VARCHAR(20) ?1)");
+    sql(sql).ok()
+        .assertBindType(is("RecordType(INTEGER ?0, VARCHAR(20) ?1)"));
   }
 
   @Test void testStream() {
@@ -10557,94 +10583,94 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   /** Tests that various expressions are monotonic. */
   @Test void testMonotonic() {
     sql("select stream floor(rowtime to hour) from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream ceil(rowtime to minute) from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream extract(minute from rowtime) from orders")
-        .monotonic(SqlMonotonicity.NOT_MONOTONIC);
+        .assertMonotonicity(is(SqlMonotonicity.NOT_MONOTONIC));
     sql("select stream (rowtime - timestamp '1970-01-01 00:00:00') hour from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream\n"
         + "cast((rowtime - timestamp '1970-01-01 00:00:00') hour as integer)\n"
         + "from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream\n"
         + "cast((rowtime - timestamp '1970-01-01 00:00:00') hour as integer) / 15\n"
         + "from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream\n"
         + "mod(cast((rowtime - timestamp '1970-01-01 00:00:00') hour as integer), 15)\n"
         + "from orders")
-        .monotonic(SqlMonotonicity.NOT_MONOTONIC);
+        .assertMonotonicity(is(SqlMonotonicity.NOT_MONOTONIC));
 
     // constant
     sql("select stream 1 - 2 from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
     sql("select stream 1 + 2 from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
 
     // extract(YEAR) is monotonic, extract(other time unit) is not
     sql("select stream extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream extract(month from rowtime) from orders")
-        .monotonic(SqlMonotonicity.NOT_MONOTONIC);
+        .assertMonotonicity(is(SqlMonotonicity.NOT_MONOTONIC));
 
     // <monotonic> - constant
     sql("select stream extract(year from rowtime) - 3 from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream extract(year from rowtime) * 5 from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream extract(year from rowtime) * -5 from orders")
-        .monotonic(SqlMonotonicity.DECREASING);
+        .assertMonotonicity(is(SqlMonotonicity.DECREASING));
 
     // <monotonic> / constant
     sql("select stream extract(year from rowtime) / -5 from orders")
-        .monotonic(SqlMonotonicity.DECREASING);
+        .assertMonotonicity(is(SqlMonotonicity.DECREASING));
     sql("select stream extract(year from rowtime) / 5 from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream extract(year from rowtime) / 0 from orders")
-        .monotonic(SqlMonotonicity.CONSTANT); // +inf is constant!
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT)); // +inf is constant!
     sql("select stream extract(year from rowtime) / null from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
     sql("select stream null / extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
     sql("select stream extract(year from rowtime) / cast(null as integer) from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
     sql("select stream cast(null as integer) / extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
 
     // constant / <monotonic> is not monotonic (we don't know whether sign of
     // expression ever changes)
     sql("select stream 5 / extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.NOT_MONOTONIC);
+        .assertMonotonicity(is(SqlMonotonicity.NOT_MONOTONIC));
 
     // <monotonic> * constant
     sql("select stream extract(year from rowtime) * -5 from orders")
-        .monotonic(SqlMonotonicity.DECREASING);
+        .assertMonotonicity(is(SqlMonotonicity.DECREASING));
     sql("select stream extract(year from rowtime) * 5 from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream extract(year from rowtime) * 0 from orders")
-        .monotonic(SqlMonotonicity.CONSTANT); // 0 is constant!
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT)); // 0 is constant!
 
     // constant * <monotonic>
     sql("select stream -5 * extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.DECREASING);
+        .assertMonotonicity(is(SqlMonotonicity.DECREASING));
     sql("select stream 5 * extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
     sql("select stream 0 * extract(year from rowtime) from orders")
-        .monotonic(SqlMonotonicity.CONSTANT);
+        .assertMonotonicity(is(SqlMonotonicity.CONSTANT));
 
     // <monotonic> - <monotonic>
     sql("select stream\n"
         + "extract(year from rowtime) - extract(year from rowtime)\n"
         + "from orders")
-        .monotonic(SqlMonotonicity.NOT_MONOTONIC);
+        .assertMonotonicity(is(SqlMonotonicity.NOT_MONOTONIC));
 
     // <monotonic> + <monotonic>
     sql("select stream\n"
         + "extract(year from rowtime) + extract(year from rowtime)\n"
         + "from orders")
-        .monotonic(SqlMonotonicity.INCREASING);
+        .assertMonotonicity(is(SqlMonotonicity.INCREASING));
   }
 
   @Test void testStreamUnionAll() {
