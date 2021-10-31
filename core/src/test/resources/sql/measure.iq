@@ -75,11 +75,13 @@ where job = 'CLERK';
 !ok
 
 # Aggregate measure
+!if (false) {
 select deptno, count_plus_100
 from (
   select empno, deptno, job, count(*) + 100 as measure count_plus_100
   from "scott".emp)
 group by deptno;
 !ok
+!}
 
 # End measure.iq
