@@ -20,11 +20,11 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.SqlValidatorTestCase;
@@ -296,14 +296,6 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
       ResultChecker resultChecker);
 
   /**
-   * Tests that the first column of a SQL query has a given monotonicity.
-   *
-   * @param expectedMonotonicity Expected monotonicity
-   * @param query                SQL query
-   */
-  void checkMonotonic(String query, SqlMonotonicity expectedMonotonicity);
-
-  /**
    * Declares that this test is for a given operator. So we can check that all
    * operators are tested.
    *
@@ -439,5 +431,23 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.Tester {
   /** Result checker. */
   interface ResultChecker {
     void checkResult(ResultSet result) throws Exception;
+  }
+
+  /** Action that is called after validation.
+   *
+   * @see #validateAndThen
+   * @see #forEachQueryValidateAndThen
+   */
+  interface ValidatedNodeConsumer {
+    void accept(String sql, SqlValidator validator, SqlNode validatedNode);
+  }
+
+  /** A function to apply to the result of validation.
+   *
+   * @param <R> Result type of the function
+   *
+   * @see #validateAndApply */
+  interface ValidatedNodeFunction<R> {
+    R apply(String sql, SqlValidator validator, SqlNode validatedNode);
   }
 }
