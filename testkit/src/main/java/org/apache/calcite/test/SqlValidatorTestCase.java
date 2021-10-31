@@ -48,6 +48,7 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -63,7 +64,6 @@ import static org.apache.calcite.sql.SqlUtil.stripAs;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -156,19 +156,19 @@ public class SqlValidatorTestCase {
     SqlNode parseAndValidate(SqlValidator validator, String sql);
 
     /** Parses and validates a query, then calls an action on the result. */
-    void validateAndThen(String query,
+    void validateAndThen(StringAndPos sap,
         SqlTester.ValidatedNodeConsumer consumer);
 
     /** Parses and validates a query, then applies a function to the result.
      *
      * @param <R> Result type */
-    <R> R validateAndApply(String query,
+    <R> R validateAndApply(StringAndPos sap,
         SqlTester.ValidatedNodeFunction<R> function);
 
     /** Given an expression, generates several queries that include that
      * expression, and for each, parses and validates, then calls an action on
      * the result. */
-    void forEachQueryValidateAndThen(String expression,
+    void forEachQueryValidateAndThen(StringAndPos expression,
         SqlTester.ValidatedNodeConsumer consumer);
 
     SqlValidator getValidator();
@@ -183,14 +183,15 @@ public class SqlValidatorTestCase {
      * <p>If <code>expectedMsgPattern</code> is not null, the query must
      * fail, and give an error location of (expectedLine, expectedColumn)
      * through (expectedEndLine, expectedEndColumn).
-     *  @param sap                SQL statement
+     *
+     * @param sap                SQL statement
      * @param expectedMsgPattern If this parameter is null the query must be
      *                           valid for the test to pass; If this parameter
      *                           is not null the query must be malformed and the
      */
     void assertExceptionIsThrown(
         StringAndPos sap,
-        String expectedMsgPattern);
+        @Nullable String expectedMsgPattern);
 
     /**
      * Returns the data type of the sole column of a SQL query.
@@ -220,40 +221,6 @@ public class SqlValidatorTestCase {
     void checkColumnType(
         String sql,
         String expected);
-
-    /**
-     * Given a SQL query, returns a list of the origins of each result
-     * field.
-     *
-     * @param query           SQL query
-     * @param fieldOriginList Field origin list, e.g.
-     *                        "{(CATALOG.SALES.EMP.EMPNO, null)}"
-     */
-    default void checkFieldOrigin(String query, String fieldOriginList) {
-      validateAndThen(query, (sql, validator, n) -> {
-        final List<List<String>> list = validator.getFieldOrigins(n);
-        final StringBuilder buf = new StringBuilder("{");
-        int i = 0;
-        for (List<String> strings : list) {
-          if (i++ > 0) {
-            buf.append(", ");
-          }
-          if (strings == null) {
-            buf.append("null");
-          } else {
-            int j = 0;
-            for (String s : strings) {
-              if (j++ > 0) {
-                buf.append('.');
-              }
-              buf.append(s);
-            }
-          }
-        }
-        buf.append("}");
-        assertEquals(fieldOriginList, buf.toString());
-      });
-    }
 
     SqlConformance getConformance();
   }
@@ -362,7 +329,7 @@ public class SqlValidatorTestCase {
      * @param expectedType Expected row type
      */
     public Sql type(String expectedType) {
-      tester.validateAndThen(sap.sql, (sql1, validator, n) -> {
+      tester.validateAndThen(sap, (sql1, validator, n) -> {
         RelDataType actualType = validator.getValidatedNodeType(n);
         String actual = SqlTests.getTypeString(actualType);
         assertThat(actual, is(expectedType));
@@ -391,8 +358,8 @@ public class SqlValidatorTestCase {
      * @param matcher Expected monotonicity
      */
     public Sql assertMonotonicity(Matcher<SqlMonotonicity> matcher) {
-      tester.validateAndThen(toSql(false).sql,
-          (sql, validator, n) -> {
+      tester.validateAndThen(toSql(false),
+          (sap, validator, n) -> {
             final RelDataType rowType = validator.getValidatedNodeType(n);
             final SqlValidatorNamespace selectNamespace =
                 validator.getNamespace(n);
@@ -405,14 +372,14 @@ public class SqlValidatorTestCase {
     }
 
     public Sql assertBindType(Matcher<String> matcher) {
-      tester.check(sap.sql, null, parameterRowType ->
+      tester.check(sap.sql, SqlTests.ANY_TYPE_CHECKER, parameterRowType ->
           assertThat(parameterRowType.toString(), matcher),
           result -> { });
       return this;
     }
 
     public void assertCharset(Matcher<Charset> charsetMatcher) {
-      tester.forEachQueryValidateAndThen(sap.sql, (sql, validator, n) -> {
+      tester.forEachQueryValidateAndThen(sap, (sap, validator, n) -> {
         final RelDataType rowType = validator.getValidatedNodeType(n);
         final List<RelDataTypeField> fields = rowType.getFieldList();
         assertThat("expected query to return 1 field", fields.size(), is(1));
@@ -424,7 +391,7 @@ public class SqlValidatorTestCase {
 
     public void assertCollation(Matcher<String> collationMatcher,
         Matcher<SqlCollation.Coercibility> coercibilityMatcher) {
-      tester.forEachQueryValidateAndThen(sap.sql, (sql, validator, n) -> {
+      tester.forEachQueryValidateAndThen(sap, (sap, validator, n) -> {
         RelDataType rowType = validator.getValidatedNodeType(n);
         final List<RelDataTypeField> fields = rowType.getFieldList();
         assertThat("expected query to return 1 field", fields.size(), is(1));
@@ -445,8 +412,8 @@ public class SqlValidatorTestCase {
      * </blockquote>
      */
     public void assertInterval(Matcher<Long> matcher) {
-      tester.validateAndThen(toSql(false).sql,
-          (sql, validator, validatedNode) -> {
+      tester.validateAndThen(toSql(false),
+          (sap, validator, validatedNode) -> {
             final SqlCall n = (SqlCall) validatedNode;
             SqlNode node = null;
             for (int i = 0; i < n.operandCount(); i++) {
@@ -505,8 +472,8 @@ public class SqlValidatorTestCase {
     }
 
     public Sql rewritesTo(String expected) {
-      tester.validateAndThen(toSql(false).sql,
-          (sql, validator, validatedNode) -> {
+      tester.validateAndThen(toSql(false),
+          (sap, validator, validatedNode) -> {
             String actualRewrite =
                 validatedNode.toSqlString(AnsiSqlDialect.DEFAULT, false)
                     .getSql();
@@ -516,10 +483,44 @@ public class SqlValidatorTestCase {
     }
 
     public Sql isAggregate(Matcher<Boolean> matcher) {
-      tester.validateAndThen(toSql(false).sql,
-          (sql, validator, validatedNode) ->
+      tester.validateAndThen(toSql(false),
+          (sap, validator, validatedNode) ->
               assertThat(validator.isAggregate((SqlSelect) validatedNode),
                   matcher));
+      return this;
+    }
+
+    /**
+     * Tests that the list of the origins of each result field of
+     * the current query match expected.
+     *
+     * <p>The field origin list looks like this:
+     * <code>"{(CATALOG.SALES.EMP.EMPNO, null)}"</code>.
+     */
+    public Sql assertFieldOrigin(Matcher<String> matcher) {
+      tester.validateAndThen(toSql(false), (sap, validator, n) -> {
+        final List<List<String>> list = validator.getFieldOrigins(n);
+        final StringBuilder buf = new StringBuilder("{");
+        int i = 0;
+        for (List<String> strings : list) {
+          if (i++ > 0) {
+            buf.append(", ");
+          }
+          if (strings == null) {
+            buf.append("null");
+          } else {
+            int j = 0;
+            for (String s : strings) {
+              if (j++ > 0) {
+                buf.append('.');
+              }
+              buf.append(s);
+            }
+          }
+        }
+        buf.append("}");
+        assertThat(buf.toString(), matcher);
+      });
       return this;
     }
   }
