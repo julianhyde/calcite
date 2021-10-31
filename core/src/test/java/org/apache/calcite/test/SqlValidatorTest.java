@@ -977,7 +977,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .columnType("VARBINARY(3) NOT NULL");
 
     sql("substring('10' FROM 1  FOR 2)")
-        .assertCharset(isCharset("latin1"));
+        .assertCharset(isCharset("ISO-8859-1")); // aka "latin1"
     sql("substring(_UTF16'10' FROM 1  FOR 2)")
         .assertCharset(isCharset("UTF-16LE"));
     expr("substring('a', 1)").ok();
