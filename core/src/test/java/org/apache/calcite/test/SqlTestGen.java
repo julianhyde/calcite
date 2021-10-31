@@ -25,6 +25,8 @@ import org.apache.calcite.util.BarfingInvocationHandler;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
@@ -100,7 +102,7 @@ class SqlTestGen {
       return new SqlValidatorTester(SPOOLER_VALIDATOR) {
         public void assertExceptionIsThrown(
             StringAndPos sap,
-            String expectedMsgPattern) {
+            @Nullable String expectedMsgPattern) {
           if (expectedMsgPattern == null) {
             // This SQL statement is supposed to succeed.
             // Generate it to the file, so we can see what
@@ -115,10 +117,10 @@ class SqlTestGen {
           }
         }
 
-        @Override public void validateAndThen(String query, ValidatedNodeConsumer consumer) {
+        @Override public void validateAndThen(StringAndPos sap, ValidatedNodeConsumer consumer) {
         }
 
-        @Override public void forEachQueryValidateAndThen(String expression,
+        @Override public void forEachQueryValidateAndThen(StringAndPos expression,
             ValidatedNodeConsumer consumer) {
         }
       };
