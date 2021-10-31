@@ -27,18 +27,13 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMultiset;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 
@@ -55,13 +50,6 @@ public class AggregatingSelectScope
 
   private final SqlSelect select;
   private final boolean distinct;
-
-  /** Use while resolving. */
-  private SqlValidatorUtil.@Nullable GroupAnalyzer groupAnalyzer;
-
-  @SuppressWarnings("methodref.receiver.bound.invalid")
-  public final Supplier<Resolved> resolved =
-      Suppliers.memoize(this::resolve)::get;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -86,35 +74,26 @@ public class AggregatingSelectScope
 
   //~ Methods ----------------------------------------------------------------
 
-  private Resolved resolve() {
-    assert groupAnalyzer == null : "resolve already in progress";
-    SqlValidatorUtil.GroupAnalyzer groupAnalyzer = new SqlValidatorUtil.GroupAnalyzer();
-    this.groupAnalyzer = groupAnalyzer;
-    try {
-      final ImmutableList.Builder<ImmutableList<ImmutableBitSet>> builder =
-          ImmutableList.builder();
-      if (select.getGroup() != null) {
-        final SqlNodeList groupList = select.getGroup();
-        for (SqlNode groupExpr : groupList) {
-          SqlValidatorUtil.analyzeGroupItem(this, groupAnalyzer, builder,
-              groupExpr);
-        }
-      }
+  @Override protected void analyze(SqlValidatorUtil.GroupAnalyzer analyzer) {
+    super.analyze(analyzer);
 
-      final List<ImmutableBitSet> flatGroupSets = new ArrayList<>();
-      for (List<ImmutableBitSet> groupSet : Linq4j.product(builder.build())) {
-        flatGroupSets.add(ImmutableBitSet.union(groupSet));
+    final ImmutableList.Builder<ImmutableList<ImmutableBitSet>> builder =
+        ImmutableList.builder();
+    if (select.getGroup() != null) {
+      final SqlNodeList groupList = select.getGroup();
+      for (SqlNode groupExpr : groupList) {
+        SqlValidatorUtil.analyzeGroupItem(this, analyzer, builder,
+            groupExpr);
       }
+    }
 
-      // For GROUP BY (), we need a singleton grouping set.
-      if (flatGroupSets.isEmpty()) {
-        flatGroupSets.add(ImmutableBitSet.of());
-      }
+    for (List<ImmutableBitSet> groupSet : Linq4j.product(builder.build())) {
+      analyzer.flatGroupSets.add(ImmutableBitSet.union(groupSet));
+    }
 
-      return new Resolved(groupAnalyzer.extraExprs, groupAnalyzer.groupExprs,
-          flatGroupSets, groupAnalyzer.groupExprProjection);
-    } finally {
-      this.groupAnalyzer = null;
+    // For GROUP BY (), we need a singleton grouping set.
+    if (analyzer.flatGroupSets.isEmpty()) {
+      analyzer.flatGroupSets.add(ImmutableBitSet.of());
     }
   }
 
