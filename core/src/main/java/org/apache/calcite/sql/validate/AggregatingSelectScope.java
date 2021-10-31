@@ -20,29 +20,20 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUtil;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
-import org.apache.calcite.util.Pair;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMultiset;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 
@@ -59,13 +50,6 @@ public class AggregatingSelectScope
 
   private final SqlSelect select;
   private final boolean distinct;
-
-  /** Use while resolving. */
-  private SqlValidatorUtil.@Nullable GroupAnalyzer groupAnalyzer;
-
-  @SuppressWarnings({"methodref.receiver.bound.invalid", "FunctionalExpressionCanBeFolded"})
-  public final Supplier<Resolved> resolved =
-      Suppliers.memoize(this::resolve)::get;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -90,52 +74,26 @@ public class AggregatingSelectScope
 
   //~ Methods ----------------------------------------------------------------
 
-  private Resolved resolve() {
-    assert groupAnalyzer == null : "resolve already in progress";
-    SqlValidatorUtil.GroupAnalyzer groupAnalyzer = new SqlValidatorUtil.GroupAnalyzer();
-    this.groupAnalyzer = groupAnalyzer;
-    try {
-      final ImmutableList.Builder<ImmutableList<ImmutableBitSet>> builder =
-          ImmutableList.builder();
-      if (select.getGroup() != null) {
-        final SqlNodeList groupList = select.getGroup();
-        for (SqlNode groupExpr : groupList) {
-          SqlValidatorUtil.analyzeGroupItem(this, groupAnalyzer, builder,
-              groupExpr);
-        }
-      }
+  @Override protected void analyze(SqlValidatorUtil.GroupAnalyzer analyzer) {
+    super.analyze(analyzer);
 
-      for (ScopeChild child : ((SelectScope) parent).children) {
-        if (child.namespace instanceof SelectNamespace) {
-          final SqlSelect select = ((SelectNamespace) child.namespace).getNode();
-          Pair.forEach(select.getSelectList(),
-              child.namespace.getRowType().getFieldList(),
-              (selectItem, field) -> {
-                if (SqlValidatorUtil.isMeasure(selectItem)) {
-                  groupAnalyzer.measureExprs.add(
-                      new SqlIdentifier(
-                          Arrays.asList(child.name, field.getName()),
-                          SqlParserPos.ZERO));
-                }
-              });
-        }
+    final ImmutableList.Builder<ImmutableList<ImmutableBitSet>> builder =
+        ImmutableList.builder();
+    if (select.getGroup() != null) {
+      final SqlNodeList groupList = select.getGroup();
+      for (SqlNode groupExpr : groupList) {
+        SqlValidatorUtil.analyzeGroupItem(this, analyzer, builder,
+            groupExpr);
       }
+    }
 
-      final List<ImmutableBitSet> flatGroupSets = new ArrayList<>();
-      for (List<ImmutableBitSet> groupSet : Linq4j.product(builder.build())) {
-        flatGroupSets.add(ImmutableBitSet.union(groupSet));
-      }
+    for (List<ImmutableBitSet> groupSet : Linq4j.product(builder.build())) {
+      analyzer.flatGroupSets.add(ImmutableBitSet.union(groupSet));
+    }
 
-      // For GROUP BY (), we need a singleton grouping set.
-      if (flatGroupSets.isEmpty()) {
-        flatGroupSets.add(ImmutableBitSet.of());
-      }
-
-      return new Resolved(groupAnalyzer.extraExprs,
-          groupAnalyzer.measureExprs, groupAnalyzer.groupExprs,
-          flatGroupSets, groupAnalyzer.groupExprProjection);
-    } finally {
-      this.groupAnalyzer = null;
+    // For GROUP BY (), we need a singleton grouping set.
+    if (analyzer.flatGroupSets.isEmpty()) {
+      analyzer.flatGroupSets.add(ImmutableBitSet.of());
     }
   }
 
@@ -143,6 +101,11 @@ public class AggregatingSelectScope
    * Returns the expressions that are in the GROUP BY clause (or the SELECT
    * DISTINCT clause, if distinct) and that can therefore be referenced
    * without being wrapped in aggregate functions.
+   *
+   * <p>Also identifies measure expressions, which are not in {@code GROUP BY}
+   * but can still be referenced without aggregate functions. (Some dialects
+   * require measures to be wrapped in
+   * {@link org.apache.calcite.sql.fun.SqlLibraryOperators#AGGREGATE}.)
    *
    * <p>The expressions are fully-qualified, and any "*" in select clauses are
    * expanded.
@@ -164,7 +127,7 @@ public class AggregatingSelectScope
       for (SqlNode selectItem : expandedSelectList) {
         groupExprs.add(stripAs(selectItem));
       }
-    } else if (select.getGroup() != null) {
+    } else {
       SqlValidatorUtil.GroupAnalyzer groupAnalyzer = this.groupAnalyzer;
       if (groupAnalyzer != null) {
         // we are in the middle of resolving
