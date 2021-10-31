@@ -50,7 +50,6 @@ import com.google.common.base.Preconditions;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
@@ -59,8 +58,6 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
-import static java.util.Objects.requireNonNull;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 
