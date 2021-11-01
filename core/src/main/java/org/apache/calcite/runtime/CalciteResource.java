@@ -338,6 +338,9 @@ public interface CalciteResource {
   @BaseMessage("MEASURE not valid in aggregate or DISTINCT query")
   ExInst<SqlValidatorException> measureInAggregateQuery();
 
+  @BaseMessage("Measure ''{0}'' is cyclic; its definition depends on the following measures: {1}")
+  ExInst<SqlValidatorException> measureIsCyclic(String measureName, String dependentMeasures);
+
   @BaseMessage("Argument to function ''{0}'' must be a measure")
   ExInst<SqlValidatorException> argumentMustBeMeasure(String functionName);
 
