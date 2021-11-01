@@ -5276,9 +5276,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "  ename as n\n"
         + "from emp")
         .type(intVarcharType);
-    // todo: INTEGER would be better than UNKNOWN
     final String intIntType =
-        "RecordType(INTEGER NOT NULL ENAME, UNKNOWN N) NOT NULL";
+        "RecordType(INTEGER NOT NULL ENAME, INTEGER NOT NULL N) NOT NULL";
     sql("select\n"
         + "  deptno + 1 as measure ename,\n"
         + "  ename as measure n\n"
@@ -5296,6 +5295,22 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "  deptno + 1 as measure ename,\n"
         + "  min(emp.ename) as measure n\n"
         + "from emp").type(intVarcharType);
+
+    // without the 't.' qualifier, this would be an illegal cyclic reference
+    sql("select t.uno as measure uno\n"
+        + "from (select deptno, 1 as uno from emp) as t")
+        .type("RecordType(INTEGER NOT NULL UNO) NOT NULL");
+
+    // cyclic
+    sql("select ^six^ - 5 as measure uno, 2 + uno as measure three,\n"
+        + "  three * 2 as measure six\n"
+        + "from emp").
+        fails("Measure 'SIX' is cyclic; its definition depends on the "
+            + "following measures: 'UNO', 'THREE', 'SIX'");
+    sql("select 2 as measure two, ^uno^ as measure uno\n"
+        + "from emp").
+        fails("Measure 'UNO' is cyclic; its definition depends on the "
+            + "following measures: 'UNO'");
 
     // measure does not need to be grouped
     sql("select deptno, count_plus_100 from (\n"
