@@ -2322,7 +2322,7 @@ public class RexSimplify {
     return false;
   }
 
-  private RexNode simplifyM2v(RexCall e) {
+  private static RexNode simplifyM2v(RexCall e) {
     final RexNode operand = e.getOperands().get(0);
     switch (operand.getKind()) {
     case V2M:
