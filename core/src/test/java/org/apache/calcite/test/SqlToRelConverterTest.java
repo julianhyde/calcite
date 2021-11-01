@@ -4707,6 +4707,14 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
+  /** Measures defined in the outermost query are converted to values. */
+  @Test void testMeasure4() {
+    final String sql = "select\n"
+        + "  count(*) as measure c, t.uno as measure uno, 2 as measure two\n"
+        + "from (select deptno, job, 1 as measure uno from emp) as t";
+//    sql(sql).ok();
+  }
+
   /** Test case for:
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3310">[CALCITE-3310]
    * Approximate and exact aggregate calls are recognized as the same
