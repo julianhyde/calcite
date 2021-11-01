@@ -1722,7 +1722,7 @@ LogicalProject(EXPR$0=[ROW(ITEM($3, 1).EMPNO, ITEM($3, 1).ENAME, ROW(ITEM($3, 1)
   <TestCase name="testFunctionExprInOver">
     <Resource name="sql">
       <![CDATA[select ename, row_number() over(partition by char_length(ename)
-order by deptno desc) as rn
+ order by deptno desc) as rn
 from emp
 where deptno = 10]]>
     </Resource>
@@ -3997,7 +3997,7 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
+LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(+($0, 1), CAST($7):DECIMAL(19, 9))])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
@@ -4032,9 +4032,16 @@ group by deptno]]>
       <![CDATA[
 LogicalProject(DEPTNO=[$0], COUNT_PLUS_10=[$1], MIN_JOB=[$2])
   LogicalAggregate(group=[{0}], agg#0=[AGG_M2V($1)], MIN_JOB=[MIN($3)])
-    LogicalProject(DEPTNO=[$7], COUNT_PLUS_10=[V2M(+(COUNT(), 10))], E2=[V2M(+(CAST(+(COUNT(), 10)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9)))], JOB=[$2])
+    LogicalProject(DEPTNO=[$7], COUNT_PLUS_10=[V2M(+(COUNT(), 10))], E2=[V2M(+(+(COUNT(), 10), CAST($7):DECIMAL(19, 9)))], JOB=[$2])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testMeasure4">
+    <Resource name="sql">
+      <![CDATA[select
+  count(*) as measure c, t.uno as measure uno, 2 as measure two
+from (select deptno, job, 1 as measure uno from emp) as t]]>
     </Resource>
   </TestCase>
   <TestCase name="testModeFunction">
@@ -4663,8 +4670,8 @@ LogicalProject(EXPR$0=[1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select * from emp where not unique(
-select 1 from dept where emp.deptno = dept.deptno)]]>
+      <![CDATA[select * from emp where not unique (
+  select 1 from dept where emp.deptno=dept.deptno)]]>
     </Resource>
   </TestCase>
   <TestCase name="testOffset">
@@ -6989,6 +6996,12 @@ select 34 from emp
 union all values (30), (45 + 10)]]>
     </Resource>
   </TestCase>
+  <TestCase name="testUniqueWithExpand">
+    <Resource name="sql">
+      <![CDATA[select * from emp
+where unique (select 1 from dept where deptno=55)]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testUniqueWithManyProject">
     <Resource name="plan">
       <![CDATA[
@@ -7001,8 +7014,8 @@ LogicalProject(DEPTNO=[$0], NAME=[$1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select * from emp where unique (
-select * from dept)]]>
+      <![CDATA[select * from emp
+where unique (select * from dept)]]>
     </Resource>
   </TestCase>
   <TestCase name="testUniqueWithOneProject">
@@ -7018,8 +7031,8 @@ LogicalProject(NAME=[$1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select * from emp where unique (
-select name from dept where deptno=55)]]>
+      <![CDATA[select * from emp
+where unique (select name from dept where deptno=55)]]>
     </Resource>
   </TestCase>
   <TestCase name="testUniqueWithProjectLateral">
@@ -7035,8 +7048,8 @@ LogicalProject(EXPR$0=[1])
 ]]>
     </Resource>
     <Resource name="sql">
-      <![CDATA[select * from emp where unique (
-select 1 from dept where deptno=55)]]>
+      <![CDATA[select * from emp
+where unique (select 1 from dept where deptno=55)]]>
     </Resource>
   </TestCase>
   <TestCase name="testUnnest">
