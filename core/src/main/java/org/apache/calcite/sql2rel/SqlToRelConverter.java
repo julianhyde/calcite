@@ -176,7 +176,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -4419,7 +4418,7 @@ public class SqlToRelConverter {
       List<SqlMonotonicity> columnMonotonicityList) {
   }
 
-  private String deriveAlias(
+  private static String deriveAlias(
       final SqlNode node,
       Collection<String> aliases,
       final int ordinal) {
@@ -5542,7 +5541,6 @@ public class SqlToRelConverter {
       if (isMeasureExpr(expr)) {
         return false; // already present
       }
-      final int index = measureExprs.size();
       measureExprs.add(expr);
       String name = nameMap.get(expr.toString());
       RexNode convExpr = bb.convertExpression(expr);
