@@ -27,9 +27,13 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.calcite.util.Static.RESOURCE;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Scope for resolving identifiers within a SELECT item that is annotated
@@ -43,6 +47,7 @@ public class MeasureScope extends DelegatingScope {
 
   private final SqlSelect select;
   private final List<String> aliasList;
+  private final Set<Integer> activeOrdinals = new HashSet<>();
 
   /**
    * Creates a MeasureScope.
@@ -80,7 +85,18 @@ public class MeasureScope extends DelegatingScope {
       final SqlNode selectItem = select.getSelectList().get(aliasOrdinal);
       final SqlNode measure = SqlValidatorUtil.getMeasure(selectItem);
       if (measure != null) {
-        return validator.unknownType;
+        try {
+          if (activeOrdinals.add(aliasOrdinal)) {
+            return validator.deriveType(this, measure);
+          }
+          final String dependentMeasures = activeOrdinals.stream().map(aliasList::get)
+              .map(s -> "'" + s + "'")
+              .collect(joining(", "));
+          throw validator.newValidationError(ctx,
+              RESOURCE.measureIsCyclic(name, dependentMeasures));
+        } finally {
+          activeOrdinals.remove(aliasOrdinal);
+        }
       }
       return validator.unknownType; // non-measure
     }
@@ -101,7 +117,7 @@ public class MeasureScope extends DelegatingScope {
     return null;
   }
 
-  public SqlQualified fullyQualify(SqlIdentifier identifier) {
+  @Override public SqlQualified fullyQualify(SqlIdentifier identifier) {
     // If it's a simple identifier, look for an alias.
     if (identifier.isSimple()) {
       @Nullable SqlQualified qualified = foo(this, select, identifier);
