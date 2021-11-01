@@ -5824,7 +5824,6 @@ public class SqlToRelConverter {
       if (isMeasureExpr(expr)) {
         return false; // already present
       }
-      final int index = measureExprs.size();
       measureExprs.add(expr);
       String name = nameMap.get(expr.toString());
       RexNode convExpr = bb.convertExpression(expr);
