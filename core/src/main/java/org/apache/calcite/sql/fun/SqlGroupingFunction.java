@@ -16,10 +16,26 @@
  */
 package org.apache.calcite.sql.fun;
 
+import com.google.common.collect.ImmutableList;
+
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlSingletonAggFunction;
+import org.apache.calcite.sql.SqlSplittableAggFunction;
+import org.apache.calcite.sql.SqlStaticAggFunction;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mappings;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.math.BigDecimal;
 
 /**
  * The {@code GROUPING} function. It accepts 1 or more arguments and they must be
@@ -39,8 +55,25 @@ import org.apache.calcite.sql.type.ReturnTypes;
  * <p>Some examples are in {@code agg.iq}.
  */
 class SqlGroupingFunction extends SqlAbstractGroupFunction {
+  private static final SqlStaticAggFunction STATIC =
+      SqlGroupingFunction::constant;
+
   SqlGroupingFunction(String name) {
     super(name, SqlKind.GROUPING, ReturnTypes.BIGINT, null,
         OperandTypes.ONE_OR_MORE, SqlFunctionCategory.SYSTEM);
+  }
+
+  /** Implements {@link SqlStaticAggFunction}. */
+  private static @Nullable RexNode constant(RexBuilder rexBuilder,
+      ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets,
+      AggregateCall aggregateCall) {
+    return rexBuilder.makeExactLiteral(BigDecimal.ZERO);
+  }
+
+  @Override public <T> @Nullable T unwrap(Class<T> clazz) {
+    if (clazz.isInstance(STATIC)) {
+      return clazz.cast(STATIC);
+    }
+    return super.unwrap(clazz);
   }
 }
