@@ -29,12 +29,17 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlSingletonAggFunction;
 import org.apache.calcite.sql.SqlSplittableAggFunction;
+import org.apache.calcite.sql.SqlStaticAggFunction;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Planner rule that removes
@@ -78,7 +83,9 @@ public class AggregateRemoveRule
     for (AggregateCall aggregateCall : aggregate.getAggCallList()) {
       if (aggregateCall.filterArg >= 0
           || !aggregateCall.getAggregation()
-              .maybeUnwrap(SqlSplittableAggFunction.class).isPresent()) {
+                  .maybeUnwrap(SqlSingletonAggFunction.class).isPresent()
+              && !aggregateCall.getAggregation()
+                  .maybeUnwrap(SqlStaticAggFunction.class).isPresent()) {
         return false;
       }
     }
@@ -106,8 +113,21 @@ public class AggregateRemoveRule
         // function to SUM0 and COUNT.
         return;
       }
-      final SqlSplittableAggFunction splitter =
-          aggregation.unwrapOrThrow(SqlSplittableAggFunction.class);
+      final @Nullable SqlStaticAggFunction staticAggFunction =
+          aggregation.unwrap(SqlStaticAggFunction.class);
+      if (staticAggFunction != null) {
+        final RexNode constant =
+            staticAggFunction.constant(rexBuilder,
+                aggregate.getGroupSet(), aggregate.groupSets, aggCall);
+        if (constant != null) {
+          final RexNode cast =
+              rexBuilder.ensureType(aggCall.type, constant, false);
+          projects.add(cast);
+          continue;
+        }
+      }
+      final SqlSingletonAggFunction splitter =
+          aggregation.unwrapOrThrow(SqlSingletonAggFunction.class);
       final RexNode singleton =
           splitter.singleton(rexBuilder, input.getRowType(), aggCall);
       final RexNode cast =

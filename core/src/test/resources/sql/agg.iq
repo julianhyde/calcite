@@ -910,6 +910,48 @@ group by grouping sets (deptno, (), ());
 
 !ok
 
+# Degenerate case: GROUP_ID() without GROUPING SETS
+select group_id() as g
+from "scott".emp
+group by ();
+!ok
+
+# GROUP_ID() does not make a query into an aggregate query
+# (maybe it should)
+select group_id() as g
+from "scott".emp;
+GROUP_ID operator may only occur in an aggregate query
+!error
+
+# GROUP_ID() does not make a query into an aggregate query
+select group_id() as g, sum(3) as s3
+from "scott".emp;
+0 42
+!ok
+
+# Extremely degenerate case: GROUP_ID on an empty table
+select group_id() as g, sum(3) as s3
+from "scott".emp
+where empno < 0;
+0 null
+!ok
+
+# As above, explicit empty GROUP BY
+select group_id() as g
+from "scott".emp
+where empno < 0
+group by ();
+0 null
+!ok
+
+# As above, non-empty GROUP BY
+select group_id() as g
+from "scott".emp
+where empno < 0
+group by deptno;
+no rows
+!ok
+
 # From http://rwijk.blogspot.com/2008/12/groupid.html
 select deptno
        , job
