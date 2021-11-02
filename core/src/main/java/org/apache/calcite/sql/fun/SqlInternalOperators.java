@@ -106,9 +106,11 @@ public abstract class SqlInternalOperators {
           ReturnTypes.ARG0.andThen(SqlTypeTransforms.TO_MEASURE), null,
           OperandTypes.ANY);
 
-  /** {@code M2A} aggregate function takes a measure as its argument and
+  /** {@code AGG_M2M} aggregate function takes a measure as its argument and
    * returns a measure. It is used to propagate measures through the
-   * {@code Aggregate} relational operator. */
+   * {@code Aggregate} relational operator.
+   *
+   * @see SqlLibraryOperators#AGGREGATE */
   public static final SqlOperator AGG_M2M =
       SqlBasicAggFunction.create(SqlKind.AGG_M2M, ReturnTypes.ARG0,
           OperandTypes.ANY);
