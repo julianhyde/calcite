@@ -326,6 +326,9 @@ public interface CalciteResource {
   @BaseMessage("Measure ''{0}'' is cyclic; its definition depends on the following measures: {1}")
   ExInst<SqlValidatorException> measureIsCyclic(String measureName, String dependentMeasures);
 
+  @BaseMessage("Argument to function ''{0}'' must be a measure")
+  ExInst<SqlValidatorException> argumentMustBeMeasure(String functionName);
+
   @BaseMessage("Window ''{0}'' not found")
   ExInst<SqlValidatorException> windowNotFound(String a0);
 

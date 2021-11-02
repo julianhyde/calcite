@@ -5314,11 +5314,88 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         fails("Measure 'UNO' is cyclic; its definition depends on the "
             + "following measures: 'UNO'");
 
-    // measure does not need to be grouped
-    sql("select deptno, count_plus_100 from (\n"
-        + "  select empno, deptno, count(*) + 100 as measure count_plus_100\n"
+    // A measure can be used in the SELECT clause of a GROUP BY query even
+    // though it is not a GROUP BY key.
+    sql("select deptno, count_plus_100\n"
+        + "from (\n"
+        + "  select empno, deptno, count(mgr) + 100 as measure count_plus_100\n"
         + "  from emp)\n"
-        + "group by deptno").ok();
+        + "group by deptno")
+        .isAggregate(is(true))
+        .ok();
+
+    // Similarly for a query that is an aggregate query because of another
+    // aggregate function.
+    sql("select count(*), count_plus_100\n"
+        + "from (\n"
+        + "  select empno, deptno, count(mgr) + 100 as measure count_plus_100\n"
+        + "  from emp)")
+        .isAggregate(is(true))
+        .ok();
+
+    // A measure in a non-aggregate query.
+    // Using a measure should not make it an aggregate query.
+    // The type of the measure should be the result type of the COUNT aggregate
+    // function (BIGINT), not type of the un-aggregated argument type (VARCHAR).
+    sql("select deptno, count_plus_100, ename\n"
+        + "from (\n"
+        + "  select ename, deptno, sal,\n"
+        + "      count(ename) + 100 as measure count_plus_100\n"
+        + "  from emp)")
+        .type("RecordType(INTEGER NOT NULL DEPTNO, "
+            + "BIGINT NOT NULL COUNT_PLUS_100, "
+            + "VARCHAR(20) NOT NULL ENAME) NOT NULL")
+        .isAggregate(is(false));
+
+    // as above, wrapping the measure in AGGREGATE
+    sql("select deptno, aggregate(count_plus_100), ename\n"
+        + "from (\n"
+        + "  select ename, deptno, sal,\n"
+        + "      count(ename) + 100 as measure count_plus_100\n"
+        + "  from emp)\n"
+        + "group by deptno, ename")
+        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
+        .type("RecordType(INTEGER NOT NULL DEPTNO, "
+            + "BIGINT NOT NULL EXPR$1, "
+            + "VARCHAR(20) NOT NULL ENAME) NOT NULL");
+
+    // you can apply the AGGREGATE function only to measures
+    sql("select deptno, aggregate(count_plus_100), ^aggregate(ename)^\n"
+        + "from (\n"
+        + "  select ename, deptno, sal,\n"
+        + "      count(ename) + 100 as measure count_plus_100\n"
+        + "  from emp)\n"
+        + "group by deptno, ename")
+        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
+        .fails("Argument to function 'AGGREGATE' must be a measure");
+
+    sql("select deptno, ^aggregate(count_plus_100 + 1)^\n"
+        + "from (\n"
+        + "  select ename, deptno, sal,\n"
+        + "      count(ename) + 100 as measure count_plus_100\n"
+        + "  from emp)\n"
+        + "group by deptno, ename")
+        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
+        .fails("Argument to function 'AGGREGATE' must be a measure");
+
+    // A query with AGGREGATE is an aggregate query, even without GROUP BY,
+    // and even if it is inside an expression.
+    sql("select aggregate(count_plus_100) + 1\n"
+        + "from (\n"
+        + "  select ename, deptno, sal,\n"
+        + "      count(ename) + 100 as measure count_plus_100\n"
+        + "  from emp)")
+        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
+        .isAggregate(is(true));
+
+    // Including a measure in a query does not make it an aggregate query
+    sql("select count_plus_100\n"
+        + "from (\n"
+        + "  select ename, deptno, sal,\n"
+        + "      count(ename) + 100 as measure count_plus_100\n"
+        + "  from emp)")
+        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
+        .isAggregate(is(false));
   }
 
   @Test void testAmbiguousColumnInIn() {
