@@ -4212,10 +4212,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
   /** Measures defined in the outermost query are converted to values. */
   @Test void testMeasure4() {
-    final String sql = "select\n"
-        + "  count(*) as measure c, t.uno as measure uno, 2 as measure two\n"
+    final String sql = "select deptno, count(*) as measure c,\n"
+        + "  t.uno as measure uno, 2 as measure two\n"
         + "from (select deptno, job, 1 as measure uno from emp) as t";
-//    sql(sql).ok();
+    sql(sql).ok();
   }
 
   /** Test case for:
