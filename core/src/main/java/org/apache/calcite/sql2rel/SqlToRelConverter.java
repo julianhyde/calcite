@@ -650,13 +650,17 @@ public class SqlToRelConverter {
       return relBuilder.push(r)
           .project(relBuilder.fields()
               .stream()
-              .map(e -> e.getType().getSqlTypeName() == SqlTypeName.MEASURE
-                  ? relBuilder.call(SqlInternalOperators.M2V, e)
-                  : e)
-          .collect(Util.toImmutableList()))
+              .map(this::measureToValue)
+              .collect(Util.toImmutableList()))
           .build();
     }
     return r;
+  }
+
+  private RexNode measureToValue(RexNode e) {
+    return e.getType().getSqlTypeName() == SqlTypeName.MEASURE
+        ? relBuilder.call(SqlInternalOperators.M2V, e)
+        : e;
   }
 
   private static boolean isStream(SqlNode query) {
@@ -4557,7 +4561,11 @@ public class SqlToRelConverter {
       final RexNode e;
       if (measure != null) {
         final RexNode m = measureBb.convertExpression(measure);
-        e = rexBuilder.makeCall(SqlInternalOperators.V2M, m);
+        if (m.getType().getSqlTypeName() == SqlTypeName.MEASURE) {
+          e = m;
+        } else {
+          e = rexBuilder.makeCall(SqlInternalOperators.V2M, m);
+        }
       } else {
         e = bb.convertExpression(expr);
       }
