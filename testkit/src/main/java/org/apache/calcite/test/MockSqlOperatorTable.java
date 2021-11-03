@@ -308,9 +308,8 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
           SqlKind.OTHER_FUNCTION,
           null,
           null,
-          OperandTypes.or(
-              OperandTypes.variadic(SqlOperandCountRanges.from(1)),
-              OperandTypes.variadic(SqlOperandCountRanges.from(2))),
+          OperandTypes.variadic(SqlOperandCountRanges.from(1))
+              .or(OperandTypes.variadic(SqlOperandCountRanges.from(2))),
           SqlFunctionCategory.USER_DEFINED_FUNCTION);
     }
 
