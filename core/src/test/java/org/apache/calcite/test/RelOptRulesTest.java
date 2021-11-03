@@ -77,6 +77,7 @@ import org.apache.calcite.rel.rules.FilterMultiJoinMergeRule;
 import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
 import org.apache.calcite.rel.rules.JoinAssociateRule;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.rules.MeasureRules;
 import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rel.rules.ProjectCorrelateTransposeRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
@@ -4213,6 +4214,18 @@ class RelOptRulesTest extends RelOptTestBase {
         + "from emp\n"
         + "group by deptno";
     sql(sql).withRule(CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW).check();
+  }
+
+  @Disabled // until feature works
+  @Test void testMeasureSort() {
+    final String sql = "select deptno, c1\n"
+        + "from (select deptno, job, count(*) + 1 as measure c1\n"
+        + "  from emp)\n"
+        + "order by deptno";
+    sql(sql)
+        .withRule(MeasureRules.FILTER_SORT,
+            MeasureRules.PROJECT_SORT)
+        .check();
   }
 
   @Test void testPushAggregateThroughJoin1() {
