@@ -79,6 +79,16 @@ public interface SqlOperandTypeChecker {
     return null;
   }
 
+  /** Composes this with another checker using AND. */
+  default SqlOperandTypeChecker and(SqlOperandTypeChecker checker) {
+    return OperandTypes.and(this, checker);
+  }
+
+  /** Composes this with another checker using OR. */
+  default SqlOperandTypeChecker or(SqlOperandTypeChecker checker) {
+    return OperandTypes.or(this, checker);
+  }
+
   /** Strategy used to make arguments consistent. */
   enum Consistency {
     /** Do not try to make arguments consistent. */
