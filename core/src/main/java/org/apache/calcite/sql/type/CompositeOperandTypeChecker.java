@@ -95,12 +95,10 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
 
   //~ Constructors -----------------------------------------------------------
 
-  /**
-   * Package private. Use {@link OperandTypes#and},
-   * {@link OperandTypes#or}.
-   */
-  CompositeOperandTypeChecker(
-      Composition composition,
+  /** Creates a CompositeOperandTypeChecker. Outside this package, use
+   * {@link SqlOperandTypeChecker#and(SqlOperandTypeChecker)},
+   * {@link OperandTypes#and}, {@link OperandTypes#or} and similar. */
+  protected CompositeOperandTypeChecker(Composition composition,
       ImmutableList<? extends SqlOperandTypeChecker> allowedRules,
       @Nullable String allowedSignatures,
       @Nullable SqlOperandCountRange range) {
