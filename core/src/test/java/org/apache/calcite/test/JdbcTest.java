@@ -56,7 +56,6 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
