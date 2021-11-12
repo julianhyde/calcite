@@ -64,7 +64,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -82,6 +81,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A <code>SqlParserTest</code> is a unit-test for
@@ -607,12 +608,14 @@ public class SqlParserTest {
     return new TesterImpl();
   }
 
-  protected Sql sql(String sql) {
-    return new Sql(StringAndPos.of(sql), false, null, parser -> { });
+  public Sql sql(String sql) { // TODO restore protected
+    return new Sql(StringAndPos.of(sql), false, null, getTester(),
+        parser -> { });
   }
 
   protected Sql expr(String sql) {
-    return new Sql(StringAndPos.of(sql), true, null, parser -> { });
+    return new Sql(StringAndPos.of(sql), true, null, getTester(),
+        parser -> { });
   }
 
   /** Creates an instance of helper class {@link SqlList} to test parsing a
@@ -10022,18 +10025,20 @@ public class SqlParserTest {
 
   /** Helper class for building fluent code such as
    * {@code sql("values 1").ok();}. */
-  protected class Sql {
+  public static class Sql { // TODO restore protected
     private final StringAndPos sap;
     private final boolean expression;
     private final SqlDialect dialect;
+    private final Tester tester;
     private final Consumer<SqlParser> parserChecker;
 
-    Sql(StringAndPos sap, boolean expression, SqlDialect dialect,
+    Sql(StringAndPos sap, boolean expression, SqlDialect dialect, Tester tester,
         Consumer<SqlParser> parserChecker) {
-      this.sap = Objects.requireNonNull(sap, "sap");
+      this.sap = requireNonNull(sap, "sap");
       this.expression = expression;
       this.dialect = dialect;
-      this.parserChecker = Objects.requireNonNull(parserChecker, "parserChecker");
+      this.tester = requireNonNull(tester, "tester");
+      this.parserChecker = requireNonNull(parserChecker, "parserChecker");
     }
 
     public Sql same() {
@@ -10042,39 +10047,44 @@ public class SqlParserTest {
 
     public Sql ok(String expected) {
       if (expression) {
-        getTester().checkExp(sap, dialect, expected, parserChecker);
+        tester.checkExp(sap, dialect, expected, parserChecker);
       } else {
-        getTester().check(sap, dialect, expected, parserChecker);
+        tester.check(sap, dialect, expected, parserChecker);
       }
       return this;
     }
 
     public Sql fails(String expectedMsgPattern) {
       if (expression) {
-        getTester().checkExpFails(sap, dialect, expectedMsgPattern);
+        tester.checkExpFails(sap, dialect, expectedMsgPattern);
       } else {
-        getTester().checkFails(sap, dialect, false, expectedMsgPattern);
+        tester.checkFails(sap, dialect, false, expectedMsgPattern);
       }
       return this;
     }
 
     public Sql hasWarning(Consumer<List<? extends Throwable>> messageMatcher) {
-      return new Sql(sap, expression, dialect, parser ->
+      return new Sql(sap, expression, dialect, tester, parser ->
           messageMatcher.accept(parser.getWarnings()));
     }
 
     public Sql node(Matcher<SqlNode> matcher) {
-      getTester().checkNode(sap, dialect, matcher);
+      tester.checkNode(sap, dialect, matcher);
       return this;
     }
 
     /** Flags that this is an expression, not a whole query. */
     public Sql expression() {
-      return expression ? this : new Sql(sap, true, dialect, parserChecker);
+      return expression ? this
+          : new Sql(sap, true, dialect, tester, parserChecker);
     }
 
     public Sql withDialect(SqlDialect dialect) {
-      return new Sql(sap, expression, dialect, parserChecker);
+      return new Sql(sap, expression, dialect, tester, parserChecker);
+    }
+
+    public Sql withTester(Tester tester) {
+      return new Sql(sap, expression, dialect, tester, parserChecker);
     }
   }
 

@@ -97,4 +97,32 @@ class BabelTest {
           is(sqlType));
     }
   }
+
+  /** Tests that you can run tests via {@link Fixtures}. */
+  @Test void testFixtures() {
+    Fixtures.forValidator("select ^1 + date '2002-03-04'^")
+        .fails("(?s).*Cannot apply '\\+' to arguments of"
+            + " type '<INTEGER> \\+ <DATE>'.*");
+
+    // 'as' as identifier is invalid with Core parser
+    Fixtures.forParser("select ^as^ from t")
+        .fails("(?s)Encountered \"as\".*");
+
+    // 'as' as identifier is valid with Babel's tester (and Babel parser)
+    Fixtures.forParser("select as from t")
+        .withTester(new BabelParserTest().getTester())
+        .ok("SELECT `AS`\n"
+            + "FROM `T`");
+
+    // 'as' as identifier is valid with Babel parser
+    // TODO: use Babel parser without Babel tester
+    Fixtures.forParser("select as from t")
+        .withTester(new BabelParserTest().getTester())
+        .ok("SELECT `AS`\n"
+            + "FROM `T`");
+
+    // Postgres cast is invalid with core parser
+    Fixtures.forParser("select 1 ^:^: integer as x")
+        .fails("(?s).*Encountered \":\" at .*");
+  }
 }
