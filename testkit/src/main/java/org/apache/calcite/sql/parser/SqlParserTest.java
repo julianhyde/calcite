@@ -600,10 +600,6 @@ public class SqlParserTest {
   private static final SqlDialect REDSHIFT =
       SqlDialect.DatabaseProduct.REDSHIFT.getDialect();
 
-  Casing unquotedCasing = Casing.TO_UPPER;
-  Casing quotedCasing = Casing.UNCHANGED;
-  SqlConformance conformance = SqlConformanceEnum.DEFAULT;
-
   protected Tester getTester() {
     return new TesterImpl();
   }
@@ -640,18 +636,18 @@ public class SqlParserTest {
 
   private SqlParser.Config parserConfig() { // TODO: remove
     return SqlParser.config()
-        .withParserFactory(parserImplFactory())
-        .withUnquotedCasing(unquotedCasing)
-        .withQuotedCasing(quotedCasing)
-        .withConformance(conformance);
+        .withParserFactory(parserImplFactory());
   }
 
   /** Given a test config, returns a transform that adds the necessary options
    * to a parser config. */
   private static UnaryOperator<SqlParser.Config> getTransform(Config config) {
-    final SqlDialect dialect = config.dialect();
     return c -> {
+      c = c.withConformance(config.conformance());
       c = c.withQuoting(config.quoting());
+      c = c.withQuotedCasing(config.quotedCasing());
+      c = c.withUnquotedCasing(config.unquotedCasing());
+      final SqlDialect dialect = config.dialect();
       if (dialect != null) {
         c = dialect.configureParser(c);
       }
@@ -1229,43 +1225,53 @@ public class SqlParserTest {
             + "FROM `SALES`.`DEPTS`) AS `T`");
 
     // Conformance DEFAULT and LENIENT support explicit row value constructor
-    conformance = SqlConformanceEnum.DEFAULT;
     final String selectRow = "select ^row(t1a, t2a)^ from t1";
     final String expected = "SELECT (ROW(`T1A`, `T2A`))\n"
         + "FROM `T1`";
-    sql(selectRow).ok(expected);
-    conformance = SqlConformanceEnum.LENIENT;
-    sql(selectRow).ok(expected);
+    sql(selectRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .ok(expected);
+    sql(selectRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
+        .ok(expected);
 
     final String pattern = "ROW expression encountered in illegal context";
-    conformance = SqlConformanceEnum.MYSQL_5;
-    sql(selectRow).fails(pattern);
-    conformance = SqlConformanceEnum.ORACLE_12;
-    sql(selectRow).fails(pattern);
-    conformance = SqlConformanceEnum.STRICT_2003;
-    sql(selectRow).fails(pattern);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(selectRow).fails(pattern);
+    sql(selectRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .fails(pattern);
+    sql(selectRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.ORACLE_12))
+        .fails(pattern);
+    sql(selectRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.STRICT_2003))
+        .fails(pattern);
+    sql(selectRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .fails(pattern);
 
     final String whereRow = "select 1 from t2 where ^row (x, y)^ < row (a, b)";
     final String whereExpected = "SELECT 1\n"
         + "FROM `T2`\n"
         + "WHERE ((ROW(`X`, `Y`)) < (ROW(`A`, `B`)))";
-    conformance = SqlConformanceEnum.DEFAULT;
-    sql(whereRow).ok(whereExpected);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(whereRow).fails(pattern);
+    sql(whereRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .ok(whereExpected);
+    sql(whereRow)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .fails(pattern);
 
     final String whereRow2 = "select 1 from t2 where ^(x, y)^ < (a, b)";
-    conformance = SqlConformanceEnum.DEFAULT;
-    sql(whereRow2).ok(whereExpected);
+    sql(whereRow2)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .ok(whereExpected);
 
     // After this point, SqlUnparserTest has problems.
     // We generate ROW in a dialect that does not allow ROW in all contexts.
     // So bail out.
     assumeFalse(isUnparserTest());
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(whereRow2).ok(whereExpected);
+    sql(whereRow2)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(whereExpected);
   }
 
   @Test void testRowValueExpression() {
@@ -1298,7 +1304,6 @@ public class SqlParserTest {
         .withDialect(MSSQL)
         .ok(expected3);
 
-    conformance = SqlConformanceEnum.DEFAULT;
     expr("ROW(EMP.EMPNO, EMP.ENAME)").ok("(ROW(`EMP`.`EMPNO`, `EMP`.`ENAME`))");
     expr("ROW(EMP.EMPNO + 1, EMP.ENAME)").ok("(ROW((`EMP`.`EMPNO` + 1), `EMP`.`ENAME`))");
     expr("ROW((select deptno from dept where dept.deptno = emp.deptno), EMP.ENAME)")
@@ -2380,75 +2385,79 @@ public class SqlParserTest {
     final String expectingAlias = "Expecting alias, found character literal";
 
     final String sql1 = "select 1 as ^'a b'^ from t";
-    conformance = SqlConformanceEnum.DEFAULT;
-    sql(sql1).fails(expectingAlias);
-    conformance = SqlConformanceEnum.MYSQL_5;
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .fails(expectingAlias);
     final String sql1b = "SELECT 1 AS `a b`\n"
         + "FROM `T`";
-    sql(sql1).ok(sql1b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql1).ok(sql1b);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(sql1).ok(sql1b);
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .ok(sql1b);
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .ok(sql1b);
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(sql1b);
 
     // valid on MSSQL (alias contains a single quote)
     final String sql2 = "with t as (select 1 as ^'x''y'^)\n"
         + "select [x'y] from t as [u]";
     final Sql f2 = sql(sql2)
-        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
-    conformance = SqlConformanceEnum.DEFAULT;
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET))
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f2.fails(expectingAlias);
-    conformance = SqlConformanceEnum.MYSQL_5;
     final String sql2b = "WITH `T` AS (SELECT 1 AS `x'y`) (SELECT `x'y`\n"
         + "FROM `T` AS `u`)";
-    f2.ok(sql2b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    f2.ok(sql2b);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    f2.ok(sql2b);
+    f2.withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .ok(sql2b);
+    f2.withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .ok(sql2b);
+    f2.withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(sql2b);
 
     // also valid on MSSQL
     final String sql3 = "with [t] as (select 1 as [x]) select [x] from [t]";
     final String sql3b = "WITH `t` AS (SELECT 1 AS `x`) (SELECT `x`\n"
         + "FROM `t`)";
     final Sql f3 = sql(sql3)
-        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
-    conformance = SqlConformanceEnum.DEFAULT;
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET))
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f3.ok(sql3b);
-    conformance = SqlConformanceEnum.MYSQL_5;
-    f3.ok(sql3b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    f3.ok(sql3b);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    f3.ok(sql3b);
+    f3.withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .ok(sql3b);
+    f3.withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .ok(sql3b);
+    f3.withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(sql3b);
 
     // char literal as table alias is invalid on MSSQL (and others)
     final String sql4 = "with t as (select 1 as x) select x from t as ^'u'^";
     final String sql4b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
-    conformance = SqlConformanceEnum.DEFAULT;
     final Sql f4 = sql(sql4)
-        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET))
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f4.fails(sql4b);
-    conformance = SqlConformanceEnum.MYSQL_5;
-    f4.fails(sql4b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    f4.fails(sql4b);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    f4.fails(sql4b);
+    f4.withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .fails(sql4b);
+    f4.withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .fails(sql4b);
+    f4.withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .fails(sql4b);
 
     // char literal as table alias (without AS) is invalid on MSSQL (and others)
     final String sql5 = "with t as (select 1 as x) select x from t ^'u'^";
     final String sql5b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
-    conformance = SqlConformanceEnum.DEFAULT;
     final Sql f5 = sql(sql5)
-        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET))
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f5.fails(sql5b);
-    conformance = SqlConformanceEnum.MYSQL_5;
-    f5.fails(sql5b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    f5.fails(sql5b);
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    f5.fails(sql5b);
+    f5.withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .fails(sql5b);
+    f5.withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .fails(sql5b);
+    f5.withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .fails(sql5b);
   }
 
   @Test void testInList() {
@@ -2653,13 +2662,14 @@ public class SqlParserTest {
     final String sql = "select col1 from table1 ^MINUS^ select col1 from table2";
     sql(sql).fails(pattern);
 
-    conformance = SqlConformanceEnum.ORACLE_10;
     final String expected = "(SELECT `COL1`\n"
         + "FROM `TABLE1`\n"
         + "EXCEPT\n"
         + "SELECT `COL1`\n"
         + "FROM `TABLE2`)";
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.ORACLE_10))
+        .ok(expected);
 
     final String sql2 =
         "select col1 from table1 MINUS ALL select col1 from table2";
@@ -2668,7 +2678,9 @@ public class SqlParserTest {
         + "EXCEPT ALL\n"
         + "SELECT `COL1`\n"
         + "FROM `TABLE2`)";
-    sql(sql2).ok(expected2);
+    sql(sql2)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.ORACLE_10))
+        .ok(expected2);
   }
 
   /** MINUS is a <b>reserved</b> keyword in Calcite in all conformances, even
@@ -2855,32 +2867,35 @@ public class SqlParserTest {
         + "cross apply table(ramp(deptno)) as t(a^)^";
     sql(sql).fails(pattern);
 
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
     final String expected = "SELECT *\n"
         + "FROM `DEPT`\n"
         + "CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)";
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(expected);
 
     // Supported in Oracle 12 but not Oracle 10
-    conformance = SqlConformanceEnum.ORACLE_10;
-    sql(sql).fails(pattern);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.ORACLE_10))
+        .fails(pattern);
 
-    conformance = SqlConformanceEnum.ORACLE_12;
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.ORACLE_12))
+        .ok(expected);
   }
 
   /** Tests OUTER APPLY. */
   @Test void testOuterApply() {
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
     final String sql = "select * from dept outer apply table(ramp(deptno))";
     final String expected = "SELECT *\n"
         + "FROM `DEPT`\n"
         + "LEFT JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) ON TRUE";
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(expected);
   }
 
   @Test void testOuterApplySubQuery() {
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
     final String sql = "select * from dept\n"
         + "outer apply (select * from emp where emp.deptno = dept.deptno)";
     final String expected = "SELECT *\n"
@@ -2888,11 +2903,12 @@ public class SqlParserTest {
         + "LEFT JOIN LATERAL (SELECT *\n"
         + "FROM `EMP`\n"
         + "WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)) ON TRUE";
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(expected);
   }
 
   @Test void testOuterApplyValues() {
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
     final String sql = "select * from dept\n"
         + "outer apply (select * from emp where emp.deptno = dept.deptno)";
     final String expected = "SELECT *\n"
@@ -2900,19 +2916,21 @@ public class SqlParserTest {
         + "LEFT JOIN LATERAL (SELECT *\n"
         + "FROM `EMP`\n"
         + "WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)) ON TRUE";
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(expected);
   }
 
   /** Even in SQL Server conformance mode, we do not yet support
    * 'function(args)' as an abbreviation for 'table(function(args)'. */
   @Test void testOuterApplyFunctionFails() {
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
     final String sql = "select * from dept outer apply ramp(deptno^)^)";
-    sql(sql).fails("(?s).*Encountered \"\\)\" at .*");
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .fails("(?s).*Encountered \"\\)\" at .*");
   }
 
   @Test void testCrossOuterApply() {
-    conformance = SqlConformanceEnum.SQL_SERVER_2008;
     final String sql = "select * from dept\n"
         + "cross apply table(ramp(deptno)) as t(a)\n"
         + "outer apply table(ramp2(a))";
@@ -2920,7 +2938,9 @@ public class SqlParserTest {
         + "FROM `DEPT`\n"
         + "CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)\n"
         + "LEFT JOIN LATERAL TABLE(`RAMP2`(`A`)) ON TRUE";
-    sql(sql).ok(expected);
+    sql(sql)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
+        .ok(expected);
   }
 
   @Test void testTableSample() {
@@ -3028,12 +3048,15 @@ public class SqlParserTest {
     final String sql0b = "SELECT 1 AS `AN_ALIAS`, X'01'\n"
         + "'AB' AS `X`\n"
         + "FROM `T`";
-    conformance = SqlConformanceEnum.DEFAULT;
-    sql(sql0).ok(sql0b);
-    conformance = SqlConformanceEnum.MYSQL_5;
-    sql(sql0).ok(sql0b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql0).ok(sql0b);
+    sql(sql0)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .ok(sql0b);
+    sql(sql0)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .ok(sql0b);
+    sql(sql0)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .ok(sql0b);
 
     // Is 'ab' an alias or is it part of the x'01' 'ab' continued binary string
     // literal? It's ambiguous, but we prefer the latter.
@@ -3044,12 +3067,15 @@ public class SqlParserTest {
     final String sql1b = "SELECT 1 AS `an alias`, X'01'\n"
         + "'AB'\n"
         + "FROM `T`";
-    conformance = SqlConformanceEnum.DEFAULT;
-    sql(sql1).fails(expectingAlias);
-    conformance = SqlConformanceEnum.MYSQL_5;
-    sql(sql1).ok(sql1b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql1).ok(sql1b);
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .fails(expectingAlias);
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .ok(sql1b);
+    sql(sql1)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .ok(sql1b);
 
     // Parser prefers continued character and binary string literals over
     // character string aliases, regardless of whether the dialect allows
@@ -3063,12 +3089,15 @@ public class SqlParserTest {
         + "'char literal, not alias', X'01'\n"
         + "'AB'\n"
         + "FROM `T`";
-    conformance = SqlConformanceEnum.DEFAULT;
-    sql(sql2).ok(sql2b);
-    conformance = SqlConformanceEnum.MYSQL_5;
-    sql(sql2).ok(sql2b);
-    conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql2).ok(sql2b);
+    sql(sql2)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
+        .ok(sql2b);
+    sql(sql2)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.MYSQL_5))
+        .ok(sql2b);
+    sql(sql2)
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.BIG_QUERY))
+        .ok(sql2b);
   }
 
   @Test void testMixedFrom() {
@@ -3323,30 +3352,32 @@ public class SqlParserTest {
   }
 
   @Test void testLimitStartCount() {
-    conformance = SqlConformanceEnum.DEFAULT;
     final String error = "'LIMIT start, count' is not allowed under the "
         + "current SQL conformance level";
     sql("select a from foo limit 1,^2^")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
         .fails(error);
 
     // "limit all" is equivalent to no limit
     final String expected0 = "SELECT `A`\n"
         + "FROM `FOO`";
     sql("select a from foo limit all")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
         .ok(expected0);
 
     final String expected1 = "SELECT `A`\n"
         + "FROM `FOO`\n"
         + "ORDER BY `X`";
     sql("select a from foo order by x limit all")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT))
         .ok(expected1);
 
-    conformance = SqlConformanceEnum.LENIENT;
     final String expected2 = "SELECT `A`\n"
         + "FROM `FOO`\n"
         + "OFFSET 2 ROWS\n"
         + "FETCH NEXT 3 ROWS ONLY";
     sql("select a from foo limit 2,3")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .ok(expected2);
 
     // "offset 4" overrides the earlier "2"
@@ -3355,6 +3386,7 @@ public class SqlParserTest {
         + "OFFSET 4 ROWS\n"
         + "FETCH NEXT 3 ROWS ONLY";
     sql("select a from foo limit 2,3 offset 4")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .ok(expected3);
 
     // "fetch next 4" overrides the earlier "limit 3"
@@ -3363,10 +3395,12 @@ public class SqlParserTest {
         + "OFFSET 2 ROWS\n"
         + "FETCH NEXT 4 ROWS ONLY";
     sql("select a from foo limit 2,3 fetch next 4 rows only")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .ok(expected4);
 
     // "limit start, all" is not valid
     sql("select a from foo limit 2, ^all^")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .fails("(?s).*Encountered \"all\" at line 1.*");
   }
 
@@ -4214,11 +4248,11 @@ public class SqlParserTest {
         + "FROM `EMPS`)";
     sql("insert into emps(z boolean)(x,y) select * from emps")
         .ok(expected);
-    conformance = SqlConformanceEnum.LENIENT;
     expected = "INSERT INTO `EMPS` EXTEND (`Z` BOOLEAN) (`X`, `Y`, `Z`)\n"
         + "(SELECT *\n"
         + "FROM `EMPS`)";
     sql("insert into emps(x, y, z boolean) select * from emps")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .ok(expected);
   }
 
@@ -4257,11 +4291,11 @@ public class SqlParserTest {
         + "FROM `EMPS`)";
     sql("insert into \"emps\"(\"z\" boolean)(\"x\",\"y\") select * from emps")
         .ok(expected);
-    conformance = SqlConformanceEnum.LENIENT;
     expected = "INSERT INTO `emps` EXTEND (`z` BOOLEAN) (`x`, `y`, `z`)\n"
         + "(SELECT *\n"
         + "FROM `EMPS`)";
     sql("insert into \"emps\"(\"x\", \"y\", \"z\" boolean) select * from emps")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .ok(expected);
   }
 
@@ -7572,8 +7606,8 @@ public class SqlParserTest {
   @Test void testGeometry() {
     expr("cast(null as ^geometry^)")
         .fails("Geo-spatial extensions and the GEOMETRY data type are not enabled");
-    conformance = SqlConformanceEnum.LENIENT;
     expr("cast(null as geometry)")
+        .withConfig(c -> c.withConformance(SqlConformanceEnum.LENIENT))
         .ok("CAST(NULL AS GEOMETRY)");
   }
 
@@ -10002,7 +10036,8 @@ public class SqlParserTest {
       // Parse and unparse again.
       // (Turn off parser checking, and use double-quotes.)
       SqlNode sqlNode2 =
-          parseStmtAndHandleEx(sql1, c -> c.withQuoting(Quoting.DOUBLE_QUOTE),
+          parseExpressionAndHandleEx(sql1,
+              transform.andThen(c -> c.withQuoting(Quoting.DOUBLE_QUOTE))::apply,
               parser -> { });
       final String sql2 =
           sqlNode2.toSqlString(UnaryOperator.identity()).getSql();
@@ -10149,7 +10184,7 @@ public class SqlParserTest {
     /** Returns the dialect (may be null). */
     @Nullable SqlDialect dialect();
 
-    /** Withs {@link #dialect()}. */
+    /** Sets {@link #dialect()}. */
     Config withDialect(@Nullable SqlDialect dialect);
 
     /** Returns how identifiers are quoted, default DOUBLE_QUOTE. */
@@ -10157,8 +10192,29 @@ public class SqlParserTest {
       return Quoting.DOUBLE_QUOTE;
     }
 
-    /** Withs {@link #quoting()}. */
+    /** Sets {@link #quoting()}. */
     Config withQuoting(Quoting quoting);
+
+    @Value.Default default Casing quotedCasing() {
+      return Casing.UNCHANGED;
+    }
+
+    /** Sets {@link #quotedCasing()}. */
+    Config withQuotedCasing(Casing casing);
+
+    @Value.Default default Casing unquotedCasing() {
+      return Casing.TO_UPPER;
+    }
+
+    /** Sets {@link #unquotedCasing()}. */
+    Config withUnquotedCasing(Casing casing);
+
+    @Value.Default default SqlConformance conformance() {
+      return SqlConformanceEnum.DEFAULT;
+    }
+
+    /** Sets {@link #conformance()}. */
+    Config withConformance(SqlConformance conformance);
   }
 
   /** Helper class for building fluent code,
