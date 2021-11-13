@@ -4446,7 +4446,7 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(+($0, 1), $7)])
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(+($0, 1), $7)])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
@@ -4494,7 +4494,7 @@ from (select deptno, job, 1 as measure uno from emp) as t]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], $f1=[COUNT() OVER ()], $f2=[1], $f3=[2])
+LogicalProject(DEPTNO=[$7], C=[COUNT() OVER ()], UNO=[1], TWO=[2])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
