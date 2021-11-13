@@ -80,6 +80,10 @@ public class RexUtil {
   public static final RexExecutor EXECUTOR =
       new RexExecutorImpl(DataContexts.EMPTY);
 
+  /** Finds calls to the
+   * {@link org.apache.calcite.sql.fun.SqlInternalOperators#M2V} function. */
+  public static final RexFinder M2V_FINDER = find(SqlKind.M2V);
+
   private RexUtil() {
   }
 
