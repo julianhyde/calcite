@@ -600,7 +600,6 @@ public class SqlParserTest {
   private static final SqlDialect REDSHIFT =
       SqlDialect.DatabaseProduct.REDSHIFT.getDialect();
 
-  Quoting quoting = Quoting.DOUBLE_QUOTE;
   Casing unquotedCasing = Casing.TO_UPPER;
   Casing quotedCasing = Casing.UNCHANGED;
   SqlConformance conformance = SqlConformanceEnum.DEFAULT;
@@ -628,26 +627,36 @@ public class SqlParserTest {
   }
 
   public SqlParser getSqlParser(String sql) {
-    return getSqlParser(new SourceStringReader(sql), UnaryOperator.identity());
+    return sqlParser(new SourceStringReader(sql), parserConfig(),
+        UnaryOperator.identity());
   }
 
-  protected SqlParser getSqlParser(Reader source,
+  protected static SqlParser sqlParser(Reader source,
+      SqlParser.Config parserConfig,
       UnaryOperator<SqlParser.Config> transform) {
-    final SqlParser.Config configBuilder =
-        SqlParser.config()
-            .withParserFactory(parserImplFactory())
-            .withQuoting(quoting)
-            .withUnquotedCasing(unquotedCasing)
-            .withQuotedCasing(quotedCasing)
-            .withConformance(conformance);
-    final SqlParser.Config config = transform.apply(configBuilder);
+    final SqlParser.Config config = transform.apply(parserConfig);
     return SqlParser.create(source, config);
   }
 
+  private SqlParser.Config parserConfig() { // TODO: remove
+    return SqlParser.config()
+        .withParserFactory(parserImplFactory())
+        .withUnquotedCasing(unquotedCasing)
+        .withQuotedCasing(quotedCasing)
+        .withConformance(conformance);
+  }
+
+  /** Given a test config, returns a transform that adds the necessary options
+   * to a parser config. */
   private static UnaryOperator<SqlParser.Config> getTransform(Config config) {
     final SqlDialect dialect = config.dialect();
-    return dialect == null ? UnaryOperator.identity()
-        : dialect::configureParser;
+    return c -> {
+      c = c.withQuoting(config.quoting());
+      if (dialect != null) {
+        c = dialect.configureParser(c);
+      }
+      return c;
+    };
   }
 
   /** Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a
@@ -2274,81 +2283,90 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickIdentifier() {
-    quoting = Quoting.BACK_TICK;
-    expr("ab").ok("`AB`");
-    expr("     `a  \" b!c`").ok("`a  \" b!c`");
-    expr("     ^\"^a  \"\" b!c\"")
+    Sql f = sql("?")
+        .withConfig(c -> c.withQuoting(Quoting.BACK_TICK))
+        .expression();
+    f.sql("ab").ok("`AB`");
+    f.sql("     `a  \" b!c`").ok("`a  \" b!c`");
+    f.sql("     ^\"^a  \"\" b!c\"")
         .fails("(?s).*Encountered.*");
 
-    expr("^\"^x`y`z\"").fails("(?s).*Encountered.*");
-    expr("`x``y``z`").ok("`x``y``z`");
-    expr("`x\\`^y^\\`z`").fails("(?s).*Encountered.*");
+    f.sql("^\"^x`y`z\"").fails("(?s).*Encountered.*");
+    f.sql("`x``y``z`").ok("`x``y``z`");
+    f.sql("`x\\`^y^\\`z`").fails("(?s).*Encountered.*");
 
-    expr("myMap[field] + myArray[1 + 2]")
+    f.sql("myMap[field] + myArray[1 + 2]")
         .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
 
-    sql("VALUES a").node(isQuoted(0, false));
-    sql("VALUES `a`").node(isQuoted(0, true));
-    sql("VALUES `a``b`").node(isQuoted(0, true));
+    f = f.expression(false);
+    f.sql("VALUES a").node(isQuoted(0, false));
+    f.sql("VALUES `a`").node(isQuoted(0, true));
+    f.sql("VALUES `a``b`").node(isQuoted(0, true));
   }
 
   @Test void testBackTickBackslashIdentifier() {
-    quoting = Quoting.BACK_TICK_BACKSLASH;
-    expr("ab").ok("`AB`");
-    expr("     `a  \" b!c`").ok("`a  \" b!c`");
-    expr("     \"a  \"^\" b!c\"^")
+    Sql f = sql("?")
+        .withConfig(c -> c.withQuoting(Quoting.BACK_TICK_BACKSLASH))
+        .expression();
+    f.sql("ab").ok("`AB`");
+    f.sql("     `a  \" b!c`").ok("`a  \" b!c`");
+    f.sql("     \"a  \"^\" b!c\"^")
         .fails("(?s).*Encountered.*");
 
     // BACK_TICK_BACKSLASH identifiers implies
     // BigQuery dialect, which implies double-quoted character literals.
-    expr("^\"^x`y`z\"").ok("'x`y`z'");
-    expr("`x`^`y`^`z`").fails("(?s).*Encountered.*");
-    expr("`x\\`y\\`z`").ok("`x``y``z`");
+    f.sql("^\"^x`y`z\"").ok("'x`y`z'");
+    f.sql("`x`^`y`^`z`").fails("(?s).*Encountered.*");
+    f.sql("`x\\`y\\`z`").ok("`x``y``z`");
 
-    expr("myMap[field] + myArray[1 + 2]")
+    f.sql("myMap[field] + myArray[1 + 2]")
         .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
 
-    sql("VALUES a").node(isQuoted(0, false));
-    sql("VALUES `a`").node(isQuoted(0, true));
-    sql("VALUES `a\\`b`").node(isQuoted(0, true));
+    f = f.expression(false);
+    f.sql("VALUES a").node(isQuoted(0, false));
+    f.sql("VALUES `a`").node(isQuoted(0, true));
+    f.sql("VALUES `a\\`b`").node(isQuoted(0, true));
   }
 
   @Test void testBracketIdentifier() {
-    quoting = Quoting.BRACKET;
-    expr("ab").ok("`AB`");
-    expr("     [a  \" b!c]").ok("`a  \" b!c`");
-    expr("     ^`^a  \" b!c`")
+    Sql f = sql("?")
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET))
+        .expression();
+    f.sql("ab").ok("`AB`");
+    f.sql("     [a  \" b!c]").ok("`a  \" b!c`");
+    f.sql("     ^`^a  \" b!c`")
         .fails("(?s).*Encountered.*");
-    expr("     ^\"^a  \"\" b!c\"")
-        .fails("(?s).*Encountered.*");
-
-    expr("[x`y`z]").ok("`x``y``z`");
-    expr("^\"^x`y`z\"")
-        .fails("(?s).*Encountered.*");
-    expr("^`^x``y``z`")
+    f.sql("     ^\"^a  \"\" b!c\"")
         .fails("(?s).*Encountered.*");
 
-    expr("[anything [even brackets]] is].[ok]")
+    f.sql("[x`y`z]").ok("`x``y``z`");
+    f.sql("^\"^x`y`z\"")
+        .fails("(?s).*Encountered.*");
+    f.sql("^`^x``y``z`")
+        .fails("(?s).*Encountered.*");
+
+    f.sql("[anything [even brackets]] is].[ok]")
         .ok("`anything [even brackets] is`.`ok`");
 
     // What would be a call to the 'item' function in DOUBLE_QUOTE and BACK_TICK
     // is a table alias.
-    sql("select * from myMap[field], myArray[1 + 2]")
+    f = f.expression(false);
+    f.sql("select * from myMap[field], myArray[1 + 2]")
         .ok("SELECT *\n"
             + "FROM `MYMAP` AS `field`,\n"
             + "`MYARRAY` AS `1 + 2`");
-    sql("select * from myMap [field], myArray [1 + 2]")
+    f.sql("select * from myMap [field], myArray [1 + 2]")
         .ok("SELECT *\n"
             + "FROM `MYMAP` AS `field`,\n"
             + "`MYARRAY` AS `1 + 2`");
 
-    sql("VALUES a").node(isQuoted(0, false));
-    sql("VALUES [a]").node(isQuoted(0, true));
+    f.sql("VALUES a").node(isQuoted(0, false));
+    f.sql("VALUES [a]").node(isQuoted(0, true));
   }
 
   @Test void testBackTickQuery() {
-    quoting = Quoting.BACK_TICK;
     sql("select `x`.`b baz` from `emp` as `x` where `x`.deptno in (10, 20)")
+        .withConfig(c -> c.withQuoting(Quoting.BACK_TICK))
         .ok("SELECT `x`.`b baz`\n"
             + "FROM `emp` AS `x`\n"
             + "WHERE (`x`.`DEPTNO` IN (10, 20))");
@@ -2376,55 +2394,61 @@ public class SqlParserTest {
     // valid on MSSQL (alias contains a single quote)
     final String sql2 = "with t as (select 1 as ^'x''y'^)\n"
         + "select [x'y] from t as [u]";
+    final Sql f2 = sql(sql2)
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
     conformance = SqlConformanceEnum.DEFAULT;
-    quoting = Quoting.BRACKET;
-    sql(sql2).fails(expectingAlias);
+    f2.fails(expectingAlias);
     conformance = SqlConformanceEnum.MYSQL_5;
     final String sql2b = "WITH `T` AS (SELECT 1 AS `x'y`) (SELECT `x'y`\n"
         + "FROM `T` AS `u`)";
-    sql(sql2).ok(sql2b);
+    f2.ok(sql2b);
     conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql2).ok(sql2b);
+    f2.ok(sql2b);
     conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(sql2).ok(sql2b);
+    f2.ok(sql2b);
 
     // also valid on MSSQL
     final String sql3 = "with [t] as (select 1 as [x]) select [x] from [t]";
     final String sql3b = "WITH `t` AS (SELECT 1 AS `x`) (SELECT `x`\n"
         + "FROM `t`)";
+    final Sql f3 = sql(sql3)
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
     conformance = SqlConformanceEnum.DEFAULT;
-    quoting = Quoting.BRACKET;
-    sql(sql3).ok(sql3b);
+    f3.ok(sql3b);
     conformance = SqlConformanceEnum.MYSQL_5;
-    sql(sql3).ok(sql3b);
+    f3.ok(sql3b);
     conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql3).ok(sql3b);
+    f3.ok(sql3b);
     conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(sql3).ok(sql3b);
+    f3.ok(sql3b);
 
     // char literal as table alias is invalid on MSSQL (and others)
     final String sql4 = "with t as (select 1 as x) select x from t as ^'u'^";
     final String sql4b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
     conformance = SqlConformanceEnum.DEFAULT;
-    sql(sql4).fails(sql4b);
+    final Sql f4 = sql(sql4)
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
+    f4.fails(sql4b);
     conformance = SqlConformanceEnum.MYSQL_5;
-    sql(sql4).fails(sql4b);
+    f4.fails(sql4b);
     conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql4).fails(sql4b);
+    f4.fails(sql4b);
     conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(sql4).fails(sql4b);
+    f4.fails(sql4b);
 
     // char literal as table alias (without AS) is invalid on MSSQL (and others)
     final String sql5 = "with t as (select 1 as x) select x from t ^'u'^";
     final String sql5b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
     conformance = SqlConformanceEnum.DEFAULT;
-    sql(sql5).fails(sql5b);
+    final Sql f5 = sql(sql5)
+        .withConfig(c -> c.withQuoting(Quoting.BRACKET));
+    f5.fails(sql5b);
     conformance = SqlConformanceEnum.MYSQL_5;
-    sql(sql5).fails(sql5b);
+    f5.fails(sql5b);
     conformance = SqlConformanceEnum.BIG_QUERY;
-    sql(sql5).fails(sql5b);
+    f5.fails(sql5b);
     conformance = SqlConformanceEnum.SQL_SERVER_2008;
-    sql(sql5).fails(sql5b);
+    f5.fails(sql5b);
   }
 
   @Test void testInList() {
@@ -4031,9 +4055,10 @@ public class SqlParserTest {
   }
 
   @Test void testExplainJsonFormat() {
-    final String sql = "explain plan as json for select * from emps";
     TesterImpl tester = (TesterImpl) getTester();
-    SqlExplain sqlExplain = (SqlExplain) tester.parseStmtsAndHandleEx(sql).get(0);
+    SqlExplain sqlExplain =
+        (SqlExplain) sql("explain plan as json for select * from emps")
+            .nodeList().get(0);
     assertThat(sqlExplain.isJson(), is(true));
   }
 
@@ -7819,7 +7844,7 @@ public class SqlParserTest {
   }
 
   @Test protected void testMetadata() {
-    SqlAbstractParserImpl.Metadata metadata = getSqlParser("").getMetadata();
+    SqlAbstractParserImpl.Metadata metadata = sql("").parser().getMetadata();
     assertThat(metadata.isReservedFunctionName("ABS"), is(true));
     assertThat(metadata.isReservedFunctionName("FOO"), is(false));
 
@@ -9341,7 +9366,7 @@ public class SqlParserTest {
 
   @Test void testParseWithReader() throws Exception {
     String query = "select * from dual";
-    SqlParser sqlParserReader = getSqlParser(new StringReader(query), b -> b);
+    SqlParser sqlParserReader = sqlParser(new StringReader(query), parserConfig(), b -> b);
     SqlNode node1 = sqlParserReader.parseQuery();
     SqlParser sqlParserString = getSqlParser(query);
     SqlNode node2 = sqlParserString.parseQuery();
@@ -9676,7 +9701,8 @@ public class SqlParserTest {
 
     @Override public void checkList(StringAndPos sap, Config config,
         List<String> expected) {
-      final SqlNodeList sqlNodeList = parseStmtsAndHandleEx(sap.sql);
+      final SqlNodeList sqlNodeList =
+          parseStmtsAndHandleEx(sap.sql, getTransform(config));
       assertThat(sqlNodeList.size(), is(expected.size()));
 
       final Config config2 = config.withDialect(null);
@@ -9698,7 +9724,7 @@ public class SqlParserTest {
         UnaryOperator<SqlParser.Config> transform,
         Consumer<SqlParser> parserChecker) {
       final Reader reader = new SourceStringReader(sql);
-      final SqlParser parser = getSqlParser(reader, transform);
+      final SqlParser parser = sqlParser(reader, parserConfig(), transform);
       final SqlNode sqlNode;
       try {
         sqlNode = parser.parseStmt();
@@ -9710,10 +9736,13 @@ public class SqlParserTest {
     }
 
     /** Parses a list of statements. */
-    protected SqlNodeList parseStmtsAndHandleEx(String sql) {
+    protected SqlNodeList parseStmtsAndHandleEx(String sql,
+        UnaryOperator<SqlParser.Config> transform) {
+      final Reader reader = new SourceStringReader(sql);
+      final SqlParser parser = sqlParser(reader, parserConfig(), transform);
       final SqlNodeList sqlNodeList;
       try {
-        sqlNodeList = getSqlParser(sql).parseStmtList();
+        sqlNodeList = parser.parseStmtList();
       } catch (SqlParseException e) {
         throw new RuntimeException("Error while parsing SQL: " + sql, e);
       }
@@ -9735,7 +9764,7 @@ public class SqlParserTest {
       final SqlNode sqlNode;
       try {
         final SqlParser parser =
-            getSqlParser(new SourceStringReader(sql), transform);
+            sqlParser(new SourceStringReader(sql), parserConfig(), transform);
         sqlNode = parser.parseExpression();
         parserChecker.accept(parser);
       } catch (SqlParseException e) {
@@ -9752,7 +9781,7 @@ public class SqlParserTest {
         final UnaryOperator<SqlParser.Config> transform =
             getTransform(config);
         final Reader reader = new SourceStringReader(sap.sql);
-        final SqlParser parser = getSqlParser(reader, transform);
+        final SqlParser parser = sqlParser(reader, parserConfig(), transform);
         if (list) {
           sqlNode = parser.parseStmtList();
         } else {
@@ -9771,7 +9800,7 @@ public class SqlParserTest {
       try {
         final UnaryOperator<SqlParser.Config> transform = getTransform(config);
         final Reader reader = new SourceStringReader(sap.sql);
-        final SqlParser parser = getSqlParser(reader, transform);
+        final SqlParser parser = sqlParser(reader, parserConfig(), transform);
         final SqlNode sqlNode = parser.parseStmt();
         assertThat(sqlNode, matcher);
       } catch (SqlParseException e) {
@@ -9789,7 +9818,7 @@ public class SqlParserTest {
       try {
         final UnaryOperator<SqlParser.Config> transform = getTransform(config);
         final Reader reader = new SourceStringReader(sap.sql);
-        final SqlParser parser = getSqlParser(reader, transform);
+        final SqlParser parser = sqlParser(reader, parserConfig(), transform);
         final SqlNode sqlNode = parser.parseExpression();
         Util.discard(sqlNode);
       } catch (Throwable ex) {
@@ -9880,7 +9909,8 @@ public class SqlParserTest {
 
     @Override public void checkList(StringAndPos sap, Config config,
         List<String> expected) {
-      SqlNodeList sqlNodeList = parseStmtsAndHandleEx(sap.sql);
+      SqlNodeList sqlNodeList =
+          parseStmtsAndHandleEx(sap.sql, getTransform(config));
 
       checkList(sqlNodeList, config, expected);
 
@@ -9889,14 +9919,9 @@ public class SqlParserTest {
       final String sql1 = toSqlString(sqlNodeList, simple());
 
       // Parse and unparse again.
-      SqlNodeList sqlNodeList2;
-      final Quoting q = quoting;
-      try {
-        quoting = Quoting.DOUBLE_QUOTE;
-        sqlNodeList2 = parseStmtsAndHandleEx(sql1);
-      } finally {
-        quoting = q;
-      }
+      SqlNodeList sqlNodeList2 =
+          parseStmtsAndHandleEx(sql1,
+              getTransform(config.withQuoting(Quoting.DOUBLE_QUOTE)));
       final String sql2 = toSqlString(sqlNodeList2, simple());
 
       // Should be the same as we started with.
@@ -9931,14 +9956,9 @@ public class SqlParserTest {
       final String sql1 = sqlNode.toSqlString(simple()).getSql();
 
       // Parse and unparse again.
-      SqlNode sqlNode2;
-      final Quoting q = quoting;
-      try {
-        quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode2 = parseStmtAndHandleEx(sql1, b -> b, parser -> { });
-      } finally {
-        quoting = q;
-      }
+      SqlNode sqlNode2 =
+          parseStmtAndHandleEx(sql1, c -> c.withQuoting(Quoting.DOUBLE_QUOTE),
+              parser -> { });
       final String sql2 = sqlNode2.toSqlString(simple()).getSql();
 
       // Should be the same as we started with.
@@ -9955,13 +9975,9 @@ public class SqlParserTest {
       final Random random = new Random();
       final String sql3 = sqlNode.toSqlString(randomize(random)).getSql();
       assertThat(sql3, notNullValue());
-      SqlNode sqlNode4;
-      try {
-        quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode4 = parseStmtAndHandleEx(sql1, b -> b, parser -> { });
-      } finally {
-        quoting = q;
-      }
+      SqlNode sqlNode4 =
+          parseStmtAndHandleEx(sql1, c -> c.withQuoting(Quoting.DOUBLE_QUOTE),
+              parser -> { });
       final String sql4 = sqlNode4.toSqlString(simple()).getSql();
       assertEquals(sql1, sql4);
     }
@@ -9985,14 +10001,9 @@ public class SqlParserTest {
 
       // Parse and unparse again.
       // (Turn off parser checking, and use double-quotes.)
-      SqlNode sqlNode2;
-      final Quoting q = quoting;
-      try {
-        quoting = Quoting.DOUBLE_QUOTE;
-        sqlNode2 = parseExpressionAndHandleEx(sql1, transform, parser -> { });
-      } finally {
-        quoting = q;
-      }
+      SqlNode sqlNode2 =
+          parseStmtAndHandleEx(sql1, c -> c.withQuoting(Quoting.DOUBLE_QUOTE),
+              parser -> { });
       final String sql2 =
           sqlNode2.toSqlString(UnaryOperator.identity()).getSql();
 
@@ -10069,10 +10080,21 @@ public class SqlParserTest {
       return this;
     }
 
+    /** Changes the SQL. */
+    public Sql sql(String sql) {
+      return sql.equals(this.sap.addCarets()) ? this
+          : new Sql(StringAndPos.of(sql), expression, dialect, tester, transform, parserChecker);
+    }
+
     /** Flags that this is an expression, not a whole query. */
     public Sql expression() {
-      return expression ? this
-          : new Sql(sap, true, dialect, tester, transform, parserChecker);
+      return expression(true);
+    }
+
+    /** Sets whether this is an expression (as opposed to a whole query). */
+    public Sql expression(boolean expression) {
+      return this.expression == expression ? this
+          : new Sql(sap, expression, dialect, tester, transform, parserChecker);
     }
 
     /** Creates an instance of helper class {@link SqlList} to test parsing a
@@ -10099,6 +10121,16 @@ public class SqlParserTest {
       final UnaryOperator<Config> t2 = t0.andThen(t1)::apply;
       return new Sql(sap, expression, dialect, tester, t2, parserChecker);
     }
+
+    public SqlParser parser() {
+      return sqlParser(new StringReader(sap.addCarets()),
+          SqlParser.Config.DEFAULT, getTransform(config()));
+    }
+
+    public SqlNodeList nodeList() {
+      return ((TesterImpl) tester).parseStmtsAndHandleEx(sap.addCarets(),
+          getTransform(config()));
+    }
   }
 
   /** Test configuration. */
@@ -10119,6 +10151,14 @@ public class SqlParserTest {
 
     /** Withs {@link #dialect()}. */
     Config withDialect(@Nullable SqlDialect dialect);
+
+    /** Returns how identifiers are quoted, default DOUBLE_QUOTE. */
+    @Value.Default default Quoting quoting() {
+      return Quoting.DOUBLE_QUOTE;
+    }
+
+    /** Withs {@link #quoting()}. */
+    Config withQuoting(Quoting quoting);
   }
 
   /** Helper class for building fluent code,
