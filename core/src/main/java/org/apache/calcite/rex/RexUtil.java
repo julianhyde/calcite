@@ -80,6 +80,10 @@ public class RexUtil {
   public static final RexExecutor EXECUTOR =
       new RexExecutorImpl(DataContexts.EMPTY);
 
+  /** Finds calls to the
+   * {@link org.apache.calcite.sql.fun.SqlInternalOperators#M2V} function. */
+  public static final RexFinder M2V_FINDER = find(SqlKind.M2V);
+
   private RexUtil() {
   }
 
@@ -3015,7 +3019,14 @@ public class RexUtil {
       return contains(filter.getCondition());
     }
 
-    /** Returns whether a {@link Join} contains kind of expression we seek. */
+    /** Returns whether a {@link RexProgram} contains the kind of expression we
+     * seek. */
+    public boolean inProgram(RexProgram program) {
+      return anyContain(program.getExprList());
+    }
+
+    /** Returns whether a {@link Join} contains the kind of expression we
+     * seek. */
     public boolean inJoin(Join join) {
       return contains(join.getCondition());
     }

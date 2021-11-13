@@ -6144,10 +6144,19 @@ order by deptno]]>
     </Resource>
     <Resource name="planBefore">
       <![CDATA[
-LogicalProject(DEPTNO=[$0], $f1=[M2V($1)])
+LogicalProject(DEPTNO=[$0], C1=[M2V($1)])
   LogicalSort(sort0=[$0], dir0=[ASC])
     LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], C1=[$2])
+  LogicalSort(sort0=[$0], dir0=[ASC])
+    LogicalProject(DEPTNO=[$0], C1=[$1], $f2=[M2V($1)])
+      LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
+        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>
