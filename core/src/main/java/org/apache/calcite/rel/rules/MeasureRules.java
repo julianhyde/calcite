@@ -22,10 +22,20 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RelBuilder;
 
 import org.immutables.value.Value;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Collection of planner rules that deal with measures.
@@ -108,8 +118,43 @@ public abstract class MeasureRules {
 
     @Override public void onMatch(RelOptRuleCall call) {
       final Project project = call.rel(0);
+      final Sort sort = call.rel(1);
       final RelBuilder relBuilder = call.builder();
-      relBuilder.push(project.getInput());
+
+      // Given
+      //   Project [$0, 1 + M2V(2)]  (a)
+      //     Sort $1 desc
+      //       R
+      // transform to
+      //   Project [$0, 1 + $2]  (b)
+      //     Sort $1 desc
+      //       Project [$0, $1, M2V(2)]  (c)
+      //         R
+      //
+      // projects is [$0, 1 + M2V(2)] (see a)
+      // newProjects is [$0, 1 + $2]
+      // map.keys() is [M2V(2)] (see c)
+
+      final List<RexNode> projects = project.getAliasedProjects(relBuilder);
+      final Map<RexCall, RexInputRef> map = new LinkedHashMap<>();
+      final List<RexNode> newProjects =
+          new RexShuttle() {
+            @Override public RexNode visitCall(RexCall call) {
+              if (call.getKind() == SqlKind.M2V) {
+                return map.computeIfAbsent(call, c ->
+                    relBuilder.getRexBuilder().makeInputRef(call.getType(),
+                        projects.size() + map.size()));
+              }
+              return super.visitCall(call);
+            }
+          }.apply(projects);
+
+      relBuilder.push(sort.getInput())
+          .projectPlus(map.keySet())
+          .sortLimit(sort.offset == null ? 0 : RexLiteral.intValue(sort.offset),
+              sort.fetch == null ? -1 : RexLiteral.intValue(sort.fetch),
+              sort.getSortExps())
+          .project(newProjects);
       call.transformTo(relBuilder.build());
     }
   }
@@ -120,6 +165,7 @@ public abstract class MeasureRules {
     ProjectSortMeasureRuleConfig DEFAULT =
         ImmutableProjectSortMeasureRuleConfig.of().withOperandSupplier(b ->
             b.operand(Project.class)
+                .predicate(RexUtil.M2V_FINDER::inProject)
                 .oneInput(b2 -> b2.operand(Sort.class)
                     .anyInputs()));
 
