@@ -111,14 +111,19 @@ public class SqlValidatorTestCase {
     return new SqlValidatorTester(SqlTestFactory.INSTANCE);
   }
 
+  /** Creates a test fixture. */
+  public final Sql fixture() {
+    return new Sql(tester, StringAndPos.of("?"), true, false);
+  }
+
   /** Creates a test context with a SQL query. */
   public final Sql sql(String sql) {
-    return new Sql(tester, StringAndPos.of(sql), true, false);
+    return fixture().sql(sql);
   }
 
   /** Creates a test context with a SQL expression. */
   public final Sql expr(String sql) {
-    return new Sql(tester, StringAndPos.of(sql), false, false);
+    return fixture().expr(sql);
   }
 
   /** Creates a test context with a SQL expression.

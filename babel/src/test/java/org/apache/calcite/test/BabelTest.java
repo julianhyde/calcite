@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 
 import org.junit.jupiter.api.Test;
@@ -100,29 +101,32 @@ class BabelTest {
 
   /** Tests that you can run tests via {@link Fixtures}. */
   @Test void testFixtures() {
-    Fixtures.forValidator("select ^1 + date '2002-03-04'^")
+    final SqlValidatorTestCase.Sql v = Fixtures.forValidator();
+    v.sql("select ^1 + date '2002-03-04'^")
         .fails("(?s).*Cannot apply '\\+' to arguments of"
             + " type '<INTEGER> \\+ <DATE>'.*");
 
+    v.sql("select 1 + 2 as three")
+        .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
+
     // 'as' as identifier is invalid with Core parser
-    Fixtures.forParser("select ^as^ from t")
+    final SqlParserTest.Sql p = Fixtures.forParser();
+    p.sql("select ^as^ from t")
         .fails("(?s)Encountered \"as\".*");
 
-    // 'as' as identifier is valid with Babel's tester (and Babel parser)
-    Fixtures.forParser("select as from t")
-        .withTester(new BabelParserTest().getTester())
-        .ok("SELECT `AS`\n"
-            + "FROM `T`");
+    // 'as' as identifier is invalid if you use Babel's tester and Core parser
+    p.sql("select ^as^ from t")
+        .withTester(new BabelParserTest.BabelTesterImpl())
+        .fails("(?s)Encountered \"as\".*");
 
     // 'as' as identifier is valid with Babel parser
-    // TODO: use Babel parser without Babel tester
-    Fixtures.forParser("select as from t")
-        .withTester(new BabelParserTest().getTester())
+    p.withConfig(c -> c.withParserFactory(SqlBabelParserImpl.FACTORY))
+        .sql("select as from t")
         .ok("SELECT `AS`\n"
             + "FROM `T`");
 
     // Postgres cast is invalid with core parser
-    Fixtures.forParser("select 1 ^:^: integer as x")
+    p.sql("select 1 ^:^: integer as x")
         .fails("(?s).*Encountered \":\" at .*");
   }
 }

@@ -92,9 +92,9 @@ import static java.util.Objects.requireNonNull;
  * A <code>SqlParserTest</code> is a unit-test for
  * {@link SqlParser the SQL parser}.
  *
- * <p>To reuse this test for an extension parser, implement the
- * {@link #parserImplFactory()} method to return the extension parser
- * implementation.
+ * <p>To reuse this test for an extension parser, override the
+ * {@link #fixture()} method, calling {@link Sql#withConfig(UnaryOperator)}
+ * and then {@link Config#withParserFactory(SqlParserImplFactory)}.
  */
 public class SqlParserTest {
   /**
@@ -600,49 +600,33 @@ public class SqlParserTest {
   private static final SqlDialect REDSHIFT =
       SqlDialect.DatabaseProduct.REDSHIFT.getDialect();
 
-  protected Tester getTester() {
-    return new TesterImpl();
+  /** Creates the test fixture that determines the behavior of tests.
+   * Sub-classes that, say, test different parser implementations should
+   * override. */
+  public Sql fixture() {
+    return new Sql(StringAndPos.of("?"), false, null, new TesterImpl(),
+        c -> c, parser -> { });
   }
 
-  public Sql sql(String sql) { // TODO restore protected
-    return new Sql(StringAndPos.of(sql), false, null, getTester(),
-        c -> c, parser -> { });
+  protected Sql sql(String sql) {
+    return fixture().sql(sql);
   }
 
   protected Sql expr(String sql) {
-    return new Sql(StringAndPos.of(sql), true, null, getTester(),
-        c -> c, parser -> { });
-  }
-
-  /**
-   * Implementors of custom parsing logic who want to reuse this test should
-   * override this method with the factory for their extension parser.
-   */
-  protected SqlParserImplFactory parserImplFactory() {
-    return SqlParserImpl.FACTORY;
-  }
-
-  public SqlParser getSqlParser(String sql) {
-    return sqlParser(new SourceStringReader(sql), parserConfig(),
-        UnaryOperator.identity());
+    return sql(sql).expression(true);
   }
 
   protected static SqlParser sqlParser(Reader source,
-      SqlParser.Config parserConfig,
       UnaryOperator<SqlParser.Config> transform) {
-    final SqlParser.Config config = transform.apply(parserConfig);
+    final SqlParser.Config config = transform.apply(SqlParser.Config.DEFAULT);
     return SqlParser.create(source, config);
-  }
-
-  private SqlParser.Config parserConfig() { // TODO: remove
-    return SqlParser.config()
-        .withParserFactory(parserImplFactory());
   }
 
   /** Given a test config, returns a transform that adds the necessary options
    * to a parser config. */
   private static UnaryOperator<SqlParser.Config> getTransform(Config config) {
     return c -> {
+      c = c.withParserFactory(config.parserFactory());
       c = c.withConformance(config.conformance());
       c = c.withQuoting(config.quoting());
       c = c.withQuotedCasing(config.quotedCasing());
@@ -693,7 +677,7 @@ public class SqlParserTest {
    * used to disable tests that behave differently with different collections
    * of reserved words. */
   protected boolean isReserved(String word) {
-    SqlAbstractParserImpl.Metadata metadata = getSqlParser("").getMetadata();
+    SqlAbstractParserImpl.Metadata metadata = fixture().parser().getMetadata();
     return metadata.isReservedWord(word.toUpperCase(Locale.ROOT));
   }
 
@@ -1268,7 +1252,7 @@ public class SqlParserTest {
     // After this point, SqlUnparserTest has problems.
     // We generate ROW in a dialect that does not allow ROW in all contexts.
     // So bail out.
-    assumeFalse(isUnparserTest());
+    assumeFalse(fixture().tester.isUnparserTest());
     sql(whereRow2)
         .withConfig(c -> c.withConformance(SqlConformanceEnum.SQL_SERVER_2008))
         .ok(whereExpected);
@@ -1310,11 +1294,6 @@ public class SqlParserTest {
         .ok("(ROW((SELECT `DEPTNO`\n"
             + "FROM `DEPT`\n"
             + "WHERE (`DEPT`.`DEPTNO` = `EMP`.`DEPTNO`)), `EMP`.`ENAME`))");
-  }
-
-  /** Whether this is a sub-class that tests un-parsing as well as parsing. */
-  protected boolean isUnparserTest() {
-    return false;
   }
 
   @Test void testRowWithDot() {
@@ -4089,10 +4068,8 @@ public class SqlParserTest {
   }
 
   @Test void testExplainJsonFormat() {
-    TesterImpl tester = (TesterImpl) getTester();
     SqlExplain sqlExplain =
-        (SqlExplain) sql("explain plan as json for select * from emps")
-            .nodeList().get(0);
+        (SqlExplain) sql("explain plan as json for select * from emps").node();
     assertThat(sqlExplain.isJson(), is(true));
   }
 
@@ -6336,7 +6313,7 @@ public class SqlParserTest {
 
   @Test void testVisitSqlInsertWithSqlShuttle() throws Exception {
     final String sql = "insert into emps select * from emps";
-    final SqlNode sqlNode = getSqlParser(sql).parseStmt();
+    final SqlNode sqlNode = sql(sql).node();
     final SqlNode sqlNodeVisited = sqlNode.accept(new SqlShuttle() {
       @Override public SqlNode visit(SqlIdentifier identifier) {
         // Copy the identifier in order to return a new SqlInsert.
@@ -6349,7 +6326,7 @@ public class SqlParserTest {
 
   @Test void testSqlInsertSqlBasicCallToString() throws Exception {
     final String sql0 = "insert into emps select * from emps";
-    final SqlNode sqlNode0 = getSqlParser(sql0).parseStmt();
+    final SqlNode sqlNode0 = sql(sql0).node();
     final SqlNode sqlNodeVisited0 = sqlNode0.accept(new SqlShuttle() {
       @Override public SqlNode visit(SqlIdentifier identifier) {
         // Copy the identifier in order to return a new SqlInsert.
@@ -6362,7 +6339,7 @@ public class SqlParserTest {
     assertThat(str0, is(toLinux(sqlNodeVisited0.toString())));
 
     final String sql1 = "insert into emps select empno from emps";
-    final SqlNode sqlNode1 = getSqlParser(sql1).parseStmt();
+    final SqlNode sqlNode1 = sql(sql1).node();
     final SqlNode sqlNodeVisited1 = sqlNode1.accept(new SqlShuttle() {
       @Override public SqlNode visit(SqlIdentifier identifier) {
         // Copy the identifier in order to return a new SqlInsert.
@@ -6384,7 +6361,7 @@ public class SqlParserTest {
         + "    down as down.sal < PREV(down.sal),\n"
         + "    up as up.sal > PREV(up.sal)\n"
         + ") mr";
-    final SqlNode sqlNode = getSqlParser(sql).parseStmt();
+    final SqlNode sqlNode = sql(sql).node();
     final SqlNode sqlNodeVisited = sqlNode.accept(new SqlShuttle() {
       @Override public SqlNode visit(SqlIdentifier identifier) {
         // Copy the identifier in order to return a new SqlMatchRecognize.
@@ -7926,7 +7903,7 @@ public class SqlParserTest {
   @Test void testNoUnintendedNewReservedKeywords() {
     assumeTrue(isNotSubclass(), "don't run this test for sub-classes");
     final SqlAbstractParserImpl.Metadata metadata =
-        getSqlParser("").getMetadata();
+        fixture().parser().getMetadata();
 
     final SortedSet<String> reservedKeywords = new TreeSet<>();
     final SortedSet<String> keywords92 = keywords("92");
@@ -8094,7 +8071,7 @@ public class SqlParserTest {
   }
 
   @Test void testSqlOptions() throws SqlParseException {
-    SqlNode node = getSqlParser("alter system set schema = true").parseStmt();
+    SqlNode node = sql("alter system set schema = true").node();
     SqlSetOption opt = (SqlSetOption) node;
     assertThat(opt.getScope(), equalTo("SYSTEM"));
     SqlPrettyWriter writer = new SqlPrettyWriter();
@@ -8126,7 +8103,7 @@ public class SqlParserTest {
         .ok("SET `APPROX` = -12.3450")
         .node(isDdl());
 
-    node = getSqlParser("reset schema").parseStmt();
+    node = sql("reset schema").node();
     opt = (SqlSetOption) node;
     assertThat(opt.getScope(), equalTo(null));
     writer = new SqlPrettyWriter();
@@ -9400,10 +9377,9 @@ public class SqlParserTest {
 
   @Test void testParseWithReader() throws Exception {
     String query = "select * from dual";
-    SqlParser sqlParserReader = sqlParser(new StringReader(query), parserConfig(), b -> b);
+    SqlParser sqlParserReader = sqlParser(new StringReader(query), b -> b);
     SqlNode node1 = sqlParserReader.parseQuery();
-    SqlParser sqlParserString = getSqlParser(query);
-    SqlNode node2 = sqlParserString.parseQuery();
+    SqlNode node2 = sql(query).node();
     assertEquals(node2.toString(), node1.toString());
   }
 
@@ -9602,7 +9578,7 @@ public class SqlParserTest {
 
   @Test void testHintThroughShuttle() throws Exception {
     final String sql = "select * from emp /*+ options('key1' = 'val1') */";
-    final SqlNode sqlNode = getSqlParser(sql).parseStmt();
+    final SqlNode sqlNode = sql(sql).node();
     final SqlNode shuttled = sqlNode.accept(new SqlShuttle() {
       @Override public SqlNode visit(SqlIdentifier identifier) {
         // Copy the identifier in order to return a new SqlTableRef.
@@ -9705,10 +9681,17 @@ public class SqlParserTest {
     void checkFails(StringAndPos sap, Config config, boolean list,
         String expectedMsgPattern);
 
+    /** Tests that an expression throws an exception that matches the given
+     * pattern. */
     void checkExpFails(StringAndPos sap, Config config,
         String expectedMsgPattern);
 
     void checkNode(StringAndPos sap, Config config, Matcher<SqlNode> matcher);
+
+    /** Whether this is a sub-class that tests un-parsing as well as parsing. */
+    default boolean isUnparserTest() {
+      return false;
+    }
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -9716,7 +9699,7 @@ public class SqlParserTest {
   /**
    * Default implementation of {@link Tester}.
    */
-  protected class TesterImpl implements Tester {
+  protected static class TesterImpl implements Tester {
     /** Converts a string to linux format (LF line endings rather than CR-LF),
      * except if disabled in {@link Config#isConvertToLinux()}. */
     protected String linux(Config config, String s) {
@@ -9758,7 +9741,7 @@ public class SqlParserTest {
         UnaryOperator<SqlParser.Config> transform,
         Consumer<SqlParser> parserChecker) {
       final Reader reader = new SourceStringReader(sql);
-      final SqlParser parser = sqlParser(reader, parserConfig(), transform);
+      final SqlParser parser = sqlParser(reader, transform);
       final SqlNode sqlNode;
       try {
         sqlNode = parser.parseStmt();
@@ -9773,7 +9756,7 @@ public class SqlParserTest {
     protected SqlNodeList parseStmtsAndHandleEx(String sql,
         UnaryOperator<SqlParser.Config> transform) {
       final Reader reader = new SourceStringReader(sql);
-      final SqlParser parser = sqlParser(reader, parserConfig(), transform);
+      final SqlParser parser = sqlParser(reader, transform);
       final SqlNodeList sqlNodeList;
       try {
         sqlNodeList = parser.parseStmtList();
@@ -9798,7 +9781,7 @@ public class SqlParserTest {
       final SqlNode sqlNode;
       try {
         final SqlParser parser =
-            sqlParser(new SourceStringReader(sql), parserConfig(), transform);
+            sqlParser(new SourceStringReader(sql), transform);
         sqlNode = parser.parseExpression();
         parserChecker.accept(parser);
       } catch (SqlParseException e) {
@@ -9815,7 +9798,7 @@ public class SqlParserTest {
         final UnaryOperator<SqlParser.Config> transform =
             getTransform(config);
         final Reader reader = new SourceStringReader(sap.sql);
-        final SqlParser parser = sqlParser(reader, parserConfig(), transform);
+        final SqlParser parser = sqlParser(reader, transform);
         if (list) {
           sqlNode = parser.parseStmtList();
         } else {
@@ -9834,7 +9817,7 @@ public class SqlParserTest {
       try {
         final UnaryOperator<SqlParser.Config> transform = getTransform(config);
         final Reader reader = new SourceStringReader(sap.sql);
-        final SqlParser parser = sqlParser(reader, parserConfig(), transform);
+        final SqlParser parser = sqlParser(reader, transform);
         final SqlNode sqlNode = parser.parseStmt();
         assertThat(sqlNode, matcher);
       } catch (SqlParseException e) {
@@ -9842,17 +9825,13 @@ public class SqlParserTest {
       }
     }
 
-    /**
-     * Tests that an expression throws an exception which matches the given
-     * pattern.
-     */
     @Override public void checkExpFails(StringAndPos sap, Config config,
         String expectedMsgPattern) {
       Throwable thrown = null;
       try {
         final UnaryOperator<SqlParser.Config> transform = getTransform(config);
         final Reader reader = new SourceStringReader(sap.sql);
-        final SqlParser parser = sqlParser(reader, parserConfig(), transform);
+        final SqlParser parser = sqlParser(reader, transform);
         final SqlNode sqlNode = parser.parseExpression();
         Util.discard(sqlNode);
       } catch (Throwable ex) {
@@ -9878,6 +9857,10 @@ public class SqlParserTest {
    * unparsing a query are consistent with the original query.
    */
   public class UnparsingTesterImpl extends TesterImpl {
+    @Override public boolean isUnparserTest() {
+      return true;
+    }
+
     private UnaryOperator<SqlWriterConfig> simple() {
       return c -> c.withSelectListItemsOnSeparateLines(false)
           .withUpdateSetListNewline(false)
@@ -9979,10 +9962,10 @@ public class SqlParserTest {
       // Unparse with the given dialect, always parenthesize.
       final @Nullable SqlDialect dialect = config.dialect();
       final SqlDialect dialect2 = Util.first(dialect, AnsiSqlDialect.DEFAULT);
-      final UnaryOperator<SqlWriterConfig> transform2 =
+      final UnaryOperator<SqlWriterConfig> writerTransform =
           c -> simpleWithParens(c)
               .withDialect(dialect2);
-      final String actual = sqlNode.toSqlString(transform2).getSql();
+      final String actual = sqlNode.toSqlString(writerTransform).getSql();
       assertEquals(expected, linux(config, actual));
 
       // Unparse again in Calcite dialect (which we can parse), and
@@ -9990,9 +9973,10 @@ public class SqlParserTest {
       final String sql1 = sqlNode.toSqlString(simple()).getSql();
 
       // Parse and unparse again.
+      final UnaryOperator<SqlParser.Config> transform2 =
+          transform.andThen(c -> c.withQuoting(Quoting.DOUBLE_QUOTE))::apply;
       SqlNode sqlNode2 =
-          parseStmtAndHandleEx(sql1, c -> c.withQuoting(Quoting.DOUBLE_QUOTE),
-              parser -> { });
+          parseStmtAndHandleEx(sql1, transform2, parser -> { });
       final String sql2 = sqlNode2.toSqlString(simple()).getSql();
 
       // Should be the same as we started with.
@@ -10001,7 +9985,7 @@ public class SqlParserTest {
       // Now unparse again in the given dialect.
       // If the unparser is not including sufficient parens to override
       // precedence, the problem will show up here.
-      final String actual2 = sqlNode.toSqlString(transform2).getSql();
+      final String actual2 = sqlNode.toSqlString(writerTransform).getSql();
       assertEquals(expected, linux(config, actual2));
 
       // Now unparse with a randomly configured SqlPrettyWriter.
@@ -10010,8 +9994,7 @@ public class SqlParserTest {
       final String sql3 = sqlNode.toSqlString(randomize(random)).getSql();
       assertThat(sql3, notNullValue());
       SqlNode sqlNode4 =
-          parseStmtAndHandleEx(sql1, c -> c.withQuoting(Quoting.DOUBLE_QUOTE),
-              parser -> { });
+          parseStmtAndHandleEx(sql1, transform2, parser -> { });
       final String sql4 = sqlNode4.toSqlString(simple()).getSql();
       assertEquals(sql1, sql4);
     }
@@ -10118,7 +10101,8 @@ public class SqlParserTest {
     /** Changes the SQL. */
     public Sql sql(String sql) {
       return sql.equals(this.sap.addCarets()) ? this
-          : new Sql(StringAndPos.of(sql), expression, dialect, tester, transform, parserChecker);
+          : new Sql(StringAndPos.of(sql), expression, dialect, tester,
+              transform, parserChecker);
     }
 
     /** Flags that this is an expression, not a whole query. */
@@ -10159,7 +10143,12 @@ public class SqlParserTest {
 
     public SqlParser parser() {
       return sqlParser(new StringReader(sap.addCarets()),
-          SqlParser.Config.DEFAULT, getTransform(config()));
+          getTransform(config()));
+    }
+
+    public SqlNode node() {
+      return ((TesterImpl) tester).parseStmtAndHandleEx(sap.addCarets(),
+          getTransform(config()), parser -> { });
     }
 
     public SqlNodeList nodeList() {
@@ -10170,7 +10159,7 @@ public class SqlParserTest {
 
   /** Test configuration. */
   @Value.Immutable
-  interface Config {
+  public interface Config {
     /** Returns whether to convert actual strings to Linux (converting Windows
      * CR-LF line endings to Linux LF) before comparing them to expected.
      * Default is true. */
@@ -10215,6 +10204,14 @@ public class SqlParserTest {
 
     /** Sets {@link #conformance()}. */
     Config withConformance(SqlConformance conformance);
+
+    /** Returns the parser factory. */
+    @Value.Default default SqlParserImplFactory parserFactory() {
+      return SqlParserImpl.FACTORY;
+    }
+
+    /** Sets {@link #parserFactory()}. */
+    Config withParserFactory(SqlParserImplFactory factory);
   }
 
   /** Helper class for building fluent code,

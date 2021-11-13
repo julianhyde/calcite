@@ -24,12 +24,12 @@ public class Fixtures {
   private Fixtures() {}
 
   /** Creates a fixture for parser tests. */
-  public static SqlParserTest.Sql forParser(String sql) {
-    return new SqlParserTest().sql(sql);
+  public static SqlParserTest.Sql forParser() {
+    return new SqlParserTest().fixture();
   }
 
   /** Creates a fixture for validation tests. */
-  public static SqlValidatorTestCase.Sql forValidator(String sql) {
-    return new SqlValidatorTestCase().sql(sql);
+  public static SqlValidatorTestCase.Sql forValidator() {
+    return new SqlValidatorTestCase().fixture();
   }
 }
