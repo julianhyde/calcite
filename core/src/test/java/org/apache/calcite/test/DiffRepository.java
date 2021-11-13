@@ -789,20 +789,7 @@ public class DiffRepository {
    * @return The diff repository shared between test cases in this class.
    */
   public static DiffRepository lookup(Class<?> clazz) {
-    return lookup(clazz, null);
-  }
-
-  @Deprecated // to be removed before 1.28
-  public static DiffRepository lookup(
-      Class<?> clazz,
-      DiffRepository baseRepository) {
-    return lookup(clazz, baseRepository, null);
-  }
-
-  @Deprecated // to be removed before 1.28
-  public static DiffRepository lookup(Class<?> clazz,
-      DiffRepository baseRepository, Filter filter) {
-    return lookup(clazz, baseRepository, filter, 2);
+    return lookup(clazz, null, null, 2);
   }
 
   /**
