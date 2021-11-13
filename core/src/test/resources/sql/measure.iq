@@ -100,6 +100,18 @@ from (
 (14 rows)
 
 !ok
+EnumerableCalc(expr#0..8=[{inputs}], expr#9=[100], expr#10=[+($t8, $t9)], EMPNO=[$t0], COUNT_PLUS_100=[$t10])
+  EnumerableWindow(window#0=[window(rows between CURRENT ROW and CURRENT ROW aggs [COUNT()])])
+    EnumerableTableScan(table=[[scott, EMP]])
+!plan
+
+# Aggregate measure used in non-aggregate query with ORDER BY
+select empno, count_plus_100
+from (
+  select empno, deptno, job, count(*) + 100 as measure count_plus_100
+  from "scott".emp)
+order by 1;
+!ok
 
 !if (false) {
 # Aggregate measure used in non-aggregate query with WHERE and ORDER BY
