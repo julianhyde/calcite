@@ -1034,7 +1034,7 @@ LogicalProject(MGR=[$0], SUM_SAL=[$2])
   <TestCase name="testAggregateUnionTransposeWithAllInputsUnique">
     <Resource name="sql">
       <![CDATA[select deptno, SUM(t) from (
-select deptno, 1 as t from sales.emp e1
+select distinct deptno, 1 as t from sales.emp e1
 union all
 select distinct deptno, 2 as t from sales.emp e2)
 group by deptno]]>
@@ -4890,10 +4890,19 @@ order by deptno]]>
     </Resource>
     <Resource name="planBefore">
       <![CDATA[
-LogicalProject(DEPTNO=[$0], $f1=[M2V($1)])
+LogicalProject(DEPTNO=[$0], C1=[M2V($1)])
   LogicalSort(sort0=[$0], dir0=[ASC])
     LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], C1=[$2])
+  LogicalSort(sort0=[$0], dir0=[ASC])
+    LogicalProject(DEPTNO=[$0], C1=[$1], $f2=[M2V($1)])
+      LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
+        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>

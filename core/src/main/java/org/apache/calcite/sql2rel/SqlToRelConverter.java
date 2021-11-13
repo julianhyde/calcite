@@ -636,7 +636,8 @@ public class SqlToRelConverter {
           .project(relBuilder.fields()
               .stream()
               .map(this::measureToValue)
-              .collect(Util.toImmutableList()))
+              .collect(Util.toImmutableList()),
+              relBuilder.peek().getRowType().getFieldNames())
           .build();
     }
     return r;
