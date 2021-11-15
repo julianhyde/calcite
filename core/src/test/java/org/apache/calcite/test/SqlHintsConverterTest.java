@@ -78,6 +78,8 @@ import java.util.Locale;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static org.apache.calcite.test.Matchers.relIsValid;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIn.in;
 import static org.hamcrest.core.Is.is;
@@ -625,7 +627,7 @@ class SqlHintsConverterTest extends SqlToRelTestBase {
       final RelNode rel = tester.convertSqlToRel(sql2).project();
 
       assertNotNull(rel);
-      assertValid(rel);
+      assertThat(rel, relIsValid());
 
       final HintCollector collector = new HintCollector(hintsCollect);
       rel.accept(collector);

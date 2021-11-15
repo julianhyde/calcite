@@ -18,6 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelValidityChecker;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.TestUtil;
@@ -185,6 +186,22 @@ public class Matchers {
    */
   public static Matcher<String> isLinux(final String value) {
     return compose(Is.is(value), input -> input == null ? null : Util.toLinux(input));
+  }
+
+  /** Matcher that matches a {@link RelNode} if the {@code RelNode} is valid
+   * per {@link RelValidityChecker}. */
+  public static Matcher<RelNode> relIsValid() {
+    return new TypeSafeMatcher<RelNode>() {
+      @Override public void describeTo(Description description) {
+        description.appendText("rel is valid");
+      }
+
+      @Override protected boolean matchesSafely(RelNode rel) {
+        RelValidityChecker checker = new RelValidityChecker();
+        checker.go(rel);
+        return checker.invalidCount() == 0;
+      }
+    };
   }
 
   /**

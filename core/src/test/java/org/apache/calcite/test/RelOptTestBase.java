@@ -54,6 +54,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import static org.apache.calcite.test.Matchers.relIsValid;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -133,7 +135,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
 
     final String planBefore = NL + RelOptUtil.toString(relBefore);
     diffRepos.assertEquals("planBefore", "${planBefore}", planBefore);
-    SqlToRelTestBase.assertValid(relBefore);
+    assertThat(relBefore, relIsValid());
 
     if (planner instanceof VolcanoPlanner) {
       relBefore = planner.changeTraits(relBefore,
@@ -144,7 +146,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
     if (tester.isLateDecorrelate()) {
       final String planMid = NL + RelOptUtil.toString(r);
       diffRepos.assertEquals("planMid", "${planMid}", planMid);
-      SqlToRelTestBase.assertValid(r);
+      assertThat(r, relIsValid());
       final RelBuilder relBuilder =
           RelFactories.LOGICAL_BUILDER.create(cluster, null);
       r = RelDecorrelator.decorrelateQuery(r, relBuilder);
@@ -159,7 +161,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
             + "You must use unchanged=true or call checkUnchanged");
       }
     }
-    SqlToRelTestBase.assertValid(r);
+    assertThat(r, relIsValid());
   }
 
   /** Sets the SQL statement for a test. */

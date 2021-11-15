@@ -37,7 +37,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
-import org.apache.calcite.rel.RelValidityChecker;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -86,8 +85,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static org.apache.calcite.test.Matchers.relIsValid;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -149,17 +149,6 @@ public abstract class SqlToRelTestBase {
    */
   protected DiffRepository getDiffRepos() {
     return null;
-  }
-
-  /**
-   * Checks that every node of a relational expression is valid.
-   *
-   * @param rel Relational expression
-   */
-  public static void assertValid(RelNode rel) {
-    RelValidityChecker checker = new RelValidityChecker();
-    checker.go(rel);
-    assertThat(checker.invalidCount(), is(0));
   }
 
   //~ Inner Interfaces -------------------------------------------------------
@@ -859,7 +848,7 @@ public abstract class SqlToRelTestBase {
       RelNode rel = convertSqlToRel(sql2).project();
 
       assertNotNull(rel);
-      assertValid(rel);
+      assertThat(rel, relIsValid());
 
       if (trim) {
         final RelBuilder relBuilder =
@@ -867,7 +856,7 @@ public abstract class SqlToRelTestBase {
         final RelFieldTrimmer trimmer = createFieldTrimmer(relBuilder);
         rel = trimmer.trim(rel);
         assertNotNull(rel);
-        assertValid(rel);
+        assertThat(rel, relIsValid());
       }
 
       // NOTE jvs 28-Mar-2006:  insert leading newline so

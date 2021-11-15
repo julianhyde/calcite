@@ -34,8 +34,8 @@ import java.util.Set;
  */
 public class RelValidityChecker extends RelVisitor
     implements RelNode.Context {
-  int invalidCount;
-  final Deque<RelNode> stack = new ArrayDeque<>();
+  private int invalidCount;
+  private final Deque<RelNode> stack = new ArrayDeque<>();
 
   public Set<CorrelationId> correlationIds() {
     final ImmutableSet.Builder<CorrelationId> builder =
@@ -46,7 +46,8 @@ public class RelValidityChecker extends RelVisitor
     return builder.build();
   }
 
-  public void visit(RelNode node, int ordinal, @Nullable RelNode parent) {
+  @Override public void visit(RelNode node, int ordinal,
+      @Nullable RelNode parent) {
     try {
       stack.push(node);
       if (!node.isValid(Litmus.THROW, this)) {
