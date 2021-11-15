@@ -31,8 +31,6 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.externalize.RelDotWriter;
 import org.apache.calcite.rel.externalize.RelXmlWriter;
 import org.apache.calcite.rel.logical.LogicalCalc;
@@ -49,26 +47,20 @@ import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.util.Bug;
-import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -4376,40 +4368,8 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     newTester.assertConvertsTo(sql, "${plan}", false);
   }
 
-  /**
-   * Visitor that checks that every {@link RelNode} in a tree is valid.
-   *
-   * @see RelNode#isValid(Litmus, RelNode.Context)
-   */
-  public static class RelValidityChecker extends RelVisitor
-      implements RelNode.Context {
-    int invalidCount;
-    final Deque<RelNode> stack = new ArrayDeque<>();
-
-    public Set<CorrelationId> correlationIds() {
-      final ImmutableSet.Builder<CorrelationId> builder =
-          ImmutableSet.builder();
-      for (RelNode r : stack) {
-        builder.addAll(r.getVariablesSet());
-      }
-      return builder.build();
-    }
-
-    public void visit(RelNode node, int ordinal, @Nullable RelNode parent) {
-      try {
-        stack.push(node);
-        if (!node.isValid(Litmus.THROW, this)) {
-          ++invalidCount;
-        }
-        super.visit(node, ordinal, parent);
-      } finally {
-        stack.pop();
-      }
-    }
-  }
-
   /** Allows fluent testing. */
-  public class Sql {
+  public static class Sql {
     private final String sql;
     private final boolean decorrelate;
     private final Tester tester;
