@@ -102,6 +102,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.test.SqlToRelTestBase.Tester;
 import org.apache.calcite.test.catalog.MockCatalogReader;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -140,7 +141,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.test.Matchers.within;
 
@@ -168,7 +169,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * relational algebra (e.g. join conditions in the WHERE clause will look like
  * filters), so it's necessary to phrase the SQL carefully.
  */
-public class RelMetadataTest extends SqlToRelTestBase {
+public class RelMetadataTest {
   //~ Static fields/initializers ---------------------------------------------
 
   private static final double EPSILON = 1.0e-5;
@@ -196,201 +197,101 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   //~ Methods ----------------------------------------------------------------
 
-  /** Creates a tester. */
-  Sql sql(String sql) {
-    return new Sql(tester, sql);
+  /** Creates a fixture. */
+  Sql fixture() {
+    return new Sql(SqlToRelTestBase.createTesterStatic(), "?", false, true);
+  }
+
+  final Sql sql(String sql) {
+    return fixture().sql(sql);
+  }
+
+  private static Matcher<Double> isAlmost(double value) {
+    return within(value, EPSILON);
   }
 
   // ----------------------------------------------------------------------
   // Tests for getPercentageOriginalRows
   // ----------------------------------------------------------------------
 
-  private RelNode convertSql(String sql) {
-    return convertSql(tester, sql);
-  }
-
-  private static RelNode convertSql(Tester tester, String sql) {
-    final RelRoot root = tester.convertSqlToRel(sql);
-    root.rel.getCluster().setMetadataProvider(DefaultRelMetadataProvider.INSTANCE);
-    return root.rel;
-  }
-
-  private RelNode convertSql(String sql, boolean typeCoercion) {
-    final Tester tester = typeCoercion ? this.tester : this.strictTester;
-    return convertSql(tester, sql);
-  }
-
-  private void checkPercentageOriginalRows(String sql, double expected) {
-    checkPercentageOriginalRows(sql, expected, EPSILON);
-  }
-
-  private void checkPercentageOriginalRows(
-      String sql,
-      double expected,
-      double epsilon) {
-    RelNode rel = convertSql(sql);
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Double result = mq.getPercentageOriginalRows(rel);
-    assertNotNull(result);
-    assertEquals(expected, result, epsilon);
-  }
-
   @Test void testPercentageOriginalRowsTableOnly() {
-    checkPercentageOriginalRows(
-        "select * from dept",
-        1.0);
+    sql("select * from dept").checkPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Test void testPercentageOriginalRowsAgg() {
-    checkPercentageOriginalRows(
-        "select deptno from dept group by deptno",
-        1.0);
+    sql("select deptno from dept group by deptno")
+        .checkPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsOneFilter() {
-    checkPercentageOriginalRows(
-        "select * from dept where deptno = 20",
-        DEFAULT_EQUAL_SELECTIVITY);
+    sql("select * from dept where deptno = 20")
+        .checkPercentageOriginalRows(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsTwoFilters() {
-    checkPercentageOriginalRows("select * from (\n"
+    sql("select * from (\n"
         + "  select * from dept where name='X')\n"
-        + "where deptno = 20",
-        DEFAULT_EQUAL_SELECTIVITY_SQUARED);
+        + "where deptno = 20")
+        .checkPercentageOriginalRows(
+            isAlmost(DEFAULT_EQUAL_SELECTIVITY_SQUARED));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsRedundantFilter() {
-    checkPercentageOriginalRows("select * from (\n"
+    sql("select * from (\n"
         + "  select * from dept where deptno=20)\n"
-        + "where deptno = 20",
-        DEFAULT_EQUAL_SELECTIVITY);
+        + "where deptno = 20")
+        .checkPercentageOriginalRows(
+            isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Test void testPercentageOriginalRowsJoin() {
-    checkPercentageOriginalRows(
-        "select * from emp inner join dept on emp.deptno=dept.deptno",
-        1.0);
+    sql("select * from emp inner join dept on emp.deptno=dept.deptno")
+        .checkPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsJoinTwoFilters() {
-    checkPercentageOriginalRows("select * from (\n"
+    sql("select * from (\n"
         + "  select * from emp where deptno=10) e\n"
         + "inner join (select * from dept where deptno=10) d\n"
-        + "on e.deptno=d.deptno",
-        DEFAULT_EQUAL_SELECTIVITY_SQUARED);
+        + "on e.deptno=d.deptno")
+        .checkPercentageOriginalRows(
+            isAlmost(DEFAULT_EQUAL_SELECTIVITY_SQUARED));
   }
 
   @Test void testPercentageOriginalRowsUnionNoFilter() {
-    checkPercentageOriginalRows(
-        "select name from dept union all select ename from emp",
-        1.0);
+    sql("select name from dept union all select ename from emp")
+        .checkPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsUnionLittleFilter() {
-    checkPercentageOriginalRows(
-        "select name from dept where deptno=20"
-            + " union all select ename from emp",
-        ((DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY) + EMP_SIZE)
-            / (DEPT_SIZE + EMP_SIZE));
+    sql("select name from dept where deptno=20"
+        + " union all select ename from emp")
+        .checkPercentageOriginalRows(
+            isAlmost(((DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY) + EMP_SIZE)
+                / (DEPT_SIZE + EMP_SIZE)));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsUnionBigFilter() {
-    checkPercentageOriginalRows(
-        "select name from dept"
-            + " union all select ename from emp where deptno=20",
-        ((EMP_SIZE * DEFAULT_EQUAL_SELECTIVITY) + DEPT_SIZE)
-            / (DEPT_SIZE + EMP_SIZE));
+    sql("select name from dept"
+        + " union all select ename from emp where deptno=20")
+        .checkPercentageOriginalRows(
+            isAlmost(((EMP_SIZE * DEFAULT_EQUAL_SELECTIVITY) + DEPT_SIZE)
+                / (DEPT_SIZE + EMP_SIZE)));
   }
 
   // ----------------------------------------------------------------------
   // Tests for getColumnOrigins
   // ----------------------------------------------------------------------
 
-  private Set<RelColumnOrigin> checkColumnOrigin(String sql) {
-    RelNode rel = convertSql(sql);
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    return mq.getColumnOrigins(rel, 0);
-  }
-
-  private void checkNoColumnOrigin(String sql) {
-    Set<RelColumnOrigin> result = checkColumnOrigin(sql);
-    assertNotNull(result);
-    assertTrue(result.isEmpty());
-  }
-
-  public static void checkColumnOrigin(
-      RelColumnOrigin rco,
-      String expectedTableName,
-      String expectedColumnName,
-      boolean expectedDerived) {
-    RelOptTable actualTable = rco.getOriginTable();
-    List<String> actualTableName = actualTable.getQualifiedName();
-    assertThat(
-        Iterables.getLast(actualTableName),
-        equalTo(expectedTableName));
-    assertThat(
-        actualTable.getRowType()
-            .getFieldList()
-            .get(rco.getOriginColumnOrdinal())
-            .getName(),
-        equalTo(expectedColumnName));
-    assertThat(rco.isDerived(), equalTo(expectedDerived));
-  }
-
-  private void checkSingleColumnOrigin(
-      String sql,
-      String expectedTableName,
-      String expectedColumnName,
-      boolean expectedDerived) {
-    Set<RelColumnOrigin> result = checkColumnOrigin(sql);
-    assertNotNull(result);
-    assertThat(result.size(), is(1));
-    RelColumnOrigin rco = result.iterator().next();
-    checkColumnOrigin(
-        rco, expectedTableName, expectedColumnName, expectedDerived);
-  }
-
-  // WARNING:  this requires the two table names to be different
-  private void checkTwoColumnOrigin(
-      String sql,
-      String expectedTableName1,
-      String expectedColumnName1,
-      String expectedTableName2,
-      String expectedColumnName2,
-      boolean expectedDerived) {
-    Set<RelColumnOrigin> result = checkColumnOrigin(sql);
-    assertNotNull(result);
-    assertThat(result.size(), is(2));
-    for (RelColumnOrigin rco : result) {
-      RelOptTable actualTable = rco.getOriginTable();
-      List<String> actualTableName = actualTable.getQualifiedName();
-      String actualUnqualifiedName = Iterables.getLast(actualTableName);
-      if (actualUnqualifiedName.equals(expectedTableName1)) {
-        checkColumnOrigin(
-            rco,
-            expectedTableName1,
-            expectedColumnName1,
-            expectedDerived);
-      } else {
-        checkColumnOrigin(
-            rco,
-            expectedTableName2,
-            expectedColumnName2,
-            expectedDerived);
-      }
-    }
-  }
-
   @Test void testCalcColumnOriginsTable() {
     final String sql = "select name,deptno from dept where deptno > 10";
-    final RelNode relNode = convertSql(sql);
+    final RelNode relNode = sql(sql).toRel();
     final HepProgram program = new HepProgramBuilder().
         addRuleInstance(CoreRules.PROJECT_TO_CALC).build();
     final HepPlanner planner = new HepPlanner(program);
@@ -408,7 +309,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "select empno, sum(sal) as all_sal\n"
         + "from emp\n"
         + "group by empno";
-    final RelNode relNode = convertSql(sql1);
+    final RelNode relNode = sql(sql1).toRel();
     final HepProgram program = new HepProgramBuilder().
         addRuleInstance(CoreRules.PROJECT_TO_CALC).build();
     final HepPlanner planner = new HepPlanner(program);
@@ -420,125 +321,85 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testColumnOriginsTableOnly() {
-    checkSingleColumnOrigin(
-        "select name as dname from dept",
-        "DEPT",
-        "NAME",
-        false);
+    sql("select name as dname from dept")
+        .checkSingleColumnOrigin("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsExpression() {
-    checkSingleColumnOrigin(
-        "select upper(name) as dname from dept",
-        "DEPT",
-        "NAME",
-        true);
+    sql("select upper(name) as dname from dept")
+        .checkSingleColumnOrigin("DEPT", "NAME", true);
   }
 
   @Test void testColumnOriginsDyadicExpression() {
-    checkTwoColumnOrigin(
-        "select name||ename from dept,emp",
-        "DEPT",
-        "NAME",
-        "EMP",
-        "ENAME",
-        true);
+    sql("select name||ename from dept,emp")
+        .checkTwoColumnOrigin("DEPT", "NAME", "EMP", "ENAME", true);
   }
 
   @Test void testColumnOriginsConstant() {
-    checkNoColumnOrigin(
-        "select 'Minstrelsy' as dname from dept");
+    sql("select 'Minstrelsy' as dname from dept")
+        .checkNoColumnOrigin();
   }
 
   @Test void testColumnOriginsFilter() {
-    checkSingleColumnOrigin(
-        "select name as dname from dept where deptno=10",
-        "DEPT",
-        "NAME",
-        false);
+    sql("select name as dname from dept where deptno=10")
+        .checkSingleColumnOrigin("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsJoinLeft() {
-    checkSingleColumnOrigin(
-        "select ename from emp,dept",
-        "EMP",
-        "ENAME",
-        false);
+    sql("select ename from emp,dept")
+        .checkSingleColumnOrigin("EMP", "ENAME", false);
   }
 
   @Test void testColumnOriginsJoinRight() {
-    checkSingleColumnOrigin(
-        "select name as dname from emp,dept",
-        "DEPT",
-        "NAME",
-        false);
+    sql("select name as dname from emp,dept")
+        .checkSingleColumnOrigin("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsJoinOuter() {
-    checkSingleColumnOrigin(
-        "select name as dname from emp left outer join dept"
-            + " on emp.deptno = dept.deptno",
-        "DEPT",
-        "NAME",
-        true);
+    sql("select name as dname from emp left outer join dept"
+        + " on emp.deptno = dept.deptno")
+        .checkSingleColumnOrigin("DEPT", "NAME", true);
   }
 
   @Test void testColumnOriginsJoinFullOuter() {
-    checkSingleColumnOrigin(
-        "select name as dname from emp full outer join dept"
-            + " on emp.deptno = dept.deptno",
-        "DEPT",
-        "NAME",
-        true);
+    sql("select name as dname from emp full outer join dept"
+        + " on emp.deptno = dept.deptno")
+        .checkSingleColumnOrigin("DEPT", "NAME", true);
   }
 
   @Test void testColumnOriginsAggKey() {
-    checkSingleColumnOrigin(
-        "select name,count(deptno) from dept group by name",
-        "DEPT",
-        "NAME",
-        false);
+    sql("select name,count(deptno) from dept group by name")
+        .checkSingleColumnOrigin("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsAggReduced() {
-    checkNoColumnOrigin(
-        "select count(deptno),name from dept group by name");
+    sql("select count(deptno),name from dept group by name")
+        .checkNoColumnOrigin();
   }
 
   @Test void testColumnOriginsAggCountNullable() {
-    checkSingleColumnOrigin(
-        "select count(mgr),ename from emp group by ename",
-        "EMP",
-        "MGR",
-        true);
+    sql("select count(mgr),ename from emp group by ename")
+        .checkSingleColumnOrigin("EMP", "MGR", true);
   }
 
   @Test void testColumnOriginsAggCountStar() {
-    checkNoColumnOrigin(
-        "select count(*),name from dept group by name");
+    sql("select count(*),name from dept group by name")
+        .checkNoColumnOrigin();
   }
 
   @Test void testColumnOriginsValues() {
-    checkNoColumnOrigin(
-        "values(1,2,3)");
+    sql("values(1,2,3)")
+        .checkNoColumnOrigin();
   }
 
   @Test void testColumnOriginsUnion() {
-    checkTwoColumnOrigin(
-        "select name from dept union all select ename from emp",
-        "DEPT",
-        "NAME",
-        "EMP",
-        "ENAME",
-        false);
+    sql("select name from dept union all select ename from emp")
+        .checkTwoColumnOrigin("DEPT", "NAME", "EMP", "ENAME", false);
   }
 
   @Test void testColumnOriginsSelfUnion() {
-    checkSingleColumnOrigin(
-        "select ename from emp union all select ename from emp",
-        "EMP",
-        "ENAME",
-        false);
+    sql("select ename from emp union all select ename from emp")
+        .checkSingleColumnOrigin("EMP", "ENAME", false);
   }
 
   /** Test case for
@@ -547,7 +408,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
    * was optimized by AggregateProjectMergeRule rule</a>. */
   @Test void testColumnOriginAfterAggProjectMergeRule() {
     final String sql = "select count(ename), SAL from emp group by SAL";
-    final RelNode rel = tester.convertSqlToRel(sql).rel;
+    final RelNode rel = sql(sql).toRel();
     final HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addRuleInstance(CoreRules.AGGREGATE_PROJECT_MERGE);
     final HepPlanner planner = new HepPlanner(programBuilder.build());
@@ -556,6 +417,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     Set<RelColumnOrigin> origins = RelMetadataQuery.instance()
         .getColumnOrigins(optimizedRel, 1);
+    assertThat(origins, notNullValue());
     assertThat(origins.size(), equalTo(1));
 
     RelColumnOrigin columnOrigin = origins.iterator().next();
@@ -570,7 +432,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   private void checkRowCount(String sql, double expected, double expectedMin,
       double expectedMax) {
-    RelNode rel = convertSql(sql);
+    RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Double result = mq.getRowCount(rel);
     assertThat(result, notNullValue());
@@ -752,7 +614,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testRowCountExchange() {
     final String sql = "select * from emp order by ename limit 123456";
-    RelNode rel = convertSql(sql);
+    RelNode rel = sql(sql).toRel();
     final RelDistribution dist = RelDistributions.hash(ImmutableList.<Integer>of());
     final LogicalExchange exchange = LogicalExchange.create(rel, dist);
     checkExchangeRowCount(exchange, EMP_SIZE, 0D, 123456D);
@@ -909,7 +771,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   private void checkFilterSelectivity(
       String sql,
       double expected) {
-    RelNode rel = convertSql(sql);
+    RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Double result = mq.getSelectivity(rel, null);
     assertNotNull(result);
@@ -962,29 +824,29 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testSelectivityRedundantFilter() {
-    RelNode rel = convertSql("select * from emp where deptno = 10");
+    RelNode rel = sql("select * from emp where deptno = 10").toRel();
     checkRelSelectivity(rel, DEFAULT_EQUAL_SELECTIVITY);
   }
 
   @Test void testSelectivitySort() {
     RelNode rel =
-        convertSql("select * from emp where deptno = 10"
-            + "order by ename");
+        sql("select * from emp where deptno = 10"
+            + "order by ename").toRel();
     checkRelSelectivity(rel, DEFAULT_EQUAL_SELECTIVITY);
   }
 
   @Test void testSelectivityUnion() {
     RelNode rel =
-        convertSql("select * from (\n"
+        sql("select * from (\n"
             + "  select * from emp union all select * from emp) "
-            + "where deptno = 10");
+            + "where deptno = 10").toRel();
     checkRelSelectivity(rel, DEFAULT_EQUAL_SELECTIVITY);
   }
 
   @Test void testSelectivityAgg() {
     RelNode rel =
-        convertSql("select deptno, count(*) from emp where deptno > 10 "
-            + "group by deptno having count(*) = 0");
+        sql("select deptno, count(*) from emp where deptno > 10 "
+            + "group by deptno having count(*) = 0").toRel();
     checkRelSelectivity(
         rel,
         DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY);
@@ -994,12 +856,12 @@ public class RelMetadataTest extends SqlToRelTestBase {
    * argument. */
   @Test void testSelectivityAggCached() {
     RelNode rel =
-        convertSql("select deptno, count(*) from emp where deptno > 10 "
-            + "group by deptno having count(*) = 0");
+        sql("select deptno, count(*) from emp where deptno > 10 "
+            + "group by deptno having count(*) = 0").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Double result = mq.getSelectivity(rel, null);
     assertThat(result,
-        within(DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY, EPSILON));
+        isAlmost(DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY));
   }
 
   /** Test case for
@@ -1013,7 +875,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     assumeTrue(CalciteSystemProperty.METADATA_HANDLER_CACHE_MAXIMUM_SIZE.value() < 10_000,
         "If cache size is too large, this test may fail and the test won't be to blame");
     final int iterationCount = 2_000;
-    final RelNode rel = convertSql("select * from emp");
+    final RelNode rel = sql("select * from emp").toRel();
     final RelMetadataProvider metadataProvider =
         rel.getCluster().getMetadataProvider();
     for (int i = 0; i < iterationCount; i++) {
@@ -1044,12 +906,12 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testDistinctRowCountTable() {
     // no unique key information is available so return null
-    RelNode rel = convertSql("select * from (values "
+    RelNode rel = sql("select * from (values "
         + "(1, 2, 3, null), "
         + "(3, 4, 5, 6), "
         + "(3, 4, null, 6), "
         + "(8, 4, 5, null) "
-        + ") t(c1, c2, c3, c4)");
+        + ") t(c1, c2, c3, c4)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     ImmutableBitSet groupKey = ImmutableBitSet.of(0, 1, 2, 3);
@@ -1074,7 +936,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testDistinctRowCountValues() {
-    RelNode rel = convertSql("select * from emp where deptno = 10");
+    RelNode rel = sql("select * from emp where deptno = 10").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     ImmutableBitSet groupKey =
         ImmutableBitSet.of(rel.getRowType().getFieldNames().indexOf("DEPTNO"));
@@ -1083,7 +945,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testDistinctRowCountTableEmptyKey() {
-    RelNode rel = convertSql("select * from emp where deptno = 10");
+    RelNode rel = sql("select * from emp where deptno = 10").toRel();
     ImmutableBitSet groupKey = ImmutableBitSet.of(); // empty key
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Double result = mq.getDistinctRowCount(rel, groupKey, null);
@@ -1094,70 +956,14 @@ public class RelMetadataTest extends SqlToRelTestBase {
   // Tests for getUniqueKeys
   // ----------------------------------------------------------------------
 
-  /**
-   * Checks result of getting unique keys for sql, using specific tester.
-   */
-  private void checkGetUniqueKeys(String sql, Set<ImmutableBitSet> expectedUniqueKeySet,
-      Function<String, RelNode> converter) {
-    RelNode rel = converter.apply(sql);
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
-    assertEquals(
-        ImmutableSortedSet.copyOf(expectedUniqueKeySet),
-        ImmutableSortedSet.copyOf(result),
-        () -> "unique keys, sql: " + sql + ", rel: " + RelOptUtil.toString(rel));
-    assertUniqueConsistent(rel);
-  }
-
-  /**
-   * Checks result of getting unique keys for sql, using specific tester.
-   */
-  private void checkGetUniqueKeys(Tester tester,
-      String sql, Set<ImmutableBitSet> expectedUniqueKeySet) {
-    checkGetUniqueKeys(sql, expectedUniqueKeySet, s -> convertSql(tester, s));
-  }
-
-  /**
-   * Checks result of getting unique keys for sql, using default tester.
-   */
-  private void checkGetUniqueKeys(String sql, Set<ImmutableBitSet> expectedUniqueKeySet) {
-    checkGetUniqueKeys(tester, sql, expectedUniqueKeySet);
-  }
-
-  /** Asserts that {@link RelMetadataQuery#getUniqueKeys(RelNode)}
-   * and {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
-   * return consistent results. */
-  private void assertUniqueConsistent(RelNode rel) {
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel);
-    final ImmutableBitSet allCols =
-        ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
-    for (ImmutableBitSet key : allCols.powerSet()) {
-      Boolean result2 = mq.areColumnsUnique(rel, key);
-      assertEquals(isUnique(uniqueKeys, key), SqlFunctions.isTrue(result2),
-          () -> "areColumnsUnique. key: " + key + ", uniqueKeys: " + uniqueKeys
-              + ", rel: " + RelOptUtil.toString(rel));
-    }
-  }
-
-  /** Returns whether {@code keys} is unique, that is, whether it or a superset
-   * is in {@code keySets}. */
-  private boolean isUnique(Set<ImmutableBitSet> uniqueKeys, ImmutableBitSet key) {
-    for (ImmutableBitSet uniqueKey : uniqueKeys) {
-      if (key.contains(uniqueKey)) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-509">[CALCITE-509]
    * "RelMdColumnUniqueness uses ImmutableBitSet.Builder twice, gets
    * NullPointerException"</a>. */
   @Test void testJoinUniqueKeys() {
-    checkGetUniqueKeys("select * from emp join bonus using (ename)",
-        ImmutableSet.of());
+    sql("select * from emp join bonus using (ename)")
+        .checkGetUniqueKeys(ImmutableSet.of());
   }
 
   @Test void testCorrelateUniqueKeys() {
@@ -1165,7 +971,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "from (select distinct deptno from emp) as e,\n"
         + "  lateral (\n"
         + "    select * from dept where dept.deptno = e.deptno)";
-    final RelNode rel = convertSql(sql);
+    final Sql f = sql(sql);
+    final RelNode rel = f.toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     assertThat(rel, isA((Class) Project.class));
@@ -1173,7 +980,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final Set<ImmutableBitSet> result = mq.getUniqueKeys(project);
     assertThat(result, sortsAs("[{0}]"));
     if (false) {
-      assertUniqueConsistent(project);
+      f.assertUniqueConsistent(project);
     }
 
     assertThat(project.getInput(), isA((Class) Correlate.class));
@@ -1181,18 +988,18 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final Set<ImmutableBitSet> result2 = mq.getUniqueKeys(correlate);
     assertThat(result2, sortsAs("[{0}]"));
     if (false) {
-      assertUniqueConsistent(correlate);
+      f.assertUniqueConsistent(correlate);
     }
   }
 
   @Test void testGroupByEmptyUniqueKeys() {
-    checkGetUniqueKeys("select count(*) from emp",
-        ImmutableSet.of(ImmutableBitSet.of()));
+    sql("select count(*) from emp")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of()));
   }
 
   @Test void testGroupByEmptyHavingUniqueKeys() {
-    checkGetUniqueKeys("select count(*) from emp where 1 = 1",
-        ImmutableSet.of(ImmutableBitSet.of()));
+    sql("select count(*) from emp where 1 = 1")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of()));
   }
 
   @Test void testFullOuterJoinUniqueness1() {
@@ -1202,7 +1009,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "full outer join (select cast (null as int) deptno from sales.dept "
         + "group by cast(null as int)) as d on e.empno = d.deptno\n"
         + "group by e.empno, d.deptno";
-    RelNode rel = convertSql(sql);
+    RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final ImmutableBitSet allCols =
         ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
@@ -1222,7 +1029,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   private void checkColumnUniquenessForFilterWithConstantColumns(String sql) {
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(rel.getRowType().getFieldNames().toString(),
         is("[DEPTNO, SAL]"));
@@ -1236,7 +1043,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "select deptno, sal from emp where sal=1000\n"
         + "union\n"
         + "select deptno, sal from emp where sal=1000\n";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(rel.getRowType().getFieldNames().toString(),
         is("[DEPTNO, SAL]"));
@@ -1250,7 +1057,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "where sal=1000\n"
         + "intersect all\n"
         + "select deptno, sal from emp\n";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(rel.getRowType().getFieldNames().toString(),
         is("[DEPTNO, SAL]"));
@@ -1264,7 +1071,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "where sal=1000\n"
         + "except all\n"
         + "select deptno, sal from emp\n";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(rel.getRowType().getFieldNames().toString(),
         is("[DEPTNO, SAL]"));
@@ -1278,7 +1085,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "from (select distinct deptno, sal from emp)\n"
         + "where sal=1000\n"
         + "order by deptno";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(rel.getRowType().getFieldNames().toString(),
         is("[DEPTNO, SAL]"));
@@ -1290,7 +1097,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "select sal\n"
         + "from emp\n"
         + "limit 1";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.areRowsUnique(rel), is(true));
   }
@@ -1301,7 +1108,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "from (select distinct deptno, sal from emp) A\n"
         + "join (select distinct deptno, sal from emp) B\n"
         + "on A.deptno=B.deptno and A.sal=1000 and B.sal=1000";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     assertThat(rel.getRowType().getFieldNames().toString(),
         is("[DEPTNO, SAL, DEPTNO0, SAL0]"));
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
@@ -1317,7 +1124,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "from emp\n"
         + "where deptno=1010\n"
         + "group by deptno, ename";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(1)), is(true));
   }
@@ -1360,45 +1167,45 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testGroupBy() {
-    checkGetUniqueKeys("select deptno, count(*), sum(sal) from emp group by deptno",
-        ImmutableSet.of(ImmutableBitSet.of(0)));
+    sql("select deptno, count(*), sum(sal) from emp group by deptno")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
   }
 
   @Test void testGroupingSets() {
-    checkGetUniqueKeys("select deptno, sal, count(*) from emp\n"
-            + "group by GROUPING SETS (deptno, sal)",
-        ImmutableSet.of());
+    sql("select deptno, sal, count(*) from emp\n"
+        + "group by GROUPING SETS (deptno, sal)")
+        .checkGetUniqueKeys(ImmutableSet.of());
   }
 
   @Test void testUnion() {
-    checkGetUniqueKeys("select deptno from emp\n"
+    sql("select deptno from emp\n"
         + "union\n"
-        + "select deptno from dept",
-        ImmutableSet.of(ImmutableBitSet.of(0)));
+        + "select deptno from dept")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
   }
 
   @Test void testUniqueKeysMinus() {
-    checkGetUniqueKeys("select distinct deptno from emp\n"
-            + "except all\n"
-            + "select deptno from dept",
-        ImmutableSet.of(ImmutableBitSet.of(0)));
+    sql("select distinct deptno from emp\n"
+        + "except all\n"
+        + "select deptno from dept")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
   }
 
   @Test void testUniqueKeysIntersect() {
-    checkGetUniqueKeys("select distinct deptno from emp\n"
-            + "intersect all\n"
-            + "select deptno from dept",
-        ImmutableSet.of(ImmutableBitSet.of(0)));
+    sql("select distinct deptno from emp\n"
+        + "intersect all\n"
+        + "select deptno from dept")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
   }
 
   @Test void testSingleKeyTableScanUniqueKeys() {
     // select key column
-    checkGetUniqueKeys("select empno, ename from emp",
-        ImmutableSet.of(ImmutableBitSet.of(0)));
+    sql("select empno, ename from emp")
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
 
     // select non key column
-    checkGetUniqueKeys("select ename, deptno from emp",
-        ImmutableSet.of());
+    sql("select ename, deptno from emp")
+        .checkGetUniqueKeys(ImmutableSet.of());
   }
 
   @Test void testCompositeKeysTableScanUniqueKeys() {
@@ -1408,23 +1215,26 @@ public class RelMetadataTest extends SqlToRelTestBase {
       catalogReader.init();
       return catalogReader;
     };
-    Tester newTester = tester.withCatalogReaderFactory(factory);
 
     // all columns, contain composite keys
-    checkGetUniqueKeys(newTester, "select * from s.composite_keys_table",
-        ImmutableSet.of(ImmutableBitSet.of(0, 1)));
+    sql("select * from s.composite_keys_table")
+        .withCatalogReaderFactory(factory)
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0, 1)));
 
     // only contain composite keys
-    checkGetUniqueKeys(newTester, "select key1, key2 from s.composite_keys_table",
-        ImmutableSet.of(ImmutableBitSet.of(0, 1)));
+    sql("select key1, key2 from s.composite_keys_table")
+        .withCatalogReaderFactory(factory)
+        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0, 1)));
 
     // partial column of composite keys
-    checkGetUniqueKeys(newTester, "select key1, value1 from s.composite_keys_table",
-        ImmutableSet.of());
+    sql("select key1, value1 from s.composite_keys_table")
+        .withCatalogReaderFactory(factory)
+        .checkGetUniqueKeys(ImmutableSet.of());
 
     // no column of composite keys
-    checkGetUniqueKeys(newTester, "select value1 from s.composite_keys_table",
-        ImmutableSet.of());
+    sql("select value1 from s.composite_keys_table")
+        .withCatalogReaderFactory(factory)
+        .checkGetUniqueKeys(ImmutableSet.of());
   }
 
   private static ImmutableBitSet bitSetOf(int... bits) {
@@ -1432,56 +1242,47 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void calcColumnsAreUniqueSimpleCalc() {
-    checkGetUniqueKeys("select empno, empno*0 from emp",
-        ImmutableSet.of(bitSetOf(0)),
-        this::convertProjectAsCalc);
+    sql("select empno, empno*0 from emp")
+        .convertingProjectAsCalc()
+        .checkGetUniqueKeys(ImmutableSet.of(bitSetOf(0)));
   }
 
   @Test void calcColumnsAreUniqueCalcWithFirstConstant() {
-    checkGetUniqueKeys("select 1, empno, empno*0 from emp",
-        ImmutableSet.of(bitSetOf(1)),
-        this::convertProjectAsCalc);
+    sql("select 1, empno, empno*0 from emp")
+        .convertingProjectAsCalc()
+        .checkGetUniqueKeys(ImmutableSet.of(bitSetOf(1)));
   }
 
   @Test void calcMultipleColumnsAreUniqueCalc() {
-    checkGetUniqueKeys("select empno, empno from emp",
-        ImmutableSet.of(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1)),
-        this::convertProjectAsCalc);
+    sql("select empno, empno from emp")
+        .convertingProjectAsCalc()
+        .checkGetUniqueKeys(
+            ImmutableSet.of(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1)));
   }
 
   @Test void calcMultipleColumnsAreUniqueCalc2() {
-    checkGetUniqueKeys(
-        "select a1.empno, a2.empno from emp a1 join emp a2 on (a1.empno=a2.empno)",
-        ImmutableSet.of(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1)),
-        this::convertProjectAsCalc);
+    sql("select a1.empno, a2.empno\n"
+        + "from emp a1 join emp a2 on (a1.empno=a2.empno)")
+        .convertingProjectAsCalc()
+        .checkGetUniqueKeys(
+            ImmutableSet.of(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1)));
   }
 
   @Test void calcMultipleColumnsAreUniqueCalc3() {
-    checkGetUniqueKeys(
-        "select a1.empno, a2.empno, a2.empno\n"
+    sql("select a1.empno, a2.empno, a2.empno\n"
         + " from emp a1 join emp a2\n"
-        + " on (a1.empno=a2.empno)",
-        ImmutableSet.of(
-            bitSetOf(0), bitSetOf(0, 1), bitSetOf(0, 1, 2), bitSetOf(0, 2),
-            bitSetOf(1), bitSetOf(1, 2), bitSetOf(2)),
-        this::convertProjectAsCalc);
+        + " on (a1.empno=a2.empno)")
+        .convertingProjectAsCalc()
+        .checkGetUniqueKeys(
+            ImmutableSet.of(
+                bitSetOf(0), bitSetOf(0, 1), bitSetOf(0, 1, 2), bitSetOf(0, 2),
+                bitSetOf(1), bitSetOf(1, 2), bitSetOf(2)));
   }
 
   @Test void calcColumnsAreNonUniqueCalc() {
-    checkGetUniqueKeys("select empno*0 from emp",
-        ImmutableSet.of(),
-        this::convertProjectAsCalc);
-  }
-
-  private RelNode convertProjectAsCalc(String s) {
-    Project project = (Project) convertSql(s);
-    RexProgram program = RexProgram.create(
-        project.getInput().getRowType(),
-        project.getProjects(),
-        null,
-        project.getRowType(),
-        project.getCluster().getRexBuilder());
-    return LogicalCalc.create(project.getInput(), program);
+    sql("select empno*0 from emp")
+        .convertingProjectAsCalc()
+        .checkGetUniqueKeys(ImmutableSet.of());
   }
 
   /** Unit test for
@@ -1533,17 +1334,16 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
-    final RelRoot root = tester
+    final Sql fixture = sql(sql)
         .withClusterFactory(cluster -> {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(
                   ImmutableList.of(BrokenColTypeImpl.SOURCE,
                       cluster.getMetadataProvider())));
           return cluster;
-        })
-        .convertSqlToRel(sql);
+        });
 
-    final RelNode rel = root.rel;
+    final RelNode rel = fixture.toRel();
     assertThat(rel, instanceOf(LogicalFilter.class));
     final MyRelMetadataQuery mq = new MyRelMetadataQuery();
 
@@ -1566,7 +1366,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
-    final RelRoot root = tester
+    final Sql fixture = sql(sql)
         .withClusterFactory(cluster -> {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(
@@ -1574,13 +1374,14 @@ public class RelMetadataTest extends SqlToRelTestBase {
                       cluster.getMetadataProvider())));
           cluster.setMetadataQuerySupplier(MyRelMetadataQuery::new);
           return cluster;
-        })
-        .convertSqlToRel(sql);
+        });
 
-    final RelNode rel = root.rel;
+    final RelNode rel = fixture.toRel();
     assertThat(rel, instanceOf(LogicalFilter.class));
-    assertThat(rel.getCluster().getMetadataQuery(), instanceOf(MyRelMetadataQuery.class));
-    final MyRelMetadataQuery mq = (MyRelMetadataQuery) rel.getCluster().getMetadataQuery();
+    assertThat(rel.getCluster().getMetadataQuery(),
+        instanceOf(MyRelMetadataQuery.class));
+    final MyRelMetadataQuery mq =
+        (MyRelMetadataQuery) rel.getCluster().getMetadataQuery();
 
     try {
       assertThat(colType(mq, rel, 0), equalTo("DEPTNO-rel"));
@@ -1611,7 +1412,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
-    final RelRoot root = tester
+    final Sql fixture = sql(sql)
         .withClusterFactory(cluster -> {
           // Create a custom provider that includes ColType.
           // Include the same provider twice just to be devious.
@@ -1621,9 +1422,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(list));
           return cluster;
-        })
-        .convertSqlToRel(sql);
-    final RelNode rel = root.rel;
+        });
+    final RelNode rel = fixture.toRel();
 
     // Top node is a filter. Its metadata uses getColType(RelNode, int).
     assertThat(rel, instanceOf(LogicalFilter.class));
@@ -1676,7 +1476,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
-    final RelRoot root = tester
+    final Sql fixture = sql(sql)
         .withClusterFactory(cluster -> {
           // Create a custom provider that includes ColType.
           // Include the same provider twice just to be devious.
@@ -1687,9 +1487,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
               ChainedRelMetadataProvider.of(list));
           cluster.setMetadataQuerySupplier(MyRelMetadataQuery::new);
           return cluster;
-        })
-        .convertSqlToRel(sql);
-    final RelNode rel = root.rel;
+        });
+    final RelNode rel = fixture.toRel();
 
     // Top node is a filter. Its metadata uses getColType(RelNode, int).
     assertThat(rel, instanceOf(LogicalFilter.class));
@@ -1735,7 +1534,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
    * {@link org.apache.calcite.rel.metadata.RelMdCollation#project}
    * and other helper functions for deducing collations. */
   @Test void testCollation() {
-    final Project rel = (Project) convertSql("select * from emp, dept");
+    final Project rel = (Project) sql("select * from emp, dept").toRel();
     final Join join = (Join) rel.getInput();
     final RelOptTable empTable = join.getInput(0).getTable();
     final RelOptTable deptTable = join.getInput(1).getTable();
@@ -1933,7 +1732,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
    * {@link org.apache.calcite.rel.metadata.RelMetadataQuery#getAverageColumnSizes(org.apache.calcite.rel.RelNode)},
    * {@link org.apache.calcite.rel.metadata.RelMetadataQuery#getAverageRowSize(org.apache.calcite.rel.RelNode)}. */
   @Test void testAverageRowSize() {
-    final Project rel = (Project) convertSql("select * from emp, dept");
+    final Project rel = (Project) sql("select * from emp, dept").toRel();
     final Join join = (Join) rel.getInput();
     final RelOptTable empTable = join.getInput(0).getTable();
     final RelOptTable deptTable = join.getInput(1).getTable();
@@ -2075,7 +1874,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   /** Unit test for
    * {@link org.apache.calcite.rel.metadata.RelMdPredicates#getPredicates(Join, RelMetadataQuery)}. */
   @Test void testPredicates() {
-    final Project rel = (Project) convertSql("select * from emp, dept");
+    final Project rel = (Project) sql("select * from emp, dept").toRel();
     final Join join = (Join) rel.getInput();
     final RelOptTable empTable = join.getInput(0).getTable();
     final RelOptTable deptTable = join.getInput(1).getTable();
@@ -2197,7 +1996,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final String sql = "select a, max(b) from (\n"
         + "  select 1 as a, 2 as b from emp)subq\n"
         + "group by a";
-    final Aggregate rel = (Aggregate) convertSql(sql);
+    final Aggregate rel = (Aggregate) sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList inputSet = mq.getPulledUpPredicates(rel);
     ImmutableList<RexNode> pulledUpPredicates = inputSet.pulledUpPredicates;
@@ -2231,7 +2030,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     try (JdbcAdapterTest.LockWrapper ignore =
              JdbcAdapterTest.LockWrapper.lock(LOCK)) {
       // FIXME: fix timeout when enable implicit type coercion.
-      final RelNode rel = convertSql(sql, false);
+      final RelNode rel = sql(sql).withTypeCoercion(false).toRel();
       final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
       RelOptPredicateList inputSet = mq.getPulledUpPredicates(rel.getInput(0));
       assertThat(inputSet.pulledUpPredicates.size(), is(11));
@@ -2243,7 +2042,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "  select deptno, mgr, cast(null as integer) as x, cast('1' as int) as z\n"
         + "  from emp\n"
         + "  where mgr is null and deptno < 10)";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList list = mq.getPulledUpPredicates(rel);
     assertThat(list.pulledUpPredicates,
@@ -2254,7 +2053,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final String sql = "select nullif(1, 1) as c\n"
         + "  from emp\n"
         + "  where mgr is null and deptno < 10";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList list = mq.getPulledUpPredicates(rel);
     // Uses "IS NOT DISTINCT FROM" rather than "=" because cannot guarantee not null.
@@ -2263,30 +2062,30 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testPullUpPredicatesFromUnion0() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno from emp where empno=1\n"
         + "union all\n"
-        + "select empno from emp where empno=1");
+        + "select empno from emp where empno=1").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[=($0, 1)]"));
   }
 
   @Test void testPullUpPredicatesFromUnion1() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno, deptno from emp where empno=1 or deptno=2\n"
         + "union all\n"
-        + "select empno, deptno from emp where empno=3 or deptno=4");
+        + "select empno, deptno from emp where empno=3 or deptno=4").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[OR(SEARCH($0, Sarg[1, 3]), SEARCH($1, Sarg[2, 4]))]"));
   }
 
   @Test void testPullUpPredicatesFromUnion2() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno, comm, deptno from emp where empno=1 and comm=2 and deptno=3\n"
         + "union all\n"
-        + "select empno, comm, deptno from emp where empno=1 and comm=4");
+        + "select empno, comm, deptno from emp where empno=1 and comm=4").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         // Because the hashCode for
@@ -2300,10 +2099,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testPullUpPredicatesFromIntersect0() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno from emp where empno=1\n"
         + "intersect all\n"
-        + "select empno from emp where empno=1");
+        + "select empno from emp where empno=1").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[=($0, 1)]"));
@@ -2311,10 +2110,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testPullUpPredicatesFromIntersect1() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno, deptno, comm from emp where empno=1 and deptno=2\n"
         + "intersect all\n"
-        + "select empno, deptno, comm from emp where empno=1 and comm=3");
+        + "select empno, deptno, comm from emp where empno=1 and comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[=($0, 1), =($1, 2), =($2, 3)]"));
@@ -2322,10 +2121,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testPullUpPredicatesFromIntersect2() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno, deptno, comm from emp where empno=1 and deptno=2\n"
         + "intersect all\n"
-        + "select empno, deptno, comm from emp where 1=empno and (deptno=2 or comm=3)");
+        + "select empno, deptno, comm from emp where 1=empno and (deptno=2 or comm=3)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[=($0, 1), =($1, 2)]"));
@@ -2333,34 +2132,34 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testPullUpPredicatesFromIntersect3() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno, deptno, comm from emp where empno=1 or deptno=2\n"
         + "intersect all\n"
-        + "select empno, deptno, comm from emp where deptno=2 or empno=1 or comm=3");
+        + "select empno, deptno, comm from emp where deptno=2 or empno=1 or comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[OR(=($0, 1), =($1, 2))]"));
   }
 
   @Test void testPullUpPredicatesFromMinus() {
-    final RelNode rel = convertSql(""
+    final RelNode rel = sql(""
         + "select empno, deptno, comm from emp where empno=1 and deptno=2\n"
         + "except all\n"
-        + "select empno, deptno, comm from emp where comm=3");
+        + "select empno, deptno, comm from emp where comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
         sortsAs("[=($0, 1), =($1, 2)]"));
   }
 
   @Test void testDistributionSimple() {
-    RelNode rel = convertSql("select * from emp where deptno = 10");
+    RelNode rel = sql("select * from emp where deptno = 10").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelDistribution d = mq.getDistribution(rel);
     assertThat(d, is(RelDistributions.BROADCAST_DISTRIBUTED));
   }
 
   @Test void testDistributionHash() {
-    final RelNode rel = convertSql("select * from emp");
+    final RelNode rel = sql("select * from emp").toRel();
     final RelDistribution dist = RelDistributions.hash(ImmutableList.of(1));
     final LogicalExchange exchange = LogicalExchange.create(rel, dist);
 
@@ -2370,7 +2169,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testDistributionHashEmpty() {
-    final RelNode rel = convertSql("select * from emp");
+    final RelNode rel = sql("select * from emp").toRel();
     final RelDistribution dist = RelDistributions.hash(ImmutableList.<Integer>of());
     final LogicalExchange exchange = LogicalExchange.create(rel, dist);
 
@@ -2380,7 +2179,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testDistributionSingleton() {
-    final RelNode rel = convertSql("select * from emp");
+    final RelNode rel = sql("select * from emp").toRel();
     final RelDistribution dist = RelDistributions.SINGLETON;
     final LogicalExchange exchange = LogicalExchange.create(rel, dist);
 
@@ -2401,7 +2200,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageStar() {
     // All columns in output
-    final RelNode tableRel = convertSql("select * from emp");
+    final RelNode tableRel = sql("select * from emp").toRel();
     final RelMetadataQuery mq = tableRel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(4, tableRel.getRowType().getFieldList());
@@ -2416,7 +2215,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testExpressionLineageTwoColumns() {
     // mgr is column 3 in catalog.sales.emp
     // deptno is column 7 in catalog.sales.emp
-    final RelNode rel = convertSql("select mgr, deptno from emp");
+    final RelNode rel = sql("select mgr, deptno from emp").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref1 = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2439,7 +2238,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testExpressionLineageTwoColumnsSwapped() {
     // deptno is column 7 in catalog.sales.emp
     // mgr is column 3 in catalog.sales.emp
-    final RelNode rel = convertSql("select deptno, mgr from emp");
+    final RelNode rel = sql("select deptno, mgr from emp").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref1 = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2462,7 +2261,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testExpressionLineageCombineTwoColumns() {
     // empno is column 0 in catalog.sales.emp
     // deptno is column 7 in catalog.sales.emp
-    final RelNode rel = convertSql("select empno + deptno from emp");
+    final RelNode rel = sql("select empno + deptno from emp").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2484,7 +2283,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageInnerJoinLeft() {
     // ename is column 1 in catalog.sales.emp
-    final RelNode rel = convertSql("select ename from emp,dept");
+    final RelNode rel = sql("select ename from emp,dept").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2497,7 +2296,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageInnerJoinRight() {
     // ename is column 0 in catalog.sales.bonus
-    final RelNode rel = convertSql("select bonus.ename from emp join bonus using (ename)");
+    final RelNode rel = sql("select bonus.ename from emp join bonus using (ename)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2510,7 +2309,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageLeftJoinLeft() {
     // ename is column 1 in catalog.sales.emp
-    final RelNode rel = convertSql("select ename from emp left join dept using (deptno)");
+    final RelNode rel = sql("select ename from emp left join dept using (deptno)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2523,7 +2322,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageRightJoinRight() {
     // ename is column 0 in catalog.sales.bonus
-    final RelNode rel = convertSql("select bonus.ename from emp right join bonus using (ename)");
+    final RelNode rel = sql("select bonus.ename from emp right join bonus using (ename)"
+    ).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2537,10 +2337,11 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testExpressionLineageSelfJoin() {
     // deptno is column 7 in catalog.sales.emp
     // sal is column 5 in catalog.sales.emp
-    final RelNode rel = convertSql("select a.deptno, b.sal from (select * from emp limit 7) as a\n"
+    final RelNode rel = sql("select a.deptno, b.sal from (select * from emp limit 7) as"
+        + " a\n"
         + "inner join (select * from emp limit 2) as b\n"
-        + "on a.deptno = b.deptno");
-    final RelNode tableRel = convertSql("select * from emp");
+        + "on a.deptno = b.deptno").toRel();
+    final RelNode tableRel = sql("select * from emp").toRel();
     final RelMetadataQuery mq = tableRel.getCluster().getMetadataQuery();
 
     final RexNode ref1 = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2565,8 +2366,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageOuterJoin() {
     // lineage cannot be determined
-    final RelNode rel = convertSql("select name as dname from emp left outer join dept"
-        + " on emp.deptno = dept.deptno");
+    final RelNode rel = sql("select name as dname from emp left outer join dept"
+        + " on emp.deptno = dept.deptno").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2576,8 +2377,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageFilter() {
     // ename is column 1 in catalog.sales.emp
-    final RelNode rel = convertSql("select ename from emp where deptno = 10");
-    final RelNode tableRel = convertSql("select * from emp");
+    final RelNode rel = sql("select ename from emp where deptno = 10").toRel();
+    final RelNode tableRel = sql("select * from emp").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2591,9 +2392,9 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageAggregateGroupColumn() {
     // deptno is column 7 in catalog.sales.emp
-    final RelNode rel = convertSql("select deptno, count(*) from emp where deptno > 10 "
-        + "group by deptno having count(*) = 0");
-    final RelNode tableRel = convertSql("select * from emp");
+    final RelNode rel = sql("select deptno, count(*) from emp where deptno > 10 "
+        + "group by deptno having count(*) = 0").toRel();
+    final RelNode tableRel = sql("select * from emp").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2607,8 +2408,8 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageAggregateAggColumn() {
     // lineage cannot be determined
-    final RelNode rel = convertSql("select deptno, count(*) from emp where deptno > 10 "
-        + "group by deptno having count(*) = 0");
+    final RelNode rel = sql("select deptno, count(*) from emp where deptno > 10 "
+        + "group by deptno having count(*) = 0").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(1, rel.getRowType().getFieldList());
@@ -2618,10 +2419,10 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageUnion() {
     // sal is column 5 in catalog.sales.emp
-    final RelNode rel = convertSql("select sal from (\n"
+    final RelNode rel = sql("select sal from (\n"
         + "  select * from emp union all select * from emp) "
-        + "where deptno = 10");
-    final RelNode tableRel = convertSql("select * from emp");
+        + "where deptno = 10").toRel();
+    final RelNode tableRel = sql("select * from emp").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2642,11 +2443,11 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testExpressionLineageMultiUnion() {
     // empno is column 0 in catalog.sales.emp
     // sal is column 5 in catalog.sales.emp
-    final RelNode rel = convertSql("select a.empno + b.sal from\n"
+    final RelNode rel = sql("select a.empno + b.sal from\n"
         + " (select empno, ename from emp,dept) a join "
         + " (select * from emp union all select * from emp) b\n"
         + " on a.empno = b.empno\n"
-        + " where b.deptno = 10");
+        + " where b.deptno = 10").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2676,7 +2477,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testExpressionLineageValues() {
     // lineage cannot be determined
-    final RelNode rel = convertSql("select * from (values (1), (2)) as t(c)");
+    final RelNode rel = sql("select * from (values (1), (2)) as t(c)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     final RexNode ref = RexInputRef.of(0, rel.getRowType().getFieldList());
@@ -2685,9 +2486,9 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testExpressionLineageCalc() {
-    final RelNode rel = convertSql("select sal from (\n"
+    final RelNode rel = sql("select sal from (\n"
         + " select deptno, empno, sal + 1 as sal, job from emp) "
-        + "where deptno = 10");
+        + "where deptno = 10").toRel();
     final HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addRuleInstance(CoreRules.PROJECT_TO_CALC);
     programBuilder.addRuleInstance(CoreRules.FILTER_TO_CALC);
@@ -2706,7 +2507,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   @Test void testAllPredicates() {
-    final Project rel = (Project) convertSql("select * from emp, dept");
+    final Project rel = (Project) sql("select * from emp, dept").toRel();
     final Join join = (Join) rel.getInput();
     final RelOptTable empTable = join.getInput(0).getTable();
     final RelOptTable deptTable = join.getInput(1).getTable();
@@ -2776,7 +2577,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     final String sql = "select a, max(b) from (\n"
         + "  select empno as a, sal as b from emp where empno = 5)subq\n"
         + "group by a";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     ImmutableList<RexNode> pulledUpPredicates = inputSet.pulledUpPredicates;
@@ -2795,7 +2596,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "  select empno as a, sal as b from emp)subq\n"
         + "group by a)\n"
         + "where a = 5";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     ImmutableList<RexNode> pulledUpPredicates = inputSet.pulledUpPredicates;
@@ -2814,7 +2615,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "  select empno as a, sal as b from emp)subq\n"
         + "group by a)\n"
         + "where b = 5";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     // Filter on aggregate, we cannot infer lineage
@@ -2833,7 +2634,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "inner join (select * from emp limit 2) as c\n"
         + "on a.deptno = c.deptno) as y\n"
         + "on x.deptno = y.deptno";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
@@ -2851,7 +2652,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testAllPredicatesAndTablesCalc() {
     final String sql = "select empno as a, sal as b from emp where empno > 5";
-    final RelNode relNode = convertSql(sql);
+    final RelNode relNode = sql(sql).toRel();
     final HepProgram hepProgram = new HepProgramBuilder()
         .addRuleInstance(CoreRules.PROJECT_TO_CALC)
         .addRuleInstance(CoreRules.FILTER_TO_CALC)
@@ -2908,7 +2709,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   public void checkAllPredicatesAndTableSetOp(String sql) {
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
@@ -2926,14 +2727,14 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testTableReferenceForIntersect() {
     final String sql1 = "select a.deptno, a.sal from emp a\n"
         + "intersect all select b.deptno, b.sal from emp b where empno = 5";
-    final RelNode rel1 = convertSql(sql1);
+    final RelNode rel1 = sql(sql1).toRel();
     final RelMetadataQuery mq1 = rel1.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences1 = Sets.newTreeSet(mq1.getTableReferences(rel1));
     assertThat(tableReferences1.toString(),
         equalTo("[[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1]"));
 
     final String sql2 = "select a.deptno from dept a intersect all select b.deptno from emp b";
-    final RelNode rel2 = convertSql(sql2);
+    final RelNode rel2 = sql(sql2).toRel();
     final RelMetadataQuery mq2 = rel2.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences2 = Sets.newTreeSet(mq2.getTableReferences(rel2));
     assertThat(tableReferences2.toString(),
@@ -2944,7 +2745,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   @Test void testTableReferenceForMinus() {
     final String sql = "select emp.deptno, emp.sal from emp\n"
         + "except all select emp.deptno, emp.sal from emp where empno = 5";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences = Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences.toString(),
@@ -2956,7 +2757,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "(select a.deptno, c.sal from (select * from emp limit 7) as a\n"
         + "cross join (select * from dept limit 1) as b\n"
         + "cross join (select * from emp where empno = 5 limit 2) as c) as x";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences = Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences,
@@ -2971,7 +2772,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testTableReferencesJoinUnknownNode() {
     final String sql = "select * from emp limit 10";
-    final RelNode node = convertSql(sql);
+    final RelNode node = sql(sql).toRel();
     final RelNode nodeWithUnknown = new DummyRelNode(
         node.getCluster(), node.getTraitSet(), node);
     final RexBuilder rexBuilder = node.getCluster().getRexBuilder();
@@ -2989,7 +2790,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         + "(select a.deptno, a.sal from (select * from emp) as a\n"
         + "union all select emp.deptno, emp.sal from emp\n"
         + "union all select emp.deptno, emp.sal from emp where empno = 5) as x";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences = Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences,
@@ -3005,7 +2806,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testTableReferencesUnionUnknownNode() {
     final String sql = "select * from emp limit 10";
-    final RelNode node = convertSql(sql);
+    final RelNode node = sql(sql).toRel();
     final RelNode nodeWithUnknown = new DummyRelNode(
         node.getCluster(), node.getTraitSet(), node);
     // Union
@@ -3018,7 +2819,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
   }
 
   private void checkNodeTypeCount(String sql, Map<Class<? extends RelNode>, Integer> expected) {
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Multimap<Class<? extends RelNode>, RelNode> result = mq.getNodeTypes(rel);
     assertThat(result, notNullValue());
@@ -3083,7 +2884,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testNodeTypeCountExchange() {
 
-    final RelNode rel = convertSql("select * from emp");
+    final RelNode rel = sql("select * from emp").toRel();
     final RelDistribution dist = RelDistributions.hash(ImmutableList.<Integer>of());
     final LogicalExchange exchange = LogicalExchange.create(rel, dist);
 
@@ -3306,7 +3107,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testConstColumnsNdv() {
     final String sql = "select ename, 100, 200 from emp";
-    final RelNode rel = convertSql(sql);
+    final RelNode rel = sql(sql).toRel();
     RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
     assertThat(rel, instanceOf(Project.class));
@@ -3424,7 +3225,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4315">[CALCITE-4315]
    * NPE in RelMdUtil#checkInputForCollationAndLimit</a>. */
   @Test void testCheckInputForCollationAndLimit() {
-    final Project rel = (Project) convertSql("select * from emp, dept");
+    final Project rel = (Project) sql("select * from emp, dept").toRel();
     final Join join = (Join) rel.getInput();
     final RelOptTable empTable = join.getInput(0).getTable();
     final RelOptTable deptTable = join.getInput(1).getTable();
@@ -3598,14 +3399,46 @@ public class RelMetadataTest extends SqlToRelTestBase {
   private static class Sql {
     private final Tester tester;
     private final String sql;
+    private final boolean convertAsCalc;
+    private final boolean typeCoercion;
 
-    Sql(Tester tester, String sql) {
+    Sql(Tester tester, String sql, boolean convertAsCalc,
+        boolean typeCoercion) {
       this.tester = tester;
       this.sql = sql;
+      this.convertAsCalc = convertAsCalc;
+      this.typeCoercion = typeCoercion;
+    }
+
+    Sql sql(String sql) {
+      return sql.equals(this.sql) ? this
+          : new Sql(tester, sql, convertAsCalc, typeCoercion);
+    }
+
+    Sql withTester(UnaryOperator<Tester> transform) {
+      return new Sql(transform.apply(tester), sql, convertAsCalc, typeCoercion);
+    }
+
+    public Sql convertingProjectAsCalc() {
+      return new Sql(tester, sql, true, typeCoercion);
+    }
+
+    public Sql withCatalogReaderFactory(
+        SqlTestFactory.MockCatalogReaderFactory factory) {
+      return withTester(t -> t.withCatalogReaderFactory(factory));
+    }
+
+    public Sql withClusterFactory(UnaryOperator<RelOptCluster> factory) {
+      return withTester(t -> t.withClusterFactory(factory));
+    }
+
+    public Sql withTypeCoercion(boolean typeCoercion) {
+      return typeCoercion == this.typeCoercion ? this
+          : new Sql(tester, sql, convertAsCalc, typeCoercion);
     }
 
     Sql assertCpuCost(Matcher<Double> matcher, String reason) {
-      RelNode rel = convertSql(tester, sql);
+      RelNode rel = toRel();
       RelOptCost cost = computeRelSelfCost(rel);
       assertThat(reason + "\n"
           + "sql:" + sql + "\n"
@@ -3631,7 +3464,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     Sql assertRowsUnique(boolean[] ignoreNulls, Matcher<Boolean> matcher,
         String reason) {
-      RelNode rel = convertSql(tester, sql);
+      RelNode rel = toRel();
       final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
       for (boolean ignoreNull : ignoreNulls) {
         Boolean rowsUnique = mq.areRowsUnique(rel, ignoreNull);
@@ -3643,5 +3476,144 @@ public class RelMetadataTest extends SqlToRelTestBase {
       return this;
     }
 
+    public RelNode toRel() {
+      final RelRoot root = tester
+          .enableTypeCoercion(typeCoercion)
+          .convertSqlToRel(sql);
+      root.rel.getCluster().setMetadataProvider(DefaultRelMetadataProvider.INSTANCE);
+      if (convertAsCalc) {
+        Project project = (Project) root.rel;
+        RexProgram program = RexProgram.create(
+            project.getInput().getRowType(),
+            project.getProjects(),
+            null,
+            project.getRowType(),
+            project.getCluster().getRexBuilder());
+        return LogicalCalc.create(project.getInput(), program);
+      }
+      return root.rel;
+    }
+
+    private void checkPercentageOriginalRows(Matcher<Double> matcher) {
+      RelNode rel = sql(sql).toRel();
+      final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+      Double result = mq.getPercentageOriginalRows(rel);
+      assertNotNull(result);
+      assertThat(result, matcher);
+    }
+
+    private Set<RelColumnOrigin> checkColumnOrigin(String sql) {
+      RelNode rel = sql(sql).toRel();
+      final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+      return mq.getColumnOrigins(rel, 0);
+    }
+
+    private void checkNoColumnOrigin() {
+      Set<RelColumnOrigin> result = checkColumnOrigin(sql);
+      assertNotNull(result);
+      assertTrue(result.isEmpty());
+    }
+
+    public static void checkColumnOrigin(
+        RelColumnOrigin rco,
+        String expectedTableName,
+        String expectedColumnName,
+        boolean expectedDerived) {
+      RelOptTable actualTable = rco.getOriginTable();
+      List<String> actualTableName = actualTable.getQualifiedName();
+      assertThat(
+          Iterables.getLast(actualTableName),
+          equalTo(expectedTableName));
+      assertThat(
+          actualTable.getRowType()
+              .getFieldList()
+              .get(rco.getOriginColumnOrdinal())
+              .getName(),
+          equalTo(expectedColumnName));
+      assertThat(rco.isDerived(), equalTo(expectedDerived));
+    }
+
+    private void checkSingleColumnOrigin(
+        String expectedTableName,
+        String expectedColumnName,
+        boolean expectedDerived) {
+      Set<RelColumnOrigin> result = checkColumnOrigin(sql);
+      assertNotNull(result);
+      assertThat(result.size(), is(1));
+      RelColumnOrigin rco = result.iterator().next();
+      checkColumnOrigin(
+          rco, expectedTableName, expectedColumnName, expectedDerived);
+    }
+
+    // WARNING:  this requires the two table names to be different
+    private void checkTwoColumnOrigin(
+        String expectedTableName1,
+        String expectedColumnName1,
+        String expectedTableName2,
+        String expectedColumnName2,
+        boolean expectedDerived) {
+      Set<RelColumnOrigin> result = checkColumnOrigin(sql);
+      assertNotNull(result);
+      assertThat(result.size(), is(2));
+      for (RelColumnOrigin rco : result) {
+        RelOptTable actualTable = rco.getOriginTable();
+        List<String> actualTableName = actualTable.getQualifiedName();
+        String actualUnqualifiedName = Iterables.getLast(actualTableName);
+        if (actualUnqualifiedName.equals(expectedTableName1)) {
+          checkColumnOrigin(
+              rco,
+              expectedTableName1,
+              expectedColumnName1,
+              expectedDerived);
+        } else {
+          checkColumnOrigin(
+              rco,
+              expectedTableName2,
+              expectedColumnName2,
+              expectedDerived);
+        }
+      }
+    }
+
+    /**
+     * Checks result of getting unique keys for sql.
+     */
+    private void checkGetUniqueKeys(Set<ImmutableBitSet> expectedUniqueKeySet) {
+      RelNode rel = toRel();
+      final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+      Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
+      assertEquals(
+          ImmutableSortedSet.copyOf(expectedUniqueKeySet),
+          ImmutableSortedSet.copyOf(result),
+          () -> "unique keys, sql: " + sql + ", rel: " + RelOptUtil.toString(rel));
+      assertUniqueConsistent(rel);
+    }
+
+    /** Asserts that {@link RelMetadataQuery#getUniqueKeys(RelNode)}
+     * and {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
+     * return consistent results. */
+    private void assertUniqueConsistent(RelNode rel) {
+      final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+      final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel);
+      final ImmutableBitSet allCols =
+          ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
+      for (ImmutableBitSet key : allCols.powerSet()) {
+        Boolean result2 = mq.areColumnsUnique(rel, key);
+        assertEquals(isUnique(uniqueKeys, key), SqlFunctions.isTrue(result2),
+            () -> "areColumnsUnique. key: " + key + ", uniqueKeys: " + uniqueKeys
+                + ", rel: " + RelOptUtil.toString(rel));
+      }
+    }
+
+    /** Returns whether {@code keys} is unique, that is, whether it or a superset
+     * is in {@code keySets}. */
+    private boolean isUnique(Set<ImmutableBitSet> uniqueKeys, ImmutableBitSet key) {
+      for (ImmutableBitSet uniqueKey : uniqueKeys) {
+        if (key.contains(uniqueKey)) {
+          return true;
+        }
+      }
+      return false;
+    }
   }
 }

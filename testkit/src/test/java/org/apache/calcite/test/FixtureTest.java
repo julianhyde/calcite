@@ -19,6 +19,7 @@ package org.apache.calcite.test;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.parser.SqlParserTest;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /** Tests test fixtures.
@@ -64,4 +65,27 @@ public class FixtureTest {
     f.sql("select 1 + 2 as three")
         .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
   }
+
+  /** Tests that you can run SQL-to-Rel tests via
+   * {@link Fixtures#forValidator()}. */
+  @Disabled
+  @Test void testSqlToRelFixture() {
+    final SqlValidatorTestCase.Sql f = Fixtures.forSqlToRel();
+    final String sql = "select 1 from emp";
+    f.sql(sql).ok();
+  }
+
+  /** Tests that you can run RelRule tests via
+   * {@link Fixtures#forValidator()}. */
+  @Test void testRuleFixture() {
+    final SqlValidatorTestCase.Sql f = Fixtures.forValidator();
+    f.sql("select ^1 + date '2002-03-04'^")
+        .fails("(?s).*Cannot apply '\\+' to arguments of"
+            + " type '<INTEGER> \\+ <DATE>'.*");
+
+    f.sql("select 1 + 2 as three")
+        .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
+  }
+
+
 }

@@ -18,6 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -27,7 +28,6 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
@@ -38,6 +38,8 @@ import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.test.SqlToRelTestBase.Tester;
+import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Closer;
 
@@ -49,170 +51,130 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.test.Matchers.relIsValid;
+import static org.apache.calcite.test.SqlToRelTestBase.NL;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * RelOptTestBase is an abstract base for tests which exercise a planner and/or
  * rules via {@link DiffRepository}.
  */
-abstract class RelOptTestBase extends SqlToRelTestBase {
+abstract class RelOptTestBase {
   //~ Methods ----------------------------------------------------------------
 
-  @Override protected Tester createTester() {
-    return super.createTester().withDecorrelation(false);
+  protected Tester createTester() { // TODO override in Sql, not tester
+    return new SqlToRelTestBase() {
+    }.tester.withDecorrelation(false);
   }
 
-  protected Tester createDynamicTester() {
-    return getTesterWithDynamicTable();
+  /** Creates a fixture for a test. Derived class must override and set
+   * {@link Sql#diffRepos}. */
+  Sql fixture() {
+    final Tester tester = createTester();
+    return new Sql(tester, null, RelSupplier.NONE, null, null,
+        ImmutableMap.of(), ImmutableList.of(), (f, r) -> r, (f, r) -> r)
+        .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
   }
 
-  /**
-   * Checks the plan for a given {@link RelNode} supplier before/after executing a given rule,
-   * with a pre-program to prepare the tree.
-   *
-   * @param tester     Tester
-   * @param preProgram Program to execute before comparing before state
-   * @param planner    Planner
-   * @param relFn      {@link RelNode} supplier
-   * @param unchanged  Whether the rule is to have no effect
-   */
-  private void checkPlanning(Tester tester, HepProgram preProgram,
-      RelOptPlanner planner, Function<RelBuilder, RelNode> relFn, boolean unchanged) {
-    RelNode relInitial = relFn.apply(RelBuilder.create(RelBuilderTest.config().build()));
-    checkPlanning(tester, preProgram, planner, relInitial, unchanged);
-  }
-
-  /**
-   * Checks the plan for a SQL statement before/after executing a given rule,
-   * with a pre-program to prepare the tree.
-   *
-   * @param tester     Tester
-   * @param preProgram Program to execute before comparing before state
-   * @param planner    Planner
-   * @param sql        SQL query
-   * @param unchanged  Whether the rule is to have no effect
-   */
-  private void checkPlanning(Tester tester, HepProgram preProgram,
-      RelOptPlanner planner, String sql, boolean unchanged) {
-    final DiffRepository diffRepos = getDiffRepos();
-    String sql2 = diffRepos.expand("sql", sql);
-    final RelRoot root = tester.convertSqlToRel(sql2);
-    final RelNode relInitial = root.rel;
-    checkPlanning(tester, preProgram, planner, relInitial, unchanged);
-  }
-
-  private void checkPlanning(Tester tester, HepProgram preProgram,
-        RelOptPlanner planner, RelNode relInitial, boolean unchanged) {
-    assertNotNull(relInitial);
-    final DiffRepository diffRepos = getDiffRepos();
-    List<RelMetadataProvider> list = new ArrayList<>();
-    list.add(DefaultRelMetadataProvider.INSTANCE);
-    RelMetadataProvider plannerChain =
-        ChainedRelMetadataProvider.of(list);
-    final RelOptCluster cluster = relInitial.getCluster();
-    cluster.setMetadataProvider(plannerChain);
-
-    RelNode relBefore;
-    if (preProgram == null) {
-      relBefore = relInitial;
-    } else {
-      HepPlanner prePlanner = new HepPlanner(preProgram);
-      prePlanner.setRoot(relInitial);
-      relBefore = prePlanner.findBestExp();
-    }
-
-    assertThat(relBefore, notNullValue());
-
-    final String planBefore = NL + RelOptUtil.toString(relBefore);
-    diffRepos.assertEquals("planBefore", "${planBefore}", planBefore);
-    assertThat(relBefore, relIsValid());
-
-    if (planner instanceof VolcanoPlanner) {
-      relBefore = planner.changeTraits(relBefore,
-          relBefore.getTraitSet().replace(EnumerableConvention.INSTANCE));
-    }
-    planner.setRoot(relBefore);
-    RelNode r = planner.findBestExp();
-    if (tester.isLateDecorrelate()) {
-      final String planMid = NL + RelOptUtil.toString(r);
-      diffRepos.assertEquals("planMid", "${planMid}", planMid);
-      assertThat(r, relIsValid());
-      final RelBuilder relBuilder =
-          RelFactories.LOGICAL_BUILDER.create(cluster, null);
-      r = RelDecorrelator.decorrelateQuery(r, relBuilder);
-    }
-    final String planAfter = NL + RelOptUtil.toString(r);
-    if (unchanged) {
-      assertThat(planAfter, is(planBefore));
-    } else {
-      diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
-      if (planBefore.equals(planAfter)) {
-        throw new AssertionError("Expected plan before and after is the same.\n"
-            + "You must use unchanged=true or call checkUnchanged");
-      }
-    }
-    assertThat(r, relIsValid());
-  }
-
-  /** Sets the SQL statement for a test. */
-  Sql sql(String sql) {
-    final Sql s =
-        new Sql(tester, sql, null, null, ImmutableMap.of(), ImmutableList.of(), null);
-    return s.withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
+  /** Creates a fixture and sets its SQL statement. */
+  protected final Sql sql(String sql) {
+    return fixture().sql(sql);
   }
 
   /** Initiates a test case with a given {@link RelNode} supplier. */
-  Sql relFn(Function<RelBuilder, RelNode> relFn) {
-    return sql("?").relFn(relFn);
+  protected final Sql relFn(Function<RelBuilder, RelNode> relFn) {
+    return fixture().relFn(relFn);
   }
 
   /** Allows fluent testing. */
-  class Sql {
-    private final Tester tester;
-    private final String sql;
-    private HepProgram preProgram;
-    private final RelOptPlanner planner;
-    private final ImmutableMap<Hook, Consumer> hooks;
-    private ImmutableList<Function<Tester, Tester>> transforms;
-    private final @Nullable Function<RelBuilder, RelNode> relFn;
+  static class Sql {
+    final Tester tester;
+    final RelSupplier relSupplier;
+    final DiffRepository diffRepos;
+    final HepProgram preProgram;
+    final RelOptPlanner planner;
+    final ImmutableMap<Hook, Consumer<Object>> hooks;
+    final ImmutableList<Function<Tester, Tester>> transforms;
+    final BiFunction<Sql, RelNode, RelNode> before;
+    final BiFunction<Sql, RelNode, RelNode> after;
 
-    Sql(Tester tester, String sql, HepProgram preProgram, RelOptPlanner planner,
-        ImmutableMap<Hook, Consumer> hooks,
+    Sql(Tester tester, @Nullable DiffRepository diffRepos,
+        RelSupplier relSupplier, HepProgram preProgram, RelOptPlanner planner,
+        ImmutableMap<Hook, Consumer<Object>> hooks,
         ImmutableList<Function<Tester, Tester>> transforms,
-        @Nullable Function<RelBuilder, RelNode> relFn) {
-      this.tester = Objects.requireNonNull(tester, "tester");
-      this.sql = Objects.requireNonNull(sql, "sql");
-      if (sql.contains(" \n")) {
-        throw new AssertionError("trailing whitespace");
-      }
+        BiFunction<Sql, RelNode, RelNode> before,
+        BiFunction<Sql, RelNode, RelNode> after) {
+      this.tester = requireNonNull(tester, "tester");
+      this.diffRepos = diffRepos;
+      this.relSupplier = requireNonNull(relSupplier, "relSupplier");
+      this.before = requireNonNull(before, "before");
+      this.after = requireNonNull(after, "after");
       this.preProgram = preProgram;
       this.planner = planner;
-      this.hooks = Objects.requireNonNull(hooks, "hooks");
-      this.transforms = Objects.requireNonNull(transforms, "transforms");
-      this.relFn = relFn;
+      this.hooks = requireNonNull(hooks, "hooks");
+      this.transforms = requireNonNull(transforms, "transforms");
+    }
+
+    public Sql withDiffRepos(DiffRepository diffRepos) {
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after);
+    }
+
+    public Sql withRelSupplier(RelSupplier relSupplier) {
+      return relSupplier.equals(this.relSupplier) ? this
+          : new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+              transforms, before, after);
+    }
+
+    public Sql sql(String sql) {
+      return withRelSupplier(RelSupplier.of(sql));
     }
 
     Sql relFn(Function<RelBuilder, RelNode> relFn) {
-      return new Sql(tester, sql, null, null, ImmutableMap.of(), ImmutableList.of(), relFn);
+      return withRelSupplier(RelSupplier.of(relFn));
     }
 
-    public Sql withTester(UnaryOperator<Tester> transform) {
+    public Sql withBefore(BiFunction<Sql, RelNode, RelNode> before) {
+      final BiFunction<Sql, RelNode, RelNode> before0 = this.before;
+      final BiFunction<Sql, RelNode, RelNode> before2 =
+          (sql, r) -> before.apply(this, before0.apply(this, r));
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before2, after);
+    }
+
+    public Sql withAfter(BiFunction<Sql, RelNode, RelNode> after) {
+      final BiFunction<Sql, RelNode, RelNode> after0 = this.after;
+      final BiFunction<Sql, RelNode, RelNode> after2 =
+          (sql, r) -> after.apply(this, after0.apply(this, r));
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after2);
+    }
+
+    public Sql withDynamicTable() {
+      return withTester(t ->
+          t.withCatalogReaderFactory(MockCatalogReaderDynamic::new));
+    }
+
+    public Sql withTester(UnaryOperator<Tester> transform) { // TODO dont transform tester
       final Tester tester2 = transform.apply(tester);
-      return new Sql(tester2, sql, preProgram, planner, hooks, transforms, relFn);
+      return new Sql(tester2, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after);
     }
 
     public Sql withPre(HepProgram preProgram) {
-      return new Sql(tester, sql, preProgram, planner, hooks, transforms, relFn);
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after);
     }
 
     public Sql withPreRule(RelOptRule... rules) {
@@ -223,13 +185,13 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       return withPre(builder.build());
     }
 
-    public Sql with(HepPlanner hepPlanner) {
-      return new Sql(tester, sql, preProgram, hepPlanner, hooks, transforms, relFn);
+    public Sql with(RelOptPlanner planner) {
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after);
     }
 
     public Sql with(HepProgram program) {
-      final HepPlanner hepPlanner = new HepPlanner(program);
-      return new Sql(tester, sql, preProgram, hepPlanner, hooks, transforms, relFn);
+      return with(new HepPlanner(program));
     }
 
     public Sql withRule(RelOptRule... rules) {
@@ -245,16 +207,19 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
     private Sql withTransform(Function<Tester, Tester> transform) {
       final ImmutableList<Function<Tester, Tester>> transforms =
           FlatLists.append(this.transforms, transform);
-      return new Sql(tester, sql, preProgram, planner, hooks, transforms, relFn);
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after);
     }
 
     /** Adds a hook and a handler for that hook. Calcite will create a thread
      * hook (by calling {@link Hook#addThread(Consumer)})
      * just before running the query, and remove the hook afterwards. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public <T> Sql withHook(Hook hook, Consumer<T> handler) {
-      final ImmutableMap<Hook, Consumer> hooks =
-          FlatLists.append(this.hooks, hook, handler);
-      return new Sql(tester, sql, preProgram, planner, hooks, transforms, relFn);
+      final ImmutableMap<Hook, Consumer<Object>> hooks =
+          FlatLists.append((Map) this.hooks, hook, (Consumer) handler);
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after);
     }
 
     // CHECKSTYLE: IGNORE 1
@@ -308,6 +273,10 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       return withTransform(tester -> tester.withContext(transform));
     }
 
+    public RelNode toRel() {
+      return relSupplier.apply(this);
+    }
+
     /**
      * Checks the plan for a SQL statement before/after executing a given rule,
      * with a optional pre-program specified by {@link #withPre(HepProgram)}
@@ -325,23 +294,129 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
       check(true);
     }
 
-    @SuppressWarnings("unchecked")
     private void check(boolean unchanged) {
       try (Closer closer = new Closer()) {
-        for (Map.Entry<Hook, Consumer> entry : hooks.entrySet()) {
+        for (Map.Entry<Hook, Consumer<Object>> entry : hooks.entrySet()) {
           closer.add(entry.getKey().addThread(entry.getValue()));
         }
-        Tester t = tester;
-        for (Function<Tester, Tester> transform : transforms) {
-          t = transform.apply(t);
-        }
-        if (relFn != null) {
-          checkPlanning(t, preProgram, planner, relFn, unchanged);
-        } else {
-          checkPlanning(t, preProgram, planner, sql, unchanged);
+        checkPlanning(unchanged);
+      }
+    }
+
+    /**
+     * Checks the plan for a given {@link RelNode} supplier before/after executing a given rule,
+     * with a pre-program to prepare the tree.
+     *
+     * @param unchanged   Whether the rule is to have no effect
+     */
+    private void checkPlanning(boolean unchanged) {
+      RelNode relInitial = toRel();
+
+      assertNotNull(relInitial);
+      List<RelMetadataProvider> list = new ArrayList<>();
+      list.add(DefaultRelMetadataProvider.INSTANCE);
+      RelMetadataProvider plannerChain =
+          ChainedRelMetadataProvider.of(list);
+      final RelOptCluster cluster = relInitial.getCluster();
+      cluster.setMetadataProvider(plannerChain);
+
+      RelNode relBefore;
+      if (preProgram == null) {
+        relBefore = relInitial;
+      } else {
+        HepPlanner prePlanner = new HepPlanner(preProgram);
+        prePlanner.setRoot(relInitial);
+        relBefore = prePlanner.findBestExp();
+      }
+      relBefore = before.apply(this, relBefore);
+      assertThat(relBefore, notNullValue());
+
+      final String planBefore = NL + RelOptUtil.toString(relBefore);
+      final DiffRepository diffRepos = diffRepos();
+      diffRepos.assertEquals("planBefore", "${planBefore}", planBefore);
+      assertThat(relBefore, relIsValid());
+
+      if (planner instanceof VolcanoPlanner) {
+        relBefore = planner.changeTraits(relBefore,
+            relBefore.getTraitSet().replace(EnumerableConvention.INSTANCE));
+      }
+      planner.setRoot(relBefore);
+      RelNode r = planner.findBestExp();
+      final Tester tester = tester();
+      if (tester.isLateDecorrelate()) {
+        final String planMid = NL + RelOptUtil.toString(r);
+        diffRepos.assertEquals("planMid", "${planMid}", planMid);
+        assertThat(r, relIsValid());
+        final RelBuilder relBuilder =
+            RelFactories.LOGICAL_BUILDER.create(cluster, null);
+        r = RelDecorrelator.decorrelateQuery(r, relBuilder);
+      }
+      r = after.apply(this, r);
+      final String planAfter = NL + RelOptUtil.toString(r);
+      if (unchanged) {
+        assertThat(planAfter, is(planBefore));
+      } else {
+        diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
+        if (planBefore.equals(planAfter)) {
+          throw new AssertionError("Expected plan before and after is the same.\n"
+              + "You must use unchanged=true or call checkUnchanged");
         }
       }
+      assertThat(r, relIsValid());
+    }
+
+    public Sql withVolcanoPlanner(boolean topDown) {
+      return withVolcanoPlanner(topDown, p ->
+          RelOptUtil.registerDefaultRules(p, false, false));
+    }
+
+    public Sql withVolcanoPlanner(boolean topDown, Consumer<VolcanoPlanner> init) {
+      final VolcanoPlanner planner = new VolcanoPlanner();
+      planner.setTopDownOpt(topDown);
+      planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+      init.accept(planner);
+      return with(planner)
+          .withDecorrelation(true)
+          .withTester(t ->
+              t.withClusterFactory(cluster ->
+                  RelOptCluster.create(planner, cluster.getRexBuilder())));
+    }
+
+    /** Returns the diff repository, checking that it is not null.
+     * (It is allowed to be null because some tests that don't use a diff
+     * repository.) */
+    public DiffRepository diffRepos() {
+      return requireNonNull(diffRepos, "diffRepos is null; if you require a "
+          + "DiffRepository, set it in your test's fixture() method");
+    }
+
+    public Tester tester() {
+      Tester t = tester;
+      for (Function<Tester, Tester> transform : transforms) {
+        t = transform.apply(t);
+      }
+      return t;
     }
   }
 
+  /** The source of a {@link RelNode} for running a test. */
+  interface RelSupplier extends Function<Sql, RelNode> {
+    RelSupplier NONE = fixture -> {
+      throw new UnsupportedOperationException();
+    };
+    static RelSupplier of(String sql) {
+      if (sql.contains(" \n")) {
+        throw new AssertionError("trailing whitespace");
+      }
+      return fixture -> {
+        // TODO: define toString and equals methods
+        String sql2 = fixture.diffRepos.expand("sql", sql);
+        return fixture.tester().convertSqlToRel(sql2).rel;
+      };
+    }
+    static RelSupplier of(Function<RelBuilder, RelNode> relFn) {
+      return fixture ->
+          relFn.apply(RelBuilder.create(RelBuilderTest.config().build()));
+    }
+  }
 }
