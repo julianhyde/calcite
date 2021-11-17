@@ -16,6 +16,32 @@
   ~ limitations under the License.
   -->
 <Root>
+  <TestCase name="testRuleFixture">
+    <Resource name="sql">
+      <![CDATA[select * from dept
+union
+select * from dept]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalUnion(all=[false])
+  LogicalProject(DEPTNO=[$0], NAME=[$1])
+    LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+  LogicalProject(DEPTNO=[$0], NAME=[$1])
+    LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalAggregate(group=[{0, 1}])
+  LogicalUnion(all=[true])
+    LogicalProject(DEPTNO=[$0], NAME=[$1])
+      LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+    LogicalProject(DEPTNO=[$0], NAME=[$1])
+      LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testSqlToRelFixture">
     <Resource name="sql">
       <![CDATA[select 1 from emp]]>

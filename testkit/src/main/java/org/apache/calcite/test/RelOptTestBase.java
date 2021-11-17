@@ -424,7 +424,7 @@ abstract class RelOptTestBase {
       }
       return fixture -> {
         // TODO: define toString and equals methods
-        String sql2 = fixture.diffRepos.expand("sql", sql);
+        String sql2 = fixture.diffRepos().expand("sql", sql);
         return fixture.tester().convertSqlToRel(sql2).rel;
       };
     }

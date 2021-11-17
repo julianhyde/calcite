@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.sql.parser.SqlParserTest;
 
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,11 @@ import static org.hamcrest.core.Is.is;
  *
  * @see Fixtures */
 public class FixtureTest {
+
+  public static final String DIFF_REPOS_MESSAGE = "diffRepos is null; if you require a "
+      + "DiffRepository, set it in "
+      + "your test's fixture() method";
+
   /** Tests that you can write parser tests via {@link Fixtures#forParser()}. */
   @Test void testParserFixture() {
     // 'as' as identifier is invalid with Core parser
@@ -88,23 +94,38 @@ public class FixtureTest {
       f.sql(sql).ok();
       throw new AssertionError("expected error");
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(),
-          is("diffRepos is null; if you require a DiffRepository, set it in "
-              + "your test's fixture() method"));
+      assertThat(e.getMessage(), is(DIFF_REPOS_MESSAGE));
     }
   }
 
   /** Tests that you can run RelRule tests via
    * {@link Fixtures#forValidator()}. */
   @Test void testRuleFixture() {
-    final SqlValidatorTestCase.Sql f = Fixtures.forValidator();
-    f.sql("select ^1 + date '2002-03-04'^")
-        .fails("(?s).*Cannot apply '\\+' to arguments of"
-            + " type '<INTEGER> \\+ <DATE>'.*");
-
-    f.sql("select 1 + 2 as three")
-        .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
+    final String sql = "select * from dept\n"
+        + "union\n"
+        + "select * from dept";
+    final RelOptTestBase.Sql f =
+        Fixtures.forRules()
+            .withDiffRepos(DiffRepository.lookup(FixtureTest.class));
+    f.sql(sql)
+        .withRule(CoreRules.UNION_TO_DISTINCT)
+        .check();
   }
 
-
+  /** As {@link #testSqlToRelFixtureNeedsDiffRepos} but for
+   * {@link Fixtures#forRules()}. */
+  @Test void testRuleFixtureNeedsDiffRepos() {
+    try {
+      final String sql = "select * from dept\n"
+          + "union\n"
+          + "select * from dept";
+      final RelOptTestBase.Sql f = Fixtures.forRules();
+      f.sql(sql)
+          .withRule(CoreRules.UNION_TO_DISTINCT)
+          .check();
+      throw new AssertionError("expected error");
+    } catch (IllegalArgumentException e) {
+      assertThat(e.getMessage(), is(DIFF_REPOS_MESSAGE));
+    }
+  }
 }
