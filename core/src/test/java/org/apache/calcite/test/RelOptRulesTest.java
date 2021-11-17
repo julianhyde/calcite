@@ -6311,13 +6311,13 @@ class RelOptRulesTest extends RelOptTestBase {
     String sql = "(select n_nationkey from SALES.CUSTOMER)\n"
         + "union all\n"
         + "(select n_name from CUSTOMER_MODIFIABLEVIEW)";
-
+    RuleSet ruleSet =
+        RuleSets.ofList(
+            EnumerableRules.ENUMERABLE_PROJECT_RULE,
+            EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
+            EnumerableRules.ENUMERABLE_UNION_RULE);
     sql(sql)
-        .withVolcanoPlanner(false, p -> {
-          p.addRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
-          p.addRule(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
-          p.addRule(EnumerableRules.ENUMERABLE_UNION_RULE);
-        })
+        .withVolcanoPlanner(false, p -> ruleSet.forEach(p::addRule))
         .withDynamicTable()
         .check();
   }

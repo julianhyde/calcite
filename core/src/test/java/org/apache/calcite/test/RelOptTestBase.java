@@ -310,7 +310,7 @@ abstract class RelOptTestBase {
      * @param unchanged   Whether the rule is to have no effect
      */
     private void checkPlanning(boolean unchanged) {
-      RelNode relInitial = toRel();
+      final RelNode relInitial = toRel();
 
       assertNotNull(relInitial);
       List<RelMetadataProvider> list = new ArrayList<>();
@@ -320,15 +320,18 @@ abstract class RelOptTestBase {
       final RelOptCluster cluster = relInitial.getCluster();
       cluster.setMetadataProvider(plannerChain);
 
-      RelNode relBefore;
+      // Rather than a single mutable 'RelNode r', this method uses lots of
+      // final variables (relInitial, r1, relBefore, and so forth) so that the
+      // intermediate states of planning are visible in the debugger.
+      final RelNode r1;
       if (preProgram == null) {
-        relBefore = relInitial;
+        r1 = relInitial;
       } else {
         HepPlanner prePlanner = new HepPlanner(preProgram);
         prePlanner.setRoot(relInitial);
-        relBefore = prePlanner.findBestExp();
+        r1 = prePlanner.findBestExp();
       }
-      relBefore = before.apply(this, relBefore);
+      final RelNode relBefore = before.apply(this, r1);
       assertThat(relBefore, notNullValue());
 
       final String planBefore = NL + RelOptUtil.toString(relBefore);
@@ -336,23 +339,30 @@ abstract class RelOptTestBase {
       diffRepos.assertEquals("planBefore", "${planBefore}", planBefore);
       assertThat(relBefore, relIsValid());
 
+      final RelNode r2;
       if (planner instanceof VolcanoPlanner) {
-        relBefore = planner.changeTraits(relBefore,
+        r2 = planner.changeTraits(relBefore,
             relBefore.getTraitSet().replace(EnumerableConvention.INSTANCE));
+      } else {
+        r2 = relBefore;
       }
-      planner.setRoot(relBefore);
-      RelNode r = planner.findBestExp();
+      planner.setRoot(r2);
+      final RelNode r3 = planner.findBestExp();
+
+      final RelNode r4;
       final Tester tester = tester();
       if (tester.isLateDecorrelate()) {
-        final String planMid = NL + RelOptUtil.toString(r);
+        final String planMid = NL + RelOptUtil.toString(r3);
         diffRepos.assertEquals("planMid", "${planMid}", planMid);
-        assertThat(r, relIsValid());
+        assertThat(r3, relIsValid());
         final RelBuilder relBuilder =
             RelFactories.LOGICAL_BUILDER.create(cluster, null);
-        r = RelDecorrelator.decorrelateQuery(r, relBuilder);
+        r4 = RelDecorrelator.decorrelateQuery(r3, relBuilder);
+      } else {
+        r4 = r3;
       }
-      r = after.apply(this, r);
-      final String planAfter = NL + RelOptUtil.toString(r);
+      final RelNode relAfter = after.apply(this, r4);
+      final String planAfter = NL + RelOptUtil.toString(relAfter);
       if (unchanged) {
         assertThat(planAfter, is(planBefore));
       } else {
@@ -362,7 +372,7 @@ abstract class RelOptTestBase {
               + "You must use unchanged=true or call checkUnchanged");
         }
       }
-      assertThat(r, relIsValid());
+      assertThat(relAfter, relIsValid());
     }
 
     public Sql withVolcanoPlanner(boolean topDown) {

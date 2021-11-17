@@ -3480,7 +3480,6 @@ public class RelMetadataTest {
       final RelRoot root = tester
           .enableTypeCoercion(typeCoercion)
           .convertSqlToRel(sql);
-      root.rel.getCluster().setMetadataProvider(DefaultRelMetadataProvider.INSTANCE);
       if (convertAsCalc) {
         Project project = (Project) root.rel;
         RexProgram program = RexProgram.create(

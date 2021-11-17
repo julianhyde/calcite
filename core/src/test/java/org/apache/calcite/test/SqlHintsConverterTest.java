@@ -22,8 +22,8 @@ import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -57,8 +57,6 @@ import org.apache.calcite.sql.SqlTableRef;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.test.SqlToRelTestBase.Tester;
-import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Litmus;
@@ -70,7 +68,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.UnaryOperator;
@@ -100,6 +97,13 @@ class SqlHintsConverterTest {
             c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
     return new Sql(tester, "?",
         DiffRepository.lookup(SqlHintsConverterTest.class));
+  }
+
+  public static RelOptTestBase.Sql ruleFixture() {
+    return ((RelOptTestBase) new RelOptRulesTest()).fixture()
+        .withDiffRepos(DiffRepository.lookup(SqlHintsConverterTest.class))
+        .withConfig(c ->
+            c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
   }
 
   /** Sets the SQL statement for a test. */
@@ -392,26 +396,23 @@ class SqlHintsConverterTest {
     // Validate Volcano planner.
     RuleSet ruleSet = RuleSets.ofList(
         MockEnumerableJoinRule.create(hint), // Rule to validate the hint.
-        CoreRules.FILTER_PROJECT_TRANSPOSE, CoreRules.FILTER_MERGE, CoreRules.PROJECT_MERGE,
+        CoreRules.FILTER_PROJECT_TRANSPOSE,
+        CoreRules.FILTER_MERGE,
+        CoreRules.PROJECT_MERGE,
         EnumerableRules.ENUMERABLE_JOIN_RULE,
         EnumerableRules.ENUMERABLE_PROJECT_RULE,
         EnumerableRules.ENUMERABLE_FILTER_RULE,
         EnumerableRules.ENUMERABLE_SORT_RULE,
         EnumerableRules.ENUMERABLE_LIMIT_RULE,
         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
-    Program program = Programs.of(ruleSet);
-    new RelOptRulesTest().fixture()
+    ruleFixture()
+        .withConfig(c ->
+            c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE))
         .sql(sql)
-        .withVolcanoPlanner(false, p ->
-            p.addRelTraitDef(RelCollationTraitDef.INSTANCE))
-        .withAfter((fixture, rel) -> {
-          RelTraitSet toTraits = rel
-              .getCluster()
-              .traitSet()
-              .replace(EnumerableConvention.INSTANCE);
-
-          return program.run(fixture.planner, rel, toTraits,
-              Collections.emptyList(), Collections.emptyList());
+        .withVolcanoPlanner(false, p -> {
+          p.addRelTraitDef(RelCollationTraitDef.INSTANCE);
+          RelOptUtil.registerDefaultRules(p, false, false);
+          ruleSet.forEach(p::addRule);
         })
         .check();
   }
@@ -447,18 +448,12 @@ class SqlHintsConverterTest {
         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
         EnumerableRules.ENUMERABLE_SORT_RULE,
         AbstractConverter.ExpandConversionRule.INSTANCE);
-    Program program = Programs.of(ruleSet);
 
-    new RelOptRulesTest().sql(sql)
-        .withDiffRepos(DiffRepository.lookup(SqlHintsConverterTest.class))
+    ruleFixture()
+        .sql(sql)
         .withVolcanoPlanner(false, planner -> {
           planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
-        })
-        .withAfter((fixture, r) -> {
-          RelTraitSet toTraits = r.getCluster().traitSet()
-              .replace(EnumerableConvention.INSTANCE);
-          return program.run(fixture.planner, r, toTraits,
-              Collections.emptyList(), Collections.emptyList());
+          ruleSet.forEach(planner::addRule);
         })
         .check();
   }
