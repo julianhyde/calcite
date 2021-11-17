@@ -396,8 +396,7 @@ abstract class RelOptTestBase {
      * (It is allowed to be null because some tests that don't use a diff
      * repository.) */
     public DiffRepository diffRepos() {
-      return requireNonNull(diffRepos, "diffRepos is null; if you require a "
-          + "DiffRepository, set it in your test's fixture() method");
+      return DiffRepository.castNonNull(diffRepos);
     }
 
     public Tester tester() {

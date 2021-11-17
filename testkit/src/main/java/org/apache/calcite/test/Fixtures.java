@@ -34,7 +34,8 @@ public class Fixtures {
   }
 
   /** Creates a fixture for SQL-to-Rel tests. */
-  public static SqlValidatorTestCase.Sql forSqlToRel() {
-    return new SqlValidatorTestCase().fixture();
+  public static SqlToRelTestBase.Sql forSqlToRel() {
+    return new SqlToRelTestBase() {
+    }.fixture();
   }
 }

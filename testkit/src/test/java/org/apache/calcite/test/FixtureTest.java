@@ -19,8 +19,10 @@ package org.apache.calcite.test;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.parser.SqlParserTest;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 /** Tests test fixtures.
  *
@@ -67,12 +69,29 @@ public class FixtureTest {
   }
 
   /** Tests that you can run SQL-to-Rel tests via
-   * {@link Fixtures#forValidator()}. */
-  @Disabled
+   * {@link Fixtures#forSqlToRel()}. */
   @Test void testSqlToRelFixture() {
-    final SqlValidatorTestCase.Sql f = Fixtures.forSqlToRel();
+    final SqlToRelTestBase.Sql f =
+        Fixtures.forSqlToRel()
+            .withDiffRepos(DiffRepository.lookup(FixtureTest.class));
     final String sql = "select 1 from emp";
     f.sql(sql).ok();
+  }
+
+  /** Tests that we get a good error message if a test needs a diff repository.
+   *
+   * @see DiffRepository#castNonNull(DiffRepository) */
+  @Test void testSqlToRelFixtureNeedsDiffRepos() {
+    try {
+      final SqlToRelTestBase.Sql f = Fixtures.forSqlToRel();
+      final String sql = "select 1 from emp";
+      f.sql(sql).ok();
+      throw new AssertionError("expected error");
+    } catch (IllegalArgumentException e) {
+      assertThat(e.getMessage(),
+          is("diffRepos is null; if you require a DiffRepository, set it in "
+              + "your test's fixture() method"));
+    }
   }
 
   /** Tests that you can run RelRule tests via

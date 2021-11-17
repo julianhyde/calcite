@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.Spaces;
+import org.apache.calcite.linq4j.Nullness;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Sources;
 import org.apache.calcite.util.Util;
@@ -28,6 +29,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.opentest4j.AssertionFailedError;
 import org.w3c.dom.CDATASection;
@@ -232,6 +234,19 @@ public class DiffRepository {
     String rest = "/" + clazz.getName().replace('.', File.separatorChar)
         + suffix;
     return clazz.getResource(rest);
+  }
+
+  /** Returns the diff repository, checking that it is not null.
+   *
+   * <p>If it is null, throws {@link IllegalArgumentException} with a message
+   * informing people that they need to change their test configuration. */
+  public static DiffRepository castNonNull(
+      @Nullable DiffRepository diffRepos) {
+    if (diffRepos != null) {
+      return Nullness.castNonNull(diffRepos);
+    }
+    throw new IllegalArgumentException("diffRepos is null; if you require a "
+        + "DiffRepository, set it in your test's fixture() method");
   }
 
   /**

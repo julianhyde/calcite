@@ -1153,7 +1153,7 @@ public abstract class SqlToRelTestBase {
     }
 
     private DiffRepository diffRepos() {
-      return requireNonNull(diffRepos, "diffRepos");
+      return DiffRepository.castNonNull(diffRepos);
     }
 
     public Sql sql(String sql) {
