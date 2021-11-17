@@ -38,4 +38,10 @@ public class Fixtures {
     return new SqlToRelTestBase() {
     }.fixture();
   }
+
+  /** Creates a fixture for rule tests. */
+  public static RelOptTestBase.Sql forRules() {
+    return new RelOptTestBase() {
+    }.fixture();
+  }
 }
