@@ -37,7 +37,7 @@ public class RelValidityChecker extends RelVisitor
   private int invalidCount;
   private final Deque<RelNode> stack = new ArrayDeque<>();
 
-  public Set<CorrelationId> correlationIds() {
+  @Override public Set<CorrelationId> correlationIds() {
     final ImmutableSet.Builder<CorrelationId> builder =
         ImmutableSet.builder();
     for (RelNode r : stack) {

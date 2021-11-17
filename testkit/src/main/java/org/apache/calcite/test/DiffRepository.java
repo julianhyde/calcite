@@ -401,7 +401,7 @@ public class DiffRepository {
    * @param fail Whether to fail if no method is found
    * @return Name of current test case, or null if not found
    */
-  private String getCurrentTestCaseName(boolean fail) {
+  private static String getCurrentTestCaseName(boolean fail) {
     // REVIEW jvs 12-Mar-2006: Too clever by half.  Someone might not know
     // about this and use a private helper method whose name also starts
     // with test. Perhaps just require them to pass in getName() from the
