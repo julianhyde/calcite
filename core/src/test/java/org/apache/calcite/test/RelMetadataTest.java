@@ -121,14 +121,9 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -148,6 +143,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Unit test for {@link DefaultRelMetadataProvider}. See
@@ -879,26 +876,25 @@ public class RelMetadataTest {
         + ") t(c1, c2, c3, c4)";
     sql(sql)
         // all rows are different
-        .assertThatDistinctRowCount(ImmutableBitSet.of(0, 1, 2, 3), is(4D))
+        .assertThatDistinctRowCount(bitSetOf(0, 1, 2, 3), is(4D))
         // rows 2 and 4 are the same in the specified columns
-        .assertThatDistinctRowCount(ImmutableBitSet.of(1, 2), is(3D))
+        .assertThatDistinctRowCount(bitSetOf(1, 2), is(3D))
         // rows 2 and 3 are the same in the specified columns
-        .assertThatDistinctRowCount(ImmutableBitSet.of(0), is(3D))
+        .assertThatDistinctRowCount(bitSetOf(0), is(3D))
         // the last column has 2 distinct values: 6 and null
-        .assertThatDistinctRowCount(ImmutableBitSet.of(3), is(2D));
+        .assertThatDistinctRowCount(bitSetOf(3), is(2D));
   }
 
   @Test void testDistinctRowCountValues() {
     sql("select * from emp where deptno = 10")
         .assertThatDistinctRowCount(
-            rel -> ImmutableBitSet.of(
-                rel.getRowType().getFieldNames().indexOf("DEPTNO")),
+            rel -> bitSetOf(rel.getRowType().getFieldNames().indexOf("DEPTNO")),
             nullValue(Double.class));
   }
 
   @Test void testDistinctRowCountTableEmptyKey() {
     sql("select * from emp where deptno = 10")
-        .assertThatDistinctRowCount(ImmutableBitSet.of(), // empty key
+        .assertThatDistinctRowCount(bitSetOf(), // empty key
             is(1D));
   }
 
@@ -913,7 +909,7 @@ public class RelMetadataTest {
    * NullPointerException"</a>. */
   @Test void testJoinUniqueKeys() {
     sql("select * from emp join bonus using (ename)")
-        .checkGetUniqueKeys(ImmutableSet.of());
+        .assertThatUniqueKeysAre(); // no unique keys
   }
 
   @Test void testCorrelateUniqueKeys() {
@@ -923,20 +919,20 @@ public class RelMetadataTest {
         + "    select * from dept where dept.deptno = e.deptno)";
     sql(sql)
         .assertThatRel(is(instanceOf(Project.class)))
-        .assertThatUniqueKeys(sortsAs("[{0}]"))
+        .assertThatUniqueKeys(Matchers.sortsAs("[{0}]"))
         .withRelTransform(r -> ((Project) r).getInput())
         .assertThatRel(is(instanceOf(Correlate.class)))
-        .assertThatUniqueKeys(sortsAs("[{0}]"));
+        .assertThatUniqueKeys(Matchers.sortsAs("[{0}]"));
   }
 
   @Test void testGroupByEmptyUniqueKeys() {
     sql("select count(*) from emp")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of()));
+        .assertThatUniqueKeysAre(bitSetOf());
   }
 
   @Test void testGroupByEmptyHavingUniqueKeys() {
     sql("select count(*) from emp where 1 = 1")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of()));
+        .assertThatUniqueKeysAre(bitSetOf());
   }
 
   @Test void testFullOuterJoinUniqueness1() {
@@ -967,9 +963,9 @@ public class RelMetadataTest {
   private void checkColumnUniquenessForFilterWithConstantColumns(String sql) {
     sql(sql)
         .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(1), is(false));
+        .assertThatAreColumnsUnique(bitSetOf(0, 1), is(true))
+        .assertThatAreColumnsUnique(bitSetOf(0), is(true))
+        .assertThatAreColumnsUnique(bitSetOf(1), is(false));
   }
 
   @Test void testColumnUniquenessForUnionWithConstantColumns() {
@@ -979,7 +975,7 @@ public class RelMetadataTest {
         + "select deptno, sal from emp where sal=1000\n";
     sql(sql)
         .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true));
+        .assertThatAreColumnsUnique(bitSetOf(0), is(true));
   }
 
   @Test void testColumnUniquenessForIntersectWithConstantColumns() {
@@ -991,7 +987,7 @@ public class RelMetadataTest {
         + "select deptno, sal from emp\n";
     sql(sql)
         .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true));
+        .assertThatAreColumnsUnique(bitSetOf(0, 1), is(true));
   }
 
   @Test void testColumnUniquenessForMinusWithConstantColumns() {
@@ -1003,8 +999,8 @@ public class RelMetadataTest {
         + "select deptno, sal from emp\n";
     sql(sql)
         .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true));
+        .assertThatAreColumnsUnique(bitSetOf(0), is(true))
+        .assertThatAreColumnsUnique(bitSetOf(0, 1), is(true));
   }
 
   @Test void testColumnUniquenessForSortWithConstantColumns() {
@@ -1015,7 +1011,7 @@ public class RelMetadataTest {
         + "order by deptno";
     sql(sql)
         .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true));
+        .assertThatAreColumnsUnique(bitSetOf(0, 1), is(true));
   }
 
   @Test void testRowUniquenessForSortWithLimit() {
@@ -1034,10 +1030,10 @@ public class RelMetadataTest {
         + "on A.deptno=B.deptno and A.sal=1000 and B.sal=1000";
     sql(sql)
         .assertThatRel(hasFieldNames("[DEPTNO, SAL, DEPTNO0, SAL0]"))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 2), is(true))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1, 2), is(true))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 2, 3), is(true))
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(false));
+        .assertThatAreColumnsUnique(bitSetOf(0, 2), is(true))
+        .assertThatAreColumnsUnique(bitSetOf(0, 1, 2), is(true))
+        .assertThatAreColumnsUnique(bitSetOf(0, 2, 3), is(true))
+        .assertThatAreColumnsUnique(bitSetOf(0, 1), is(false));
   }
 
   @Test void testColumnUniquenessForAggregateWithConstantColumns() {
@@ -1047,7 +1043,7 @@ public class RelMetadataTest {
         + "where deptno=1010\n"
         + "group by deptno, ename";
     sql(sql)
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(1), is(true));
+        .assertThatAreColumnsUnique(bitSetOf(1), is(true));
   }
 
   @Test void testColumnUniquenessForExchangeWithConstantColumns() {
@@ -1059,73 +1055,73 @@ public class RelMetadataTest {
                 .filter(b.equals(b.field("SAL"), b.literal(1)))
                 .exchange(RelDistributions.hash(ImmutableList.of(1)))
                 .build())
-        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true));
+        .assertThatAreColumnsUnique(bitSetOf(0), is(true));
   }
 
   @Test void testColumnUniquenessForCorrelateWithConstantColumns() {
-    final FrameworkConfig config = RelBuilderTest.config().build();
-    final RelBuilder builder = RelBuilder.create(config);
-    RelNode rel0 = builder.scan("EMP")
-        .project(builder.field("DEPTNO"), builder.field("SAL"))
-        .distinct()
-        .filter(builder.equals(builder.field("SAL"), builder.literal(1)))
-        .build();
-    final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
-    final RelNode rel1 = builder.scan("EMP")
-        .variable(v)
-        .project(builder.field("DEPTNO"), builder.field("SAL"))
-        .filter(
-            builder.equals(builder.field(0), builder.field(v.get(), "DEPTNO")))
-        .build();
-    final RelNode correl = builder.push(rel0)
-        .variable(v)
-        .push(rel1)
-        .correlate(JoinRelType.SEMI, v.get().id, builder.field(2, 0, "DEPTNO"))
-        .build();
-    final RelMetadataQuery mq = correl.getCluster().getMetadataQuery();
-    assertThat(mq.areColumnsUnique(correl, ImmutableBitSet.of(0)), is(true));
+    fixture()
+        .withRelFn(b -> {
+          RelNode rel0 = b.scan("EMP")
+              .project(b.field("DEPTNO"), b.field("SAL"))
+              .distinct()
+              .filter(b.equals(b.field("SAL"), b.literal(1)))
+              .build();
+          final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
+          final RelNode rel1 = b.scan("EMP")
+              .variable(v)
+              .project(b.field("DEPTNO"), b.field("SAL"))
+              .filter(
+                  b.equals(b.field(0), b.field(v.get(), "DEPTNO")))
+              .build();
+          return b.push(rel0)
+              .variable(v)
+              .push(rel1)
+              .correlate(JoinRelType.SEMI, v.get().id, b.field(2, 0, "DEPTNO"))
+              .build();
+        })
+        .assertThatAreColumnsUnique(bitSetOf(0), is(true));
   }
 
   @Test void testGroupBy() {
     sql("select deptno, count(*), sum(sal) from emp group by deptno")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
+        .assertThatUniqueKeysAre(bitSetOf(0));
   }
 
   @Test void testGroupingSets() {
     sql("select deptno, sal, count(*) from emp\n"
         + "group by GROUPING SETS (deptno, sal)")
-        .checkGetUniqueKeys(ImmutableSet.of());
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testUnion() {
     sql("select deptno from emp\n"
         + "union\n"
         + "select deptno from dept")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
+        .assertThatUniqueKeysAre(bitSetOf(0));
   }
 
   @Test void testUniqueKeysMinus() {
     sql("select distinct deptno from emp\n"
         + "except all\n"
         + "select deptno from dept")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
+        .assertThatUniqueKeysAre(bitSetOf(0));
   }
 
   @Test void testUniqueKeysIntersect() {
     sql("select distinct deptno from emp\n"
         + "intersect all\n"
         + "select deptno from dept")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
+        .assertThatUniqueKeysAre(bitSetOf(0));
   }
 
   @Test void testSingleKeyTableScanUniqueKeys() {
     // select key column
     sql("select empno, ename from emp")
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0)));
+        .assertThatUniqueKeysAre(bitSetOf(0));
 
     // select non key column
     sql("select ename, deptno from emp")
-        .checkGetUniqueKeys(ImmutableSet.of());
+        .assertThatUniqueKeysAre();
   }
 
   @Test void testCompositeKeysTableScanUniqueKeys() {
@@ -1139,22 +1135,22 @@ public class RelMetadataTest {
     // all columns, contain composite keys
     sql("select * from s.composite_keys_table")
         .withCatalogReaderFactory(factory)
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0, 1)));
+        .assertThatUniqueKeysAre(bitSetOf(0, 1));
 
     // only contain composite keys
     sql("select key1, key2 from s.composite_keys_table")
         .withCatalogReaderFactory(factory)
-        .checkGetUniqueKeys(ImmutableSet.of(ImmutableBitSet.of(0, 1)));
+        .assertThatUniqueKeysAre(bitSetOf(0, 1));
 
     // partial column of composite keys
     sql("select key1, value1 from s.composite_keys_table")
         .withCatalogReaderFactory(factory)
-        .checkGetUniqueKeys(ImmutableSet.of());
+        .assertThatUniqueKeysAre();
 
     // no column of composite keys
     sql("select value1 from s.composite_keys_table")
         .withCatalogReaderFactory(factory)
-        .checkGetUniqueKeys(ImmutableSet.of());
+        .assertThatUniqueKeysAre();
   }
 
   private static ImmutableBitSet bitSetOf(int... bits) {
@@ -1164,28 +1160,26 @@ public class RelMetadataTest {
   @Test void calcColumnsAreUniqueSimpleCalc() {
     sql("select empno, empno*0 from emp")
         .convertingProjectAsCalc()
-        .checkGetUniqueKeys(ImmutableSet.of(bitSetOf(0)));
+        .assertThatUniqueKeysAre(bitSetOf(0));
   }
 
   @Test void calcColumnsAreUniqueCalcWithFirstConstant() {
     sql("select 1, empno, empno*0 from emp")
         .convertingProjectAsCalc()
-        .checkGetUniqueKeys(ImmutableSet.of(bitSetOf(1)));
+        .assertThatUniqueKeysAre(bitSetOf(1));
   }
 
   @Test void calcMultipleColumnsAreUniqueCalc() {
     sql("select empno, empno from emp")
         .convertingProjectAsCalc()
-        .checkGetUniqueKeys(
-            ImmutableSet.of(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1)));
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1));
   }
 
   @Test void calcMultipleColumnsAreUniqueCalc2() {
     sql("select a1.empno, a2.empno\n"
         + "from emp a1 join emp a2 on (a1.empno=a2.empno)")
         .convertingProjectAsCalc()
-        .checkGetUniqueKeys(
-            ImmutableSet.of(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1)));
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(1), bitSetOf(0, 1));
   }
 
   @Test void calcMultipleColumnsAreUniqueCalc3() {
@@ -1193,16 +1187,14 @@ public class RelMetadataTest {
         + " from emp a1 join emp a2\n"
         + " on (a1.empno=a2.empno)")
         .convertingProjectAsCalc()
-        .checkGetUniqueKeys(
-            ImmutableSet.of(
-                bitSetOf(0), bitSetOf(0, 1), bitSetOf(0, 1, 2), bitSetOf(0, 2),
-                bitSetOf(1), bitSetOf(1, 2), bitSetOf(2)));
+        .assertThatUniqueKeysAre(bitSetOf(0), bitSetOf(0, 1), bitSetOf(0, 1, 2),
+            bitSetOf(0, 2), bitSetOf(1), bitSetOf(1, 2), bitSetOf(2));
   }
 
   @Test void calcColumnsAreNonUniqueCalc() {
     sql("select empno*0 from emp")
         .convertingProjectAsCalc()
-        .checkGetUniqueKeys(ImmutableSet.of());
+        .assertThatUniqueKeysAre();
   }
 
   /** Unit test for
@@ -1259,7 +1251,8 @@ public class RelMetadataTest {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(
                   ImmutableList.of(BrokenColTypeImpl.SOURCE,
-                      cluster.getMetadataProvider())));
+                      requireNonNull(cluster.getMetadataProvider(),
+                          "cluster.metadataProvider"))));
           return cluster;
         });
 
@@ -1291,7 +1284,8 @@ public class RelMetadataTest {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(
                   ImmutableList.of(BrokenColTypeImpl.SOURCE,
-                      cluster.getMetadataProvider())));
+                      requireNonNull(cluster.getMetadataProvider(),
+                          "cluster.metadataProvider"))));
           cluster.setMetadataQuerySupplier(MyRelMetadataQuery::new);
           return cluster;
         });
@@ -1338,7 +1332,8 @@ public class RelMetadataTest {
           // Include the same provider twice just to be devious.
           final ImmutableList<RelMetadataProvider> list =
               ImmutableList.of(ColTypeImpl.SOURCE, ColTypeImpl.SOURCE,
-                  cluster.getMetadataProvider());
+                  requireNonNull(cluster.getMetadataProvider(),
+                      "cluster.metadataProvider"));
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(list));
           return cluster;
@@ -1347,7 +1342,8 @@ public class RelMetadataTest {
 
     // Top node is a filter. Its metadata uses getColType(RelNode, int).
     assertThat(rel, instanceOf(LogicalFilter.class));
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final RelOptCluster cluster = rel.getCluster();
+    final RelMetadataQuery mq = cluster.getMetadataQuery();
     assertThat(colType(mq, rel, 0), equalTo("DEPTNO-rel"));
     assertThat(colType(mq, rel, 1), equalTo("EXPR$1-rel"));
 
@@ -1365,10 +1361,11 @@ public class RelMetadataTest {
 
     // Now add a cache. Only the first request for each piece of metadata
     // generates a new call to the provider.
-    final RelOptPlanner planner = rel.getCluster().getPlanner();
-    rel.getCluster().setMetadataProvider(
+    final RelOptPlanner planner = cluster.getPlanner();
+    cluster.setMetadataProvider(
         new org.apache.calcite.rel.metadata.CachingRelMetadataProvider(
-            rel.getCluster().getMetadataProvider(), planner));
+            requireNonNull(cluster.getMetadataProvider(),
+                "cluster.metadataProvider"), planner));
     assertThat(colType(mq, input, 0), equalTo("DEPTNO-agg"));
     assertThat(buf.size(), equalTo(5));
     assertThat(colType(mq, input, 0), equalTo("DEPTNO-agg"));
@@ -1402,7 +1399,8 @@ public class RelMetadataTest {
           // Include the same provider twice just to be devious.
           final ImmutableList<RelMetadataProvider> list =
               ImmutableList.of(ColTypeImpl.SOURCE, ColTypeImpl.SOURCE,
-                  cluster.getMetadataProvider());
+                  requireNonNull(cluster.getMetadataProvider(),
+                      "cluster.metadataProvider"));
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(list));
           cluster.setMetadataQuerySupplier(MyRelMetadataQuery::new);
@@ -1601,10 +1599,10 @@ public class RelMetadataTest {
       final LogicalValues values =
           LogicalValues.create(cluster, rowType, tuples.build());
 
-      final ImmutableBitSet colNone = ImmutableBitSet.of();
-      final ImmutableBitSet col0 = ImmutableBitSet.of(0);
-      final ImmutableBitSet col1 = ImmutableBitSet.of(1);
-      final ImmutableBitSet colAll = ImmutableBitSet.of(0, 1);
+      final ImmutableBitSet colNone = bitSetOf();
+      final ImmutableBitSet col0 = bitSetOf(0);
+      final ImmutableBitSet col1 = bitSetOf(1);
+      final ImmutableBitSet colAll = bitSetOf(0, 1);
 
       assertThat(mq.areColumnsUnique(values, col0), is(true));
       assertThat(mq.areColumnsUnique(values, col1), is(false));
@@ -1769,7 +1767,7 @@ public class RelMetadataTest {
     final LogicalAggregate aggregate =
         LogicalAggregate.create(join,
             ImmutableList.of(),
-            ImmutableBitSet.of(2, 0),
+            bitSetOf(2, 0),
             ImmutableList.of(),
             ImmutableList.of(
                 AggregateCall.create(SqlStdOperatorTable.COUNT,
@@ -1823,7 +1821,7 @@ public class RelMetadataTest {
 
     final RelNode filter = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(filter);
-    assertThat(predicates.pulledUpPredicates, sortsAs("[=($0, 1)]"));
+    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[=($0, 1)]"));
 
     final LogicalTableScan deptScan =
         LogicalTableScan.create(cluster, deptTable, ImmutableList.of());
@@ -1835,8 +1833,8 @@ public class RelMetadataTest {
     final LogicalJoin semiJoin = (LogicalJoin) relBuilder.build();
 
     predicates = mq.getPulledUpPredicates(semiJoin);
-    assertThat(predicates.pulledUpPredicates, sortsAs("[=($0, 1)]"));
-    assertThat(predicates.leftInferredPredicates, sortsAs("[]"));
+    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[=($0, 1)]"));
+    assertThat(predicates.leftInferredPredicates, Matchers.sortsAs("[]"));
     assertThat(predicates.rightInferredPredicates.isEmpty(), is(true));
 
     // Create a Join similar to the previous SemiJoin
@@ -1850,7 +1848,7 @@ public class RelMetadataTest {
     final RelNode project = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(project);
     // No inferred predicates, because we already know DEPTNO is NOT NULL
-    assertThat(predicates.pulledUpPredicates, sortsAs("[]"));
+    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[]"));
     assertThat(project.getRowType().getFullTypeString(),
         is("RecordType(INTEGER NOT NULL DEPTNO) NOT NULL"));
     assertThat(predicates.leftInferredPredicates.isEmpty(), is(true));
@@ -1868,7 +1866,7 @@ public class RelMetadataTest {
     relBuilder.project(relBuilder.field("MGR"));
     final RelNode project2 = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(project2);
-    assertThat(predicates.pulledUpPredicates, sortsAs("[IS NOT NULL($0)]"));
+    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[IS NOT NULL($0)]"));
     assertThat(predicates.leftInferredPredicates.isEmpty(), is(true));
     assertThat(predicates.rightInferredPredicates.isEmpty(), is(true));
 
@@ -1903,7 +1901,7 @@ public class RelMetadataTest {
     final RelNode project3 = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(project3);
     assertThat(predicates.pulledUpPredicates,
-        sortsAs("[OR(IS NOT NULL($0), IS NOT NULL($2))]"));
+        Matchers.sortsAs("[OR(IS NOT NULL($0), IS NOT NULL($2))]"));
     assertThat(predicates.leftInferredPredicates.isEmpty(), is(true));
     assertThat(predicates.rightInferredPredicates.isEmpty(), is(true));
   }
@@ -1920,7 +1918,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList inputSet = mq.getPulledUpPredicates(rel);
     ImmutableList<RexNode> pulledUpPredicates = inputSet.pulledUpPredicates;
-    assertThat(pulledUpPredicates, sortsAs("[=($0, 1)]"));
+    assertThat(pulledUpPredicates, Matchers.sortsAs("[=($0, 1)]"));
   }
 
   /** Test case for
@@ -1966,7 +1964,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList list = mq.getPulledUpPredicates(rel);
     assertThat(list.pulledUpPredicates,
-        sortsAs("[<($0, 10), =($3, 'y'), =($4, 1), IS NULL($1), IS NULL($2)]"));
+        Matchers.sortsAs("[<($0, 10), =($3, 'y'), =($4, 1), IS NULL($1), IS NULL($2)]"));
   }
 
   @Test void testPullUpPredicatesOnNullableConstant() {
@@ -1978,7 +1976,7 @@ public class RelMetadataTest {
     RelOptPredicateList list = mq.getPulledUpPredicates(rel);
     // Uses "IS NOT DISTINCT FROM" rather than "=" because cannot guarantee not null.
     assertThat(list.pulledUpPredicates,
-        sortsAs("[IS NULL($0)]"));
+        Matchers.sortsAs("[IS NULL($0)]"));
   }
 
   @Test void testPullUpPredicatesFromUnion0() {
@@ -1988,7 +1986,7 @@ public class RelMetadataTest {
         + "select empno from emp where empno=1").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[=($0, 1)]"));
+        Matchers.sortsAs("[=($0, 1)]"));
   }
 
   @Test void testPullUpPredicatesFromUnion1() {
@@ -1998,7 +1996,7 @@ public class RelMetadataTest {
         + "select empno, deptno from emp where empno=3 or deptno=4").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[OR(SEARCH($0, Sarg[1, 3]), SEARCH($1, Sarg[2, 4]))]"));
+        Matchers.sortsAs("[OR(SEARCH($0, Sarg[1, 3]), SEARCH($1, Sarg[2, 4]))]"));
   }
 
   @Test void testPullUpPredicatesFromUnion2() {
@@ -2013,8 +2011,8 @@ public class RelMetadataTest {
         // OR(AND(=($2, 3), =($1, 2)) are the same, the result is flipped and not stable,
         // but they both are correct.
         CoreMatchers.anyOf(
-            sortsAs("[=($0, 1), OR(AND(=($1, 2), =($2, 3)), =($1, 4))]"),
-            sortsAs("[=($0, 1), OR(AND(=($2, 3), =($1, 2)), =($1, 4))]")));
+            Matchers.sortsAs("[=($0, 1), OR(AND(=($1, 2), =($2, 3)), =($1, 4))]"),
+            Matchers.sortsAs("[=($0, 1), OR(AND(=($2, 3), =($1, 2)), =($1, 4))]")));
 
   }
 
@@ -2025,8 +2023,7 @@ public class RelMetadataTest {
         + "select empno from emp where empno=1").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[=($0, 1)]"));
-
+        Matchers.sortsAs("[=($0, 1)]"));
   }
 
   @Test void testPullUpPredicatesFromIntersect1() {
@@ -2036,7 +2033,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where empno=1 and comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[=($0, 1), =($1, 2), =($2, 3)]"));
+        Matchers.sortsAs("[=($0, 1), =($1, 2), =($2, 3)]"));
 
   }
 
@@ -2047,7 +2044,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where 1=empno and (deptno=2 or comm=3)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[=($0, 1), =($1, 2)]"));
+        Matchers.sortsAs("[=($0, 1), =($1, 2)]"));
 
   }
 
@@ -2058,7 +2055,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where deptno=2 or empno=1 or comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[OR(=($0, 1), =($1, 2))]"));
+        Matchers.sortsAs("[OR(=($0, 1), =($1, 2))]"));
   }
 
   @Test void testPullUpPredicatesFromMinus() {
@@ -2068,7 +2065,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        sortsAs("[=($0, 1), =($1, 2)]"));
+        Matchers.sortsAs("[=($0, 1), =($1, 2)]"));
   }
 
   @Test void testDistributionSimple() {
@@ -2558,7 +2555,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7), "
+        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7), "
             + "=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#2.$7), "
             + "=([CATALOG, SALES, EMP].#2.$7, [CATALOG, SALES, EMP].#3.$7), "
             + "true, "
@@ -2583,7 +2580,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        sortsAs("[>([CATALOG, SALES, EMP].#0.$0, 5)]"));
+        Matchers.sortsAs("[>([CATALOG, SALES, EMP].#0.$0, 5)]"));
     final Set<RelTableRef> tableReferences = Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences.toString(),
         equalTo("[[CATALOG, SALES, EMP].#0]"));
@@ -2633,7 +2630,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7),"
+        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7),"
             + " =([CATALOG, SALES, EMP].#2.$7, [CATALOG, SALES, EMP].#3.$7), "
             + "true, "
             + "true]"));
@@ -2681,13 +2678,13 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences = Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences,
-        sortsAs("[[CATALOG, SALES, DEPT].#0, "
+        Matchers.sortsAs("[[CATALOG, SALES, DEPT].#0, "
             + "[CATALOG, SALES, EMP].#0, "
             + "[CATALOG, SALES, EMP].#1]"));
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     // Note that we reference [CATALOG, SALES, EMP].#1 rather than [CATALOG, SALES, EMP].#0
     assertThat(inputSet.pulledUpPredicates,
-        sortsAs("[=([CATALOG, SALES, EMP].#1.$0, 5), true, true]"));
+        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#1.$0, 5), true, true]"));
   }
 
   @Test void testTableReferencesJoinUnknownNode() {
@@ -2714,14 +2711,14 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences = Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences,
-        sortsAs("[[CATALOG, SALES, EMP].#0, "
+        Matchers.sortsAs("[[CATALOG, SALES, EMP].#0, "
             + "[CATALOG, SALES, EMP].#1, "
             + "[CATALOG, SALES, EMP].#2]"));
     // Note that we reference [CATALOG, SALES, EMP].#2 rather than
     // [CATALOG, SALES, EMP].#0 or [CATALOG, SALES, EMP].#1
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        sortsAs("[=([CATALOG, SALES, EMP].#2.$0, 5)]"));
+        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#2.$0, 5)]"));
   }
 
   @Test void testTableReferencesUnionUnknownNode() {
@@ -2738,291 +2735,244 @@ public class RelMetadataTest {
     assertNull(tableReferences);
   }
 
-  private void checkNodeTypeCount(String sql, Map<Class<? extends RelNode>, Integer> expected) {
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final Multimap<Class<? extends RelNode>, RelNode> result = mq.getNodeTypes(rel);
-    assertThat(result, notNullValue());
-    final Map<Class<? extends RelNode>, Integer> resultCount = new HashMap<>();
-    for (Entry<Class<? extends RelNode>, Collection<RelNode>> e : result.asMap().entrySet()) {
-      resultCount.put(e.getKey(), e.getValue().size());
-    }
-    assertThat(resultCount, is(expected));
-  }
-
   @Test void testNodeTypeCountEmp() {
     final String sql = "select * from emp";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountDept() {
     final String sql = "select * from dept";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountValues() {
     final String sql = "select * from (values (1), (2)) as t(c)";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(Values.class, 1);
-    expected.put(Project.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(Values.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountCartesian() {
     final String sql = "select * from emp,dept";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountJoin() {
     final String sql = "select * from emp\n"
         + "inner join dept on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountTableModify() {
     final String sql = "insert into emp select * from emp";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(TableModify.class, 1);
-    expected.put(Project.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            TableModify.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountExchange() {
-
-    final RelNode rel = sql("select * from emp").toRel();
-    final RelDistribution dist = RelDistributions.hash(ImmutableList.<Integer>of());
-    final LogicalExchange exchange = LogicalExchange.create(rel, dist);
-
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Exchange.class, 1);
-    expected.put(Project.class, 1);
-
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final Multimap<Class<? extends RelNode>, RelNode> result = mq.getNodeTypes(exchange);
-    assertThat(result, notNullValue());
-    final Map<Class<? extends RelNode>, Integer> resultCount = new HashMap<>();
-    for (Entry<Class<? extends RelNode>, Collection<RelNode>> e : result.asMap().entrySet()) {
-      resultCount.put(e.getKey(), e.getValue().size());
-    }
-    assertThat(expected, equalTo(resultCount));
+    final String sql = "select * from emp";
+    sql(sql)
+        .withRelTransform(rel ->
+            LogicalExchange.create(rel,
+                RelDistributions.hash(ImmutableList.of())))
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Exchange.class, 1,
+            Project.class, 1);
   }
 
   @Test void testNodeTypeCountSample() {
     final String sql = "select * from emp tablesample system(50) where empno > 5";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Filter.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Sample.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Filter.class, 1,
+            Project.class, 1,
+            Sample.class, 1);
   }
 
   @Test void testNodeTypeCountJoinFinite() {
     final String sql = "select * from (select * from emp limit 14) as emp\n"
         + "inner join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 3);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 3,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountJoinEmptyFinite() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "inner join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 3);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 3,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountLeftJoinEmptyFinite() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "left join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 3);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 3,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountRightJoinEmptyFinite() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "right join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 3);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 3,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountJoinFiniteEmpty() {
     final String sql = "select * from (select * from emp limit 7) as emp\n"
         + "inner join (select * from dept limit 0) as dept\n"
         + "on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 3);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 3,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountJoinEmptyEmpty() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "inner join (select * from dept limit 0) as dept\n"
         + "on emp.deptno = dept.deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Join.class, 1);
-    expected.put(Project.class, 3);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Join.class, 1,
+            Project.class, 3,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountUnion() {
     final String sql = "select ename from emp\n"
         + "union all\n"
         + "select name from dept";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Project.class, 2);
-    expected.put(Union.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Project.class, 2,
+            Union.class, 1);
   }
 
   @Test void testNodeTypeCountUnionOnFinite() {
     final String sql = "select ename from (select * from emp limit 100)\n"
         + "union all\n"
         + "select name from (select * from dept limit 40)";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Union.class, 1);
-    expected.put(Project.class, 4);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Union.class, 1,
+            Project.class, 4,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountMinusOnFinite() {
     final String sql = "select ename from (select * from emp limit 100)\n"
         + "except\n"
         + "select name from (select * from dept limit 40)";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 2);
-    expected.put(Minus.class, 1);
-    expected.put(Project.class, 4);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 2,
+            Minus.class, 1,
+            Project.class, 4,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountFilter() {
     final String sql = "select * from emp where ename='Mathilda'";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Filter.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1,
+            Filter.class, 1);
   }
 
   @Test void testNodeTypeCountSort() {
     final String sql = "select * from emp order by ename";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Sort.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1,
+            Sort.class, 1);
   }
 
   @Test void testNodeTypeCountSortLimit() {
     final String sql = "select * from emp order by ename limit 10";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Sort.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+        Project.class, 1,
+        Sort.class, 1);
   }
 
   @Test void testNodeTypeCountSortLimitOffset() {
     final String sql = "select * from emp order by ename limit 10 offset 5";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Sort.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1,
+            Sort.class, 1);
   }
 
   @Test void testNodeTypeCountSortLimitOffsetOnFinite() {
     final String sql = "select * from (select * from emp limit 12)\n"
         + "order by ename limit 20 offset 5";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 2);
-    expected.put(Sort.class, 2);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 2,
+            Sort.class, 2);
   }
 
   @Test void testNodeTypeCountAggregate() {
     final String sql = "select deptno from emp group by deptno";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Aggregate.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1,
+            Aggregate.class, 1);
   }
 
   @Test void testNodeTypeCountAggregateGroupingSets() {
     final String sql = "select deptno from emp\n"
         + "group by grouping sets ((deptno), (ename, deptno))";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 2);
-    expected.put(Aggregate.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 2,
+            Aggregate.class, 1);
   }
 
   @Test void testNodeTypeCountAggregateEmptyKeyOnEmptyTable() {
     final String sql = "select count(*) from (select * from emp limit 0)";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 2);
-    expected.put(Aggregate.class, 1);
-    expected.put(Sort.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 2,
+            Aggregate.class, 1,
+            Sort.class, 1);
   }
 
   @Test void testNodeTypeCountFilterAggregateEmptyKey() {
     final String sql = "select count(*) from emp where 1 = 0";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Filter.class, 1);
-    expected.put(Aggregate.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1,
+            Filter.class, 1,
+            Aggregate.class, 1);
   }
 
   @Test void testConstColumnsNdv() {
@@ -3041,28 +2991,28 @@ public class RelMetadataTest {
     assertThat(RexUtil.isLiteral(project.getProjects().get(2), true), is(true));
 
     // the distinct row count of const columns should be 1
-    assertThat(mq.getDistinctRowCount(rel, ImmutableBitSet.of(), null), is(1.0));
-    assertThat(mq.getDistinctRowCount(rel, ImmutableBitSet.of(1), null), is(1.0));
-    assertThat(mq.getDistinctRowCount(rel, ImmutableBitSet.of(1, 2), null), is(1.0));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(), null), is(1.0));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(1), null), is(1.0));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(1, 2), null), is(1.0));
 
     // the population size of const columns should be 1
-    assertThat(mq.getPopulationSize(rel, ImmutableBitSet.of()), is(1.0));
-    assertThat(mq.getPopulationSize(rel, ImmutableBitSet.of(1)), is(1.0));
-    assertThat(mq.getPopulationSize(rel, ImmutableBitSet.of(1, 2)), is(1.0));
+    assertThat(mq.getPopulationSize(rel, bitSetOf()), is(1.0));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(1)), is(1.0));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(1, 2)), is(1.0));
 
     // the distinct row count of mixed columns depends on the distinct row
     // count of non-const columns
-    assertThat(mq.getDistinctRowCount(rel, ImmutableBitSet.of(0, 1), null),
-        is(mq.getDistinctRowCount(rel, ImmutableBitSet.of(0), null)));
-    assertThat(mq.getDistinctRowCount(rel, ImmutableBitSet.of(0, 1, 2), null),
-        is(mq.getDistinctRowCount(rel, ImmutableBitSet.of(0), null)));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(0, 1), null),
+        is(mq.getDistinctRowCount(rel, bitSetOf(0), null)));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(0, 1, 2), null),
+        is(mq.getDistinctRowCount(rel, bitSetOf(0), null)));
 
     // the population size of mixed columns depends on the population size of
     // non-const columns
-    assertThat(mq.getPopulationSize(rel, ImmutableBitSet.of(0, 1)),
-        is(mq.getPopulationSize(rel, ImmutableBitSet.of(0))));
-    assertThat(mq.getPopulationSize(rel, ImmutableBitSet.of(0, 1, 2)),
-        is(mq.getPopulationSize(rel, ImmutableBitSet.of(0))));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(0, 1)),
+        is(mq.getPopulationSize(rel, bitSetOf(0))));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(0, 1, 2)),
+        is(mq.getPopulationSize(rel, bitSetOf(0))));
   }
 
   private static final SqlOperator NONDETERMINISTIC_OP = new SqlSpecialOperator(
@@ -3091,7 +3041,7 @@ public class RelMetadataTest {
     assertThat(tableOrigin, nullValue());
   }
 
-  @Test void testGetPredicatesForJoin() throws Exception {
+  @Test void testGetPredicatesForJoin() {
     final FrameworkConfig config = RelBuilderTest.config().build();
     final RelBuilder builder = RelBuilder.create(config);
     RelNode join = builder
@@ -3169,29 +3119,6 @@ public class RelMetadataTest {
         RelMdUtil.checkInputForCollationAndLimit(mq, join, join.getTraitSet().getCollation(),
             null, null), () -> "we are checking a join against its own collation, "
         + "fetch=null, offset=null => checkInputForCollationAndLimit must be true. join=" + join);
-  }
-
-  /**
-   * Matcher that succeeds for any collection that, when converted to strings
-   * and sorted on those strings, matches the given reference string.
-   *
-   * <p>Use it as an alternative to {@link CoreMatchers#is} if items in your
-   * list might occur in any order.
-   *
-   * <p>For example:
-   *
-   * <blockquote><pre>List&lt;Integer&gt; ints = Arrays.asList(2, 500, 12);
-   * assertThat(ints, sortsAs("[12, 2, 500]");</pre></blockquote>
-   */
-  public static <T> Matcher<Iterable<T>> sortsAs(final String value) {
-    return Matchers.compose(equalTo(value), item -> {
-      final List<String> strings = new ArrayList<>();
-      for (T t : item) {
-        strings.add(t.toString());
-      }
-      Collections.sort(strings);
-      return strings.toString();
-    });
   }
 
   //~ Inner classes and interfaces -------------------------------------------

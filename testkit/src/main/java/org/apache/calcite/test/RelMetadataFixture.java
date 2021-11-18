@@ -35,12 +35,17 @@ import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 
 import org.hamcrest.Matcher;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -269,12 +274,12 @@ public class RelMetadataFixture {
   /**
    * Checks result of getting unique keys for sql.
    */
-  public void checkGetUniqueKeys(Set<ImmutableBitSet> expectedUniqueKeySet) {
+  public void assertThatUniqueKeysAre(ImmutableBitSet... expectedUniqueKeys) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
     assertThat(result, notNullValue());
-    assertEquals(ImmutableSortedSet.copyOf(expectedUniqueKeySet),
+    assertEquals(ImmutableSortedSet.copyOf(expectedUniqueKeys),
         ImmutableSortedSet.copyOf(result),
         () -> "unique keys, sql: " + relSupplier + ", rel: " + RelOptUtil.toString(rel));
     assertUniqueConsistent(rel);
@@ -370,6 +375,36 @@ public class RelMetadataFixture {
   public RelMetadataFixture assertThatRel(Matcher<RelNode> matcher) {
     final RelNode rel = toRel();
     assertThat(rel, matcher);
+    return this;
+  }
+
+  /** Shorthand for a call to {@link #assertThatNodeTypeCount(Matcher)}
+   * with a constant map. */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public RelMetadataFixture assertThatNodeTypeCountIs(
+      Class<? extends RelNode> k0, Integer v0, Object... rest) {
+    final ImmutableMap.Builder<Class<? extends RelNode>, Integer> b =
+        ImmutableMap.builder();
+    b.put(k0, v0);
+    for (int i = 0; i < rest.length;) {
+      b.put((Class) rest[i++], (Integer) rest[i++]);
+    }
+    return assertThatNodeTypeCount(is(b.build()));
+  }
+
+  /** Checks the number of each sub-class of {@link RelNode},
+   * calling {@link RelMetadataQuery#getNodeTypes(RelNode)}. */
+  public RelMetadataFixture assertThatNodeTypeCount(
+      Matcher<Map<Class<? extends RelNode>, Integer>> matcher) {
+    final RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final Multimap<Class<? extends RelNode>, RelNode> result = mq.getNodeTypes(rel);
+    assertThat(result, notNullValue());
+    final Map<Class<? extends RelNode>, Integer> resultCount = new HashMap<>();
+    for (Map.Entry<Class<? extends RelNode>, Collection<RelNode>> e : result.asMap().entrySet()) {
+      resultCount.put(e.getKey(), e.getValue().size());
+    }
+    assertThat(resultCount, matcher);
     return this;
   }
 

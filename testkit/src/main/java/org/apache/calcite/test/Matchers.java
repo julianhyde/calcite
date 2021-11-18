@@ -50,6 +50,8 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+
 /**
  * Matchers for testing SQL queries.
  */
@@ -359,6 +361,29 @@ public class Matchers {
         return item.name().equals(charsetName);
       }
     };
+  }
+
+  /**
+   * Matcher that succeeds for any collection that, when converted to strings
+   * and sorted on those strings, matches the given reference string.
+   *
+   * <p>Use it as an alternative to {@link CoreMatchers#is} if items in your
+   * list might occur in any order.
+   *
+   * <p>For example:
+   *
+   * <blockquote><pre>List&lt;Integer&gt; ints = Arrays.asList(2, 500, 12);
+   * assertThat(ints, sortsAs("[12, 2, 500]");</pre></blockquote>
+   */
+  public static <T> Matcher<Iterable<T>> sortsAs(final String value) {
+    return compose(equalTo(value), item -> {
+      final List<String> strings = new ArrayList<>();
+      for (T t : item) {
+        strings.add(t.toString());
+      }
+      Collections.sort(strings);
+      return strings.toString();
+    });
   }
 
   /** Matcher that tests whether the numeric value is within a given difference
