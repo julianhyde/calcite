@@ -44,4 +44,9 @@ public class Fixtures {
     return new RelOptTestBase() {
     }.fixture();
   }
+
+  /** Creates a fixture for metadata tests. */
+  public static RelMetadataFixture forMetadata() {
+    return RelMetadataFixture.DEFAULT;
+  }
 }

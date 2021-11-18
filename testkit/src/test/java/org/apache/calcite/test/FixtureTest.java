@@ -128,4 +128,17 @@ public class FixtureTest {
       assertThat(e.getMessage(), is(DIFF_REPOS_MESSAGE));
     }
   }
+
+  /** Tests metadata. */
+  @Test void testMetadata() {
+    final RelMetadataFixture f = Fixtures.forMetadata();
+    f.sql("select name as dname from dept")
+          .checkSingleColumnOrigin("DEPT", "NAME", false);
+    f.sql("select upper(name) as dname from dept")
+        .checkSingleColumnOrigin("DEPT", "NAME", true);
+    f.sql("select name||ename from dept,emp")
+        .checkTwoColumnOrigin("DEPT", "NAME", "EMP", "ENAME", true);
+    f.sql("select 'Minstrelsy' as dname from dept")
+        .checkNoColumnOrigin();
+  }
 }
