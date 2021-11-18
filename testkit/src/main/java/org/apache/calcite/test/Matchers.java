@@ -217,6 +217,21 @@ public class Matchers {
   }
 
   /**
+   * Creates a Matcher that matches a {@link RelNode} if its field
+   * names, converting to a list, are equal to the given {@code value}.
+   */
+  public static Matcher<RelNode> hasFieldNames(String fieldNames) {
+    return new TypeSafeMatcher<RelNode>() {
+      @Override public void describeTo(Description description) {
+        description.appendText("has fields ").appendText(fieldNames);
+      }
+
+      @Override protected boolean matchesSafely(RelNode r) {
+        return r.getRowType().getFieldNames().toString().equals(fieldNames);
+      }
+    };
+  }
+  /**
    * Creates a Matcher that matches a {@link RelNode} if its string
    * representation, after converting Windows-style line endings ("\r\n")
    * to Unix-style line endings ("\n"), contains the given {@code value}

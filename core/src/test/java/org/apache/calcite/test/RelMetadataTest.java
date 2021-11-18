@@ -132,20 +132,18 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.apache.calcite.test.Matchers.hasFieldNames;
 import static org.apache.calcite.test.Matchers.within;
 
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -420,20 +418,6 @@ public class RelMetadataTest {
   // Tests for getRowCount, getMinRowCount, getMaxRowCount
   // ----------------------------------------------------------------------
 
-  private void checkRowCount(String sql, double expected, double expectedMin,
-      double expectedMax) {
-    RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final Double result = mq.getRowCount(rel);
-    assertThat(result, notNullValue());
-    assertThat(result, is(expected));
-    final Double max = mq.getMaxRowCount(rel);
-    assertThat(max, notNullValue());
-    assertThat(max, is(expectedMax));
-    final Double min = mq.getMinRowCount(rel);
-    assertThat(max, notNullValue());
-    assertThat(min, is(expectedMin));
-  }
 
   private void checkExchangeRowCount(RelNode rel, double expected, double expectedMin,
       double expectedMax) {
@@ -451,248 +435,271 @@ public class RelMetadataTest {
 
   @Test void testRowCountEmp() {
     final String sql = "select * from emp";
-    checkRowCount(sql, EMP_SIZE, 0D, Double.POSITIVE_INFINITY);
+    sql(sql)
+        .assertThatRowCount(is(EMP_SIZE), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountDept() {
     final String sql = "select * from dept";
-    checkRowCount(sql, DEPT_SIZE, 0D, Double.POSITIVE_INFINITY);
+    sql(sql)
+        .assertThatRowCount(is(DEPT_SIZE), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountValues() {
     final String sql = "select * from (values (1), (2)) as t(c)";
-    checkRowCount(sql, 2, 2, 2);
+    sql(sql).assertThatRowCount(is(2d), is(2d), is(2d));
   }
 
   @Test void testRowCountCartesian() {
     final String sql = "select * from emp,dept";
-    checkRowCount(sql, EMP_SIZE * DEPT_SIZE, 0D, Double.POSITIVE_INFINITY);
+    sql(sql).assertThatRowCount(is(EMP_SIZE * DEPT_SIZE), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountJoin() {
     final String sql = "select * from emp\n"
         + "inner join dept on emp.deptno = dept.deptno";
-    checkRowCount(sql, EMP_SIZE * DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY,
-        0D, Double.POSITIVE_INFINITY);
+    sql(sql)
+        .assertThatRowCount(is(EMP_SIZE * DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY),
+            is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountJoinFinite() {
     final String sql = "select * from (select * from emp limit 14) as emp\n"
         + "inner join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, EMP_SIZE * DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY,
-        0D, 56D); // 4 * 14
+    // 4 * 14
+    sql(sql)
+        .assertThatRowCount(is(EMP_SIZE * DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY),
+            is(0D), is(56D));
   }
 
   @Test void testRowCountJoinEmptyFinite() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "inner join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 1D, // 0, rounded up to row count's minimum 1
-        0D, 0D); // 0 * 4
+    // 0, rounded up to row count's minimum 1
+    // 0 * 4
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(0D));
   }
 
   @Test void testRowCountLeftJoinEmptyFinite() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "left join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 1D, // 0, rounded up to row count's minimum 1
-        0D, 0D); // 0 * 4
+    // 0, rounded up to row count's minimum 1
+    // 0 * 4
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(0D));
   }
 
   @Test void testRowCountRightJoinEmptyFinite() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "right join (select * from dept limit 4) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 4D,
-        0D, 4D);
+    sql(sql).assertThatRowCount(is(4D), is(0D), is(4D));
   }
 
   @Test void testRowCountJoinFiniteEmpty() {
     final String sql = "select * from (select * from emp limit 7) as emp\n"
         + "inner join (select * from dept limit 0) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 1D, // 0, rounded up to row count's minimum 1
-        0D, 0D); // 7 * 0
+    // 0, rounded up to row count's minimum 1
+    // 7 * 0
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(0D));
   }
 
   @Test void testRowCountLeftJoinFiniteEmpty() {
     final String sql = "select * from (select * from emp limit 4) as emp\n"
         + "left join (select * from dept limit 0) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 4D,
-        0D, 4D);
+    sql(sql).assertThatRowCount(is(4D), is(0D), is(4D));
   }
 
   @Test void testRowCountRightJoinFiniteEmpty() {
     final String sql = "select * from (select * from emp limit 4) as emp\n"
         + "right join (select * from dept limit 0) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 1D, // 0, rounded up to row count's minimum 1
-        0D, 0D); // 0 * 4
+    // 0, rounded up to row count's minimum 1
+    // 0 * 4
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(0D));
   }
 
   @Test void testRowCountJoinEmptyEmpty() {
     final String sql = "select * from (select * from emp limit 0) as emp\n"
         + "inner join (select * from dept limit 0) as dept\n"
         + "on emp.deptno = dept.deptno";
-    checkRowCount(sql, 1D, // 0, rounded up to row count's minimum 1
-        0D, 0D); // 0 * 0
+    // 0, rounded up to row count's minimum 1
+    // 0 * 0
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(0D));
   }
 
   @Test void testRowCountUnion() {
     final String sql = "select ename from emp\n"
         + "union all\n"
         + "select name from dept";
-    checkRowCount(sql, EMP_SIZE + DEPT_SIZE, 0D, Double.POSITIVE_INFINITY);
+    sql(sql).assertThatRowCount(is(EMP_SIZE + DEPT_SIZE),
+        is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountUnionOnFinite() {
     final String sql = "select ename from (select * from emp limit 100)\n"
         + "union all\n"
         + "select name from (select * from dept limit 40)";
-    checkRowCount(sql, EMP_SIZE + DEPT_SIZE, 0D, 140D);
+    sql(sql).assertThatRowCount(is(EMP_SIZE + DEPT_SIZE), is(0D), is(140D));
   }
 
   @Test void testRowCountUnionDistinct() {
     String sql = "select x from (values 'a', 'b') as t(x)\n"
         + "union\n"
         + "select x from (values 'a', 'b') as t(x)";
-    checkRowCount(sql, 2D, 1D, 4D);
+    sql(sql).assertThatRowCount(is(2D), is(1D), is(4D));
 
     sql = "select x from (values 'a', 'a') as t(x)\n"
         + "union\n"
         + "select x from (values 'a', 'a') as t(x)";
-    checkRowCount(sql, 2D, 1D, 4D);
+    sql(sql).assertThatRowCount(is(2D), is(1D), is(4D));
   }
 
   @Test void testRowCountIntersectOnFinite() {
     final String sql = "select ename from (select * from emp limit 100)\n"
         + "intersect\n"
         + "select name from (select * from dept limit 40)";
-    checkRowCount(sql, Math.min(EMP_SIZE, DEPT_SIZE), 0D, 40D);
+    sql(sql)
+        .assertThatRowCount(is(Math.min(EMP_SIZE, DEPT_SIZE)), is(0D), is(40D));
   }
 
   @Test void testRowCountMinusOnFinite() {
     final String sql = "select ename from (select * from emp limit 100)\n"
         + "except\n"
         + "select name from (select * from dept limit 40)";
-    checkRowCount(sql, 4D, 0D, 100D);
+    sql(sql).assertThatRowCount(is(4D), is(0D), is(100D));
   }
 
   @Test void testRowCountFilter() {
     final String sql = "select * from emp where ename='Mathilda'";
-    checkRowCount(sql, EMP_SIZE * DEFAULT_EQUAL_SELECTIVITY,
-        0D, Double.POSITIVE_INFINITY);
+    sql(sql)
+        .assertThatRowCount(is(EMP_SIZE * DEFAULT_EQUAL_SELECTIVITY),
+            is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountFilterOnFinite() {
     final String sql = "select * from (select * from emp limit 10)\n"
         + "where ename='Mathilda'";
-    checkRowCount(sql, 10D * DEFAULT_EQUAL_SELECTIVITY, 0D, 10D);
+    sql(sql)
+        .assertThatRowCount(is(10D * DEFAULT_EQUAL_SELECTIVITY),
+            is(0D), is(10D));
   }
 
   @Test void testRowCountFilterFalse() {
     final String sql = "select * from (values 'a', 'b') as t(x) where false";
-    checkRowCount(sql, 1D, 0D, 0D);
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(0D));
   }
 
   @Test void testRowCountSort() {
     final String sql = "select * from emp order by ename";
-    checkRowCount(sql, EMP_SIZE, 0D, Double.POSITIVE_INFINITY);
+    sql(sql)
+        .assertThatRowCount(is(EMP_SIZE), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountExchange() {
     final String sql = "select * from emp order by ename limit 123456";
-    RelNode rel = sql(sql).toRel();
-    final RelDistribution dist = RelDistributions.hash(ImmutableList.<Integer>of());
-    final LogicalExchange exchange = LogicalExchange.create(rel, dist);
-    checkExchangeRowCount(exchange, EMP_SIZE, 0D, 123456D);
+    sql(sql)
+        .withRelTransform(rel ->
+            LogicalExchange.create(rel,
+                RelDistributions.hash(ImmutableList.<Integer>of())))
+        .assertThatRowCount(is(EMP_SIZE), is(0D), is(123456D));
   }
 
   @Test void testRowCountTableModify() {
     final String sql = "insert into emp select * from emp order by ename limit 123456";
-    checkRowCount(sql, EMP_SIZE, 0D, 123456D);
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(EMP_SIZE), is(0D), is(123456D));
   }
 
   @Test void testRowCountSortHighLimit() {
     final String sql = "select * from emp order by ename limit 123456";
-    checkRowCount(sql, EMP_SIZE, 0D, 123456D);
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(EMP_SIZE), is(0D), is(123456D));
   }
 
   @Test void testRowCountSortHighOffset() {
     final String sql = "select * from emp order by ename offset 123456";
-    checkRowCount(sql, 1D, 0D, Double.POSITIVE_INFINITY);
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(1D), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountSortHighOffsetLimit() {
     final String sql = "select * from emp order by ename limit 5 offset 123456";
-    checkRowCount(sql, 1D, 0D, 5D);
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(1D), is(0D), is(5D));
   }
 
   @Test void testRowCountSortLimit() {
     final String sql = "select * from emp order by ename limit 10";
-    checkRowCount(sql, 10d, 0D, 10d);
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(10d), is(0D), is(10d));
   }
 
   @Test void testRowCountSortLimit0() {
     final String sql = "select * from emp order by ename limit 0";
-    checkRowCount(sql, 1d, 0D, 0d);
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(1d), is(0D), is(0d));
   }
 
   @Test void testRowCountSortLimitOffset() {
     final String sql = "select * from emp order by ename limit 10 offset 5";
-    checkRowCount(sql, 9D /* 14 - 5 */, 0D, 10d);
+    /* 14 - 5 */
+    final RelMetadataFixture fixture = sql(sql);
+    fixture.assertThatRowCount(is(9D), is(0D), is(10d));
   }
 
   @Test void testRowCountSortLimitOffsetOnFinite() {
     final String sql = "select * from (select * from emp limit 12)\n"
         + "order by ename limit 20 offset 5";
-    checkRowCount(sql, 7d, 0D, 7d);
+    sql(sql).assertThatRowCount(is(7d), is(0D), is(7d));
   }
 
   @Test void testRowCountAggregate() {
     final String sql = "select deptno from emp group by deptno";
-    checkRowCount(sql, 1.4D, 0D, Double.POSITIVE_INFINITY);
+    sql(sql).assertThatRowCount(is(1.4D), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountAggregateGroupingSets() {
     final String sql = "select deptno from emp\n"
         + "group by grouping sets ((deptno), (ename, deptno))";
-    checkRowCount(sql, 2.8D, // EMP_SIZE / 10 * 2
-        0D, Double.POSITIVE_INFINITY);
+    // EMP_SIZE / 10 * 2
+    sql(sql).assertThatRowCount(is(2.8D), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountAggregateGroupingSetsOneEmpty() {
     final String sql = "select deptno from emp\n"
         + "group by grouping sets ((deptno), ())";
-    checkRowCount(sql, 2.8D, 0D, Double.POSITIVE_INFINITY);
+    sql(sql).assertThatRowCount(is(2.8D), is(0D), is(Double.POSITIVE_INFINITY));
   }
 
   @Test void testRowCountAggregateEmptyKey() {
     final String sql = "select count(*) from emp";
-    checkRowCount(sql, 1D, 1D, 1D);
+    sql(sql).assertThatRowCount(is(1D), is(1D), is(1D));
   }
 
   @Test void testRowCountAggregateConstantKey() {
     final String sql = "select count(*) from emp where deptno=2 and ename='emp1' "
         + "group by deptno, ename";
-    checkRowCount(sql, 1D, 0D, 1D);
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(1D));
   }
 
   @Test void testRowCountAggregateConstantKeys() {
     final String sql = "select distinct deptno from emp where deptno=4";
-    checkRowCount(sql, 1D, 0D, 1D);
+    sql(sql).assertThatRowCount(is(1D), is(0D), is(1D));
   }
 
   @Test void testRowCountFilterAggregateEmptyKey() {
     final String sql = "select count(*) from emp where 1 = 0";
-    checkRowCount(sql, 1D, 1D, 1D);
+    sql(sql).assertThatRowCount(is(1D), is(1D), is(1D));
   }
 
   @Test void testRowCountAggregateEmptyKeyOnEmptyTable() {
     final String sql = "select count(*) from (select * from emp limit 0)";
-    checkRowCount(sql, 1D, 1D, 1D);
+    sql(sql).assertThatRowCount(is(1D), is(1D), is(1D));
   }
 
   // ----------------------------------------------------------------------
@@ -758,100 +765,68 @@ public class RelMetadataTest {
   // Tests for getSelectivity
   // ----------------------------------------------------------------------
 
-  private void checkFilterSelectivity(
-      String sql,
-      double expected) {
-    RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Double result = mq.getSelectivity(rel, null);
-    assertNotNull(result);
-    assertEquals(expected, result, EPSILON);
-  }
-
   @Test void testSelectivityIsNotNullFilter() {
-    checkFilterSelectivity(
-        "select * from emp where mgr is not null",
-        DEFAULT_NOTNULL_SELECTIVITY);
+    sql("select * from emp where mgr is not null")
+        .assertThatSelectivity(isAlmost(DEFAULT_NOTNULL_SELECTIVITY));
   }
 
   @Test void testSelectivityIsNotNullFilterOnNotNullColumn() {
-    checkFilterSelectivity(
-        "select * from emp where deptno is not null",
-        1.0d);
+    sql("select * from emp where deptno is not null")
+        .assertThatSelectivity(isAlmost(1.0d));
   }
 
   @Test void testSelectivityComparisonFilter() {
-    checkFilterSelectivity(
-        "select * from emp where deptno > 10",
-        DEFAULT_COMP_SELECTIVITY);
+    sql("select * from emp where deptno > 10")
+        .assertThatSelectivity(isAlmost(DEFAULT_COMP_SELECTIVITY));
   }
 
   @Test void testSelectivityAndFilter() {
-    checkFilterSelectivity(
-        "select * from emp where ename = 'foo' and deptno = 10",
-        DEFAULT_EQUAL_SELECTIVITY_SQUARED);
+    sql("select * from emp where ename = 'foo' and deptno = 10")
+        .assertThatSelectivity(isAlmost(DEFAULT_EQUAL_SELECTIVITY_SQUARED));
   }
 
   @Test void testSelectivityOrFilter() {
-    checkFilterSelectivity(
-        "select * from emp where ename = 'foo' or deptno = 10",
-        DEFAULT_SELECTIVITY);
+    sql("select * from emp where ename = 'foo' or deptno = 10")
+        .assertThatSelectivity(isAlmost(DEFAULT_SELECTIVITY));
   }
 
   @Test void testSelectivityJoin() {
-    checkFilterSelectivity(
-        "select * from emp join dept using (deptno) where ename = 'foo'",
-        DEFAULT_EQUAL_SELECTIVITY);
-  }
-
-  private void checkRelSelectivity(
-      RelNode rel,
-      double expected) {
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Double result = mq.getSelectivity(rel, null);
-    assertNotNull(result);
-    assertEquals(expected, result, EPSILON);
+    sql("select * from emp join dept using (deptno) where ename = 'foo'")
+        .assertThatSelectivity(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Test void testSelectivityRedundantFilter() {
-    RelNode rel = sql("select * from emp where deptno = 10").toRel();
-    checkRelSelectivity(rel, DEFAULT_EQUAL_SELECTIVITY);
+    sql("select * from emp where deptno = 10")
+        .assertThatSelectivity(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Test void testSelectivitySort() {
-    RelNode rel =
-        sql("select * from emp where deptno = 10"
-            + "order by ename").toRel();
-    checkRelSelectivity(rel, DEFAULT_EQUAL_SELECTIVITY);
+    sql("select * from emp where deptno = 10\n"
+        + "order by ename")
+        .assertThatSelectivity(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Test void testSelectivityUnion() {
-    RelNode rel =
-        sql("select * from (\n"
-            + "  select * from emp union all select * from emp) "
-            + "where deptno = 10").toRel();
-    checkRelSelectivity(rel, DEFAULT_EQUAL_SELECTIVITY);
+    sql("select * from (\n"
+        + "  select * from emp union all select * from emp)\n"
+        + "where deptno = 10")
+        .assertThatSelectivity(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Test void testSelectivityAgg() {
-    RelNode rel =
-        sql("select deptno, count(*) from emp where deptno > 10 "
-            + "group by deptno having count(*) = 0").toRel();
-    checkRelSelectivity(
-        rel,
-        DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY);
+    sql("select deptno, count(*) from emp where deptno > 10 "
+        + "group by deptno having count(*) = 0")
+        .assertThatSelectivity(
+            isAlmost(DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY));
   }
 
   /** Checks that we can cache a metadata request that includes a null
    * argument. */
   @Test void testSelectivityAggCached() {
-    RelNode rel =
-        sql("select deptno, count(*) from emp where deptno > 10 "
-            + "group by deptno having count(*) = 0").toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Double result = mq.getSelectivity(rel, null);
-    assertThat(result,
-        isAlmost(DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY));
+    sql("select deptno, count(*) from emp where deptno > 10\n"
+        + "group by deptno having count(*) = 0")
+        .assertThatSelectivity(
+            isAlmost(DEFAULT_COMP_SELECTIVITY * DEFAULT_EQUAL_SELECTIVITY));
   }
 
   /** Test case for
@@ -859,7 +834,7 @@ public class RelMetadataTest {
    * JaninoRelMetadataProvider loading cache might cause
    * OutOfMemoryError</a>.
    *
-   * Too slow to run every day, and it does not reproduce the issue. */
+   * <p>Too slow to run every day, and it does not reproduce the issue. */
   @Tag("slow")
   @Test void testMetadataHandlerCacheLimit() {
     assumeTrue(CalciteSystemProperty.METADATA_HANDLER_CACHE_MAXIMUM_SIZE.value() < 10_000,
@@ -896,50 +871,35 @@ public class RelMetadataTest {
 
   @Test void testDistinctRowCountTable() {
     // no unique key information is available so return null
-    RelNode rel = sql("select * from (values "
+    final String sql = "select * from (values "
         + "(1, 2, 3, null), "
         + "(3, 4, 5, 6), "
         + "(3, 4, null, 6), "
         + "(8, 4, 5, null) "
-        + ") t(c1, c2, c3, c4)").toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-
-    ImmutableBitSet groupKey = ImmutableBitSet.of(0, 1, 2, 3);
-    Double result = mq.getDistinctRowCount(rel, groupKey, null);
-    // all rows are different
-    assertThat(result, is(4D));
-
-    groupKey = ImmutableBitSet.of(1, 2);
-    result = mq.getDistinctRowCount(rel, groupKey, null);
-    // rows 2 and 4 are the same in the specified columns
-    assertThat(result, is(3D));
-
-    groupKey = ImmutableBitSet.of(0);
-    result = mq.getDistinctRowCount(rel, groupKey, null);
-    // rows 2 and 3 are the same in the specified columns
-    assertThat(result, is(3D));
-
-    groupKey = ImmutableBitSet.of(3);
-    result = mq.getDistinctRowCount(rel, groupKey, null);
-    // the last column has 2 distinct values: 6 and null
-    assertThat(result, is(2D));
+        + ") t(c1, c2, c3, c4)";
+    sql(sql)
+        // all rows are different
+        .assertThatDistinctRowCount(ImmutableBitSet.of(0, 1, 2, 3), is(4D))
+        // rows 2 and 4 are the same in the specified columns
+        .assertThatDistinctRowCount(ImmutableBitSet.of(1, 2), is(3D))
+        // rows 2 and 3 are the same in the specified columns
+        .assertThatDistinctRowCount(ImmutableBitSet.of(0), is(3D))
+        // the last column has 2 distinct values: 6 and null
+        .assertThatDistinctRowCount(ImmutableBitSet.of(3), is(2D));
   }
 
   @Test void testDistinctRowCountValues() {
-    RelNode rel = sql("select * from emp where deptno = 10").toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    ImmutableBitSet groupKey =
-        ImmutableBitSet.of(rel.getRowType().getFieldNames().indexOf("DEPTNO"));
-    Double result = mq.getDistinctRowCount(rel, groupKey, null);
-    assertThat(result, nullValue());
+    sql("select * from emp where deptno = 10")
+        .assertThatDistinctRowCount(
+            rel -> ImmutableBitSet.of(
+                rel.getRowType().getFieldNames().indexOf("DEPTNO")),
+            nullValue(Double.class));
   }
 
   @Test void testDistinctRowCountTableEmptyKey() {
-    RelNode rel = sql("select * from emp where deptno = 10").toRel();
-    ImmutableBitSet groupKey = ImmutableBitSet.of(); // empty key
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    Double result = mq.getDistinctRowCount(rel, groupKey, null);
-    assertThat(result, is(1D));
+    sql("select * from emp where deptno = 10")
+        .assertThatDistinctRowCount(ImmutableBitSet.of(), // empty key
+            is(1D));
   }
 
   // ----------------------------------------------------------------------
@@ -961,25 +921,12 @@ public class RelMetadataTest {
         + "from (select distinct deptno from emp) as e,\n"
         + "  lateral (\n"
         + "    select * from dept where dept.deptno = e.deptno)";
-    final RelMetadataFixture f = sql(sql);
-    final RelNode rel = f.toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-
-    assertThat(rel, isA((Class) Project.class));
-    final Project project = (Project) rel;
-    final Set<ImmutableBitSet> result = mq.getUniqueKeys(project);
-    assertThat(result, sortsAs("[{0}]"));
-    if (false) {
-      f.assertUniqueConsistent(project);
-    }
-
-    assertThat(project.getInput(), isA((Class) Correlate.class));
-    final Correlate correlate = (Correlate) project.getInput();
-    final Set<ImmutableBitSet> result2 = mq.getUniqueKeys(correlate);
-    assertThat(result2, sortsAs("[{0}]"));
-    if (false) {
-      f.assertUniqueConsistent(correlate);
-    }
+    sql(sql)
+        .assertThatRel(is(instanceOf(Project.class)))
+        .assertThatUniqueKeys(sortsAs("[{0}]"))
+        .withRelTransform(r -> ((Project) r).getInput())
+        .assertThatRel(is(instanceOf(Correlate.class)))
+        .assertThatUniqueKeys(sortsAs("[{0}]"));
   }
 
   @Test void testGroupByEmptyUniqueKeys() {
@@ -999,12 +946,11 @@ public class RelMetadataTest {
         + "full outer join (select cast (null as int) deptno from sales.dept "
         + "group by cast(null as int)) as d on e.empno = d.deptno\n"
         + "group by e.empno, d.deptno";
-    RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final ImmutableBitSet allCols =
-        ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
-    Boolean areGroupByKeysUnique = mq.areColumnsUnique(rel.getInput(0), allCols);
-    assertThat(areGroupByKeysUnique, is(false));
+    sql(sql)
+        .assertThatAreColumnsUnique(r ->
+                ImmutableBitSet.range(0, r.getRowType().getFieldCount()),
+            r -> r.getInput(0),
+            is(false));
   }
 
   @Test void testColumnUniquenessForFilterWithConstantColumns() {
@@ -1019,13 +965,11 @@ public class RelMetadataTest {
   }
 
   private void checkColumnUniquenessForFilterWithConstantColumns(String sql) {
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(rel.getRowType().getFieldNames().toString(),
-        is("[DEPTNO, SAL]"));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 1)), is(true));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0)), is(true));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(1)), is(false));
+    sql(sql)
+        .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(1), is(false));
   }
 
   @Test void testColumnUniquenessForUnionWithConstantColumns() {
@@ -1033,11 +977,9 @@ public class RelMetadataTest {
         + "select deptno, sal from emp where sal=1000\n"
         + "union\n"
         + "select deptno, sal from emp where sal=1000\n";
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(rel.getRowType().getFieldNames().toString(),
-        is("[DEPTNO, SAL]"));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0)), is(true));
+    sql(sql)
+        .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true));
   }
 
   @Test void testColumnUniquenessForIntersectWithConstantColumns() {
@@ -1047,11 +989,9 @@ public class RelMetadataTest {
         + "where sal=1000\n"
         + "intersect all\n"
         + "select deptno, sal from emp\n";
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(rel.getRowType().getFieldNames().toString(),
-        is("[DEPTNO, SAL]"));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 1)), is(true));
+    sql(sql)
+        .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true));
   }
 
   @Test void testColumnUniquenessForMinusWithConstantColumns() {
@@ -1061,12 +1001,10 @@ public class RelMetadataTest {
         + "where sal=1000\n"
         + "except all\n"
         + "select deptno, sal from emp\n";
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(rel.getRowType().getFieldNames().toString(),
-        is("[DEPTNO, SAL]"));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0)), is(true));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 1)), is(true));
+    sql(sql)
+        .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true));
   }
 
   @Test void testColumnUniquenessForSortWithConstantColumns() {
@@ -1075,21 +1013,17 @@ public class RelMetadataTest {
         + "from (select distinct deptno, sal from emp)\n"
         + "where sal=1000\n"
         + "order by deptno";
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(rel.getRowType().getFieldNames().toString(),
-        is("[DEPTNO, SAL]"));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 1)), is(true));
+    sql(sql)
+        .assertThatRel(hasFieldNames("[DEPTNO, SAL]"))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(true));
   }
 
   @Test void testRowUniquenessForSortWithLimit() {
-    final String sql = ""
-        + "select sal\n"
+    final String sql = "select sal\n"
         + "from emp\n"
         + "limit 1";
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(mq.areRowsUnique(rel), is(true));
+    sql(sql)
+        .assertThatAreRowsUnique(is(true));
   }
 
   @Test void testColumnUniquenessForJoinWithConstantColumns() {
@@ -1098,14 +1032,12 @@ public class RelMetadataTest {
         + "from (select distinct deptno, sal from emp) A\n"
         + "join (select distinct deptno, sal from emp) B\n"
         + "on A.deptno=B.deptno and A.sal=1000 and B.sal=1000";
-    final RelNode rel = sql(sql).toRel();
-    assertThat(rel.getRowType().getFieldNames().toString(),
-        is("[DEPTNO, SAL, DEPTNO0, SAL0]"));
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 2)), is(true));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 1, 2)), is(true));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 2, 3)), is(true));
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(0, 1)), is(false));
+    sql(sql)
+        .assertThatRel(hasFieldNames("[DEPTNO, SAL, DEPTNO0, SAL0]"))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 2), is(true))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1, 2), is(true))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 2, 3), is(true))
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0, 1), is(false));
   }
 
   @Test void testColumnUniquenessForAggregateWithConstantColumns() {
@@ -1114,22 +1046,20 @@ public class RelMetadataTest {
         + "from emp\n"
         + "where deptno=1010\n"
         + "group by deptno, ename";
-    final RelNode rel = sql(sql).toRel();
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    assertThat(mq.areColumnsUnique(rel, ImmutableBitSet.of(1)), is(true));
+    sql(sql)
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(1), is(true));
   }
 
   @Test void testColumnUniquenessForExchangeWithConstantColumns() {
-    final FrameworkConfig config = RelBuilderTest.config().build();
-    final RelBuilder builder = RelBuilder.create(config);
-    RelNode exchange = builder.scan("EMP")
-        .project(builder.field("DEPTNO"), builder.field("SAL"))
-        .distinct()
-        .filter(builder.equals(builder.field("SAL"), builder.literal(1)))
-        .exchange(RelDistributions.hash(ImmutableList.of(1)))
-        .build();
-    final RelMetadataQuery mq = exchange.getCluster().getMetadataQuery();
-    assertThat(mq.areColumnsUnique(exchange, ImmutableBitSet.of(0)), is(true));
+    fixture()
+        .withRelFn(b ->
+            b.scan("EMP")
+                .project(b.field("DEPTNO"), b.field("SAL"))
+                .distinct()
+                .filter(b.equals(b.field("SAL"), b.literal(1)))
+                .exchange(RelDistributions.hash(ImmutableList.of(1)))
+                .build())
+        .assertThatAreColumnsUnique(ImmutableBitSet.of(0), is(true));
   }
 
   @Test void testColumnUniquenessForCorrelateWithConstantColumns() {
@@ -3253,7 +3183,7 @@ public class RelMetadataTest {
    * <blockquote><pre>List&lt;Integer&gt; ints = Arrays.asList(2, 500, 12);
    * assertThat(ints, sortsAs("[12, 2, 500]");</pre></blockquote>
    */
-  public static <T> Matcher<Iterable<? extends T>> sortsAs(final String value) {
+  public static <T> Matcher<Iterable<T>> sortsAs(final String value) {
     return Matchers.compose(equalTo(value), item -> {
       final List<String> strings = new ArrayList<>();
       for (T t : item) {

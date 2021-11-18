@@ -23,15 +23,16 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.test.SqlTestFactory;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import com.google.common.collect.ImmutableSortedSet;
@@ -41,6 +42,7 @@ import org.hamcrest.Matcher;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -56,35 +58,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class RelMetadataFixture {
   public static final RelMetadataFixture DEFAULT =
-      new RelMetadataFixture(SqlToRelTestBase.createTesterStatic(), "?", false,
-          true);
+      new RelMetadataFixture(SqlToRelTestBase.createTesterStatic(),
+          RelSupplier.NONE, false, true, r -> r);
 
   private final SqlToRelTestBase.Tester tester;
-  private final String sql;
+  private final RelSupplier relSupplier;
   private final boolean convertAsCalc;
   private final boolean typeCoercion;
+  private final UnaryOperator<RelNode> relTransform;
 
-  private RelMetadataFixture(SqlToRelTestBase.Tester tester, String sql,
-      boolean convertAsCalc, boolean typeCoercion) {
+  private RelMetadataFixture(SqlToRelTestBase.Tester tester,
+      RelSupplier relSupplier, boolean convertAsCalc, boolean typeCoercion,
+      UnaryOperator<RelNode> relTransform) {
     this.tester = tester;
-    this.sql = sql;
+    this.relSupplier = relSupplier;
     this.convertAsCalc = convertAsCalc;
     this.typeCoercion = typeCoercion;
+    this.relTransform = relTransform;
   }
 
   public RelMetadataFixture sql(String sql) {
-    return sql.equals(this.sql) ? this
-        : new RelMetadataFixture(tester, sql, convertAsCalc, typeCoercion);
+    final RelSupplier relSupplier = RelSupplier.of(sql);
+    return relSupplier.equals(this.relSupplier) ? this
+        : new RelMetadataFixture(tester, relSupplier, convertAsCalc,
+            typeCoercion, relTransform);
+  }
+
+  public RelMetadataFixture withRelFn(Function<RelBuilder, RelNode> relFn) {
+    final RelSupplier relSupplier = RelSupplier.of(relFn);
+    return relSupplier.equals(this.relSupplier) ? this
+        : new RelMetadataFixture(tester, relSupplier, convertAsCalc,
+            typeCoercion, relTransform);
   }
 
   public RelMetadataFixture withTester(
       UnaryOperator<SqlToRelTestBase.Tester> transform) {
-    return new RelMetadataFixture(transform.apply(tester), sql, convertAsCalc,
-        typeCoercion);
+    final SqlToRelTestBase.Tester tester = transform.apply(this.tester);
+    return new RelMetadataFixture(tester, relSupplier, convertAsCalc,
+        typeCoercion, relTransform);
   }
 
   public RelMetadataFixture convertingProjectAsCalc() {
-    return new RelMetadataFixture(tester, sql, true, typeCoercion);
+    return new RelMetadataFixture(tester, relSupplier, true,
+        typeCoercion, relTransform);
   }
 
   public RelMetadataFixture withCatalogReaderFactory(
@@ -98,7 +114,15 @@ public class RelMetadataFixture {
 
   public RelMetadataFixture withTypeCoercion(boolean typeCoercion) {
     return typeCoercion == this.typeCoercion ? this
-        : new RelMetadataFixture(tester, sql, convertAsCalc, typeCoercion);
+        : new RelMetadataFixture(tester, relSupplier, convertAsCalc,
+            typeCoercion, relTransform);
+  }
+
+  public RelMetadataFixture withRelTransform(UnaryOperator<RelNode> relTransform) {
+    final UnaryOperator<RelNode> relTransform1 =
+        this.relTransform.andThen(relTransform)::apply;
+    return new RelMetadataFixture(tester, relSupplier, convertAsCalc,
+        typeCoercion, relTransform1);
   }
 
   public RelMetadataFixture assertCpuCost(Matcher<Double> matcher,
@@ -106,7 +130,7 @@ public class RelMetadataFixture {
     RelNode rel = toRel();
     RelOptCost cost = computeRelSelfCost(rel);
     assertThat(reason + "\n"
-            + "sql:" + sql + "\n"
+            + "sql:" + relSupplier + "\n"
             + "plan:" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES),
         cost.getCpu(), matcher);
     return this;
@@ -135,19 +159,23 @@ public class RelMetadataFixture {
     for (boolean ignoreNull : ignoreNulls) {
       Boolean rowsUnique = mq.areRowsUnique(rel, ignoreNull);
       assertThat(reason + "\n"
-              + "sql:" + sql + "\n"
+              + "sql:" + relSupplier + "\n"
               + "plan:" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES),
           rowsUnique, matcher);
     }
     return this;
   }
 
+  /** Only for use by RelSupplier. Must be package-private. */
+  RelNode sqlToRel(String sql) {
+    return tester.enableTypeCoercion(typeCoercion)
+        .convertSqlToRel(sql).rel;
+  }
+
   public RelNode toRel() {
-    final RelRoot root = tester
-        .enableTypeCoercion(typeCoercion)
-        .convertSqlToRel(sql);
+    final RelNode rel = relSupplier.apply2(this);
     if (convertAsCalc) {
-      Project project = (Project) root.rel;
+      Project project = (Project) rel;
       RexProgram program = RexProgram.create(
           project.getInput().getRowType(),
           project.getProjects(),
@@ -156,25 +184,25 @@ public class RelMetadataFixture {
           project.getCluster().getRexBuilder());
       return LogicalCalc.create(project.getInput(), program);
     }
-    return root.rel;
+    return relTransform.apply(rel);
   }
 
-  public  void checkPercentageOriginalRows(Matcher<Double> matcher) {
-    RelNode rel = sql(sql).toRel();
+  public void checkPercentageOriginalRows(Matcher<Double> matcher) {
+    RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Double result = mq.getPercentageOriginalRows(rel);
     assertNotNull(result);
     assertThat(result, matcher);
   }
 
-  private Set<RelColumnOrigin> checkColumnOrigin(String sql) {
-    RelNode rel = sql(sql).toRel();
+  private Set<RelColumnOrigin> checkColumnOrigin() {
+    RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     return mq.getColumnOrigins(rel, 0);
   }
 
   public void checkNoColumnOrigin() {
-    Set<RelColumnOrigin> result = checkColumnOrigin(sql);
+    Set<RelColumnOrigin> result = checkColumnOrigin();
     assertNotNull(result);
     assertTrue(result.isEmpty());
   }
@@ -200,7 +228,7 @@ public class RelMetadataFixture {
 
   public void checkSingleColumnOrigin(String expectedTableName,
       String expectedColumnName, boolean expectedDerived) {
-    Set<RelColumnOrigin> result = checkColumnOrigin(sql);
+    Set<RelColumnOrigin> result = checkColumnOrigin();
     assertNotNull(result);
     assertThat(result.size(), is(1));
     RelColumnOrigin rco = result.iterator().next();
@@ -215,7 +243,7 @@ public class RelMetadataFixture {
       String expectedTableName2,
       String expectedColumnName2,
       boolean expectedDerived) {
-    Set<RelColumnOrigin> result = checkColumnOrigin(sql);
+    Set<RelColumnOrigin> result = checkColumnOrigin();
     assertNotNull(result);
     assertThat(result.size(), is(2));
     for (RelColumnOrigin rco : result) {
@@ -248,7 +276,7 @@ public class RelMetadataFixture {
     assertThat(result, notNullValue());
     assertEquals(ImmutableSortedSet.copyOf(expectedUniqueKeySet),
         ImmutableSortedSet.copyOf(result),
-        () -> "unique keys, sql: " + sql + ", rel: " + RelOptUtil.toString(rel));
+        () -> "unique keys, sql: " + relSupplier + ", rel: " + RelOptUtil.toString(rel));
     assertUniqueConsistent(rel);
   }
 
@@ -282,5 +310,106 @@ public class RelMetadataFixture {
       }
     }
     return false;
+  }
+
+  /** Checks {@link RelMetadataQuery#getRowCount(RelNode)},
+   * {@link RelMetadataQuery#getMaxRowCount(RelNode)},
+   * and {@link RelMetadataQuery#getMinRowCount(RelNode)}. */
+  public RelMetadataFixture assertThatRowCount(Matcher<Number> rowCountMatcher,
+      Matcher<Number> minRowCountMatcher, Matcher<Number> maxRowCountMatcher) {
+    final RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+
+    final Double rowCount = mq.getRowCount(rel);
+    assertThat(rowCount, notNullValue());
+    assertThat(rowCount, rowCountMatcher);
+
+    final Double min = mq.getMinRowCount(rel);
+    assertThat(min, notNullValue());
+    assertThat(min, minRowCountMatcher);
+
+    final Double max = mq.getMaxRowCount(rel);
+    assertThat(max, notNullValue());
+    assertThat(max, maxRowCountMatcher);
+    return this;
+  }
+
+  /** Checks {@link RelMetadataQuery#getSelectivity(RelNode, RexNode)}. */
+  public RelMetadataFixture assertThatSelectivity(Matcher<Double> matcher) {
+    RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    Double result = mq.getSelectivity(rel, null);
+    assertThat(result, notNullValue());
+    assertThat(result, matcher);
+    return this;
+  }
+
+  /** Checks
+   * {@link RelMetadataQuery#getDistinctRowCount(RelNode, ImmutableBitSet, RexNode)}
+   * with a null predicate. */
+  public RelMetadataFixture assertThatDistinctRowCount(ImmutableBitSet groupKey,
+      Matcher<Double> matcher) {
+    return assertThatDistinctRowCount(r -> groupKey, matcher);
+  }
+
+  /** Checks
+   * {@link RelMetadataQuery#getDistinctRowCount(RelNode, ImmutableBitSet, RexNode)}
+   * with a null predicate, deriving the group key from the {@link RelNode}. */
+  public RelMetadataFixture assertThatDistinctRowCount(
+      Function<RelNode, ImmutableBitSet> groupKeyFn,
+      Matcher<Double> matcher) {
+    final RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final ImmutableBitSet groupKey = groupKeyFn.apply(rel);
+    Double result = mq.getDistinctRowCount(rel, groupKey, null);
+    assertThat(result, matcher);
+    return this;
+  }
+
+  /** Checks the {@link RelNode} produced by {@link #toRel}. */
+  public RelMetadataFixture assertThatRel(Matcher<RelNode> matcher) {
+    final RelNode rel = toRel();
+    assertThat(rel, matcher);
+    return this;
+  }
+
+  /** Checks {@link RelMetadataQuery#getUniqueKeys(RelNode)}. */
+  public RelMetadataFixture assertThatUniqueKeys(
+      Matcher<Iterable<ImmutableBitSet>> matcher) {
+    final RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
+    assertThat(result, matcher);
+    return this;
+  }
+
+  /** Checks {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}. */
+  public RelMetadataFixture assertThatAreColumnsUnique(ImmutableBitSet columns,
+      Matcher<Boolean> matcher) {
+    return assertThatAreColumnsUnique(r -> columns, r -> r, matcher);
+  }
+
+  /** Checks {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)},
+   * deriving parameters via functions. */
+  public RelMetadataFixture assertThatAreColumnsUnique(
+      Function<RelNode, ImmutableBitSet> columnsFn,
+      UnaryOperator<RelNode> relFn,
+      Matcher<Boolean> matcher) {
+    RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final ImmutableBitSet columns = columnsFn.apply(rel);
+    final RelNode rel2 = relFn.apply(rel);
+    final Boolean areColumnsUnique = mq.areColumnsUnique(rel2, columns);
+    assertThat(areColumnsUnique, matcher);
+    return this;
+  }
+
+  /** Checks {@link RelMetadataQuery#areRowsUnique(RelNode)}. */
+  public RelMetadataFixture assertThatAreRowsUnique(Matcher<Boolean> matcher) {
+    RelNode rel = toRel();
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final Boolean areRowsUnique = mq.areRowsUnique(rel);
+    assertThat(areRowsUnique, matcher);
+    return this;
   }
 }

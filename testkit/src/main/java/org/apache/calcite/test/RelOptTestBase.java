@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -35,16 +34,12 @@ import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.SqlToRelTestBase.Tester;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Closer;
 
@@ -413,37 +408,4 @@ abstract class RelOptTestBase {
     }
   }
 
-  /** The source of a {@link RelNode} for running a test. */
-  interface RelSupplier extends Function<Sql, RelNode> {
-    RelSupplier NONE = fixture -> {
-      throw new UnsupportedOperationException();
-    };
-    static RelSupplier of(String sql) {
-      if (sql.contains(" \n")) {
-        throw new AssertionError("trailing whitespace");
-      }
-      return fixture -> {
-        // TODO: define toString and equals methods
-        String sql2 = fixture.diffRepos().expand("sql", sql);
-        return fixture.tester().convertSqlToRel(sql2).rel;
-      };
-    }
-
-    /** RelBuilder config based on the "scott" schema. */
-    FrameworkConfig FRAMEWORK_CONFIG =
-        Frameworks.newConfigBuilder()
-            .parserConfig(SqlParser.Config.DEFAULT)
-            .defaultSchema(
-                CalciteAssert.addSchema(
-                    Frameworks.createRootSchema(true),
-                    CalciteAssert.SchemaSpec.SCOTT_WITH_TEMPORAL))
-            .traitDefs((List<RelTraitDef>) null)
-            .programs(Programs.heuristicJoinOrder(Programs.RULE_SET, true, 2))
-            .build();
-
-    static RelSupplier of(Function<RelBuilder, RelNode> relFn) {
-      return fixture ->
-          relFn.apply(RelBuilder.create(FRAMEWORK_CONFIG));
-    }
-  }
 }
