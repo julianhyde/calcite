@@ -180,7 +180,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     validateAndThen(StringAndPos.of(sql), checkColumnTypeAction(is(expected)));
   }
 
-  private ValidatedNodeConsumer checkColumnTypeAction(Matcher<String> matcher) {
+  private static ValidatedNodeConsumer checkColumnTypeAction(
+      Matcher<String> matcher) {
     return (sql1, validator, validatedNode) -> {
       final RelDataType rowType =
           validator.getValidatedNodeType(validatedNode);

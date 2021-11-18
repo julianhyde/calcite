@@ -271,10 +271,11 @@ public class RelMetadataFixture {
   }
 
   /**
-   * Returns whether {@code keys} is unique, that is, whether it or a superset
-   * is in {@code keySets}.
+   * Returns whether {@code key} is unique, that is, whether it or a subset
+   * is in {@code uniqueKeys}.
    */
-  private boolean isUnique(Set<ImmutableBitSet> uniqueKeys, ImmutableBitSet key) {
+  private static boolean isUnique(Set<ImmutableBitSet> uniqueKeys,
+      ImmutableBitSet key) {
     for (ImmutableBitSet uniqueKey : uniqueKeys) {
       if (key.contains(uniqueKey)) {
         return true;
