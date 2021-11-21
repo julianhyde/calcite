@@ -42,7 +42,7 @@ public class FixtureTest {
   /** Tests that you can write parser tests via {@link Fixtures#forParser()}. */
   @Test void testParserFixture() {
     // 'as' as identifier is invalid with Core parser
-    final SqlParserTest.Sql f = Fixtures.forParser();
+    final SqlParserTest.Fixture f = Fixtures.forParser();
     f.sql("select ^as^ from t")
         .fails("(?s)Encountered \"as\".*");
 

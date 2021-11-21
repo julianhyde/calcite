@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
  */
 class ServerParserTest extends SqlParserTest {
 
-  @Override public Sql fixture() {
+  @Override public Fixture fixture() {
     return super.fixture()
         .withConfig(c -> c.withParserFactory(SqlDdlParserImpl.FACTORY));
   }

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
  */
 class ExtensionSqlParserTest extends SqlParserTest {
 
-  @Override public Sql fixture() {
+  @Override public Fixture fixture() {
     return super.fixture()
         .withConfig(c -> c.withParserFactory(ExtensionSqlParserImpl.FACTORY));
   }

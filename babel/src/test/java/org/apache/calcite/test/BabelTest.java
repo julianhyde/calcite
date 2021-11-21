@@ -110,7 +110,7 @@ class BabelTest {
         .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
 
     // 'as' as identifier is invalid with Core parser
-    final SqlParserTest.Sql p = Fixtures.forParser();
+    final SqlParserTest.Fixture p = Fixtures.forParser();
     p.sql("select ^as^ from t")
         .fails("(?s)Encountered \"as\".*");
 

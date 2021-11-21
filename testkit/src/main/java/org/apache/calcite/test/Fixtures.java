@@ -24,7 +24,7 @@ public class Fixtures {
   private Fixtures() {}
 
   /** Creates a fixture for parser tests. */
-  public static SqlParserTest.Sql forParser() {
+  public static SqlParserTest.Fixture forParser() {
     return new SqlParserTest().fixture();
   }
 

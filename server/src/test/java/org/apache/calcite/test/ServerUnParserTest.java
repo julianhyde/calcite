@@ -23,7 +23,7 @@ package org.apache.calcite.test;
 class ServerUnParserTest extends ServerParserTest {
   //~ Methods ----------------------------------------------------------------
 
-  @Override public Sql fixture() {
+  @Override public Fixture fixture() {
     return super.fixture()
         .withTester(new UnparsingTesterImpl());
   }

@@ -93,7 +93,7 @@ import static java.util.Objects.requireNonNull;
  * {@link SqlParser the SQL parser}.
  *
  * <p>To reuse this test for an extension parser, override the
- * {@link #fixture()} method, calling {@link Sql#withConfig(UnaryOperator)}
+ * {@link #fixture()} method, calling {@link Fixture#withConfig(UnaryOperator)}
  * and then {@link Config#withParserFactory(SqlParserImplFactory)}.
  */
 public class SqlParserTest {
@@ -603,15 +603,15 @@ public class SqlParserTest {
   /** Creates the test fixture that determines the behavior of tests.
    * Sub-classes that, say, test different parser implementations should
    * override. */
-  public Sql fixture() {
-    return Sql.DEFAULT;
+  public Fixture fixture() {
+    return Fixture.DEFAULT;
   }
 
-  protected Sql sql(String sql) {
+  protected Fixture sql(String sql) {
     return fixture().sql(sql);
   }
 
-  protected Sql expr(String sql) {
+  protected Fixture expr(String sql) {
     return sql(sql).expression(true);
   }
 
@@ -2266,7 +2266,7 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickIdentifier() {
-    Sql f = sql("?")
+    Fixture f = sql("?")
         .withConfig(c -> c.withQuoting(Quoting.BACK_TICK))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2288,7 +2288,7 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickBackslashIdentifier() {
-    Sql f = sql("?")
+    Fixture f = sql("?")
         .withConfig(c -> c.withQuoting(Quoting.BACK_TICK_BACKSLASH))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2312,7 +2312,7 @@ public class SqlParserTest {
   }
 
   @Test void testBracketIdentifier() {
-    Sql f = sql("?")
+    Fixture f = sql("?")
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2381,7 +2381,7 @@ public class SqlParserTest {
     // valid on MSSQL (alias contains a single quote)
     final String sql2 = "with t as (select 1 as ^'x''y'^)\n"
         + "select [x'y] from t as [u]";
-    final Sql f2 = sql(sql2)
+    final Fixture f2 = sql(sql2)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f2.fails(expectingAlias);
@@ -2398,7 +2398,7 @@ public class SqlParserTest {
     final String sql3 = "with [t] as (select 1 as [x]) select [x] from [t]";
     final String sql3b = "WITH `t` AS (SELECT 1 AS `x`) (SELECT `x`\n"
         + "FROM `t`)";
-    final Sql f3 = sql(sql3)
+    final Fixture f3 = sql(sql3)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f3.ok(sql3b);
@@ -2412,7 +2412,7 @@ public class SqlParserTest {
     // char literal as table alias is invalid on MSSQL (and others)
     final String sql4 = "with t as (select 1 as x) select x from t as ^'u'^";
     final String sql4b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
-    final Sql f4 = sql(sql4)
+    final Fixture f4 = sql(sql4)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f4.fails(sql4b);
@@ -2426,7 +2426,7 @@ public class SqlParserTest {
     // char literal as table alias (without AS) is invalid on MSSQL (and others)
     final String sql5 = "with t as (select 1 as x) select x from t ^'u'^";
     final String sql5b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
-    final Sql f5 = sql(sql5)
+    final Fixture f5 = sql(sql5)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .withConfig(c -> c.withConformance(SqlConformanceEnum.DEFAULT));
     f5.fails(sql5b);
@@ -10049,117 +10049,108 @@ public class SqlParserTest {
 
   /** Helper class for building fluent code such as
    * {@code sql("values 1").ok();}. */
-  public static class Sql {
-    static final Sql DEFAULT =
-        new Sql(StringAndPos.of("?"), false, null, TesterImpl.DEFAULT, c -> c,
-            parser -> {
-            });
+  public static class Fixture {
+    static final Fixture DEFAULT =
+        new Fixture(StringAndPos.of("?"), false, TesterImpl.DEFAULT,
+            ImmutableConfig.of(), parser -> { });
 
     private final StringAndPos sap;
     private final boolean expression;
-    private final SqlDialect dialect;
     private final Tester tester;
-    private final UnaryOperator<Config> transform;
+    private final Config config;
     private final Consumer<SqlParser> parserChecker;
 
-    Sql(StringAndPos sap, boolean expression, SqlDialect dialect, Tester tester,
-        UnaryOperator<Config> transform, Consumer<SqlParser> parserChecker) {
+    Fixture(StringAndPos sap, boolean expression, Tester tester,
+        Config config, Consumer<SqlParser> parserChecker) {
       this.sap = requireNonNull(sap, "sap");
       this.expression = expression;
-      this.dialect = dialect;
       this.tester = requireNonNull(tester, "tester");
-      this.transform = requireNonNull(transform, "transform");
+      this.config = requireNonNull(config, "config");
       this.parserChecker = requireNonNull(parserChecker, "parserChecker");
     }
 
-    public Sql same() {
+    public Fixture same() {
       return ok(sap.sql);
     }
 
-    public Sql ok(String expected) {
+    public Fixture ok(String expected) {
       if (expression) {
-        tester.checkExp(sap, config(), expected, parserChecker);
+        tester.checkExp(sap, config, expected, parserChecker);
       } else {
-        tester.check(sap, config(), expected, parserChecker);
+        tester.check(sap, config, expected, parserChecker);
       }
       return this;
     }
 
-    public Sql fails(String expectedMsgPattern) {
+    public Fixture fails(String expectedMsgPattern) {
       if (expression) {
-        tester.checkExpFails(sap, config(), expectedMsgPattern);
+        tester.checkExpFails(sap, config, expectedMsgPattern);
       } else {
-        tester.checkFails(sap, config(), false, expectedMsgPattern);
+        tester.checkFails(sap, config, false, expectedMsgPattern);
       }
       return this;
     }
 
-    public Sql hasWarning(Consumer<List<? extends Throwable>> messageMatcher) {
-      return new Sql(sap, expression, dialect, tester, transform, parser ->
+    public Fixture hasWarning(Consumer<List<? extends Throwable>> messageMatcher) {
+      return new Fixture(sap, expression, tester, config, parser ->
           messageMatcher.accept(parser.getWarnings()));
     }
 
-    public Sql node(Matcher<SqlNode> matcher) {
-      tester.checkNode(sap, config(), matcher);
+    public Fixture node(Matcher<SqlNode> matcher) {
+      tester.checkNode(sap, config, matcher);
       return this;
     }
 
     /** Changes the SQL. */
-    public Sql sql(String sql) {
+    public Fixture sql(String sql) {
       return sql.equals(this.sap.addCarets()) ? this
-          : new Sql(StringAndPos.of(sql), expression, dialect, tester,
-              transform, parserChecker);
+          : new Fixture(StringAndPos.of(sql), expression, tester, config,
+              parserChecker);
     }
 
     /** Flags that this is an expression, not a whole query. */
-    public Sql expression() {
+    public Fixture expression() {
       return expression(true);
     }
 
     /** Sets whether this is an expression (as opposed to a whole query). */
-    public Sql expression(boolean expression) {
+    public Fixture expression(boolean expression) {
       return this.expression == expression ? this
-          : new Sql(sap, expression, dialect, tester, transform, parserChecker);
+          : new Fixture(sap, expression, tester, config, parserChecker);
     }
 
     /** Creates an instance of helper class {@link SqlList} to test parsing a
      * list of statements. */
     protected SqlList list() {
-      return new SqlList(config(), tester, sap);
+      return new SqlList(config, tester, sap);
     }
 
-    private Config config() {
-      return transform.apply(ImmutableConfig.of().withDialect(dialect));
+    public Fixture withDialect(SqlDialect dialect) {
+      return withConfig(c -> c.withDialect(dialect));
     }
 
-    public Sql withDialect(SqlDialect dialect) {
-      return new Sql(sap, expression, dialect, tester, transform, parserChecker);
+    public Fixture withTester(Tester tester) {
+      return new Fixture(sap, expression, tester, config, parserChecker);
     }
 
-    public Sql withTester(Tester tester) {
-      return new Sql(sap, expression, dialect, tester, transform, parserChecker);
-    }
-
-    public Sql withConfig(UnaryOperator<Config> transform) {
-      final UnaryOperator<Config> t0 = this.transform;
-      final UnaryOperator<Config> t1 = transform;
-      final UnaryOperator<Config> t2 = t0.andThen(t1)::apply;
-      return new Sql(sap, expression, dialect, tester, t2, parserChecker);
+    public Fixture withConfig(UnaryOperator<Config> transform) {
+      return new Fixture(sap, expression, tester, transform.apply(config),
+          parserChecker);
     }
 
     public SqlParser parser() {
       return sqlParser(new StringReader(sap.addCarets()),
-          getTransform(config()));
+          getTransform(config));
     }
 
     public SqlNode node() {
       return ((TesterImpl) tester).parseStmtAndHandleEx(sap.addCarets(),
-          getTransform(config()), parser -> { });
+          getTransform(config), parser -> { });
     }
 
     public SqlNodeList nodeList() {
       return ((TesterImpl) tester).parseStmtsAndHandleEx(sap.addCarets(),
-          getTransform(config()));
+          getTransform(config));
     }
   }
 
@@ -10221,7 +10212,7 @@ public class SqlParserTest {
   }
 
   /** Helper class for building fluent code,
-   * similar to {@link Sql}, but used to manipulate
+   * similar to {@link Fixture}, but used to manipulate
    * a list of statements, such as
    * {@code sqlList("select * from a;").ok();}. */
   protected static class SqlList {

@@ -42,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 class BabelParserTest extends SqlParserTest {
 
-  @Override public Sql fixture() {
+  @Override public Fixture fixture() {
     return super.fixture()
         .withTester(new BabelTesterImpl())
         .withConfig(c -> c.withParserFactory(SqlBabelParserImpl.FACTORY));
