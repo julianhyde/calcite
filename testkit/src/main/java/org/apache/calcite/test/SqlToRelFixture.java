@@ -37,8 +37,21 @@ import static java.util.Objects.requireNonNull;
  * Parameters for a SQL-to-RelNode test.
  */
 public class SqlToRelFixture {
-  public static final SqlToRelTestBase.Tester TESTER = createTesterStatic();
-  public static final SqlToRelFixture DEFAULT = createFixtureStatic();
+  public static final SqlToRelTestBase.Tester TESTER =
+      new SqlToRelTestBase.TesterImpl(false, false, false, true, null,
+          null, MockRelOptPlanner::new, UnaryOperator.identity(),
+          SqlConformanceEnum.DEFAULT, UnaryOperator.identity(),
+          SqlToRelTestBase.DEFAULT_TYPE_FACTORY_SUPPLIER)
+          .withConfig(c ->
+              c.withTrimUnusedFields(true)
+                  .withExpand(true)
+                  .addRelBuilderConfigTransform(b ->
+                      b.withAggregateUnique(true)
+                          .withPruneInputOfAggregate(false)));
+
+  public static final SqlToRelFixture DEFAULT =
+      new SqlToRelFixture("?", true, TESTER, false,
+          UnaryOperator.identity(), TESTER.getConformance(), false, null);
 
   private final String sql;
   private final @Nullable DiffRepository diffRepos;
@@ -65,26 +78,6 @@ public class SqlToRelFixture {
     this.config = requireNonNull(config, "config");
     this.conformance = requireNonNull(conformance, "conformance");
     this.expression = expression;
-  }
-
-  private static SqlToRelFixture createFixtureStatic() {
-    final SqlToRelTestBase.Tester tester = TESTER;
-    return new SqlToRelFixture("?", true, tester, false,
-        UnaryOperator.identity(), tester.getConformance(), false, null);
-  }
-
-  private static SqlToRelTestBase.Tester createTesterStatic() {
-    final SqlToRelTestBase.TesterImpl tester =
-        new SqlToRelTestBase.TesterImpl(false, false, false, true, null, null,
-            MockRelOptPlanner::new, UnaryOperator.identity(),
-            SqlConformanceEnum.DEFAULT, UnaryOperator.identity(),
-            SqlToRelTestBase.DEFAULT_TYPE_FACTORY_SUPPLIER);
-    return tester.withConfig(c ->
-        c.withTrimUnusedFields(true)
-            .withExpand(true)
-            .addRelBuilderConfigTransform(b ->
-                b.withAggregateUnique(true)
-                    .withPruneInputOfAggregate(false)));
   }
 
   public void ok() {

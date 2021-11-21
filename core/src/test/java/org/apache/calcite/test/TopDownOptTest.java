@@ -65,8 +65,7 @@ import java.util.function.Consumer;
  */
 class TopDownOptTest {
   Sql fixture() {
-    return new RelOptTestBase() {
-    }.fixture()
+    return Sql.DEFAULT
         .withDiffRepos(DiffRepository.lookup(TopDownOptTest.class));
   }
 

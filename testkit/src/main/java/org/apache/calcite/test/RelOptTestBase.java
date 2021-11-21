@@ -73,17 +73,10 @@ import static java.util.Objects.requireNonNull;
 abstract class RelOptTestBase {
   //~ Methods ----------------------------------------------------------------
 
-  protected Tester createTester() { // TODO override in Sql, not tester
-    return SqlToRelFixture.TESTER.withDecorrelation(false);
-  }
-
   /** Creates a fixture for a test. Derived class must override and set
    * {@link Sql#diffRepos}. */
   Sql fixture() {
-    final Tester tester = SqlToRelFixture.TESTER;
-    return new Sql(tester, null, RelSupplier.NONE, null, null,
-        ImmutableMap.of(), ImmutableList.of(), (f, r) -> r, (f, r) -> r)
-        .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
+    return Sql.DEFAULT;
   }
 
   /** Creates a fixture and sets its SQL statement. */
@@ -98,6 +91,11 @@ abstract class RelOptTestBase {
 
   /** Allows fluent testing. */
   static class Sql {
+    static final Sql DEFAULT =
+        new Sql(SqlToRelFixture.TESTER, null, RelSupplier.NONE, null, null,
+            ImmutableMap.of(), ImmutableList.of(), (f, r) -> r, (f, r) -> r)
+            .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
+
     final Tester tester;
     final RelSupplier relSupplier;
     final DiffRepository diffRepos;

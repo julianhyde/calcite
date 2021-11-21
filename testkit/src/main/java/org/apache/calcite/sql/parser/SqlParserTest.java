@@ -604,8 +604,7 @@ public class SqlParserTest {
    * Sub-classes that, say, test different parser implementations should
    * override. */
   public Sql fixture() {
-    return new Sql(StringAndPos.of("?"), false, null, new TesterImpl(),
-        c -> c, parser -> { });
+    return Sql.DEFAULT;
   }
 
   protected Sql sql(String sql) {
@@ -9700,6 +9699,8 @@ public class SqlParserTest {
    * Default implementation of {@link Tester}.
    */
   protected static class TesterImpl implements Tester {
+    static final TesterImpl DEFAULT = new TesterImpl();
+
     /** Converts a string to linux format (LF line endings rather than CR-LF),
      * except if disabled in {@link Config#isConvertToLinux()}. */
     protected String linux(Config config, String s) {
@@ -10048,7 +10049,11 @@ public class SqlParserTest {
 
   /** Helper class for building fluent code such as
    * {@code sql("values 1").ok();}. */
-  public static class Sql { // TODO restore protected
+  public static class Sql {
+    static final Sql DEFAULT =
+        new Sql(StringAndPos.of("?"), false, null, TesterImpl.DEFAULT, c -> c,
+            parser -> {});
+
     private final StringAndPos sap;
     private final boolean expression;
     private final SqlDialect dialect;

@@ -85,8 +85,7 @@ class HepPlannerTest {
   //~ Methods ----------------------------------------------------------------
 
   public Sql fixture() {
-    return new RelOptTestBase() {
-    }.fixture()
+    return Sql.DEFAULT
         .withDiffRepos(DiffRepository.lookup(HepPlannerTest.class));
   }
 
