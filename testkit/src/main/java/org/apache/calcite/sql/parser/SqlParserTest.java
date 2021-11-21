@@ -10052,7 +10052,8 @@ public class SqlParserTest {
   public static class Sql {
     static final Sql DEFAULT =
         new Sql(StringAndPos.of("?"), false, null, TesterImpl.DEFAULT, c -> c,
-            parser -> {});
+            parser -> {
+            });
 
     private final StringAndPos sap;
     private final boolean expression;
