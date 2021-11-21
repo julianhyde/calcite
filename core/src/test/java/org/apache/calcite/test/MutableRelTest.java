@@ -253,9 +253,7 @@ class MutableRelTest {
    * RelNode remains identical to the original RelNode. */
   private static void checkConvertMutableRel(
       String rel, String sql, boolean decorrelate, List<RelOptRule> rules) {
-    final SqlToRelTestBase test = new SqlToRelTestBase() {
-    };
-    RelNode origRel = test.createTester().convertSqlToRel(sql).rel;
+    RelNode origRel = SqlToRelFixture.DEFAULT.withSql(sql).toRel();
     if (decorrelate) {
       final RelBuilder relBuilder =
           RelFactories.LOGICAL_BUILDER.create(origRel.getCluster(), null);
@@ -304,9 +302,7 @@ class MutableRelTest {
   }
 
   private static MutableRel createMutableRel(String sql) {
-    final SqlToRelTestBase test = new SqlToRelTestBase() {
-    };
-    RelNode rel = test.createTester().convertSqlToRel(sql).rel;
+    RelNode rel = SqlToRelFixture.DEFAULT.withSql(sql).toRel();
     return MutableRels.toMutable(rel);
   }
 

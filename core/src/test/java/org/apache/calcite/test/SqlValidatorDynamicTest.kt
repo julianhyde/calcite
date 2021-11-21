@@ -18,7 +18,6 @@ package org.apache.calcite.test
 
 import org.apache.calcite.rel.type.RelDataTypeFactory
 import org.apache.calcite.sql.test.SqlTestFactory
-import org.apache.calcite.sql.test.SqlTester
 import org.apache.calcite.sql.test.SqlValidatorTester
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic
 import org.apache.calcite.testlib.annotations.LocaleEnUs
@@ -29,8 +28,8 @@ import org.junit.jupiter.api.Test
  * tests.
  *
  * If you want to run these same tests in a different environment, create a
- * derived class whose [getTester] returns a different implementation of
- * [SqlTester].
+ * derived class whose [fixture] returns a different implementation of
+ * [SqlValidatorTestCase.Sql].
  */
 @LocaleEnUs
 class SqlValidatorDynamicTest : SqlValidatorTestCase() {
@@ -38,14 +37,15 @@ class SqlValidatorDynamicTest : SqlValidatorTestCase() {
      * Dynamic schema should not be reused since it is mutable, so
      * we create new SqlTestFactory for each test
      */
-    override fun getTester(): SqlTester = SqlValidatorTester(SqlTestFactory.INSTANCE
-        .withCatalogReader { typeFactory: RelDataTypeFactory, caseSensitive: Boolean ->
-            MockCatalogReaderDynamic(
-                typeFactory,
-                caseSensitive
-            )
-        }
-    )
+    override fun fixture(): Sql {
+        return super.fixture()
+            .withTester { tester ->
+                SqlValidatorTester(SqlTestFactory.INSTANCE
+                    .withCatalogReader { typeFactory: RelDataTypeFactory, caseSensitive: Boolean ->
+                        MockCatalogReaderDynamic(typeFactory, caseSensitive)
+                    })
+            }
+    }
 
     /**
      * Test case for

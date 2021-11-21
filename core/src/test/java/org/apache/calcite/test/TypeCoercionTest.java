@@ -87,7 +87,6 @@ class TypeCoercionTest extends SqlValidatorTestCase {
     // sql validator tester.
     catalogReaderFactory = (factory, caseSensitive) ->
         new TCatalogReader(this.dataTypeFactory, caseSensitive).init();
-    tester = getTester();
   }
 
   //~ fields initialize ------------------------------------------------------
@@ -318,7 +317,12 @@ class TypeCoercionTest extends SqlValidatorTestCase {
     }
   }
 
-  @Override public SqlTester getTester() {
+  @Override public Sql fixture() {
+    return super.fixture()
+        .withTester(t -> createTester());
+  }
+
+  private SqlTester createTester() {
     return new SqlValidatorTester(SqlTestFactory.INSTANCE
         .withCatalogReader(getCatalogReaderFactory()));
   }
@@ -507,6 +511,7 @@ class TypeCoercionTest extends SqlValidatorTestCase {
 
   /** Test arithmetic expressions with string type arguments. */
   @Test void testArithmeticExpressionsWithStrings() {
+    Sql f = fixture();
     // for null type in binary arithmetic.
     expr("1 + null").ok();
     expr("1 - null").ok();
@@ -525,14 +530,15 @@ class TypeCoercionTest extends SqlValidatorTestCase {
     expr("select abs(t1_varchar20) from t1").ok();
     expr("select sum(t1_varchar20) from t1").ok();
     expr("select avg(t1_varchar20) from t1").ok();
-    tester.setFor(SqlStdOperatorTable.STDDEV_POP);
-    tester.setFor(SqlStdOperatorTable.STDDEV_SAMP);
+
+    fixture().tester.setFor(SqlStdOperatorTable.STDDEV_POP);
+    fixture().tester.setFor(SqlStdOperatorTable.STDDEV_SAMP);
     expr("select STDDEV_POP(t1_varchar20) from t1").ok();
     expr("select STDDEV_SAMP(t1_varchar20) from t1").ok();
     expr("select -(t1_varchar20) from t1").ok();
     expr("select +(t1_varchar20) from t1").ok();
-    tester.setFor(SqlStdOperatorTable.VAR_POP);
-    tester.setFor(SqlStdOperatorTable.VAR_SAMP);
+    f.tester.setFor(SqlStdOperatorTable.VAR_POP);
+    f.tester.setFor(SqlStdOperatorTable.VAR_SAMP);
     expr("select VAR_POP(t1_varchar20) from t1").ok();
     expr("select VAR_SAMP(t1_varchar20) from t1").ok();
     // test divide with strings

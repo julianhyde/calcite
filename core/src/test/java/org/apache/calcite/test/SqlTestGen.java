@@ -18,7 +18,6 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.SqlTestFactory;
-import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.BarfingInvocationHandler;
@@ -98,7 +97,12 @@ class SqlTestGen {
       this.pw = pw;
     }
 
-    public SqlTester getTester() {
+    @Override public Sql fixture() {
+      return super.fixture()
+          .withTester(t -> createTester());
+    }
+
+    private SqlValidatorTester createTester() {
       return new SqlValidatorTester(SPOOLER_VALIDATOR) {
         public void assertExceptionIsThrown(
             StringAndPos sap,
@@ -117,7 +121,8 @@ class SqlTestGen {
           }
         }
 
-        @Override public void validateAndThen(StringAndPos sap, ValidatedNodeConsumer consumer) {
+        @Override public void validateAndThen(StringAndPos sap,
+            ValidatedNodeConsumer consumer) {
         }
 
         @Override public void forEachQueryValidateAndThen(StringAndPos expression,

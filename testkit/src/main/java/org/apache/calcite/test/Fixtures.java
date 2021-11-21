@@ -34,9 +34,8 @@ public class Fixtures {
   }
 
   /** Creates a fixture for SQL-to-Rel tests. */
-  public static SqlToRelTestBase.Sql forSqlToRel() {
-    return new SqlToRelTestBase() {
-    }.fixture();
+  public static SqlToRelFixture forSqlToRel() {
+    return SqlToRelFixture.DEFAULT;
   }
 
   /** Creates a fixture for rule tests. */

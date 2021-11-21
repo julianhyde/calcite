@@ -25,6 +25,10 @@ import java.util.function.UnaryOperator;
  */
 public class SqlValidatorTester extends AbstractSqlTester {
 
+  /** Default instance of this tester. */
+  public static final SqlValidatorTester DEFAULT =
+      new SqlValidatorTester(SqlTestFactory.INSTANCE);
+
   public SqlValidatorTester(SqlTestFactory factory) {
     this(factory, UnaryOperator.identity());
   }

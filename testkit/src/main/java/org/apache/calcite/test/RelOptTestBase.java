@@ -74,14 +74,13 @@ abstract class RelOptTestBase {
   //~ Methods ----------------------------------------------------------------
 
   protected Tester createTester() { // TODO override in Sql, not tester
-    return new SqlToRelTestBase() {
-    }.tester.withDecorrelation(false);
+    return SqlToRelFixture.TESTER.withDecorrelation(false);
   }
 
   /** Creates a fixture for a test. Derived class must override and set
    * {@link Sql#diffRepos}. */
   Sql fixture() {
-    final Tester tester = createTester();
+    final Tester tester = SqlToRelFixture.TESTER;
     return new Sql(tester, null, RelSupplier.NONE, null, null,
         ImmutableMap.of(), ImmutableList.of(), (f, r) -> r, (f, r) -> r)
         .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));

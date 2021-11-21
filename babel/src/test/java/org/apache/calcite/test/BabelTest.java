@@ -102,11 +102,11 @@ class BabelTest {
   /** Tests that you can run tests via {@link Fixtures}. */
   @Test void testFixtures() {
     final SqlValidatorTestCase.Sql v = Fixtures.forValidator();
-    v.sql("select ^1 + date '2002-03-04'^")
+    v.withSql("select ^1 + date '2002-03-04'^")
         .fails("(?s).*Cannot apply '\\+' to arguments of"
             + " type '<INTEGER> \\+ <DATE>'.*");
 
-    v.sql("select 1 + 2 as three")
+    v.withSql("select 1 + 2 as three")
         .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
 
     // 'as' as identifier is invalid with Core parser

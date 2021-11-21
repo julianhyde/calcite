@@ -66,22 +66,22 @@ public class FixtureTest {
    * {@link Fixtures#forValidator()}. */
   @Test void testValidatorFixture() {
     final SqlValidatorTestCase.Sql f = Fixtures.forValidator();
-    f.sql("select ^1 + date '2002-03-04'^")
+    f.withSql("select ^1 + date '2002-03-04'^")
         .fails("(?s).*Cannot apply '\\+' to arguments of"
             + " type '<INTEGER> \\+ <DATE>'.*");
 
-    f.sql("select 1 + 2 as three")
+    f.withSql("select 1 + 2 as three")
         .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
   }
 
   /** Tests that you can run SQL-to-Rel tests via
    * {@link Fixtures#forSqlToRel()}. */
   @Test void testSqlToRelFixture() {
-    final SqlToRelTestBase.Sql f =
+    final SqlToRelFixture f =
         Fixtures.forSqlToRel()
             .withDiffRepos(DiffRepository.lookup(FixtureTest.class));
     final String sql = "select 1 from emp";
-    f.sql(sql).ok();
+    f.withSql(sql).ok();
   }
 
   /** Tests that we get a good error message if a test needs a diff repository.
@@ -89,9 +89,9 @@ public class FixtureTest {
    * @see DiffRepository#castNonNull(DiffRepository) */
   @Test void testSqlToRelFixtureNeedsDiffRepos() {
     try {
-      final SqlToRelTestBase.Sql f = Fixtures.forSqlToRel();
+      final SqlToRelFixture f = Fixtures.forSqlToRel();
       final String sql = "select 1 from emp";
-      f.sql(sql).ok();
+      f.withSql(sql).ok();
       throw new AssertionError("expected error");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is(DIFF_REPOS_MESSAGE));
@@ -132,13 +132,13 @@ public class FixtureTest {
   /** Tests metadata. */
   @Test void testMetadata() {
     final RelMetadataFixture f = Fixtures.forMetadata();
-    f.sql("select name as dname from dept")
-          .checkSingleColumnOrigin("DEPT", "NAME", false);
-    f.sql("select upper(name) as dname from dept")
-        .checkSingleColumnOrigin("DEPT", "NAME", true);
-    f.sql("select name||ename from dept,emp")
-        .checkTwoColumnOrigin("DEPT", "NAME", "EMP", "ENAME", true);
-    f.sql("select 'Minstrelsy' as dname from dept")
-        .checkNoColumnOrigin();
+    f.withSql("select name as dname from dept")
+          .assertColumnOriginSingle("DEPT", "NAME", false);
+    f.withSql("select upper(name) as dname from dept")
+        .assertColumnOriginSingle("DEPT", "NAME", true);
+    f.withSql("select name||ename from dept,emp")
+        .assertColumnOriginDouble("DEPT", "NAME", "EMP", "ENAME", true);
+    f.withSql("select 'Minstrelsy' as dname from dept")
+        .assertColumnOriginIsEmpty();
   }
 }

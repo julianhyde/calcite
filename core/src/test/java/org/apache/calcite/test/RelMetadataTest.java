@@ -187,7 +187,7 @@ public class RelMetadataTest {
   }
 
   final RelMetadataFixture sql(String sql) {
-    return fixture().sql(sql);
+    return fixture().withSql(sql);
   }
 
   private static Matcher<Double> isAlmost(double value) {
@@ -200,18 +200,18 @@ public class RelMetadataTest {
 
   @Test void testPercentageOriginalRowsTableOnly() {
     sql("select * from dept")
-        .checkPercentageOriginalRows(isAlmost(1.0));
+        .assertPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Test void testPercentageOriginalRowsAgg() {
     sql("select deptno from dept group by deptno")
-        .checkPercentageOriginalRows(isAlmost(1.0));
+        .assertPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsOneFilter() {
     sql("select * from dept where deptno = 20")
-        .checkPercentageOriginalRows(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
+        .assertPercentageOriginalRows(isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Disabled
@@ -219,7 +219,7 @@ public class RelMetadataTest {
     sql("select * from (\n"
         + "  select * from dept where name='X')\n"
         + "where deptno = 20")
-        .checkPercentageOriginalRows(
+        .assertPercentageOriginalRows(
             isAlmost(DEFAULT_EQUAL_SELECTIVITY_SQUARED));
   }
 
@@ -228,13 +228,13 @@ public class RelMetadataTest {
     sql("select * from (\n"
         + "  select * from dept where deptno=20)\n"
         + "where deptno = 20")
-        .checkPercentageOriginalRows(
+        .assertPercentageOriginalRows(
             isAlmost(DEFAULT_EQUAL_SELECTIVITY));
   }
 
   @Test void testPercentageOriginalRowsJoin() {
     sql("select * from emp inner join dept on emp.deptno=dept.deptno")
-        .checkPercentageOriginalRows(isAlmost(1.0));
+        .assertPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Disabled
@@ -243,20 +243,20 @@ public class RelMetadataTest {
         + "  select * from emp where deptno=10) e\n"
         + "inner join (select * from dept where deptno=10) d\n"
         + "on e.deptno=d.deptno")
-        .checkPercentageOriginalRows(
+        .assertPercentageOriginalRows(
             isAlmost(DEFAULT_EQUAL_SELECTIVITY_SQUARED));
   }
 
   @Test void testPercentageOriginalRowsUnionNoFilter() {
     sql("select name from dept union all select ename from emp")
-        .checkPercentageOriginalRows(isAlmost(1.0));
+        .assertPercentageOriginalRows(isAlmost(1.0));
   }
 
   @Disabled
   @Test void testPercentageOriginalRowsUnionLittleFilter() {
     sql("select name from dept where deptno=20"
         + " union all select ename from emp")
-        .checkPercentageOriginalRows(
+        .assertPercentageOriginalRows(
             isAlmost(((DEPT_SIZE * DEFAULT_EQUAL_SELECTIVITY) + EMP_SIZE)
                 / (DEPT_SIZE + EMP_SIZE)));
   }
@@ -265,7 +265,7 @@ public class RelMetadataTest {
   @Test void testPercentageOriginalRowsUnionBigFilter() {
     sql("select name from dept"
         + " union all select ename from emp where deptno=20")
-        .checkPercentageOriginalRows(
+        .assertPercentageOriginalRows(
             isAlmost(((EMP_SIZE * DEFAULT_EQUAL_SELECTIVITY) + DEPT_SIZE)
                 / (DEPT_SIZE + EMP_SIZE)));
   }
@@ -307,84 +307,84 @@ public class RelMetadataTest {
 
   @Test void testColumnOriginsTableOnly() {
     sql("select name as dname from dept")
-        .checkSingleColumnOrigin("DEPT", "NAME", false);
+        .assertColumnOriginSingle("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsExpression() {
     sql("select upper(name) as dname from dept")
-        .checkSingleColumnOrigin("DEPT", "NAME", true);
+        .assertColumnOriginSingle("DEPT", "NAME", true);
   }
 
   @Test void testColumnOriginsDyadicExpression() {
     sql("select name||ename from dept,emp")
-        .checkTwoColumnOrigin("DEPT", "NAME", "EMP", "ENAME", true);
+        .assertColumnOriginDouble("DEPT", "NAME", "EMP", "ENAME", true);
   }
 
   @Test void testColumnOriginsConstant() {
     sql("select 'Minstrelsy' as dname from dept")
-        .checkNoColumnOrigin();
+        .assertColumnOriginIsEmpty();
   }
 
   @Test void testColumnOriginsFilter() {
     sql("select name as dname from dept where deptno=10")
-        .checkSingleColumnOrigin("DEPT", "NAME", false);
+        .assertColumnOriginSingle("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsJoinLeft() {
     sql("select ename from emp,dept")
-        .checkSingleColumnOrigin("EMP", "ENAME", false);
+        .assertColumnOriginSingle("EMP", "ENAME", false);
   }
 
   @Test void testColumnOriginsJoinRight() {
     sql("select name as dname from emp,dept")
-        .checkSingleColumnOrigin("DEPT", "NAME", false);
+        .assertColumnOriginSingle("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsJoinOuter() {
     sql("select name as dname from emp left outer join dept"
         + " on emp.deptno = dept.deptno")
-        .checkSingleColumnOrigin("DEPT", "NAME", true);
+        .assertColumnOriginSingle("DEPT", "NAME", true);
   }
 
   @Test void testColumnOriginsJoinFullOuter() {
     sql("select name as dname from emp full outer join dept"
         + " on emp.deptno = dept.deptno")
-        .checkSingleColumnOrigin("DEPT", "NAME", true);
+        .assertColumnOriginSingle("DEPT", "NAME", true);
   }
 
   @Test void testColumnOriginsAggKey() {
     sql("select name,count(deptno) from dept group by name")
-        .checkSingleColumnOrigin("DEPT", "NAME", false);
+        .assertColumnOriginSingle("DEPT", "NAME", false);
   }
 
   @Test void testColumnOriginsAggReduced() {
     sql("select count(deptno),name from dept group by name")
-        .checkNoColumnOrigin();
+        .assertColumnOriginIsEmpty();
   }
 
   @Test void testColumnOriginsAggCountNullable() {
     sql("select count(mgr),ename from emp group by ename")
-        .checkSingleColumnOrigin("EMP", "MGR", true);
+        .assertColumnOriginSingle("EMP", "MGR", true);
   }
 
   @Test void testColumnOriginsAggCountStar() {
     sql("select count(*),name from dept group by name")
-        .checkNoColumnOrigin();
+        .assertColumnOriginIsEmpty();
   }
 
   @Test void testColumnOriginsValues() {
     sql("values(1,2,3)")
-        .checkNoColumnOrigin();
+        .assertColumnOriginIsEmpty();
   }
 
   @Test void testColumnOriginsUnion() {
     sql("select name from dept union all select ename from emp")
-        .checkTwoColumnOrigin("DEPT", "NAME", "EMP", "ENAME", false);
+        .assertColumnOriginDouble("DEPT", "NAME", "EMP", "ENAME", false);
   }
 
   @Test void testColumnOriginsSelfUnion() {
     sql("select ename from emp union all select ename from emp")
-        .checkSingleColumnOrigin("EMP", "ENAME", false);
+        .assertColumnOriginSingle("EMP", "ENAME", false);
   }
 
   /** Test case for

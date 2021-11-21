@@ -68,7 +68,6 @@ import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.test.catalog.MockCatalogReader;
-import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -78,8 +77,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -88,7 +85,6 @@ import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.test.Matchers.relIsValid;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -115,42 +111,22 @@ public abstract class SqlToRelTestBase {
 
   //~ Instance fields --------------------------------------------------------
 
-  protected final Tester tester = createTester();
-
   //~ Methods ----------------------------------------------------------------
 
   /** Creates the test fixture that determines the behavior of tests.
    * Sub-classes that, say, test different parser implementations should
    * override. */
-  public Sql fixture() {
-    return new Sql("?", true, tester, false, UnaryOperator.identity(),
-        tester.getConformance(), false, null);
+  public SqlToRelFixture fixture() {
+    return SqlToRelFixture.DEFAULT;
   }
 
   /** Sets the SQL statement for a test. */
-  public final Sql sql(String sql) {
-    return fixture().expression(false).sql(sql);
+  public final SqlToRelFixture sql(String sql) {
+    return fixture().expression(false).withSql(sql);
   }
 
-  public final Sql expr(String sql) {
-    return fixture().expression(true).sql(sql);
-  }
-
-  protected Tester createTester() {
-    return createTesterStatic();
-  }
-
-  protected static Tester createTesterStatic() {
-    final TesterImpl tester =
-        new TesterImpl(false, false, false, true, null, null,
-            MockRelOptPlanner::new, UnaryOperator.identity(),
-            SqlConformanceEnum.DEFAULT, UnaryOperator.identity(), DEFAULT_TYPE_FACTORY_SUPPLIER);
-    return tester.withConfig(c ->
-        c.withTrimUnusedFields(true)
-            .withExpand(true)
-            .addRelBuilderConfigTransform(b ->
-                b.withAggregateUnique(true)
-                    .withPruneInputOfAggregate(false)));
+  public final SqlToRelFixture expr(String sql) {
+    return fixture().expression(true).withSql(sql);
   }
 
   /**
@@ -1104,123 +1080,4 @@ public abstract class SqlToRelTestBase {
     }
   }
 
-  /** Allows fluent testing. */
-  public static class Sql {
-    private final String sql;
-    private final @Nullable DiffRepository diffRepos;
-    private final boolean decorrelate;
-    private final Tester tester;
-    private final boolean trim;
-    private final UnaryOperator<SqlToRelConverter.Config> config;
-    private final SqlConformance conformance;
-    private final boolean expression;
-
-    Sql(String sql, boolean decorrelate, Tester tester, boolean trim,
-        UnaryOperator<SqlToRelConverter.Config> config,
-        SqlConformance conformance, boolean expression,
-        @Nullable DiffRepository diffRepos) {
-      this.sql = requireNonNull(sql, "sql");
-      this.diffRepos = diffRepos;
-      if (sql.contains(" \n")) {
-        throw new AssertionError("trailing whitespace");
-      }
-      this.decorrelate = decorrelate;
-      this.tester = requireNonNull(tester, "tester");
-      this.trim = trim;
-      this.config = requireNonNull(config, "config");
-      this.conformance = requireNonNull(conformance, "conformance");
-      this.expression = expression;
-    }
-
-    public void ok() {
-      convertsTo("${plan}");
-    }
-
-    public void throws_(String message) {
-      try {
-        ok();
-      } catch (Throwable throwable) {
-        assertThat(TestUtil.printStackTrace(throwable), containsString(message));
-      }
-    }
-
-    public void convertsTo(String plan) {
-      tester.withDecorrelation(decorrelate)
-          .withConformance(conformance)
-          .withConfig(config)
-          .withConfig(c -> c.withTrimUnusedFields(true))
-          .assertConvertsTo(diffRepos(), sql, plan, trim, expression);
-    }
-
-    private DiffRepository diffRepos() {
-      return DiffRepository.castNonNull(diffRepos);
-    }
-
-    public Sql sql(String sql) {
-      return sql.equals(this.sql) ? this
-          : new Sql(sql, decorrelate, tester, trim, config, conformance,
-              expression, diffRepos);
-    }
-
-    /** Sets whether this is an expression (as opposed to a whole query). */
-    public Sql expression(boolean expression) {
-      return this.expression == expression ? this
-          : new Sql(sql, decorrelate, tester, trim, config, conformance,
-              expression, diffRepos);
-    }
-
-    public Sql withConfig(UnaryOperator<SqlToRelConverter.Config> config) {
-      final UnaryOperator<SqlToRelConverter.Config> config2 =
-          this.config.andThen(requireNonNull(config, "config"))::apply;
-      return new Sql(sql, decorrelate, tester, trim, config2, conformance,
-          expression, diffRepos);
-    }
-
-    public Sql expand(boolean expand) {
-      return withConfig(b -> b.withExpand(expand));
-    }
-
-    public Sql decorrelate(boolean decorrelate) {
-      return new Sql(sql, decorrelate, tester, trim, config, conformance,
-          expression, diffRepos);
-    }
-
-    public Sql with(Tester tester) {
-      return new Sql(sql, decorrelate, tester, trim, config, conformance,
-          expression, diffRepos);
-    }
-
-    // TODO: change the config, not the tester
-    public Sql with(UnaryOperator<Tester> testerTransform) {
-      return with(testerTransform.apply(tester));
-    }
-
-    public Sql trim(boolean trim) {
-      return new Sql(sql, decorrelate, tester, trim, config, conformance,
-          expression, diffRepos);
-    }
-
-    public Sql conformance(SqlConformance conformance) {
-      return new Sql(sql, decorrelate, tester, trim, config, conformance,
-          expression, diffRepos);
-    }
-
-    public Sql withDiffRepos(DiffRepository diffRepos) {
-      return new Sql(sql, decorrelate, tester, trim, config, conformance,
-          expression, diffRepos);
-    }
-
-    public Sql withDynamicTable() {
-      return with(t ->
-          t.withCatalogReaderFactory(MockCatalogReaderDynamic::new));
-    }
-
-    public RelRoot toRoot() {
-      return tester.convertSqlToRel(sql);
-    }
-
-    public RelNode toRel() {
-      return toRoot().rel;
-    }
-  }
 }

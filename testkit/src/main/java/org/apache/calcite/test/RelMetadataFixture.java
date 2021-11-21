@@ -47,11 +47,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,8 +64,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Parameters for a Metadata test.
  */
 public class RelMetadataFixture {
+  /** Default fixture.
+   *
+   * <p>Use this, or call the {@code withXxx} methods to make one with the
+   * properties you need. Fixtures are immutable, so whatever your test does
+   * to this fixture, it won't break other tests. */
   public static final RelMetadataFixture DEFAULT =
-      new RelMetadataFixture(SqlToRelTestBase.createTesterStatic(),
+      new RelMetadataFixture(SqlToRelFixture.TESTER,
           RelSupplier.NONE, false, true, r -> r);
 
   private final SqlToRelTestBase.Tester tester;
@@ -82,13 +89,20 @@ public class RelMetadataFixture {
     this.relTransform = relTransform;
   }
 
-  public RelMetadataFixture sql(String sql) {
+  //~ 'With' methods ---------------------------------------------------------
+  // Each method returns a copy of this fixture, changing the value of one
+  // property.
+
+  /** Creates a copy of this fixture that uses a given SQL query. */
+  public RelMetadataFixture withSql(String sql) {
     final RelSupplier relSupplier = RelSupplier.of(sql);
     return relSupplier.equals(this.relSupplier) ? this
         : new RelMetadataFixture(tester, relSupplier, convertAsCalc,
             typeCoercion, relTransform);
   }
 
+  /** Creates a copy of this fixture that uses a given function to create a
+   * {@link RelNode}. */
   public RelMetadataFixture withRelFn(Function<RelBuilder, RelNode> relFn) {
     final RelSupplier relSupplier = RelSupplier.of(relFn);
     return relSupplier.equals(this.relSupplier) ? this
@@ -130,6 +144,37 @@ public class RelMetadataFixture {
         typeCoercion, relTransform1);
   }
 
+  //~ Helper methods ---------------------------------------------------------
+  // Don't use them too much. Write an assertXxx method if possible.
+
+  /** Only for use by RelSupplier. Must be package-private. */
+  RelNode sqlToRel(String sql) {
+    return tester.enableTypeCoercion(typeCoercion)
+        .convertSqlToRel(sql).rel;
+  }
+
+  /** Creates a {@link RelNode} from this fixture's supplier
+   * (see {@link #withSql(String)} and {@link #withRelFn(Function)}). */
+  public RelNode toRel() {
+    final RelNode rel = relSupplier.apply2(this);
+    if (convertAsCalc) {
+      Project project = (Project) rel;
+      RexProgram program = RexProgram.create(
+          project.getInput().getRowType(),
+          project.getProjects(),
+          null,
+          project.getRowType(),
+          project.getCluster().getRexBuilder());
+      return LogicalCalc.create(project.getInput(), program);
+    }
+    return relTransform.apply(rel);
+  }
+
+  //~ Methods that execute tests ---------------------------------------------
+
+  /** Checks the CPU component of
+   * {@link RelNode#computeSelfCost(RelOptPlanner, RelMetadataQuery)}. */
+  @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertCpuCost(Matcher<Double> matcher,
       String reason) {
     RelNode rel = toRel();
@@ -147,72 +192,59 @@ public class RelMetadataFixture {
     return rel.computeSelfCost(planner, mq);
   }
 
+  /** Checks {@link RelMetadataQuery#areRowsUnique(RelNode)} for all
+   * values of {@code ignoreNulls}. */
+  @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertRowsUnique(Matcher<Boolean> matcher,
       String reason) {
-    return assertRowsUnique(new boolean[]{false, true}, matcher, reason);
+    return assertRowsUnique(false, matcher, reason)
+        .assertRowsUnique(true, matcher, reason);
   }
 
+  /** Checks {@link RelMetadataQuery#areRowsUnique(RelNode)}. */
   public RelMetadataFixture assertRowsUnique(boolean ignoreNulls,
-      Matcher<Boolean> matcher, String reason) {
-    return assertRowsUnique(new boolean[]{ignoreNulls}, matcher, reason);
-  }
-
-  RelMetadataFixture assertRowsUnique(boolean[] ignoreNulls,
       Matcher<Boolean> matcher, String reason) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    for (boolean ignoreNull : ignoreNulls) {
-      Boolean rowsUnique = mq.areRowsUnique(rel, ignoreNull);
-      assertThat(reason + "\n"
-              + "sql:" + relSupplier + "\n"
-              + "plan:" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES),
-          rowsUnique, matcher);
-    }
+    Boolean rowsUnique = mq.areRowsUnique(rel, ignoreNulls);
+    assertThat(reason + "\n"
+            + "sql:" + relSupplier + "\n"
+            + "plan:" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES),
+        rowsUnique, matcher);
     return this;
   }
 
-  /** Only for use by RelSupplier. Must be package-private. */
-  RelNode sqlToRel(String sql) {
-    return tester.enableTypeCoercion(typeCoercion)
-        .convertSqlToRel(sql).rel;
-  }
-
-  public RelNode toRel() {
-    final RelNode rel = relSupplier.apply2(this);
-    if (convertAsCalc) {
-      Project project = (Project) rel;
-      RexProgram program = RexProgram.create(
-          project.getInput().getRowType(),
-          project.getProjects(),
-          null,
-          project.getRowType(),
-          project.getCluster().getRexBuilder());
-      return LogicalCalc.create(project.getInput(), program);
-    }
-    return relTransform.apply(rel);
-  }
-
-  public void checkPercentageOriginalRows(Matcher<Double> matcher) {
+  /** Checks {@link RelMetadataQuery#getPercentageOriginalRows(RelNode)}. */
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertPercentageOriginalRows(Matcher<Double> matcher) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Double result = mq.getPercentageOriginalRows(rel);
     assertNotNull(result);
     assertThat(result, matcher);
+    return this;
   }
 
-  private Set<RelColumnOrigin> checkColumnOrigin() {
+  private RelMetadataFixture checkColumnOrigin(
+      Consumer<Set<RelColumnOrigin>> action) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    return mq.getColumnOrigins(rel, 0);
+    final Set<RelColumnOrigin> columnOrigins = mq.getColumnOrigins(rel, 0);
+    action.accept(columnOrigins);
+    return this;
   }
 
-  public void checkNoColumnOrigin() {
-    Set<RelColumnOrigin> result = checkColumnOrigin();
-    assertNotNull(result);
-    assertTrue(result.isEmpty());
+  /** Checks that {@link RelMetadataQuery#getColumnOrigins(RelNode, int)}
+   * for column 0 returns no origins. */
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertColumnOriginIsEmpty() {
+    return checkColumnOrigin(result -> {
+      assertNotNull(result);
+      assertTrue(result.isEmpty());
+    });
   }
 
-  public static void checkColumnOrigin(
+  private static void checkColumnOrigin(
       RelColumnOrigin rco,
       String expectedTableName,
       String expectedColumnName,
@@ -231,50 +263,51 @@ public class RelMetadataFixture {
     assertThat(rco.isDerived(), equalTo(expectedDerived));
   }
 
-  public void checkSingleColumnOrigin(String expectedTableName,
+  /** Checks that {@link RelMetadataQuery#getColumnOrigins(RelNode, int)}
+   * for column 0 returns one origin. */
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertColumnOriginSingle(String expectedTableName,
       String expectedColumnName, boolean expectedDerived) {
-    Set<RelColumnOrigin> result = checkColumnOrigin();
-    assertNotNull(result);
-    assertThat(result.size(), is(1));
-    RelColumnOrigin rco = result.iterator().next();
-    checkColumnOrigin(
-        rco, expectedTableName, expectedColumnName, expectedDerived);
+    return checkColumnOrigin(result -> {
+      assertNotNull(result);
+      assertThat(result.size(), is(1));
+      RelColumnOrigin rco = result.iterator().next();
+      checkColumnOrigin(rco, expectedTableName, expectedColumnName,
+          expectedDerived);
+    });
   }
 
-  // WARNING:  this requires the two table names to be different
-  public void checkTwoColumnOrigin(
-      String expectedTableName1,
-      String expectedColumnName1,
-      String expectedTableName2,
-      String expectedColumnName2,
+  /** Checks that {@link RelMetadataQuery#getColumnOrigins(RelNode, int)}
+   * for column 0 returns two origins. */
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertColumnOriginDouble(
+      String expectedTableName1, String expectedColumnName1,
+      String expectedTableName2, String expectedColumnName2,
       boolean expectedDerived) {
-    Set<RelColumnOrigin> result = checkColumnOrigin();
-    assertNotNull(result);
-    assertThat(result.size(), is(2));
-    for (RelColumnOrigin rco : result) {
-      RelOptTable actualTable = rco.getOriginTable();
-      List<String> actualTableName = actualTable.getQualifiedName();
-      String actualUnqualifiedName = Iterables.getLast(actualTableName);
-      if (actualUnqualifiedName.equals(expectedTableName1)) {
-        checkColumnOrigin(
-            rco,
-            expectedTableName1,
-            expectedColumnName1,
-            expectedDerived);
-      } else {
-        checkColumnOrigin(
-            rco,
-            expectedTableName2,
-            expectedColumnName2,
-            expectedDerived);
+    assertThat("required so that the test mechanism works", expectedTableName1,
+        not(is(expectedTableName2)));
+    return checkColumnOrigin(result -> {
+      assertNotNull(result);
+      assertThat(result.size(), is(2));
+      for (RelColumnOrigin rco : result) {
+        RelOptTable actualTable = rco.getOriginTable();
+        List<String> actualTableName = actualTable.getQualifiedName();
+        String actualUnqualifiedName = Iterables.getLast(actualTableName);
+        if (actualUnqualifiedName.equals(expectedTableName1)) {
+          checkColumnOrigin(rco, expectedTableName1, expectedColumnName1,
+              expectedDerived);
+        } else {
+          checkColumnOrigin(rco, expectedTableName2, expectedColumnName2,
+              expectedDerived);
+        }
       }
-    }
+    });
   }
 
-  /**
-   * Checks result of getting unique keys for sql.
-   */
-  public void assertThatUniqueKeysAre(ImmutableBitSet... expectedUniqueKeys) {
+  /** Checks result of getting unique keys for SQL. */
+  @SuppressWarnings({"UnusedReturnValue"})
+  public RelMetadataFixture assertThatUniqueKeysAre(
+      ImmutableBitSet... expectedUniqueKeys) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     Set<ImmutableBitSet> result = mq.getUniqueKeys(rel);
@@ -282,7 +315,8 @@ public class RelMetadataFixture {
     assertEquals(ImmutableSortedSet.copyOf(expectedUniqueKeys),
         ImmutableSortedSet.copyOf(result),
         () -> "unique keys, sql: " + relSupplier + ", rel: " + RelOptUtil.toString(rel));
-    assertUniqueConsistent(rel);
+    checkUniqueConsistent(rel);
+    return this;
   }
 
   /**
@@ -290,9 +324,10 @@ public class RelMetadataFixture {
    * and {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
    * return consistent results.
    */
-  public void assertUniqueConsistent(RelNode rel) {
+  private void checkUniqueConsistent(RelNode rel) {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel);
+    assertThat(uniqueKeys, notNullValue());
     final ImmutableBitSet allCols =
         ImmutableBitSet.range(0, rel.getRowType().getFieldCount());
     for (ImmutableBitSet key : allCols.powerSet()) {
@@ -320,6 +355,7 @@ public class RelMetadataFixture {
   /** Checks {@link RelMetadataQuery#getRowCount(RelNode)},
    * {@link RelMetadataQuery#getMaxRowCount(RelNode)},
    * and {@link RelMetadataQuery#getMinRowCount(RelNode)}. */
+  @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertThatRowCount(Matcher<Number> rowCountMatcher,
       Matcher<Number> minRowCountMatcher, Matcher<Number> maxRowCountMatcher) {
     final RelNode rel = toRel();
@@ -380,7 +416,7 @@ public class RelMetadataFixture {
 
   /** Shorthand for a call to {@link #assertThatNodeTypeCount(Matcher)}
    * with a constant map. */
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"rawtypes", "unchecked", "UnusedReturnValue"})
   public RelMetadataFixture assertThatNodeTypeCountIs(
       Class<? extends RelNode> k0, Integer v0, Object... rest) {
     final ImmutableMap.Builder<Class<? extends RelNode>, Integer> b =
@@ -440,6 +476,7 @@ public class RelMetadataFixture {
   }
 
   /** Checks {@link RelMetadataQuery#areRowsUnique(RelNode)}. */
+  @SuppressWarnings({"UnusedReturnValue"})
   public RelMetadataFixture assertThatAreRowsUnique(Matcher<Boolean> matcher) {
     RelNode rel = toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();

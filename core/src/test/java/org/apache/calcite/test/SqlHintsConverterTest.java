@@ -91,8 +91,7 @@ import static java.util.Objects.requireNonNull;
 class SqlHintsConverterTest {
 
   public Sql fixture() {
-    Tester tester = new SqlToRelTestBase() {
-    }.createTester()
+    Tester tester = SqlToRelFixture.TESTER
         .withConfig(c ->
             c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
     return new Sql(tester, "?",

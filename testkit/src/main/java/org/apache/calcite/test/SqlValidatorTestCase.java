@@ -42,7 +42,6 @@ import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
-import org.apache.calcite.testlib.annotations.WithLex;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
@@ -50,9 +49,6 @@ import com.google.common.base.Preconditions;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.platform.commons.support.AnnotationSupport;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -69,13 +65,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * An abstract base class for implementing tests against {@link SqlValidator}.
  *
- * <p>A derived class can refine this test in two ways. First, it can add <code>
- * testXxx()</code> methods, to test more functionality.
+ * <p>A derived class can refine this test in two ways. First, it can add
+ * {@code testXxx()} methods, to test more functionality.
  *
- * <p>Second, it can override the {@link #getTester} method to return a
- * different implementation of the {@link Tester} object. This encapsulates the
+ * <p>Second, it can override the {@link #fixture()} method to return a
+ * different implementation of the {@link Sql} object. This encapsulates the
  * differences between test environments, for example, which SQL parser or
- * validator to use.</p>
+ * validator to use.
  */
 public class SqlValidatorTestCase {
   private static final SqlTestFactory EXTENDED_TEST_FACTORY =
@@ -92,38 +88,26 @@ public class SqlValidatorTestCase {
       new SqlValidatorTester(EXTENDED_TEST_FACTORY)
           .withConformance(SqlConformanceEnum.LENIENT);
 
-  protected SqlTester tester;
-
-  /**
-   * Creates a test case.
-   */
+  /** Creates a test case. */
   public SqlValidatorTestCase() {
-    this.tester = getTester();
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  /**
-   * Returns a tester. Derived classes should override this method to run the
-   * same set of tests in a different testing environment.
-   */
-  public SqlTester getTester() {
-    return new SqlValidatorTester(SqlTestFactory.INSTANCE);
-  }
-
-  /** Creates a test fixture. */
-  public final Sql fixture() {
-    return new Sql(tester, StringAndPos.of("?"), true, false);
+  /** Creates a test fixture. Derived classes can override this method to
+   * run the same set of tests in a different testing environment. */
+  public Sql fixture() {
+    return Sql.DEFAULT;
   }
 
   /** Creates a test context with a SQL query. */
   public final Sql sql(String sql) {
-    return fixture().sql(sql);
+    return fixture().withSql(sql);
   }
 
   /** Creates a test context with a SQL expression. */
   public final Sql expr(String sql) {
-    return fixture().expr(sql);
+    return fixture().withExpr(sql);
   }
 
   /** Creates a test context with a SQL expression.
@@ -231,11 +215,14 @@ public class SqlValidatorTestCase {
   }
 
   /** Fluent testing API. */
-  static class Sql {
-    private final SqlTester tester;
-    private final StringAndPos sap;
-    private final boolean query;
-    private final boolean whole;
+  public static class Sql {
+    public static final Sql DEFAULT =
+        new Sql(SqlValidatorTester.DEFAULT, StringAndPos.of("?"), true, false);
+
+    public final SqlTester tester;
+    public final StringAndPos sap;
+    public final boolean query;
+    public final boolean whole;
 
     /** Creates a Sql.
      *
@@ -245,7 +232,7 @@ public class SqlValidatorTestCase {
      * @param whole Whether the failure location is the whole query or
      *              expression
      */
-    Sql(SqlTester tester, StringAndPos sap, boolean query,
+    protected Sql(SqlTester tester, StringAndPos sap, boolean query,
         boolean whole) {
       this.tester = tester;
       this.query = query;
@@ -253,15 +240,15 @@ public class SqlValidatorTestCase {
       this.whole = whole;
     }
 
-    Sql withTester(UnaryOperator<SqlTester> transform) {
+    public Sql withTester(UnaryOperator<SqlTester> transform) {
       return new Sql(transform.apply(tester), sap, query, whole);
     }
 
-    public Sql sql(String sql) {
+    public Sql withSql(String sql) {
       return new Sql(tester, StringAndPos.of(sql), true, false);
     }
 
-    public Sql expr(String sql) {
+    public Sql withExpr(String sql) {
       return new Sql(tester, StringAndPos.of(sql), false, false);
     }
 
@@ -270,7 +257,7 @@ public class SqlValidatorTestCase {
           : StringAndPos.of(AbstractSqlTester.buildQuery(sap.addCarets()));
     }
 
-    Sql withExtendedCatalog() {
+    public Sql withExtendedCatalog() {
       return withTester(tester -> EXTENDED_CATALOG_TESTER);
     }
 
@@ -278,11 +265,11 @@ public class SqlValidatorTestCase {
       return withTester(tester -> tester.withQuoting(quoting));
     }
 
-    Sql withLex(Lex lex) {
+    public Sql withLex(Lex lex) {
       return withTester(tester -> tester.withLex(lex));
     }
 
-    Sql withConformance(SqlConformance conformance) {
+    public Sql withConformance(SqlConformance conformance) {
       return withTester(tester -> tester.withConformance(conformance));
     }
 
@@ -532,24 +519,4 @@ public class SqlValidatorTestCase {
     }
   }
 
-  /**
-   * Enables to configure {@link #tester} behavior on a per-test basis.
-   * {@code tester} object is created in the test object constructor, and
-   * there's no trivial way to override its features.
-   *
-   * <p>This JUnit rule enables post-process test object on a per test method
-   * basis.
-   */
-  public static class LexConfiguration implements BeforeEachCallback {
-    @Override public void beforeEach(ExtensionContext context) {
-      context.getElement()
-          .flatMap(element -> AnnotationSupport.findAnnotation(element, WithLex.class))
-          .ifPresent(lex -> {
-            SqlValidatorTestCase tc = (SqlValidatorTestCase) context.getTestInstance().get();
-            SqlTester tester = tc.tester;
-            tester = tester.withLex(lex.value());
-            tc.tester = tester;
-          });
-    }
-  }
 }

@@ -27,13 +27,16 @@ import org.junit.jupiter.api.Test;
  */
 class TypeCoercionConverterTest extends SqlToRelTestBase {
 
-  @Override public Sql fixture() {
-    return super.fixture()
-        .withDiffRepos(DiffRepository.lookup(TypeCoercionConverterTest.class))
-        .with(t ->
-            t.withCatalogReaderFactory(
-                new TypeCoercionTest().getCatalogReaderFactory()))
-        .decorrelate(false);
+  protected static final SqlToRelFixture FIXTURE =
+      SqlToRelFixture.DEFAULT
+          .withDiffRepos(DiffRepository.lookup(TypeCoercionConverterTest.class))
+          .with(t ->
+              t.withCatalogReaderFactory(
+                  new TypeCoercionTest().getCatalogReaderFactory()))
+          .withDecorrelate(false);
+
+  @Override public SqlToRelFixture fixture() {
+    return FIXTURE;
   }
 
   /** Test case for {@link TypeCoercion#commonTypeForBinaryComparison}. */
