@@ -2440,19 +2440,19 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "from (select * from emp order by sal limit 3) a\n"
         + "where a.EMPNO > 10 group by 2";
     RelNode afterTrim = sql(sql)
+        .withDecorrelate(false)
         .with(t ->
             // Create a customized test with RelCollation trait in the test
             // cluster.
-            t.withDecorrelation(false)
-                .withPlannerFactory(context ->
-                    new MockRelOptPlanner(Contexts.empty()) {
-                      @Override public List<RelTraitDef> getRelTraitDefs() {
-                        return ImmutableList.of(RelCollationTraitDef.INSTANCE);
-                      }
-                      @Override public RelTraitSet emptyTraitSet() {
-                        return RelTraitSet.createEmpty().plus(
-                            RelCollationTraitDef.INSTANCE.getDefault());
-                      }
+            t.withPlannerFactory(context ->
+                new MockRelOptPlanner(Contexts.empty()) {
+                  @Override public List<RelTraitDef> getRelTraitDefs() {
+                    return ImmutableList.of(RelCollationTraitDef.INSTANCE);
+                  }
+                  @Override public RelTraitSet emptyTraitSet() {
+                    return RelTraitSet.createEmpty().plus(
+                        RelCollationTraitDef.INSTANCE.getDefault());
+                  }
                 }))
         .toRel();
 
@@ -3835,8 +3835,9 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     CalciteConnectionConfigImpl connectionConfig =
         new CalciteConnectionConfigImpl(properties);
     sql(sql)
+        .withDecorrelate(false)
         .with(t ->
-            t.withDecorrelation(false).withTrim(false).withContext(c ->
+            t.withTrim(false).withContext(c ->
                 Contexts.of(connectionConfig, c)))
         .ok();
   }

@@ -93,7 +93,7 @@ abstract class RelOptTestBase {
   static class Sql {
     static final Sql DEFAULT =
         new Sql(SqlToRelFixture.TESTER, null, RelSupplier.NONE, null, null,
-            ImmutableMap.of(), ImmutableList.of(), (f, r) -> r, (f, r) -> r)
+            ImmutableMap.of(), ImmutableList.of(), (f, r) -> r, (f, r) -> r, false)
             .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
 
     final Tester tester;
@@ -105,13 +105,14 @@ abstract class RelOptTestBase {
     final ImmutableList<Function<Tester, Tester>> transforms;
     final BiFunction<Sql, RelNode, RelNode> before;
     final BiFunction<Sql, RelNode, RelNode> after;
+    final boolean decorrelate;
 
     Sql(Tester tester, @Nullable DiffRepository diffRepos,
         RelSupplier relSupplier, HepProgram preProgram, RelOptPlanner planner,
         ImmutableMap<Hook, Consumer<Object>> hooks,
         ImmutableList<Function<Tester, Tester>> transforms,
         BiFunction<Sql, RelNode, RelNode> before,
-        BiFunction<Sql, RelNode, RelNode> after) {
+        BiFunction<Sql, RelNode, RelNode> after, boolean decorrelate) {
       this.tester = requireNonNull(tester, "tester");
       this.diffRepos = diffRepos;
       this.relSupplier = requireNonNull(relSupplier, "relSupplier");
@@ -121,17 +122,18 @@ abstract class RelOptTestBase {
       this.planner = planner;
       this.hooks = requireNonNull(hooks, "hooks");
       this.transforms = requireNonNull(transforms, "transforms");
+      this.decorrelate = decorrelate;
     }
 
     public Sql withDiffRepos(DiffRepository diffRepos) {
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after);
+          transforms, before, after, decorrelate);
     }
 
     public Sql withRelSupplier(RelSupplier relSupplier) {
       return relSupplier.equals(this.relSupplier) ? this
           : new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-              transforms, before, after);
+              transforms, before, after, decorrelate);
     }
 
     public Sql sql(String sql) {
@@ -147,7 +149,7 @@ abstract class RelOptTestBase {
       final BiFunction<Sql, RelNode, RelNode> before2 =
           (sql, r) -> before.apply(this, before0.apply(this, r));
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before2, after);
+          transforms, before2, after, decorrelate);
     }
 
     public Sql withAfter(BiFunction<Sql, RelNode, RelNode> after) {
@@ -155,7 +157,7 @@ abstract class RelOptTestBase {
       final BiFunction<Sql, RelNode, RelNode> after2 =
           (sql, r) -> after.apply(this, after0.apply(this, r));
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after2);
+          transforms, before, after2, decorrelate);
     }
 
     public Sql withDynamicTable() {
@@ -166,12 +168,12 @@ abstract class RelOptTestBase {
     public Sql withTester(UnaryOperator<Tester> transform) { // TODO dont transform tester
       final Tester tester2 = transform.apply(tester);
       return new Sql(tester2, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after);
+          transforms, before, after, decorrelate);
     }
 
     public Sql withPre(HepProgram preProgram) {
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after);
+          transforms, before, after, decorrelate);
     }
 
     public Sql withPreRule(RelOptRule... rules) {
@@ -184,7 +186,7 @@ abstract class RelOptTestBase {
 
     public Sql with(RelOptPlanner planner) {
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after);
+          transforms, before, after, decorrelate);
     }
 
     public Sql with(HepProgram program) {
@@ -205,7 +207,7 @@ abstract class RelOptTestBase {
       final ImmutableList<Function<Tester, Tester>> transforms =
           FlatLists.append(this.transforms, transform);
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after);
+          transforms, before, after, decorrelate);
     }
 
     /** Adds a hook and a handler for that hook. Calcite will create a thread
@@ -216,7 +218,7 @@ abstract class RelOptTestBase {
       final ImmutableMap<Hook, Consumer<Object>> hooks =
           FlatLists.append((Map) this.hooks, hook, (Consumer) handler);
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          transforms, before, after);
+          transforms, before, after, decorrelate);
     }
 
     // CHECKSTYLE: IGNORE 1
@@ -249,8 +251,9 @@ abstract class RelOptTestBase {
       return withTransform(tester -> tester.withLateDecorrelation(b));
     }
 
-    public Sql withDecorrelation(final boolean b) {
-      return withTransform(tester -> tester.withDecorrelation(b));
+    public Sql withDecorrelation(final boolean decorrelate) {
+      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
+          transforms, before, after, decorrelate);
     }
 
     public Sql withTrim(final boolean b) {

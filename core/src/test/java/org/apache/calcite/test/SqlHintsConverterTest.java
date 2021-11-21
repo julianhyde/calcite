@@ -95,7 +95,7 @@ class SqlHintsConverterTest {
         .withConfig(c ->
             c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
     return new Sql(tester, "?",
-        DiffRepository.lookup(SqlHintsConverterTest.class));
+        DiffRepository.lookup(SqlHintsConverterTest.class), false);
   }
 
   public static RelOptTestBase.Sql ruleFixture() {
@@ -167,7 +167,7 @@ class SqlHintsConverterTest {
         + "where e1.deptno = d1.deptno\n"
         + "and e1.sal> (\n"
         + "select /*+ resource(cpu='2') */ avg(e2.sal) from emp e2 where e2.deptno = d1.deptno)";
-    sql(sql).withTester(t -> t.withDecorrelation(true)).ok();
+    sql(sql).withDecorrelate(true).ok();
   }
 
   @Test void testHintsInSubQueryWithDecorrelation2() {
@@ -179,7 +179,7 @@ class SqlHintsConverterTest {
         + "  avg(e2.sal)\n"
         + "  from emp e2\n"
         + "  where e2.deptno = d1.deptno)";
-    sql(sql).withTester(t -> t.withDecorrelation(true)).ok();
+    sql(sql).withDecorrelate(true).ok();
   }
 
   @Test void testHintsInSubQueryWithDecorrelation3() {
@@ -191,7 +191,7 @@ class SqlHintsConverterTest {
         + "  avg(e2.sal)\n"
         + "  from emp e2\n"
         + "  where e2.deptno = d1.deptno)";
-    sql(sql).withTester(t -> t.withDecorrelation(true)).ok();
+    sql(sql).withDecorrelate(true).ok();
   }
 
   @Test void testHintsInSubQueryWithoutDecorrelation() {
@@ -594,21 +594,27 @@ class SqlHintsConverterTest {
     private final DiffRepository diffRepos;
     private final Tester tester;
     private final List<String> hintsCollect = new ArrayList<>();
+    private final boolean decorrelate;
 
-    Sql(Tester tester, String sql, DiffRepository diffRepos) {
+    Sql(Tester tester, String sql, DiffRepository diffRepos, boolean decorrelate) {
       this.tester = requireNonNull(tester, "tester");
       this.sql = requireNonNull(sql, "sql");
       this.diffRepos = requireNonNull(diffRepos, "diffRepos");
+      this.decorrelate = decorrelate;
     }
 
     Sql sql(String sql) {
-      return new Sql(tester, sql, diffRepos);
+      return new Sql(tester, sql, diffRepos, decorrelate);
     }
 
     /** Creates a new Sql instance with new tester
      * applied with the {@code transform}. */
     Sql withTester(UnaryOperator<Tester> transform) {
-      return new Sql(transform.apply(tester), sql, diffRepos);
+      return new Sql(transform.apply(tester), sql, diffRepos, decorrelate);
+    }
+
+    public Sql withDecorrelate(boolean decorrelate) {
+      return new Sql(tester, sql, diffRepos, decorrelate);
     }
 
     void ok() {
@@ -620,7 +626,9 @@ class SqlHintsConverterTest {
         String hint) {
       diffRepos.assertEquals("sql", "${sql}", sql);
       String sql2 = diffRepos.expand("sql", sql);
-      final RelNode rel = tester.convertSqlToRel(sql2).project();
+      final RelNode rel =
+          tester.convertSqlToRel(sql2, decorrelate)
+              .project();
 
       assertNotNull(rel);
       assertThat(rel, relIsValid());
@@ -636,7 +644,7 @@ class SqlHintsConverterTest {
 
     void fails(String failedMsg) {
       try {
-        tester.convertSqlToRel(sql);
+        tester.convertSqlToRel(sql, decorrelate);
         fail("Unexpected exception");
       } catch (AssertionError e) {
         assertThat(e.getMessage(), is(failedMsg));
@@ -648,7 +656,7 @@ class SqlHintsConverterTest {
       MockLogger logger = new MockLogger();
       logger.addAppender(appender);
       try {
-        tester.convertSqlToRel(sql);
+        tester.convertSqlToRel(sql, decorrelate);
       } finally {
         logger.removeAppender(appender);
       }
@@ -661,7 +669,7 @@ class SqlHintsConverterTest {
     }
 
     public RelNode toRel() {
-      return tester.convertSqlToRel(sql).rel;
+      return tester.convertSqlToRel(sql, decorrelate).rel;
     }
 
     /** A shuttle to collect all the hints within the relational expression into a collection. */

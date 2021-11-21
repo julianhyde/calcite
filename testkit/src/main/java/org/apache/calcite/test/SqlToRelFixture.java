@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlToRelFixture {
   public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl(false, false, false, true, null,
+      new SqlToRelTestBase.TesterImpl(false, false, true, null,
           null, MockRelOptPlanner::new, UnaryOperator.identity(),
           SqlConformanceEnum.DEFAULT, UnaryOperator.identity(),
           SqlToRelTestBase.DEFAULT_TYPE_FACTORY_SUPPLIER)
@@ -93,11 +93,10 @@ public class SqlToRelFixture {
   }
 
   public void convertsTo(String plan) {
-    tester.withDecorrelation(decorrelate)
-        .withConformance(conformance)
+    tester.withConformance(conformance)
         .withConfig(config)
         .withConfig(c -> c.withTrimUnusedFields(true))
-        .assertConvertsTo(diffRepos(), sql, plan, trim, expression);
+        .assertConvertsTo(diffRepos(), sql, plan, trim, expression, decorrelate);
   }
 
   public DiffRepository diffRepos() {
@@ -170,11 +169,11 @@ public class SqlToRelFixture {
   }
 
   public RelRoot toRoot() {
-    return tester.withDecorrelation(decorrelate)
+    return tester
         .withConformance(conformance)
         .withConfig(config)
         .withConfig(c -> c.withTrimUnusedFields(true))
-        .convertSqlToRel(sql);
+        .convertSqlToRel(sql, decorrelate);
   }
 
   public RelNode toRel() {
