@@ -170,7 +170,11 @@ public class SqlToRelFixture {
   }
 
   public RelRoot toRoot() {
-    return tester.convertSqlToRel(sql);
+    return tester.withDecorrelation(decorrelate)
+        .withConformance(conformance)
+        .withConfig(config)
+        .withConfig(c -> c.withTrimUnusedFields(true))
+        .convertSqlToRel(sql);
   }
 
   public RelNode toRel() {

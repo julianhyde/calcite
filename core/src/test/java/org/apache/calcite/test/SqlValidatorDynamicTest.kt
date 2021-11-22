@@ -39,7 +39,7 @@ class SqlValidatorDynamicTest : SqlValidatorTestCase() {
      */
     override fun fixture(): Sql {
         return super.fixture()
-            .withTester { tester ->
+            .withTester {
                 SqlValidatorTester(SqlTestFactory.INSTANCE
                     .withCatalogReader { typeFactory: RelDataTypeFactory, caseSensitive: Boolean ->
                         MockCatalogReaderDynamic(typeFactory, caseSensitive)
