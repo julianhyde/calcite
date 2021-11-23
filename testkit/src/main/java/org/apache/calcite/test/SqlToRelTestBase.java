@@ -159,7 +159,8 @@ public abstract class SqlToRelTestBase {
      * Converts a SQL string to a {@link RelNode} tree.
      *
      * @param sql SQL statement
-     * @param trim
+     * @param trim Whether to trim
+     * @param decorrelate Whether to decorrelate
      * @return Relational expression, never null
      */
     RelRoot convertSqlToRel(String sql, boolean decorrelate, boolean trim);
