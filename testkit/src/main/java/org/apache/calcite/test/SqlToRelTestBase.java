@@ -159,9 +159,10 @@ public abstract class SqlToRelTestBase {
      * Converts a SQL string to a {@link RelNode} tree.
      *
      * @param sql SQL statement
+     * @param trim
      * @return Relational expression, never null
      */
-    RelRoot convertSqlToRel(String sql, boolean decorrelate);
+    RelRoot convertSqlToRel(String sql, boolean decorrelate, boolean trim);
 
     /**
      * Converts an expression string to  {@link RexNode}.
@@ -263,9 +264,6 @@ public abstract class SqlToRelTestBase {
 
     Tester withCatalogReaderFactory(
         SqlTestFactory.MockCatalogReaderFactory factory);
-
-    /** Returns a tester that optionally trims unused fields. */
-    Tester withTrim(boolean enable);
 
     Tester withClusterFactory(Function<RelOptCluster, RelOptCluster> function);
 
@@ -553,7 +551,6 @@ public abstract class SqlToRelTestBase {
     private RelOptPlanner planner;
     private SqlOperatorTable opTab;
     private final boolean enableLateDecorrelate;
-    private final boolean enableTrim;
     private final boolean enableTypeCoercion;
     private final Function<Context, RelOptPlanner> plannerFactory;
     private final SqlConformance conformance;
@@ -566,7 +563,7 @@ public abstract class SqlToRelTestBase {
 
     /** Creates a TesterImpl with default options. */
     protected TesterImpl() {
-      this(true, false, true, null, null, MockRelOptPlanner::new,
+      this(false, true, null, null, MockRelOptPlanner::new,
           UnaryOperator.identity(), SqlConformanceEnum.DEFAULT,
           c -> Contexts.empty(), DEFAULT_TYPE_FACTORY_SUPPLIER);
     }
@@ -574,11 +571,10 @@ public abstract class SqlToRelTestBase {
     /**
      * Creates a TesterImpl.
      *
-     * @param enableTrim Whether to trim unused fields
      * @param catalogReaderFactory Function to create catalog reader, or null
      * @param clusterFactory Called after a cluster has been created
      */
-    protected TesterImpl(boolean enableTrim, boolean enableLateDecorrelate,
+    protected TesterImpl(boolean enableLateDecorrelate,
         boolean enableTypeCoercion,
         SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
         Function<RelOptCluster, RelOptCluster> clusterFactory,
@@ -586,13 +582,13 @@ public abstract class SqlToRelTestBase {
         UnaryOperator<SqlToRelConverter.Config> configTransform,
         SqlConformance conformance, UnaryOperator<Context> contextTransform,
         Supplier<RelDataTypeFactory> typeFactorySupplier) {
-      this(enableTrim, enableLateDecorrelate,
+      this(enableLateDecorrelate,
           enableTypeCoercion, catalogReaderFactory, clusterFactory, plannerFactory,
           configTransform, conformance, contextTransform,  typeFactorySupplier,
           transform -> transform);
     }
 
-    protected TesterImpl(boolean enableTrim, boolean enableLateDecorrelate,
+    protected TesterImpl(boolean enableLateDecorrelate,
         boolean enableTypeCoercion,
         SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
         Function<RelOptCluster, RelOptCluster> clusterFactory,
@@ -601,7 +597,6 @@ public abstract class SqlToRelTestBase {
         SqlConformance conformance, UnaryOperator<Context> contextTransform,
         Supplier<RelDataTypeFactory> typeFactorySupplier,
         UnaryOperator<SqlValidator> validatorTransform) {
-      this.enableTrim = enableTrim;
       this.enableLateDecorrelate = enableLateDecorrelate;
       this.enableTypeCoercion = enableTypeCoercion;
       this.catalogReaderFactory = catalogReaderFactory;
@@ -614,7 +609,8 @@ public abstract class SqlToRelTestBase {
       this.validatorTransform = requireNonNull(validatorTransform, "validatorTransform");
     }
 
-    @Override public RelRoot convertSqlToRel(String sql, boolean decorrelate) {
+    @Override public RelRoot convertSqlToRel(String sql, boolean decorrelate,
+        boolean trim) {
       requireNonNull(sql, "sql");
       final SqlNode sqlQuery;
       try {
@@ -636,13 +632,13 @@ public abstract class SqlToRelTestBase {
       RelRoot root =
           converter.convertQuery(validatedQuery, false, true);
       assert root != null;
-      if (decorrelate || enableTrim) {
+      if (decorrelate || trim) {
         root = root.withRel(converter.flattenTypes(root.rel, true));
       }
       if (decorrelate) {
         root = root.withRel(converter.decorrelate(sqlQuery, root.rel));
       }
-      if (enableTrim) {
+      if (trim) {
         root = root.withRel(converter.trimUnusedFields(true, root.rel));
       }
       return root;
@@ -832,7 +828,7 @@ public abstract class SqlToRelTestBase {
         boolean trim,
         boolean decorrelate) {
       String sql2 = diffRepos.expand("sql", sql);
-      RelNode rel = convertSqlToRel(sql2, decorrelate).project();
+      RelNode rel = convertSqlToRel(sql2, decorrelate, trim).project();
 
       assertNotNull(rel);
       assertThat(rel, relIsValid());
@@ -896,7 +892,7 @@ public abstract class SqlToRelTestBase {
     @Override public TesterImpl withLateDecorrelation(boolean enableLateDecorrelate) {
       return this.enableLateDecorrelate == enableLateDecorrelate
           ? this
-          : new TesterImpl(enableTrim,
+          : new TesterImpl(
               enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
               clusterFactory, plannerFactory, configTransform, conformance,
               contextTransform, typeFactorySupplier);
@@ -905,24 +901,16 @@ public abstract class SqlToRelTestBase {
     @Override public Tester withConfig(UnaryOperator<SqlToRelConverter.Config> transform) {
       final UnaryOperator<SqlToRelConverter.Config> configTransform =
           this.configTransform.andThen(transform)::apply;
-      return new TesterImpl(enableTrim,
+      return new TesterImpl(
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,
           contextTransform, typeFactorySupplier);
     }
 
-    @Override public TesterImpl withTrim(boolean enableTrim) {
-      return this.enableTrim == enableTrim ? this
-          : new TesterImpl(enableTrim,
-              enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
-              clusterFactory, plannerFactory, configTransform, conformance,
-              contextTransform, typeFactorySupplier);
-    }
-
     @Override public TesterImpl withConformance(SqlConformance conformance) {
       return conformance.equals(this.conformance)
           ? this
-          : new TesterImpl(enableTrim,
+          : new TesterImpl(
               enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
               clusterFactory, plannerFactory, configTransform, conformance,
               contextTransform, typeFactorySupplier);
@@ -931,7 +919,7 @@ public abstract class SqlToRelTestBase {
     @Override public Tester enableTypeCoercion(boolean enableTypeCoercion) {
       return enableTypeCoercion == this.enableTypeCoercion
           ? this
-          : new TesterImpl(enableTrim,
+          : new TesterImpl(
               enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
               clusterFactory, plannerFactory, configTransform, conformance,
               contextTransform, typeFactorySupplier);
@@ -939,7 +927,7 @@ public abstract class SqlToRelTestBase {
 
     @Override public Tester withCatalogReaderFactory(
         SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory) {
-      return new TesterImpl(enableTrim,
+      return new TesterImpl(
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,
           contextTransform, typeFactorySupplier);
@@ -947,7 +935,7 @@ public abstract class SqlToRelTestBase {
 
     @Override public Tester withClusterFactory(
         Function<RelOptCluster, RelOptCluster> clusterFactory) {
-      return new TesterImpl(enableTrim,
+      return new TesterImpl(
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,
           contextTransform, typeFactorySupplier);
@@ -957,7 +945,7 @@ public abstract class SqlToRelTestBase {
         Function<Context, RelOptPlanner> plannerFactory) {
       return this.plannerFactory == plannerFactory
           ? this
-          : new TesterImpl(enableTrim,
+          : new TesterImpl(
               enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
               clusterFactory, plannerFactory, configTransform, conformance,
               contextTransform, typeFactorySupplier);
@@ -967,14 +955,14 @@ public abstract class SqlToRelTestBase {
         Supplier<RelDataTypeFactory> typeFactorySupplier) {
       return this.typeFactorySupplier == typeFactorySupplier
           ? this
-          : new TesterImpl(enableTrim,
+          : new TesterImpl(
               enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
               clusterFactory, plannerFactory, configTransform, conformance,
               contextTransform, typeFactorySupplier);
     }
 
     @Override public TesterImpl withContext(UnaryOperator<Context> context) {
-      return new TesterImpl(enableTrim,
+      return new TesterImpl(
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,
           context, typeFactorySupplier);
@@ -986,7 +974,7 @@ public abstract class SqlToRelTestBase {
 
     @Override public Tester withValidatorTransform(
         UnaryOperator<SqlValidator> transform) {
-      return new TesterImpl(enableTrim,
+      return new TesterImpl(
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,
           contextTransform, typeFactorySupplier, transform);

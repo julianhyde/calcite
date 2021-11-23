@@ -3836,8 +3836,9 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         new CalciteConnectionConfigImpl(properties);
     sql(sql)
         .withDecorrelate(false)
+        .withTrim(false)
         .with(t ->
-            t.withTrim(false).withContext(c ->
+            t.withContext(c ->
                 Contexts.of(connectionConfig, c)))
         .ok();
   }

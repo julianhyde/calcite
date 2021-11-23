@@ -150,7 +150,7 @@ public class RelMetadataFixture {
   /** Only for use by RelSupplier. Must be package-private. */
   RelNode sqlToRel(String sql) {
     return tester.enableTypeCoercion(typeCoercion)
-        .convertSqlToRel(sql, false).rel;
+        .convertSqlToRel(sql, false, false).rel;
   }
 
   /** Creates a {@link RelNode} from this fixture's supplier

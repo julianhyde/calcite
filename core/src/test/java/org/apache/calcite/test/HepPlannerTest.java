@@ -338,7 +338,7 @@ class HepPlannerTest {
         + "(select n_name from CUSTOMER_MODIFIABLEVIEW)";
     sql(query)
         .withDynamicTable()
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .with(programBuilder.build())
         .with(planner)
         .checkUnchanged();

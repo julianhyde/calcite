@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlToRelFixture {
   public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl(false, false, true, null,
+      new SqlToRelTestBase.TesterImpl(false, true, null,
           null, MockRelOptPlanner::new, UnaryOperator.identity(),
           SqlConformanceEnum.DEFAULT, UnaryOperator.identity(),
           SqlToRelTestBase.DEFAULT_TYPE_FACTORY_SUPPLIER)
@@ -173,7 +173,7 @@ public class SqlToRelFixture {
         .withConformance(conformance)
         .withConfig(config)
         .withConfig(c -> c.withTrimUnusedFields(true))
-        .convertSqlToRel(sql, decorrelate);
+        .convertSqlToRel(sql, decorrelate, trim);
   }
 
   public RelNode toRel() {

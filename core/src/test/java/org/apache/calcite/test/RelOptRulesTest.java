@@ -384,7 +384,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "from dept left join emp on dept.deptno = emp.deptno\n"
         + "where emp.deptno is not null and emp.sal > 100";
     sql(sql)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .withPreRule(CoreRules.PROJECT_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE)
@@ -960,7 +960,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "order by mgr limit 10 offset 5";
     final Sql fixture = sql(sql)
         .withVolcanoPlanner(false)
-        .withDecorrelation(true);
+        .withDecorrelate(true);
     RelNode rel = fixture.toRel();
 
     String planBefore = NL + RelOptUtil.toString(rel);
@@ -995,7 +995,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  where emp.deptno = dept.deptno\n"
         + "  and emp.sal > 100)";
     sql(sql)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(true))
         .withPreRule(CoreRules.FILTER_PROJECT_TRANSPOSE,
@@ -1010,7 +1010,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select distinct deptno from emp\n"
         + "  where sal > 100) using (deptno)";
     sql(sql)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .withPreRule(CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_INTO_JOIN,
@@ -1031,7 +1031,7 @@ class RelOptRulesTest extends RelOptTestBase {
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.PROJECT_MERGE)
         .withRule(CoreRules.PROJECT_TO_SEMI_JOIN)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .checkUnchanged();
   }
@@ -1046,7 +1046,7 @@ class RelOptRulesTest extends RelOptTestBase {
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.PROJECT_MERGE)
         .withRule(CoreRules.PROJECT_TO_SEMI_JOIN)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .checkUnchanged();
   }
@@ -1061,7 +1061,7 @@ class RelOptRulesTest extends RelOptTestBase {
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.PROJECT_MERGE)
         .withRule(CoreRules.PROJECT_TO_SEMI_JOIN)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .check();
   }
@@ -1075,7 +1075,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "    select emp.deptno from emp))R\n"
         + "where R.deptno <=10";
     sql(sql)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(false)
         .withPreRule(CoreRules.PROJECT_TO_SEMI_JOIN)
         .withRule(CoreRules.FILTER_PROJECT_TRANSPOSE,
@@ -1094,7 +1094,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "where e1.deptno in (\n"
         + "  select e2.deptno from emp e2 where e2.sal = 100)";
     sql(sql)
-        .withDecorrelation(false)
+        .withDecorrelate(false)
         .withTrim(true)
         .withPreRule(CoreRules.PROJECT_TO_SEMI_JOIN)
         .withRule(CoreRules.JOIN_REDUCE_EXPRESSIONS)
@@ -1120,7 +1120,7 @@ class RelOptRulesTest extends RelOptTestBase {
             .build();
 
     sql(sql)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withPre(program)
         .withRule() // empty program
         .withAfter((fixture, r) -> fixture.tester().trimRelNode(r))
@@ -1637,7 +1637,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "FROM emp e1 "
         + "where exists (select empno, deptno from dept d2 where e1.deptno = d2.deptno)";
     sql(sql)
-        .withDecorrelation(false)
+        .withDecorrelate(false)
         .expand(true)
         .withRule(CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.PROJECT_FILTER_TRANSPOSE,
@@ -1745,7 +1745,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "    FROM dept) AS d\n"
         + "  WHERE e.deptno = d.twiceDeptno)";
     sql(sql)
-        .withDecorrelation(false)
+        .withDecorrelate(false)
         .expand(true)
         .withRule(CoreRules.FILTER_PROJECT_TRANSPOSE)
         .checkUnchanged();
@@ -1774,7 +1774,7 @@ class RelOptRulesTest extends RelOptTestBase {
             .withCopyProject(true)
             .toRule();
     sql(sql)
-        .withDecorrelation(false)
+        .withDecorrelate(false)
         .expand(true)
         .withRule(filterProjectTransposeRule)
         .check();
@@ -3959,7 +3959,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "and e1.deptno < 10 and d1.deptno < 15\n"
         + "and e1.sal > (select avg(sal) from emp e2 where e1.empno = e2.empno)";
     sql(sql)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withTrim(true)
         .expand(true)
         .withPreRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS,
@@ -4482,7 +4482,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select n2.SAL\n"
         + "  from EMPNULLABLES_20 n2\n"
         + "  where n1.SAL = n2.SAL or n1.SAL = 4)";
-    sql(sql).withDecorrelation(true)
+    sql(sql).withDecorrelate(true)
         .withRule(CoreRules.FILTER_INTO_JOIN,
             CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES)
@@ -4497,7 +4497,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "join sales.emp e on e.deptno = d.deptno and d.deptno not in (4, 6)";
     sql(sql)
         .withProperty(Hook.REL_BUILDER_SIMPLIFY, false)
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withRule(CoreRules.FILTER_INTO_JOIN,
             CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES)
@@ -5782,7 +5782,7 @@ class RelOptRulesTest extends RelOptTestBase {
     sql(sql)
         .withVolcanoPlanner(false)
         .withDynamicTable()
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .withAfter((fixture, r) -> {
           RelTraitSet toTraits =
               r.getCluster().traitSet()
@@ -5814,7 +5814,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testFlattenUncorrelatedCallBelowEquals() {
     final String sql = "select * from emp e1 where exists ("
         + "select * from emp e2 where e1.deptno = (e2.deptno+30))";
-    sql(sql).withDecorrelation(false)
+    sql(sql).withDecorrelate(false)
         .withRule(FilterFlattenCorrelatedConditionRule.Config.DEFAULT.toRule())
         .check();
   }
@@ -5822,7 +5822,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testCallOverCorrelationVariableIsNotFlattened() {
     final String sql = "select * from emp e1 where exists ("
         + "select * from emp e2 where (e1.deptno+30) = e2.deptno)";
-    sql(sql).withDecorrelation(false)
+    sql(sql).withDecorrelate(false)
         .withRule(FilterFlattenCorrelatedConditionRule.Config.DEFAULT.toRule())
         .checkUnchanged();
   }
@@ -5830,7 +5830,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testFlattenUncorrelatedTwoLevelCallBelowEqualsSucceeds() {
     final String sql = "select * from emp e1 where exists ("
         + "select * from emp e2 where e1.deptno = (2 * e2.deptno+30))";
-    sql(sql).withDecorrelation(false)
+    sql(sql).withDecorrelate(false)
         .withRule(FilterFlattenCorrelatedConditionRule.Config.DEFAULT.toRule())
         .check();
   }
@@ -5838,7 +5838,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testUncorrelatedCallBelowNonComparisonOpIsNotFlattened() {
     final String sql = "select * from emp e1 where exists ("
         + "select * from emp e2 where (e1.deptno + (e2.deptno+30)) > 0)";
-    sql(sql).withDecorrelation(false)
+    sql(sql).withDecorrelate(false)
         .withRule(FilterFlattenCorrelatedConditionRule.Config.DEFAULT.toRule())
         .checkUnchanged();
   }
@@ -5846,7 +5846,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testUncorrelatedCallInConjunctionIsFlattenedOnlyIfSiblingOfCorrelation() {
     final String sql = "select * from emp e1 where exists ("
         + "select * from emp e2 where (e2.empno+50) < 20 and e1.deptno >= (30+e2.deptno))";
-    sql(sql).withDecorrelation(false)
+    sql(sql).withDecorrelate(false)
         .withRule(FilterFlattenCorrelatedConditionRule.Config.DEFAULT.toRule())
         .check();
   }
@@ -6599,7 +6599,7 @@ class RelOptRulesTest extends RelOptTestBase {
 
     sql(sql)
         .withRule() // empty program
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .checkUnchanged();
   }
 
@@ -6629,7 +6629,7 @@ class RelOptRulesTest extends RelOptTestBase {
           p.addRule(EnumerableRules.ENUMERABLE_CALC_RULE);
         })
         .withDynamicTable()
-        .withDecorrelation(true)
+        .withDecorrelate(true)
         .check();
   }
 
