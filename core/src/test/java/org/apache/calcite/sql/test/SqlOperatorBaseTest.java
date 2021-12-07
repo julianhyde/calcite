@@ -49,7 +49,6 @@ import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlString;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -333,14 +332,6 @@ public abstract class SqlOperatorBaseTest {
   @BeforeEach
   public void setUp() throws Exception {
     fixture.setFor(null);
-  }
-
-  protected SqlFixture libraryTester(SqlLibrary library) { // TODO inline
-    return fixture.withLibrary(library);
-  }
-
-  protected SqlFixture oracleTester(SqlConformance conformance) { // TODO inline
-    return fixture.forOracle(conformance);
   }
 
   /** Creates a tester with special sql library. */
@@ -3946,7 +3937,7 @@ public abstract class SqlOperatorBaseTest {
     fixture.checkFails("^'a' not ilike 'b'^", noNotLike, false);
     fixture.checkFails("^'a' not ilike 'b' escape 'c'^", noNotLike, false);
 
-    final SqlFixture f = libraryTester(SqlLibrary.POSTGRESQL);
+    final SqlFixture f = fixture.withLibrary(SqlLibrary.POSTGRESQL);
     f.checkBoolean("''  ilike ''", true);
     f.checkBoolean("'a' ilike 'a'", true);
     f.checkBoolean("'a' ilike 'b'", false);
@@ -3990,7 +3981,7 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testIlikeDot() {
     fixture.setFor(SqlLibraryOperators.ILIKE, VmName.EXPAND);
-    final SqlFixture f = libraryTester(SqlLibrary.POSTGRESQL);
+    final SqlFixture f = fixture.withLibrary(SqlLibrary.POSTGRESQL);
     f.checkBoolean("'abc' ilike 'a.c'", false);
     f.checkBoolean("'abcde' ilike '%c.e'", false);
     f.checkBoolean("'abc.e' ilike '%c.e'", true);
@@ -7028,14 +7019,14 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testRtrimFunc() {
     fixture.setFor(SqlLibraryOperators.RTRIM, VmName.EXPAND);
-    final SqlFixture f = libraryTester(SqlLibrary.ORACLE);
+    final SqlFixture f = fixture.withLibrary(SqlLibrary.ORACLE);
     f.checkString("rtrim(' aAa  ')", " aAa", "VARCHAR(6) NOT NULL");
     f.checkNull("rtrim(CAST(NULL AS VARCHAR(6)))");
   }
 
   @Test void testLtrimFunc() {
     fixture.setFor(SqlLibraryOperators.LTRIM, VmName.EXPAND);
-    final SqlFixture f = libraryTester(SqlLibrary.ORACLE);
+    final SqlFixture f = fixture.withLibrary(SqlLibrary.ORACLE);
     f.checkString("ltrim(' aAa  ')", "aAa  ", "VARCHAR(6) NOT NULL");
     f.checkNull("ltrim(CAST(NULL AS VARCHAR(6)))");
   }
@@ -7102,7 +7093,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testDecodeFunc() {
-    checkDecodeFunc(libraryTester(SqlLibrary.ORACLE));
+    checkDecodeFunc(fixture.withLibrary(SqlLibrary.ORACLE));
   }
 
   void checkDecodeFunc(SqlFixture f) {
@@ -7412,9 +7403,9 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testArrayAggFunc() {
-    checkArrayAggFunc(libraryTester(SqlLibrary.POSTGRESQL));
-    checkArrayAggFunc(libraryTester(SqlLibrary.BIG_QUERY));
-    checkArrayAggFuncFails(libraryTester(SqlLibrary.MYSQL));
+    checkArrayAggFunc(fixture.withLibrary(SqlLibrary.POSTGRESQL));
+    checkArrayAggFunc(fixture.withLibrary(SqlLibrary.BIG_QUERY));
+    checkArrayAggFuncFails(fixture.withLibrary(SqlLibrary.MYSQL));
   }
 
   private void checkArrayAggFunc(SqlFixture f) {
@@ -7446,9 +7437,9 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testArrayConcatAggFunc() {
-    checkArrayConcatAggFunc(libraryTester(SqlLibrary.POSTGRESQL));
-    checkArrayConcatAggFunc(libraryTester(SqlLibrary.BIG_QUERY));
-    checkArrayConcatAggFuncFails(libraryTester(SqlLibrary.MYSQL));
+    checkArrayConcatAggFunc(fixture.withLibrary(SqlLibrary.POSTGRESQL));
+    checkArrayConcatAggFunc(fixture.withLibrary(SqlLibrary.BIG_QUERY));
+    checkArrayConcatAggFuncFails(fixture.withLibrary(SqlLibrary.MYSQL));
   }
 
   void checkArrayConcatAggFunc(SqlFixture t) {
@@ -9516,7 +9507,7 @@ public abstract class SqlOperatorBaseTest {
     fixture.checkAggFails("^bool_and(x)^", values,
         "No match found for function signature BOOL_AND\\(<BOOLEAN>\\)", false);
 
-    checkBoolAndFunc(libraryTester(SqlLibrary.POSTGRESQL));
+    checkBoolAndFunc(fixture.withLibrary(SqlLibrary.POSTGRESQL));
   }
 
   void checkBoolAndFunc(SqlFixture f) {
@@ -9551,7 +9542,7 @@ public abstract class SqlOperatorBaseTest {
     fixture.checkAggFails("^bool_or(x)^", values,
         "No match found for function signature BOOL_OR\\(<BOOLEAN>\\)", false);
 
-    checkBoolOrFunc(libraryTester(SqlLibrary.POSTGRESQL));
+    checkBoolOrFunc(fixture.withLibrary(SqlLibrary.POSTGRESQL));
   }
 
   void checkBoolOrFunc(SqlFixture f) {
@@ -9586,7 +9577,7 @@ public abstract class SqlOperatorBaseTest {
     fixture.checkAggFails("^logical_and(x)^", values,
         "No match found for function signature LOGICAL_AND\\(<BOOLEAN>\\)", false);
 
-    checkLogicalAndFunc(libraryTester(SqlLibrary.BIG_QUERY));
+    checkLogicalAndFunc(fixture.withLibrary(SqlLibrary.BIG_QUERY));
   }
 
   void checkLogicalAndFunc(SqlFixture f) {
@@ -9621,7 +9612,7 @@ public abstract class SqlOperatorBaseTest {
     fixture.checkAggFails("^logical_or(x)^", values,
         "No match found for function signature LOGICAL_OR\\(<BOOLEAN>\\)", false);
 
-    checkLogicalOrFunc(libraryTester(SqlLibrary.BIG_QUERY));
+    checkLogicalOrFunc(fixture.withLibrary(SqlLibrary.BIG_QUERY));
   }
 
   void checkLogicalOrFunc(SqlFixture f) {

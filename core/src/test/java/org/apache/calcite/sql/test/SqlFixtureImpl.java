@@ -64,9 +64,6 @@ import static java.util.Objects.requireNonNull;
 class SqlFixtureImpl implements SqlFixture {
   private final SqlNewTestFactory factory;
 
-  // TODO: push transform into factory
-  private final UnaryOperator<SqlValidator> validatorTransform = v -> v;
-
   SqlFixtureImpl(SqlNewTestFactory factory) {
     this.factory = requireNonNull(factory, "factory");
   }
@@ -127,14 +124,14 @@ class SqlFixtureImpl implements SqlFixture {
 
   void validateAndThen(StringAndPos sap,
       SqlTester.ValidatedNodeConsumer consumer) {
-    final SqlValidator validator = validatorTransform.apply(getValidator());
+    final SqlValidator validator = getValidator();
     SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
     consumer.accept(sap, validator, rewrittenNode);
   }
 
   <R> R validateAndApply(StringAndPos sap,
       SqlTester.ValidatedNodeFunction<R> function) {
-    final SqlValidator validator = validatorTransform.apply(getValidator());
+    final SqlValidator validator = getValidator();
     SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
     return function.apply(sap, validator, rewrittenNode);
   }

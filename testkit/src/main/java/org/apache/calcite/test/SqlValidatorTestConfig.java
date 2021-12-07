@@ -18,9 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
@@ -28,7 +26,6 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import java.util.function.UnaryOperator;
@@ -36,18 +33,6 @@ import java.util.function.UnaryOperator;
 /** Test configuration for validator tests. */
 @Value.Immutable
 public interface SqlValidatorTestConfig {
-  /** Returns the dialect (may be null). */
-  @Value.Default
-  // CALCITE-4831: remove the second nullable annotation once immutables/#1261 is fixed
-  default @javax.annotation.Nullable @Nullable SqlDialect dialect() {
-    return CalciteSqlDialect.DEFAULT;
-  }
-
-  /**
-   * Sets {@link #dialect()}.
-   */
-  SqlValidatorTestConfig withDialect(@Nullable SqlDialect dialect);
-
   /**
    * Returns how identifiers are quoted, default DOUBLE_QUOTE.
    */
