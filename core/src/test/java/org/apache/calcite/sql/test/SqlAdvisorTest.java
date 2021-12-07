@@ -25,7 +25,6 @@ import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlMoniker;
 import org.apache.calcite.sql.validate.SqlMonikerType;
 import org.apache.calcite.test.SqlValidatorTestCase;
-import org.apache.calcite.test.SqlValidatorTestConfig;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -65,13 +64,12 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   public static final SqlNewTestFactory ADVISOR_NEW_TEST_FACTORY =
       SqlNewTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
 
-  static final SqlValidatorTester ADVISOR_TESTER =
+  static final SqlValidatorTester ADVISOR_TESTER = // TODO: remove
       new SqlValidatorTester(ADVISOR_TEST_FACTORY);
 
   static final Fixture LOCAL_FIXTURE =
       new Fixture(SqlValidatorTesterImpl.DEFAULT, ADVISOR_NEW_TEST_FACTORY,
-          StringAndPos.of("?"), true, false,
-          SqlValidatorTestCase.FIXTURE.config);
+          StringAndPos.of("?"), true, false);
 
   private static final List<String> STAR_KEYWORD =
       Collections.singletonList(
@@ -1122,7 +1120,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   }
 
   private void checkSimpleParserQuotedIdImpl(Fixture fixture) {
-    SqlParser.Config parserConfig = fixture.config.toParserConfig();
+    SqlParser.Config parserConfig = fixture.parserConfig();
     String sql;
     String expected;
 
@@ -1497,21 +1495,20 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   /** Fixture for the advisor test. */
   static class Fixture extends Sql {
     protected Fixture(Tester tester, SqlNewTestFactory factory,
-        StringAndPos sap, boolean query, boolean whole,
-        SqlValidatorTestConfig config) {
-      super(tester, factory, sap, query, whole, config);
+        StringAndPos sap, boolean query, boolean whole) {
+      super(tester, factory, sap, query, whole);
     }
 
     @SuppressWarnings("deprecation")
     @Override public Fixture withTester(UnaryOperator<Tester> transform) {
       final Tester tester = transform.apply(this.tester);
-      return new Fixture(tester, factory, sap, query, whole, config);
+      return new Fixture(tester, factory, sap, query, whole);
     }
 
-    @Override public Sql withConfig(
-        UnaryOperator<SqlValidatorTestConfig> transform) {
-      final SqlValidatorTestConfig config = transform.apply(this.config);
-      return new Fixture(tester, factory, sap, query, whole, config);
+    @Override public Fixture withFactory(
+        UnaryOperator<SqlNewTestFactory> transform) {
+      final SqlNewTestFactory factory = transform.apply(this.factory);
+      return new Fixture(tester, factory, sap, query, whole);
     }
 
     @Override public Fixture withLex(Lex lex) {
@@ -1519,14 +1516,14 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
     @Override public Fixture withSql(String sql) {
-      return new Fixture(tester, factory, StringAndPos.of(sql), true, false,
-          config);
+      return new Fixture(tester, factory, StringAndPos.of(sql), true, false
+      );
     }
 
     private void assertTokenizesTo(String expected) {
       SqlSimpleParser.Tokenizer tokenizer =
           new SqlSimpleParser.Tokenizer(sap.sql, "xxxxx",
-              config.quoting());
+              factory.parserConfig().quoting());
       StringBuilder buf = new StringBuilder();
       while (true) {
         SqlSimpleParser.Token token = tokenizer.nextToken();
@@ -1551,8 +1548,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
      * @param expectedResults Expected list of hints
      */
     protected void assertHint(String expectedResults) {
-      final SqlParser.Config parserConfig = config.toParserConfig();
-      SqlAdvisor advisor = factory.createAdvisor(parserConfig);
+      SqlAdvisor advisor = factory.createAdvisor();
 
       List<SqlMoniker> results =
           advisor.getCompletionHints(
@@ -1568,8 +1564,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
      * @param expected Expected result after simplification.
      */
     protected Fixture assertSimplify(String expected) {
-      final SqlParser.Config parserConfig = config.toParserConfig();
-      SqlAdvisor advisor = factory.createAdvisor(parserConfig);
+      SqlAdvisor advisor = factory.createAdvisor();
 
       String actual = advisor.simplifySql(sap.sql, sap.cursor);
       Assertions.assertEquals(expected, actual);
@@ -1604,8 +1599,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     protected void assertComplete(String expectedResults,
         @Nullable String expectedWord,
         @Nullable Map<String, String> replacements) {
-      final SqlParser.Config parserConfig = config.toParserConfig();
-      SqlAdvisor advisor = factory.createAdvisor(parserConfig);
+      SqlAdvisor advisor = factory.createAdvisor();
 
       final String[] replaced = {null};
       List<SqlMoniker> results =

@@ -53,7 +53,6 @@ import org.hamcrest.Matcher;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
@@ -62,6 +61,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * An abstract base class for implementing tests against {@link SqlValidator}.
@@ -77,8 +78,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class SqlValidatorTestCase {
   public static final Sql FIXTURE =
       new Sql(SqlValidatorTesterImpl.DEFAULT, SqlNewTestFactory.INSTANCE,
-          StringAndPos.of("?"), true, false,
-          ImmutableSqlValidatorTestConfig.of());
+          StringAndPos.of("?"), true, false
+      );
 
   /** Creates a test case. */
   public SqlValidatorTestCase() {
@@ -216,7 +217,6 @@ public class SqlValidatorTestCase {
     public final StringAndPos sap;
     public final boolean query;
     public final boolean whole;
-    public final SqlValidatorTestConfig config;
 
     /** Creates a Sql.
      *
@@ -227,45 +227,42 @@ public class SqlValidatorTestCase {
      *              expression
      */
     protected Sql(Tester tester, SqlNewTestFactory factory,
-        StringAndPos sap, boolean query,
-        boolean whole, SqlValidatorTestConfig config) {
+        StringAndPos sap, boolean query, boolean whole) {
       this.tester = tester;
       this.factory = factory;
       this.query = query;
       this.sap = sap;
       this.whole = whole;
-      this.config = config;
     }
 
     @Deprecated // we shouldn't need this, if Tester is stateless
     public Sql withTester(UnaryOperator<Tester> transform) {
       final Tester tester = transform.apply(this.tester);
-      return new Sql(tester, factory, sap, query, whole, config);
+      return new Sql(tester, factory, sap, query, whole);
     }
 
     public Sql withFactory(UnaryOperator<SqlNewTestFactory> transform) {
       final SqlNewTestFactory factory = transform.apply(this.factory);
-      return new Sql(tester, factory, sap, query, whole, config);
-    }
-
-    public Sql withConfig(UnaryOperator<SqlValidatorTestConfig> transform) {
-      final SqlValidatorTestConfig config = transform.apply(this.config);
-      return new Sql(tester, factory, sap, query, whole, config);
+      return new Sql(tester, factory, sap, query, whole);
     }
 
     public Sql withParserConfig(UnaryOperator<SqlParser.Config> transform) {
       return withFactory(f -> f.withParserConfig(transform));
     }
 
+    public SqlParser.Config parserConfig() {
+      return factory.parserConfig();
+    }
+
     public Sql withSql(String sql) {
       // TODO: throw if sql = "?", and change those places to use fixture()
-      return new Sql(tester, factory, StringAndPos.of(sql), true, false,
-          config);
+      return new Sql(tester, factory, StringAndPos.of(sql), true, false
+      );
     }
 
     public Sql withExpr(String sql) {
-      return new Sql(tester, factory, StringAndPos.of(sql), false, false,
-          config);
+      return new Sql(tester, factory, StringAndPos.of(sql), false, false
+      );
     }
 
     public StringAndPos toSql(boolean withCaret) {
@@ -283,19 +280,18 @@ public class SqlValidatorTestCase {
     }
 
     public Sql withQuoting(Quoting quoting) {
-      return withConfig(config -> config.withQuoting(quoting));
+      return withParserConfig(config -> config.withQuoting(quoting));
     }
 
     public Sql withLex(Lex lex) {
-      return withConfig(c -> c.withQuoting(lex.quoting)
+      return withParserConfig(c -> c.withQuoting(lex.quoting)
           .withCaseSensitive(lex.caseSensitive)
           .withQuotedCasing(lex.quotedCasing)
           .withUnquotedCasing(lex.unquotedCasing));
     }
 
     public Sql withConformance(SqlConformance conformance) {
-      return withConfig(config -> config.withConformance(conformance))
-          .withValidatorConfig(c -> c.withSqlConformance(conformance))
+      return withValidatorConfig(c -> c.withSqlConformance(conformance))
           .withParserConfig(c -> c.withConformance(conformance));
     }
 
@@ -316,11 +312,11 @@ public class SqlValidatorTestCase {
     Sql withWhole(boolean whole) {
       Preconditions.checkArgument(sap.cursor < 0);
       final StringAndPos sap = StringAndPos.of("^" + this.sap.sql + "^");
-      return new Sql(tester, factory, sap, query, whole, config);
+      return new Sql(tester, factory, sap, query, whole);
     }
 
     Sql ok() {
-      final SqlParser.Config parserConfig = config.toParserConfig();
+      final SqlParser.Config parserConfig = factory.parserConfig();
       tester.assertExceptionIsThrown(toSql(false), parserConfig, null);
       return this;
     }
@@ -329,8 +325,8 @@ public class SqlValidatorTestCase {
      * Checks that a SQL expression gives a particular error.
      */
     Sql fails(String expected) {
-      Objects.requireNonNull(expected, "expected");
-      final SqlParser.Config parserConfig = this.config.toParserConfig();
+      requireNonNull(expected, "expected");
+      final SqlParser.Config parserConfig = factory.parserConfig();
       tester.assertExceptionIsThrown(toSql(true), parserConfig, expected);
       return this;
     }
@@ -469,29 +465,23 @@ public class SqlValidatorTestCase {
     }
 
     public Sql withCaseSensitive(boolean caseSensitive) {
-      return withConfig(c -> c.withCaseSensitive(caseSensitive));
+      return withFactory(f -> f.withCaseSensitive(caseSensitive));
     }
 
     public Sql withOperatorTable(SqlOperatorTable operatorTable) {
-      return withConfig(c -> c.withOperatorTable(operatorTable));
+      return withFactory(c -> c.withOperatorTable(o -> operatorTable));
     }
 
     public Sql withQuotedCasing(Casing casing) {
-      return withConfig(c -> c.withQuotedCasing(casing));
+      return withParserConfig(c -> c.withQuotedCasing(casing));
     }
 
     public Sql withUnquotedCasing(Casing casing) {
       return withParserConfig(c -> c.withUnquotedCasing(casing));
     }
 
-    private Sql withValidator(UnaryOperator<SqlValidator> transform) {
-      return withConfig(c ->
-          c.withValidatorTransform(
-              c.validatorTransform().andThen(transform)::apply));
-    }
-
-    private Sql withValidatorConfig(UnaryOperator<SqlValidator.Config> transform) {
-      return withValidator(v -> v.transform(transform));
+    public Sql withValidatorConfig(UnaryOperator<SqlValidator.Config> transform) {
+      return withFactory(f -> f.withValidatorConfig(transform));
     }
 
     public Sql withValidatorIdentifierExpansion(boolean expansion) {
