@@ -22,6 +22,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
+import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.TestUtil;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -38,7 +39,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlToRelFixture {
   public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl(false, true, null,
+      new SqlToRelTestBase.TesterImpl(false, true,
+          MockCatalogReaderSimple::create,
           null, MockRelOptPlanner::new, UnaryOperator.identity(),
           SqlConformanceEnum.DEFAULT, UnaryOperator.identity(),
           SqlToRelTestBase.DEFAULT_TYPE_FACTORY_SUPPLIER)
@@ -165,7 +167,7 @@ public class SqlToRelFixture {
 
   public SqlToRelFixture withDynamicTable() {
     return with(t ->
-        t.withCatalogReaderFactory(MockCatalogReaderDynamic::new));
+        t.withCatalogReaderFactory(MockCatalogReaderDynamic::create));
   }
 
   public RelRoot toRoot() {

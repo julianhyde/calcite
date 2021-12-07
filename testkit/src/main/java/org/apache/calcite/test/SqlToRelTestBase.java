@@ -54,7 +54,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.test.SqlTestFactory;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -264,7 +264,7 @@ public abstract class SqlToRelTestBase {
     Tester enableTypeCoercion(boolean typeCoercion);
 
     Tester withCatalogReaderFactory(
-        SqlTestFactory.MockCatalogReaderFactory factory);
+        SqlNewTestFactory.CatalogReaderFactory factory);
 
     Tester withClusterFactory(Function<RelOptCluster, RelOptCluster> function);
 
@@ -555,7 +555,7 @@ public abstract class SqlToRelTestBase {
     private final boolean enableTypeCoercion;
     private final Function<Context, RelOptPlanner> plannerFactory;
     private final SqlConformance conformance;
-    private final SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory;
+    private final SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory;
     private final Function<RelOptCluster, RelOptCluster> clusterFactory;
     private final Supplier<RelDataTypeFactory> typeFactorySupplier;
     private final UnaryOperator<SqlToRelConverter.Config> configTransform;
@@ -564,7 +564,8 @@ public abstract class SqlToRelTestBase {
 
     /** Creates a TesterImpl with default options. */
     protected TesterImpl() {
-      this(false, true, null, null, MockRelOptPlanner::new,
+      this(false, true,
+          MockCatalogReaderSimple::create, null, MockRelOptPlanner::new,
           UnaryOperator.identity(), SqlConformanceEnum.DEFAULT,
           c -> Contexts.empty(), DEFAULT_TYPE_FACTORY_SUPPLIER);
     }
@@ -577,7 +578,7 @@ public abstract class SqlToRelTestBase {
      */
     protected TesterImpl(boolean enableLateDecorrelate,
         boolean enableTypeCoercion,
-        SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
+        SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory,
         Function<RelOptCluster, RelOptCluster> clusterFactory,
         Function<Context, RelOptPlanner> plannerFactory,
         UnaryOperator<SqlToRelConverter.Config> configTransform,
@@ -591,7 +592,7 @@ public abstract class SqlToRelTestBase {
 
     protected TesterImpl(boolean enableLateDecorrelate,
         boolean enableTypeCoercion,
-        SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
+        SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory,
         Function<RelOptCluster, RelOptCluster> clusterFactory,
         Function<Context, RelOptPlanner> plannerFactory,
         UnaryOperator<SqlToRelConverter.Config> configTransform,
@@ -600,7 +601,8 @@ public abstract class SqlToRelTestBase {
         UnaryOperator<SqlValidator> validatorTransform) {
       this.enableLateDecorrelate = enableLateDecorrelate;
       this.enableTypeCoercion = enableTypeCoercion;
-      this.catalogReaderFactory = catalogReaderFactory;
+      this.catalogReaderFactory =
+          requireNonNull(catalogReaderFactory, "catalogReaderFactory");
       this.clusterFactory = clusterFactory;
       this.configTransform = requireNonNull(configTransform, "configTransform");
       this.plannerFactory = requireNonNull(plannerFactory, "plannerFactory");
@@ -772,13 +774,8 @@ public abstract class SqlToRelTestBase {
 
     @Override public Prepare.CatalogReader createCatalogReader(
         RelDataTypeFactory typeFactory) {
-      MockCatalogReader catalogReader;
-      if (this.catalogReaderFactory != null) {
-        catalogReader = catalogReaderFactory.create(typeFactory, true);
-      } else {
-        catalogReader = new MockCatalogReaderSimple(typeFactory, true);
-      }
-      return catalogReader.init();
+      return (Prepare.CatalogReader) catalogReaderFactory.create(typeFactory,
+          true);
     }
 
     @Override public RelOptPlanner createPlanner() {
@@ -861,12 +858,10 @@ public abstract class SqlToRelTestBase {
         throw TestUtil.rethrow(e);
       }
 
+      // TODO use SqlNewTestFactory
       final RelDataTypeFactory typeFactory = getTypeFactory();
-      final Prepare.CatalogReader catalogReader =
-              createCatalogReader(typeFactory);
-      final SqlValidator validator =
-              createValidator(
-                      catalogReader, typeFactory);
+      final Prepare.CatalogReader catalogReader = createCatalogReader(typeFactory);
+      final SqlValidator validator = createValidator(catalogReader, typeFactory);
       SqlToRelConverter converter = createSqlToRelConverter(validator, catalogReader);
 
       final SqlNode validatedQuery = validator.validate(sqlQuery);
@@ -927,7 +922,7 @@ public abstract class SqlToRelTestBase {
     }
 
     @Override public Tester withCatalogReaderFactory(
-        SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory) {
+        SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory) {
       return new TesterImpl(
           enableLateDecorrelate, enableTypeCoercion, catalogReaderFactory,
           clusterFactory, plannerFactory, configTransform, conformance,

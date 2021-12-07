@@ -17,6 +17,7 @@
 package org.apache.calcite.sql.test;
 
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 
@@ -66,7 +67,7 @@ class SqlRuntimeTester extends AbstractSqlTester {
 
   public void assertExceptionIsThrown(
       StringAndPos sap,
-      @Nullable String expectedMsgPattern) {
+      SqlParser.Config parserConfig, @Nullable String expectedMsgPattern) {
     assertExceptionIsThrown(sap, expectedMsgPattern, false);
   }
 

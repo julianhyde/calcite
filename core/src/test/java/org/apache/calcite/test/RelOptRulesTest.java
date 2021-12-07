@@ -289,13 +289,15 @@ class RelOptRulesTest extends RelOptTestBase {
 
       // Verify LogicalFilter traitSet (must be [3 DESC])
       RelNode filter = result.getInput(0);
-      RelCollation collation = filter.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE);
+      RelCollation collation =
+          filter.getTraitSet().getTrait(RelCollationTraitDef.INSTANCE);
       assertNotNull(collation);
       List<RelFieldCollation> fieldCollations = collation.getFieldCollations();
       assertEquals(1, fieldCollations.size());
       RelFieldCollation fieldCollation = fieldCollations.get(0);
       assertEquals(3, fieldCollation.getFieldIndex());
-      assertEquals(RelFieldCollation.Direction.DESCENDING, fieldCollation.getDirection());
+      assertEquals(RelFieldCollation.Direction.DESCENDING,
+          fieldCollation.getDirection());
     }
   }
 
@@ -2687,7 +2689,7 @@ class RelOptRulesTest extends RelOptTestBase {
                 return this;
               }
               // CHECKSTYLE: IGNORE 1
-            })
+            }.init())
         .with(program);
   }
 
@@ -6107,8 +6109,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(SpatialRules.INSTANCE)
         .build();
     return sql(sql)
-        .withCatalogReaderFactory((typeFactory, caseSensitive) ->
-            new MockCatalogReaderExtended(typeFactory, caseSensitive).init())
+        .withCatalogReaderFactory(MockCatalogReaderExtended::create)
         .withConformance(SqlConformanceEnum.LENIENT)
         .with(program);
   }

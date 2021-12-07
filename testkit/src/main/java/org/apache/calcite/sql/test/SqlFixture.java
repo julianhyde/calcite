@@ -18,20 +18,22 @@ package org.apache.calcite.sql.test;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.fun.SqlLibrary;
+import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
+import org.apache.calcite.sql.test.SqlTester.ResultChecker;
+import org.apache.calcite.sql.test.SqlTester.TypeChecker;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
-import org.apache.calcite.test.SqlValidatorTestCase;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.sql.ResultSet;
 import java.util.function.UnaryOperator;
 
 /**
@@ -47,8 +49,7 @@ import java.util.function.UnaryOperator;
  * queries in different ways, for example, using a C++ versus Java calculator.
  * An implementation might even ignore certain calls altogether.
  */
-@SuppressWarnings("deprecation")
-public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester {
+public interface SqlFixture extends AutoCloseable {
   //~ Enums ------------------------------------------------------------------
 
   /**
@@ -60,48 +61,88 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
 
   //~ Methods ----------------------------------------------------------------
 
-  SqlTestFactory getFactory();
+  SqlNewTestFactory getFactory();
+
+  /** Creates a copy of this fixture with a new test factory. */
+  SqlFixture withFactory(UnaryOperator<SqlNewTestFactory> transform);
+
+  /** Creates a copy of this fixture with a new parser configuration. */
+  default SqlFixture withParserConfig(UnaryOperator<SqlParser.Config> transform) {
+    return withFactory(f -> f.withParserConfig(transform));
+  }
 
   /** Returns a tester that tests a given SQL quoting style. */
-  SqlTester withQuoting(Quoting quoting);
+  default SqlFixture withQuoting(Quoting quoting) {
+    return withParserConfig(c -> c.withQuoting(quoting));
+  }
 
   /** Returns a tester that applies a given casing policy to quoted
    * identifiers. */
-  SqlTester withQuotedCasing(Casing casing);
+  default SqlFixture withQuotedCasing(Casing casing) {
+    return withParserConfig(c -> c.withQuotedCasing(casing));
+  }
 
   /** Returns a tester that applies a given casing policy to unquoted
    * identifiers. */
-  SqlTester withUnquotedCasing(Casing casing);
+  default SqlFixture withUnquotedCasing(Casing casing) {
+    return withParserConfig(c -> c.withUnquotedCasing(casing));
+  }
 
   /** Returns a tester that matches identifiers by case-sensitive or
    * case-insensitive. */
-  SqlTester withCaseSensitive(boolean sensitive);
+  default SqlFixture withCaseSensitive(boolean sensitive) {
+    return withParserConfig(c -> c.withCaseSensitive(sensitive));
+  }
 
   /** Returns a tester that follows a lex policy. */
-  SqlTester withLex(Lex lex);
+  default SqlFixture withLex(Lex lex) {
+    return withParserConfig(c -> c.withLex(lex));
+  }
 
   /** Returns a tester that tests conformance to a particular SQL language
    * version. */
-  SqlTester withConformance(SqlConformance conformance);
+  default SqlFixture withConformance(SqlConformance conformance) {
+    return withParserConfig(c -> c.withConformance(conformance))
+        .withValidatorConfig(c -> c.withSqlConformance(conformance));
+  }
+
+  /** Returns the conformance. */
+  default SqlConformance conformance() {
+    return getFactory().parserConfig().conformance();
+  }
+
+  /** Returns the validator. */
+  default SqlValidator getValidator() {
+    return getFactory().getValidator();
+  }
+
+  /** Returns a tester with a given validator configuration. */
+  default SqlFixture withValidatorConfig(
+      UnaryOperator<SqlValidator.Config> transform) {
+    return withFactory(f -> f.withValidatorConfig(transform));
+  }
 
   /** Returns a tester that tests with implicit type coercion on/off. */
-  SqlTester enableTypeCoercion(boolean enabled);
+  default SqlFixture enableTypeCoercion(boolean enabled) {
+    return withValidatorConfig(c -> c.withTypeCoercionEnabled(enabled));
+  }
 
   /** Returns a tester that does not fail validation if it encounters an
    * unknown function. */
-  SqlTester withLenientOperatorLookup(boolean lenient);
+  default SqlFixture withLenientOperatorLookup(boolean lenient) {
+    return withValidatorConfig(c -> c.withLenientOperatorLookup(lenient));
+  }
 
   /** Returns a tester that gets connections from a given factory. */
-  SqlTester withConnectionFactory(
-      CalciteAssert.ConnectionFactory connectionFactory);
+  default SqlFixture withConnectionFactory(
+      CalciteAssert.ConnectionFactory connectionFactory) {
+    return withFactory(f -> f.withConnectionFactory(connectionFactory));
+  }
 
   /** Returns a tester that uses a given operator table. */
-  SqlTester withOperatorTable(SqlOperatorTable operatorTable);
-
-  /** Returns a tester that applies the given transform to a validator before
-   * using it. */
-  SqlTester withValidatorTransform(UnaryOperator<UnaryOperator<SqlValidator>>
-      transform);
+  default SqlFixture withOperatorTable(SqlOperatorTable operatorTable) {
+    return withFactory(f -> f.withOperatorTable(o -> operatorTable));
+  }
 
   /**
    * Tests that a scalar SQL expression returns the expected result and the
@@ -170,6 +211,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param delta          Allowed margin of error between expected and actual
    *                       result
    */
+  // TODO: replace last two arguments with matcher
   void checkScalarApprox(
       String expression,
       String expectedType,
@@ -251,7 +293,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param sql  Query expression
    * @param type Type string
    */
-  @Override void checkColumnType(
+  void checkColumnType(
       String sql,
       String type);
 
@@ -292,8 +334,8 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    */
   void check(
       String query,
-      TypeChecker typeChecker,
-      ParameterChecker parameterChecker,
+      SqlTester.TypeChecker typeChecker,
+      SqlTester.ParameterChecker parameterChecker,
       ResultChecker resultChecker);
 
   /**
@@ -303,7 +345,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param operator             Operator
    * @param unimplementedVmNames Names of virtual machines for which this
    */
-  void setFor(
+  SqlFixture setFor(
       SqlOperator operator,
       VmName... unimplementedVmNames);
 
@@ -417,39 +459,38 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    */
   void checkQuery(String sql);
 
-  //~ Inner Interfaces -------------------------------------------------------
-
-  /** Type checker. */
-  interface TypeChecker {
-    void checkType(RelDataType type);
+  default SqlFixture withLibrary(SqlLibrary library) {
+    return withOperatorTable(
+        SqlLibraryOperatorTableFactory.INSTANCE
+            .getOperatorTable(SqlLibrary.STANDARD, library))
+        .withConnectionFactory(
+            CalciteAssert.EMPTY_CONNECTION_FACTORY
+                .with(new CalciteAssert
+                    .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
+                .with(CalciteConnectionProperty.FUN, library.fun));
   }
 
-  /** Parameter checker. */
-  interface ParameterChecker {
-    void checkParameters(RelDataType parameterRowType);
+  default SqlFixture withLibrary2(SqlLibrary library) { // TODO obsolete and use withLibrary
+    return withOperatorTable(
+        SqlLibraryOperatorTableFactory.INSTANCE
+            .getOperatorTable(SqlLibrary.STANDARD, library))
+        .withConnectionFactory(
+            CalciteAssert.EMPTY_CONNECTION_FACTORY
+                .with(new CalciteAssert
+                    .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
+                .with("fun", library.name()));
   }
 
-  /** Result checker. */
-  interface ResultChecker {
-    void checkResult(ResultSet result) throws Exception;
-  }
-
-  /** Action that is called after validation.
-   *
-   * @see #validateAndThen
-   * @see #forEachQueryValidateAndThen
-   */
-  interface ValidatedNodeConsumer {
-    void accept(StringAndPos sap, SqlValidator validator,
-        SqlNode validatedNode);
-  }
-
-  /** A function to apply to the result of validation.
-   *
-   * @param <R> Result type of the function
-   *
-   * @see #validateAndApply */
-  interface ValidatedNodeFunction<R> {
-    R apply(StringAndPos sap, SqlValidator validator, SqlNode validatedNode);
+  default SqlFixture forOracle(SqlConformance conformance) {
+    return withConformance(conformance)
+        .withOperatorTable(
+            SqlLibraryOperatorTableFactory.INSTANCE
+                .getOperatorTable(SqlLibrary.STANDARD, SqlLibrary.ORACLE))
+        .withConnectionFactory(
+            CalciteAssert.EMPTY_CONNECTION_FACTORY
+                .with(new CalciteAssert
+                    .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
+                .with("fun", "oracle")
+                .with("conformance", conformance));
   }
 }

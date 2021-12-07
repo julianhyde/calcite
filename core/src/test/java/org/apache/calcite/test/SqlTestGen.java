@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlValidatorTester;
@@ -98,15 +99,15 @@ class SqlTestGen {
     }
 
     @Override public Sql fixture() {
-      return super.fixture()
-          .withTester(t -> createTester());
+      return super.fixture() /*
+          .withTester(t -> createTester()) */;
     }
 
     private SqlValidatorTester createTester() {
       return new SqlValidatorTester(SPOOLER_VALIDATOR) {
         public void assertExceptionIsThrown(
             StringAndPos sap,
-            @Nullable String expectedMsgPattern) {
+            SqlParser.Config parserConfig, @Nullable String expectedMsgPattern) {
           if (expectedMsgPattern == null) {
             // This SQL statement is supposed to succeed.
             // Generate it to the file, so we can see what

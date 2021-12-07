@@ -81,7 +81,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   public AbstractSqlTester(SqlTestFactory factory,
       UnaryOperator<SqlValidator> validatorTransform) {
     this.factory = requireNonNull(factory, "factory");
-    this.validatorTransform = requireNonNull(validatorTransform, "validatorTransform");
+    this.validatorTransform =
+        requireNonNull(validatorTransform, "validatorTransform");
   }
 
   @Override public final SqlTestFactory getFactory() {
@@ -250,8 +251,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     return with("connectionFactory", connectionFactory);
   }
 
+  // TODO obsolete this method
   protected final SqlTester with(final String name, final Object value) {
-    return with(factory.with(name, value));
+    return this; // with(factory.with(name, value));
   }
 
   protected abstract SqlTester with(SqlTestFactory factory);

@@ -3607,7 +3607,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
   private Tester getExtendedTester() {
     return SqlToRelFixture.TESTER
-        .withCatalogReaderFactory(MockCatalogReaderExtended::new);
+        .withCatalogReaderFactory(MockCatalogReaderExtended::create);
   }
 
   @Test void testLarge() {

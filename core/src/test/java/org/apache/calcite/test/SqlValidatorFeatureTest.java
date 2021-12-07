@@ -22,8 +22,6 @@ import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Feature;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.test.SqlTestFactory;
-import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 
@@ -42,9 +40,7 @@ class SqlValidatorFeatureTest extends SqlValidatorTestCase {
 
   @Override public Sql fixture() {
     return super.fixture()
-        .withTester(t ->
-            new SqlValidatorTester(
-                SqlTestFactory.INSTANCE.withValidator(FeatureValidator::new)));
+        .withFactory(f -> f.withValidator(FeatureValidator::new));
   }
 
   @Test void testDistinct() {

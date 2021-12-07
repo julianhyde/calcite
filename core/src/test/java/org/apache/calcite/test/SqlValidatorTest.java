@@ -36,9 +36,6 @@ import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.test.SqlTestFactory;
-import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.type.ArraySqlType;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -51,6 +48,7 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -1567,7 +1565,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUnknownFunctionHandling() {
-    final Sql s = sql("?").withTester(t -> t.withLenientOperatorLookup(true));
+    final Sql s = sql("?").withLenientOperatorLookup(true);
     s.withExpr("concat('a', 2)").ok();
     s.withExpr("foo('2001-12-21')").ok();
     s.withExpr("\"foo\"('b')").ok();
@@ -3832,7 +3830,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // (values used in subtests depend on these being true to
     // accurately test bounds)
     final RelDataTypeSystem typeSystem =
-        fixture().tester.getValidator().getTypeFactory().getTypeSystem();
+        fixture().factory.getValidator().getTypeFactory().getTypeSystem();
     final RelDataTypeSystem defTypeSystem = RelDataTypeSystem.DEFAULT;
     for (SqlTypeName typeName : SqlTypeName.INTERVAL_TYPES) {
       assertThat(typeName.getMinPrecision(), is(1));
@@ -6557,7 +6555,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testOrder() {
-    final SqlConformance conformance = fixture().tester.getConformance();
+    final SqlConformance conformance = fixture().conformance();
     sql("select empno as x from emp order by empno").ok();
 
     // invalid use of 'asc'
@@ -6714,7 +6712,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
     // ordinal out of range -- if 'order by <ordinal>' means something in
     // this dialect
-    final SqlConformance conformance = fixture().tester.getConformance();
+    final SqlConformance conformance = fixture().conformance();
     if (conformance.isSortByOrdinal()) {
       sql("select empno, sal from emp "
           + "union all "
@@ -6778,7 +6776,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "group by empno, deptno "
         + "order by x * sum(sal + 2)").ok();
 
-    final SqlConformance conformance = fixture().tester.getConformance();
+    final SqlConformance conformance = fixture().conformance();
     sql("select empno as x "
         + "from emp "
         + "group by empno, deptno "
@@ -6999,7 +6997,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // These tests are primarily intended to test cases where sorting by
     // an alias is allowed.  But for instances that don't support sorting
     // by alias, the tests also verify that a proper exception is thrown.
-    final SqlConformance conformance = fixture().tester.getConformance();
+    final SqlConformance conformance = fixture().conformance();
     sql("select distinct cast(empno as bigint) as empno "
         + "from emp order by ^empno^")
         .failsIf(!conformance.isSortByAlias(),
@@ -8929,64 +8927,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testRewriteExpansionOfColumnReferenceBeforeResolution() {
-    SqlValidatorTester sqlValidatorTester = new SqlValidatorTester(
-        SqlTestFactory.INSTANCE.withValidator((opTab, catalogReader, typeFactory, config) ->
-             // Rewrites columnar sql identifiers 'UNEXPANDED'.'Something' to 'DEPT'.'Something',
-             // where 'Something' is any string.
-            new SqlValidatorImpl(opTab, catalogReader, typeFactory, config) {
-              @Override public SqlNode expand(SqlNode expr, SqlValidatorScope scope) {
-                SqlNode rewrittenNode = rewriteNode(expr);
-                return super.expand(rewrittenNode, scope);
-              }
-
-              @Override public SqlNode expandSelectExpr(
-                  SqlNode expr,
-                  SelectScope scope,
-                  SqlSelect select) {
-                SqlNode rewrittenNode = rewriteNode(expr);
-                return super.expandSelectExpr(rewrittenNode, scope, select);
-              }
-
-              @Override public SqlNode expandGroupByOrHavingExpr(
-                  SqlNode expr,
-                  SqlValidatorScope scope,
-                  SqlSelect select,
-                  boolean havingExpression) {
-                SqlNode rewrittenNode = rewriteNode(expr);
-                return super.expandGroupByOrHavingExpr(
-                    rewrittenNode,
-                    scope,
-                    select,
-                    havingExpression);
-              }
-
-              private SqlNode rewriteNode(SqlNode sqlNode) {
-                return sqlNode.accept(new SqlShuttle() {
-                  @Override public SqlNode visit(SqlIdentifier id) {
-                    return rewriteIdentifier(id);
-                  }
-                });
-              }
-
-              private SqlIdentifier rewriteIdentifier(SqlIdentifier sqlIdentifier) {
-                Preconditions.checkArgument(sqlIdentifier.names.size() == 2);
-                if (sqlIdentifier.names.get(0).equals("UNEXPANDED")) {
-                  return new SqlIdentifier(
-                      asList("DEPT", sqlIdentifier.names.get(1)),
-                      null,
-                      sqlIdentifier.getParserPosition(),
-                      asList(
-                          sqlIdentifier.getComponentParserPosition(0),
-                          sqlIdentifier.getComponentParserPosition(1)));
-                } else if (sqlIdentifier.names.get(0).equals("DEPT")) {
-                  //  Identifiers are expanded multiple times
-                  return sqlIdentifier;
-                } else {
-                  throw new RuntimeException("Unknown Identifier " + sqlIdentifier);
-                }
-              }
-            }));
-
     final String sql = "select unexpanded.deptno from dept \n"
         + " where unexpanded.name = 'Moonracer' \n"
         + " group by unexpanded.deptno\n"
@@ -8998,7 +8938,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "GROUP BY `DEPT`.`DEPTNO`\n"
         + "HAVING SUM(`DEPT`.`DEPTNO`) > 0\n"
         + "ORDER BY `DEPT`.`DEPTNO`";
-    new Sql(sqlValidatorTester, StringAndPos.of(sql), true, false)
+    SqlValidatorTestCase.FIXTURE
+        .withFactory(t -> t.withValidator(UnexpandedToDeptValidator::new))
+        .withSql(sql)
         .withValidatorIdentifierExpansion(true)
         .withValidatorColumnReferenceExpansion(true)
         .withConformance(SqlConformanceEnum.LENIENT)
@@ -9011,7 +8953,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "FROM `CATALOG`.`SALES`.`EMP` AS `EMP`";
     final String expected2 = "SELECT COALESCE(`DEPTNO`, `EMPNO`)\n"
         + "FROM `EMP`";
-    final SqlValidator validator = fixture().tester.getValidator();
+    final SqlValidator validator = fixture().factory.getValidator();
     sql(sql)
         .withValidatorCallRewrite(false)
         .rewritesTo(validator.config().identifierExpansion()
@@ -9026,7 +8968,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String expected2 = "SELECT CASE WHEN `DEPTNO` IS NOT NULL"
         + " THEN `DEPTNO` ELSE `EMPNO` END\n"
         + "FROM `EMP`";
-    final SqlValidator validator = fixture().tester.getValidator();
+    final SqlValidator validator = fixture().factory.getValidator();
     sql(sql)
         .withValidatorCallRewrite(true)
         .rewritesTo(validator.config().identifierExpansion()
@@ -12220,7 +12162,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     try {
       final SqlParser sqlParserReader = SqlParser.create(sql, config);
       final SqlNode node = sqlParserReader.parseQuery();
-      final SqlValidator validator = fixture().tester.getValidator();
+      final SqlValidator validator = fixture().factory.getValidator();
       final SqlNode x = validator.validate(node);
       fail("expecting an error, got " + x);
       return;
@@ -12238,7 +12180,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
       final SqlParser sqlParserReader =
           SqlParser.create(new StringReader(sql), config);
       final SqlNode node = sqlParserReader.parseQuery();
-      final SqlValidator validator = fixture().tester.getValidator();
+      final SqlValidator validator = fixture().factory.getValidator();
       final SqlNode x = validator.validate(node);
       fail("expecting an error, got " + x);
     } catch (CalciteContextException error) {
@@ -12251,7 +12193,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testValidateParameterizedExpression() throws SqlParseException {
     final SqlParser.Config config = SqlParser.config();
-    final SqlValidator validator = fixture().tester.getValidator();
+    final SqlValidator validator = fixture().factory.getValidator();
     final RelDataTypeFactory typeFactory = validator.getTypeFactory();
     final RelDataType intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
     final RelDataType intTypeNull = typeFactory.createTypeWithNullability(intType, true);
@@ -12280,5 +12222,56 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql("select * FROM TABLE(ROW_FUNC()) AS T(a, b)")
         .withOperatorTable(operatorTable)
         .type("RecordType(BIGINT NOT NULL A, BIGINT B) NOT NULL");
+  }
+
+  /** Validator that rewrites columnar sql identifiers 'UNEXPANDED'.'Something'
+   * to 'DEPT'.'Something', where 'Something' is any string. */
+  private static class UnexpandedToDeptValidator extends SqlValidatorImpl {
+    UnexpandedToDeptValidator(SqlOperatorTable opTab,
+        SqlValidatorCatalogReader catalogReader,
+        RelDataTypeFactory typeFactory, Config config) {
+      super(opTab, catalogReader, typeFactory, config);
+    }
+
+    @Override public SqlNode expand(SqlNode expr, SqlValidatorScope scope) {
+      SqlNode rewrittenNode = rewriteNode(expr);
+      return super.expand(rewrittenNode, scope);
+    }
+
+    @Override public SqlNode expandSelectExpr(SqlNode expr, SelectScope scope,
+        SqlSelect select) {
+      SqlNode rewrittenNode = rewriteNode(expr);
+      return super.expandSelectExpr(rewrittenNode, scope, select);
+    }
+
+    @Override public SqlNode expandGroupByOrHavingExpr(SqlNode expr,
+        SqlValidatorScope scope, SqlSelect select, boolean havingExpression) {
+      SqlNode rewrittenNode = rewriteNode(expr);
+      return super.expandGroupByOrHavingExpr(rewrittenNode, scope, select,
+          havingExpression);
+    }
+
+    private SqlNode rewriteNode(SqlNode sqlNode) {
+      return sqlNode.accept(new SqlShuttle() {
+        @Override public SqlNode visit(SqlIdentifier id) {
+          return rewriteIdentifier(id);
+        }
+      });
+    }
+
+    private SqlIdentifier rewriteIdentifier(SqlIdentifier sqlIdentifier) {
+      Preconditions.checkArgument(sqlIdentifier.names.size() == 2);
+      if (sqlIdentifier.names.get(0).equals("UNEXPANDED")) {
+        return new SqlIdentifier(asList("DEPT", sqlIdentifier.names.get(1)),
+            null, sqlIdentifier.getParserPosition(),
+            asList(sqlIdentifier.getComponentParserPosition(0),
+                sqlIdentifier.getComponentParserPosition(1)));
+      } else if (sqlIdentifier.names.get(0).equals("DEPT")) {
+        //  Identifiers are expanded multiple times
+        return sqlIdentifier;
+      } else {
+        throw new RuntimeException("Unknown Identifier " + sqlIdentifier);
+      }
+    }
   }
 }

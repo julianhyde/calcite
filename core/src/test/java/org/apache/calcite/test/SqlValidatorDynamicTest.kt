@@ -17,8 +17,6 @@
 package org.apache.calcite.test
 
 import org.apache.calcite.rel.type.RelDataTypeFactory
-import org.apache.calcite.sql.test.SqlTestFactory
-import org.apache.calcite.sql.test.SqlValidatorTester
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic
 import org.apache.calcite.testlib.annotations.LocaleEnUs
 import org.junit.jupiter.api.Test
@@ -39,11 +37,8 @@ class SqlValidatorDynamicTest : SqlValidatorTestCase() {
      */
     override fun fixture(): Sql {
         return super.fixture()
-            .withTester {
-                SqlValidatorTester(SqlTestFactory.INSTANCE
-                    .withCatalogReader { typeFactory: RelDataTypeFactory, caseSensitive: Boolean ->
-                        MockCatalogReaderDynamic(typeFactory, caseSensitive)
-                    })
+            .withCatalogReader { typeFactory: RelDataTypeFactory, caseSensitive: Boolean ->
+                MockCatalogReaderDynamic.create(typeFactory, caseSensitive)
             }
     }
 

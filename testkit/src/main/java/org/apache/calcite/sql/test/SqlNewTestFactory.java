@@ -27,14 +27,12 @@ import org.apache.calcite.sql.advise.SqlAdvisor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.SqlValidatorWithHints;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.MockSqlOperatorTable;
-import org.apache.calcite.test.catalog.MockCatalogReader;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.SourceStringReader;
 
@@ -45,24 +43,22 @@ import com.google.common.collect.ImmutableSortedMap;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
- * Default implementation of {@link SqlTestFactory}.
- *
- * <p>Suitable for most tests. If you want different behavior, you can extend;
- * if you want a factory with different properties (e.g. SQL conformance level
- * or identifier quoting), use {@link #with(String, Object)} to create a new factory.</p>
+ * As {@link SqlNewTestFactory} but has no state, and therefore
+ * configuration is passed to each method.
 */
-public class SqlTestFactory {
+public class SqlNewTestFactory {
   public static final ImmutableMap<String, Object> DEFAULT_OPTIONS =
       ImmutableSortedMap.<String, Object>naturalOrder()
           .put("quoting", Quoting.DOUBLE_QUOTE)
           .put("quotedCasing", Casing.UNCHANGED)
           .put("unquotedCasing", Casing.TO_UPPER)
           .put("caseSensitive", true)
-          .put("lenientOperatorLookup", false)
-          .put("enableTypeCoercion", true)
-          .put("conformance", SqlConformanceEnum.DEFAULT)
+//          .put("lenientOperatorLookup", false)
+//          .put("enableTypeCoercion", true)
+//          .put("conformance", SqlConformanceEnum.DEFAULT)
           .put("operatorTable", SqlStdOperatorTable.instance())
           .put("connectionFactory",
               CalciteAssert.EMPTY_CONNECTION_FACTORY
@@ -71,77 +67,61 @@ public class SqlTestFactory {
                           CalciteAssert.SchemaSpec.HR)))
           .build();
 
-  public static final SqlTestFactory INSTANCE =
-      new SqlTestFactory();
+  public static final SqlNewTestFactory INSTANCE =
+      new SqlNewTestFactory(DEFAULT_OPTIONS, MockCatalogReaderSimple::create,
+          SqlValidatorUtil::newValidator,
+          CalciteAssert.EMPTY_CONNECTION_FACTORY, SqlParser.Config.DEFAULT,
+          SqlValidator.Config.DEFAULT,
+          SqlStdOperatorTable.instance())
+      .withOperatorTable(o -> {
+        MockSqlOperatorTable opTab = new MockSqlOperatorTable(o);
+        MockSqlOperatorTable.addRamp(opTab);
+        return opTab;
+      });
 
   private final ImmutableMap<String, Object> options;
-  private final MockCatalogReaderFactory catalogReaderFactory;
+  private final CalciteAssert.ConnectionFactory connectionFactory;
+  private final CatalogReaderFactory catalogReaderFactory;
   private final ValidatorFactory validatorFactory;
 
   private final Supplier<RelDataTypeFactory> typeFactory;
-  private final Supplier<SqlOperatorTable> operatorTable;
+  private final SqlOperatorTable operatorTable;
   private final Supplier<SqlValidatorCatalogReader> catalogReader;
-  private final Supplier<SqlParser.Config> parserConfig;
+  private final SqlParser.Config parserConfig;
+  private final SqlValidator.Config validatorConfig;
 
-  protected SqlTestFactory() {
-    this(DEFAULT_OPTIONS, MockCatalogReaderSimple::create,
-        SqlValidatorUtil::newValidator);
-  }
-
-  protected SqlTestFactory(ImmutableMap<String, Object> options,
-      MockCatalogReaderFactory catalogReaderFactory,
-      ValidatorFactory validatorFactory) {
+  protected SqlNewTestFactory(ImmutableMap<String, Object> options,
+      CatalogReaderFactory catalogReaderFactory,
+      ValidatorFactory validatorFactory,
+      CalciteAssert.ConnectionFactory connectionFactory,
+      SqlParser.Config parserConfig,
+      SqlValidator.Config validatorConfig, SqlOperatorTable operatorTable) {
     this.options = options;
+    this.connectionFactory = connectionFactory;
+    assert options.get("conformance") == null;
+    assert options.get("lenientOperatorLookup") == null;
+    assert options.get("enableTypeCoercion") == null; // TODO remove
+
     this.catalogReaderFactory = catalogReaderFactory;
     this.validatorFactory = validatorFactory;
-    this.operatorTable = Suppliers.memoize(
-        () -> createOperatorTable((SqlOperatorTable) options.get("operatorTable")));
+    this.operatorTable = operatorTable;
     this.typeFactory = Suppliers.memoize(
-        () -> createTypeFactory((SqlConformance) options.get("conformance")));
+        () -> createTypeFactory(validatorConfig.sqlConformance()));
     Boolean caseSensitive = (Boolean) options.get("caseSensitive");
     this.catalogReader = Suppliers.memoize(
-        () -> catalogReaderFactory.create(typeFactory.get(), caseSensitive).init());
-    this.parserConfig = Suppliers.memoize(
-        () -> createParserConfig(options));
-  }
-
-  private static SqlOperatorTable createOperatorTable(SqlOperatorTable opTab0) {
-    MockSqlOperatorTable opTab = new MockSqlOperatorTable(opTab0);
-    MockSqlOperatorTable.addRamp(opTab);
-    return opTab;
-  }
-
-  public SqlParser.Config getParserConfig() {
-    return parserConfig.get();
+        () -> catalogReaderFactory.create(typeFactory.get(), caseSensitive));
+    this.parserConfig = parserConfig;
+    this.validatorConfig = validatorConfig;
   }
 
   public SqlParser createParser(String sql) {
-    return SqlParser.create(new SourceStringReader(sql), parserConfig.get());
-  }
-
-  public static SqlParser.Config createParserConfig(ImmutableMap<String, Object> options) {
-    return SqlParser.config()
-        .withQuoting((Quoting) options.get("quoting"))
-        .withUnquotedCasing((Casing) options.get("unquotedCasing"))
-        .withQuotedCasing((Casing) options.get("quotedCasing"))
-        .withConformance((SqlConformance) options.get("conformance"))
-        .withCaseSensitive((boolean) options.get("caseSensitive"));
+    SqlParser.Config parserConfig = parserConfig();
+    return SqlParser.create(new SourceStringReader(sql), parserConfig);
   }
 
   public SqlValidator getValidator() {
-    final SqlConformance conformance =
-        (SqlConformance) options.get("conformance");
-    final boolean lenientOperatorLookup =
-        (boolean) options.get("lenientOperatorLookup");
-    final boolean enableTypeCoercion = (boolean) options.get("enableTypeCoercion");
-    final SqlValidator.Config config = SqlValidator.Config.DEFAULT
-        .withSqlConformance(conformance)
-        .withTypeCoercionEnabled(enableTypeCoercion)
-        .withLenientOperatorLookup(lenientOperatorLookup);
-    return validatorFactory.create(operatorTable.get(),
-        catalogReader.get(),
-        typeFactory.get(),
-        config);
+    return validatorFactory.create(operatorTable, catalogReader.get(),
+        typeFactory.get(), validatorConfig);
   }
 
   public SqlAdvisor createAdvisor(SqlParser.Config parserConfig) {
@@ -153,7 +133,7 @@ public class SqlTestFactory {
         "Validator should implement SqlValidatorWithHints, actual validator is " + validator);
   }
 
-  public SqlTestFactory with(String name, Object value) {
+  public SqlNewTestFactory with(String name, Object value) {
     if (Objects.equals(value, options.get(name))) {
       return this;
     }
@@ -166,15 +146,26 @@ public class SqlTestFactory {
       builder.put(entry);
     }
     builder.put(name, value);
-    return new SqlTestFactory(builder.build(), catalogReaderFactory, validatorFactory);
+    return new SqlNewTestFactory(builder.build(), catalogReaderFactory,
+        validatorFactory, connectionFactory, parserConfig, validatorConfig, operatorTable);
   }
 
-  public SqlTestFactory withCatalogReader(MockCatalogReaderFactory newCatalogReaderFactory) {
-    return new SqlTestFactory(options, newCatalogReaderFactory, validatorFactory);
+  public SqlNewTestFactory withCatalogReader(CatalogReaderFactory catalogReaderFactory) {
+    return new SqlNewTestFactory(options, catalogReaderFactory,
+        validatorFactory, connectionFactory, parserConfig, validatorConfig, operatorTable);
   }
 
-  public SqlTestFactory withValidator(ValidatorFactory newValidatorFactory) {
-    return new SqlTestFactory(options, catalogReaderFactory, newValidatorFactory);
+  public SqlNewTestFactory withValidator(ValidatorFactory validatorFactory) {
+    return new SqlNewTestFactory(options, catalogReaderFactory,
+        validatorFactory, connectionFactory, parserConfig, validatorConfig, operatorTable);
+  }
+
+  public SqlNewTestFactory withValidatorConfig(
+      UnaryOperator<SqlValidator.Config> transform) {
+    final SqlValidator.Config validatorConfig =
+        transform.apply(this.validatorConfig);
+    return new SqlNewTestFactory(options, catalogReaderFactory,
+        validatorFactory, connectionFactory, parserConfig, validatorConfig, operatorTable);
   }
 
   public final Object get(String name) {
@@ -200,6 +191,33 @@ public class SqlTestFactory {
     return new JavaTypeFactoryImpl(typeSystem);
   }
 
+  public SqlNewTestFactory withParserConfig(
+      UnaryOperator<SqlParser.Config> transform) {
+    final SqlParser.Config parserConfig = transform.apply(this.parserConfig);
+    return new SqlNewTestFactory(options, catalogReaderFactory,
+        validatorFactory, connectionFactory,
+        parserConfig, validatorConfig, operatorTable);
+  }
+
+  public SqlNewTestFactory withConnectionFactory(
+      CalciteAssert.ConnectionFactory connectionFactory) {
+    return new SqlNewTestFactory(options, catalogReaderFactory,
+        validatorFactory, connectionFactory,
+        parserConfig, validatorConfig, operatorTable);
+  }
+
+  public SqlNewTestFactory withOperatorTable(
+      UnaryOperator<SqlOperatorTable> transform) {
+    final SqlOperatorTable operatorTable =
+        transform.apply(this.operatorTable);
+    return new SqlNewTestFactory(options, catalogReaderFactory,
+        validatorFactory, connectionFactory, parserConfig, validatorConfig, operatorTable);
+  }
+
+  public SqlParser.Config parserConfig() {
+    return parserConfig;
+  }
+
   /**
    * Creates {@link SqlValidator} for tests.
    */
@@ -211,12 +229,10 @@ public class SqlTestFactory {
         SqlValidator.Config config);
   }
 
-  /**
-   * Creates {@link MockCatalogReader} for tests.
-   * Note: {@link MockCatalogReader#init()} is to be invoked later, so a typical implementation
-   * should be via constructor reference like {@code MockCatalogReaderSimple::new}.
-   */
-  public interface MockCatalogReaderFactory {
-    MockCatalogReader create(RelDataTypeFactory typeFactory, boolean caseSensitive);
+  /** Creates a {@link SqlValidatorCatalogReader} for tests. */
+  @FunctionalInterface
+  public interface CatalogReaderFactory {
+    SqlValidatorCatalogReader create(RelDataTypeFactory typeFactory,
+        boolean caseSensitive);
   }
 }

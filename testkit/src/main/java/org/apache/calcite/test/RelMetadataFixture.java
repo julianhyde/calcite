@@ -122,9 +122,10 @@ public class RelMetadataFixture {
         typeCoercion, relTransform);
   }
 
+  // TODO switch to SqlNewTestFactory
   public RelMetadataFixture withCatalogReaderFactory(
       SqlTestFactory.MockCatalogReaderFactory factory) {
-    return withTester(t -> t.withCatalogReaderFactory(factory));
+    return withTester(t -> t.withCatalogReaderFactory(factory::create));
   }
 
   public RelMetadataFixture withClusterFactory(UnaryOperator<RelOptCluster> factory) {

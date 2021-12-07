@@ -25,6 +25,7 @@ import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlMoniker;
 import org.apache.calcite.sql.validate.SqlMonikerType;
 import org.apache.calcite.test.SqlValidatorTestCase;
+import org.apache.calcite.test.SqlValidatorTestConfig;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -61,12 +62,16 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   public static final SqlTestFactory ADVISOR_TEST_FACTORY =
       SqlTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
 
+  public static final SqlNewTestFactory ADVISOR_NEW_TEST_FACTORY =
+      SqlNewTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
+
   static final SqlValidatorTester ADVISOR_TESTER =
       new SqlValidatorTester(ADVISOR_TEST_FACTORY);
 
   static final Fixture LOCAL_FIXTURE =
-      new Fixture(SqlValidatorTester.DEFAULT, StringAndPos.of("?"), true, false)
-          .withTester(t -> ADVISOR_TESTER);
+      new Fixture(SqlValidatorTesterImpl.DEFAULT, ADVISOR_NEW_TEST_FACTORY,
+          StringAndPos.of("?"), true, false,
+          SqlValidatorTestCase.FIXTURE.config);
 
   private static final List<String> STAR_KEYWORD =
       Collections.singletonList(
@@ -422,7 +427,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     final Fixture f = fixture();
 
     String sql = "select a.empno, b.deptno from ^dummy a, sales.dummy b";
-    f.withSql(sql).assertHint(SCHEMAS, getSalesTables(), getFromKeywords()); // join
+    f.withSql(sql)
+        .assertHint(SCHEMAS, getSalesTables(), getFromKeywords()); // join
 
     sql = "select a.empno, b.deptno from ^";
     f.withSql(sql).assertComplete(SCHEMAS, getSalesTables(), getFromKeywords());
@@ -432,7 +438,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     f.withSql(sql).assertComplete(SCHEMAS, getSalesTables(), getFromKeywords());
 
     sql = "select a.empno, b.deptno from dummy a, ^sales.dummy b";
-    f.withSql(sql).assertHint(SCHEMAS, getSalesTables(), getFromKeywords()); // join
+    f.withSql(sql)
+        .assertHint(SCHEMAS, getSalesTables(), getFromKeywords()); // join
   }
 
   @Test void testFromComplete() {
@@ -530,13 +537,15 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     String sql;
 
     // "dummy b" should be removed
-    sql = "select axc from (select (select ^ from dummy) axc from dummy a), dummy b";
+    sql = "select axc\n"
+        + "from (select (select ^ from dummy) axc from dummy a), dummy b";
     f.withSql(sql)
         .assertSimplify("SELECT * FROM ("
             + " SELECT ( SELECT _suggest_ FROM dummy ) axc FROM dummy a )");
 
     // "dummy b" should be removed
-    sql = "select axc from dummy b, (select (select ^ from dummy) axc from dummy a)";
+    sql = "select axc\n"
+        + "from dummy b, (select (select ^ from dummy) axc from dummy a)";
     f.withSql(sql)
         .assertSimplify("SELECT * FROM ("
             + " SELECT ( SELECT _suggest_ FROM dummy ) axc FROM dummy a )");
@@ -587,14 +596,13 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     final Fixture f = fixture();
     String sql;
 
-    sql =
-        "select a.empno, b.deptno from sales.emp a, sales.dept b "
-            + "where b.deptno=^a.dummy";
-    f.withSql(sql).assertHint(AB_TABLES, EXPR_KEYWORDS, QUANTIFIERS); // where list
+    sql = "select a.empno, b.deptno from sales.emp a, sales.dept b "
+        + "where b.deptno=^a.dummy";
+    f.withSql(sql)
+        .assertHint(AB_TABLES, EXPR_KEYWORDS, QUANTIFIERS); // where list
 
-    sql =
-        "select a.empno, b.deptno from sales.emp a, sales.dept b "
-            + "where b.deptno=a.^";
+    sql = "select a.empno, b.deptno from sales.emp a, sales.dept b\n"
+        + "where b.deptno=a.^";
     f.withSql(sql)
         .assertComplete(ImmutableMap.of("COLUMN(COMM)", "COMM"),
             EMP_COLUMNS); // where list
@@ -753,38 +761,43 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
         Arrays.asList(
             "TABLE(T)");
 
-    sql =
-        "select ^t.dummy from (select 1 as x, 2 as y from sales.emp) as t where t.dummy=1";
+    sql = "select ^t.dummy from (\n"
+        + "  select 1 as x, 2 as y from sales.emp) as t\n"
+        + "where t.dummy=1";
     f.withSql(sql)
         .assertHint(EXPR_KEYWORDS, getSelectKeywords(), xyColumns, tTable);
 
     sql = "select t.^ from (select 1 as x, 2 as y from sales.emp) as t";
     f.withSql(sql).assertComplete(xyColumns, STAR_KEYWORD);
 
-    sql =
-        "select t.x from (select 1 as x, 2 as y from sales.emp) as t where ^t.dummy=1";
+    sql = "select t.x from (select 1 as x, 2 as y from sales.emp) as t "
+        + "where ^t.dummy=1";
     f.withSql(sql).assertHint(EXPR_KEYWORDS, tTable, xyColumns);
 
-    sql =
-        "select t.x from (select 1 as x, 2 as y from sales.emp) as t where t.^";
+    sql = "select t.x\n"
+        + "from (select 1 as x, 2 as y from sales.emp) as t\n"
+        + "where t.^";
     f.withSql(sql).assertComplete(xyColumns);
 
-    sql =
-        "select t.x from (select 1 as x, 2 as y from sales.emp) as t where ^";
+    sql = "select t.x from (select 1 as x, 2 as y from sales.emp) as t where ^";
     f.withSql(sql).assertComplete(EXPR_KEYWORDS, tTable, xyColumns);
 
     // with extra from item, aliases are ambiguous, so columns are not
     // offered
-    sql =
-        "select a.x from (select 1 as x, 2 as y from sales.emp) as a, dept as b where ^";
+    sql = "select a.x\n"
+        + "from (select 1 as x, 2 as y from sales.emp) as a,\n"
+        + "  dept as b\n"
+        + "where ^";
     f.withSql(sql).assertComplete(EXPR_KEYWORDS, AB_TABLES);
 
     // note that we get hints even though there's a syntax error in
     // select clause ('t.')
-    sql =
-        "select t. from (select 1 as x, 2 as y from (select x from sales.emp)) as t where ^";
-    String simplified =
-        "SELECT * FROM ( SELECT 1 as x , 2 as y FROM ( SELECT x FROM sales.emp ) ) as t WHERE _suggest_";
+    sql = "select t.\n"
+        + "from (select 1 as x, 2 as y from (select x from sales.emp)) as t\n"
+        + "where ^";
+    String simplified = "SELECT * "
+        + "FROM ( SELECT 1 as x , 2 as y FROM ( SELECT x FROM sales.emp ) ) as t "
+        + "WHERE _suggest_";
     f.withSql(sql)
         .assertSimplify(simplified)
         .assertComplete(EXPR_KEYWORDS, tTable, xyColumns);
@@ -1061,26 +1074,27 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     f.withSql(sql).assertSimplify(expected);
 
     // skip comments
-    sql =
-        "select /* here is from */ 'cat' as foobar, 1 as x from t group by t.^ order by 123";
+    sql = "select /* here is from */ 'cat' as foobar, 1 as x\n"
+        + "from t group by t.^ order by 123";
     expected = "SELECT * FROM t GROUP BY t. _suggest_";
     f.withSql(sql).assertSimplify(expected);
 
     // skip comments
-    sql =
-        "select // here is from clause\n 'cat' as foobar, 1 as x from t group by t.^ order by 123";
+    sql = "select // here is from clause\n"
+        + " 'cat' as foobar, 1 as x from t group by t.^ order by 123";
     expected = "SELECT * FROM t GROUP BY t. _suggest_";
     f.withSql(sql).assertSimplify(expected);
 
     // skip comments
-    sql =
-        "select -- here is from clause\n 'cat' as foobar, 1 as x from t group by t.^ order by 123";
+    sql = "select -- here is from clause\n"
+        + " 'cat' as foobar, 1 as x from t group by t.^ order by 123";
     expected = "SELECT * FROM t GROUP BY t. _suggest_";
     f.withSql(sql).assertSimplify(expected);
 
     // skip comments
-    sql =
-        "-- test test\nselect -- here is from\n'cat' as foobar, 1 as x from t group by t.^ order by 123";
+    sql = "-- test test\n"
+        + "select -- here is from\n"
+        + "'cat' as foobar, 1 as x from t group by t.^ order by 123";
     expected = "SELECT * FROM t GROUP BY t. _suggest_";
     f.withSql(sql).assertSimplify(expected);
   }
@@ -1108,8 +1122,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   }
 
   private void checkSimpleParserQuotedIdImpl(Fixture fixture) {
-    SqlParser.Config parserConfig =
-        fixture.tester.getFactory().getParserConfig();
+    SqlParser.Config parserConfig = fixture.config.toParserConfig();
     String sql;
     String expected;
 
@@ -1120,17 +1133,21 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
 
     // closed double-quote
     sql = replaceQuotes(parserConfig, "select * from t where [^] and x = y");
-    expected = replaceQuotes(parserConfig, "SELECT * FROM t WHERE _suggest_ and x = y");
+    expected = replaceQuotes(parserConfig,
+        "SELECT * FROM t WHERE _suggest_ and x = y");
     fixture.withSql(sql).assertSimplify(expected);
 
     // closed double-quote containing extra stuff
     sql = replaceQuotes(parserConfig, "select * from t where [^foo] and x = y");
-    expected = replaceQuotes(parserConfig, "SELECT * FROM t WHERE _suggest_ and x = y");
+    expected = replaceQuotes(parserConfig,
+        "SELECT * FROM t WHERE _suggest_ and x = y");
     fixture.withSql(sql).assertSimplify(expected);
 
     // escaped double-quote containing extra stuff
-    sql = replaceQuotes(parserConfig, "select * from t where [^f]]oo] and x = y");
-    expected = replaceQuotes(parserConfig, "SELECT * FROM t WHERE _suggest_ and x = y");
+    sql = replaceQuotes(parserConfig,
+        "select * from t where [^f]]oo] and x = y");
+    expected = replaceQuotes(parserConfig,
+        "SELECT * FROM t WHERE _suggest_ and x = y");
     fixture.withSql(sql).assertSimplify(expected);
   }
 
@@ -1400,8 +1417,9 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
         .assertComplete(EXPR_KEYWORDS, A_TABLE, DEPT_COLUMNS);
 
     // UNION ALL
-    sql =
-        "select 1 from emp union all select 2 from dept a where ^ and deptno < 5";
+    sql = "select 1 from emp\n"
+        + "union all\n"
+        + "select 2 from dept a where ^ and deptno < 5";
     f.withSql(sql).assertSimplify(simplified);
 
     // hint is in first query
@@ -1411,12 +1429,14 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   }
 
   @Test void testMssql() {
-    final Fixture f = fixture().withLex(Lex.SQL_SERVER);
-    String sql =
-        "select 1 from [emp] union select 2 from [DEPT] a where ^ and deptno < 5";
+    String sql = "select 1 from [emp]\n"
+        + "union\n"
+        + "select 2 from [DEPT] a where ^ and deptno < 5";
     String simplified =
         "SELECT * FROM [DEPT] a WHERE _suggest_ and deptno < 5";
-    f.withSql(sql)
+    fixture()
+        .withLex(Lex.SQL_SERVER)
+        .withSql(sql)
         .assertSimplify(simplified)
         .assertComplete(EXPR_KEYWORDS, Collections.singletonList("TABLE(a)"),
             DEPT_COLUMNS);
@@ -1447,13 +1467,16 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     assertSimplifySql(originSql, baseResultSql + "WHERE price > 10.0");
 
     originSql = baseOriginSql + "where column_b='/* this is not comment */'";
-    assertSimplifySql(originSql, baseResultSql + "WHERE column_b= '/* this is not comment */'");
+    assertSimplifySql(originSql,
+        baseResultSql + "WHERE column_b= '/* this is not comment */'");
 
     originSql = baseOriginSql + "where column_b='2021 --this is not comment'";
-    assertSimplifySql(originSql, baseResultSql + "WHERE column_b= '2021 --this is not comment'");
+    assertSimplifySql(originSql,
+        baseResultSql + "WHERE column_b= '2021 --this is not comment'");
 
     originSql = baseOriginSql + "where column_b='2021--this is not comment'";
-    assertSimplifySql(originSql, baseResultSql + "WHERE column_b= '2021--this is not comment'");
+    assertSimplifySql(originSql,
+        baseResultSql + "WHERE column_b= '2021--this is not comment'");
   }
 
   /**
@@ -1467,18 +1490,28 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
         new SqlSimpleParser("_suggest_", SqlParser.Config.DEFAULT);
 
     String actualSql = simpleParser.simplifySql(originSql);
-    assertThat("simpleParser.simplifySql(" + originSql + ")", actualSql, equalTo(expectedSql));
+    assertThat("simpleParser.simplifySql(" + originSql + ")",
+        actualSql, equalTo(expectedSql));
   }
 
   /** Fixture for the advisor test. */
   static class Fixture extends Sql {
-    protected Fixture(SqlTester tester, StringAndPos sap, boolean query,
-        boolean whole) {
-      super(tester, sap, query, whole);
+    protected Fixture(Tester tester, SqlNewTestFactory factory,
+        StringAndPos sap, boolean query, boolean whole,
+        SqlValidatorTestConfig config) {
+      super(tester, factory, sap, query, whole, config);
     }
 
-    @Override public Fixture withTester(UnaryOperator<SqlTester> transform) {
-      return new Fixture(transform.apply(tester), sap, query, whole);
+    @SuppressWarnings("deprecation")
+    @Override public Fixture withTester(UnaryOperator<Tester> transform) {
+      final Tester tester = transform.apply(this.tester);
+      return new Fixture(tester, factory, sap, query, whole, config);
+    }
+
+    @Override public Sql withConfig(
+        UnaryOperator<SqlValidatorTestConfig> transform) {
+      final SqlValidatorTestConfig config = transform.apply(this.config);
+      return new Fixture(tester, factory, sap, query, whole, config);
     }
 
     @Override public Fixture withLex(Lex lex) {
@@ -1486,13 +1519,14 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
     @Override public Fixture withSql(String sql) {
-      return new Fixture(tester, StringAndPos.of(sql), true, false);
+      return new Fixture(tester, factory, StringAndPos.of(sql), true, false,
+          config);
     }
 
     private void assertTokenizesTo(String expected) {
       SqlSimpleParser.Tokenizer tokenizer =
           new SqlSimpleParser.Tokenizer(sap.sql, "xxxxx",
-              tester.getFactory().getParserConfig().quoting());
+              config.quoting());
       StringBuilder buf = new StringBuilder();
       while (true) {
         SqlSimpleParser.Token token = tokenizer.nextToken();
@@ -1517,7 +1551,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
      * @param expectedResults Expected list of hints
      */
     protected void assertHint(String expectedResults) {
-      SqlAdvisor advisor = tester.getFactory().createAdvisor();
+      final SqlParser.Config parserConfig = config.toParserConfig();
+      SqlAdvisor advisor = factory.createAdvisor(parserConfig);
 
       List<SqlMoniker> results =
           advisor.getCompletionHints(
@@ -1533,7 +1568,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
      * @param expected Expected result after simplification.
      */
     protected Fixture assertSimplify(String expected) {
-      SqlAdvisor advisor = tester.getFactory().createAdvisor();
+      final SqlParser.Config parserConfig = config.toParserConfig();
+      SqlAdvisor advisor = factory.createAdvisor(parserConfig);
 
       String actual = advisor.simplifySql(sap.sql, sap.cursor);
       Assertions.assertEquals(expected, actual);
@@ -1568,7 +1604,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     protected void assertComplete(String expectedResults,
         @Nullable String expectedWord,
         @Nullable Map<String, String> replacements) {
-      SqlAdvisor advisor = tester.getFactory().createAdvisor();
+      final SqlParser.Config parserConfig = config.toParserConfig();
+      SqlAdvisor advisor = factory.createAdvisor(parserConfig);
 
       final String[] replaced = {null};
       List<SqlMoniker> results =
@@ -1604,7 +1641,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
       if (missingReplacemenets.isEmpty()) {
         return;
       }
-      fail("Sql " + sap + " did not produce replacement hints " + missingReplacemenets);
+      fail("Sql " + sap + " did not produce replacement hints "
+          + missingReplacemenets);
     }
 
     protected void assertEquals(

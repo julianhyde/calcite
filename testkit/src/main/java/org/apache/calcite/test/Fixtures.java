@@ -30,7 +30,7 @@ public class Fixtures {
 
   /** Creates a fixture for validation tests. */
   public static SqlValidatorTestCase.Sql forValidator() {
-    return SqlValidatorTestCase.Sql.DEFAULT;
+    return SqlValidatorTestCase.FIXTURE;
   }
 
   /** Creates a fixture for SQL-to-Rel tests. */

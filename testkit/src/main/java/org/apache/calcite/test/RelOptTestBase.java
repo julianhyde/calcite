@@ -165,7 +165,7 @@ abstract class RelOptTestBase {
 
     public Sql withDynamicTable() {
       return withTester(t ->
-          t.withCatalogReaderFactory(MockCatalogReaderDynamic::new));
+          t.withCatalogReaderFactory(MockCatalogReaderDynamic::create));
     }
 
     public Sql withTester(UnaryOperator<Tester> transform) { // TODO dont transform tester
@@ -206,7 +206,9 @@ abstract class RelOptTestBase {
 
     /** Adds a transform that will be applied to {@link #tester}
      * just before running the query. */
-    private Sql withTransform(Function<Tester, Tester> transform) {
+    // TODO obsolete tester, and therefore this method
+    // TODO transform eagerly
+    private Sql withTransform(UnaryOperator<Tester> transform) {
       final ImmutableList<Function<Tester, Tester>> transforms =
           FlatLists.append(this.transforms, transform);
       return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
@@ -264,9 +266,10 @@ abstract class RelOptTestBase {
           transforms, before, after, decorrelate, trim);
     }
 
+    // TODO switch to SqlNewTestFactory
     public Sql withCatalogReaderFactory(
         SqlTestFactory.MockCatalogReaderFactory factory) {
-      return withTransform(tester -> tester.withCatalogReaderFactory(factory));
+      return withTransform(tester -> tester.withCatalogReaderFactory(factory::create));
     }
 
     public Sql withConformance(final SqlConformance conformance) {
