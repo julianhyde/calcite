@@ -17,13 +17,10 @@
 package org.apache.calcite.sql.test;
 
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.function.UnaryOperator;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -31,30 +28,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Tester of {@link SqlValidator} and runtime execution of the input SQL.
  */
 class SqlRuntimeTester extends AbstractSqlTester {
-  SqlRuntimeTester(SqlTestFactory factory,
-      UnaryOperator<SqlValidator> validatorTransform) {
-    super(factory, validatorTransform);
+  SqlRuntimeTester() {
   }
 
-  @Override protected SqlTester with(SqlTestFactory factory) {
-    return new SqlRuntimeTester(factory, validatorTransform);
-  }
-
-  public SqlTester withValidatorTransform(
-      UnaryOperator<UnaryOperator<SqlValidator>> transform) {
-    return new SqlRuntimeTester(factory,
-        transform.apply(validatorTransform));
-  }
-
-  @Override public void checkFails(StringAndPos sap, String expectedError,
-      boolean runtime) {
+  @Override public void checkFails(SqlNewTestFactory factory, StringAndPos sap,
+      String expectedError, boolean runtime) {
     final StringAndPos sap2 =
-        StringAndPos.of(runtime ? buildQuery2(sap.addCarets())
+        StringAndPos.of(runtime ? buildQuery2(factory, sap.addCarets())
             : buildQuery(sap.addCarets()));
-    assertExceptionIsThrown(sap2, expectedError, runtime);
+    assertExceptionIsThrown(factory, sap2, expectedError, runtime);
   }
 
-  @Override public void checkAggFails(
+  @Override public void checkAggFails(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       String expectedError,
@@ -62,20 +47,19 @@ class SqlRuntimeTester extends AbstractSqlTester {
     String query =
         SqlTests.generateAggQuery(expr, inputValues);
     final StringAndPos sap = StringAndPos.of(query);
-    assertExceptionIsThrown(sap, expectedError, runtime);
+    assertExceptionIsThrown(factory, sap, expectedError, runtime);
   }
 
-  public void assertExceptionIsThrown(
-      StringAndPos sap,
-      SqlParser.Config parserConfig, @Nullable String expectedMsgPattern) {
-    assertExceptionIsThrown(sap, expectedMsgPattern, false);
+  @Override public void assertExceptionIsThrown(SqlNewTestFactory factory,
+      StringAndPos sap, @Nullable String expectedMsgPattern) {
+    assertExceptionIsThrown(factory, sap, expectedMsgPattern, false);
   }
 
-  public void assertExceptionIsThrown(StringAndPos sap,
-      @Nullable String expectedMsgPattern, boolean runtime) {
+  public void assertExceptionIsThrown(SqlNewTestFactory factory,
+      StringAndPos sap, @Nullable String expectedMsgPattern, boolean runtime) {
     final SqlNode sqlNode;
     try {
-      sqlNode = parseQuery(sap.sql);
+      sqlNode = parseQuery(factory, sap.sql);
     } catch (Throwable e) {
       checkParseEx(e, expectedMsgPattern, sap);
       return;
@@ -83,13 +67,13 @@ class SqlRuntimeTester extends AbstractSqlTester {
 
     Throwable thrown = null;
     final SqlTests.Stage stage;
-    final SqlValidator validator = getValidator();
+    final SqlValidator validator = factory.createValidator();
     if (runtime) {
       stage = SqlTests.Stage.RUNTIME;
       SqlNode validated = validator.validate(sqlNode);
       assertNotNull(validated);
       try {
-        check(sap.sql, SqlTests.ANY_TYPE_CHECKER,
+        check(factory, sap.sql, SqlTests.ANY_TYPE_CHECKER,
             SqlTests.ANY_PARAMETER_CHECKER, SqlTests.ANY_RESULT_CHECKER);
       } catch (Throwable ex) {
         // get the real exception in runtime check

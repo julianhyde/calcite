@@ -51,7 +51,6 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
-import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.test.CalciteAssert;
@@ -160,6 +159,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 public abstract class SqlOperatorBaseTest {
   //~ Static fields/initializers ---------------------------------------------
+
+  public static final TesterImpl TESTER = new TesterImpl();
 
   private static final Logger LOGGER =
       CalciteTrace.getTestTracer(SqlOperatorBaseTest.class);
@@ -326,7 +327,7 @@ public abstract class SqlOperatorBaseTest {
    */
   protected SqlOperatorBaseTest(boolean enable, SqlTester tester) {
     this.enable = enable;
-    this.fixture = new SqlFixtureImpl(SqlNewTestFactory.INSTANCE);
+    this.fixture = SqlFixtureImpl.DEFAULT;
   }
 
   @BeforeEach
@@ -8628,8 +8629,7 @@ public abstract class SqlOperatorBaseTest {
 
     // The following test would correctly return "TIMESTAMP(6) NOT NULL" if max
     // precision were 6 or higher
-    final SqlValidator validator = fixture.getValidator();
-    assumeTrue(validator.getTypeFactory().getTypeSystem()
+    assumeTrue(fixture.getFactory().getTypeFactory().getTypeSystem()
         .getMaxPrecision(SqlTypeName.TIMESTAMP) == 3);
     fixture.checkType(
         "timestampadd(MICROSECOND, 2, timestamp '2016-02-24 12:42:25.000000')",
@@ -9762,9 +9762,8 @@ public abstract class SqlOperatorBaseTest {
     if (!enable) {
       return;
     }
-    final SqlValidator validator = fixture.getValidator();
     final List<RelDataType> types =
-        SqlLimitsTest.getTypes(validator.getTypeFactory());
+        SqlLimitsTest.getTypes(fixture.getFactory().getTypeFactory());
     for (RelDataType type : types) {
       for (Object o : getValues((BasicSqlType) type, true)) {
         SqlLiteral literal =
@@ -9814,7 +9813,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testLiteralBeyondLimit() {
     fixture.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     final List<RelDataType> types =
-        SqlLimitsTest.getTypes(fixture.getValidator().getTypeFactory());
+        SqlLimitsTest.getTypes(fixture.getFactory().getTypeFactory());
     for (RelDataType type : types) {
       for (Object o : getValues((BasicSqlType) type, false)) {
         SqlLiteral literal =
@@ -9895,7 +9894,8 @@ public abstract class SqlOperatorBaseTest {
   @Disabled("Too slow and not really a unit test")
   @Tag("slow")
   @Test void testArgumentBounds() {
-    final SqlValidatorImpl validator = (SqlValidatorImpl) fixture.getValidator();
+    final SqlValidatorImpl validator =
+        (SqlValidatorImpl) fixture.getFactory().createValidator();
     final SqlValidatorScope scope = validator.getEmptyScope();
     final RelDataTypeFactory typeFactory = validator.getTypeFactory();
     final Builder builder = new Builder(typeFactory);
@@ -10102,26 +10102,20 @@ public abstract class SqlOperatorBaseTest {
     }
   }
 
-  public static SqlTester tester() {
-    return new TesterImpl(SqlTestFactory.INSTANCE);
-  }
-
   /**
    * Implementation of {@link org.apache.calcite.sql.test.SqlTester} based on a
    * JDBC connection.
    */
   protected static class TesterImpl extends SqlRuntimeTester {
-    public TesterImpl(SqlTestFactory testFactory) {
-      super(testFactory, UnaryOperator.identity());
+    public TesterImpl() {
     }
 
-    @Override public void check(String query, TypeChecker typeChecker,
+    @Override public void check(SqlNewTestFactory factory, String query,
+        TypeChecker typeChecker,
         ParameterChecker parameterChecker, ResultChecker resultChecker) {
-      super.check(query, typeChecker, parameterChecker, resultChecker);
-      //noinspection unchecked
+      super.check(factory, query, typeChecker, parameterChecker, resultChecker);
       final CalciteAssert.ConnectionFactory connectionFactory =
-          (CalciteAssert.ConnectionFactory)
-              getFactory().get("connectionFactory");
+          factory.connectionFactory;
       try (Connection connection = connectionFactory.createConnection();
            Statement statement = connection.createStatement()) {
         final ResultSet resultSet =
@@ -10132,9 +10126,6 @@ public abstract class SqlOperatorBaseTest {
       }
     }
 
-    @Override protected SqlTester with(SqlTestFactory factory) {
-      return new TesterImpl(factory);
-    }
   }
 
   /** A type, a value, and its {@link SqlNode} representation. */

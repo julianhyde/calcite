@@ -646,7 +646,7 @@ class TypeCoercionTest {
 
     /** Creates a Fixture. */
     public static Fixture create(SqlNewTestFactory testFactory) {
-      final SqlValidator validator = testFactory.getValidator();
+      final SqlValidator validator = testFactory.createValidator();
       return new Fixture(validator.getTypeFactory(), validator.getTypeCoercion());
     }
 

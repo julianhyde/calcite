@@ -64,11 +64,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   public static final SqlNewTestFactory ADVISOR_NEW_TEST_FACTORY =
       SqlNewTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
 
-  static final SqlValidatorTester ADVISOR_TESTER = // TODO: remove
-      new SqlValidatorTester(ADVISOR_TEST_FACTORY);
-
   static final Fixture LOCAL_FIXTURE =
-      new Fixture(SqlValidatorTesterImpl.DEFAULT, ADVISOR_NEW_TEST_FACTORY,
+      new Fixture(SqlValidatorTester.DEFAULT, ADVISOR_NEW_TEST_FACTORY,
           StringAndPos.of("?"), true, false);
 
   private static final List<String> STAR_KEYWORD =
@@ -1494,14 +1491,14 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
 
   /** Fixture for the advisor test. */
   static class Fixture extends Sql {
-    protected Fixture(Tester tester, SqlNewTestFactory factory,
+    protected Fixture(SqlTester tester, SqlNewTestFactory factory,
         StringAndPos sap, boolean query, boolean whole) {
       super(tester, factory, sap, query, whole);
     }
 
     @SuppressWarnings("deprecation")
-    @Override public Fixture withTester(UnaryOperator<Tester> transform) {
-      final Tester tester = transform.apply(this.tester);
+    @Override public Fixture withTester(UnaryOperator<SqlTester> transform) {
+      final SqlTester tester = transform.apply(this.tester);
       return new Fixture(tester, factory, sap, query, whole);
     }
 

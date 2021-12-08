@@ -24,6 +24,6 @@ import org.apache.calcite.sql.test.SqlOperatorBaseTest;
  */
 class CalciteSqlOperatorTest extends SqlOperatorBaseTest {
   CalciteSqlOperatorTest() {
-    super(false, tester());
+    super(false, TESTER);
   }
 }

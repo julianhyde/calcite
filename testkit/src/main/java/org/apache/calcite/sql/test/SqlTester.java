@@ -27,15 +27,13 @@ import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
-import org.apache.calcite.test.SqlValidatorTestCase;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.ResultSet;
-import java.util.function.UnaryOperator;
 
 /**
- * SqlTester defines a callback for testing SQL queries and expressions.
+ * Callback for testing SQL queries and expressions.
  *
  * <p>The idea is that when you define an operator (or another piece of SQL
  * functionality), you can define the logical behavior of that operator once, as
@@ -47,8 +45,9 @@ import java.util.function.UnaryOperator;
  * queries in different ways, for example, using a C++ versus Java calculator.
  * An implementation might even ignore certain calls altogether.
  */
-@SuppressWarnings("deprecation")
-public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester {
+public interface SqlTester extends AutoCloseable {
+  // TODO: make sure that 'param factory' occurs in each method javadoc
+
   //~ Enums ------------------------------------------------------------------
 
   /**
@@ -59,8 +58,6 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  SqlTestFactory getFactory();
 
   /** Returns a tester that tests a given SQL quoting style. */
   SqlTester withQuoting(Quoting quoting);
@@ -98,10 +95,53 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
   /** Returns a tester that uses a given operator table. */
   SqlTester withOperatorTable(SqlOperatorTable operatorTable);
 
-  /** Returns a tester that applies the given transform to a validator before
-   * using it. */
-  SqlTester withValidatorTransform(UnaryOperator<UnaryOperator<SqlValidator>>
-      transform);
+  /** Parses and validates a query, then calls an action on the result. */
+  void validateAndThen(SqlNewTestFactory factory, StringAndPos sap,
+      ValidatedNodeConsumer consumer);
+
+  /** Given an expression, generates several queries that include that
+   * expression, and for each, parses and validates, then calls an action on
+   * the result. */
+  void forEachQueryValidateAndThen(SqlNewTestFactory factory,
+      StringAndPos expression, ValidatedNodeConsumer consumer);
+
+  /**
+   * Checks that a query is valid, or, if invalid, throws the right
+   * message at the right location.
+   *
+   * <p>If <code>expectedMsgPattern</code> is null, the query must
+   * succeed.
+   *
+   * <p>If <code>expectedMsgPattern</code> is not null, the query must
+   * fail, and give an error location of (expectedLine, expectedColumn)
+   * through (expectedEndLine, expectedEndColumn).
+   *
+   * @param factory            Factory
+   * @param sap                SQL statement
+   * @param expectedMsgPattern If this parameter is null the query must be
+   */
+  void assertExceptionIsThrown(SqlNewTestFactory factory, StringAndPos sap,
+      @Nullable String expectedMsgPattern);
+
+  /**
+   * Returns the data type of the sole column of a SQL query.
+   *
+   * <p>For example, <code>getResultType("VALUES (1")</code> returns
+   * <code>INTEGER</code>.
+   *
+   * <p>Fails if query returns more than one column.
+   *
+   * @see #getResultType(SqlNewTestFactory, String)
+   */
+  RelDataType getColumnType(SqlNewTestFactory factory, String sql);
+
+  /**
+   * Returns the data type of the row returned by a SQL query.
+   *
+   * <p>For example, <code>getResultType("VALUES (1, 'foo')")</code>
+   * returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
+   */
+  RelDataType getResultType(SqlNewTestFactory factory, String sql);
 
   /**
    * Tests that a scalar SQL expression returns the expected result and the
@@ -111,11 +151,12 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * <pre>checkScalar("1.1 + 2.9", "4.0", "DECIMAL(2, 1) NOT NULL");</pre>
    * </blockquote>
    *
+   * @param factory    Factory
    * @param expression Scalar expression
    * @param result     Expected result
    * @param resultType Expected result type
    */
-  void checkScalar(
+  void checkScalar(SqlNewTestFactory factory,
       String expression,
       Object result,
       String resultType);
@@ -128,11 +169,12 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * <pre>checkScalarExact("1 + 2", "3");</pre>
    * </blockquote>
    *
+   * @param factory    Factory
    * @param expression Scalar expression
    * @param result     Expected result
    */
   void checkScalarExact(
-      String expression,
+      SqlNewTestFactory factory, String expression,
       String result);
 
   /**
@@ -143,13 +185,14 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * <pre>checkScalarExact("1 + 2", "3");</pre>
    * </blockquote>
    *
+   * @param factory      Factory
    * @param expression   Scalar expression
    * @param expectedType Type we expect the result to have, including
    *                     nullability, precision and scale, for example
    *                     <code>DECIMAL(2, 1) NOT NULL</code>.
    * @param result       Expected result
    */
-  void checkScalarExact(
+  void checkScalarExact(SqlNewTestFactory factory,
       String expression,
       String expectedType,
       String result);
@@ -162,6 +205,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * <pre>checkScalarApprox("1.0 + 2.1", "3.1");</pre>
    * </blockquote>
    *
+   * @param factory        Factory
    * @param expression     Scalar expression
    * @param expectedType   Type we expect the result to have, including
    *                       nullability, precision and scale, for example
@@ -171,7 +215,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    *                       result
    */
   void checkScalarApprox(
-      String expression,
+      SqlNewTestFactory factory, String expression,
       String expectedType,
       double expectedResult,
       double delta);
@@ -193,7 +237,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param expression Scalar expression
    * @param result     Expected result (null signifies NULL).
    */
-  void checkBoolean(
+  void checkBoolean(SqlNewTestFactory factory,
       String expression,
       @Nullable Boolean result);
 
@@ -209,7 +253,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param result     Expected result
    * @param resultType Expected result type
    */
-  void checkString(
+  void checkString(SqlNewTestFactory factory,
       String expression,
       String result,
       String resultType);
@@ -223,7 +267,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    *
    * @param expression Scalar expression
    */
-  void checkNull(String expression);
+  void checkNull(SqlNewTestFactory factory, String expression);
 
   /**
    * Tests that a SQL expression has a given type. For example,
@@ -240,7 +284,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param expression Scalar expression
    * @param type       Type string
    */
-  void checkType(
+  void checkType(SqlNewTestFactory factory,
       String expression,
       String type);
 
@@ -251,7 +295,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param sql  Query expression
    * @param type Type string
    */
-  @Override void checkColumnType(
+  void checkColumnType(SqlNewTestFactory factory,
       String sql,
       String type);
 
@@ -273,7 +317,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param result      Expected result
    * @param delta       The acceptable tolerance between the expected and actual
    */
-  void check(
+  void check(SqlNewTestFactory factory,
       String query,
       TypeChecker typeChecker,
       @Nullable Object result,
@@ -284,13 +328,14 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * Checking of type and value are abstracted using {@link TypeChecker}
    * and {@link ResultChecker} functors.
    *
+   * @param factory       Factory
    * @param query         SQL query
    * @param typeChecker   Checks whether the result is the expected type
    * @param parameterChecker Checks whether the parameters are of expected
    *                      types
    * @param resultChecker Checks whether the result has the expected value
    */
-  void check(
+  void check(SqlNewTestFactory factory,
       String query,
       TypeChecker typeChecker,
       ParameterChecker parameterChecker,
@@ -319,7 +364,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param result      Expected result
    * @param delta       Allowable variance from expected result
    */
-  void checkAgg(
+  void checkAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       Object result,
@@ -337,7 +382,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param result      Expected result
    * @param delta       Allowable variance from expected result
    */
-  void checkAggWithMultipleArgs(
+  void checkAggWithMultipleArgs(SqlNewTestFactory factory,
       String expr,
       String[][] inputValues,
       Object result,
@@ -356,7 +401,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    * @param result      Expected result
    * @param delta       Allowable variance from expected result
    */
-  void checkWinAgg(
+  void checkWinAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       String windowSpec,
@@ -366,13 +411,14 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
 
   /**
    * Tests that an aggregate expression fails at run time.
+   *
    * @param expr An aggregate expression
    * @param inputValues Array of input values
    * @param expectedError Pattern for expected error
    * @param runtime       If true, must fail at runtime; if false, must fail at
    *                      validate time
    */
-  void checkAggFails(
+  void checkAggFails(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       String expectedError,
@@ -381,41 +427,45 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
   /**
    * Tests that a scalar SQL expression fails at run time.
    *
+   * @param factory       Factory
    * @param expression    SQL scalar expression
    * @param expectedError Pattern for expected error. If !runtime, must
    *                      include an error location.
    * @param runtime       If true, must fail at runtime; if false, must fail at
    *                      validate time
    */
-  void checkFails(
+  void checkFails(SqlNewTestFactory factory,
       StringAndPos expression,
       String expectedError,
       boolean runtime);
 
-  /** As {@link #checkFails(StringAndPos, String, boolean)}, but with a string
-   * that contains carets. */
-  default void checkFails(
+  /** As {@link #checkFails(SqlNewTestFactory, StringAndPos, String, boolean)},
+   * but with a string that contains carets. */
+  default void checkFails(SqlNewTestFactory factory,
       String expression,
       String expectedError,
       boolean runtime) {
-    checkFails(StringAndPos.of(expression), expectedError, runtime);
+    checkFails(factory, StringAndPos.of(expression), expectedError, runtime);
   }
 
   /**
    * Tests that a SQL query fails at prepare time.
    *
+   * @param factory       Factory
    * @param sap           SQL query and error position
    * @param expectedError Pattern for expected error. Must
    *                      include an error location.
    */
-  void checkQueryFails(StringAndPos sap, String expectedError);
+  void checkQueryFails(SqlNewTestFactory factory, StringAndPos sap,
+      String expectedError);
 
   /**
    * Tests that a SQL query succeeds at prepare time.
    *
+   * @param factory       Factory
    * @param sql           SQL query
    */
-  void checkQuery(String sql);
+  void checkQuery(SqlNewTestFactory factory, String sql);
 
   //~ Inner Interfaces -------------------------------------------------------
 
@@ -448,7 +498,7 @@ public interface SqlTester extends AutoCloseable, SqlValidatorTestCase.OldTester
    *
    * @param <R> Result type of the function
    *
-   * @see #validateAndApply */
+   * @see AbstractSqlTester#validateAndApply */
   interface ValidatedNodeFunction<R> {
     R apply(StringAndPos sap, SqlValidator validator, SqlNode validatedNode);
   }

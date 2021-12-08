@@ -16,9 +16,8 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.test.SqlTestFactory;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.BarfingInvocationHandler;
@@ -41,6 +40,14 @@ import java.util.List;
 class SqlTestGen {
   private SqlTestGen() {}
 
+  private static final SqlNewTestFactory SPOOLER_TEST_FACTORY =
+      SqlNewTestFactory.INSTANCE.withValidator(
+          (opTab, catalogReader, typeFactory, config) ->
+              (SqlValidator) Proxy.newProxyInstance(
+                  SqlValidatorSpooler.class.getClassLoader(),
+                  new Class[]{SqlValidator.class},
+                  new SqlValidatorSpooler.MyInvocationHandler()));
+
   //~ Methods ----------------------------------------------------------------
 
   public static void main(String[] args) {
@@ -50,7 +57,7 @@ class SqlTestGen {
   private void genValidatorTest() {
     final File file = new File("validatorTest.sql");
     try (PrintWriter pw = Util.printWriter(file)) {
-      Method[] methods = getJunitMethods(SqlValidatorSpooler.class);
+      List<Method> methods = getJunitMethods(SqlValidatorSpooler.class);
       for (Method method : methods) {
         final SqlValidatorSpooler test = new SqlValidatorSpooler(pw);
         final Object result = method.invoke(test);
@@ -62,9 +69,9 @@ class SqlTestGen {
   }
 
   /**
-   * Returns a list of all of the Junit methods in a given class.
+   * Returns a list of all Junit methods in a given class.
    */
-  private static Method[] getJunitMethods(Class<SqlValidatorSpooler> clazz) {
+  private static List<Method> getJunitMethods(Class<SqlValidatorSpooler> clazz) {
     List<Method> list = new ArrayList<>();
     for (Method method : clazz.getMethods()) {
       if (method.getName().startsWith("test")
@@ -75,7 +82,7 @@ class SqlTestGen {
         list.add(method);
       }
     }
-    return list.toArray(new Method[0]);
+    return list;
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -85,13 +92,6 @@ class SqlTestGen {
    * tests.
    */
   private static class SqlValidatorSpooler extends SqlValidatorTest {
-    private static final SqlTestFactory SPOOLER_VALIDATOR = SqlTestFactory.INSTANCE.withValidator(
-        (opTab, catalogReader, typeFactory, config) ->
-            (SqlValidator) Proxy.newProxyInstance(
-                SqlValidatorSpooler.class.getClassLoader(),
-                new Class[]{SqlValidator.class},
-                new MyInvocationHandler()));
-
     private final PrintWriter pw;
 
     private SqlValidatorSpooler(PrintWriter pw) {
@@ -99,37 +99,9 @@ class SqlTestGen {
     }
 
     @Override public Sql fixture() {
-      return super.fixture() /*
-          .withTester(t -> createTester()) */;
-    }
-
-    private SqlValidatorTester createTester() {
-      return new SqlValidatorTester(SPOOLER_VALIDATOR) {
-        public void assertExceptionIsThrown(
-            StringAndPos sap,
-            SqlParser.Config parserConfig, @Nullable String expectedMsgPattern) {
-          if (expectedMsgPattern == null) {
-            // This SQL statement is supposed to succeed.
-            // Generate it to the file, so we can see what
-            // output it produces.
-            pw.println("-- " /* + getName() */);
-            pw.println(sap);
-            pw.println(";");
-          } else {
-            // Do nothing. We know that this fails the validator
-            // test, so we don't learn anything by having it fail
-            // from SQL.
-          }
-        }
-
-        @Override public void validateAndThen(StringAndPos sap,
-            ValidatedNodeConsumer consumer) {
-        }
-
-        @Override public void forEachQueryValidateAndThen(StringAndPos expression,
-            ValidatedNodeConsumer consumer) {
-        }
-      };
+      return super.fixture()
+          .withTester(t -> new SpoolerTester(pw))
+          .withFactory(t -> SPOOLER_TEST_FACTORY);
     }
 
     /**
@@ -149,6 +121,41 @@ class SqlTestGen {
 
       public boolean shouldExpandIdentifiers() {
         return true;
+      }
+    }
+
+    /** Extension of {@link org.apache.calcite.sql.test.SqlTester} that writes
+     * out SQL. */
+    private static class SpoolerTester extends SqlValidatorTester {
+      private final PrintWriter pw;
+
+      SpoolerTester(PrintWriter pw) {
+        this.pw = pw;
+      }
+
+      @Override public void assertExceptionIsThrown(SqlNewTestFactory factory,
+          StringAndPos sap, @Nullable String expectedMsgPattern) {
+        if (expectedMsgPattern == null) {
+          // This SQL statement is supposed to succeed.
+          // Generate it to the file, so we can see what
+          // output it produces.
+          pw.println("-- " /* + getName() */);
+          pw.println(sap);
+          pw.println(";");
+        } else {
+          // Do nothing. We know that this fails the validator
+          // test, so we don't learn anything by having it fail
+          // from SQL.
+        }
+      }
+
+      @Override public void validateAndThen(SqlNewTestFactory factory,
+          StringAndPos sap, ValidatedNodeConsumer consumer) {
+      }
+
+      @Override public void forEachQueryValidateAndThen(
+          SqlNewTestFactory factory, StringAndPos expression,
+          ValidatedNodeConsumer consumer) {
       }
     }
   }

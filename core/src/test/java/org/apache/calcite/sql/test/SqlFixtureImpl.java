@@ -62,10 +62,16 @@ import static java.util.Objects.requireNonNull;
  * Implementation of {@link SqlFixture}.
  */
 class SqlFixtureImpl implements SqlFixture {
-  private final SqlNewTestFactory factory;
+  public static final SqlFixtureImpl DEFAULT =
+      new SqlFixtureImpl(SqlNewTestFactory.INSTANCE,
+          SqlValidatorTester.DEFAULT);
 
-  SqlFixtureImpl(SqlNewTestFactory factory) {
+  private final SqlNewTestFactory factory;
+  private final SqlTester tester;
+
+  SqlFixtureImpl(SqlNewTestFactory factory, SqlTester tester) {
     this.factory = requireNonNull(factory, "factory");
+    this.tester = requireNonNull(tester, "tester");
   }
 
   @Override public void close() {
@@ -77,34 +83,12 @@ class SqlFixtureImpl implements SqlFixture {
 
   public SqlFixtureImpl withFactory(UnaryOperator<SqlNewTestFactory> transform) {
     final SqlNewTestFactory factory = transform.apply(this.factory);
-    return new SqlFixtureImpl(factory);
+    return new SqlFixtureImpl(factory, tester);
   }
 
   @Override public SqlFixture setFor(SqlOperator operator,
       VmName... unimplementedVmNames) {
     return this;
-  }
-
-  void assertExceptionIsThrown(StringAndPos sap,
-      @Nullable String expectedMsgPattern) {
-    final SqlValidator validator;
-    final SqlNode sqlNode;
-    try {
-      sqlNode = parseQuery(sap.sql);
-      validator = getValidator();
-    } catch (Throwable e) {
-      SqlTests.checkEx(e, expectedMsgPattern, sap, SqlTests.Stage.PARSE);
-      return;
-    }
-
-    Throwable thrown = null;
-    try {
-      validator.validate(sqlNode);
-    } catch (Throwable ex) {
-      thrown = ex;
-    }
-
-    SqlTests.checkEx(thrown, expectedMsgPattern, sap, SqlTests.Stage.VALIDATE);
   }
 
   SqlNode parseQuery(String sql) throws SqlParseException {
@@ -124,14 +108,14 @@ class SqlFixtureImpl implements SqlFixture {
 
   void validateAndThen(StringAndPos sap,
       SqlTester.ValidatedNodeConsumer consumer) {
-    final SqlValidator validator = getValidator();
+    final SqlValidator validator = factory.createValidator();
     SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
     consumer.accept(sap, validator, rewrittenNode);
   }
 
   <R> R validateAndApply(StringAndPos sap,
       SqlTester.ValidatedNodeFunction<R> function) {
-    final SqlValidator validator = getValidator();
+    final SqlValidator validator = factory.createValidator();
     SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
     return function.apply(sap, validator, rewrittenNode);
   }
@@ -169,7 +153,7 @@ class SqlFixtureImpl implements SqlFixture {
   }
 
   @Override public void checkQuery(String sql) {
-    assertExceptionIsThrown(StringAndPos.of(sql), null);
+    tester.assertExceptionIsThrown(factory, StringAndPos.of(sql), null);
   }
 
   static String buildQuery(String expression) {
@@ -317,7 +301,7 @@ class SqlFixtureImpl implements SqlFixture {
     if (runtime) {
       // We need to test that the expression fails at runtime.
       // Ironically, that means that it must succeed at prepare time.
-      SqlValidator validator = getValidator();
+      SqlValidator validator = factory.createValidator();
       final String sql = buildQuery(sap.addCarets());
       SqlNode n = parseAndValidate(validator, sql);
       assertNotNull(n);
@@ -329,7 +313,7 @@ class SqlFixtureImpl implements SqlFixture {
 
   @Override public void checkQueryFails(StringAndPos sap,
       String expectedError) {
-    assertExceptionIsThrown(sap, expectedError);
+    tester.assertExceptionIsThrown(factory, sap, expectedError);
   }
 
   @Override public void checkAggFails(
@@ -340,7 +324,7 @@ class SqlFixtureImpl implements SqlFixture {
     final String sql =
         SqlTests.generateAggQuery(expr, inputValues);
     if (runtime) {
-      SqlValidator validator = getValidator();
+      SqlValidator validator = factory.createValidator();
       SqlNode n = parseAndValidate(validator, sql);
       assertNotNull(n);
     } else {
@@ -476,7 +460,7 @@ class SqlFixtureImpl implements SqlFixture {
     // Check result type.
     typeChecker.checkType(actualType);
 
-    SqlValidator validator = getValidator();
+    SqlValidator validator = factory.createValidator();
     SqlNode n = parseAndValidate(validator, query);
     final RelDataType parameterRowType = validator.getParameterRowType(n);
     parameterChecker.checkParameters(parameterRowType);

@@ -3830,7 +3830,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // (values used in subtests depend on these being true to
     // accurately test bounds)
     final RelDataTypeSystem typeSystem =
-        fixture().factory.getValidator().getTypeFactory().getTypeSystem();
+        fixture().factory.getTypeFactory().getTypeSystem();
     final RelDataTypeSystem defTypeSystem = RelDataTypeSystem.DEFAULT;
     for (SqlTypeName typeName : SqlTypeName.INTERVAL_TYPES) {
       assertThat(typeName.getMinPrecision(), is(1));
@@ -8953,11 +8953,12 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "FROM `CATALOG`.`SALES`.`EMP` AS `EMP`";
     final String expected2 = "SELECT COALESCE(`DEPTNO`, `EMPNO`)\n"
         + "FROM `EMP`";
-    final SqlValidator validator = fixture().factory.getValidator();
     sql(sql)
         .withValidatorCallRewrite(false)
-        .rewritesTo(validator.config().identifierExpansion()
-            ? expected1 : expected2);
+        .withValidatorIdentifierExpansion(true)
+        .rewritesTo(expected1)
+        .withValidatorIdentifierExpansion(false)
+        .rewritesTo(expected2);
   }
 
   @Test void testCoalesceWithRewrite() {
@@ -8968,11 +8969,12 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String expected2 = "SELECT CASE WHEN `DEPTNO` IS NOT NULL"
         + " THEN `DEPTNO` ELSE `EMPNO` END\n"
         + "FROM `EMP`";
-    final SqlValidator validator = fixture().factory.getValidator();
     sql(sql)
         .withValidatorCallRewrite(true)
-        .rewritesTo(validator.config().identifierExpansion()
-            ? expected1 : expected2);
+        .withValidatorIdentifierExpansion(true)
+        .rewritesTo(expected1)
+        .withValidatorIdentifierExpansion(false)
+        .rewritesTo(expected2);
   }
 
   @Disabled
@@ -12162,7 +12164,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     try {
       final SqlParser sqlParserReader = SqlParser.create(sql, config);
       final SqlNode node = sqlParserReader.parseQuery();
-      final SqlValidator validator = fixture().factory.getValidator();
+      final SqlValidator validator = fixture().factory.createValidator();
       final SqlNode x = validator.validate(node);
       fail("expecting an error, got " + x);
       return;
@@ -12180,7 +12182,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
       final SqlParser sqlParserReader =
           SqlParser.create(new StringReader(sql), config);
       final SqlNode node = sqlParserReader.parseQuery();
-      final SqlValidator validator = fixture().factory.getValidator();
+      final SqlValidator validator = fixture().factory.createValidator();
       final SqlNode x = validator.validate(node);
       fail("expecting an error, got " + x);
     } catch (CalciteContextException error) {
@@ -12193,7 +12195,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testValidateParameterizedExpression() throws SqlParseException {
     final SqlParser.Config config = SqlParser.config();
-    final SqlValidator validator = fixture().factory.getValidator();
+    final SqlValidator validator = fixture().factory.createValidator();
     final RelDataTypeFactory typeFactory = validator.getTypeFactory();
     final RelDataType intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
     final RelDataType intTypeNull = typeFactory.createTypeWithNullability(intType, true);

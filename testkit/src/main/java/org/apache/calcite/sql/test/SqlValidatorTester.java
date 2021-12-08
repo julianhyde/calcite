@@ -18,33 +18,10 @@ package org.apache.calcite.sql.test;
 
 import org.apache.calcite.sql.validate.SqlValidator;
 
-import java.util.function.UnaryOperator;
-
 /**
  * Tester of {@link SqlValidator}.
  */
 public class SqlValidatorTester extends AbstractSqlTester {
-
   /** Default instance of this tester. */
-  public static final SqlValidatorTester DEFAULT =
-      new SqlValidatorTester(SqlTestFactory.INSTANCE);
-
-  public SqlValidatorTester(SqlTestFactory factory) {
-    this(factory, UnaryOperator.identity());
-  }
-
-  SqlValidatorTester(SqlTestFactory factory,
-      UnaryOperator<SqlValidator> validatorTransform) {
-    super(factory, validatorTransform);
-  }
-
-  @Override protected SqlTester with(SqlTestFactory factory) {
-    return new SqlValidatorTester(factory, validatorTransform);
-  }
-
-  @Override public SqlTester withValidatorTransform(
-      UnaryOperator<UnaryOperator<SqlValidator>> transform) {
-    return new SqlValidatorTester(factory,
-        transform.apply(validatorTransform));
-  }
+  public static final SqlValidatorTester DEFAULT = new SqlValidatorTester();
 }

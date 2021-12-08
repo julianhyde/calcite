@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.sql.test;
 
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -36,13 +34,9 @@ import org.apache.calcite.test.MockSqlOperatorTable;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.SourceStringReader;
 
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
 
-import java.util.Map;
-import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 /**
@@ -50,27 +44,14 @@ import java.util.function.UnaryOperator;
  * configuration is passed to each method.
 */
 public class SqlNewTestFactory {
-  public static final ImmutableMap<String, Object> DEFAULT_OPTIONS =
-      ImmutableSortedMap.<String, Object>naturalOrder()
-          .put("quoting", Quoting.DOUBLE_QUOTE)
-          .put("quotedCasing", Casing.UNCHANGED)
-          .put("unquotedCasing", Casing.TO_UPPER)
-//          .put("caseSensitive", true)
-//          .put("lenientOperatorLookup", false)
-//          .put("enableTypeCoercion", true)
-//          .put("conformance", SqlConformanceEnum.DEFAULT)
-          .put("operatorTable", SqlStdOperatorTable.instance())
-          .put("connectionFactory",
-              CalciteAssert.EMPTY_CONNECTION_FACTORY
-                  .with(
-                      new CalciteAssert.AddSchemaSpecPostProcessor(
-                          CalciteAssert.SchemaSpec.HR)))
-          .build();
-
   public static final SqlNewTestFactory INSTANCE =
-      new SqlNewTestFactory(DEFAULT_OPTIONS, MockCatalogReaderSimple::create,
-          true, SqlValidatorUtil::newValidator,
-          CalciteAssert.EMPTY_CONNECTION_FACTORY, SqlParser.Config.DEFAULT,
+      new SqlNewTestFactory(MockCatalogReaderSimple::create,
+          SqlValidatorUtil::newValidator,
+          CalciteAssert.EMPTY_CONNECTION_FACTORY
+              .with(
+                  new CalciteAssert.AddSchemaSpecPostProcessor(
+                      CalciteAssert.SchemaSpec.HR)),
+          SqlParser.Config.DEFAULT,
           SqlValidator.Config.DEFAULT,
           SqlStdOperatorTable.instance())
       .withOperatorTable(o -> {
@@ -79,55 +60,48 @@ public class SqlNewTestFactory {
         return opTab;
       });
 
-  private final ImmutableMap<String, Object> options;
-  private final CalciteAssert.ConnectionFactory connectionFactory;
+  public final CalciteAssert.ConnectionFactory connectionFactory;
   private final CatalogReaderFactory catalogReaderFactory;
-  private final boolean caseSensitive;
   private final ValidatorFactory validatorFactory;
 
-  private final Supplier<RelDataTypeFactory> typeFactory;
+  private final Supplier<RelDataTypeFactory> typeFactorySupplier;
   private final SqlOperatorTable operatorTable;
-  private final Supplier<SqlValidatorCatalogReader> catalogReader;
+  private final Supplier<SqlValidatorCatalogReader> catalogReaderSupplier;
   private final SqlParser.Config parserConfig;
-  private final SqlValidator.Config validatorConfig;
+  public final SqlValidator.Config validatorConfig;
 
-  protected SqlNewTestFactory(ImmutableMap<String, Object> options,
-      CatalogReaderFactory catalogReaderFactory, boolean caseSensitive,
+  protected SqlNewTestFactory(CatalogReaderFactory catalogReaderFactory,
       ValidatorFactory validatorFactory,
       CalciteAssert.ConnectionFactory connectionFactory,
       SqlParser.Config parserConfig,
       SqlValidator.Config validatorConfig, SqlOperatorTable operatorTable) {
-    this.options = options;
-    this.connectionFactory = connectionFactory;
-    assert options.get("caseSensitive") == null;
-    assert options.get("conformance") == null;
-    assert options.get("lenientOperatorLookup") == null;
-    assert options.get("enableTypeCoercion") == null; // TODO remove
-
     this.catalogReaderFactory = catalogReaderFactory;
-    this.caseSensitive = caseSensitive;
     this.validatorFactory = validatorFactory;
+    this.connectionFactory = connectionFactory;
     this.operatorTable = operatorTable;
-    this.typeFactory = Suppliers.memoize(
-        () -> createTypeFactory(validatorConfig.sqlConformance()));
-    this.catalogReader = Suppliers.memoize(
-        () -> catalogReaderFactory.create(typeFactory.get(), caseSensitive));
+    this.typeFactorySupplier = Suppliers.memoize(() ->
+        createTypeFactory(validatorConfig.sqlConformance()));
+    this.catalogReaderSupplier = Suppliers.memoize(() ->
+        catalogReaderFactory.create(typeFactorySupplier.get(),
+            parserConfig.caseSensitive()));
     this.parserConfig = parserConfig;
     this.validatorConfig = validatorConfig;
   }
 
+  /** Creates a parser. */
   public SqlParser createParser(String sql) {
     SqlParser.Config parserConfig = parserConfig();
     return SqlParser.create(new SourceStringReader(sql), parserConfig);
   }
 
-  public SqlValidator getValidator() {
-    return validatorFactory.create(operatorTable, catalogReader.get(),
-        typeFactory.get(), validatorConfig);
+  /** Creates a validator. */
+  public SqlValidator createValidator() {
+    return validatorFactory.create(operatorTable, catalogReaderSupplier.get(),
+        typeFactorySupplier.get(), validatorConfig);
   }
 
   public SqlAdvisor createAdvisor() {
-    SqlValidator validator = getValidator();
+    SqlValidator validator = createValidator();
     if (validator instanceof SqlValidatorWithHints) {
       return new SqlAdvisor((SqlValidatorWithHints) validator, parserConfig);
     }
@@ -135,33 +109,15 @@ public class SqlNewTestFactory {
         "Validator should implement SqlValidatorWithHints, actual validator is " + validator);
   }
 
-  public SqlNewTestFactory with(String name, Object value) {
-    if (Objects.equals(value, options.get(name))) {
-      return this;
-    }
-    ImmutableMap.Builder<String, Object> builder = ImmutableSortedMap.naturalOrder();
-    // Protect from IllegalArgumentException: Multiple entries with same key
-    for (Map.Entry<String, Object> entry : options.entrySet()) {
-      if (name.equals(entry.getKey())) {
-        continue;
-      }
-      builder.put(entry);
-    }
-    builder.put(name, value);
-    return new SqlNewTestFactory(builder.build(), catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
-  }
-
   public SqlNewTestFactory withCatalogReader(CatalogReaderFactory catalogReaderFactory) {
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
+    return new SqlNewTestFactory(catalogReaderFactory,
+        validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);
   }
 
   public SqlNewTestFactory withValidator(ValidatorFactory validatorFactory) {
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
+    return new SqlNewTestFactory(catalogReaderFactory,
+        validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);
   }
 
@@ -169,13 +125,9 @@ public class SqlNewTestFactory {
       UnaryOperator<SqlValidator.Config> transform) {
     final SqlValidator.Config validatorConfig =
         transform.apply(this.validatorConfig);
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
+    return new SqlNewTestFactory(catalogReaderFactory,
+        validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);
-  }
-
-  public final Object get(String name) {
-    return options.get(name);
   }
 
   private static RelDataTypeFactory createTypeFactory(SqlConformance conformance) {
@@ -187,28 +139,21 @@ public class SqlNewTestFactory {
         }
       };
     }
-    if (conformance.allowExtendedTrim()) {
-      typeSystem = new DelegatingTypeSystem(typeSystem) {
-        public boolean allowExtendedTrim() {
-          return true;
-        }
-      };
-    }
     return new JavaTypeFactoryImpl(typeSystem);
   }
 
   public SqlNewTestFactory withParserConfig(
       UnaryOperator<SqlParser.Config> transform) {
     final SqlParser.Config parserConfig = transform.apply(this.parserConfig);
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
+    return new SqlNewTestFactory(catalogReaderFactory,
+        validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);
   }
 
   public SqlNewTestFactory withConnectionFactory(
       CalciteAssert.ConnectionFactory connectionFactory) {
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
+    return new SqlNewTestFactory(catalogReaderFactory,
+        validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);
   }
 
@@ -216,8 +161,8 @@ public class SqlNewTestFactory {
       UnaryOperator<SqlOperatorTable> transform) {
     final SqlOperatorTable operatorTable =
         transform.apply(this.operatorTable);
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
+    return new SqlNewTestFactory(catalogReaderFactory,
+        validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);
   }
 
@@ -225,10 +170,8 @@ public class SqlNewTestFactory {
     return parserConfig;
   }
 
-  public SqlNewTestFactory withCaseSensitive(boolean caseSensitive) {
-    return new SqlNewTestFactory(options, catalogReaderFactory,
-        caseSensitive, validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+  public RelDataTypeFactory getTypeFactory() {
+    return typeFactorySupplier.get();
   }
 
   /**

@@ -57,7 +57,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.UnaryOperator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -67,26 +66,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Abstract implementation of
- * {@link org.apache.calcite.test.SqlValidatorTestCase.Tester}
+ * Abstract implementation of {@link SqlTester}
  * that talks to a mock catalog.
  *
  * <p>This is to implement the default behavior: testing is only against the
  * {@link SqlValidator}.
  */
 public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
-  protected final SqlTestFactory factory;
-  protected final UnaryOperator<SqlValidator> validatorTransform;
-
-  public AbstractSqlTester(SqlTestFactory factory,
-      UnaryOperator<SqlValidator> validatorTransform) {
-    this.factory = requireNonNull(factory, "factory");
-    this.validatorTransform =
-        requireNonNull(validatorTransform, "validatorTransform");
-  }
-
-  @Override public final SqlTestFactory getFactory() {
-    return factory;
+  public AbstractSqlTester() {
   }
 
   /**
@@ -98,26 +85,17 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     // no resources to release
   }
 
-  @Override public final SqlConformance getConformance() {
-    return (SqlConformance) factory.get("conformance");
-  }
-
-  @Override public final SqlValidator getValidator() {
-    return factory.getValidator();
-  }
-
-  @Override public void assertExceptionIsThrown(StringAndPos sap,
-      @Nullable String expectedMsgPattern) {
-    final SqlValidator validator;
+  @Override public void assertExceptionIsThrown(SqlNewTestFactory factory,
+      StringAndPos sap, @Nullable String expectedMsgPattern) {
     final SqlNode sqlNode;
     try {
-      sqlNode = parseQuery(sap.sql);
-      validator = getValidator();
+      sqlNode = parseQuery(factory, sap.sql);
     } catch (Throwable e) {
       SqlTests.checkEx(e, expectedMsgPattern, sap, SqlTests.Stage.PARSE);
       return;
     }
 
+    final SqlValidator validator = factory.createValidator();
     Throwable thrown = null;
     try {
       validator.validate(sqlNode);
@@ -147,38 +125,46 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
   }
 
-  @Override public RelDataType getColumnType(String sql) {
-    return validateAndApply(StringAndPos.of(sql), (sql1, validator, n) -> {
-      final RelDataType rowType =
-          validator.getValidatedNodeType(n);
-      final List<RelDataTypeField> fields = rowType.getFieldList();
-      assertThat("expected query to return 1 field", fields.size(), is(1));
-      return fields.get(0).getType();
-    });
+  @Override public RelDataType getColumnType(SqlNewTestFactory factory,
+      String sql) {
+    return validateAndApply(factory, StringAndPos.of(sql),
+        (sql1, validator, n) -> {
+          final RelDataType rowType =
+              validator.getValidatedNodeType(n);
+          final List<RelDataTypeField> fields = rowType.getFieldList();
+          assertThat("expected query to return 1 field", fields.size(), is(1));
+          return fields.get(0).getType();
+        });
   }
 
-  @Override public RelDataType getResultType(String sql) {
-    return validateAndApply(StringAndPos.of(sql), (sql1, validator, n) ->
-        validator.getValidatedNodeType(n));
+  @Override public RelDataType getResultType(SqlNewTestFactory factory,
+      String sql) {
+    return validateAndApply(factory, StringAndPos.of(sql),
+        (sql1, validator, n) ->
+            validator.getValidatedNodeType(n));
   }
 
-  @Override public SqlNode parseAndValidate(SqlValidator validator, String sql) {
+  Pair<SqlValidator, SqlNode> parseAndValidate(SqlNewTestFactory factory,
+      String sql) {
     SqlNode sqlNode;
     try {
-      sqlNode = parseQuery(sql);
+      sqlNode = parseQuery(factory, sql);
     } catch (Throwable e) {
       throw new RuntimeException("Error while parsing query: " + sql, e);
     }
-    return validator.validate(sqlNode);
+    SqlValidator validator = factory.createValidator();
+    return Pair.of(validator, validator.validate(sqlNode));
   }
 
-  @Override public SqlNode parseQuery(String sql) throws SqlParseException {
+  SqlNode parseQuery(SqlNewTestFactory factory, String sql) throws SqlParseException {
     SqlParser parser = factory.createParser(sql);
     return parser.parseQuery();
   }
 
-  @Override public void checkColumnType(String sql, String expected) {
-    validateAndThen(StringAndPos.of(sql), checkColumnTypeAction(is(expected)));
+  @Override public void checkColumnType(SqlNewTestFactory factory, String sql,
+      String expected) {
+    validateAndThen(factory, StringAndPos.of(sql),
+        checkColumnTypeAction(is(expected)));
   }
 
   private static ValidatedNodeConsumer checkColumnTypeAction(
@@ -194,8 +180,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     };
   }
 
-  @Override public void checkType(String expression, String type) {
-    forEachQueryValidateAndThen(StringAndPos.of(expression),
+  @Override public void checkType(SqlNewTestFactory factory,
+      String expression, String type) {
+    forEachQueryValidateAndThen(factory, StringAndPos.of(expression),
         checkColumnTypeAction(is(type)));
   }
 
@@ -256,8 +243,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     return this; // with(factory.with(name, value));
   }
 
-  protected abstract SqlTester with(SqlTestFactory factory);
-
   // SqlTester methods
 
   @Override public void setFor(
@@ -266,27 +251,27 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     // do nothing
   }
 
-  @Override public void checkAgg(
+  @Override public void checkAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       Object result,
       double delta) {
     String query =
         SqlTests.generateAggQuery(expr, inputValues);
-    check(query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
-  @Override public void checkAggWithMultipleArgs(
+  @Override public void checkAggWithMultipleArgs(SqlNewTestFactory factory,
       String expr,
       String[][] inputValues,
       Object result,
       double delta) {
     String query =
         SqlTests.generateAggQueryWithMultipleArgs(expr, inputValues);
-    check(query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
-  @Override public void checkWinAgg(
+  @Override public void checkWinAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       String windowSpec,
@@ -296,89 +281,90 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     String query =
         SqlTests.generateWinAggQuery(
             expr, windowSpec, inputValues);
-    check(query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
-  @Override public void checkScalar(
-      String expression,
-      Object result,
-      String resultType) {
-    checkType(expression, resultType);
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.ANY_TYPE_CHECKER, result, 0);
+  @Override public void checkScalar(SqlNewTestFactory factory,
+      String expression, Object result, String resultType) {
+    checkType(factory, expression, resultType);
+    for (String sql : buildQueries(factory, expression)) {
+      check(factory, sql, SqlTests.ANY_TYPE_CHECKER, result, 0);
     }
   }
 
-  @Override public void checkScalarExact(
+  @Override public void checkScalarExact(SqlNewTestFactory factory,
       String expression,
       String result) {
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0);
+    for (String sql : buildQueries(factory, expression)) {
+      check(factory, sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0);
     }
   }
 
-  @Override public void checkScalarExact(
+  @Override public void checkScalarExact(SqlNewTestFactory factory,
       String expression,
       String expectedType,
       String result) {
-    for (String sql : buildQueries(expression)) {
+    for (String sql : buildQueries(factory, expression)) {
       TypeChecker typeChecker =
           new SqlTests.StringTypeChecker(expectedType);
-      check(sql, typeChecker, result, 0);
+      check(factory, sql, typeChecker, result, 0);
     }
   }
 
-  @Override public void checkScalarApprox(
+  @Override public void checkScalarApprox(SqlNewTestFactory factory,
       String expression,
       String expectedType,
       double expectedResult,
       double delta) {
-    for (String sql : buildQueries(expression)) {
+    for (String sql : buildQueries(factory, expression)) {
       TypeChecker typeChecker =
           new SqlTests.StringTypeChecker(expectedType);
-      check(sql, typeChecker, expectedResult, delta);
+      check(factory, sql, typeChecker, expectedResult, delta);
     }
   }
 
-  @Override public void checkBoolean(
+  @Override public void checkBoolean(SqlNewTestFactory factory,
       String expression,
       @Nullable Boolean result) {
     if (null == result) {
-      checkNull(expression);
+      checkNull(factory, expression);
     } else {
-      for (String sql : buildQueries(expression)) {
-        check(sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(), 0);
+      for (String sql : buildQueries(factory, expression)) {
+        check(factory, sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(),
+            0);
       }
     }
   }
 
-  @Override public void checkString(
+  @Override public void checkString(SqlNewTestFactory factory,
       String expression,
       String result,
       String expectedType) {
-    for (String sql : buildQueries(expression)) {
+    for (String sql : buildQueries(factory, expression)) {
       TypeChecker typeChecker =
           new SqlTests.StringTypeChecker(expectedType);
-      check(sql, typeChecker, result, 0);
+      check(factory, sql, typeChecker, result, 0);
     }
   }
 
-  @Override public void checkNull(String expression) {
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.ANY_TYPE_CHECKER, null, 0);
+  @Override public void checkNull(SqlNewTestFactory factory,
+      String expression) {
+    for (String sql : buildQueries(factory, expression)) {
+      check(factory, sql, SqlTests.ANY_TYPE_CHECKER, null, 0);
     }
   }
 
-  @Override public final void check(
+  @Override public final void check(SqlNewTestFactory factory,
       String query,
       TypeChecker typeChecker,
       @Nullable Object result,
       double delta) {
-    check(query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
+    check(factory, query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
         SqlTests.createChecker(result, delta));
   }
 
-  @Override public void check(String query, TypeChecker typeChecker,
+  @Override public void check(SqlNewTestFactory factory,
+      String query, TypeChecker typeChecker,
       ParameterChecker parameterChecker, ResultChecker resultChecker) {
     // This implementation does NOT check the result!
     // All it does is check the return type.
@@ -388,57 +374,62 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     // Parse and validate. There should be no errors.
     // There must be 1 column. Get its type.
-    RelDataType actualType = getColumnType(query);
+    RelDataType actualType = getColumnType(factory, query);
 
     // Check result type.
     typeChecker.checkType(actualType);
 
-    SqlValidator validator = getValidator();
-    SqlNode n = parseAndValidate(validator, query);
+    Pair<SqlValidator, SqlNode> p = parseAndValidate(factory, query);
+    SqlValidator validator = requireNonNull(p.left);
+    SqlNode n = requireNonNull(p.right);
     final RelDataType parameterRowType = validator.getParameterRowType(n);
     parameterChecker.checkParameters(parameterRowType);
   }
 
-  @Override public void validateAndThen(StringAndPos sap,
-      ValidatedNodeConsumer consumer) {
-    final SqlValidator validator = validatorTransform.apply(getValidator());
-    SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
+  @Override public void validateAndThen(SqlNewTestFactory factory,
+      StringAndPos sap, ValidatedNodeConsumer consumer) {
+    Pair<SqlValidator, SqlNode> p = parseAndValidate(factory, sap.sql);
+    SqlValidator validator = requireNonNull(p.left);
+    SqlNode rewrittenNode = requireNonNull(p.right);
     consumer.accept(sap, validator, rewrittenNode);
   }
 
-  @Override public <R> R validateAndApply(StringAndPos sap,
+  public <R> R validateAndApply(SqlNewTestFactory factory, StringAndPos sap,
       ValidatedNodeFunction<R> function) {
-    final SqlValidator validator = validatorTransform.apply(getValidator());
-    SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
+    Pair<SqlValidator, SqlNode> p = parseAndValidate(factory, sap.sql);
+    SqlValidator validator = requireNonNull(p.left);
+    SqlNode rewrittenNode = requireNonNull(p.right);
     return function.apply(sap, validator, rewrittenNode);
   }
 
-  @Override public void forEachQueryValidateAndThen(StringAndPos expression,
-      ValidatedNodeConsumer consumer) {
-    buildQueries(expression.addCarets())
-        .forEach(query -> validateAndThen(StringAndPos.of(query), consumer));
+  @Override public void forEachQueryValidateAndThen(SqlNewTestFactory factory,
+      StringAndPos expression, ValidatedNodeConsumer consumer) {
+    buildQueries(factory, expression.addCarets())
+        .forEach(query ->
+            validateAndThen(factory, StringAndPos.of(query), consumer));
   }
 
-  @Override public void checkFails(StringAndPos sap, String expectedError,
-      boolean runtime) {
+  @Override public void checkFails(SqlNewTestFactory factory, StringAndPos sap,
+      String expectedError, boolean runtime) {
     if (runtime) {
       // We need to test that the expression fails at runtime.
       // Ironically, that means that it must succeed at prepare time.
-      SqlValidator validator = getValidator();
       final String sql = buildQuery(sap.addCarets());
-      SqlNode n = parseAndValidate(validator, sql);
+      Pair<SqlValidator, SqlNode> p = parseAndValidate(factory, sql);
+      SqlNode n = p.right;
       assertNotNull(n);
     } else {
-      checkQueryFails(StringAndPos.of(buildQuery(sap.addCarets())),
-          expectedError);
+      StringAndPos sap1 = StringAndPos.of(buildQuery(sap.addCarets()));
+      checkQueryFails(factory, sap1, expectedError);
     }
   }
 
-  @Override public void checkQueryFails(StringAndPos sap, String expectedError) {
-    assertExceptionIsThrown(sap, expectedError);
+  @Override public void checkQueryFails(SqlNewTestFactory factory,
+      StringAndPos sap, String expectedError) {
+    assertExceptionIsThrown(factory, sap, expectedError);
   }
 
-  @Override public void checkAggFails(
+  @Override public void checkAggFails(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       String expectedError,
@@ -446,16 +437,16 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     final String sql =
         SqlTests.generateAggQuery(expr, inputValues);
     if (runtime) {
-      SqlValidator validator = getValidator();
-      SqlNode n = parseAndValidate(validator, sql);
+      Pair<SqlValidator, SqlNode> p = parseAndValidate(factory, sql);
+      SqlNode n = p.right;
       assertNotNull(n);
     } else {
-      checkQueryFails(StringAndPos.of(sql), expectedError);
+      checkQueryFails(factory, StringAndPos.of(sql), expectedError);
     }
   }
 
-  @Override public void checkQuery(String sql) {
-    assertExceptionIsThrown(StringAndPos.of(sql), null);
+  @Override public void checkQuery(SqlNewTestFactory factory, String sql) {
+    assertExceptionIsThrown(factory, StringAndPos.of(sql), null);
   }
 
   public static String buildQuery(String expression) {
@@ -483,10 +474,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
    * We push down {@code CAST(NULL AS type)} but raw nulls such as
    * {@code CASE 1 WHEN 2 THEN 'a' ELSE NULL END} are left as is.</p>
    *
+   * @param factory Test factory
    * @param expression Scalar expression
    * @return Query that evaluates a scalar expression
    */
-  protected String buildQuery2(String expression) {
+  protected String buildQuery2(SqlNewTestFactory factory, String expression) {
     if (expression.matches("(?i).*percentile_(cont|disc).*")) {
       // PERCENTILE_CONT requires its argument to be a literal,
       // so converting its argument to a column will cause false errors.
@@ -498,7 +490,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     SqlNode x;
     final String sql = "values (" + expression + ")";
     try {
-      x = parseQuery(sql);
+      x = parseQuery(factory, sql);
     } catch (SqlParseException e) {
       throw TestUtil.rethrow(e);
     }
@@ -602,7 +594,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
    * @param expression Scalar expression
    * @return List of queries that evaluate an expression
    */
-  private Iterable<String> buildQueries(final String expression) {
+  private Iterable<String> buildQueries(SqlNewTestFactory factory,
+      final String expression) {
     // Why an explicit iterable rather than a list? If there is
     // a syntax error in the expression, the calling code discovers it
     // before we try to parse it to do substitutions on the parse tree.
@@ -618,7 +611,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         case 0:
           return buildQuery(expression);
         case 1:
-          return buildQuery2(expression);
+          return buildQuery2(factory, expression);
         default:
           throw new NoSuchElementException();
         }

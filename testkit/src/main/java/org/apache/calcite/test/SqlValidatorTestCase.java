@@ -37,7 +37,7 @@ import org.apache.calcite.sql.test.AbstractSqlTester;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlTests;
-import org.apache.calcite.sql.test.SqlValidatorTesterImpl;
+import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -77,9 +77,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlValidatorTestCase {
   public static final Sql FIXTURE =
-      new Sql(SqlValidatorTesterImpl.DEFAULT, SqlNewTestFactory.INSTANCE,
-          StringAndPos.of("?"), true, false
-      );
+      new Sql(SqlValidatorTester.DEFAULT, SqlNewTestFactory.INSTANCE,
+          StringAndPos.of("?"), true, false);
 
   /** Creates a test case. */
   public SqlValidatorTestCase() {
@@ -132,7 +131,7 @@ public class SqlValidatorTestCase {
    * <p>It contains a mock schema with <code>EMP</code> and <code>DEPT</code>
    * tables, which can run without having to start up Farrago.
    *
-   * @deprecated Use {@link Tester}, which is stateless.
+   * @deprecated Use {@link SqlTester}, which is stateless.
    */
   @Deprecated // to be removed shortly
   public interface OldTester {
@@ -212,7 +211,7 @@ public class SqlValidatorTestCase {
   /** Fluent testing API. */
   public static class Sql {
 
-    public final Tester tester;
+    public final SqlTester tester;
     public final SqlNewTestFactory factory;
     public final StringAndPos sap;
     public final boolean query;
@@ -226,7 +225,7 @@ public class SqlValidatorTestCase {
      * @param whole Whether the failure location is the whole query or
      *              expression
      */
-    protected Sql(Tester tester, SqlNewTestFactory factory,
+    protected Sql(SqlTester tester, SqlNewTestFactory factory,
         StringAndPos sap, boolean query, boolean whole) {
       this.tester = tester;
       this.factory = factory;
@@ -235,9 +234,8 @@ public class SqlValidatorTestCase {
       this.whole = whole;
     }
 
-    @Deprecated // we shouldn't need this, if Tester is stateless
-    public Sql withTester(UnaryOperator<Tester> transform) {
-      final Tester tester = transform.apply(this.tester);
+    public Sql withTester(UnaryOperator<SqlTester> transform) {
+      final SqlTester tester = transform.apply(this.tester);
       return new Sql(tester, factory, sap, query, whole);
     }
 
@@ -316,8 +314,7 @@ public class SqlValidatorTestCase {
     }
 
     Sql ok() {
-      final SqlParser.Config parserConfig = factory.parserConfig();
-      tester.assertExceptionIsThrown(toSql(false), parserConfig, null);
+      tester.assertExceptionIsThrown(factory, toSql(false), null);
       return this;
     }
 
@@ -326,8 +323,7 @@ public class SqlValidatorTestCase {
      */
     Sql fails(String expected) {
       requireNonNull(expected, "expected");
-      final SqlParser.Config parserConfig = factory.parserConfig();
-      tester.assertExceptionIsThrown(toSql(true), parserConfig, expected);
+      tester.assertExceptionIsThrown(factory, toSql(true), expected);
       return this;
     }
 
@@ -355,7 +351,7 @@ public class SqlValidatorTestCase {
      * @param expectedType Expected row type
      */
     public Sql type(String expectedType) {
-      tester.validateAndThen(sap, (sql1, validator, n) -> {
+      tester.validateAndThen(factory, sap, (sql1, validator, n) -> {
         RelDataType actualType = validator.getValidatedNodeType(n);
         String actual = SqlTests.getTypeString(actualType);
         assertThat(actual, is(expectedType));
@@ -374,7 +370,7 @@ public class SqlValidatorTestCase {
      * @param expectedType Expected type, including nullability
      */
     public Sql columnType(String expectedType) {
-      tester.checkColumnType(toSql(false).sql, expectedType);
+      tester.checkColumnType(factory, toSql(false).sql, expectedType);
       return this;
     }
 
@@ -384,7 +380,7 @@ public class SqlValidatorTestCase {
      * @param matcher Expected monotonicity
      */
     public Sql assertMonotonicity(Matcher<SqlMonotonicity> matcher) {
-      tester.validateAndThen(toSql(false),
+      tester.validateAndThen(factory, toSql(false),
           (sap, validator, n) -> {
             final RelDataType rowType = validator.getValidatedNodeType(n);
             final SqlValidatorNamespace selectNamespace =
@@ -398,7 +394,7 @@ public class SqlValidatorTestCase {
     }
 
     public Sql assertBindType(Matcher<String> matcher) {
-      tester.validateAndThen(sap, (sap, validator, validatedNode) -> {
+      tester.validateAndThen(factory, sap, (sap, validator, validatedNode) -> {
         final RelDataType parameterRowType =
             validator.getParameterRowType(validatedNode);
         assertThat(parameterRowType.toString(), matcher);
@@ -407,7 +403,7 @@ public class SqlValidatorTestCase {
     }
 
     public void assertCharset(Matcher<Charset> charsetMatcher) {
-      tester.forEachQueryValidateAndThen(sap, (sap, validator, n) -> {
+      tester.forEachQueryValidateAndThen(factory, sap, (sap, validator, n) -> {
         final RelDataType rowType = validator.getValidatedNodeType(n);
         final List<RelDataTypeField> fields = rowType.getFieldList();
         assertThat("expected query to return 1 field", fields.size(), is(1));
@@ -419,7 +415,7 @@ public class SqlValidatorTestCase {
 
     public void assertCollation(Matcher<String> collationMatcher,
         Matcher<SqlCollation.Coercibility> coercibilityMatcher) {
-      tester.forEachQueryValidateAndThen(sap, (sap, validator, n) -> {
+      tester.forEachQueryValidateAndThen(factory, sap, (sap, validator, n) -> {
         RelDataType rowType = validator.getValidatedNodeType(n);
         final List<RelDataTypeField> fields = rowType.getFieldList();
         assertThat("expected query to return 1 field", fields.size(), is(1));
@@ -440,7 +436,7 @@ public class SqlValidatorTestCase {
      * </blockquote>
      */
     public void assertInterval(Matcher<Long> matcher) {
-      tester.validateAndThen(toSql(false),
+      tester.validateAndThen(factory, toSql(false),
           (sap, validator, validatedNode) -> {
             final SqlCall n = (SqlCall) validatedNode;
             SqlNode node = null;
@@ -465,7 +461,7 @@ public class SqlValidatorTestCase {
     }
 
     public Sql withCaseSensitive(boolean caseSensitive) {
-      return withFactory(f -> f.withCaseSensitive(caseSensitive));
+      return withParserConfig(c -> c.withCaseSensitive(caseSensitive));
     }
 
     public Sql withOperatorTable(SqlOperatorTable operatorTable) {
@@ -498,7 +494,7 @@ public class SqlValidatorTestCase {
     }
 
     public Sql rewritesTo(String expected) {
-      tester.validateAndThen(toSql(false),
+      tester.validateAndThen(factory, toSql(false),
           (sap, validator, validatedNode) -> {
             String actualRewrite =
                 validatedNode.toSqlString(AnsiSqlDialect.DEFAULT, false)
@@ -509,7 +505,7 @@ public class SqlValidatorTestCase {
     }
 
     public Sql isAggregate(Matcher<Boolean> matcher) {
-      tester.validateAndThen(toSql(false),
+      tester.validateAndThen(factory, toSql(false),
           (sap, validator, validatedNode) ->
               assertThat(validator.isAggregate((SqlSelect) validatedNode),
                   matcher));
@@ -524,7 +520,7 @@ public class SqlValidatorTestCase {
      * <code>"{(CATALOG.SALES.EMP.EMPNO, null)}"</code>.
      */
     public Sql assertFieldOrigin(Matcher<String> matcher) {
-      tester.validateAndThen(toSql(false), (sap, validator, n) -> {
+      tester.validateAndThen(factory, toSql(false), (sap, validator, n) -> {
         final List<List<String>> list = validator.getFieldOrigins(n);
         final StringBuilder buf = new StringBuilder("{");
         int i = 0;
@@ -553,87 +549,4 @@ public class SqlValidatorTestCase {
     public void setFor(SqlOperator operator) {
     }
   }
-
-  /**
-   * Encapsulates differences between test environments, for example, which
-   * SQL parser or validator to use.
-   *
-   * <p>It contains a mock schema with <code>EMP</code> and <code>DEPT</code>
-   * tables, which can run without having to start up Farrago.
-   */
-  public interface Tester {
-    SqlNode parseQuery(SqlParser.Config parserConfig, String sql)
-        throws SqlParseException;
-
-    SqlNode parseAndValidate(SqlValidator validator, String sql);
-
-    /** Parses and validates a query, then calls an action on the result. */
-    void validateAndThen(StringAndPos sap,
-        SqlTester.ValidatedNodeConsumer consumer);
-
-    /** Parses and validates a query, then applies a function to the result.
-     *
-     * @param <R> Result type */
-    <R> R validateAndApply(StringAndPos sap,
-        SqlTester.ValidatedNodeFunction<R> function);
-
-    /** Given an expression, generates several queries that include that
-     * expression, and for each, parses and validates, then calls an action on
-     * the result. */
-    void forEachQueryValidateAndThen(StringAndPos expression,
-        SqlTester.ValidatedNodeConsumer consumer);
-
-    SqlValidator getValidator();
-
-    /**
-     * Checks that a query is valid, or, if invalid, throws the right
-     * message at the right location.
-     *
-     * <p>If <code>expectedMsgPattern</code> is null, the query must
-     * succeed.
-     *
-     * <p>If <code>expectedMsgPattern</code> is not null, the query must
-     * fail, and give an error location of (expectedLine, expectedColumn)
-     * through (expectedEndLine, expectedEndColumn).
-     *
-     * @param sap                SQL statement
-     * @param parserConfig       Parser configuration
-     * @param expectedMsgPattern If this parameter is null the query must be
-     *                           valid for the test to pass; If this parameter
-     */
-    void assertExceptionIsThrown(StringAndPos sap,
-        SqlParser.Config parserConfig, @Nullable String expectedMsgPattern);
-
-    /**
-     * Returns the data type of the sole column of a SQL query.
-     *
-     * <p>For example, <code>getResultType("VALUES (1")</code> returns
-     * <code>INTEGER</code>.
-     *
-     * <p>Fails if query returns more than one column.
-     *
-     * @see #getResultType(String)
-     */
-    RelDataType getColumnType(String sql);
-
-    /**
-     * Returns the data type of the row returned by a SQL query.
-     *
-     * <p>For example, <code>getResultType("VALUES (1, 'foo')")</code>
-     * returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
-     */
-    RelDataType getResultType(String sql);
-
-    /**
-     * Checks that a query returns one column of an expected type. For
-     * example, <code>checkType("VALUES (1 + 2)", "INTEGER NOT
-     * NULL")</code>.
-     */
-    void checkColumnType(
-        String sql,
-        String expected);
-
-    SqlConformance getConformance();
-  }
-
 }

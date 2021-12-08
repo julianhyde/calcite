@@ -111,11 +111,6 @@ public interface SqlFixture extends AutoCloseable {
     return getFactory().parserConfig().conformance();
   }
 
-  /** Returns the validator. */
-  default SqlValidator getValidator() {
-    return getFactory().getValidator();
-  }
-
   /** Returns a tester with a given validator configuration. */
   default SqlFixture withValidatorConfig(
       UnaryOperator<SqlValidator.Config> transform) {
