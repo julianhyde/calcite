@@ -6780,9 +6780,8 @@ public abstract class SqlOperatorBaseTest {
   SubFunChecker substringChecker(SqlConformanceEnum conformance,
       SqlLibrary library) {
     return new SubFunChecker(
-        fixture.withConnectionFactory(
-            CalciteAssert.EMPTY_CONNECTION_FACTORY
-                .with(
+        fixture.withConnectionFactory(cf ->
+            cf.with(
                     new CalciteAssert.AddSchemaSpecPostProcessor(
                         CalciteAssert.SchemaSpec.HR))
                 .with(CalciteConnectionProperty.CONFORMANCE, conformance)),

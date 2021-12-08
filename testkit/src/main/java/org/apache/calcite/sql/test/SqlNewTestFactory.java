@@ -151,7 +151,9 @@ public class SqlNewTestFactory {
   }
 
   public SqlNewTestFactory withConnectionFactory(
-      CalciteAssert.ConnectionFactory connectionFactory) {
+      UnaryOperator<CalciteAssert.ConnectionFactory> transform) {
+    final CalciteAssert.ConnectionFactory connectionFactory =
+        transform.apply(this.connectionFactory);
     return new SqlNewTestFactory(catalogReaderFactory,
         validatorFactory, connectionFactory,
         parserConfig, validatorConfig, operatorTable);

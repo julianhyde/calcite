@@ -18,6 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -39,6 +40,7 @@ import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
@@ -290,7 +292,11 @@ public class SqlValidatorTestCase {
 
     public Sql withConformance(SqlConformance conformance) {
       return withValidatorConfig(c -> c.withSqlConformance(conformance))
-          .withParserConfig(c -> c.withConformance(conformance));
+          .withParserConfig(c -> c.withConformance(conformance))
+          .withFactory(f -> conformance instanceof SqlConformanceEnum
+              ? f.withConnectionFactory(cf ->
+                  cf.with(CalciteConnectionProperty.CONFORMANCE, conformance))
+              : f);
     }
 
     public SqlConformance conformance() {

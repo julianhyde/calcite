@@ -16,17 +16,11 @@
  */
 package org.apache.calcite.sql.test;
 
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
-import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.test.CalciteAssert;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -58,42 +52,6 @@ public interface SqlTester extends AutoCloseable {
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  /** Returns a tester that tests a given SQL quoting style. */
-  SqlTester withQuoting(Quoting quoting);
-
-  /** Returns a tester that applies a given casing policy to quoted
-   * identifiers. */
-  SqlTester withQuotedCasing(Casing casing);
-
-  /** Returns a tester that applies a given casing policy to unquoted
-   * identifiers. */
-  SqlTester withUnquotedCasing(Casing casing);
-
-  /** Returns a tester that matches identifiers by case-sensitive or
-   * case-insensitive. */
-  SqlTester withCaseSensitive(boolean sensitive);
-
-  /** Returns a tester that follows a lex policy. */
-  SqlTester withLex(Lex lex);
-
-  /** Returns a tester that tests conformance to a particular SQL language
-   * version. */
-  SqlTester withConformance(SqlConformance conformance);
-
-  /** Returns a tester that tests with implicit type coercion on/off. */
-  SqlTester enableTypeCoercion(boolean enabled);
-
-  /** Returns a tester that does not fail validation if it encounters an
-   * unknown function. */
-  SqlTester withLenientOperatorLookup(boolean lenient);
-
-  /** Returns a tester that gets connections from a given factory. */
-  SqlTester withConnectionFactory(
-      CalciteAssert.ConnectionFactory connectionFactory);
-
-  /** Returns a tester that uses a given operator table. */
-  SqlTester withOperatorTable(SqlOperatorTable operatorTable);
 
   /** Parses and validates a query, then calls an action on the result. */
   void validateAndThen(SqlNewTestFactory factory, StringAndPos sap,

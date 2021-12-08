@@ -10155,6 +10155,8 @@ public class SqlParserTest {
   }
 
   /** Test configuration. */
+  // TODO: move as many methods as possible into SqlParser.Config or
+  // SqlNewTestFactory
   @Value.Immutable
   public interface Config {
     /** Returns whether to convert actual strings to Linux (converting Windows

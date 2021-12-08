@@ -16,10 +16,6 @@
  */
 package org.apache.calcite.sql.test;
 
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
-import org.apache.calcite.config.CalciteConnectionProperty;
-import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.runtime.Utilities;
@@ -27,7 +23,6 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlUnresolvedFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -37,11 +32,8 @@ import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlShuttle;
-import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
-import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
@@ -184,63 +176,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       String expression, String type) {
     forEachQueryValidateAndThen(factory, StringAndPos.of(expression),
         checkColumnTypeAction(is(type)));
-  }
-
-  @Override public SqlTester withQuoting(Quoting quoting) {
-    return with("quoting", quoting);
-  }
-
-  @Override public SqlTester withQuotedCasing(Casing casing) {
-    return with("quotedCasing", casing);
-  }
-
-  @Override public SqlTester withUnquotedCasing(Casing casing) {
-    return with("unquotedCasing", casing);
-  }
-
-  @Override public SqlTester withCaseSensitive(boolean sensitive) {
-    return with("caseSensitive", sensitive);
-  }
-
-  @Override public SqlTester withLenientOperatorLookup(boolean lenient) {
-    return with("lenientOperatorLookup", lenient);
-  }
-
-  @Override public SqlTester withLex(Lex lex) {
-    return withQuoting(lex.quoting)
-        .withCaseSensitive(lex.caseSensitive)
-        .withQuotedCasing(lex.quotedCasing)
-        .withUnquotedCasing(lex.unquotedCasing);
-  }
-
-  @Override public SqlTester withConformance(SqlConformance conformance) {
-    final SqlTester tester = with("conformance", conformance);
-    if (conformance instanceof SqlConformanceEnum) {
-      return tester
-          .withConnectionFactory(
-              CalciteAssert.EMPTY_CONNECTION_FACTORY
-                  .with(CalciteConnectionProperty.CONFORMANCE, conformance));
-    } else {
-      return tester;
-    }
-  }
-
-  @Override public SqlTester enableTypeCoercion(boolean enabled) {
-    return with("enableTypeCoercion", enabled);
-  }
-
-  @Override public SqlTester withOperatorTable(SqlOperatorTable operatorTable) {
-    return with("operatorTable", operatorTable);
-  }
-
-  @Override public SqlTester withConnectionFactory(
-      CalciteAssert.ConnectionFactory connectionFactory) {
-    return with("connectionFactory", connectionFactory);
-  }
-
-  // TODO obsolete this method
-  protected final SqlTester with(final String name, final Object value) {
-    return this; // with(factory.with(name, value));
   }
 
   // SqlTester methods
