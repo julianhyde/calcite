@@ -80,10 +80,10 @@ public class SqlNewTestFactory {
     this.connectionFactory = connectionFactory;
     this.operatorTable = operatorTable;
     this.typeFactorySupplier = Suppliers.memoize(() ->
-        createTypeFactory(validatorConfig.sqlConformance()));
+        createTypeFactory(validatorConfig.sqlConformance()))::get;
     this.catalogReaderSupplier = Suppliers.memoize(() ->
         catalogReaderFactory.create(typeFactorySupplier.get(),
-            parserConfig.caseSensitive()));
+            parserConfig.caseSensitive()))::get;
     this.parserConfig = parserConfig;
     this.validatorConfig = validatorConfig;
   }
