@@ -202,7 +202,7 @@ public abstract class AbstractMaterializedViewTest {
   private static class ValidatorForTest extends SqlValidatorImpl {
     ValidatorForTest(SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader,
         RelDataTypeFactory typeFactory, SqlConformance conformance) {
-      super(opTab, catalogReader, typeFactory, Config.DEFAULT.withSqlConformance(conformance));
+      super(opTab, catalogReader, typeFactory, Config.DEFAULT.withConformance(conformance));
     }
   }
 

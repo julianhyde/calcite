@@ -135,7 +135,7 @@ public class SqlTestFactory {
         (boolean) options.get("lenientOperatorLookup");
     final boolean enableTypeCoercion = (boolean) options.get("enableTypeCoercion");
     final SqlValidator.Config config = SqlValidator.Config.DEFAULT
-        .withSqlConformance(conformance)
+        .withConformance(conformance)
         .withTypeCoercionEnabled(enableTypeCoercion)
         .withLenientOperatorLookup(lenientOperatorLookup);
     return validatorFactory.create(operatorTable.get(),

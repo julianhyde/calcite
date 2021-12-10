@@ -727,7 +727,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final CalciteConnectionConfig connectionConfig = context.config();
     final SqlValidator.Config config = SqlValidator.Config.DEFAULT
         .withLenientOperatorLookup(connectionConfig.lenientOperatorLookup())
-        .withSqlConformance(connectionConfig.conformance())
+        .withConformance(connectionConfig.conformance())
         .withDefaultNullCollation(connectionConfig.defaultNullCollation())
         .withIdentifierExpansion(true);
     return new CalciteSqlValidator(opTab, catalogReader, typeFactory,

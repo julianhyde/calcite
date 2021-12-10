@@ -740,7 +740,7 @@ public abstract class SqlToRelTestBase {
           catalogReader,
           typeFactory,
           SqlValidator.Config.DEFAULT
-              .withSqlConformance(conformance)
+              .withConformance(conformance)
               .withTypeCoercionEnabled(enableTypeCoercion)
               .withIdentifierExpansion(true));
       return validatorTransform.apply(validator);

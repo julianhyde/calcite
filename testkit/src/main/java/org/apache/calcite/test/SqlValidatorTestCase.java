@@ -291,7 +291,7 @@ public class SqlValidatorTestCase {
     }
 
     public Sql withConformance(SqlConformance conformance) {
-      return withValidatorConfig(c -> c.withSqlConformance(conformance))
+      return withValidatorConfig(c -> c.withConformance(conformance))
           .withParserConfig(c -> c.withConformance(conformance))
           .withFactory(f -> conformance instanceof SqlConformanceEnum
               ? f.withConnectionFactory(cf ->

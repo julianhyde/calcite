@@ -103,7 +103,7 @@ public interface SqlFixture extends AutoCloseable {
    * version. */
   default SqlFixture withConformance(SqlConformance conformance) {
     return withParserConfig(c -> c.withConformance(conformance))
-        .withValidatorConfig(c -> c.withSqlConformance(conformance));
+        .withValidatorConfig(c -> c.withConformance(conformance));
   }
 
   /** Returns the conformance. */
