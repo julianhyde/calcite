@@ -44,7 +44,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlDelegatingConformance;
-import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
@@ -1040,61 +1039,61 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test void testModifiableViewExtend() {
     final String sql = "select *\n"
         + "from EMP_MODIFIABLEVIEW extend (x varchar(5) not null)";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testModifiableViewExtendSubset() {
     final String sql = "select x, empno\n"
         + "from EMP_MODIFIABLEVIEW extend (x varchar(5) not null)";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testModifiableViewExtendExpression() {
     final String sql = "select empno + x\n"
         + "from EMP_MODIFIABLEVIEW extend (x int not null)";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testSelectViewExtendedColumnCollision() {
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR\n"
         + " from EMP_MODIFIABLEVIEW3\n"
-        + " where SAL = 20").withTester(getExtendedTester()).ok();
+        + " where SAL = 20").withExtendedTester().ok();
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR\n"
         + " from EMP_MODIFIABLEVIEW3 extend (SAL int)\n"
-        + " where SAL = 20").withTester(getExtendedTester()).ok();
+        + " where SAL = 20").withExtendedTester().ok();
   }
 
   @Test void testSelectViewExtendedColumnCaseSensitiveCollision() {
     sql("select ENAME, EMPNO, JOB, SLACKER, \"sal\", HIREDATE, MGR\n"
         + " from EMP_MODIFIABLEVIEW3 extend (\"sal\" boolean)\n"
-        + " where \"sal\" = true").withTester(getExtendedTester()).ok();
+        + " where \"sal\" = true").withExtendedTester().ok();
   }
 
   @Test void testSelectViewExtendedColumnExtendedCollision() {
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, EXTRA\n"
         + " from EMP_MODIFIABLEVIEW2\n"
-        + " where SAL = 20").withTester(getExtendedTester()).ok();
+        + " where SAL = 20").withExtendedTester().ok();
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, EXTRA\n"
         + " from EMP_MODIFIABLEVIEW2 extend (EXTRA boolean)\n"
-        + " where SAL = 20").withTester(getExtendedTester()).ok();
+        + " where SAL = 20").withExtendedTester().ok();
   }
 
   @Test void testSelectViewExtendedColumnCaseSensitiveExtendedCollision() {
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, \"extra\"\n"
         + " from EMP_MODIFIABLEVIEW2 extend (\"extra\" boolean)\n"
-        + " where \"extra\" = false").withTester(getExtendedTester()).ok();
+        + " where \"extra\" = false").withExtendedTester().ok();
   }
 
   @Test void testSelectViewExtendedColumnUnderlyingCollision() {
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR, COMM\n"
         + " from EMP_MODIFIABLEVIEW3 extend (COMM int)\n"
-        + " where SAL = 20").withTester(getExtendedTester()).ok();
+        + " where SAL = 20").withExtendedTester().ok();
   }
 
   @Test void testSelectViewExtendedColumnCaseSensitiveUnderlyingCollision() {
     sql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR, \"comm\"\n"
         + " from EMP_MODIFIABLEVIEW3 extend (\"comm\" int)\n"
-        + " where \"comm\" = 20").withTester(getExtendedTester()).ok();
+        + " where \"comm\" = 20").withExtendedTester().ok();
   }
 
   @Test void testUpdateExtendedColumnCollision() {
@@ -1112,42 +1111,42 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test void testUpdateExtendedColumnModifiableViewCollision() {
     sql("update EMP_MODIFIABLEVIEW3(empno INTEGER NOT NULL, deptno INTEGER)"
         + " set deptno = 20, empno = 20, ename = 'Bob'"
-        + " where empno = 10").withTester(getExtendedTester()).ok();
+        + " where empno = 10").withExtendedTester().ok();
   }
 
   @Test void testUpdateExtendedColumnModifiableViewCaseSensitiveCollision() {
     sql("update EMP_MODIFIABLEVIEW2(\"slacker\" INTEGER, deptno INTEGER)"
         + " set deptno = 20, \"slacker\" = 100"
-        + " where ename = 'Bob'").withTester(getExtendedTester()).ok();
+        + " where ename = 'Bob'").withExtendedTester().ok();
   }
 
   @Test void testUpdateExtendedColumnModifiableViewExtendedCollision() {
     sql("update EMP_MODIFIABLEVIEW2(\"slacker\" INTEGER, extra BOOLEAN)"
         + " set deptno = 20, \"slacker\" = 100, extra = true"
-        + " where ename = 'Bob'").withTester(getExtendedTester()).ok();
+        + " where ename = 'Bob'").withExtendedTester().ok();
   }
 
   @Test void testUpdateExtendedColumnModifiableViewExtendedCaseSensitiveCollision() {
     sql("update EMP_MODIFIABLEVIEW2(\"extra\" INTEGER, extra BOOLEAN)"
         + " set deptno = 20, \"extra\" = 100, extra = true"
-        + " where ename = 'Bob'").withTester(getExtendedTester()).ok();
+        + " where ename = 'Bob'").withExtendedTester().ok();
   }
 
   @Test void testUpdateExtendedColumnModifiableViewUnderlyingCollision() {
     sql("update EMP_MODIFIABLEVIEW3(extra BOOLEAN, comm INTEGER)"
         + " set empno = 20, comm = 123, extra = true"
-        + " where ename = 'Bob'").withTester(getExtendedTester()).ok();
+        + " where ename = 'Bob'").withExtendedTester().ok();
   }
 
   @Test void testSelectModifiableViewConstraint() {
     final String sql = "select deptno from EMP_MODIFIABLEVIEW2\n"
         + "where deptno = ?";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testModifiableViewDdlExtend() {
     final String sql = "select extra from EMP_MODIFIABLEVIEW2";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testExplicitTable() {
@@ -1176,7 +1175,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     // Test temporal table with virtual columns.
     final String sql = "select * from VIRTUALCOLUMNS.VC_T1 "
         + "for system_time as of TIMESTAMP '2011-01-02 00:00:00'";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testJoinTemporalTableOnSpecificTime1() {
@@ -1193,7 +1192,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "from orders,\n"
         + "  VIRTUALCOLUMNS.VC_T1 for system_time as of\n"
         + "    TIMESTAMP '2011-01-02 00:00:00'";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testJoinTemporalTableOnColumnReference1() {
@@ -1210,7 +1209,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "from orders\n"
         + "join VIRTUALCOLUMNS.VC_T1 for system_time as of orders.rowtime\n"
         + "on orders.productid = VIRTUALCOLUMNS.VC_T1.a";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   /**
@@ -1464,7 +1463,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "select d.deptno, e2.empno\n"
         + "from dept_nested as d,\n"
         + " UNNEST(d.employees) e2";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testUnnestArrayPlanAs() {
@@ -2441,7 +2440,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "where a.EMPNO > 10 group by 2";
     RelNode afterTrim = sql(sql)
         .withDecorrelate(false)
-        .with(t ->
+        .withTester(t ->
             // Create a customized test with RelCollation trait in the test
             // cluster.
             t.withPlannerFactory(context ->
@@ -2658,14 +2657,14 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "insert into EMP_MODIFIABLEVIEW2(updated TIMESTAMP)\n"
         + " (ename, deptno, empno, updated, sal)\n"
         + " values ('Fred', 20, 44, timestamp '2017-03-12 13:03:05', 999999)";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testInsertBindExtendedColumnModifiableView() {
     final String sql = "insert into EMP_MODIFIABLEVIEW2(updated TIMESTAMP)\n"
         + " (ename, deptno, empno, updated, sal)\n"
         + " values ('Fred', 20, 44, ?, 999999)";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testInsertWithSort() {
@@ -2702,13 +2701,13 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
   @Test void testDeleteBindModifiableView() {
     final String sql = "delete from EMP_MODIFIABLEVIEW2 where empno = ?";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testDeleteBindExtendedColumnModifiableView() {
     final String sql = "delete from EMP_MODIFIABLEVIEW2(note VARCHAR)\n"
         + "where note = ?";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testUpdate() {
@@ -2763,7 +2762,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test void testUpdateModifiableView() {
     final String sql = "update EMP_MODIFIABLEVIEW2\n"
         + "set sal = sal + 5000 where slacker = false";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testUpdateExtendedColumn() {
@@ -2777,7 +2776,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final String sql = "update EMP_MODIFIABLEVIEW2(updated TIMESTAMP)\n"
         + "set updated = timestamp '2017-03-12 13:03:05', sal = sal + 5000\n"
         + "where slacker = false";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testUpdateBind() {
@@ -2834,27 +2833,27 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test void testInsertModifiableView() {
     final String sql = "insert into EMP_MODIFIABLEVIEW (EMPNO, ENAME, JOB)"
         + " values (34625, 'nom', 'accountant')";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testInsertSubsetModifiableView() {
     final String sql = "insert into EMP_MODIFIABLEVIEW "
         + "values (10, 'Fred')";
-    sql(sql).withTester(getExtendedTester())
+    sql(sql).withExtendedTester()
         .withConformance(SqlConformanceEnum.PRAGMATIC_2003).ok();
   }
 
   @Test void testInsertBindModifiableView() {
     final String sql = "insert into EMP_MODIFIABLEVIEW (empno, job)"
         + " values (?, ?)";
-    sql(sql).withTester(getExtendedTester()).ok();
+    sql(sql).withExtendedTester().ok();
   }
 
   @Test void testInsertBindSubsetModifiableView() {
     final String sql = "insert into EMP_MODIFIABLEVIEW"
         + " values (?, ?)";
     sql(sql).withConformance(SqlConformanceEnum.PRAGMATIC_2003)
-        .withTester(getExtendedTester()).ok();
+        .withExtendedTester().ok();
   }
 
   @Test void testInsertWithCustomColumnResolving() {
@@ -3605,11 +3604,6 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  private Tester getExtendedTester() {
-    return SqlToRelFixture.TESTER
-        .withCatalogReaderFactory(MockCatalogReaderExtended::create);
-  }
-
   @Test void testLarge() {
     // Size factor used to be 400, but lambdas use a lot of stack
     final int x = 300;
@@ -3837,7 +3831,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql)
         .withDecorrelate(false)
         .withTrim(false)
-        .with(t ->
+        .withTester(t ->
             t.withContext(c ->
                 Contexts.of(connectionConfig, c)))
         .ok();
@@ -4364,7 +4358,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "from emp\n"
         + "where deptno = 10";
     sql(sql)
-        .with(t ->
+        .withTester(t ->
             t.withValidatorTransform(sqlValidator ->
                 sqlValidator.transform(config ->
                     config.withIdentifierExpansion(false))))

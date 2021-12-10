@@ -30,7 +30,7 @@ class TypeCoercionConverterTest extends SqlToRelTestBase {
   protected static final SqlToRelFixture FIXTURE =
       SqlToRelFixture.DEFAULT
           .withDiffRepos(DiffRepository.lookup(TypeCoercionConverterTest.class))
-          .with(t -> t.withCatalogReaderFactory(TCatalogReader::create))
+          .withTester(t -> t.withCatalogReaderFactory(TCatalogReader::create))
           .withDecorrelate(false);
 
   @Override public SqlToRelFixture fixture() {

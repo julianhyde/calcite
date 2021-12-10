@@ -22,6 +22,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
+import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.TestUtil;
 
@@ -53,20 +54,18 @@ public class SqlToRelFixture {
 
   public static final SqlToRelFixture DEFAULT =
       new SqlToRelFixture("?", true, TESTER, false,
-          UnaryOperator.identity(), TESTER.getConformance(), false, null);
+          TESTER.getConformance(), false, null);
 
   private final String sql;
   private final @Nullable DiffRepository diffRepos;
   private final boolean decorrelate;
   private final SqlToRelTestBase.Tester tester;
   private final boolean trim;
-  private final UnaryOperator<SqlToRelConverter.Config> config;
   private final SqlConformance conformance;
   private final boolean expression;
 
   SqlToRelFixture(String sql, boolean decorrelate,
       SqlToRelTestBase.Tester tester, boolean trim,
-      UnaryOperator<SqlToRelConverter.Config> config,
       SqlConformance conformance, boolean expression,
       @Nullable DiffRepository diffRepos) {
     this.sql = requireNonNull(sql, "sql");
@@ -77,7 +76,6 @@ public class SqlToRelFixture {
     this.decorrelate = decorrelate;
     this.tester = requireNonNull(tester, "tester");
     this.trim = trim;
-    this.config = requireNonNull(config, "config");
     this.conformance = requireNonNull(conformance, "conformance");
     this.expression = expression;
   }
@@ -95,9 +93,7 @@ public class SqlToRelFixture {
   }
 
   public void convertsTo(String plan) {
-    tester.withConformance(conformance)
-        .withConfig(config)
-        .withConfig(c -> c.withTrimUnusedFields(true))
+    tester.withConfig(c -> c.withTrimUnusedFields(true))
         .assertConvertsTo(diffRepos(), sql, plan, trim, expression, decorrelate);
   }
 
@@ -107,7 +103,7 @@ public class SqlToRelFixture {
 
   public SqlToRelFixture withSql(String sql) {
     return sql.equals(this.sql) ? this
-        : new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
+        : new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
             expression, diffRepos);
   }
 
@@ -116,15 +112,13 @@ public class SqlToRelFixture {
    */
   public SqlToRelFixture expression(boolean expression) {
     return this.expression == expression ? this
-        : new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
+        : new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
             expression, diffRepos);
   }
 
-  public SqlToRelFixture withConfig(UnaryOperator<SqlToRelConverter.Config> config) {
-    final UnaryOperator<SqlToRelConverter.Config> config2 =
-        this.config.andThen(requireNonNull(config, "config"))::apply;
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, config2, conformance,
-        expression, diffRepos);
+  public SqlToRelFixture withConfig(
+      UnaryOperator<SqlToRelConverter.Config> transform) {
+    return withTester(t -> t.withConfig(transform));
   }
 
   public SqlToRelFixture withExpand(boolean expand) {
@@ -132,22 +126,28 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withDecorrelate(boolean decorrelate) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
-        expression, diffRepos);
-  }
-
-  public SqlToRelFixture withTester(SqlToRelTestBase.Tester tester) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
         expression, diffRepos);
   }
 
   // TODO: change the config, not the tester
-  public SqlToRelFixture with(UnaryOperator<SqlToRelTestBase.Tester> testerTransform) {
-    return withTester(testerTransform.apply(tester));
+  public SqlToRelFixture withTester(
+      UnaryOperator<SqlToRelTestBase.Tester> testerTransform) {
+    SqlToRelTestBase.Tester tester = testerTransform.apply(this.tester);
+    if (tester == this.tester) {
+      return this;
+    }
+    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+        expression, diffRepos);
+  }
+
+  public SqlToRelFixture withExtendedTester() {
+    return withTester(t ->
+        t.withCatalogReaderFactory(MockCatalogReaderExtended::create));
   }
 
   public SqlToRelFixture withTrim(boolean trim) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
         expression, diffRepos);
   }
 
@@ -156,24 +156,22 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withConformance(SqlConformance conformance) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
-        expression, diffRepos);
+    return withTester(t -> t.withConformance(conformance));
   }
 
   public SqlToRelFixture withDiffRepos(DiffRepository diffRepos) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, config, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
         expression, diffRepos);
   }
 
   public SqlToRelFixture withDynamicTable() {
-    return with(t ->
+    return withTester(t ->
         t.withCatalogReaderFactory(MockCatalogReaderDynamic::create));
   }
 
   public RelRoot toRoot() {
     return tester
         .withConformance(conformance)
-        .withConfig(config)
         .withConfig(c -> c.withTrimUnusedFields(true))
         .convertSqlToRel(sql, decorrelate, trim);
   }
