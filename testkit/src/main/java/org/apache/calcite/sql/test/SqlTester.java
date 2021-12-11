@@ -40,8 +40,6 @@ import java.sql.ResultSet;
  * An implementation might even ignore certain calls altogether.
  */
 public interface SqlTester extends AutoCloseable {
-  // TODO: make sure that 'param factory' occurs in each method javadoc
-
   //~ Enums ------------------------------------------------------------------
 
   /**
@@ -172,8 +170,8 @@ public interface SqlTester extends AutoCloseable {
    * @param delta          Allowed margin of error between expected and actual
    *                       result
    */
-  void checkScalarApprox(
-      SqlNewTestFactory factory, String expression,
+  void checkScalarApprox(SqlNewTestFactory factory,
+      String expression,
       String expectedType,
       double expectedResult,
       double delta);
@@ -192,8 +190,9 @@ public interface SqlTester extends AutoCloseable {
    * <pre>checkScalarExact("NOT UNKNOWN", null);</pre>
    * </blockquote>
    *
+   * @param factory    Factory
    * @param expression Scalar expression
-   * @param result     Expected result (null signifies NULL).
+   * @param result     Expected result (null signifies NULL)
    */
   void checkBoolean(SqlNewTestFactory factory,
       String expression,
@@ -207,6 +206,7 @@ public interface SqlTester extends AutoCloseable {
    * <pre>checkScalarExact("'ab' || 'c'", "abc");</pre>
    * </blockquote>
    *
+   * @param factory    Factory
    * @param expression Scalar expression
    * @param result     Expected result
    * @param resultType Expected result type
@@ -223,6 +223,7 @@ public interface SqlTester extends AutoCloseable {
    * <pre>checkNull("CHAR_LENGTH(CAST(NULL AS VARCHAR(3))");</pre>
    * </blockquote>
    *
+   * @param factory    Factory
    * @param expression Scalar expression
    */
   void checkNull(SqlNewTestFactory factory, String expression);
@@ -239,6 +240,7 @@ public interface SqlTester extends AutoCloseable {
    * NULL values, so is more precise than the type-checking done by methods
    * such as {@link #checkScalarExact}.
    *
+   * @param factory    Factory
    * @param expression Scalar expression
    * @param type       Type string
    */
@@ -250,8 +252,9 @@ public interface SqlTester extends AutoCloseable {
    * Checks that a query returns one column of an expected type. For example,
    * <code>checkType("VALUES (1 + 2)", "INTEGER NOT NULL")</code>.
    *
-   * @param sql  Query expression
-   * @param type Type string
+   * @param factory    Factory
+   * @param sql        Query expression
+   * @param type       Type string
    */
   void checkColumnType(SqlNewTestFactory factory,
       String sql,
@@ -269,6 +272,7 @@ public interface SqlTester extends AutoCloseable {
    * value. If <code>result</code> is a {@link java.util.regex.Pattern}, the
    * result must match that pattern.
    *
+   * @param factory     Factory
    * @param query       SQL query
    * @param typeChecker Checks whether the result is the expected type; must
    *                    not be null
@@ -316,9 +320,9 @@ public interface SqlTester extends AutoCloseable {
    * <p>For example, <code>checkAgg("AVG(DISTINCT x)", new String[] {"2", "3",
    * null, "3" }, new Double(2.5), 0);</code>
    *
-   * @param expr        Aggregate expression, e.g. <code>SUM(DISTINCT x)</code>
-   * @param inputValues Array of input values, e.g. <code>["1", null,
-   *                    "2"]</code>.
+   * @param factory     Factory
+   * @param expr        Aggregate expression, e.g. {@code SUM(DISTINCT x)}
+   * @param inputValues Array of input values, e.g. {@code ["1", null, "2"]}
    * @param result      Expected result
    * @param delta       Allowable variance from expected result
    */
@@ -332,11 +336,10 @@ public interface SqlTester extends AutoCloseable {
    * Checks that an aggregate expression with multiple args returns the expected
    * result.
    *
-   * @param expr        Aggregate expression, e.g. <code>AGG_FUNC(x, x2, x3)</code>
-   * @param inputValues Nested array of input values, e.g. <code>[
-   *                    ["1", null, "2"]
-   *                    ["3", "4", null]
-   *                    ]</code>.
+   * @param factory     Factory
+   * @param expr        Aggregate expression, e.g. {@code AGG_FUNC(x, x2, x3)}
+   * @param inputValues Nested array of input values, e.g. {@code [["1", null, "2"],
+   *                    ["3", "4", null]]}
    * @param result      Expected result
    * @param delta       Allowable variance from expected result
    */
@@ -352,9 +355,9 @@ public interface SqlTester extends AutoCloseable {
    * <p>For example, <code>checkWinAgg("FIRST_VALUE(x)", new String[] {"2",
    * "3", null, "3" }, "INTEGER NOT NULL", 2, 0d);</code>
    *
-   * @param expr        Aggregate expression, e.g. <code>SUM(DISTINCT x)</code>
-   * @param inputValues Array of input values, e.g. <code>["1", null,
-   *                    "2"]</code>.
+   * @param factory     Factory
+   * @param expr        Aggregate expression, e.g. {@code SUM(DISTINCT x)}
+   * @param inputValues Array of input values, e.g. {@code ["1", null, "2"]}
    * @param type        Expected result type
    * @param result      Expected result
    * @param delta       Allowable variance from expected result
@@ -370,8 +373,9 @@ public interface SqlTester extends AutoCloseable {
   /**
    * Tests that an aggregate expression fails at run time.
    *
-   * @param expr An aggregate expression
-   * @param inputValues Array of input values
+   * @param factory       Factory
+   * @param expr          An aggregate expression
+   * @param inputValues   Array of input values
    * @param expectedError Pattern for expected error
    * @param runtime       If true, must fail at runtime; if false, must fail at
    *                      validate time
