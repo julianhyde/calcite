@@ -21,6 +21,11 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.sql.parser.SqlParserTest;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -96,6 +101,43 @@ public class FixtureTest {
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is(DIFF_REPOS_MESSAGE));
     }
+  }
+
+  /** Tests the {@link SqlToRelFixture#ensuring(Predicate, UnaryOperator)}
+   * test infrastructure. */
+  @Test void testSqlToRelFixtureEnsure() {
+    final SqlToRelFixture f = Fixtures.forSqlToRel();
+
+    // Case 1. Predicate is true at first, remedy not needed
+    f.ensuring(f2 -> true, f2 -> {
+      throw new AssertionError("remedy not needed");
+    });
+
+    // Case 2. Predicate is false at first, true after we invoke the remedy.
+    final AtomicInteger b = new AtomicInteger(0);
+    assertThat(b.intValue(), is(0));
+    f.ensuring(f2 -> b.intValue() > 0, f2 -> {
+      b.incrementAndGet();
+      return f2;
+    });
+    assertThat(b.intValue(), is(1));
+
+    // Case 3. Predicate is false at first, remains false after the "remedy" is
+    // invoked.
+    try {
+      f.ensuring(f2 -> b.intValue() < 0, f2 -> {
+        b.incrementAndGet();
+        return f2;
+      });
+      throw new AssertionFailedError("expected AssertionError");
+    } catch (AssertionError e) {
+      String expectedMessage = "remedy failed\n"
+          + "Expected: is <true>\n"
+          + "     but: was <false>";
+      assertThat(e.getMessage(), is(expectedMessage));
+    }
+    assertThat("Remedy should be called, even though it is unsuccessful",
+        b.intValue(), is(2));
   }
 
   /** Tests that you can run RelRule tests via

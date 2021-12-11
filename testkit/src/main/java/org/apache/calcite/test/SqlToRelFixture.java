@@ -28,10 +28,12 @@ import org.apache.calcite.util.TestUtil;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 import static java.util.Objects.requireNonNull;
 
@@ -54,19 +56,18 @@ public class SqlToRelFixture {
 
   public static final SqlToRelFixture DEFAULT =
       new SqlToRelFixture("?", true, TESTER, false,
-          TESTER.getConformance(), false, null);
+          false, null);
 
   private final String sql;
   private final @Nullable DiffRepository diffRepos;
   private final boolean decorrelate;
   private final SqlToRelTestBase.Tester tester;
   private final boolean trim;
-  private final SqlConformance conformance;
   private final boolean expression;
 
   SqlToRelFixture(String sql, boolean decorrelate,
       SqlToRelTestBase.Tester tester, boolean trim,
-      SqlConformance conformance, boolean expression,
+      boolean expression,
       @Nullable DiffRepository diffRepos) {
     this.sql = requireNonNull(sql, "sql");
     this.diffRepos = diffRepos;
@@ -76,7 +77,6 @@ public class SqlToRelFixture {
     this.decorrelate = decorrelate;
     this.tester = requireNonNull(tester, "tester");
     this.trim = trim;
-    this.conformance = requireNonNull(conformance, "conformance");
     this.expression = expression;
   }
 
@@ -93,8 +93,8 @@ public class SqlToRelFixture {
   }
 
   public void convertsTo(String plan) {
-    tester.withConfig(c -> c.withTrimUnusedFields(true))
-        .assertConvertsTo(diffRepos(), sql, plan, trim, expression, decorrelate);
+    tester.assertConvertsTo(diffRepos(), sql, plan, trim, expression,
+        decorrelate);
   }
 
   public DiffRepository diffRepos() {
@@ -103,7 +103,7 @@ public class SqlToRelFixture {
 
   public SqlToRelFixture withSql(String sql) {
     return sql.equals(this.sql) ? this
-        : new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+        : new SqlToRelFixture(sql, decorrelate, tester, trim,
             expression, diffRepos);
   }
 
@@ -112,7 +112,7 @@ public class SqlToRelFixture {
    */
   public SqlToRelFixture expression(boolean expression) {
     return this.expression == expression ? this
-        : new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+        : new SqlToRelFixture(sql, decorrelate, tester, trim,
             expression, diffRepos);
   }
 
@@ -126,7 +126,7 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withDecorrelate(boolean decorrelate) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim,
         expression, diffRepos);
   }
 
@@ -137,7 +137,7 @@ public class SqlToRelFixture {
     if (tester == this.tester) {
       return this;
     }
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim,
         expression, diffRepos);
   }
 
@@ -147,12 +147,12 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withTrim(boolean trim) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim,
         expression, diffRepos);
   }
 
   public SqlConformance getConformance() {
-    return conformance;
+    return tester.getConformance();
   }
 
   public SqlToRelFixture withConformance(SqlConformance conformance) {
@@ -160,7 +160,7 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withDiffRepos(DiffRepository diffRepos) {
-    return new SqlToRelFixture(sql, decorrelate, tester, trim, conformance,
+    return new SqlToRelFixture(sql, decorrelate, tester, trim,
         expression, diffRepos);
   }
 
@@ -171,12 +171,22 @@ public class SqlToRelFixture {
 
   public RelRoot toRoot() {
     return tester
-        .withConformance(conformance)
-        .withConfig(c -> c.withTrimUnusedFields(true))
         .convertSqlToRel(sql, decorrelate, trim);
   }
 
   public RelNode toRel() {
     return toRoot().rel;
+  }
+
+  /** Returns a fixture that meets a given condition, applying a remedy if it
+   * does not already. */
+  public SqlToRelFixture ensuring(Predicate<SqlToRelFixture> predicate,
+      UnaryOperator<SqlToRelFixture> remedy) {
+    SqlToRelFixture f = this;
+    if (!predicate.test(f)) {
+      f = remedy.apply(f);
+      assertThat("remedy failed", predicate.test(f), is(true));
+    }
+    return f;
   }
 }

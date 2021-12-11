@@ -726,20 +726,19 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test void testOrderByOrdinalDesc() {
-    // FRG-98
-    final SqlToRelFixture fixture = fixture();
-    if (!fixture.getConformance().isSortByOrdinal()) {
-      return;
-    }
+    // This test requires a conformance that sorts by ordinal
+    final SqlToRelFixture f = fixture()
+        .ensuring(f2 -> f2.getConformance().isSortByOrdinal(),
+            f2 -> f2.withConformance(SqlConformanceEnum.ORACLE_10));
     final String sql =
         "select empno + 1, deptno, empno from emp order by 2 desc";
-    fixture.withSql(sql).ok();
+    f.withSql(sql).ok();
 
-    // ordinals rounded down, so 2.5 should have same effect as 2, and
+    // ordinals rounded down, so 2.5 should have the same effect as 2, and
     // generate identical plan
     final String sql2 =
         "select empno + 1, deptno, empno from emp order by 2.5 desc";
-    fixture.withSql(sql2).ok();
+    f.withSql(sql2).ok();
   }
 
   @Test void testOrderDistinct() {
@@ -787,27 +786,27 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test void testOrderByAliasOverrides() {
-    final SqlToRelFixture fixture = fixture();
-    if (!fixture.getConformance().isSortByAlias()) {
-      return;
-    }
+    // This test requires a conformance that sorts by alias
+    final SqlToRelFixture f = fixture()
+        .ensuring(f2 -> f2.getConformance().isSortByAlias(),
+            f2 -> f2.withConformance(SqlConformanceEnum.ORACLE_10));
 
     // plan should contain '(empno + 1) + 3'
     final String sql = "select empno + 1 as empno, empno - 2 as y\n"
         + "from emp order by empno + 3";
-    fixture.withSql(sql).ok();
+    f.withSql(sql).ok();
   }
 
   @Test void testOrderByAliasDoesNotOverride() {
-    final SqlToRelFixture fixture = fixture();
-    if (fixture.getConformance().isSortByAlias()) {
-      return;
-    }
+    // This test requires a conformance that does not sort by alias
+    final SqlToRelFixture f = fixture()
+        .ensuring(f2 -> !f2.getConformance().isSortByAlias(),
+            f2 -> f2.withConformance(SqlConformanceEnum.PRAGMATIC_2003));
 
     // plan should contain 'empno + 3', not '(empno + 1) + 3'
     final String sql = "select empno + 1 as empno, empno - 2 as y\n"
         + "from emp order by empno + 3";
-    fixture.withSql(sql).ok();
+    f.withSql(sql).ok();
   }
 
   @Test void testOrderBySameExpr() {
@@ -825,15 +824,15 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test void testOrderUnionOrdinal() {
-    final SqlToRelFixture fixture = fixture();
-    if (!fixture.getConformance().isSortByOrdinal()) {
-      return;
-    }
+    // This test requires a conformance that sorts by ordinal
+    final SqlToRelFixture f = fixture()
+        .ensuring(f2 -> f2.getConformance().isSortByOrdinal(),
+            f2 -> f2.withConformance(SqlConformanceEnum.ORACLE_10));
     final String sql = "select empno, sal from emp\n"
         + "union all\n"
         + "select deptno, deptno from dept\n"
         + "order by 2";
-    fixture.withSql(sql).ok();
+    f.withSql(sql).ok();
   }
 
   @Test void testOrderUnionExprs() {
@@ -2433,6 +2432,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3183">[CALCITE-3183]
    * Trimming method for Filter rel uses wrong traitSet</a>. */
+  @SuppressWarnings("rawtypes")
   @Test void testFilterAndSortWithTrim() {
     // Run query and save plan after trimming
     final String sql = "select count(a.EMPNO)\n"
@@ -4222,6 +4222,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         sql("update emp set sal = ?, ename = ? where empno = ?").toRel();
     LogicalTableModify modify = (LogicalTableModify) rel;
     List<RexNode> parameters = modify.getSourceExpressionList();
+    assertThat(parameters, notNullValue());
     assertThat(parameters.size(), is(2));
     assertThat(parameters.get(0).getType().getSqlTypeName(), is(SqlTypeName.INTEGER));
     assertThat(parameters.get(1).getType().getSqlTypeName(), is(SqlTypeName.VARCHAR));
