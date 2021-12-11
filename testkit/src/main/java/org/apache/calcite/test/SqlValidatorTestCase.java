@@ -30,7 +30,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.StringAndPos;
@@ -50,7 +49,6 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 
 import java.nio.charset.Charset;
@@ -124,90 +122,6 @@ public class SqlValidatorTestCase {
 
   public Sql winExp2(String sql) {
     return winSql("select " + sql + " from emp");
-  }
-
-  /**
-   * Encapsulates differences between test environments, for example, which
-   * SQL parser or validator to use.
-   *
-   * <p>It contains a mock schema with <code>EMP</code> and <code>DEPT</code>
-   * tables, which can run without having to start up Farrago.
-   *
-   * @deprecated Use {@link SqlTester}, which is stateless.
-   */
-  @Deprecated // to be removed shortly
-  public interface OldTester {
-    SqlNode parseQuery(String sql) throws SqlParseException;
-
-    SqlNode parseAndValidate(SqlValidator validator, String sql);
-
-    /** Parses and validates a query, then calls an action on the result. */
-    void validateAndThen(StringAndPos sap,
-        SqlTester.ValidatedNodeConsumer consumer);
-
-    /** Parses and validates a query, then applies a function to the result.
-     *
-     * @param <R> Result type */
-    <R> R validateAndApply(StringAndPos sap,
-        SqlTester.ValidatedNodeFunction<R> function);
-
-    /** Given an expression, generates several queries that include that
-     * expression, and for each, parses and validates, then calls an action on
-     * the result. */
-    void forEachQueryValidateAndThen(StringAndPos expression,
-        SqlTester.ValidatedNodeConsumer consumer);
-
-    SqlValidator getValidator();
-
-    /**
-     * Checks that a query is valid, or, if invalid, throws the right
-     * message at the right location.
-     *
-     * <p>If <code>expectedMsgPattern</code> is null, the query must
-     * succeed.
-     *
-     * <p>If <code>expectedMsgPattern</code> is not null, the query must
-     * fail, and give an error location of (expectedLine, expectedColumn)
-     * through (expectedEndLine, expectedEndColumn).
-     *
-     * @param sap                SQL statement
-     * @param expectedMsgPattern If this parameter is null the query must be
-     *                           valid for the test to pass; If this parameter
-     */
-    void assertExceptionIsThrown(
-        StringAndPos sap,
-        @Nullable String expectedMsgPattern);
-
-    /**
-     * Returns the data type of the sole column of a SQL query.
-     *
-     * <p>For example, <code>getResultType("VALUES (1")</code> returns
-     * <code>INTEGER</code>.
-     *
-     * <p>Fails if query returns more than one column.
-     *
-     * @see #getResultType(String)
-     */
-    RelDataType getColumnType(String sql);
-
-    /**
-     * Returns the data type of the row returned by a SQL query.
-     *
-     * <p>For example, <code>getResultType("VALUES (1, 'foo')")</code>
-     * returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
-     */
-    RelDataType getResultType(String sql);
-
-    /**
-     * Checks that a query returns one column of an expected type. For
-     * example, <code>checkType("VALUES (1 + 2)", "INTEGER NOT
-     * NULL")</code>.
-     */
-    void checkColumnType(
-        String sql,
-        String expected);
-
-    SqlConformance getConformance();
   }
 
   /** Fluent testing API. */
