@@ -31,10 +31,13 @@ import org.apache.calcite.sql.test.SqlTester.TypeChecker;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.util.Bug;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.function.UnaryOperator;
+
+import static org.apache.calcite.rel.type.RelDataTypeImpl.NON_NULLABLE_SUFFIX;
 
 /**
  * SqlTester defines a callback for testing SQL queries and expressions.
@@ -50,6 +53,47 @@ import java.util.function.UnaryOperator;
  * An implementation might even ignore certain calls altogether.
  */
 public interface SqlFixture extends AutoCloseable {
+  //~ Enums ------------------------------------------------------------------
+
+  // TODO: Change message when Fnl3Fixed to something like
+  // "Invalid character for cast: PC=0 Code=22018"
+  String INVALID_CHAR_MESSAGE =
+      Bug.FNL3_FIXED ? null : "(?s).*";
+
+  // TODO: Change message when Fnl3Fixed to something like
+  // "Overflow during calculation or cast: PC=0 Code=22003"
+  String OUT_OF_RANGE_MESSAGE =
+      Bug.FNL3_FIXED ? null : "(?s).*";
+
+  // TODO: Change message when Fnl3Fixed to something like
+  // "Division by zero: PC=0 Code=22012"
+  String DIVISION_BY_ZERO_MESSAGE =
+      Bug.FNL3_FIXED ? null : "(?s).*";
+
+  // TODO: Change message when Fnl3Fixed to something like
+  // "String right truncation: PC=0 Code=22001"
+  String STRING_TRUNC_MESSAGE =
+      Bug.FNL3_FIXED ? null : "(?s).*";
+
+  // TODO: Change message when Fnl3Fixed to something like
+  // "Invalid datetime format: PC=0 Code=22007"
+  String BAD_DATETIME_MESSAGE =
+      Bug.FNL3_FIXED ? null : "(?s).*";
+
+  // Error messages when an invalid time unit is given as
+  // input to extract for a particular input type.
+  String INVALID_EXTRACT_UNIT_CONVERTLET_ERROR =
+      "Extract.*from.*type data is not supported";
+
+  String INVALID_EXTRACT_UNIT_VALIDATION_ERROR =
+      "Cannot apply 'EXTRACT' to arguments of type .*'\n.*";
+
+  String LITERAL_OUT_OF_RANGE_MESSAGE =
+      "(?s).*Numeric literal.*out of range.*";
+
+  String INVALID_ARGUMENTS_NUMBER =
+      "Invalid number of arguments to function .* Was expecting .* arguments";
+
   //~ Enums ------------------------------------------------------------------
 
   /**
@@ -281,6 +325,18 @@ public interface SqlFixture extends AutoCloseable {
       String expression,
       String type);
 
+  /** Very similar to {@link #checkType}, but generates inside a SELECT
+   * with a non-empty GROUP BY. Aggregate functions may be nullable if executed
+   * in a SELECT with an empty GROUP BY.
+   *
+   * <p>Viz: {@code SELECT sum(1) FROM emp} has type "INTEGER",
+   * {@code SELECT sum(1) FROM emp GROUP BY deptno} has type "INTEGER NOT NULL",
+   */
+  default SqlFixture checkAggType(String expr, String type) {
+    checkColumnType(AbstractSqlTester.buildQueryAgg(expr), type);
+    return this;
+  }
+
   /**
    * Checks that a query returns one column of an expected type. For example,
    * <code>checkType("VALUES (1 + 2)", "INTEGER NOT NULL")</code>.
@@ -484,5 +540,76 @@ public interface SqlFixture extends AutoCloseable {
                     .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
                 .with("fun", "oracle")
                 .with("conformance", conformance));
+  }
+
+  default String getCastString(
+      String value,
+      String targetType,
+      boolean errorLoc) {
+    if (errorLoc) {
+      value = "^" + value + "^";
+    }
+    return "cast(" + value + " as " + targetType + ")";
+  }
+
+  default void checkCastToApproxOkay(String value, String targetType,
+      double expected, double delta) {
+    checkScalarApprox(getCastString(value, targetType, false),
+        targetType + NON_NULLABLE_SUFFIX, expected, delta);
+  }
+
+  default void checkCastToStringOkay(String value, String targetType,
+      String expected) {
+    checkString(getCastString(value, targetType, false), expected,
+        targetType + NON_NULLABLE_SUFFIX);
+  }
+
+  default void checkCastToScalarOkay(String value, String targetType,
+      String expected) {
+    checkScalarExact(getCastString(value, targetType, false),
+        targetType + NON_NULLABLE_SUFFIX,
+        expected);
+  }
+
+  default void checkCastToScalarOkay(String value, String targetType) {
+    checkCastToScalarOkay(value, targetType, value);
+  }
+
+  default void checkCastFails(String value, String targetType,
+      String expectedError, boolean runtime) {
+    checkFails(getCastString(value, targetType, !runtime), expectedError,
+        runtime);
+  }
+
+  default void checkCastToString(String value, String type,
+      @Nullable String expected) {
+    String spaces = "     ";
+    if (expected == null) {
+      expected = value.trim();
+    }
+    int len = expected.length();
+    if (type != null) {
+      value = getCastString(value, type, false);
+    }
+
+    // currently no exception thrown for truncation
+    if (Bug.DT239_FIXED) {
+      checkCastFails(value,
+          "VARCHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE,
+          true);
+    }
+
+    checkCastToStringOkay(value, "VARCHAR(" + len + ")", expected);
+    checkCastToStringOkay(value, "VARCHAR(" + (len + 5) + ")", expected);
+
+    // currently no exception thrown for truncation
+    if (Bug.DT239_FIXED) {
+      checkCastFails(value,
+          "CHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE,
+          true);
+    }
+
+    checkCastToStringOkay(value, "CHAR(" + len + ")", expected);
+    checkCastToStringOkay(value, "CHAR(" + (len + 5) + ")", expected + spaces);
   }
 }
