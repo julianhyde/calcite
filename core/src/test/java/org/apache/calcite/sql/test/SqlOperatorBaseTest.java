@@ -273,8 +273,6 @@ public abstract class SqlOperatorBaseTest {
    */
   public static final boolean DECIMAL = false;
 
-  private final boolean enable;
-
   /** Function object that returns a string with 2 copies of each character.
    * For example, {@code DOUBLER.apply("xy")} returns {@code "xxyy"}. */
   private static final UnaryOperator<String> DOUBLER =
@@ -285,16 +283,6 @@ public abstract class SqlOperatorBaseTest {
           return pattern.matcher(s).replaceAll("$1$1");
         }
       };
-
-  /**
-   * Creates a SqlOperatorBaseTest.
-   *
-   * @param enable Whether to run "failing" tests.
-   * @param tester Means to validate, execute various statements.
-   */
-  protected SqlOperatorBaseTest(boolean enable, SqlTester tester) {
-    this.enable = enable;
-  }
 
   /** Sub-classes should override to run tests in a different environment. */
   protected SqlFixture fixture() {
@@ -794,7 +782,7 @@ public abstract class SqlOperatorBaseTest {
 
     f.checkCastToScalarOkay("1.25", "INTEGER", "1");
     f.checkCastToScalarOkay("1.25E0", "INTEGER", "1");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkCastToScalarOkay("1.5", "INTEGER", "2");
@@ -834,7 +822,7 @@ public abstract class SqlOperatorBaseTest {
 
     f.checkScalarExact("cast( cast(1.25 as double) as integer)", "1");
     f.checkScalarExact("cast( cast(-1.25 as double) as integer)", "-1");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkScalarExact("cast( cast(1.75 as double) as integer)", "2");
@@ -862,7 +850,7 @@ public abstract class SqlOperatorBaseTest {
         continue;
       }
 
-      if (!enable) {
+      if (!f.brokenTestsEnabled()) {
         return;
       }
 
@@ -997,7 +985,7 @@ public abstract class SqlOperatorBaseTest {
         "12:42:25", "TIME(0) NOT NULL");
 
     // test rounding
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       f.checkScalar("cast(TIME '12:42:25.9' as TIME)",
           "12:42:26", "TIME(0) NOT NULL");
     }
@@ -2057,7 +2045,7 @@ public abstract class SqlOperatorBaseTest {
       f.checkBoolean("1 in (0, null, 2)", null);
     }
 
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     // AND has lower precedence than IN
@@ -2074,7 +2062,7 @@ public abstract class SqlOperatorBaseTest {
     f.setFor(SqlStdOperatorTable.NOT_IN, VM_EXPAND);
     f.checkBoolean("1 not in (0, 1, 2)", false);
     f.checkBoolean("3 not in (0, 1, 2)", true);
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkBoolean("cast(null as integer) not in (0, 1, 2)", null);
@@ -3316,7 +3304,7 @@ public abstract class SqlOperatorBaseTest {
     // The following two tests throws exception(They probably should).
     // "Dangling meta character '*' near index 2"
 
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       f.checkBoolean("'y' similar to 'x+*y'", true);
       f.checkBoolean("'y' similar to 'x?*y'", true);
     }
@@ -3426,12 +3414,12 @@ public abstract class SqlOperatorBaseTest {
         "abcdef", "VARCHAR(9) NOT NULL");
     f.checkString("overlay('ABCdef' placing 'abc' from 1 for 2)",
         "abcCdef", "VARCHAR(9) NOT NULL");
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       f.checkString("overlay(cast('ABCdef' as varchar(10)) placing "
               + "cast('abc' as char(5)) from 1 for 2)",
           "abc  Cdef", "VARCHAR(15) NOT NULL");
     }
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       f.checkString("overlay(cast('ABCdef' as char(10)) placing "
               + "cast('abc' as char(5)) from 1 for 2)",
           "abc  Cdef    ",
@@ -3445,12 +3433,12 @@ public abstract class SqlOperatorBaseTest {
         "abcdef", "VARBINARY(5) NOT NULL");
     f.checkString("overlay(x'ABCDEF1234' placing x'2345' from 1 for 2)",
         "2345ef1234", "VARBINARY(7) NOT NULL");
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       f.checkString("overlay(cast(x'ABCdef' as varbinary(5)) placing "
               + "cast(x'abcd' as binary(3)) from 1 for 2)",
           "abc  Cdef", "VARBINARY(8) NOT NULL");
     }
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       f.checkString("overlay(cast(x'ABCdef' as binary(5)) placing "
               + "cast(x'abcd' as binary(3)) from 1 for 2)",
           "abc  Cdef    ", "VARBINARY(8) NOT NULL");
@@ -6114,10 +6102,10 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testWindow() {
-    if (!enable) {
+    final SqlFixture f = fixture();
+    if (!f.brokenTestsEnabled()) {
       return;
     }
-    final SqlFixture f = fixture();
     f.check("select sum(1) over (order by x)\n"
             + "from (select 1 as x, 2 as y\n"
             + "  from (values (true)))",
@@ -6139,7 +6127,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalarExact("cardinality(multiset[cast(null as integer),2])",
         "2");
 
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
 
@@ -6297,7 +6285,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkAgg("collect(x) within group(order by x desc)", values,
         Collections.singletonList("[2, 2, 0]"), 0d);
     Object result1 = -3;
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg("collect(CASE x WHEN 0 THEN NULL ELSE -1 END)", values,
@@ -7146,10 +7134,10 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testCeilFuncInterval() {
-    if (!enable) {
+    final SqlFixture f = fixture();
+    if (!f.brokenTestsEnabled()) {
       return;
     }
-    final SqlFixture f = fixture();
     f.checkScalar("ceil(interval '3:4:5' hour to second)",
         "+4:00:00.000000", "INTERVAL HOUR TO SECOND NOT NULL");
     f.checkScalar("ceil(interval '-6.3' second)",
@@ -7270,10 +7258,10 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testFloorFuncInterval() {
-    if (!enable) {
+    final SqlFixture f = fixture();
+    if (!f.brokenTestsEnabled()) {
       return;
     }
-    final SqlFixture f = fixture();
     f.checkScalar("floor(interval '3:4:5' hour to second)",
         "+3:00:00.000000",
         "INTERVAL HOUR TO SECOND NOT NULL");
@@ -7679,7 +7667,7 @@ public abstract class SqlOperatorBaseTest {
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
     f.checkAgg("sum(x)", values, 4, 0d);
     Object result1 = -3;
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg("sum(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result1,
@@ -7707,7 +7695,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkAggType("avg(1)", "INTEGER NOT NULL");
     f.checkAggType("avg(1.2)", "DECIMAL(2, 1) NOT NULL");
     f.checkAggType("avg(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
@@ -7731,7 +7719,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("covar_pop(CAST(NULL AS INTEGER),CAST(NULL AS INTEGER))",
         "INTEGER");
     f.checkAggType("covar_pop(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     // with zero values
@@ -7754,7 +7742,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("covar_samp(CAST(NULL AS INTEGER),CAST(NULL AS INTEGER))",
         "INTEGER");
     f.checkAggType("covar_samp(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     // with zero values
@@ -7777,7 +7765,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("regr_sxx(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
         "INTEGER");
     f.checkAggType("regr_sxx(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     // with zero values
@@ -7800,7 +7788,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("regr_syy(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
         "INTEGER");
     f.checkAggType("regr_syy(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL");
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     // with zero values
@@ -7818,7 +7806,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("stddev_pop(CAST(NULL AS INTEGER))", "INTEGER");
     f.checkAggType("stddev_pop(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       // verified on Oracle 10g
       f.checkAgg("stddev_pop(x)", values, 1.414213562373095d,
           0.000000000000001d);
@@ -7848,7 +7836,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("stddev_samp(CAST(NULL AS INTEGER))", "INTEGER");
     f.checkAggType("stddev_samp(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
-    if (enable) {
+    if (f.brokenTestsEnabled()) {
       // verified on Oracle 10g
       f.checkAgg("stddev_samp(x)", values, 1.732050807568877d,
           0.000000000000001d);
@@ -7919,7 +7907,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("var_pop(CAST(NULL AS INTEGER))", "INTEGER");
     f.checkAggType("var_pop(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg(
@@ -7966,7 +7954,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("var_samp(CAST(NULL AS INTEGER))", "INTEGER");
     f.checkAggType("var_samp(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg(
@@ -8011,7 +7999,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("variance(CAST(NULL AS INTEGER))", "INTEGER");
     f.checkAggType("variance(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg(
@@ -8060,7 +8048,7 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'MIN'. Was expecting 1 arguments",
         false);
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg(
@@ -8099,7 +8087,7 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'MAX'. Was expecting 1 arguments",
         false);
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg("max(x)", values, "2", 0d);
@@ -8113,7 +8101,7 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.LAST_VALUE, VM_EXPAND);
     final String[] values = {"0", "CAST(null AS INTEGER)", "3", "3"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkWinAgg("last_value(x)", values, "ROWS 3 PRECEDING", "INTEGER",
@@ -8130,7 +8118,7 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.FIRST_VALUE, VM_EXPAND);
     final String[] values = {"0", "CAST(null AS INTEGER)", "3", "3"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkWinAgg("first_value(x)", values, "ROWS 3 PRECEDING", "INTEGER",
@@ -8192,7 +8180,7 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'ANY_VALUE'. Was expecting 1 arguments",
         false);
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg("any_value(x)", values, "0", 0d);
@@ -8467,7 +8455,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testLiteralAtLimit() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     final List<RelDataType> types =
@@ -8568,7 +8556,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalar("CAST(CAST(x'ABCDEF12' AS VARBINARY) AS VARBINARY(3))",
         "abcdef", "VARBINARY(3) NOT NULL");
 
-    if (!enable) {
+    if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkBoolean("CAST(X'' AS BINARY(3)) = X'000000'", true);

@@ -64,14 +64,17 @@ import static java.util.Objects.requireNonNull;
 class SqlFixtureImpl implements SqlFixture {
   public static final SqlFixtureImpl DEFAULT =
       new SqlFixtureImpl(SqlNewTestFactory.INSTANCE,
-          SqlValidatorTester.DEFAULT);
+          SqlValidatorTester.DEFAULT, false);
 
   private final SqlNewTestFactory factory;
   private final SqlTester tester;
+  private final boolean brokenTestsEnabled;
 
-  SqlFixtureImpl(SqlNewTestFactory factory, SqlTester tester) {
+  SqlFixtureImpl(SqlNewTestFactory factory, SqlTester tester,
+      boolean brokenTestsEnabled) {
     this.factory = requireNonNull(factory, "factory");
     this.tester = requireNonNull(tester, "tester");
+    this.brokenTestsEnabled = brokenTestsEnabled;
   }
 
   @Override public void close() {
@@ -81,9 +84,30 @@ class SqlFixtureImpl implements SqlFixture {
     return factory;
   }
 
-  public SqlFixtureImpl withFactory(UnaryOperator<SqlNewTestFactory> transform) {
+  @Override public SqlFixtureImpl withFactory(
+      UnaryOperator<SqlNewTestFactory> transform) {
     final SqlNewTestFactory factory = transform.apply(this.factory);
-    return new SqlFixtureImpl(factory, tester);
+    if (factory == this.factory) {
+      return this;
+    }
+    return new SqlFixtureImpl(factory, tester, brokenTestsEnabled);
+  }
+
+  @Override public SqlFixture withTester(UnaryOperator<SqlTester> transform) {
+    final SqlTester tester = transform.apply(this.tester);
+    if (tester == this.tester) {
+      return this;
+    }
+    return new SqlFixtureImpl(factory, tester, brokenTestsEnabled);
+  }
+
+  @Override public boolean brokenTestsEnabled() {
+    return brokenTestsEnabled;
+  }
+
+  @Override public SqlFixture withBrokenTestsEnabled(boolean enable) {
+    return enable == this.brokenTestsEnabled ? this
+        : new SqlFixtureImpl(factory, tester, enable);
   }
 
   @Override public SqlFixture setFor(SqlOperator operator,

@@ -23,10 +23,4 @@ import org.apache.calcite.sql.validate.SqlValidator;
  * a {@link SqlValidator}. Tests that involve execution trivially succeed.
  */
 class SqlOperatorTest extends SqlOperatorBaseTest {
-  /**
-   * Creates a SqlOperatorTest.
-   */
-  SqlOperatorTest() {
-    super(false, SqlValidatorTester.DEFAULT);
-  }
 }

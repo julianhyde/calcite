@@ -110,6 +110,9 @@ public interface SqlFixture extends AutoCloseable {
   /** Creates a copy of this fixture with a new test factory. */
   SqlFixture withFactory(UnaryOperator<SqlNewTestFactory> transform);
 
+  /** Creates a copy of this fixture with a new tester. */
+  SqlFixture withTester(UnaryOperator<SqlTester> transform);
+
   /** Creates a copy of this fixture with a new parser configuration. */
   default SqlFixture withParserConfig(UnaryOperator<SqlParser.Config> transform) {
     return withFactory(f -> f.withParserConfig(transform));
@@ -182,6 +185,14 @@ public interface SqlFixture extends AutoCloseable {
   default SqlFixture withOperatorTable(SqlOperatorTable operatorTable) {
     return withFactory(f -> f.withOperatorTable(o -> operatorTable));
   }
+
+  /** Returns whether to run tests that are considered 'broken'.
+   * Returns false by default, but it is useful to temporarily enable the
+   * 'broken' tests to see whether they are still broken. */
+  boolean brokenTestsEnabled();
+
+  /** Sets {@link #brokenTestsEnabled()}. */
+  SqlFixture withBrokenTestsEnabled(boolean enableBrokenTests);
 
   /**
    * Tests that a scalar SQL expression returns the expected result and the

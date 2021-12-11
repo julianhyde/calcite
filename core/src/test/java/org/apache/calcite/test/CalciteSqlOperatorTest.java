@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.sql.test.SqlFixture;
 import org.apache.calcite.sql.test.SqlOperatorBaseTest;
 
 /**
@@ -23,7 +24,8 @@ import org.apache.calcite.sql.test.SqlOperatorBaseTest;
  * that generates SQL statements and executes them using Calcite.
  */
 class CalciteSqlOperatorTest extends SqlOperatorBaseTest {
-  CalciteSqlOperatorTest() {
-    super(false, TESTER);
+  @Override protected SqlFixture fixture() {
+    return super.fixture()
+        .withTester(t -> TESTER);
   }
 }
