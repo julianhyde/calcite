@@ -45,10 +45,9 @@ import org.hamcrest.Matcher;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -148,7 +147,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     return Pair.of(validator, validator.validate(sqlNode));
   }
 
-  SqlNode parseQuery(SqlNewTestFactory factory, String sql) throws SqlParseException {
+  @Override public SqlNode parseQuery(SqlNewTestFactory factory, String sql)
+      throws SqlParseException {
     SqlParser parser = factory.createParser(sql);
     return parser.parseQuery();
   }
@@ -172,12 +172,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     };
   }
 
-  @Override public void checkType(SqlNewTestFactory factory,
-      String expression, String type) {
-    forEachQueryValidateAndThen(factory, StringAndPos.of(expression),
-        checkColumnTypeAction(is(type)));
-  }
-
   // SqlTester methods
 
   @Override public void setFor(
@@ -196,16 +190,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
-  @Override public void checkAggWithMultipleArgs(SqlNewTestFactory factory,
-      String expr,
-      String[][] inputValues,
-      Object result,
-      double delta) {
-    String query =
-        SqlTests.generateAggQueryWithMultipleArgs(expr, inputValues);
-    check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
-  }
-
   @Override public void checkWinAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
@@ -217,76 +201,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         SqlTests.generateWinAggQuery(
             expr, windowSpec, inputValues);
     check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
-  }
-
-  @Override public void checkScalar(SqlNewTestFactory factory,
-      String expression, Object result, String resultType) {
-    checkType(factory, expression, resultType);
-    for (String sql : buildQueries(factory, expression)) {
-      check(factory, sql, SqlTests.ANY_TYPE_CHECKER, result, 0);
-    }
-  }
-
-  @Override public void checkScalarExact(SqlNewTestFactory factory,
-      String expression,
-      String result) {
-    for (String sql : buildQueries(factory, expression)) {
-      check(factory, sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0);
-    }
-  }
-
-  @Override public void checkScalarExact(SqlNewTestFactory factory,
-      String expression,
-      String expectedType,
-      String result) {
-    for (String sql : buildQueries(factory, expression)) {
-      TypeChecker typeChecker =
-          new SqlTests.StringTypeChecker(expectedType);
-      check(factory, sql, typeChecker, result, 0);
-    }
-  }
-
-  @Override public void checkScalarApprox(SqlNewTestFactory factory,
-      String expression,
-      String expectedType,
-      double expectedResult,
-      double delta) {
-    for (String sql : buildQueries(factory, expression)) {
-      TypeChecker typeChecker =
-          new SqlTests.StringTypeChecker(expectedType);
-      check(factory, sql, typeChecker, expectedResult, delta);
-    }
-  }
-
-  @Override public void checkBoolean(SqlNewTestFactory factory,
-      String expression,
-      @Nullable Boolean result) {
-    if (null == result) {
-      checkNull(factory, expression);
-    } else {
-      for (String sql : buildQueries(factory, expression)) {
-        check(factory, sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(),
-            0);
-      }
-    }
-  }
-
-  @Override public void checkString(SqlNewTestFactory factory,
-      String expression,
-      String result,
-      String expectedType) {
-    for (String sql : buildQueries(factory, expression)) {
-      TypeChecker typeChecker =
-          new SqlTests.StringTypeChecker(expectedType);
-      check(factory, sql, typeChecker, result, 0);
-    }
-  }
-
-  @Override public void checkNull(SqlNewTestFactory factory,
-      String expression) {
-    for (String sql : buildQueries(factory, expression)) {
-      check(factory, sql, SqlTests.ANY_TYPE_CHECKER, null, 0);
-    }
   }
 
   @Override public final void check(SqlNewTestFactory factory,
@@ -329,19 +243,12 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     consumer.accept(sap, validator, rewrittenNode);
   }
 
-  public <R> R validateAndApply(SqlNewTestFactory factory, StringAndPos sap,
-      ValidatedNodeFunction<R> function) {
+  @Override public <R> R validateAndApply(SqlNewTestFactory factory,
+      StringAndPos sap, ValidatedNodeFunction<R> function) {
     Pair<SqlValidator, SqlNode> p = parseAndValidate(factory, sap.sql);
     SqlValidator validator = requireNonNull(p.left);
     SqlNode rewrittenNode = requireNonNull(p.right);
     return function.apply(sap, validator, rewrittenNode);
-  }
-
-  @Override public void forEachQueryValidateAndThen(SqlNewTestFactory factory,
-      StringAndPos expression, ValidatedNodeConsumer consumer) {
-    buildQueries(factory, expression.addCarets())
-        .forEach(query ->
-            validateAndThen(factory, StringAndPos.of(query), consumer));
   }
 
   @Override public void checkFails(SqlNewTestFactory factory, StringAndPos sap,
@@ -378,10 +285,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     } else {
       checkQueryFails(factory, StringAndPos.of(sql), expectedError);
     }
-  }
-
-  @Override public void checkQuery(SqlNewTestFactory factory, String sql) {
-    assertExceptionIsThrown(factory, StringAndPos.of(sql), null);
   }
 
   public static String buildQuery(String expression) {
@@ -522,40 +425,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         + ")";
   }
 
-  /**
-   * Converts a scalar expression into a list of SQL queries that
-   * evaluate it.
-   *
-   * @param expression Scalar expression
-   * @return List of queries that evaluate an expression
-   */
-  private Iterable<String> buildQueries(SqlNewTestFactory factory,
-      final String expression) {
-    // Why an explicit iterable rather than a list? If there is
-    // a syntax error in the expression, the calling code discovers it
-    // before we try to parse it to do substitutions on the parse tree.
-    return () -> new Iterator<String>() {
-      int i = 0;
-
-      @Override public void remove() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override public String next() {
-        switch (i++) {
-        case 0:
-          return buildQuery(expression);
-        case 1:
-          return buildQuery2(factory, expression);
-        default:
-          throw new NoSuchElementException();
-        }
-      }
-
-      @Override public boolean hasNext() {
-        return i < 2;
-      }
-    };
+  @Override public void forEachQuery(SqlNewTestFactory factory,
+      String expression, Consumer<String> consumer) {
+    // Why not return a list? If there is a syntax error in the expression, the
+    // consumer will discover it before we try to parse it to do substitutions
+    // on the parse tree.
+    consumer.accept("values (" + expression + ")");
+    consumer.accept(buildQuery2(factory, expression));
   }
 
 }

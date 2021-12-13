@@ -152,11 +152,6 @@ class SqlTestGen {
       @Override public void validateAndThen(SqlNewTestFactory factory,
           StringAndPos sap, ValidatedNodeConsumer consumer) {
       }
-
-      @Override public void forEachQueryValidateAndThen(
-          SqlNewTestFactory factory, StringAndPos expression,
-          ValidatedNodeConsumer consumer) {
-      }
     }
   }
 }

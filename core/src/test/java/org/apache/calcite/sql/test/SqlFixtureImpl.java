@@ -18,37 +18,15 @@ package org.apache.calcite.sql.test;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.runtime.Utilities;
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlUnresolvedFunction;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
-import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.TestUtil;
-import org.apache.calcite.util.Util;
-
-import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.function.UnaryOperator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,6 +62,10 @@ class SqlFixtureImpl implements SqlFixture {
     return factory;
   }
 
+  @Override public SqlTester getTester() {
+    return tester;
+  }
+
   @Override public SqlFixtureImpl withFactory(
       UnaryOperator<SqlNewTestFactory> transform) {
     final SqlNewTestFactory factory = transform.apply(this.factory);
@@ -115,47 +97,19 @@ class SqlFixtureImpl implements SqlFixture {
     return this;
   }
 
-  SqlNode parseQuery(String sql) throws SqlParseException {
-    SqlParser parser = factory.createParser(sql);
-    return parser.parseQuery();
-  }
-
   SqlNode parseAndValidate(SqlValidator validator, String sql) {
     SqlNode sqlNode;
     try {
-      sqlNode = parseQuery(sql);
+      sqlNode = tester.parseQuery(factory, sql);
     } catch (Throwable e) {
       throw new RuntimeException("Error while parsing query: " + sql, e);
     }
     return validator.validate(sqlNode);
   }
 
-  void validateAndThen(StringAndPos sap,
-      SqlTester.ValidatedNodeConsumer consumer) {
-    final SqlValidator validator = factory.createValidator();
-    SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
-    consumer.accept(sap, validator, rewrittenNode);
-  }
-
-  <R> R validateAndApply(StringAndPos sap,
-      SqlTester.ValidatedNodeFunction<R> function) {
-    final SqlValidator validator = factory.createValidator();
-    SqlNode rewrittenNode = parseAndValidate(validator, sap.sql);
-    return function.apply(sap, validator, rewrittenNode);
-  }
-
-  RelDataType getColumnType(String sql) {
-    return validateAndApply(StringAndPos.of(sql), (sql1, validator, n) -> {
-      final RelDataType rowType =
-          validator.getValidatedNodeType(n);
-      final List<RelDataTypeField> fields = rowType.getFieldList();
-      assertThat("expected query to return 1 field", fields.size(), is(1));
-      return fields.get(0).getType();
-    });
-  }
-
   @Override public void checkColumnType(String sql, String expected) {
-    validateAndThen(StringAndPos.of(sql), checkColumnTypeAction(is(expected)));
+    tester.validateAndThen(factory, StringAndPos.of(sql),
+        checkColumnTypeAction(is(expected)));
   }
 
   @Override public void checkType(String expression, String type) {
@@ -165,7 +119,7 @@ class SqlFixtureImpl implements SqlFixture {
 
   private static SqlTester.ValidatedNodeConsumer checkColumnTypeAction(
       Matcher<String> matcher) {
-    return (sql1, validator, validatedNode) -> {
+    return (sql, validator, validatedNode) -> {
       final RelDataType rowType =
           validator.getValidatedNodeType(validatedNode);
       final List<RelDataTypeField> fields = rowType.getFieldList();
@@ -180,157 +134,23 @@ class SqlFixtureImpl implements SqlFixture {
     tester.assertExceptionIsThrown(factory, StringAndPos.of(sql), null);
   }
 
-  static String buildQuery(String expression) {
-    return "values (" + expression + ")";
-  }
-
-  /**
-   * Builds a query that extracts all literals as columns in an underlying
-   * select.
-   *
-   * <p>For example,</p>
-   *
-   * <blockquote>{@code 1 < 5}</blockquote>
-   *
-   * <p>becomes</p>
-   *
-   * <blockquote>{@code SELECT p0 < p1
-   * FROM (VALUES (1, 5)) AS t(p0, p1)}</blockquote>
-   *
-   * <p>Null literals don't have enough type information to be extracted.
-   * We push down {@code CAST(NULL AS type)} but raw nulls such as
-   * {@code CASE 1 WHEN 2 THEN 'a' ELSE NULL END} are left as is.</p>
-   *
-   * @param expression Scalar expression
-   * @return Query that evaluates a scalar expression
-   */
-  protected String buildQuery2(String expression) {
-    if (expression.matches("(?i).*percentile_(cont|disc).*")) {
-      // PERCENTILE_CONT requires its argument to be a literal,
-      // so converting its argument to a column will cause false errors.
-      return buildQuery(expression);
-    }
-    // "values (1 < 5)"
-    // becomes
-    // "select p0 < p1 from (values (1, 5)) as t(p0, p1)"
-    SqlNode x;
-    final String sql = "values (" + expression + ")";
-    try {
-      x = parseQuery(sql);
-    } catch (SqlParseException e) {
-      throw TestUtil.rethrow(e);
-    }
-    final Collection<SqlNode> literalSet = new LinkedHashSet<>();
-    x.accept(
-        new SqlShuttle() {
-          private final List<SqlOperator> ops =
-              ImmutableList.of(
-                  SqlStdOperatorTable.LITERAL_CHAIN,
-                  SqlStdOperatorTable.LOCALTIME,
-                  SqlStdOperatorTable.LOCALTIMESTAMP,
-                  SqlStdOperatorTable.CURRENT_TIME,
-                  SqlStdOperatorTable.CURRENT_TIMESTAMP);
-
-          @Override public SqlNode visit(SqlLiteral literal) {
-            if (!isNull(literal)
-                && literal.getTypeName() != SqlTypeName.SYMBOL) {
-              literalSet.add(literal);
-            }
-            return literal;
-          }
-
-          @Override public SqlNode visit(SqlCall call) {
-            SqlOperator operator = call.getOperator();
-            if (operator instanceof SqlUnresolvedFunction) {
-              final SqlUnresolvedFunction unresolvedFunction =
-                  (SqlUnresolvedFunction) operator;
-              final SqlOperator lookup = SqlValidatorUtil.lookupSqlFunctionByID(
-                  SqlStdOperatorTable.instance(),
-                  unresolvedFunction.getSqlIdentifier(),
-                  unresolvedFunction.getFunctionType());
-              if (lookup != null) {
-                operator = lookup;
-                call = operator.createCall(call.getFunctionQuantifier(),
-                    call.getParserPosition(), call.getOperandList());
-              }
-            }
-            if (operator == SqlStdOperatorTable.CAST
-                && isNull(call.operand(0))) {
-              literalSet.add(call);
-              return call;
-            } else if (ops.contains(operator)) {
-              // "Argument to function 'LOCALTIME' must be a
-              // literal"
-              return call;
-            } else {
-              return super.visit(call);
-            }
-          }
-
-          private boolean isNull(SqlNode sqlNode) {
-            return sqlNode instanceof SqlLiteral
-                && ((SqlLiteral) sqlNode).getTypeName()
-                == SqlTypeName.NULL;
-          }
-        });
-    final List<SqlNode> nodes = new ArrayList<>(literalSet);
-    nodes.sort((o1, o2) -> {
-      final SqlParserPos pos0 = o1.getParserPosition();
-      final SqlParserPos pos1 = o2.getParserPosition();
-      int c = -Utilities.compare(pos0.getLineNum(), pos1.getLineNum());
-      if (c != 0) {
-        return c;
-      }
-      return -Utilities.compare(pos0.getColumnNum(), pos1.getColumnNum());
-    });
-    String sql2 = sql;
-    final List<Pair<String, String>> values = new ArrayList<>();
-    int p = 0;
-    for (SqlNode literal : nodes) {
-      final SqlParserPos pos = literal.getParserPosition();
-      final int start =
-          SqlParserUtil.lineColToIndex(
-              sql, pos.getLineNum(), pos.getColumnNum());
-      final int end =
-          SqlParserUtil.lineColToIndex(
-              sql,
-              pos.getEndLineNum(),
-              pos.getEndColumnNum()) + 1;
-      String param = "p" + p++;
-      values.add(Pair.of(sql2.substring(start, end), param));
-      sql2 = sql2.substring(0, start)
-          + param
-          + sql2.substring(end);
-    }
-    if (values.isEmpty()) {
-      values.add(Pair.of("1", "p0"));
-    }
-    return "select "
-        + sql2.substring("values (".length(), sql2.length() - 1)
-        + " from (values ("
-        + Util.commaList(Pair.left(values))
-        + ")) as t("
-        + Util.commaList(Pair.right(values))
-        + ")";
-  }
-
   void forEachQueryValidateAndThen(StringAndPos expression,
       SqlTester.ValidatedNodeConsumer consumer) {
-    buildQueries(expression.addCarets())
-        .forEach(query -> validateAndThen(StringAndPos.of(query), consumer));
+    tester.forEachQuery(factory, expression.addCarets(), query ->
+        tester.validateAndThen(factory, StringAndPos.of(query), consumer));
   }
 
   @Override public void checkFails(StringAndPos sap, String expectedError,
       boolean runtime) {
+    final String sql = "values (" + sap.addCarets() + ")";
     if (runtime) {
       // We need to test that the expression fails at runtime.
       // Ironically, that means that it must succeed at prepare time.
       SqlValidator validator = factory.createValidator();
-      final String sql = buildQuery(sap.addCarets());
       SqlNode n = parseAndValidate(validator, sql);
       assertNotNull(n);
     } else {
-      checkQueryFails(StringAndPos.of(buildQuery(sap.addCarets())),
+      checkQueryFails(StringAndPos.of(sql),
           expectedError);
     }
   }
@@ -363,7 +183,7 @@ class SqlFixtureImpl implements SqlFixture {
       double delta) {
     String query =
         SqlTests.generateAggQuery(expr, inputValues);
-    check(query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
   @Override public void checkAggWithMultipleArgs(
@@ -373,7 +193,7 @@ class SqlFixtureImpl implements SqlFixture {
       double delta) {
     String query =
         SqlTests.generateAggQueryWithMultipleArgs(expr, inputValues);
-    check(query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
   @Override public void checkWinAgg(
@@ -386,7 +206,7 @@ class SqlFixtureImpl implements SqlFixture {
     String query =
         SqlTests.generateWinAggQuery(
             expr, windowSpec, inputValues);
-    check(query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
   }
 
   @Override public void checkScalar(
@@ -394,28 +214,25 @@ class SqlFixtureImpl implements SqlFixture {
       Object result,
       String resultType) {
     checkType(expression, resultType);
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.ANY_TYPE_CHECKER, result, 0);
-    }
+    tester.forEachQuery(factory, expression, sql ->
+        tester.check(factory, sql, SqlTests.ANY_TYPE_CHECKER, result, 0));
   }
 
   @Override public void checkScalarExact(
       String expression,
       String result) {
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0);
-    }
+    tester.forEachQuery(factory, expression, sql ->
+        tester.check(factory, sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0));
   }
 
   @Override public void checkScalarExact(
       String expression,
       String expectedType,
       String result) {
-    for (String sql : buildQueries(expression)) {
-      SqlTester.TypeChecker typeChecker =
-          new SqlTests.StringTypeChecker(expectedType);
-      check(sql, typeChecker, result, 0);
-    }
+    final SqlTester.TypeChecker typeChecker =
+        new SqlTests.StringTypeChecker(expectedType);
+    tester.forEachQuery(factory, expression, sql ->
+        tester.check(factory, sql, typeChecker, result, 0));
   }
 
   @Override public void checkScalarApprox(
@@ -423,11 +240,10 @@ class SqlFixtureImpl implements SqlFixture {
       String expectedType,
       double expectedResult,
       double delta) {
-    for (String sql : buildQueries(expression)) {
-      SqlTester.TypeChecker typeChecker =
-          new SqlTests.StringTypeChecker(expectedType);
-      check(sql, typeChecker, expectedResult, delta);
-    }
+    SqlTester.TypeChecker typeChecker =
+        new SqlTests.StringTypeChecker(expectedType);
+    tester.forEachQuery(factory, expression, sql ->
+        tester.check(factory, sql, typeChecker, expectedResult, delta));
   }
 
   @Override public void checkBoolean(
@@ -436,9 +252,11 @@ class SqlFixtureImpl implements SqlFixture {
     if (null == result) {
       checkNull(expression);
     } else {
-      for (String sql : buildQueries(expression)) {
-        check(sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(), 0);
-      }
+      SqlTester.ResultChecker resultChecker =
+          SqlTests.createChecker(result.toString(), 0);
+      tester.forEachQuery(factory, expression, sql ->
+          tester.check(factory, sql, SqlTests.BOOLEAN_TYPE_CHECKER,
+              SqlTests.ANY_PARAMETER_CHECKER, resultChecker));
     }
   }
 
@@ -446,82 +264,14 @@ class SqlFixtureImpl implements SqlFixture {
       String expression,
       String result,
       String expectedType) {
-    for (String sql : buildQueries(expression)) {
-      SqlTester.TypeChecker typeChecker =
-          new SqlTests.StringTypeChecker(expectedType);
-      check(sql, typeChecker, result, 0);
-    }
+    SqlTester.TypeChecker typeChecker =
+        new SqlTests.StringTypeChecker(expectedType);
+    tester.forEachQuery(factory, expression, sql ->
+        tester.check(factory, sql, typeChecker, result, 0));
   }
 
   @Override public void checkNull(String expression) {
-    for (String sql : buildQueries(expression)) {
-      check(sql, SqlTests.ANY_TYPE_CHECKER, null, 0);
-    }
-  }
-
-  @Override public final void check(
-      String query,
-      SqlTester.TypeChecker typeChecker,
-      @Nullable Object result,
-      double delta) {
-    check(query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
-        SqlTests.createChecker(result, delta));
-  }
-
-  @Override public void check(String query, SqlTester.TypeChecker typeChecker,
-      SqlTester.ParameterChecker parameterChecker,
-      SqlTester.ResultChecker resultChecker) {
-    // This implementation does NOT check the result!
-    // All it does is check the return type.
-    requireNonNull(typeChecker, "typeChecker");
-    requireNonNull(parameterChecker, "parameterChecker");
-    requireNonNull(resultChecker, "resultChecker");
-
-    // Parse and validate. There should be no errors.
-    // There must be 1 column. Get its type.
-    RelDataType actualType = getColumnType(query);
-
-    // Check result type.
-    typeChecker.checkType(actualType);
-
-    SqlValidator validator = factory.createValidator();
-    SqlNode n = parseAndValidate(validator, query);
-    final RelDataType parameterRowType = validator.getParameterRowType(n);
-    parameterChecker.checkParameters(parameterRowType);
-  }
-
-  /**
-   * Converts a scalar expression into a list of SQL queries that
-   * evaluate it.
-   *
-   * @param expression Scalar expression
-   * @return List of queries that evaluate an expression
-   */
-  private Iterable<String> buildQueries(final String expression) {
-    // Why an explicit iterable rather than a list? If there is
-    // a syntax error in the expression, the calling code discovers it
-    // before we try to parse it to do substitutions on the parse tree.
-    return () -> new Iterator<String>() {
-      int i = 0;
-
-      @Override public void remove() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override public String next() {
-        switch (i++) {
-        case 0:
-          return buildQuery(expression);
-        case 1:
-          return buildQuery2(expression);
-        default:
-          throw new NoSuchElementException();
-        }
-      }
-
-      @Override public boolean hasNext() {
-        return i < 2;
-      }
-    };
+    tester.forEachQuery(factory, expression, sql ->
+        tester.check(factory, sql, SqlTests.ANY_TYPE_CHECKER, null, 0));
   }
 }

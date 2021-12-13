@@ -105,10 +105,14 @@ public interface SqlFixture extends AutoCloseable {
 
   //~ Methods ----------------------------------------------------------------
 
+  /** Returns the test factory. */
   SqlNewTestFactory getFactory();
 
   /** Creates a copy of this fixture with a new test factory. */
   SqlFixture withFactory(UnaryOperator<SqlNewTestFactory> transform);
+
+  /** Returns the tester. */
+  SqlTester getTester();
 
   /** Creates a copy of this fixture with a new tester. */
   SqlFixture withTester(UnaryOperator<SqlTester> transform);
@@ -150,7 +154,8 @@ public interface SqlFixture extends AutoCloseable {
    * version. */
   default SqlFixture withConformance(SqlConformance conformance) {
     return withParserConfig(c -> c.withConformance(conformance))
-        .withValidatorConfig(c -> c.withConformance(conformance));
+        .withValidatorConfig(c -> c.withConformance(conformance))
+        .withConnectionFactory(cf -> cf.with("conformance", conformance));
   }
 
   /** Returns the conformance. */
@@ -377,11 +382,14 @@ public interface SqlFixture extends AutoCloseable {
    * @param result      Expected result
    * @param delta       The acceptable tolerance between the expected and actual
    */
-  void check(
+  default void check(
       String query,
       TypeChecker typeChecker,
       @Nullable Object result,
-      double delta);
+      double delta) {
+    check(query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
+        SqlTests.createChecker(result, delta));
+  }
 
   /**
    * Tests that a SQL query returns a result of expected type and value.
@@ -394,11 +402,13 @@ public interface SqlFixture extends AutoCloseable {
    *                      types
    * @param resultChecker Checks whether the result has the expected value
    */
-  void check(
-      String query,
+  default void check(String query,
       SqlTester.TypeChecker typeChecker,
       SqlTester.ParameterChecker parameterChecker,
-      ResultChecker resultChecker);
+      ResultChecker resultChecker) {
+    getTester().check(getFactory(), query, typeChecker, parameterChecker,
+        resultChecker);
+  }
 
   /**
    * Declares that this test is for a given operator. So we can check that all
@@ -549,8 +559,7 @@ public interface SqlFixture extends AutoCloseable {
         .withConnectionFactory(cf ->
             cf.with(new CalciteAssert
                     .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
-                .with("fun", "oracle")
-                .with("conformance", conformance));
+                .with("fun", "oracle"));
   }
 
   default String getCastString(

@@ -323,28 +323,34 @@ public class SqlValidatorTestCase {
     }
 
     public void assertCharset(Matcher<Charset> charsetMatcher) {
-      tester.forEachQueryValidateAndThen(factory, sap, (sap, validator, n) -> {
-        final RelDataType rowType = validator.getValidatedNodeType(n);
-        final List<RelDataTypeField> fields = rowType.getFieldList();
-        assertThat("expected query to return 1 field", fields.size(), is(1));
-        RelDataType actualType = fields.get(0).getType();
-        Charset actualCharset = actualType.getCharset();
-        assertThat(actualCharset, charsetMatcher);
-      });
+      tester.forEachQuery(factory, sap.addCarets(), query ->
+          tester.validateAndThen(factory, StringAndPos.of(query),
+              (sap, validator, n) -> {
+                final RelDataType rowType = validator.getValidatedNodeType(n);
+                final List<RelDataTypeField> fields = rowType.getFieldList();
+                assertThat("expected query to return 1 field", fields.size(),
+                    is(1));
+                RelDataType actualType = fields.get(0).getType();
+                Charset actualCharset = actualType.getCharset();
+                assertThat(actualCharset, charsetMatcher);
+              }));
     }
 
     public void assertCollation(Matcher<String> collationMatcher,
         Matcher<SqlCollation.Coercibility> coercibilityMatcher) {
-      tester.forEachQueryValidateAndThen(factory, sap, (sap, validator, n) -> {
-        RelDataType rowType = validator.getValidatedNodeType(n);
-        final List<RelDataTypeField> fields = rowType.getFieldList();
-        assertThat("expected query to return 1 field", fields.size(), is(1));
-        RelDataType actualType = fields.get(0).getType();
-        SqlCollation collation = actualType.getCollation();
-        assertThat(collation, notNullValue());
-        assertThat(collation.getCollationName(), collationMatcher);
-        assertThat(collation.getCoercibility(), coercibilityMatcher);
-      });
+      tester.forEachQuery(factory, sap.addCarets(), query ->
+          tester.validateAndThen(factory, StringAndPos.of(query),
+              (sap, validator, n) -> {
+                RelDataType rowType = validator.getValidatedNodeType(n);
+                final List<RelDataTypeField> fields = rowType.getFieldList();
+                assertThat("expected query to return 1 field", fields.size(),
+                    is(1));
+                RelDataType actualType = fields.get(0).getType();
+                SqlCollation collation = actualType.getCollation();
+                assertThat(collation, notNullValue());
+                assertThat(collation.getCollationName(), collationMatcher);
+                assertThat(collation.getCoercibility(), coercibilityMatcher);
+              }));
     }
 
     /**

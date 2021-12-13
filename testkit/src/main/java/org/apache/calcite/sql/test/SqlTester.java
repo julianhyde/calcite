@@ -19,12 +19,14 @@ package org.apache.calcite.sql.test;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.ResultSet;
+import java.util.function.Consumer;
 
 /**
  * Callback for testing SQL queries and expressions.
@@ -51,15 +53,27 @@ public interface SqlTester extends AutoCloseable {
 
   //~ Methods ----------------------------------------------------------------
 
+  /** Given a scalar expression, generates a sequence of SQL queries that
+   * evaluate it, and calls a given action with each.
+   *
+   * @param factory    Factory
+   * @param expression Scalar expression
+   * @param consumer   Action to be called for each query
+   */
+  void forEachQuery(SqlNewTestFactory factory, String expression,
+      Consumer<String> consumer);
+
+  /** Parses a query. */
+  SqlNode parseQuery(SqlNewTestFactory factory, String sql)
+      throws SqlParseException;
+
   /** Parses and validates a query, then calls an action on the result. */
   void validateAndThen(SqlNewTestFactory factory, StringAndPos sap,
       ValidatedNodeConsumer consumer);
 
-  /** Given an expression, generates several queries that include that
-   * expression, and for each, parses and validates, then calls an action on
-   * the result. */
-  void forEachQueryValidateAndThen(SqlNewTestFactory factory,
-      StringAndPos expression, ValidatedNodeConsumer consumer);
+  /** Parses and validates a query, then calls a function on the result. */
+  <R> R validateAndApply(SqlNewTestFactory factory, StringAndPos sap,
+      ValidatedNodeFunction<R> function);
 
   /**
    * Checks that a query is valid, or, if invalid, throws the right
@@ -98,155 +112,6 @@ public interface SqlTester extends AutoCloseable {
    * returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
    */
   RelDataType getResultType(SqlNewTestFactory factory, String sql);
-
-  /**
-   * Tests that a scalar SQL expression returns the expected result and the
-   * expected type. For example,
-   *
-   * <blockquote>
-   * <pre>checkScalar("1.1 + 2.9", "4.0", "DECIMAL(2, 1) NOT NULL");</pre>
-   * </blockquote>
-   *
-   * @param factory    Factory
-   * @param expression Scalar expression
-   * @param result     Expected result
-   * @param resultType Expected result type
-   */
-  void checkScalar(SqlNewTestFactory factory,
-      String expression,
-      Object result,
-      String resultType);
-
-  /**
-   * Tests that a scalar SQL expression returns the expected exact numeric
-   * result as an integer. For example,
-   *
-   * <blockquote>
-   * <pre>checkScalarExact("1 + 2", "3");</pre>
-   * </blockquote>
-   *
-   * @param factory    Factory
-   * @param expression Scalar expression
-   * @param result     Expected result
-   */
-  void checkScalarExact(
-      SqlNewTestFactory factory, String expression,
-      String result);
-
-  /**
-   * Tests that a scalar SQL expression returns the expected exact numeric
-   * result. For example,
-   *
-   * <blockquote>
-   * <pre>checkScalarExact("1 + 2", "3");</pre>
-   * </blockquote>
-   *
-   * @param factory      Factory
-   * @param expression   Scalar expression
-   * @param expectedType Type we expect the result to have, including
-   *                     nullability, precision and scale, for example
-   *                     <code>DECIMAL(2, 1) NOT NULL</code>.
-   * @param result       Expected result
-   */
-  void checkScalarExact(SqlNewTestFactory factory,
-      String expression,
-      String expectedType,
-      String result);
-
-  /**
-   * Tests that a scalar SQL expression returns expected appoximate numeric
-   * result. For example,
-   *
-   * <blockquote>
-   * <pre>checkScalarApprox("1.0 + 2.1", "3.1");</pre>
-   * </blockquote>
-   *
-   * @param factory        Factory
-   * @param expression     Scalar expression
-   * @param expectedType   Type we expect the result to have, including
-   *                       nullability, precision and scale, for example
-   *                       <code>DECIMAL(2, 1) NOT NULL</code>.
-   * @param expectedResult Expected result
-   * @param delta          Allowed margin of error between expected and actual
-   *                       result
-   */
-  void checkScalarApprox(SqlNewTestFactory factory,
-      String expression,
-      String expectedType,
-      double expectedResult,
-      double delta);
-
-  /**
-   * Tests that a scalar SQL expression returns the expected boolean result.
-   * For example,
-   *
-   * <blockquote>
-   * <pre>checkScalarExact("TRUE AND FALSE", Boolean.TRUE);</pre>
-   * </blockquote>
-   *
-   * <p>The expected result can be null:
-   *
-   * <blockquote>
-   * <pre>checkScalarExact("NOT UNKNOWN", null);</pre>
-   * </blockquote>
-   *
-   * @param factory    Factory
-   * @param expression Scalar expression
-   * @param result     Expected result (null signifies NULL)
-   */
-  void checkBoolean(SqlNewTestFactory factory,
-      String expression,
-      @Nullable Boolean result);
-
-  /**
-   * Tests that a scalar SQL expression returns the expected string result.
-   * For example,
-   *
-   * <blockquote>
-   * <pre>checkScalarExact("'ab' || 'c'", "abc");</pre>
-   * </blockquote>
-   *
-   * @param factory    Factory
-   * @param expression Scalar expression
-   * @param result     Expected result
-   * @param resultType Expected result type
-   */
-  void checkString(SqlNewTestFactory factory,
-      String expression,
-      String result,
-      String resultType);
-
-  /**
-   * Tests that a SQL expression returns the SQL NULL value. For example,
-   *
-   * <blockquote>
-   * <pre>checkNull("CHAR_LENGTH(CAST(NULL AS VARCHAR(3))");</pre>
-   * </blockquote>
-   *
-   * @param factory    Factory
-   * @param expression Scalar expression
-   */
-  void checkNull(SqlNewTestFactory factory, String expression);
-
-  /**
-   * Tests that a SQL expression has a given type. For example,
-   *
-   * <blockquote>
-   * <code>checkType("SUBSTR('hello' FROM 1 FOR 3)",
-   * "VARCHAR(3) NOT NULL");</code>
-   * </blockquote>
-   *
-   * <p>This method checks length/precision, scale, and whether the type allows
-   * NULL values, so is more precise than the type-checking done by methods
-   * such as {@link #checkScalarExact}.
-   *
-   * @param factory    Factory
-   * @param expression Scalar expression
-   * @param type       Type string
-   */
-  void checkType(SqlNewTestFactory factory,
-      String expression,
-      String type);
 
   /**
    * Checks that a query returns one column of an expected type. For example,
@@ -333,23 +198,6 @@ public interface SqlTester extends AutoCloseable {
       double delta);
 
   /**
-   * Checks that an aggregate expression with multiple args returns the expected
-   * result.
-   *
-   * @param factory     Factory
-   * @param expr        Aggregate expression, e.g. {@code AGG_FUNC(x, x2, x3)}
-   * @param inputValues Nested array of input values, e.g. {@code [["1", null, "2"],
-   *                    ["3", "4", null]]}
-   * @param result      Expected result
-   * @param delta       Allowable variance from expected result
-   */
-  void checkAggWithMultipleArgs(SqlNewTestFactory factory,
-      String expr,
-      String[][] inputValues,
-      Object result,
-      double delta);
-
-  /**
    * Checks that a windowed aggregate expression returns the expected result.
    *
    * <p>For example, <code>checkWinAgg("FIRST_VALUE(x)", new String[] {"2",
@@ -421,14 +269,6 @@ public interface SqlTester extends AutoCloseable {
   void checkQueryFails(SqlNewTestFactory factory, StringAndPos sap,
       String expectedError);
 
-  /**
-   * Tests that a SQL query succeeds at prepare time.
-   *
-   * @param factory       Factory
-   * @param sql           SQL query
-   */
-  void checkQuery(SqlNewTestFactory factory, String sql);
-
   //~ Inner Interfaces -------------------------------------------------------
 
   /** Type checker. */
@@ -449,7 +289,6 @@ public interface SqlTester extends AutoCloseable {
   /** Action that is called after validation.
    *
    * @see #validateAndThen
-   * @see #forEachQueryValidateAndThen
    */
   interface ValidatedNodeConsumer {
     void accept(StringAndPos sap, SqlValidator validator,
