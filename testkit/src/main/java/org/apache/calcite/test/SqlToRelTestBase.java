@@ -146,13 +146,6 @@ public abstract class SqlToRelTestBase {
      */
     RelRoot convertSqlToRel(String sql, boolean decorrelate, boolean trim);
 
-    /**
-     * Converts an expression string to  {@link RexNode}.
-     *
-     * @param expr The expression
-     */
-    RexNode convertExprToRex(String expr);
-
     SqlNode parseQuery(String sql) throws Exception;
 
     /**
@@ -180,31 +173,6 @@ public abstract class SqlToRelTestBase {
      * Returns the SQL dialect to test.
      */
     SqlConformance getConformance();
-
-    /**
-     * Checks that a SQL statement converts to a given plan.
-     *
-     * @param diffRepos Diff repository
-     * @param sql  SQL query
-     * @param plan Expected plan
-     */
-    void assertConvertsTo(DiffRepository diffRepos,
-        String sql,
-        String plan);
-
-    /**
-     * Checks that a SQL statement converts to a given plan, optionally
-     * trimming columns that are not needed.
-     *
-     * @param diffRepos Diff repository
-     * @param sql  SQL query
-     * @param plan Expected plan
-     * @param trim Whether to trim columns that are not needed
-     */
-    void assertConvertsTo(DiffRepository diffRepos,
-        String sql,
-        String plan,
-        boolean trim);
 
     /**
      * Checks that a SQL statement converts to a given plan, optionally
@@ -763,18 +731,6 @@ public abstract class SqlToRelTestBase {
       return plannerFactory.apply(getContext());
     }
 
-    @Override public void assertConvertsTo(DiffRepository diffRepos, String sql,
-        String plan) {
-      assertConvertsTo(diffRepos, sql, plan, false);
-    }
-
-    @Override public void assertConvertsTo(DiffRepository diffRepos,
-        String sql,
-        String plan,
-        boolean trim) {
-      assertConvertsTo(diffRepos, sql, plan, false, false, false);
-    }
-
     @Override public void assertConvertsTo(DiffRepository diffRepos,
         String sql,
         String plan,
@@ -828,7 +784,7 @@ public abstract class SqlToRelTestBase {
       diffRepos.assertEquals("plan", plan, actual);
     }
 
-    @Override public RexNode convertExprToRex(String expr) {
+    private RexNode convertExprToRex(String expr) {
       requireNonNull(expr, "expr");
       final SqlNode sqlQuery;
       try {
