@@ -406,8 +406,6 @@ class SqlHintsConverterTest {
         EnumerableRules.ENUMERABLE_LIMIT_RULE,
         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
     ruleFixture()
-        .withConfig(c ->
-            c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE))
         .sql(sql)
         .withVolcanoPlanner(false, p -> {
           p.addRelTraitDef(RelCollationTraitDef.INSTANCE);

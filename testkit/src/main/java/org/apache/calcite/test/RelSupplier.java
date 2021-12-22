@@ -94,7 +94,7 @@ interface RelSupplier {
 
     @Override public RelNode apply(RelOptTestBase.Sql fixture) {
       String sql2 = fixture.diffRepos().expand("sql", sql);
-      return fixture.tester()
+      return fixture.tester
           .convertSqlToRel(sql2, fixture.decorrelate, fixture.trim)
           .rel;
     }
