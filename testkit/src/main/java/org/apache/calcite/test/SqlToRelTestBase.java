@@ -129,25 +129,6 @@ public abstract class SqlToRelTestBase {
     return fixture().expression(true).withSql(sql);
   }
 
-  /**
-   * Returns the default diff repository for this test, or null if there is
-   * no repository.
-   *
-   * <p>The default implementation returns null.
-   *
-   * <p>Sub-classes that want to use a diff repository can override.
-   * Sub-sub-classes can override again, inheriting test cases and overriding
-   * selected test results.
-   *
-   * <p>And individual test cases can override by providing a different
-   * tester object.
-   *
-   * @return Diff repository
-   */
-  protected DiffRepository getDiffRepos() {
-    return null;
-  }
-
   //~ Inner Interfaces -------------------------------------------------------
 
   /**
