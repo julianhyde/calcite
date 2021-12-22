@@ -2348,6 +2348,47 @@ class UtilTest {
     assertThat(local2.get(), is("x"));
   }
 
+  /** Tests
+   * {@link org.apache.calcite.util.TryThreadLocal#withValue(Object, Runnable)}
+   * and
+   * {@link org.apache.calcite.util.TryThreadLocal#withValue(Object, java.util.function.Supplier)}.
+   *
+   * <p>TryThreadLocal was introduced to fix
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-915">[CALCITE-915]
+   * Tests do not unset ThreadLocal values on exit</a>. */
+  @Test void testTryThreadLocalWithValue() {
+    final TryThreadLocal<Integer> local = TryThreadLocal.of(2);
+    String s3 = local.withValue(3, () -> "the value is " + local.get());
+    assertThat(s3, is("the value is 3"));
+    assertThat(local.get(), is(2));
+
+    String s2 = local.withValue(2, () -> "the value is " + local.get());
+    assertThat(s2, is("the value is 2"));
+    assertThat(local.get(), is(2));
+
+    final StringBuilder sb = new StringBuilder();
+    local.withValue(4, () -> sb.append("the value is ").append(local.get()));
+    assertThat(sb.toString(), is("the value is 4"));
+    assertThat(local.get(), is(2));
+
+    // even when the Runnable throws, the value is restored
+    local.set(10);
+    sb.setLength(0);
+    try {
+      local.withValue(5, () -> {
+        sb.append("the value is ").append(local.get());
+        throw new IllegalArgumentException("oops");
+      });
+      fail("expected exception");
+    } catch (IllegalArgumentException e) {
+      assertThat(e.getMessage(), is("oops"));
+    }
+    assertThat(sb.toString(), is("the value is 5"));
+    assertThat(local.get(), is(10));
+    local.remove();
+    assertThat(local.get(), is(2));
+  }
+
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1264">[CALCITE-1264]
    * Litmus argument interpolation</a>. */
