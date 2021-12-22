@@ -117,6 +117,10 @@ class InterpreterTest {
       this.relFn = relFn;
     }
 
+    Sql withSql(String sql) {
+      return new Sql(sql, rootSchema, project, relFn);
+    }
+
     @SuppressWarnings("SameParameterValue")
     Sql withProject(boolean project) {
       return new Sql(sql, rootSchema, project, relFn);
@@ -184,8 +188,12 @@ class InterpreterTest {
   }
 
   /** Creates a {@link Sql}. */
+  private Sql fixture() {
+    return new Sql("?", rootSchema, false, null);
+  }
+
   private Sql sql(String sql) {
-    return new Sql(sql, rootSchema, false, null);
+    return fixture().withSql(sql);
   }
 
   private void reset() {
@@ -706,7 +714,7 @@ class InterpreterTest {
   /** Tests projecting zero fields. */
   @Test void testZeroFields() {
     final List<RexLiteral> row = ImmutableList.of();
-    sql("?")
+    fixture()
         .withRel(b ->
             b.values(ImmutableList.of(row, row),
                 b.getTypeFactory().builder().build())

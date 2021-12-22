@@ -2266,7 +2266,7 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickIdentifier() {
-    Fixture f = sql("?")
+    Fixture f = fixture()
         .withConfig(c -> c.withQuoting(Quoting.BACK_TICK))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2288,7 +2288,7 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickBackslashIdentifier() {
-    Fixture f = sql("?")
+    Fixture f = fixture()
         .withConfig(c -> c.withQuoting(Quoting.BACK_TICK_BACKSLASH))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2312,7 +2312,7 @@ public class SqlParserTest {
   }
 
   @Test void testBracketIdentifier() {
-    Fixture f = sql("?")
+    Fixture f = fixture()
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .expression();
     f.sql("ab").ok("`AB`");

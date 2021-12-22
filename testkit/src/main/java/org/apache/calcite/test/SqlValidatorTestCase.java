@@ -169,14 +169,11 @@ public class SqlValidatorTestCase {
     }
 
     public Sql withSql(String sql) {
-      // TODO: throw if sql = "?", and change those places to use fixture()
-      return new Sql(tester, factory, StringAndPos.of(sql), true, false
-      );
+      return new Sql(tester, factory, StringAndPos.of(sql), true, false);
     }
 
     public Sql withExpr(String sql) {
-      return new Sql(tester, factory, StringAndPos.of(sql), false, false
-      );
+      return new Sql(tester, factory, StringAndPos.of(sql), false, false);
     }
 
     public StringAndPos toSql(boolean withCaret) {

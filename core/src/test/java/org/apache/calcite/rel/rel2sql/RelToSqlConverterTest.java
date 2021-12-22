@@ -113,16 +113,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class RelToSqlConverterTest {
 
-  /** Initiates a test case with a given SQL query. */
-  private Sql sql(String sql) {
-    return new Sql(CalciteAssert.SchemaSpec.JDBC_FOODMART, sql,
+  private Sql fixture() {
+    return new Sql(CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
         CalciteSqlDialect.DEFAULT, SqlParser.Config.DEFAULT, ImmutableSet.of(),
         UnaryOperator.identity(), null, ImmutableList.of(), RelDataTypeSystem.DEFAULT);
   }
 
+  /** Initiates a test case with a given SQL query. */
+  private Sql sql(String sql) {
+    return fixture().withSql(sql);
+  }
+
   /** Initiates a test case with a given {@link RelNode} supplier. */
   private Sql relFn(Function<RelBuilder, RelNode> relFn) {
-    return sql("?")
+    return fixture()
         .schema(CalciteAssert.SchemaSpec.SCOTT_WITH_TEMPORAL)
         .relFn(relFn);
   }
@@ -6218,6 +6222,11 @@ class RelToSqlConverterTest {
       this.parserConfig = parserConfig;
       this.config = config;
       this.typeSystem = Objects.requireNonNull(typeSystem, "typeSystem");
+    }
+
+    Sql withSql(String sql) {
+      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
+          relFn, transforms, typeSystem);
     }
 
     Sql dialect(SqlDialect dialect) {
