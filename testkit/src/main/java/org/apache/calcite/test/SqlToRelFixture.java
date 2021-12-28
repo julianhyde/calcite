@@ -145,8 +145,7 @@ public class SqlToRelFixture {
 
   public SqlToRelFixture withConfig(
       UnaryOperator<SqlToRelConverter.Config> transform) {
-    return withTester(t -> t.withConfig(transform)) // TODO remove line
-        .withFactory(f -> f.withSqlToRelConfig(transform));
+    return withFactory(f -> f.withSqlToRelConfig(transform));
   }
 
   public SqlToRelFixture withExpand(boolean expand) {
@@ -154,17 +153,6 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withDecorrelate(boolean decorrelate) {
-    return new SqlToRelFixture(sql, decorrelate, tester, factory, trim,
-        expression, diffRepos);
-  }
-
-  // TODO: change the config or factory, not the tester
-  public SqlToRelFixture withTester(
-      UnaryOperator<SqlToRelTestBase.Tester> testerTransform) {
-    SqlToRelTestBase.Tester tester = testerTransform.apply(this.tester);
-    if (tester == this.tester) {
-      return this;
-    }
     return new SqlToRelFixture(sql, decorrelate, tester, factory, trim,
         expression, diffRepos);
   }
@@ -181,8 +169,7 @@ public class SqlToRelFixture {
 
   public SqlToRelFixture withCatalogReader(
       SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory) {
-    return withTester(t -> t.withCatalogReaderFactory(catalogReaderFactory)) // TODO remove line
-        .withFactory(f -> f.withCatalogReader(catalogReaderFactory));
+    return withFactory(f -> f.withCatalogReader(catalogReaderFactory));
   }
 
   public SqlToRelFixture withExtendedTester() {
@@ -203,10 +190,9 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withConformance(SqlConformance conformance) {
-    return withTester(t -> t.withConformance(conformance)) // TODO remove line and 'withTester'
-        .withFactory(f ->
-            f.withParserConfig(c -> c.withConformance(conformance))
-                .withValidatorConfig(c -> c.withConformance(conformance)));
+    return withFactory(f ->
+        f.withParserConfig(c -> c.withConformance(conformance))
+            .withValidatorConfig(c -> c.withConformance(conformance)));
   }
 
   public SqlToRelFixture withDiffRepos(DiffRepository diffRepos) {

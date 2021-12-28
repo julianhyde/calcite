@@ -71,7 +71,7 @@ public class RelMetadataFixture {
    * to this fixture, it won't break other tests. */
   public static final RelMetadataFixture DEFAULT =
       new RelMetadataFixture(SqlToRelFixture.TESTER,
-          SqlNewTestFactory.INSTANCE, RelSupplier.NONE, false, true, r -> r)
+          SqlNewTestFactory.INSTANCE, RelSupplier.NONE, false, r -> r)
           .withFactory(f ->
               f.withValidatorConfig(c -> c.withIdentifierExpansion(true))
                   .withSqlToRelConfig(c ->
@@ -83,18 +83,15 @@ public class RelMetadataFixture {
   private final SqlNewTestFactory factory;
   private final RelSupplier relSupplier;
   private final boolean convertAsCalc;
-  private final boolean typeCoercion;
   private final UnaryOperator<RelNode> relTransform;
 
   private RelMetadataFixture(SqlToRelTestBase.Tester tester,
       SqlNewTestFactory factory, RelSupplier relSupplier,
-      boolean convertAsCalc, boolean typeCoercion,
-      UnaryOperator<RelNode> relTransform) {
+      boolean convertAsCalc, UnaryOperator<RelNode> relTransform) {
     this.tester = tester;
     this.factory = factory;
     this.relSupplier = relSupplier;
     this.convertAsCalc = convertAsCalc;
-    this.typeCoercion = typeCoercion;
     this.relTransform = relTransform;
   }
 
@@ -107,7 +104,7 @@ public class RelMetadataFixture {
     final RelSupplier relSupplier = RelSupplier.of(sql);
     return relSupplier.equals(this.relSupplier) ? this
         : new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
-            typeCoercion, relTransform);
+            relTransform);
   }
 
   /** Creates a copy of this fixture that uses a given function to create a
@@ -116,26 +113,26 @@ public class RelMetadataFixture {
     final RelSupplier relSupplier = RelSupplier.of(relFn);
     return relSupplier.equals(this.relSupplier) ? this
         : new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
-            typeCoercion, relTransform);
+            relTransform);
   }
 
   public RelMetadataFixture withFactory(
       UnaryOperator<SqlNewTestFactory> transform) {
     final SqlNewTestFactory factory = transform.apply(this.factory);
     return new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
-        typeCoercion, relTransform);
+        relTransform);
   }
 
   public RelMetadataFixture withTester(
       UnaryOperator<SqlToRelTestBase.Tester> transform) {
     final SqlToRelTestBase.Tester tester = transform.apply(this.tester);
     return new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
-        typeCoercion, relTransform);
+        relTransform);
   }
 
   public RelMetadataFixture convertingProjectAsCalc() {
     return new RelMetadataFixture(tester, factory, relSupplier, true,
-        typeCoercion, relTransform);
+        relTransform);
   }
 
   public RelMetadataFixture withCatalogReaderFactory(
@@ -147,17 +144,11 @@ public class RelMetadataFixture {
     return withFactory(f -> f.withCluster(factory));
   }
 
-  public RelMetadataFixture withTypeCoercion(boolean typeCoercion) {
-    return typeCoercion == this.typeCoercion ? this
-        : new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
-            typeCoercion, relTransform);
-  }
-
   public RelMetadataFixture withRelTransform(UnaryOperator<RelNode> relTransform) {
     final UnaryOperator<RelNode> relTransform1 =
         this.relTransform.andThen(relTransform)::apply;
     return new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
-        typeCoercion, relTransform1);
+        relTransform1);
   }
 
   //~ Helper methods ---------------------------------------------------------
@@ -165,9 +156,7 @@ public class RelMetadataFixture {
 
   /** Only for use by RelSupplier. Must be package-private. */
   RelNode sqlToRel(String sql) {
-    // TODO remove following line, and 'typeCoercion' field
-    return tester.enableTypeCoercion(typeCoercion)
-        .convertSqlToRel(factory, sql, false, false).rel;
+    return tester.convertSqlToRel(factory, sql, false, false).rel;
   }
 
   /** Creates a {@link RelNode} from this fixture's supplier

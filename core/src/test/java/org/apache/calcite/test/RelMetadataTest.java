@@ -1957,8 +1957,7 @@ public class RelMetadataTest {
     // Lock to ensure that only one test is using this method at a time.
     try (JdbcAdapterTest.LockWrapper ignore =
              JdbcAdapterTest.LockWrapper.lock(LOCK)) {
-      // FIXME: fix timeout when enable implicit type coercion.
-      final RelNode rel = sql(sql).withTypeCoercion(false).toRel();
+      final RelNode rel = sql(sql).toRel();
       final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
       RelOptPredicateList inputSet = mq.getPulledUpPredicates(rel.getInput(0));
       assertThat(inputSet.pulledUpPredicates.size(), is(11));

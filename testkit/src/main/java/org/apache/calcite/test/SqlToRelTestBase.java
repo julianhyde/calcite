@@ -155,7 +155,7 @@ public abstract class SqlToRelTestBase {
     Pair<SqlValidator, RelRoot> convertSqlToRel2(SqlNewTestFactory factory,
         String sql, boolean decorrelate, boolean trim);
 
-    SqlNode parseQuery(String sql) throws Exception;
+    SqlNode parseQuery(SqlNewTestFactory factory, String sql) throws Exception;
 
     /**
      * Factory method to create a {@link SqlValidator}.
@@ -228,7 +228,7 @@ public abstract class SqlToRelTestBase {
     /** Trims a RelNode. */
     RelNode trimRelNode(SqlNewTestFactory factory, RelNode relNode);
 
-    SqlNode parseExpression(String expr) throws Exception;
+    SqlNode parseExpression(SqlNewTestFactory factory, String expr) throws Exception;
 
     /** Returns a tester that applies the given transform to a validator before
      * using it. */
@@ -545,7 +545,7 @@ public abstract class SqlToRelTestBase {
       requireNonNull(sql, "sql");
       final SqlNode sqlQuery;
       try {
-        sqlQuery = parseQuery(sql);
+        sqlQuery = parseQuery(factory, sql);
       } catch (RuntimeException | Error e) {
         throw e;
       } catch (Exception e) {
@@ -581,17 +581,15 @@ public abstract class SqlToRelTestBase {
       return typeFactorySupplier.get();
     }
 
-    @Override public SqlNode parseQuery(String sql) throws Exception {
-      final SqlParser.Config config =
-          SqlParser.config().withConformance(getConformance());
-      SqlParser parser = SqlParser.create(sql, config);
+    @Override public SqlNode parseQuery(SqlNewTestFactory factory, String sql)
+        throws Exception {
+      SqlParser parser = factory.createParser(sql);
       return parser.parseQuery();
     }
 
-    @Override public SqlNode parseExpression(String expr) throws Exception {
-      final SqlParser.Config config =
-              SqlParser.config().withConformance(getConformance());
-      SqlParser parser = SqlParser.create(expr, config);
+    @Override public SqlNode parseExpression(SqlNewTestFactory factory,
+        String expr) throws Exception {
+      SqlParser parser = factory.createParser(expr);
       return parser.parseExpression();
     }
 
@@ -713,7 +711,7 @@ public abstract class SqlToRelTestBase {
       requireNonNull(expr, "expr");
       final SqlNode sqlQuery;
       try {
-        sqlQuery = parseExpression(expr);
+        sqlQuery = parseExpression(factory, expr);
       } catch (RuntimeException | Error e) {
         throw e;
       } catch (Exception e) {

@@ -676,7 +676,7 @@ class SqlHintsConverterTest {
     }
 
     SqlNode parseQuery() throws Exception {
-      return tester.parseQuery(sql);
+      return tester.parseQuery(factory, sql);
     }
 
     RelNode toRel() {
