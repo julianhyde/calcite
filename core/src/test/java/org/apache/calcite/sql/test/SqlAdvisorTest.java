@@ -1249,28 +1249,28 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     f.withSql(sql).assertComplete(EMP_COLUMNS, STAR_KEYWORD);
   }
 
-  @Test public void testAdviceKeywordsJava() {
+  @Test void testAdviceKeywordsJava() {
     String sql = "select deptno, exi^ from emp where 1+2<3+4";
     fixture().withSql(sql).withLex(Lex.JAVA)
         .assertComplete("KEYWORD(EXISTS)\n", "exi",
             ImmutableMap.of("KEYWORD(EXISTS)", "exists"));
   }
 
-  @Test public void testAdviceMixedCase() {
+  @Test void testAdviceMixedCase() {
     String sql = "select is^ from (select 1 isOne from emp)";
     fixture().withSql(sql).withLex(Lex.JAVA)
         .assertComplete("COLUMN(isOne)\n", "is",
             ImmutableMap.of("COLUMN(isOne)", "isOne"));
   }
 
-  @Test public void testAdviceExpression() {
+  @Test void testAdviceExpression() {
     String sql = "select s.`count`+s.co^ from (select 1 `count` from emp) s";
     fixture().withSql(sql).withLex(Lex.JAVA)
         .assertComplete("COLUMN(count)\n", "co",
             ImmutableMap.of("COLUMN(count)", "`count`"));
   }
 
-  @Test public void testAdviceEmptyFrom() {
+  @Test void testAdviceEmptyFrom() {
     String sql = "select * from^";
     fixture().withSql(sql).withLex(Lex.JAVA)
         .assertComplete("KEYWORD(FROM)\n", "from",
@@ -1437,7 +1437,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
             DEPT_COLUMNS);
   }
 
-  @Test public void testFilterComment() {
+  @Test void testFilterComment() {
     // SqlSimpleParser.Tokenizer#nextToken() lines 401 - 423
     // is used to recognize the sql of TokenType.ID or some keywords
     // if a certain segment of characters is continuously composed of Token,

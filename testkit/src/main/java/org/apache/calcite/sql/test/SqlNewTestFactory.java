@@ -17,9 +17,16 @@
 package org.apache.calcite.sql.test;
 
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.advise.SqlAdvisor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -29,10 +36,14 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.SqlValidatorWithHints;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.ConnectionFactories;
 import org.apache.calcite.test.ConnectionFactory;
+import org.apache.calcite.test.MockRelOptPlanner;
 import org.apache.calcite.test.MockSqlOperatorTable;
+import org.apache.calcite.test.SqlToRelTestBase;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.SourceStringReader;
 
@@ -41,6 +52,8 @@ import com.google.common.base.Suppliers;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * As {@link SqlNewTestFactory} but has no state, and therefore
  * configuration is passed to each method.
@@ -48,11 +61,14 @@ import java.util.function.UnaryOperator;
 public class SqlNewTestFactory {
   public static final SqlNewTestFactory INSTANCE =
       new SqlNewTestFactory(MockCatalogReaderSimple::create,
+          SqlNewTestFactory::createTypeFactory, MockRelOptPlanner::new,
+          Contexts.of(), UnaryOperator.identity(),
           SqlValidatorUtil::newValidator,
           ConnectionFactories.empty()
               .with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR)),
           SqlParser.Config.DEFAULT,
           SqlValidator.Config.DEFAULT,
+          SqlToRelConverter.CONFIG,
           SqlStdOperatorTable.instance())
       .withOperatorTable(o -> {
         MockSqlOperatorTable opTab = new MockSqlOperatorTable(o);
@@ -61,7 +77,11 @@ public class SqlNewTestFactory {
       });
 
   public final ConnectionFactory connectionFactory;
+  public final TypeFactoryFactory typeFactoryFactory;
   private final CatalogReaderFactory catalogReaderFactory;
+  private final PlannerFactory plannerFactory;
+  private final Context plannerContext;
+  private final UnaryOperator<RelOptCluster> clusterTransform;
   private final ValidatorFactory validatorFactory;
 
   private final Supplier<RelDataTypeFactory> typeFactorySupplier;
@@ -69,20 +89,33 @@ public class SqlNewTestFactory {
   private final Supplier<SqlValidatorCatalogReader> catalogReaderSupplier;
   private final SqlParser.Config parserConfig;
   public final SqlValidator.Config validatorConfig;
+  public final SqlToRelConverter.Config sqlToRelConfig;
 
   protected SqlNewTestFactory(CatalogReaderFactory catalogReaderFactory,
+      TypeFactoryFactory typeFactoryFactory, PlannerFactory plannerFactory,
+      Context plannerContext, UnaryOperator<RelOptCluster> clusterTransform,
       ValidatorFactory validatorFactory,
       ConnectionFactory connectionFactory,
-      SqlParser.Config parserConfig,
-      SqlValidator.Config validatorConfig, SqlOperatorTable operatorTable) {
-    this.catalogReaderFactory = catalogReaderFactory;
-    this.validatorFactory = validatorFactory;
-    this.connectionFactory = connectionFactory;
+      SqlParser.Config parserConfig, SqlValidator.Config validatorConfig,
+      SqlToRelConverter.Config sqlToRelConfig, SqlOperatorTable operatorTable) {
+    this.catalogReaderFactory =
+        requireNonNull(catalogReaderFactory, "catalogReaderFactory");
+    this.typeFactoryFactory =
+        requireNonNull(typeFactoryFactory, "typeFactoryFactory");
+    this.plannerFactory = requireNonNull(plannerFactory, "plannerFactory");
+    this.plannerContext = requireNonNull(plannerContext, "plannerContext");
+    this.clusterTransform =
+        requireNonNull(clusterTransform, "clusterTransform");
+    this.validatorFactory =
+        requireNonNull(validatorFactory, "validatorFactory");
+    this.connectionFactory =
+        requireNonNull(connectionFactory, "connectionFactory");
+    this.sqlToRelConfig = requireNonNull(sqlToRelConfig, "sqlToRelConfig");
     this.operatorTable = operatorTable;
     this.typeFactorySupplier = Suppliers.memoize(() ->
-        createTypeFactory(validatorConfig.conformance()))::get;
+        typeFactoryFactory.create(validatorConfig.conformance()))::get;
     this.catalogReaderSupplier = Suppliers.memoize(() ->
-        catalogReaderFactory.create(typeFactorySupplier.get(),
+        catalogReaderFactory.create(this.typeFactorySupplier.get(),
             parserConfig.caseSensitive()))::get;
     this.parserConfig = parserConfig;
     this.validatorConfig = validatorConfig;
@@ -109,25 +142,72 @@ public class SqlNewTestFactory {
         "Validator should implement SqlValidatorWithHints, actual validator is " + validator);
   }
 
-  public SqlNewTestFactory withCatalogReader(CatalogReaderFactory catalogReaderFactory) {
-    return new SqlNewTestFactory(catalogReaderFactory,
-        validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+  public SqlNewTestFactory withTypeFactoryFactory(
+      TypeFactoryFactory typeFactoryFactory) {
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
+  }
+
+  public SqlNewTestFactory withPlannerFactory(PlannerFactory plannerFactory) {
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
+  }
+
+  public SqlNewTestFactory withPlannerContext(
+      UnaryOperator<Context> transform) {
+    final Context plannerContext = transform.apply(this.plannerContext);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
+  }
+
+  public SqlNewTestFactory withCluster(UnaryOperator<RelOptCluster> transform) {
+    final UnaryOperator<RelOptCluster> clusterTransform =
+        this.clusterTransform.andThen(transform)::apply;
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
+  }
+
+  public SqlNewTestFactory withCatalogReader(
+      CatalogReaderFactory catalogReaderFactory) {
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
   }
 
   public SqlNewTestFactory withValidator(ValidatorFactory validatorFactory) {
-    return new SqlNewTestFactory(catalogReaderFactory,
-        validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
   }
 
   public SqlNewTestFactory withValidatorConfig(
       UnaryOperator<SqlValidator.Config> transform) {
     final SqlValidator.Config validatorConfig =
         transform.apply(this.validatorConfig);
-    return new SqlNewTestFactory(catalogReaderFactory,
-        validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
+  }
+
+  public SqlNewTestFactory withSqlToRelConfig(
+      UnaryOperator<SqlToRelConverter.Config> transform) {
+    final SqlToRelConverter.Config sqlToRelConfig =
+        transform.apply(this.sqlToRelConfig);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
   }
 
   private static RelDataTypeFactory createTypeFactory(SqlConformance conformance) {
@@ -145,27 +225,30 @@ public class SqlNewTestFactory {
   public SqlNewTestFactory withParserConfig(
       UnaryOperator<SqlParser.Config> transform) {
     final SqlParser.Config parserConfig = transform.apply(this.parserConfig);
-    return new SqlNewTestFactory(catalogReaderFactory,
-        validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
   }
 
   public SqlNewTestFactory withConnectionFactory(
       UnaryOperator<ConnectionFactory> transform) {
     final ConnectionFactory connectionFactory =
         transform.apply(this.connectionFactory);
-    return new SqlNewTestFactory(catalogReaderFactory,
-        validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
   }
 
   public SqlNewTestFactory withOperatorTable(
       UnaryOperator<SqlOperatorTable> transform) {
     final SqlOperatorTable operatorTable =
         transform.apply(this.operatorTable);
-    return new SqlNewTestFactory(catalogReaderFactory,
-        validatorFactory, connectionFactory,
-        parserConfig, validatorConfig, operatorTable);
+    return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable);
   }
 
   public SqlParser.Config parserConfig() {
@@ -176,9 +259,33 @@ public class SqlNewTestFactory {
     return typeFactorySupplier.get();
   }
 
-  /**
-   * Creates {@link SqlValidator} for tests.
-   */
+  public SqlToRelConverter createSqlToRelConverter() {
+    final RelDataTypeFactory typeFactory = getTypeFactory();
+    final Prepare.CatalogReader catalogReader =
+        (Prepare.CatalogReader) catalogReaderSupplier.get();
+    final SqlValidator validator = createValidator();
+    final RexBuilder rexBuilder = new RexBuilder(typeFactory);
+    final RelOptPlanner planner = plannerFactory.create(plannerContext);
+    final RelOptCluster cluster =
+        clusterTransform.apply(RelOptCluster.create(planner, rexBuilder));
+    RelOptTable.ViewExpander viewExpander =
+        new SqlToRelTestBase.MockViewExpander(validator, catalogReader, cluster,
+            sqlToRelConfig);
+    return new SqlToRelConverter(viewExpander, validator, catalogReader, cluster,
+        StandardConvertletTable.INSTANCE, sqlToRelConfig);
+  }
+
+  /** Creates a {@link RelDataTypeFactory} for tests. */
+  public interface TypeFactoryFactory {
+    RelDataTypeFactory create(SqlConformance conformance);
+  }
+
+  /** Creates a {@link RelOptPlanner} for tests. */
+  public interface PlannerFactory {
+    RelOptPlanner create(Context context);
+  }
+
+  /** Creates {@link SqlValidator} for tests. */
   public interface ValidatorFactory {
     SqlValidator create(
         SqlOperatorTable opTab,

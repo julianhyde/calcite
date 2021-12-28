@@ -4583,7 +4583,7 @@ public class SqlParserTest {
     };
   }
 
-  @Test public void testCaseExpression() {
+  @Test void testCaseExpression() {
     // implicit simple "ELSE NULL" case
     expr("case \t col1 when 1 then 'one' end")
         .ok("(CASE WHEN (`COL1` = 1) THEN 'one' ELSE NULL END)");

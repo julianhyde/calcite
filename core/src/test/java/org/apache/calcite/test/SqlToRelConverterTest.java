@@ -2440,7 +2440,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "where a.EMPNO > 10 group by 2";
     RelNode afterTrim = sql(sql)
         .withDecorrelate(false)
-        .withTester(t ->
+        .withFactory(t ->
             // Create a customized test with RelCollation trait in the test
             // cluster.
             t.withPlannerFactory(context ->
@@ -3831,9 +3831,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql)
         .withDecorrelate(false)
         .withTrim(false)
-        .withTester(t ->
-            t.withContext(c ->
-                Contexts.of(connectionConfig, c)))
+        .withFactory(f ->
+                f.withValidatorConfig(c ->
+                    c.withDefaultNullCollation(
+                        connectionConfig.defaultNullCollation())))
         .ok();
   }
 
@@ -4240,13 +4241,13 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  @Test public void testSortInSubQuery() {
+  @Test void testSortInSubQuery() {
     final String sql = "select * from (select empno from emp order by empno)";
     sql(sql).convertsTo("${planRemoveSort}");
     sql(sql).withConfig(c -> c.withRemoveSortInSubQuery(false)).convertsTo("${planKeepSort}");
   }
 
-  @Test public void testTrimUnionAll() {
+  @Test void testTrimUnionAll() {
     final String sql = ""
         + "select deptno from\n"
         + "(select ename, deptno from emp\n"
@@ -4255,7 +4256,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).withTrim(true).ok();
   }
 
-  @Test public void testTrimUnionDistinct() {
+  @Test void testTrimUnionDistinct() {
     final String sql = ""
         + "select deptno from\n"
         + "(select ename, deptno from emp\n"
@@ -4264,7 +4265,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).withTrim(true).ok();
   }
 
-  @Test public void testTrimIntersectAll() {
+  @Test void testTrimIntersectAll() {
     final String sql = ""
         + "select deptno from\n"
         + "(select ename, deptno from emp\n"
@@ -4273,7 +4274,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).withTrim(true).ok();
   }
 
-  @Test public void testTrimIntersectDistinct() {
+  @Test void testTrimIntersectDistinct() {
     final String sql = ""
         + "select deptno from\n"
         + "(select ename, deptno from emp\n"
@@ -4282,7 +4283,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).withTrim(true).ok();
   }
 
-  @Test public void testTrimExceptAll() {
+  @Test void testTrimExceptAll() {
     final String sql = ""
         + "select deptno from\n"
         + "(select ename, deptno from emp\n"
@@ -4291,7 +4292,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).withTrim(true).ok();
   }
 
-  @Test public void testTrimExceptDistinct() {
+  @Test void testTrimExceptDistinct() {
     final String sql = ""
         + "select deptno from\n"
         + "(select ename, deptno from emp\n"
@@ -4341,28 +4342,27 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4295">[CALCITE-4295]
    * Composite of two checker with SqlOperandCountRange throws IllegalArgumentException</a>.
    */
-  @Test public void testCompositeOfCountRange() {
+  @Test void testCompositeOfCountRange() {
     final String sql = ""
         + "select COMPOSITE(deptno)\n"
         + "from dept";
     sql(sql).withTrim(true).ok();
   }
 
-  @Test public void testInWithConstantList() {
+  @Test void testInWithConstantList() {
     String expr = "1 in (1,2,3)";
     expr(expr).ok();
   }
 
-  @Test public void testFunctionExprInOver() {
+  @Test void testFunctionExprInOver() {
     String sql = "select ename, row_number() over(partition by char_length(ename)\n"
         + " order by deptno desc) as rn\n"
         + "from emp\n"
         + "where deptno = 10";
     sql(sql)
-        .withTester(t ->
-            t.withValidatorTransform(sqlValidator ->
-                sqlValidator.transform(config ->
-                    config.withIdentifierExpansion(false))))
+        .withFactory(t ->
+            t.withValidatorConfig(config ->
+                config.withIdentifierExpansion(false)))
         .withTrim(false)
         .ok();
   }

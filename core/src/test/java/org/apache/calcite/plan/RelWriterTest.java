@@ -520,7 +520,7 @@ class RelWriterTest {
     assertThat(s, is(XX2));
   }
 
-  @Test public void testExchange() {
+  @Test void testExchange() {
     final FrameworkConfig config = RelBuilderTest.config().build();
     final RelBuilder builder = RelBuilder.create(config);
     final RelNode rel = builder

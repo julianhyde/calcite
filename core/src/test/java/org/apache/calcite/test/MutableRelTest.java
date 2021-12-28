@@ -218,7 +218,7 @@ class MutableRelTest {
   }
 
   /** Verifies equivalence of {@link MutableScan}. */
-  @Test public void testMutableScanEquivalence() {
+  @Test void testMutableScanEquivalence() {
     final FrameworkConfig config = RelBuilderTest.config().build();
     final RelBuilder builder = RelBuilder.create(config);
 

@@ -56,6 +56,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlTableRef;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.test.SqlToRelTestBase.Tester;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -90,24 +91,30 @@ import static java.util.Objects.requireNonNull;
  */
 class SqlHintsConverterTest {
 
-  public Sql fixture() {
-    Tester tester = SqlToRelFixture.TESTER
-        .withConfig(c ->
-            c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
-    final DiffRepository diffRepos =
-        DiffRepository.lookup(SqlHintsConverterTest.class);
-    return new Sql(tester, "?", diffRepos, false, false);
+  static final Fixture FIXTURE =
+      new Fixture(SqlNewTestFactory.INSTANCE,
+          DiffRepository.lookup(SqlHintsConverterTest.class),
+          "?", false, false)
+          .withFactory(f ->
+              f.withSqlToRelConfig(c ->
+                  c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE)));
+
+  static final RelOptTestBase.Sql RULE_FIXTURE =
+      RelOptTestBase.Sql.DEFAULT
+          .withDiffRepos(DiffRepository.lookup(SqlHintsConverterTest.class))
+          .withConfig(c ->
+              c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
+
+  protected Fixture fixture() {
+    return FIXTURE;
   }
 
-  public static RelOptTestBase.Sql ruleFixture() {
-    return ((RelOptTestBase) new RelOptRulesTest()).fixture()
-        .withDiffRepos(DiffRepository.lookup(SqlHintsConverterTest.class))
-        .withConfig(c ->
-            c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
+  protected RelOptTestBase.Sql ruleFixture() {
+    return RULE_FIXTURE;
   }
 
   /** Sets the SQL statement for a test. */
-  public final Sql sql(String sql) {
+  public final Fixture sql(String sql) {
     return fixture().sql(sql);
   }
 
@@ -222,9 +229,9 @@ class SqlHintsConverterTest {
         + "allowed options: [ONE_PHASE, TWO_PHASE]";
     sql(sql2).warns(error2);
     // Change the error handler to validate again.
-    sql(sql2).withTester(
-        tester -> tester.withConfig(
-            c -> c.withHintStrategyTable(
+    sql(sql2).withFactory(f ->
+        f.withSqlToRelConfig(c ->
+            c.withHintStrategyTable(
                 HintTools.createHintStrategies(
                     HintStrategyTable.builder().errorHandler(Litmus.THROW)))))
         .fails(error2);
@@ -587,37 +594,38 @@ class SqlHintsConverterTest {
     }
   }
 
-  /** Sql test tool. */
-  private static class Sql {
+  /** Test fixture. */
+  private static class Fixture {
     private final String sql;
     private final DiffRepository diffRepos;
-    private final Tester tester;
+    private final SqlNewTestFactory factory;
+    private final Tester tester = SqlToRelFixture.TESTER;
     private final List<String> hintsCollect = new ArrayList<>();
     private final boolean decorrelate;
     private final boolean trim;
 
-    Sql(Tester tester, String sql, DiffRepository diffRepos,
+    Fixture(SqlNewTestFactory factory, DiffRepository diffRepos, String sql,
         boolean decorrelate, boolean trim) {
-      this.tester = requireNonNull(tester, "tester");
+      this.factory = requireNonNull(factory, "factory");
       this.sql = requireNonNull(sql, "sql");
       this.diffRepos = requireNonNull(diffRepos, "diffRepos");
       this.decorrelate = decorrelate;
       this.trim = trim;
     }
 
-    Sql sql(String sql) {
-      return new Sql(tester, sql, diffRepos, decorrelate, trim);
+    Fixture sql(String sql) {
+      return new Fixture(factory, diffRepos, sql, decorrelate, trim);
     }
 
-    /** Creates a new Sql instance with new tester
+    /** Creates a new Sql instance with new factory
      * applied with the {@code transform}. */
-    Sql withTester(UnaryOperator<Tester> transform) {
-      final Tester tester = transform.apply(this.tester);
-      return new Sql(tester, sql, diffRepos, decorrelate, trim);
+    Fixture withFactory(UnaryOperator<SqlNewTestFactory> transform) {
+      final SqlNewTestFactory factory = transform.apply(this.factory);
+      return new Fixture(factory, diffRepos, sql, decorrelate, trim);
     }
 
-    public Sql withDecorrelate(boolean decorrelate) {
-      return new Sql(tester, sql, diffRepos, decorrelate, trim);
+    Fixture withDecorrelate(boolean decorrelate) {
+      return new Fixture(factory, diffRepos, sql, decorrelate, trim);
     }
 
     void ok() {
@@ -630,7 +638,7 @@ class SqlHintsConverterTest {
       diffRepos.assertEquals("sql", "${sql}", sql);
       String sql2 = diffRepos.expand("sql", sql);
       final RelNode rel =
-          tester.convertSqlToRel(sql2, decorrelate, trim)
+          tester.convertSqlToRel(factory, sql2, decorrelate, trim)
               .project();
 
       assertNotNull(rel);
@@ -647,7 +655,7 @@ class SqlHintsConverterTest {
 
     void fails(String failedMsg) {
       try {
-        tester.convertSqlToRel(sql, decorrelate, trim);
+        tester.convertSqlToRel(factory, sql, decorrelate, trim);
         fail("Unexpected exception");
       } catch (AssertionError e) {
         assertThat(e.getMessage(), is(failedMsg));
@@ -659,7 +667,7 @@ class SqlHintsConverterTest {
       MockLogger logger = new MockLogger();
       logger.addAppender(appender);
       try {
-        tester.convertSqlToRel(sql, decorrelate, trim);
+        tester.convertSqlToRel(factory, sql, decorrelate, trim);
       } finally {
         logger.removeAppender(appender);
       }
@@ -667,12 +675,12 @@ class SqlHintsConverterTest {
       assertThat(expectWarning, is(in(appender.loggingEvents)));
     }
 
-    public SqlNode parseQuery() throws Exception {
+    SqlNode parseQuery() throws Exception {
       return tester.parseQuery(sql);
     }
 
-    public RelNode toRel() {
-      return tester.convertSqlToRel(sql, decorrelate, trim).rel;
+    RelNode toRel() {
+      return tester.convertSqlToRel(factory, sql, decorrelate, trim).rel;
     }
 
     /** A shuttle to collect all the hints within the relational expression into a collection. */

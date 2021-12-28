@@ -6728,7 +6728,7 @@ public class JdbcTest {
         .throws_("No match found for function signature NVL(<NUMERIC>, <NUMERIC>)");
   }
 
-  @Test public void testIf() {
+  @Test void testIf() {
     CalciteAssert.that(CalciteAssert.Config.REGULAR)
         .with(CalciteConnectionProperty.FUN, "bigquery")
         .query("select if(1 = 1,1,2) as r")
@@ -6743,7 +6743,7 @@ public class JdbcTest {
         .returnsUnordered("R=1");
   }
 
-  @Test public void testIfWithExpression() {
+  @Test void testIfWithExpression() {
     CalciteAssert.that(CalciteAssert.Config.REGULAR)
         .with(CalciteConnectionProperty.FUN, "bigquery")
         .query("select if(TRIM('a ') = 'a','a','b') as r")
@@ -6901,7 +6901,7 @@ public class JdbcTest {
     assertThat(aSchema.getSubSchemaNames().size(), is(2));
   }
 
-  @Test public void testCaseSensitiveConfigurableSimpleCalciteSchema() throws Exception {
+  @Test void testCaseSensitiveConfigurableSimpleCalciteSchema() throws Exception {
     final SchemaPlus rootSchema = CalciteSchema.createRootSchema(false, false).plus();
     // create schema "/a"
     final Map<String, Schema> dummySubSchemaMap = new HashMap<>();
@@ -7369,7 +7369,7 @@ public class JdbcTest {
     }
   }
 
-  @Test public void testBindableIntersect() {
+  @Test void testBindableIntersect() {
     try (Hook.Closeable ignored = Hook.ENABLE_BINDABLE.addThread(Hook.propertyJ(true))) {
       final String sql0 = "select \"empid\", \"deptno\" from \"hr\".\"emps\"";
       final String sql = sql0 + " intersect all " + sql0;
@@ -7389,7 +7389,7 @@ public class JdbcTest {
     }
   }
 
-  @Test public void testBindableMinus() {
+  @Test void testBindableMinus() {
     try (Hook.Closeable ignored = Hook.ENABLE_BINDABLE.addThread(Hook.propertyJ(true))) {
       final String sql0 = "select \"empid\", \"deptno\" from \"hr\".\"emps\"";
       final String sql = sql0 + " except all " + sql0;
@@ -7496,7 +7496,7 @@ public class JdbcTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2010">[CALCITE-2010]
    * Fails to plan query that is UNION ALL applied to VALUES</a>. */
-  @Test public void testUnionAllValues() {
+  @Test void testUnionAllValues() {
     CalciteAssert.hr()
         .query("select x, y from (values (1, 2)) as t(x, y)\n"
             + "union all\n"
@@ -7739,7 +7739,7 @@ public class JdbcTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3894">[CALCITE-3894]
    * SET operation between DATE and TIMESTAMP returns a wrong result</a>.
    */
-  @Test public void testUnionDateTime() {
+  @Test void testUnionDateTime() {
     CalciteAssert.AssertThat assertThat = CalciteAssert.that();
     String query = "select * from (\n"
         + "select \"id\" from (VALUES(DATE '2018-02-03')) \"foo\"(\"id\")\n"
@@ -7748,7 +7748,7 @@ public class JdbcTest {
     assertThat.query(query).returns("id=2008-03-31 12:23:34\nid=2018-02-03 00:00:00\n");
   }
 
-  @Test public void testNestedCastBigInt() {
+  @Test void testNestedCastBigInt() {
     CalciteAssert.AssertThat assertThat = CalciteAssert.that();
     String query = "SELECT CAST(CAST(4200000000 AS BIGINT) AS ANY) FROM (VALUES(1))";
     assertThat.query(query).returns("EXPR$0=4200000000\n");
@@ -7760,7 +7760,7 @@ public class JdbcTest {
    * Check for internal content in case of ROW in
    * RelDataTypeFactoryImpl#leastRestrictiveStructuredType should be after isStruct check</a>.
    */
-  @Test public void testCoalesceNullAndRow() {
+  @Test void testCoalesceNullAndRow() {
     CalciteAssert.that()
         .query("SELECT COALESCE(NULL, ROW(1)) AS F")
         .typeIs("[F STRUCT]")
@@ -7771,7 +7771,7 @@ public class JdbcTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4600">[CALCITE-4600]
    * ClassCastException retrieving from an ARRAY that has DATE, TIME or
    * TIMESTAMP elements</a>. */
-  @Test public void testArrayOfDates() {
+  @Test void testArrayOfDates() {
     CalciteAssert.that()
         .query("select array[cast('1900-1-1' as date)]")
         .returns("EXPR$0=[1900-01-01]\n");
@@ -7781,7 +7781,7 @@ public class JdbcTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4602">[CALCITE-4602]
    * ClassCastException retrieving from ARRAY that has mixed INTEGER and DECIMAL
    * elements</a>. */
-  @Test public void testIntAndBigDecimalInArray() {
+  @Test void testIntAndBigDecimalInArray() {
     // Result should be "EXPR$0=[1, 1.1]\n"; [CALCITE-4850] logged.
     CalciteAssert.that()
         .query("select array[1, 1.1]")

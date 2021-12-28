@@ -885,7 +885,7 @@ class CalciteRemoteDriverTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3338">[CALCITE-3338]
    * Error with executeBatch and preparedStatement when using RemoteMeta</a>. */
-  @Test public void testInsertBatchWithPreparedStatement() throws Exception {
+  @Test void testInsertBatchWithPreparedStatement() throws Exception {
     final Connection connection = DriverManager.getConnection(
         "jdbc:avatica:remote:factory="
             + LocalServiceModifiableFactory.class.getName());

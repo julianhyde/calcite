@@ -91,7 +91,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.test.SqlTestFactory;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
@@ -1128,7 +1128,7 @@ public class RelMetadataTest {
   }
 
   @Test void testCompositeKeysTableScanUniqueKeys() {
-    SqlTestFactory.MockCatalogReaderFactory factory = (typeFactory, caseSensitive) -> {
+    SqlNewTestFactory.CatalogReaderFactory factory = (typeFactory, caseSensitive) -> {
       CompositeKeysCatalogReader catalogReader =
           new CompositeKeysCatalogReader(typeFactory, false);
       catalogReader.init();
@@ -1250,7 +1250,7 @@ public class RelMetadataTest {
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
     final RelMetadataFixture fixture = sql(sql)
-        .withClusterFactory(cluster -> {
+        .withCluster(cluster -> {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(
                   ImmutableList.of(BrokenColTypeImpl.SOURCE,
@@ -1283,7 +1283,7 @@ public class RelMetadataTest {
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
     final RelMetadataFixture fixture = sql(sql)
-        .withClusterFactory(cluster -> {
+        .withCluster(cluster -> {
           cluster.setMetadataProvider(
               ChainedRelMetadataProvider.of(
                   ImmutableList.of(BrokenColTypeImpl.SOURCE,
@@ -1330,7 +1330,7 @@ public class RelMetadataTest {
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
     final RelMetadataFixture fixture = sql(sql)
-        .withClusterFactory(cluster -> {
+        .withCluster(cluster -> {
           // Create a custom provider that includes ColType.
           // Include the same provider twice just to be devious.
           final ImmutableList<RelMetadataProvider> list =
@@ -1397,7 +1397,7 @@ public class RelMetadataTest {
     final String sql = "select deptno, count(*) from emp where deptno > 10 "
         + "group by deptno having count(*) = 0";
     final RelMetadataFixture fixture = sql(sql)
-        .withClusterFactory(cluster -> {
+        .withCluster(cluster -> {
           // Create a custom provider that includes ColType.
           // Include the same provider twice just to be devious.
           final ImmutableList<RelMetadataProvider> list =

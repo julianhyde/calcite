@@ -24,7 +24,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableLimitSort;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.EnumerableSort;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -104,6 +103,7 @@ import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
@@ -134,7 +134,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static org.apache.calcite.test.SqlToRelTestBase.NL;
 
@@ -613,24 +612,19 @@ class RelOptRulesTest extends RelOptTestBase {
     sql(sql).withRule(CoreRules.FILTER_AGGREGATE_TRANSPOSE).check();
   }
 
-  private void basePushFilterPastAggWithGroupingSets(boolean unchanged) {
-    Sql sql = sql("${sql}")
+  private Sql basePushFilterPastAggWithGroupingSets() {
+    return sql("${sql}")
         .withPreRule(CoreRules.PROJECT_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE)
         .withRule(CoreRules.FILTER_AGGREGATE_TRANSPOSE);
-    if (unchanged) {
-      sql.checkUnchanged();
-    } else {
-      sql.check();
-    }
   }
 
   @Test void testPushFilterPastAggWithGroupingSets1() {
-    basePushFilterPastAggWithGroupingSets(true);
+    basePushFilterPastAggWithGroupingSets().checkUnchanged();
   }
 
   @Test void testPushFilterPastAggWithGroupingSets2() {
-    basePushFilterPastAggWithGroupingSets(false);
+    basePushFilterPastAggWithGroupingSets().check();
   }
 
   /** Test case for
@@ -1125,9 +1119,12 @@ class RelOptRulesTest extends RelOptTestBase {
 
     sql(sql)
         .withDecorrelate(true)
+        .withFactory(f ->
+            f.withSqlToRelConfig(c -> c.withTrimUnusedFields(true)))
         .withPre(program)
         .withRule() // empty program
-        .withAfter((fixture, r) -> fixture.tester.trimRelNode(r))
+        .withAfter((fixture, r) ->
+            fixture.tester.trimRelNode(fixture.factory, r))
         .check();
   }
 
@@ -2562,7 +2559,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql =
         "select * from (values (1,2)) where 1 + 2 > 3 + CAST(NULL AS INTEGER)";
     sql(sql)
-        .withTester(t -> t.withPlannerFactory(context -> planner))
+        .withFactory(t -> t.withPlannerFactory(context -> planner))
         .withBefore((fixture, r) -> {
           // Remove the executor
           assertThat(r.getCluster().getPlanner(), sameInstance(planner));
@@ -2830,12 +2827,12 @@ class RelOptRulesTest extends RelOptTestBase {
    * configurable</a>. Tests that a dynamic function (USER) is reduced if and
    * only if {@link ReduceExpressionsRule.Config#treatDynamicCallsAsConstant()}
    * is true. */
-  @Test public void testReduceDynamic() {
+  @Test void testReduceDynamic() {
     checkDynamicFunctions(true).check();
   }
 
   /** As {@link #testReduceDynamic()}. */
-  @Test public void testNoReduceDynamic() {
+  @Test void testNoReduceDynamic() {
     checkDynamicFunctions(false).checkUnchanged();
   }
 
@@ -2861,7 +2858,7 @@ class RelOptRulesTest extends RelOptTestBase {
 
     final String sql = "select USER from emp";
     return sql(sql)
-        .withTester(t -> t.withPlannerFactory(context -> planner))
+        .withFactory(t -> t.withPlannerFactory(context -> planner))
         .withRule(rule);
   }
 
@@ -3475,9 +3472,9 @@ class RelOptRulesTest extends RelOptTestBase {
 
   @Test void testPushBoolAndBoolOrThroughUnion() {
     sql("${sql}")
-        .withContext(c ->
-            Contexts.of(
-                SqlValidatorTest.operatorTableFor(SqlLibrary.POSTGRESQL), c))
+        .withFactory(f ->
+            f.withOperatorTable(opTab ->
+                SqlValidatorTest.operatorTableFor(SqlLibrary.POSTGRESQL)))
         .withRule(CoreRules.PROJECT_SET_OP_TRANSPOSE,
             CoreRules.PROJECT_MERGE,
             CoreRules.AGGREGATE_UNION_TRANSPOSE)
@@ -5382,7 +5379,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from sales.emp e right join (\n"
         + "  select * from sales.dept d) d on e.deptno = d.deptno\n"
         + "order by name";
-    sql(sql).withTester(t ->
+    sql(sql).withFactory(t ->
         t.withPlannerFactory(context ->
             // Create a customized test with RelCollation trait in the test
             // cluster.
@@ -6059,8 +6056,6 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select *\n"
         + "from sales.emp_b as e\n"
         + "where extract(year from birthdate) = 2014";
-    final Context context =
-        Contexts.of(CalciteConnectionConfig.DEFAULT);
     sql(sql).withRule(DateRangeRules.FILTER_INSTANCE)
         .withContext(c -> Contexts.of(CalciteConnectionConfig.DEFAULT, c))
         .check();
@@ -6704,7 +6699,7 @@ class RelOptRulesTest extends RelOptTestBase {
           f.diffRepos().assertEquals("planBeforeTrimming",
               "${planBeforeTrimming}", planBeforeTrimming);
 
-          RelNode r2 = f.tester.trimRelNode(r);
+          RelNode r2 = f.tester.trimRelNode(f.factory, r);
           final String planAfterTrimming = NL + RelOptUtil.toString(r2);
           f.diffRepos().assertEquals("planAfterTrimming",
               "${planAfterTrimming}", planAfterTrimming);
@@ -6881,7 +6876,8 @@ class RelOptRulesTest extends RelOptTestBase {
       }
     };
 
-    Supplier<RelDataTypeFactory> typeFactorySupplier = () -> new SqlTypeFactoryImpl(typeSystem);
+    SqlNewTestFactory.TypeFactoryFactory typeFactorySupplier =
+        conformance -> new SqlTypeFactoryImpl(typeSystem);
 
     // Expected plan:
     // LogicalProject(EXPR$0=[CAST($0):BIGINT NOT NULL], EXPR$1=[$1])
@@ -6894,7 +6890,7 @@ class RelOptRulesTest extends RelOptTestBase {
     // because type of original expression 'COUNT(DISTINCT comm)' is BIGINT
     // and type of SUM (of BIGINT) is DECIMAL.
     sql("SELECT count(comm), COUNT(DISTINCT comm) FROM emp")
-        .withTester(t -> t.withTypeFactorySupplier(typeFactorySupplier))
+        .withFactory(f -> f.withTypeFactoryFactory(typeFactorySupplier))
         .withRule(CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN)
         .check();
   }
@@ -6923,7 +6919,8 @@ class RelOptRulesTest extends RelOptTestBase {
       }
     };
 
-    Supplier<RelDataTypeFactory> typeFactorySupplier = () -> new SqlTypeFactoryImpl(typeSystem);
+    SqlNewTestFactory.TypeFactoryFactory typeFactoryFactory =
+        conformance -> new SqlTypeFactoryImpl(typeSystem);
 
     // Expected plan:
     // LogicalProject(EXPR$0=[CAST($0):BIGINT], EXPR$1=[$1])
@@ -6936,7 +6933,7 @@ class RelOptRulesTest extends RelOptTestBase {
     // because type of original expression 'COUNT(DISTINCT comm)' is BIGINT
     // and type of SUM (of BIGINT) is DECIMAL.
     sql("SELECT SUM(comm), SUM(DISTINCT comm) FROM emp")
-        .withTester(t -> t.withTypeFactorySupplier(typeFactorySupplier))
+        .withFactory(f -> f.withTypeFactoryFactory(typeFactoryFactory))
         .withRule(CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN)
         .check();
   }

@@ -36,6 +36,7 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -92,13 +93,18 @@ abstract class RelOptTestBase {
   /** Allows fluent testing. */
   static class Sql {
     static final Sql DEFAULT =
-        new Sql(SqlToRelFixture.TESTER, null, RelSupplier.NONE, null, null,
+        new Sql(SqlToRelFixture.TESTER, SqlNewTestFactory.INSTANCE, null,
+            RelSupplier.NONE, null, null,
             ImmutableMap.of(), (f, r) -> r, (f, r) -> r,
             false, false)
+            .withFactory(f ->
+                f.withValidatorConfig(c ->
+                    c.withIdentifierExpansion(true)))
             .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
 
     final Tester tester;
     final RelSupplier relSupplier;
+    final SqlNewTestFactory factory;
     final DiffRepository diffRepos;
     final HepProgram preProgram;
     final RelOptPlanner planner;
@@ -108,12 +114,14 @@ abstract class RelOptTestBase {
     final boolean decorrelate;
     final boolean trim;
 
-    Sql(Tester tester, @Nullable DiffRepository diffRepos,
+    Sql(Tester tester, SqlNewTestFactory factory,
+        @Nullable DiffRepository diffRepos,
         RelSupplier relSupplier, HepProgram preProgram, RelOptPlanner planner,
         ImmutableMap<Hook, Consumer<Object>> hooks,
         BiFunction<Sql, RelNode, RelNode> before,
         BiFunction<Sql, RelNode, RelNode> after, boolean decorrelate, boolean trim) {
       this.tester = requireNonNull(tester, "tester");
+      this.factory = factory;
       this.diffRepos = diffRepos;
       this.relSupplier = requireNonNull(relSupplier, "relSupplier");
       this.before = requireNonNull(before, "before");
@@ -126,14 +134,14 @@ abstract class RelOptTestBase {
     }
 
     public Sql withDiffRepos(DiffRepository diffRepos) {
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql withRelSupplier(RelSupplier relSupplier) {
       return relSupplier.equals(this.relSupplier) ? this
-          : new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-              before, after, decorrelate, trim);
+          : new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+              planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql sql(String sql) {
@@ -148,32 +156,40 @@ abstract class RelOptTestBase {
       final BiFunction<Sql, RelNode, RelNode> before0 = this.before;
       final BiFunction<Sql, RelNode, RelNode> before2 =
           (sql, r) -> before.apply(this, before0.apply(this, r));
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before2, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before2, after, decorrelate, trim);
     }
 
     public Sql withAfter(BiFunction<Sql, RelNode, RelNode> after) {
       final BiFunction<Sql, RelNode, RelNode> after0 = this.after;
       final BiFunction<Sql, RelNode, RelNode> after2 =
           (sql, r) -> after.apply(this, after0.apply(this, r));
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after2, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after2, decorrelate, trim);
     }
 
     public Sql withDynamicTable() {
-      return withTester(t ->
-          t.withCatalogReaderFactory(MockCatalogReaderDynamic::create));
+      return withTester(t -> // TODO remove this line and next
+          t.withCatalogReaderFactory(MockCatalogReaderDynamic::create))
+          .withFactory(f ->
+              f.withCatalogReader(MockCatalogReaderDynamic::create));
+    }
+
+    public Sql withFactory(UnaryOperator<SqlNewTestFactory> transform) {
+      final SqlNewTestFactory factory = transform.apply(this.factory);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql withTester(UnaryOperator<Tester> transform) { // TODO dont transform tester
-      final Tester tester2 = transform.apply(tester);
-      return new Sql(tester2, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      final Tester tester = transform.apply(this.tester);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql withPre(HepProgram preProgram) {
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql withPreRule(RelOptRule... rules) {
@@ -185,8 +201,8 @@ abstract class RelOptTestBase {
     }
 
     public Sql with(RelOptPlanner planner) {
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql with(HepProgram program) {
@@ -208,8 +224,8 @@ abstract class RelOptTestBase {
     public <T> Sql withHook(Hook hook, Consumer<T> handler) {
       final ImmutableMap<Hook, Consumer<Object>> hooks =
           FlatLists.append((Map) this.hooks, hook, (Consumer) handler);
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public <V> Sql withProperty(Hook hook, V value) {
@@ -225,7 +241,8 @@ abstract class RelOptTestBase {
     }
 
     public Sql withConfig(UnaryOperator<SqlToRelConverter.Config> transform) {
-      return withTester(tester -> tester.withConfig(transform));
+      return withTester(tester -> tester.withConfig(transform)) // TODO remove this line
+          .withFactory(f -> f.withSqlToRelConfig(transform));
     }
 
     public Sql withRelBuilderConfig(
@@ -238,26 +255,36 @@ abstract class RelOptTestBase {
     }
 
     public Sql withDecorrelate(final boolean decorrelate) {
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim);
     }
 
     public Sql withTrim(final boolean trim) {
-      return new Sql(tester, diffRepos, relSupplier, preProgram, planner, hooks,
-          before, after, decorrelate, trim);
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, trim)
+          .withConfig(c -> c.withTrimUnusedFields(trim)); // TODO remove trim field
     }
 
     public Sql withCatalogReaderFactory(
         SqlNewTestFactory.CatalogReaderFactory factory) {
-      return withTester(tester -> tester.withCatalogReaderFactory(factory));
+      return withTester(tester -> tester.withCatalogReaderFactory(factory))
+          .withFactory(f -> f.withCatalogReader(factory));
     }
 
     public Sql withConformance(final SqlConformance conformance) {
-      return withTester(tester -> tester.withConformance(conformance));
+      return withTester(tester -> tester.withConformance(conformance)) // TODO remove line
+          .withFactory(f ->
+              f.withValidatorConfig(c -> c.withConformance(conformance))
+                  .withOperatorTable(t ->
+                      conformance.allowGeometry()
+                          ? SqlOperatorTables.chain(t,
+                          SqlOperatorTables.spatialInstance())
+                          : t));
     }
 
     public Sql withContext(final UnaryOperator<Context> transform) {
-      return withTester(tester -> tester.withContext(transform));
+      return withTester(tester -> tester.withContext(transform)) // TODO remove 1
+          .withFactory(f -> f.withPlannerContext(transform));
     }
 
     public RelNode toRel() {
@@ -373,8 +400,8 @@ abstract class RelOptTestBase {
       init.accept(planner);
       return with(planner)
           .withDecorrelate(true)
-          .withTester(t ->
-              t.withClusterFactory(cluster ->
+          .withFactory(f ->
+              f.withCluster(cluster ->
                   RelOptCluster.create(planner, cluster.getRexBuilder())));
     }
 

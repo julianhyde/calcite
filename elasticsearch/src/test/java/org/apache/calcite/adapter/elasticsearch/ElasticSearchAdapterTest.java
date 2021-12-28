@@ -433,7 +433,7 @@ class ElasticSearchAdapterTest {
         .explainContains(explain);
   }
 
-  @Test public void testDismaxQuery() {
+  @Test void testDismaxQuery() {
     final String sql = "select * from zips\n"
         + "where state = 'CA' or pop >= 94000\n"
         + "order by state, pop";
