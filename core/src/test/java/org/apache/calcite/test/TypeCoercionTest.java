@@ -38,6 +38,12 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 /**
  * Test cases for implicit type coercion. see {@link TypeCoercion} doc
  * or <a href="https://docs.google.com/spreadsheets/d/1GhleX5h5W8-kJKh7NMJ4vtoE78pwfaZRJl88ULX_MgU/edit?usp=sharing">CalciteImplicitCasts</a>
@@ -766,16 +772,16 @@ class TypeCoercionTest {
         // ROW type do not have a family.
         return;
       }
-      RelDataType castedType = ((AbstractTypeCoercion) typeCoercion).implicitCast(from, family);
-      boolean equals = castedType != null
-          && (from.equals(castedType)
-          || SqlTypeUtil.equalSansNullability(typeFactory, castedType, expected)
-          || expected.getSqlTypeName().getFamily().contains(castedType));
-      assert equals // TODO: assertThat
-          : "Failed to cast from "
-          + from.getSqlTypeName()
-          + " to "
-          + family;
+      RelDataType castedType =
+          ((AbstractTypeCoercion) typeCoercion).implicitCast(from, family);
+      String reason = "Failed to cast from " + from.getSqlTypeName()
+          + " to " + family;
+      assertThat(reason, castedType, notNullValue());
+      assertThat(reason,
+          from.equals(castedType)
+              || SqlTypeUtil.equalSansNullability(typeFactory, castedType, expected)
+              || expected.getSqlTypeName().getFamily().contains(castedType),
+          is(true));
     }
 
     private void shouldNotCast(
@@ -785,12 +791,11 @@ class TypeCoercionTest {
         // ROW type do not have a family.
         return;
       }
-      RelDataType castedType = ((AbstractTypeCoercion) typeCoercion).implicitCast(from, family);
-      assert castedType == null // TODO: assertThat
-          : "Should not be able to cast from "
-          + from.getSqlTypeName()
-          + " to "
-          + family;
+      RelDataType castedType =
+          ((AbstractTypeCoercion) typeCoercion).implicitCast(from, family);
+      assertThat("Should not be able to cast from " + from.getSqlTypeName()
+          + " to " + family,
+          castedType, nullValue());
     }
 
     private void checkShouldCast(RelDataType checked, List<RelDataType> types) {
@@ -815,14 +820,6 @@ class TypeCoercionTest {
       return false;
     }
 
-    private boolean equals(Object o1, Object o2) {
-      if (o1 == null && o2 != null
-          || o1 != null && o2 == null) {
-        return false;
-      }
-      return o1 == o2;
-    }
-
     private String toStringNullable(Object o1) {
       if (o1 == null) {
         return "NULL";
@@ -837,26 +834,19 @@ class TypeCoercionTest {
         RelDataType expected,
         boolean isSymmetric) {
       RelDataType result = typeCoercion.getTightestCommonType(type1, type2);
-      assert equals(result, expected) // TODO: assertThat
-          : "Expected "
-          + toStringNullable(expected)
-          + " as common type for "
-          + type1.toString()
-          + " and "
-          + type2.toString()
-          + ", but found "
-          + toStringNullable(result);
+      assertThat("Expected " + toStringNullable(expected)
+          + " as common type for " + type1.toString()
+          + " and " + type2.toString()
+          + ", but found " + toStringNullable(result),
+          result,
+          sameInstance(expected));
       if (isSymmetric) {
         RelDataType result1 = typeCoercion.getTightestCommonType(type2, type1);
-        assert equals(result1, expected) // TODO: assertThat
-            : "Expected "
-            + toStringNullable(expected)
-            + " as common type for "
-            + type2.toString()
-            + " and "
-            + type1.toString()
-            + ", but found "
-            + toStringNullable(result1);
+        assertThat("Expected " + toStringNullable(expected)
+            + " as common type for " + type2
+            + " and " + type1
+            + ", but found " + toStringNullable(result1),
+            result1, sameInstance(expected));
       }
     }
 
@@ -867,21 +857,22 @@ class TypeCoercionTest {
         RelDataType expected,
         boolean stringPromotion,
         boolean symmetric) {
-      RelDataType result = typeCoercion.getWiderTypeForTwo(type1, type2, stringPromotion);
-      assert equals(result, expected) // TODO: assertThat
-          : "Expected "
+      RelDataType result =
+          typeCoercion.getWiderTypeForTwo(type1, type2, stringPromotion);
+      assertThat("Expected "
           + toStringNullable(expected)
           + " as common type for " + type1.toString()
           + " and " + type2.toString()
-          + ", but found " + toStringNullable(result);
+          + ", but found " + toStringNullable(result),
+          result, sameInstance(expected));
       if (symmetric) {
-        RelDataType result1 = typeCoercion.getWiderTypeForTwo(type2, type1, stringPromotion);
-        assert equals(result1, expected) // TODO: assertThat
-            : "Expected "
-            + toStringNullable(expected)
-            + " as common type for " + type2.toString()
-            + " and " + type1.toString()
-            + ", but found " + toStringNullable(result1);
+        RelDataType result1 =
+            typeCoercion.getWiderTypeForTwo(type2, type1, stringPromotion);
+        assertThat("Expected " + toStringNullable(expected)
+            + " as common type for " + type2
+            + " and " + type1
+            + ", but found " + toStringNullable(result1),
+            result1, sameInstance(expected));
       }
     }
   }
