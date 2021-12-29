@@ -43,7 +43,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlToRelFixture {
   public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl(false);
+      new SqlToRelTestBase.TesterImpl();
 
   public static final SqlToRelFixture DEFAULT =
       new SqlToRelFixture("?", true, TESTER, SqlNewTestFactory.INSTANCE, false,

@@ -95,12 +95,14 @@ abstract class RelOptTestBase {
     static final Sql DEFAULT =
         new Sql(SqlToRelFixture.TESTER, SqlNewTestFactory.INSTANCE, null,
             RelSupplier.NONE, null, null,
-            ImmutableMap.of(), (f, r) -> r, (f, r) -> r, false)
+            ImmutableMap.of(), (f, r) -> r, (f, r) -> r, false, false)
             .withFactory(f ->
                 f.withValidatorConfig(c ->
                     c.withIdentifierExpansion(true)))
             .withRelBuilderConfig(b -> b.withPruneInputOfAggregate(false));
 
+    /** The tester for this test. The field is vestigial; there is no
+     * {@code withTester} method, and the same tester is always used. */
     final Tester tester;
     final RelSupplier relSupplier;
     final SqlNewTestFactory factory;
@@ -111,13 +113,15 @@ abstract class RelOptTestBase {
     final BiFunction<Sql, RelNode, RelNode> before;
     final BiFunction<Sql, RelNode, RelNode> after;
     final boolean decorrelate;
+    final boolean lateDecorrelate;
 
     Sql(Tester tester, SqlNewTestFactory factory,
         @Nullable DiffRepository diffRepos,
         RelSupplier relSupplier, HepProgram preProgram, RelOptPlanner planner,
         ImmutableMap<Hook, Consumer<Object>> hooks,
         BiFunction<Sql, RelNode, RelNode> before,
-        BiFunction<Sql, RelNode, RelNode> after, boolean decorrelate) {
+        BiFunction<Sql, RelNode, RelNode> after,
+        boolean decorrelate, boolean lateDecorrelate) {
       this.tester = requireNonNull(tester, "tester");
       this.factory = factory;
       this.diffRepos = diffRepos;
@@ -128,17 +132,23 @@ abstract class RelOptTestBase {
       this.planner = planner;
       this.hooks = requireNonNull(hooks, "hooks");
       this.decorrelate = decorrelate;
+      this.lateDecorrelate = lateDecorrelate;
     }
 
     public Sql withDiffRepos(DiffRepository diffRepos) {
+      if (diffRepos.equals(this.diffRepos)) {
+        return this;
+      }
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public Sql withRelSupplier(RelSupplier relSupplier) {
-      return relSupplier.equals(this.relSupplier) ? this
-          : new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-              planner, hooks, before, after, decorrelate);
+      if (relSupplier.equals(this.relSupplier)) {
+        return this;
+      }
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public Sql sql(String sql) {
@@ -154,7 +164,7 @@ abstract class RelOptTestBase {
       final BiFunction<Sql, RelNode, RelNode> before2 =
           (sql, r) -> before.apply(this, before0.apply(this, r));
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before2, after, decorrelate);
+          planner, hooks, before2, after, decorrelate, lateDecorrelate);
     }
 
     public Sql withAfter(BiFunction<Sql, RelNode, RelNode> after) {
@@ -162,29 +172,28 @@ abstract class RelOptTestBase {
       final BiFunction<Sql, RelNode, RelNode> after2 =
           (sql, r) -> after.apply(this, after0.apply(this, r));
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after2, decorrelate);
+          planner, hooks, before, after2, decorrelate, lateDecorrelate);
     }
 
     public Sql withDynamicTable() {
-      return withFactory(f ->
-          f.withCatalogReader(MockCatalogReaderDynamic::create));
+      return withCatalogReaderFactory(MockCatalogReaderDynamic::create);
     }
 
     public Sql withFactory(UnaryOperator<SqlNewTestFactory> transform) {
       final SqlNewTestFactory factory = transform.apply(this.factory);
+      if (factory.equals(this.factory)) {
+        return this;
+      }
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
-    }
-
-    public Sql withTester(UnaryOperator<Tester> transform) { // TODO dont transform tester
-      final Tester tester = transform.apply(this.tester);
-      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public Sql withPre(HepProgram preProgram) {
+      if (preProgram.equals(this.preProgram)) {
+        return this;
+      }
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public Sql withPreRule(RelOptRule... rules) {
@@ -195,13 +204,16 @@ abstract class RelOptTestBase {
       return withPre(builder.build());
     }
 
-    public Sql with(RelOptPlanner planner) {
+    public Sql withPlanner(RelOptPlanner planner) {
+      if (planner.equals(this.planner)) {
+        return this;
+      }
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
-    public Sql with(HepProgram program) {
-      return with(new HepPlanner(program));
+    public Sql withProgram(HepProgram program) {
+      return withPlanner(new HepPlanner(program));
     }
 
     public Sql withRule(RelOptRule... rules) {
@@ -209,7 +221,7 @@ abstract class RelOptTestBase {
       for (RelOptRule rule : rules) {
         builder.addRuleInstance(rule);
       }
-      return with(builder.build());
+      return withProgram(builder.build());
     }
 
     /** Adds a hook and a handler for that hook. Calcite will create a thread
@@ -219,8 +231,11 @@ abstract class RelOptTestBase {
     public <T> Sql withHook(Hook hook, Consumer<T> handler) {
       final ImmutableMap<Hook, Consumer<Object>> hooks =
           FlatLists.append((Map) this.hooks, hook, (Consumer) handler);
+      if (hooks.equals(this.hooks)) {
+        return this;
+      }
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public <V> Sql withProperty(Hook hook, V value) {
@@ -244,13 +259,20 @@ abstract class RelOptTestBase {
       return withConfig(c -> c.addRelBuilderConfigTransform(transform));
     }
 
-    public Sql withLateDecorrelation(final boolean b) {
-      return withTester(tester -> tester.withLateDecorrelation(b));
+    public Sql withLateDecorrelate(final boolean lateDecorrelate) {
+      if (lateDecorrelate == this.lateDecorrelate) {
+        return this;
+      }
+      return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public Sql withDecorrelate(final boolean decorrelate) {
+      if (decorrelate == this.decorrelate) {
+        return this;
+      }
       return new Sql(tester, factory, diffRepos, relSupplier, preProgram,
-          planner, hooks, before, after, decorrelate);
+          planner, hooks, before, after, decorrelate, lateDecorrelate);
     }
 
     public Sql withTrim(final boolean trim) {
@@ -353,7 +375,7 @@ abstract class RelOptTestBase {
       final RelNode r3 = planner.findBestExp();
 
       final RelNode r4;
-      if (tester.isLateDecorrelate()) {
+      if (lateDecorrelate) {
         final String planMid = NL + RelOptUtil.toString(r3);
         diffRepos.assertEquals("planMid", "${planMid}", planMid);
         assertThat(r3, relIsValid());
@@ -387,7 +409,7 @@ abstract class RelOptTestBase {
       planner.setTopDownOpt(topDown);
       planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
       init.accept(planner);
-      return with(planner)
+      return withPlanner(planner)
           .withDecorrelate(true)
           .withFactory(f ->
               f.withCluster(cluster ->

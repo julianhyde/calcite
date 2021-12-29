@@ -153,12 +153,6 @@ public abstract class SqlToRelTestBase {
         boolean expression,
         boolean decorrelate);
 
-    /** Returns a tester that optionally decorrelates queries after planner
-     * rules have fired. */
-    Tester withLateDecorrelation(boolean enable);
-
-    boolean isLateDecorrelate();
-
     /** Trims a RelNode. */
     RelNode trimRelNode(SqlNewTestFactory factory, RelNode relNode);
 
@@ -425,11 +419,8 @@ public abstract class SqlToRelTestBase {
    * {@link MockRelOptSchema} and {@link MockRelOptPlanner}.
    */
   public static class TesterImpl implements Tester {
-    private final boolean enableLateDecorrelate;
-
     /** Creates a TesterImpl. */
-    protected TesterImpl(boolean enableLateDecorrelate) {
-      this.enableLateDecorrelate = enableLateDecorrelate;
+    protected TesterImpl() {
     }
 
     @Override public Pair<SqlValidator, RelRoot> convertSqlToRel2(
@@ -566,17 +557,6 @@ public abstract class SqlToRelTestBase {
     public RelFieldTrimmer createFieldTrimmer(SqlValidator validator,
         RelBuilder relBuilder) {
       return new RelFieldTrimmer(validator, relBuilder);
-    }
-
-    @Override public TesterImpl withLateDecorrelation(boolean enableLateDecorrelate) {
-      if (this.enableLateDecorrelate == enableLateDecorrelate) {
-        return this;
-      }
-      return new TesterImpl(enableLateDecorrelate);
-    }
-
-    @Override public boolean isLateDecorrelate() {
-      return enableLateDecorrelate;
     }
   }
 

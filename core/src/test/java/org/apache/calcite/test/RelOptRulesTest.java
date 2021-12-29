@@ -205,7 +205,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select *\n"
         + "from (select (case when sal > 1000 then null else false end) as caseCol from emp)\n"
         + "where NOT(caseCol)";
-    sql(sql).with(hepPlanner)
+    sql(sql).withPlanner(hepPlanner)
         .checkUnchanged();
   }
 
@@ -220,7 +220,7 @@ class RelOptRulesTest extends RelOptTestBase {
             + "where case when (sal = 1000) then\n"
             + "(case when sal = 1000 then null else 1 end is null) else\n"
             + "(case when sal = 2000 then null else 1 end is null) end is true";
-    sql(sql).with(hepPlanner)
+    sql(sql).withPlanner(hepPlanner)
         .check();
   }
 
@@ -235,7 +235,7 @@ class RelOptRulesTest extends RelOptTestBase {
             + "select deptno, count(distinct empno) from emp group by deptno\n"
             + "union all\n"
             + "select deptno, approx_count_distinct(empno) from emp group by deptno)";
-    sql(sql).with(hepPlanner)
+    sql(sql).withPlanner(hepPlanner)
         .check();
   }
 
@@ -312,7 +312,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "from emp\n"
         + "where case when sal = 1000 then null else 1 end is null\n"
         + "OR case when sal = 2000 then null else 1 end is null";
-    sql(sql).with(hepPlanner)
+    sql(sql).withPlanner(hepPlanner)
         .check();
   }
 
@@ -325,7 +325,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "SELECT CASE WHEN 1=2 "
         + "THEN cast((values(1)) as integer) "
         + "ELSE 2 end from (values(1))";
-    sql(sql).with(hepPlanner).checkUnchanged();
+    sql(sql).withPlanner(hepPlanner).checkUnchanged();
   }
 
   @Test void testReduceNullableCase2() {
@@ -337,7 +337,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "SELECT deptno, ename, CASE WHEN 1=2 "
         + "THEN substring(ename, 1, cast(2 as int)) ELSE NULL end from emp"
         + " group by deptno, ename, case when 1=2 then substring(ename,1, cast(2 as int))  else null end";
-    sql(sql).with(hepPlanner).checkUnchanged();
+    sql(sql).withPlanner(hepPlanner).checkUnchanged();
   }
 
   @Test void testProjectToWindowRuleForMultipleWindows() {
@@ -352,7 +352,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + " sum(deptno) over(partition by empno order by sal) as sum1,\n"
         + " sum(deptno) over(partition by deptno order by sal) as sum2\n"
         + "from emp";
-    sql(sql).with(hepPlanner)
+    sql(sql).withPlanner(hepPlanner)
         .check();
   }
 
@@ -693,7 +693,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "right join dept c on b.deptno > 10\n";
     sql(sql)
         .withPreRule(CoreRules.PROJECT_MERGE)
-        .with(program)
+        .withProgram(program)
         .check();
   }
 
@@ -1408,7 +1408,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** As {@link #testWithinDistinct()}, but the generated query does not throw
@@ -1424,7 +1424,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT
             .config.withThrowIfNotUnique(false).toRule())
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Tests {@link AggregateExpandWithinDistinctRule}. If all aggregate calls
@@ -1440,7 +1440,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Tests {@link AggregateExpandWithinDistinctRule}. If all aggregate calls
@@ -1458,7 +1458,7 @@ class RelOptRulesTest extends RelOptTestBase {
             CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT.config
                 .withThrowIfNotUnique(false).toRule())
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Tests that {@link AggregateExpandWithinDistinctRule} treats
@@ -1477,7 +1477,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT
             .config.withThrowIfNotUnique(false).toRule())
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Test case for
@@ -1497,7 +1497,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Tests {@link AggregateExpandWithinDistinctRule}. Includes multiple
@@ -1514,7 +1514,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Tests {@link AggregateExpandWithinDistinctRule}. Includes multiple
@@ -1533,7 +1533,7 @@ class RelOptRulesTest extends RelOptTestBase {
             CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT.config
                 .withThrowIfNotUnique(false).toRule())
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Tests {@link AggregateExpandWithinDistinctRule}. Includes multiple
@@ -1549,7 +1549,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS)
         .addRuleInstance(CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT)
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   @Test void testPushProjectPastFilter() {
@@ -1707,7 +1707,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select t1.name, e.ename\n"
         + "from DEPT_NESTED as t1 left outer join sales.emp e\n"
         + " on t1.skill.type = e.job";
-    sql(sql).withPre(preProgram).with(program).check();
+    sql(sql).withPre(preProgram).withProgram(program).check();
   }
 
   @Test void testProjectCorrelateTranspose() {
@@ -2214,7 +2214,7 @@ class RelOptRulesTest extends RelOptTestBase {
 
     final String sql = "select upper(ename) from emp union all\n"
         + "select lower(ename) from emp";
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   @Test void testPushSemiJoinPastJoinRuleLeft() {
@@ -2257,7 +2257,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .addMatchOrder(HepMatchOrder.BOTTOM_UP)
         .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
         .build();
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   @Test void testManyFiltersOnTopOfMultiJoinShouldCollapse() {
@@ -2271,7 +2271,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from (select * from emp e1 left outer join dept d\n"
         + "on e1.deptno = d.deptno\n"
         + "where d.deptno > 3) where ename LIKE 'bar'";
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   @Test void testReduceConstants() {
@@ -2617,7 +2617,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + ") where u = 'TABLE'";
     sql(sql)
         .withRelBuilderConfig(c -> c.withSimplifyValues(false))
-        .with(program).check();
+        .withProgram(program).check();
   }
 
   @Test void testRemoveSemiJoin() {
@@ -2694,7 +2694,7 @@ class RelOptRulesTest extends RelOptTestBase {
               }
               // CHECKSTYLE: IGNORE 1
             }.init())
-        .with(program);
+        .withProgram(program);
   }
 
   @Test void testConvertMultiJoinRuleOuterJoins() {
@@ -3271,7 +3271,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "SELECT sal, COUNT(1) AS count_val\n"
         + "FROM emp t WHERE sal = ?\n"
         + "GROUP BY sal HAVING sal < 1000";
-    sql(sql).with(hepPlanner)
+    sql(sql).withPlanner(hepPlanner)
         .checkUnchanged();
   }
 
@@ -3338,7 +3338,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .build();
     final String sql = "insert into sales.dept(deptno, name)\n"
         + "select empno, cast(job as varchar(128)) from sales.empnullables";
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   @Test void testReduceCaseWhenWithCast() {
@@ -3379,7 +3379,7 @@ class RelOptRulesTest extends RelOptTestBase {
     HepPlanner hepPlanner = new HepPlanner(builder.build());
     hepPlanner.addRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS);
 
-    relFn(relFn).with(hepPlanner).checkUnchanged();
+    relFn(relFn).withPlanner(hepPlanner).checkUnchanged();
   }
 
   private void basePushAggThroughUnion() {
@@ -3952,7 +3952,7 @@ class RelOptRulesTest extends RelOptTestBase {
                 CoreRules.FILTER_PROJECT_TRANSPOSE,
                 CoreRules.JOIN_REDUCE_EXPRESSIONS))
         .build();
-    sql(sql).withPre(getTransitiveProgram()).with(program).check();
+    sql(sql).withPre(getTransitiveProgram()).withProgram(program).check();
   }
 
   /** Test case for
@@ -4107,7 +4107,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "sum(deptno + sal) over(partition by deptno order by sal) as sum2\n"
         + "from emp";
     sql(sql)
-        .with(hepPlanner)
+        .withPlanner(hepPlanner)
         .check();
   }
 
@@ -4124,7 +4124,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "from emp\n"
         + "window w as (partition by empno order by empno)";
     sql(sql)
-        .with(hepPlanner)
+        .withPlanner(hepPlanner)
         .check();
   }
 
@@ -4147,7 +4147,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + ") sub_query where w_count is null";
     sql(sql)
         .withPre(preBuilder.build())
-        .with(hepPlanner)
+        .withPlanner(hepPlanner)
         .check();
   }
 
@@ -4166,7 +4166,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + ") sub_query where w_count is null";
     sql(sql)
         .withPre(preBuilder.build())
-        .with(hepPlanner)
+        .withPlanner(hepPlanner)
         .check();
   }
 
@@ -5244,7 +5244,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .build();
     final String sql = "select 1 from sales.dept d left outer join sales.emp e\n"
         + " on d.deptno = e.deptno";
-    sql(sql).with(program).check();
+    sql(sql).withProgram(program).check();
   }
 
   /** Test case for
@@ -5536,7 +5536,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + " select deptno from dept\n"
         + "   where emp.job=dept.name)\n"
         + " from emp";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for
@@ -5547,7 +5547,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "where empno NOT IN (\n"
         + "  select deptno from dept\n"
         + "  where emp.job = dept.name)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testWhereNotInCorrelated2() {
@@ -5555,19 +5555,19 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  where e1.empno NOT IN\n"
         + "   (select empno from (select ename, empno, sal as r from emp) e2\n"
         + "    where r > 2 and e1.ename= e2.ename)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testAll() {
     final String sql = "select * from emp e1\n"
         + "  where e1.empno > ALL (select deptno from dept)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testSome() {
     final String sql = "select * from emp e1\n"
         + "  where e1.empno > SOME (select deptno from dept)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for testing type created by SubQueryRemoveRule: an
@@ -5576,7 +5576,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select name, deptno > ANY (\n"
         + "  select deptno from emp)\n"
         + "from dept";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for testing type created by SubQueryRemoveRule; an
@@ -5585,38 +5585,38 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select deptno, name = ANY (\n"
         + "  select mgr from emp)\n"
         + "from dept";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testSelectAnyCorrelated() {
     final String sql = "select empno > ANY (\n"
         + "  select deptno from dept where emp.job = dept.name)\n"
         + "from emp\n";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testWhereAnyCorrelatedInSelect() {
     final String sql = "select * from emp where empno > ANY (\n"
         + "  select deptno from dept where emp.job = dept.name)\n";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testSomeWithEquality() {
     final String sql = "select * from emp e1\n"
         + "  where e1.deptno = SOME (select deptno from dept)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testSomeWithEquality2() {
     final String sql = "select * from emp e1\n"
         + "  where e1.ename= SOME (select name from dept)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testSomeWithNotEquality() {
     final String sql = "select * from emp e1\n"
         + "  where e1.deptno <> SOME (select deptno from dept)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for
@@ -5626,7 +5626,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from emp\n"
         + "where sal = 4\n"
         + "or empno NOT IN (select deptno from dept)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testExpandProjectIn() {
@@ -5882,7 +5882,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select * from sales.emp\n"
         + "where EXISTS (\n"
         + "  select * from emp e where emp.deptno = e.deptno)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for
@@ -5895,7 +5895,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select * from emp e where emp.deptno = e.deptno)\n"
         + "AND NOT EXISTS (\n"
         + "  select * from emp ee where ee.job = emp.job AND ee.sal=34)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for
@@ -5908,7 +5908,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select job from emp ee where ee.sal=34)"
         + "AND EXISTS (\n"
         + "  select * from emp e where emp.deptno = e.deptno)\n";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for
@@ -5921,7 +5921,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select deptno from dept where emp.job = dept.name)\n"
         + "AND empno IN (\n"
         + "  select empno from emp e where emp.ename = e.ename)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   /** Test case for
@@ -5935,7 +5935,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  (select min(0) from emp\n"
         + "    where deptno = d.deptno and ename = 'SMITH') as i1\n"
         + "from dept as d";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testWhereInJoinCorrelated() {
@@ -5954,7 +5954,7 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testWhereInCorrelated() {
     final String sql = "select sal from emp where empno IN (\n"
         + "  select deptno from dept where emp.job = dept.name)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testWhereExpressionInCorrelated() {
@@ -5962,7 +5962,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select ename, deptno, sal + 1 as salPlus from emp) as e\n"
         + "where deptno in (\n"
         + "  select deptno from emp where sal + 1 = e.salPlus)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testWhereExpressionInCorrelated2() {
@@ -5970,7 +5970,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  select name, deptno, deptno - 10 as deptnoMinus from dept) as d\n"
         + "where deptno in (\n"
         + "  select deptno from emp where sal + 1 = d.deptnoMinus)";
-    sql(sql).withSubQueryRules().withLateDecorrelation(true).check();
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
   @Test void testExpandWhereComparisonCorrelated() {
@@ -6016,7 +6016,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  where A.mgr = B.empno\n"
         + "  group by deptno, 'abc')";
     sql(sql)
-        .withLateDecorrelation(true)
+        .withLateDecorrelate(true)
         .withTrim(true)
         .withRule() // empty program
         .check();
@@ -6028,7 +6028,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "SELECT * FROM (SELECT MYAGG(sal, 1) AS c FROM emp) as m,\n"
         + " LATERAL TABLE(ramp(m.c)) AS T(s)";
     sql(sql)
-        .withLateDecorrelation(true)
+        .withLateDecorrelate(true)
         .withTrim(true)
         .withRule() // empty program
         .checkUnchanged();
@@ -6041,7 +6041,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "(SELECT MYAGG(sal, 1) AS c FROM emp group by empno, 'abc') as m,\n"
         + " LATERAL TABLE(ramp(m.c)) AS T(s)";
     sql(sql)
-        .withLateDecorrelation(true)
+        .withLateDecorrelate(true)
         .withTrim(true)
         .withRule() // empty program
         .checkUnchanged();
@@ -6091,7 +6091,7 @@ class RelOptRulesTest extends RelOptTestBase {
     return sql(sql)
         .withCatalogReaderFactory(MockCatalogReaderExtended::create)
         .withConformance(SqlConformanceEnum.LENIENT)
-        .with(program);
+        .withProgram(program);
   }
 
   /** Tests that a call to {@code ST_DWithin}
@@ -6327,7 +6327,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .build();
 
     sql("select * from emp e1 left outer join dept d on e1.deptno = d.deptno where d.deptno > 3")
-        .withPre(preProgram).with(program).check();
+        .withPre(preProgram).withProgram(program).check();
   }
 
   /** Test case for
@@ -6757,9 +6757,9 @@ class RelOptRulesTest extends RelOptTestBase {
     HepPlanner hepPlanner = new HepPlanner(program);
 
     if (allowAlwaysTrue) {
-      relFn(relFn).with(hepPlanner).check();
+      relFn(relFn).withPlanner(hepPlanner).check();
     } else {
-      relFn(relFn).with(hepPlanner).checkUnchanged();
+      relFn(relFn).withPlanner(hepPlanner).checkUnchanged();
     }
   }
 
@@ -6802,9 +6802,9 @@ class RelOptRulesTest extends RelOptTestBase {
     HepPlanner hepPlanner = new HepPlanner(program);
 
     if (allowAlwaysTrue) {
-      relFn(relFn).with(hepPlanner).check();
+      relFn(relFn).withPlanner(hepPlanner).check();
     } else {
-      relFn(relFn).with(hepPlanner).checkUnchanged();
+      relFn(relFn).withPlanner(hepPlanner).checkUnchanged();
     }
   }
 
@@ -6847,9 +6847,9 @@ class RelOptRulesTest extends RelOptTestBase {
     HepPlanner hepPlanner = new HepPlanner(program);
 
     if (allowAlwaysTrue) {
-      relFn(relFn).with(hepPlanner).check();
+      relFn(relFn).withPlanner(hepPlanner).check();
     } else {
-      relFn(relFn).with(hepPlanner).checkUnchanged();
+      relFn(relFn).withPlanner(hepPlanner).checkUnchanged();
     }
   }
 

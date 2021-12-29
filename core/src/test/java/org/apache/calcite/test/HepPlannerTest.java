@@ -118,7 +118,7 @@ class HepPlannerTest {
 
     final String sql = "(select name from dept union select ename from emp)\n"
         + "intersect (select fname from customer.contact)";
-    sql(sql).with(planner).check();
+    sql(sql).withPlanner(planner).check();
   }
 
   @Test void testRuleDescription() {
@@ -134,7 +134,7 @@ class HepPlannerTest {
     planner.addRule(CoreRules.FILTER_TO_CALC);
 
     final String sql = "select name from sales.dept where deptno=12";
-    sql(sql).with(planner).check();
+    sql(sql).withPlanner(planner).check();
   }
 
   /**
@@ -216,7 +216,7 @@ class HepPlannerTest {
     programBuilder.addMatchLimit(1);
     programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);
 
-    sql(UNION_TREE).with(programBuilder.build()).check();
+    sql(UNION_TREE).withProgram(programBuilder.build()).check();
   }
 
   @Test void testMatchLimitOneBottomUp() {
@@ -227,7 +227,7 @@ class HepPlannerTest {
     programBuilder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
     programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);
 
-    sql(UNION_TREE).with(programBuilder.build()).check();
+    sql(UNION_TREE).withProgram(programBuilder.build()).check();
   }
 
   @Test void testMatchUntilFixpoint() {
@@ -237,7 +237,7 @@ class HepPlannerTest {
     programBuilder.addMatchLimit(HepProgram.MATCH_UNTIL_FIXPOINT);
     programBuilder.addRuleInstance(CoreRules.UNION_TO_DISTINCT);
 
-    sql(UNION_TREE).with(programBuilder.build()).check();
+    sql(UNION_TREE).withProgram(programBuilder.build()).check();
   }
 
   @Test void testReplaceCommonSubexpression() {
@@ -294,7 +294,7 @@ class HepPlannerTest {
 
     final String sql = "select upper(ename) from\n"
         + "(select lower(ename) as ename from emp where empno = 100)";
-    sql(sql).with(programBuilder.build()).check();
+    sql(sql).withProgram(programBuilder.build()).check();
   }
 
   @Test void testGroup() {
@@ -309,7 +309,7 @@ class HepPlannerTest {
     programBuilder.addGroupEnd();
 
     final String sql = "select upper(name) from dept where deptno=20";
-    sql(sql).with(programBuilder.build()).check();
+    sql(sql).withProgram(programBuilder.build()).check();
   }
 
   @Test void testGC() {
@@ -339,8 +339,8 @@ class HepPlannerTest {
     sql(query)
         .withDynamicTable()
         .withDecorrelate(true)
-        .with(programBuilder.build())
-        .with(planner)
+        .withProgram(programBuilder.build())
+        .withPlanner(planner)
         .checkUnchanged();
   }
 

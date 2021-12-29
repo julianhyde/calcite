@@ -150,6 +150,9 @@ public class SqlNewTestFactory {
 
   public SqlNewTestFactory withTypeFactoryFactory(
       TypeFactoryFactory typeFactoryFactory) {
+    if (typeFactoryFactory.equals(this.typeFactoryFactory)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -157,6 +160,9 @@ public class SqlNewTestFactory {
   }
 
   public SqlNewTestFactory withPlannerFactory(PlannerFactory plannerFactory) {
+    if (plannerFactory.equals(this.plannerFactory)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -166,6 +172,9 @@ public class SqlNewTestFactory {
   public SqlNewTestFactory withPlannerContext(
       UnaryOperator<Context> transform) {
     final Context plannerContext = transform.apply(this.plannerContext);
+    if (plannerContext.equals(this.plannerContext)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -183,6 +192,9 @@ public class SqlNewTestFactory {
 
   public SqlNewTestFactory withCatalogReader(
       CatalogReaderFactory catalogReaderFactory) {
+    if (catalogReaderFactory.equals(this.catalogReaderFactory)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -190,6 +202,9 @@ public class SqlNewTestFactory {
   }
 
   public SqlNewTestFactory withValidator(ValidatorFactory validatorFactory) {
+    if (validatorFactory.equals(this.validatorFactory)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -200,6 +215,9 @@ public class SqlNewTestFactory {
       UnaryOperator<SqlValidator.Config> transform) {
     final SqlValidator.Config validatorConfig =
         transform.apply(this.validatorConfig);
+    if (validatorConfig.equals(this.validatorConfig)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -210,6 +228,9 @@ public class SqlNewTestFactory {
       UnaryOperator<SqlToRelConverter.Config> transform) {
     final SqlToRelConverter.Config sqlToRelConfig =
         transform.apply(this.sqlToRelConfig);
+    if (sqlToRelConfig.equals(this.sqlToRelConfig)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -231,6 +252,9 @@ public class SqlNewTestFactory {
   public SqlNewTestFactory withParserConfig(
       UnaryOperator<SqlParser.Config> transform) {
     final SqlParser.Config parserConfig = transform.apply(this.parserConfig);
+    if (parserConfig.equals(this.parserConfig)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -241,6 +265,9 @@ public class SqlNewTestFactory {
       UnaryOperator<ConnectionFactory> transform) {
     final ConnectionFactory connectionFactory =
         transform.apply(this.connectionFactory);
+    if (connectionFactory.equals(this.connectionFactory)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
@@ -251,6 +278,9 @@ public class SqlNewTestFactory {
       UnaryOperator<SqlOperatorTable> transform) {
     final SqlOperatorTable operatorTable =
         transform.apply(this.operatorTable);
+    if (operatorTable.equals(this.operatorTable)) {
+      return this;
+    }
     return new SqlNewTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
