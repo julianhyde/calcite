@@ -54,6 +54,8 @@ import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.test.ConnectionFactories;
+import org.apache.calcite.test.ConnectionFactory;
 import org.apache.calcite.test.SqlLimitsTest;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Holder;
@@ -5777,9 +5779,7 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     return new SubFunChecker(
         f.withConnectionFactory(cf ->
-            cf.with(
-                    new CalciteAssert.AddSchemaSpecPostProcessor(
-                        CalciteAssert.SchemaSpec.HR))
+            cf.with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR))
                 .with(CalciteConnectionProperty.CONFORMANCE, conformance)),
         library,
         SqlStdOperatorTable.SUBSTRING);
@@ -8797,7 +8797,7 @@ public abstract class SqlOperatorBaseTest {
         TypeChecker typeChecker,
         ParameterChecker parameterChecker, ResultChecker resultChecker) {
       super.check(factory, query, typeChecker, parameterChecker, resultChecker);
-      final CalciteAssert.ConnectionFactory connectionFactory =
+      final ConnectionFactory connectionFactory =
           factory.connectionFactory;
       try (Connection connection = connectionFactory.createConnection();
            Statement statement = connection.createStatement()) {

@@ -5959,19 +5959,16 @@ public class JdbcTest {
   @Test void testAutomaticTemporaryTable() throws Exception {
     final List<Object> objects = new ArrayList<>();
     CalciteAssert.that()
-        .with(
-            new CalciteAssert.ConnectionFactory() {
-              public CalciteConnection createConnection() throws SQLException {
-                CalciteConnection connection = (CalciteConnection)
-                    new AutoTempDriver(objects)
-                        .connect("jdbc:calcite:", new Properties());
-                final SchemaPlus rootSchema = connection.getRootSchema();
-                rootSchema.add("hr",
-                    new ReflectiveSchema(new HrSchema()));
-                connection.setSchema("hr");
-                return connection;
-              }
-            })
+        .with(() -> {
+          CalciteConnection connection = (CalciteConnection)
+              new AutoTempDriver(objects)
+                  .connect("jdbc:calcite:", new Properties());
+          final SchemaPlus rootSchema = connection.getRootSchema();
+          rootSchema.add("hr",
+              new ReflectiveSchema(new HrSchema()));
+          connection.setSchema("hr");
+          return connection;
+        })
         .doWithConnection(connection -> {
           try {
             final String sql = "select * from \"hr\".\"emps\" "

@@ -31,6 +31,8 @@ import org.apache.calcite.sql.test.SqlTester.TypeChecker;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.test.ConnectionFactories;
+import org.apache.calcite.test.ConnectionFactory;
 import org.apache.calcite.util.Bug;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -182,7 +184,7 @@ public interface SqlFixture extends AutoCloseable {
 
   /** Returns a tester that gets connections from a given factory. */
   default SqlFixture withConnectionFactory(
-      UnaryOperator<CalciteAssert.ConnectionFactory> transform) {
+      UnaryOperator<ConnectionFactory> transform) {
     return withFactory(f -> f.withConnectionFactory(transform));
   }
 
@@ -536,8 +538,7 @@ public interface SqlFixture extends AutoCloseable {
         SqlLibraryOperatorTableFactory.INSTANCE
             .getOperatorTable(SqlLibrary.STANDARD, library))
         .withConnectionFactory(cf ->
-            cf.with(new CalciteAssert
-                    .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
+            cf.with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR))
                 .with(CalciteConnectionProperty.FUN, library.fun));
   }
 
@@ -546,8 +547,7 @@ public interface SqlFixture extends AutoCloseable {
         SqlLibraryOperatorTableFactory.INSTANCE
             .getOperatorTable(SqlLibrary.STANDARD, library))
         .withConnectionFactory(cf ->
-            cf.with(new CalciteAssert
-                    .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
+            cf.with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR))
                 .with("fun", library.name()));
   }
 
@@ -557,8 +557,7 @@ public interface SqlFixture extends AutoCloseable {
             SqlLibraryOperatorTableFactory.INSTANCE
                 .getOperatorTable(SqlLibrary.STANDARD, SqlLibrary.ORACLE))
         .withConnectionFactory(cf ->
-            cf.with(new CalciteAssert
-                    .AddSchemaSpecPostProcessor(CalciteAssert.SchemaSpec.HR))
+            cf.with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR))
                 .with("fun", "oracle"));
   }
 

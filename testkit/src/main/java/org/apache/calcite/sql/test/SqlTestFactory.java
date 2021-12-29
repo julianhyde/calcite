@@ -33,6 +33,7 @@ import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.SqlValidatorWithHints;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.test.ConnectionFactories;
 import org.apache.calcite.test.MockSqlOperatorTable;
 import org.apache.calcite.test.catalog.MockCatalogReader;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
@@ -65,10 +66,8 @@ public class SqlTestFactory {
           .put("conformance", SqlConformanceEnum.DEFAULT)
           .put("operatorTable", SqlStdOperatorTable.instance())
           .put("connectionFactory",
-              CalciteAssert.EMPTY_CONNECTION_FACTORY
-                  .with(
-                      new CalciteAssert.AddSchemaSpecPostProcessor(
-                          CalciteAssert.SchemaSpec.HR)))
+              ConnectionFactories.empty()
+                  .with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR)))
           .build();
 
   public static final SqlTestFactory INSTANCE =

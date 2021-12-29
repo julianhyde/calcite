@@ -30,6 +30,8 @@ import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.SqlValidatorWithHints;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.test.ConnectionFactories;
+import org.apache.calcite.test.ConnectionFactory;
 import org.apache.calcite.test.MockSqlOperatorTable;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.SourceStringReader;
@@ -47,10 +49,8 @@ public class SqlNewTestFactory {
   public static final SqlNewTestFactory INSTANCE =
       new SqlNewTestFactory(MockCatalogReaderSimple::create,
           SqlValidatorUtil::newValidator,
-          CalciteAssert.EMPTY_CONNECTION_FACTORY
-              .with(
-                  new CalciteAssert.AddSchemaSpecPostProcessor(
-                      CalciteAssert.SchemaSpec.HR)),
+          ConnectionFactories.empty()
+              .with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR)),
           SqlParser.Config.DEFAULT,
           SqlValidator.Config.DEFAULT,
           SqlStdOperatorTable.instance())
@@ -60,7 +60,7 @@ public class SqlNewTestFactory {
         return opTab;
       });
 
-  public final CalciteAssert.ConnectionFactory connectionFactory;
+  public final ConnectionFactory connectionFactory;
   private final CatalogReaderFactory catalogReaderFactory;
   private final ValidatorFactory validatorFactory;
 
@@ -72,7 +72,7 @@ public class SqlNewTestFactory {
 
   protected SqlNewTestFactory(CatalogReaderFactory catalogReaderFactory,
       ValidatorFactory validatorFactory,
-      CalciteAssert.ConnectionFactory connectionFactory,
+      ConnectionFactory connectionFactory,
       SqlParser.Config parserConfig,
       SqlValidator.Config validatorConfig, SqlOperatorTable operatorTable) {
     this.catalogReaderFactory = catalogReaderFactory;
@@ -151,8 +151,8 @@ public class SqlNewTestFactory {
   }
 
   public SqlNewTestFactory withConnectionFactory(
-      UnaryOperator<CalciteAssert.ConnectionFactory> transform) {
-    final CalciteAssert.ConnectionFactory connectionFactory =
+      UnaryOperator<ConnectionFactory> transform) {
+    final ConnectionFactory connectionFactory =
         transform.apply(this.connectionFactory);
     return new SqlNewTestFactory(catalogReaderFactory,
         validatorFactory, connectionFactory,
