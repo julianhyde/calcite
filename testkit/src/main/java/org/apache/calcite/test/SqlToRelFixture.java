@@ -21,7 +21,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlValidatorImpl;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
 import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
@@ -55,8 +55,8 @@ public class SqlToRelFixture {
                       SqlOperatorTables.chain(opTab,
                           SqlOperatorTables.spatialInstance());
                 }
-                return new SqlValidatorImpl(opTab, catalogReader,
-                    typeFactory, config.withIdentifierExpansion(true)) { };
+                return SqlValidatorUtil.newValidator(opTab, catalogReader,
+                    typeFactory, config.withIdentifierExpansion(true));
               })
                   .withSqlToRelConfig(c ->
                       c.withTrimUnusedFields(true)
