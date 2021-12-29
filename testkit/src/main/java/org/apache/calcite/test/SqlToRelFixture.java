@@ -18,10 +18,10 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
 import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
@@ -29,8 +29,6 @@ import org.apache.calcite.util.TestUtil;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -45,33 +43,20 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlToRelFixture {
   public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl(false,
-          UnaryOperator.identity(),
-          UnaryOperator.identity(),
-          UnaryOperator.identity())
-          .withConfig(c ->
-              c.withTrimUnusedFields(true)
-                  .withExpand(true)
-                  .addRelBuilderConfigTransform(b ->
-                      b.withAggregateUnique(true)
-                          .withPruneInputOfAggregate(false)));
+      new SqlToRelTestBase.TesterImpl(false);
 
   public static final SqlToRelFixture DEFAULT =
       new SqlToRelFixture("?", true, TESTER, SqlNewTestFactory.INSTANCE, false,
           false, null)
           .withFactory(f ->
-              f.withValidator((operatorTable, catalogReader, typeFactory, config) -> {
-                final SqlConformance conformance = config.conformance();
-                final List<SqlOperatorTable> list = new ArrayList<>();
-                list.add(operatorTable);
-                if (conformance.allowGeometry()) {
-                  list.add(SqlOperatorTables.spatialInstance());
+              f.withValidator((opTab, catalogReader, typeFactory, config) -> {
+                if (config.conformance().allowGeometry()) {
+                  opTab =
+                      SqlOperatorTables.chain(opTab,
+                          SqlOperatorTables.spatialInstance());
                 }
-                return new SqlToRelTestBase.FarragoTestValidator(
-                    SqlOperatorTables.chain(list),
-                    catalogReader,
-                    typeFactory,
-                    config.withIdentifierExpansion(true));
+                return new SqlValidatorImpl(opTab, catalogReader,
+                    typeFactory, config.withIdentifierExpansion(true)) { };
               })
                   .withSqlToRelConfig(c ->
                       c.withTrimUnusedFields(true)

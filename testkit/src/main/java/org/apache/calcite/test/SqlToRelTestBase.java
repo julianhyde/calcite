@@ -17,8 +17,6 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptSchema;
@@ -26,7 +24,6 @@ import org.apache.calcite.plan.RelOptSchemaWithSampling;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
@@ -44,38 +41,28 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
-import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
-import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.test.catalog.MockCatalogReader;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TestUtil;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.test.Matchers.relIsValid;
 
@@ -98,10 +85,6 @@ public abstract class SqlToRelTestBase {
   //~ Static fields/initializers ---------------------------------------------
 
   protected static final String NL = System.getProperty("line.separator");
-
-  protected static final Supplier<RelDataTypeFactory> DEFAULT_TYPE_FACTORY_SUPPLIER =
-      Suppliers.memoize(() ->
-          new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT))::get;
 
   //~ Instance fields --------------------------------------------------------
 
@@ -153,11 +136,6 @@ public abstract class SqlToRelTestBase {
     SqlNode parseQuery(SqlNewTestFactory factory, String sql) throws Exception;
 
     /**
-     * Returns the {@link SqlOperatorTable} to use.
-     */
-    SqlOperatorTable getOperatorTable();
-
-    /**
      * Checks that a SQL statement converts to a given plan, optionally
      * trimming columns that are not needed.
      *
@@ -179,26 +157,12 @@ public abstract class SqlToRelTestBase {
      * rules have fired. */
     Tester withLateDecorrelation(boolean enable);
 
-    /** Returns a tester that applies a transform to its
-     * {@code SqlToRelConverter.Config} before it uses it. */
-    Tester withConfig(UnaryOperator<SqlToRelConverter.Config> transform);
-
-    Tester withCatalogReaderFactory(
-        SqlNewTestFactory.CatalogReaderFactory factory);
-
     boolean isLateDecorrelate();
-
-    /** Returns a tester that uses a given context. */
-    Tester withContext(UnaryOperator<Context> transform);
 
     /** Trims a RelNode. */
     RelNode trimRelNode(SqlNewTestFactory factory, RelNode relNode);
 
     SqlNode parseExpression(SqlNewTestFactory factory, String expr) throws Exception;
-
-    /** Returns a tester that applies the given transform to a validator before
-     * using it. */
-    Tester withValidatorTransform(UnaryOperator<SqlValidator> transform);
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -461,31 +425,11 @@ public abstract class SqlToRelTestBase {
    * {@link MockRelOptSchema} and {@link MockRelOptPlanner}.
    */
   public static class TesterImpl implements Tester {
-    private SqlOperatorTable opTab;
     private final boolean enableLateDecorrelate;
-    private final UnaryOperator<SqlToRelConverter.Config> configTransform;
-    private final UnaryOperator<Context> contextTransform; // TODO: replace with Context
-    private final UnaryOperator<SqlValidator> validatorTransform;
 
-    /** Creates a TesterImpl with default options. */
-    protected TesterImpl() {
-      this(false,
-          UnaryOperator.identity(),
-          c -> Contexts.empty(), v -> v);
-    }
-
-    /**
-     * Creates a TesterImpl.
-     *
-     */
-    protected TesterImpl(boolean enableLateDecorrelate,
-        UnaryOperator<SqlToRelConverter.Config> configTransform,
-        UnaryOperator<Context> contextTransform,
-        UnaryOperator<SqlValidator> validatorTransform) {
+    /** Creates a TesterImpl. */
+    protected TesterImpl(boolean enableLateDecorrelate) {
       this.enableLateDecorrelate = enableLateDecorrelate;
-      this.configTransform = requireNonNull(configTransform, "configTransform");
-      this.contextTransform = requireNonNull(contextTransform, "contextTransform");
-      this.validatorTransform = requireNonNull(validatorTransform, "validatorTransform");
     }
 
     @Override public Pair<SqlValidator, RelRoot> convertSqlToRel2(
@@ -536,32 +480,6 @@ public abstract class SqlToRelTestBase {
         String expr) throws Exception {
       SqlParser parser = factory.createParser(expr);
       return parser.parseExpression();
-    }
-
-    @Override public final SqlOperatorTable getOperatorTable() {
-      if (opTab == null) {
-        opTab = createOperatorTable();
-      }
-      return opTab;
-    }
-
-    /**
-     * Creates an operator table.
-     *
-     * @return New operator table
-     */
-    protected SqlOperatorTable createOperatorTable() {
-      return getContext().maybeUnwrap(SqlOperatorTable.class)
-          .orElseGet(() -> {
-            final MockSqlOperatorTable opTab =
-                new MockSqlOperatorTable(SqlStdOperatorTable.instance());
-            MockSqlOperatorTable.addRamp(opTab);
-            return opTab;
-          });
-    }
-
-    private Context getContext() {
-      return contextTransform.apply(Contexts.empty());
     }
 
     @Override public void assertConvertsTo(SqlNewTestFactory factory,
@@ -651,98 +569,14 @@ public abstract class SqlToRelTestBase {
     }
 
     @Override public TesterImpl withLateDecorrelation(boolean enableLateDecorrelate) {
-      return this.enableLateDecorrelate == enableLateDecorrelate
-          ? this
-          : new TesterImpl(
-              enableLateDecorrelate,
-              configTransform,
-              contextTransform, validatorTransform);
-    }
-
-    @Override public Tester withConfig(
-        UnaryOperator<SqlToRelConverter.Config> transform) {
-      final UnaryOperator<SqlToRelConverter.Config> configTransform =
-          this.configTransform.andThen(transform)::apply;
-      return new TesterImpl(
-          enableLateDecorrelate,
-          configTransform,
-          contextTransform, validatorTransform);
-    }
-
-    @Override public Tester withCatalogReaderFactory(
-        SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory) {
-      return new TesterImpl(
-          enableLateDecorrelate,
-          configTransform,
-          contextTransform, validatorTransform);
-    }
-
-    @Override public TesterImpl withContext(
-        UnaryOperator<Context> contextTransform) {
-      return new TesterImpl(
-          enableLateDecorrelate,
-          configTransform,
-          contextTransform, validatorTransform);
+      if (this.enableLateDecorrelate == enableLateDecorrelate) {
+        return this;
+      }
+      return new TesterImpl(enableLateDecorrelate);
     }
 
     @Override public boolean isLateDecorrelate() {
       return enableLateDecorrelate;
-    }
-
-    @Override public Tester withValidatorTransform(
-        UnaryOperator<SqlValidator> transform) {
-      return new TesterImpl(
-          enableLateDecorrelate,
-          configTransform,
-          contextTransform, validatorTransform);
-    }
-  }
-
-  /** Validator for testing. */
-  // TODO remove
-  static class FarragoTestValidator extends SqlValidatorImpl {
-    FarragoTestValidator(
-        SqlOperatorTable opTab,
-        SqlValidatorCatalogReader catalogReader,
-        RelDataTypeFactory typeFactory,
-        Config config) {
-      super(opTab, catalogReader, typeFactory, config);
-    }
-  }
-
-  /**
-   * {@link RelOptTable.ViewExpander} implementation for testing usage.
-   */
-  // TODO: move to SqlNewTestFactory? was previously private
-  public static class MockViewExpander implements RelOptTable.ViewExpander {
-    private final SqlValidator validator;
-    private final Prepare.CatalogReader catalogReader;
-    private final RelOptCluster cluster;
-    private final SqlToRelConverter.Config config;
-
-    public MockViewExpander(
-        SqlValidator validator,
-        Prepare.CatalogReader catalogReader,
-        RelOptCluster cluster,
-        SqlToRelConverter.Config config) {
-      this.validator = validator;
-      this.catalogReader = catalogReader;
-      this.cluster = cluster;
-      this.config = config;
-    }
-
-    @Override public RelRoot expandView(RelDataType rowType, String queryString,
-        List<String> schemaPath, List<String> viewPath) {
-      try {
-        SqlNode parsedNode = SqlParser.create(queryString).parseStmt();
-        SqlNode validatedNode = validator.validate(parsedNode);
-        SqlToRelConverter converter = new SqlToRelConverter(
-            this, validator, catalogReader, cluster,
-            StandardConvertletTable.INSTANCE, config);
-        return converter.convertQuery(validatedNode, false, true);
-      } catch (SqlParseException e) {
-        throw new RuntimeException("Error happened while expanding view.", e);
-      }
     }
   }
 

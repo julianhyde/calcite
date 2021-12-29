@@ -96,7 +96,7 @@ interface RelSupplier {
       String sql2 = fixture.diffRepos().expand("sql", sql);
       return fixture.tester
           .convertSqlToRel(fixture.factory, sql2, fixture.decorrelate,
-              fixture.trim)
+              fixture.factory.sqlToRelConfig.isTrimUnusedFields())
           .rel;
     }
 

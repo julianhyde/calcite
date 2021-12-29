@@ -23,13 +23,17 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.advise.SqlAdvisor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -43,12 +47,14 @@ import org.apache.calcite.test.ConnectionFactories;
 import org.apache.calcite.test.ConnectionFactory;
 import org.apache.calcite.test.MockRelOptPlanner;
 import org.apache.calcite.test.MockSqlOperatorTable;
-import org.apache.calcite.test.SqlToRelTestBase;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.SourceStringReader;
 
 import com.google.common.base.Suppliers;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -269,7 +275,7 @@ public class SqlNewTestFactory {
     final RelOptCluster cluster =
         clusterTransform.apply(RelOptCluster.create(planner, rexBuilder));
     RelOptTable.ViewExpander viewExpander =
-        new SqlToRelTestBase.MockViewExpander(validator, catalogReader, cluster,
+        new MockViewExpander(validator, catalogReader, cluster,
             sqlToRelConfig);
     return new SqlToRelConverter(viewExpander, validator, catalogReader, cluster,
         StandardConvertletTable.INSTANCE, sqlToRelConfig);
@@ -299,5 +305,36 @@ public class SqlNewTestFactory {
   public interface CatalogReaderFactory {
     SqlValidatorCatalogReader create(RelDataTypeFactory typeFactory,
         boolean caseSensitive);
+  }
+
+  /** Implementation for {@link RelOptTable.ViewExpander} for testing. */
+  private static class MockViewExpander implements RelOptTable.ViewExpander {
+    private final SqlValidator validator;
+    private final Prepare.CatalogReader catalogReader;
+    private final RelOptCluster cluster;
+    private final SqlToRelConverter.Config config;
+
+    MockViewExpander(SqlValidator validator,
+        Prepare.CatalogReader catalogReader, RelOptCluster cluster,
+        SqlToRelConverter.Config config) {
+      this.validator = validator;
+      this.catalogReader = catalogReader;
+      this.cluster = cluster;
+      this.config = config;
+    }
+
+    @Override public RelRoot expandView(RelDataType rowType, String queryString,
+        List<String> schemaPath, @Nullable List<String> viewPath) {
+      try {
+        SqlNode parsedNode = SqlParser.create(queryString).parseStmt();
+        SqlNode validatedNode = validator.validate(parsedNode);
+        SqlToRelConverter converter =
+            new SqlToRelConverter(this, validator, catalogReader, cluster,
+                StandardConvertletTable.INSTANCE, config);
+        return converter.convertQuery(validatedNode, false, true);
+      } catch (SqlParseException e) {
+        throw new RuntimeException("Error happened while expanding view.", e);
+      }
+    }
   }
 }

@@ -1119,12 +1119,12 @@ class RelOptRulesTest extends RelOptTestBase {
 
     sql(sql)
         .withDecorrelate(true)
-        .withFactory(f ->
-            f.withSqlToRelConfig(c -> c.withTrimUnusedFields(true)))
         .withPre(program)
         .withRule() // empty program
         .withAfter((fixture, r) ->
-            fixture.tester.trimRelNode(fixture.factory, r))
+            fixture.tester.trimRelNode(
+                fixture.factory.withSqlToRelConfig(c ->
+                    c.withTrimUnusedFields(true)), r))
         .check();
   }
 
