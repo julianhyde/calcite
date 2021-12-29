@@ -22,11 +22,9 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
 import org.apache.calcite.test.catalog.MockCatalogReaderExtended;
-import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
 import org.apache.calcite.util.TestUtil;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -47,10 +45,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlToRelFixture {
   public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl(false, true,
-          MockCatalogReaderSimple::create,
-          null, UnaryOperator.identity(),
-          SqlConformanceEnum.DEFAULT, UnaryOperator.identity(),
+      new SqlToRelTestBase.TesterImpl(false,
+          UnaryOperator.identity(),
+          UnaryOperator.identity(),
           UnaryOperator.identity())
           .withConfig(c ->
               c.withTrimUnusedFields(true)

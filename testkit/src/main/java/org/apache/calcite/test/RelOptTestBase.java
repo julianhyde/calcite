@@ -272,14 +272,13 @@ abstract class RelOptTestBase {
     }
 
     public Sql withConformance(final SqlConformance conformance) {
-      return withTester(tester -> tester.withConformance(conformance)) // TODO remove line
-          .withFactory(f ->
-              f.withValidatorConfig(c -> c.withConformance(conformance))
-                  .withOperatorTable(t ->
-                      conformance.allowGeometry()
-                          ? SqlOperatorTables.chain(t,
-                          SqlOperatorTables.spatialInstance())
-                          : t));
+      return withFactory(f ->
+          f.withValidatorConfig(c -> c.withConformance(conformance))
+              .withOperatorTable(t ->
+                  conformance.allowGeometry()
+                      ? SqlOperatorTables.chain(t,
+                      SqlOperatorTables.spatialInstance())
+                      : t));
     }
 
     public Sql withContext(final UnaryOperator<Context> transform) {
@@ -293,7 +292,7 @@ abstract class RelOptTestBase {
 
     /**
      * Checks the plan for a SQL statement before/after executing a given rule,
-     * with a optional pre-program specified by {@link #withPre(HepProgram)}
+     * with an optional pre-program specified by {@link #withPre(HepProgram)}
      * to prepare the tree.
      */
     public void check() {
