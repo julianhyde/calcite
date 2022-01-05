@@ -28,26 +28,30 @@ import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.hamcrest.Matcher;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.calcite.sql.test.SqlTester.ParameterChecker;
 import static org.apache.calcite.sql.test.SqlTester.ResultChecker;
 import static org.apache.calcite.sql.test.SqlTester.TypeChecker;
+import static org.apache.calcite.test.ConnectionFactories.isSingle;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Utility methods.
@@ -314,28 +318,27 @@ public abstract class SqlTests {
   }
 
   /**
-   * Compares the first column of a result set against a numeric result,
+   * Compares the first column of a result set against a
+   * {@link org.hamcrest.Matcher}
    * within a given tolerance. The result set must return exactly one row.
    *
    * @param resultSet Result set
-   * @param expected  Expected result
-   * @param delta     Tolerance
+   * @param matcher   Matcher
+   *
+   * @param <T> Value type
    */
-  public static void compareResultSetWithDelta(
+  public static <T> void compareResultSetWithMatcher(
       ResultSet resultSet,
-      double expected,
-      double delta) throws Exception {
+      JdbcType<T> jdbcType,
+      Matcher<T> matcher) throws Exception {
     if (!resultSet.next()) {
       fail("Query returned 0 rows, expected 1");
     }
-    double actual = resultSet.getDouble(1);
+    T actual = jdbcType.get(1, resultSet);
     if (resultSet.next()) {
       fail("Query returned 2 or more rows, expected 1");
     }
-    if ((actual < (expected - delta)) || (actual > (expected + delta))) {
-      fail("Query returned " + actual + ", expected " + expected
-          + ((delta == 0) ? "" : ("+/-" + delta)));
-    }
+    assertThat(actual, matcher);
   }
 
   /**
@@ -415,7 +418,8 @@ public abstract class SqlTests {
     } else {
       final String message = ex.getMessage();
       if (message != null) {
-        Matcher matcher = LINE_COL_TWICE_PATTERN.matcher(message);
+        java.util.regex.Matcher matcher =
+            LINE_COL_TWICE_PATTERN.matcher(message);
         if (matcher.matches()) {
           actualLine = Integer.parseInt(matcher.group(1));
           actualColumn = Integer.parseInt(matcher.group(2));
@@ -576,24 +580,26 @@ public abstract class SqlTests {
     }
   }
 
-  public static ResultChecker createChecker(@Nullable Object result, double delta) {
+  public static <T> ResultChecker createChecker(Matcher<T> matcher,
+      JdbcType<T> jdbcType) {
+    return new MatcherResultChecker(matcher, jdbcType);
+  }
+
+  public static ResultChecker createChecker(Object result) {
+    requireNonNull(result, "to check for a null result, use isNullValue()");
     if (result instanceof Pattern) {
       return new PatternResultChecker((Pattern) result);
-    } else if (delta != 0) {
-      assertTrue(result instanceof Number);
-      return new ApproximateResultChecker((Number) result, delta);
-    } else {
-      Set<String> refSet = new HashSet<>();
-      if (result == null) {
-        refSet.add(null);
-      } else if (result instanceof Collection) {
-        //noinspection unchecked
-        final Collection<String> collection = (Collection<String>) result;
-        refSet.addAll(collection);
-      } else {
-        refSet.add(result.toString());
-      }
+    } else if (result instanceof ResultChecker) {
+      return (ResultChecker) result;
+    } else if (result instanceof Matcher) {
+      return createChecker((Matcher) result, JdbcTypes.DOUBLE);
+    } else if (result instanceof Collection) {
+      //noinspection unchecked
+      final Collection<String> collection = (Collection<String>) result;
+      Set<String> refSet = new HashSet<>(collection);
       return new RefSetResultChecker(refSet);
+    } else {
+      return isSingle(result.toString());
     }
   }
 
@@ -613,23 +619,21 @@ public abstract class SqlTests {
   }
 
   /**
-   * Result checker that checks a result against an expected value. A delta
-   * value is used for approximate values (double and float).
+   * Result checker that checks a result using a {@link org.hamcrest.Matcher}.
+   *
+   * @param <T> Result type
    */
-  public static class ApproximateResultChecker implements ResultChecker {
-    private final Number expected;
-    private final double delta;
+  public static class MatcherResultChecker<T> implements ResultChecker {
+    private final Matcher<T> matcher;
+    private final JdbcType<T> jdbcType;
 
-    public ApproximateResultChecker(Number expected, double delta) {
-      this.expected = expected;
-      this.delta = delta;
+    public MatcherResultChecker(Matcher<T> matcher, JdbcType<T> jdbcType) {
+      this.matcher = matcher;
+      this.jdbcType = jdbcType;
     }
 
     @Override public void checkResult(ResultSet resultSet) throws Exception {
-      compareResultSetWithDelta(
-          resultSet,
-          expected.doubleValue(),
-          delta);
+      compareResultSetWithMatcher(resultSet, jdbcType, matcher);
     }
   }
 
@@ -639,12 +643,77 @@ public abstract class SqlTests {
   public static class RefSetResultChecker implements ResultChecker {
     private final Set<String> expected;
 
-    private RefSetResultChecker(Set<String> expected) {
+    public RefSetResultChecker(Set<String> expected) {
       this.expected = expected;
     }
 
     @Override public void checkResult(ResultSet resultSet) throws Exception {
       compareResultSet(resultSet, expected);
     }
+  }
+
+  /** Maps Java types to their corresponding getters and setters in JDBC.
+   *
+   * @param <T> Result type */
+  public interface JdbcType<T> {
+    T get(int column, ResultSet resultSet) throws SQLException;
+  }
+
+  /** Implementation of JdbcType.
+   *
+   * @see JdbcTypes */
+  @SuppressWarnings("rawtypes")
+  private enum JdbcTypeImpl implements JdbcType {
+    BIG_DECIMAL(BigDecimal.class) {
+      @Override public BigDecimal get(int column,
+          ResultSet resultSet) throws SQLException {
+        return resultSet.getBigDecimal(column);
+      }
+    },
+
+    BOOLEAN(Boolean.class) {
+      @Override public Boolean get(int column,
+          ResultSet resultSet) throws SQLException {
+        return resultSet.getBoolean(column);
+      }
+    },
+
+    DOUBLE(Double.class) {
+      @Override public Double get(int column,
+          ResultSet resultSet) throws SQLException {
+        return resultSet.getDouble(column);
+      }
+    },
+
+    INTEGER(Integer.class) {
+      @Override public Integer get(int column,
+          ResultSet resultSet) throws SQLException {
+        return resultSet.getInt(column);
+      }
+    },
+
+    STRING(String.class) {
+      @Override public String get(int column,
+          ResultSet resultSet) throws SQLException {
+        return resultSet.getString(column);
+      }
+    };
+
+    JdbcTypeImpl(Class<?> unusedClass) {
+    }
+  }
+
+  /** Utilities for {@link JdbcType}.
+   *
+   * <p>At times like this, we wish Java had Generalized Algebraic Data Types
+   * (GADTs). */
+  @SuppressWarnings("unchecked")
+  public abstract static class JdbcTypes {
+    public static final JdbcType<Boolean> BOOLEAN = JdbcTypeImpl.BOOLEAN;
+    public static final JdbcType<BigDecimal> BIG_DECIMAL =
+        JdbcTypeImpl.BIG_DECIMAL;
+    public static final JdbcType<Double> DOUBLE = JdbcTypeImpl.DOUBLE;
+    public static final JdbcType<Integer> INTEGER = JdbcTypeImpl.INTEGER;
+    public static final JdbcType<String> STRING = JdbcTypeImpl.STRING;
   }
 }

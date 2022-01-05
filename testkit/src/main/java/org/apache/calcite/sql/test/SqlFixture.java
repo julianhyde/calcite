@@ -33,6 +33,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.ConnectionFactories;
 import org.apache.calcite.test.ConnectionFactory;
+import org.apache.calcite.test.Matchers;
 import org.apache.calcite.util.Bug;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -40,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.rel.type.RelDataTypeImpl.NON_NULLABLE_SUFFIX;
+import static org.apache.calcite.test.ConnectionFactories.isSingle;
 
 /**
  * SqlTester defines a callback for testing SQL queries and expressions.
@@ -201,6 +203,10 @@ public interface SqlFixture extends AutoCloseable {
   /** Sets {@link #brokenTestsEnabled()}. */
   SqlFixture withBrokenTestsEnabled(boolean enableBrokenTests);
 
+  void checkScalar(String expression,
+      TypeChecker typeChecker,
+      ResultChecker resultChecker);
+
   /**
    * Tests that a scalar SQL expression returns the expected result and the
    * expected type. For example,
@@ -213,25 +219,29 @@ public interface SqlFixture extends AutoCloseable {
    * @param result     Expected result
    * @param resultType Expected result type
    */
-  void checkScalar(
+  default void checkScalar(
       String expression,
       Object result,
-      String resultType);
+      String resultType) {
+    checkType(expression, resultType);
+    checkScalar(expression, SqlTests.ANY_TYPE_CHECKER,
+        SqlTests.createChecker(result));
+  }
 
   /**
    * Tests that a scalar SQL expression returns the expected exact numeric
    * result as an integer. For example,
    *
    * <blockquote>
-   * <pre>checkScalarExact("1 + 2", "3");</pre>
+   * <pre>checkScalarExact("1 + 2", 3);</pre>
    * </blockquote>
    *
    * @param expression Scalar expression
    * @param result     Expected result
    */
-  void checkScalarExact(
-      String expression,
-      String result);
+  default void checkScalarExact(String expression, int result) {
+    checkScalar(expression, SqlTests.INTEGER_TYPE_CHECKER, isSingle(result));
+  }
 
   /**
    * Tests that a scalar SQL expression returns the expected exact numeric
@@ -247,13 +257,20 @@ public interface SqlFixture extends AutoCloseable {
    *                     <code>DECIMAL(2, 1) NOT NULL</code>.
    * @param result       Expected result
    */
+  default void checkScalarExact(
+      String expression,
+      String expectedType,
+      String result) {
+    checkScalarExact(expression, expectedType, isSingle(result));
+  }
+
   void checkScalarExact(
       String expression,
       String expectedType,
-      String result);
+      ResultChecker resultChecker);
 
   /**
-   * Tests that a scalar SQL expression returns expected appoximate numeric
+   * Tests that a scalar SQL expression returns expected approximate numeric
    * result. For example,
    *
    * <blockquote>
@@ -264,16 +281,14 @@ public interface SqlFixture extends AutoCloseable {
    * @param expectedType   Type we expect the result to have, including
    *                       nullability, precision and scale, for example
    *                       <code>DECIMAL(2, 1) NOT NULL</code>.
-   * @param expectedResult Expected result
-   * @param delta          Allowed margin of error between expected and actual
-   *                       result
+   * @param result         Expected result, or a matcher
+   *
+   * @see Matchers#within(Number, double)
    */
-  // TODO: replace last two arguments with matcher
   void checkScalarApprox(
       String expression,
       String expectedType,
-      double expectedResult,
-      double delta);
+      Object result);
 
   /**
    * Tests that a scalar SQL expression returns the expected boolean result.
@@ -381,16 +396,17 @@ public interface SqlFixture extends AutoCloseable {
    * @param query       SQL query
    * @param typeChecker Checks whether the result is the expected type; must
    *                    not be null
-   * @param result      Expected result
-   * @param delta       The acceptable tolerance between the expected and actual
+   * @param result      Expected result, or matcher
    */
-  default void check(
-      String query,
+  default void check(String query,
       TypeChecker typeChecker,
-      @Nullable Object result,
-      double delta) {
+      Object result) {
     check(query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
-        SqlTests.createChecker(result, delta));
+        SqlTests.createChecker(result));
+  }
+
+  default void check(String query, String expectedType, Object result) {
+    check(query, new SqlTests.StringTypeChecker(expectedType), result);
   }
 
   /**
@@ -432,14 +448,12 @@ public interface SqlFixture extends AutoCloseable {
    * @param expr        Aggregate expression, e.g. <code>SUM(DISTINCT x)</code>
    * @param inputValues Array of input values, e.g. <code>["1", null,
    *                    "2"]</code>.
-   * @param result      Expected result
-   * @param delta       Allowable variance from expected result
+   * @param checker     Result checker
    */
   void checkAgg(
       String expr,
       String[] inputValues,
-      Object result,
-      double delta);
+      ResultChecker checker);
 
   /**
    * Checks that an aggregate expression with multiple args returns the expected
@@ -449,15 +463,13 @@ public interface SqlFixture extends AutoCloseable {
    * @param inputValues Nested array of input values, e.g. <code>[
    *                    ["1", null, "2"]
    *                    ["3", "4", null]
-   *                    ]</code>.
-   * @param result      Expected result
-   * @param delta       Allowable variance from expected result
+   *                    ]</code>
+   * @param resultChecker Checks whether the result has the expected value
    */
   void checkAggWithMultipleArgs(
       String expr,
       String[][] inputValues,
-      Object result,
-      double delta);
+      ResultChecker resultChecker);
 
   /**
    * Checks that a windowed aggregate expression returns the expected result.
@@ -465,20 +477,17 @@ public interface SqlFixture extends AutoCloseable {
    * <p>For example, <code>checkWinAgg("FIRST_VALUE(x)", new String[] {"2",
    * "3", null, "3" }, "INTEGER NOT NULL", 2, 0d);</code>
    *
-   * @param expr        Aggregate expression, e.g. <code>SUM(DISTINCT x)</code>
-   * @param inputValues Array of input values, e.g. <code>["1", null,
-   *                    "2"]</code>.
-   * @param type        Expected result type
-   * @param result      Expected result
-   * @param delta       Allowable variance from expected result
+   * @param expr          Aggregate expression, e.g. {@code SUM(DISTINCT x)}
+   * @param inputValues   Array of input values, e.g. {@code ["1", null, "2"]}
+   * @param type          Expected result type
+   * @param resultChecker Checks whether the result has the expected value
    */
   void checkWinAgg(
       String expr,
       String[] inputValues,
       String windowSpec,
       String type,
-      Object result,
-      double delta);
+      ResultChecker resultChecker);
 
   /**
    * Tests that an aggregate expression fails at run time.
@@ -572,9 +581,9 @@ public interface SqlFixture extends AutoCloseable {
   }
 
   default void checkCastToApproxOkay(String value, String targetType,
-      double expected, double delta) {
+      Object expected) {
     checkScalarApprox(getCastString(value, targetType, false),
-        targetType + NON_NULLABLE_SUFFIX, expected, delta);
+        targetType + NON_NULLABLE_SUFFIX, expected);
   }
 
   default void checkCastToStringOkay(String value, String targetType,

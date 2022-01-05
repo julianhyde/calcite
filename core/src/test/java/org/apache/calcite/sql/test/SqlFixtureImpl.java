@@ -21,6 +21,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.StringAndPos;
+import org.apache.calcite.sql.test.SqlTests.JdbcTypes;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -28,6 +29,9 @@ import org.hamcrest.Matcher;
 
 import java.util.List;
 import java.util.function.UnaryOperator;
+
+import static org.apache.calcite.test.ConnectionFactories.isNullValue;
+import static org.apache.calcite.test.ConnectionFactories.isSingle;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -176,24 +180,20 @@ class SqlFixtureImpl implements SqlFixture {
     }
   }
 
-  @Override public void checkAgg(
-      String expr,
-      String[] inputValues,
-      Object result,
-      double delta) {
+  @Override public void checkAgg(String expr, String[] inputValues,
+      SqlTester.ResultChecker checker) {
     String query =
         SqlTests.generateAggQuery(expr, inputValues);
-    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, checker);
   }
 
   @Override public void checkAggWithMultipleArgs(
       String expr,
       String[][] inputValues,
-      Object result,
-      double delta) {
+      SqlTester.ResultChecker resultChecker) {
     String query =
         SqlTests.generateAggQueryWithMultipleArgs(expr, inputValues);
-    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, resultChecker);
   }
 
   @Override public void checkWinAgg(
@@ -201,49 +201,36 @@ class SqlFixtureImpl implements SqlFixture {
       String[] inputValues,
       String windowSpec,
       String type,
-      Object result,
-      double delta) {
+      SqlTester.ResultChecker resultChecker) {
     String query =
-        SqlTests.generateWinAggQuery(
-            expr, windowSpec, inputValues);
-    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+        SqlTests.generateWinAggQuery(expr, windowSpec, inputValues);
+    tester.check(factory, query, SqlTests.ANY_TYPE_CHECKER, resultChecker);
   }
 
-  @Override public void checkScalar(
-      String expression,
-      Object result,
-      String resultType) {
-    checkType(expression, resultType);
+  @Override public void checkScalar(String expression,
+      SqlTester.TypeChecker typeChecker,
+      SqlTester.ResultChecker resultChecker) {
     tester.forEachQuery(factory, expression, sql ->
-        tester.check(factory, sql, SqlTests.ANY_TYPE_CHECKER, result, 0));
+        tester.check(factory, sql, typeChecker, resultChecker));
   }
 
-  @Override public void checkScalarExact(
-      String expression,
-      String result) {
-    tester.forEachQuery(factory, expression, sql ->
-        tester.check(factory, sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0));
-  }
-
-  @Override public void checkScalarExact(
-      String expression,
-      String expectedType,
-      String result) {
+  @Override public void checkScalarExact(String expression,
+      String expectedType, SqlTester.ResultChecker resultChecker) {
     final SqlTester.TypeChecker typeChecker =
         new SqlTests.StringTypeChecker(expectedType);
     tester.forEachQuery(factory, expression, sql ->
-        tester.check(factory, sql, typeChecker, result, 0));
+        tester.check(factory, sql, typeChecker, resultChecker));
   }
 
   @Override public void checkScalarApprox(
       String expression,
       String expectedType,
-      double expectedResult,
-      double delta) {
+      Object result) {
     SqlTester.TypeChecker typeChecker =
         new SqlTests.StringTypeChecker(expectedType);
+    final SqlTester.ResultChecker checker = SqlTests.createChecker(result);
     tester.forEachQuery(factory, expression, sql ->
-        tester.check(factory, sql, typeChecker, expectedResult, delta));
+        tester.check(factory, sql, typeChecker, checker));
   }
 
   @Override public void checkBoolean(
@@ -253,7 +240,7 @@ class SqlFixtureImpl implements SqlFixture {
       checkNull(expression);
     } else {
       SqlTester.ResultChecker resultChecker =
-          SqlTests.createChecker(result.toString(), 0);
+          SqlTests.createChecker(is(result), JdbcTypes.BOOLEAN);
       tester.forEachQuery(factory, expression, sql ->
           tester.check(factory, sql, SqlTests.BOOLEAN_TYPE_CHECKER,
               SqlTests.ANY_PARAMETER_CHECKER, resultChecker));
@@ -266,12 +253,13 @@ class SqlFixtureImpl implements SqlFixture {
       String expectedType) {
     SqlTester.TypeChecker typeChecker =
         new SqlTests.StringTypeChecker(expectedType);
+    SqlTester.ResultChecker resultChecker = isSingle(result);
     tester.forEachQuery(factory, expression, sql ->
-        tester.check(factory, sql, typeChecker, result, 0));
+        tester.check(factory, sql, typeChecker, resultChecker));
   }
 
   @Override public void checkNull(String expression) {
     tester.forEachQuery(factory, expression, sql ->
-        tester.check(factory, sql, SqlTests.ANY_TYPE_CHECKER, null, 0));
+        tester.check(factory, sql, SqlTests.ANY_TYPE_CHECKER, isNullValue()));
   }
 }

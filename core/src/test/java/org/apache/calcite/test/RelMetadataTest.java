@@ -111,8 +111,6 @@ import com.google.common.collect.Sets;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -128,8 +126,11 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.calcite.test.Matchers.hasFieldNames;
+import static org.apache.calcite.test.Matchers.isAlmost;
+import static org.apache.calcite.test.Matchers.sortsAs;
 import static org.apache.calcite.test.Matchers.within;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -155,8 +156,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class RelMetadataTest {
   //~ Static fields/initializers ---------------------------------------------
-
-  private static final double EPSILON = 1.0e-5;
 
   private static final double DEFAULT_EQUAL_SELECTIVITY = 0.15;
 
@@ -189,10 +188,6 @@ public class RelMetadataTest {
 
   final RelMetadataFixture sql(String sql) {
     return fixture().withSql(sql);
-  }
-
-  private static Matcher<Double> isAlmost(double value) {
-    return within(value, EPSILON);
   }
 
   // ----------------------------------------------------------------------
@@ -922,10 +917,10 @@ public class RelMetadataTest {
         + "    select * from dept where dept.deptno = e.deptno)";
     sql(sql)
         .assertThatRel(is(instanceOf(Project.class)))
-        .assertThatUniqueKeys(Matchers.sortsAs("[{0}]"))
+        .assertThatUniqueKeys(sortsAs("[{0}]"))
         .withRelTransform(r -> ((Project) r).getInput())
         .assertThatRel(is(instanceOf(Correlate.class)))
-        .assertThatUniqueKeys(Matchers.sortsAs("[{0}]"));
+        .assertThatUniqueKeys(sortsAs("[{0}]"));
   }
 
   @Test void testGroupByEmptyUniqueKeys() {
@@ -1830,7 +1825,7 @@ public class RelMetadataTest {
 
     final RelNode filter = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(filter);
-    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[=($0, 1)]"));
+    assertThat(predicates.pulledUpPredicates, sortsAs("[=($0, 1)]"));
 
     final LogicalTableScan deptScan =
         LogicalTableScan.create(cluster, deptTable, ImmutableList.of());
@@ -1842,8 +1837,8 @@ public class RelMetadataTest {
     final LogicalJoin semiJoin = (LogicalJoin) relBuilder.build();
 
     predicates = mq.getPulledUpPredicates(semiJoin);
-    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[=($0, 1)]"));
-    assertThat(predicates.leftInferredPredicates, Matchers.sortsAs("[]"));
+    assertThat(predicates.pulledUpPredicates, sortsAs("[=($0, 1)]"));
+    assertThat(predicates.leftInferredPredicates, sortsAs("[]"));
     assertThat(predicates.rightInferredPredicates.isEmpty(), is(true));
 
     // Create a Join similar to the previous SemiJoin
@@ -1857,7 +1852,7 @@ public class RelMetadataTest {
     final RelNode project = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(project);
     // No inferred predicates, because we already know DEPTNO is NOT NULL
-    assertThat(predicates.pulledUpPredicates, Matchers.sortsAs("[]"));
+    assertThat(predicates.pulledUpPredicates, sortsAs("[]"));
     assertThat(project.getRowType().getFullTypeString(),
         is("RecordType(INTEGER NOT NULL DEPTNO) NOT NULL"));
     assertThat(predicates.leftInferredPredicates.isEmpty(), is(true));
@@ -1876,7 +1871,7 @@ public class RelMetadataTest {
     final RelNode project2 = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(project2);
     assertThat(predicates.pulledUpPredicates,
-        Matchers.sortsAs("[IS NOT NULL($0)]"));
+        sortsAs("[IS NOT NULL($0)]"));
     assertThat(predicates.leftInferredPredicates.isEmpty(), is(true));
     assertThat(predicates.rightInferredPredicates.isEmpty(), is(true));
 
@@ -1911,7 +1906,7 @@ public class RelMetadataTest {
     final RelNode project3 = relBuilder.peek();
     predicates = mq.getPulledUpPredicates(project3);
     assertThat(predicates.pulledUpPredicates,
-        Matchers.sortsAs("[OR(IS NOT NULL($0), IS NOT NULL($2))]"));
+        sortsAs("[OR(IS NOT NULL($0), IS NOT NULL($2))]"));
     assertThat(predicates.leftInferredPredicates.isEmpty(), is(true));
     assertThat(predicates.rightInferredPredicates.isEmpty(), is(true));
   }
@@ -1928,7 +1923,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList inputSet = mq.getPulledUpPredicates(rel);
     ImmutableList<RexNode> pulledUpPredicates = inputSet.pulledUpPredicates;
-    assertThat(pulledUpPredicates, Matchers.sortsAs("[=($0, 1)]"));
+    assertThat(pulledUpPredicates, sortsAs("[=($0, 1)]"));
   }
 
   /** Test case for
@@ -1973,7 +1968,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     RelOptPredicateList list = mq.getPulledUpPredicates(rel);
     assertThat(list.pulledUpPredicates,
-        Matchers.sortsAs("[<($0, 10), =($3, 'y'), =($4, 1), IS NULL($1), IS NULL($2)]"));
+        sortsAs("[<($0, 10), =($3, 'y'), =($4, 1), IS NULL($1), IS NULL($2)]"));
   }
 
   @Test void testPullUpPredicatesOnNullableConstant() {
@@ -1985,7 +1980,7 @@ public class RelMetadataTest {
     RelOptPredicateList list = mq.getPulledUpPredicates(rel);
     // Uses "IS NOT DISTINCT FROM" rather than "=" because cannot guarantee not null.
     assertThat(list.pulledUpPredicates,
-        Matchers.sortsAs("[IS NULL($0)]"));
+        sortsAs("[IS NULL($0)]"));
   }
 
   @Test void testPullUpPredicatesFromUnion0() {
@@ -1995,7 +1990,7 @@ public class RelMetadataTest {
         + "select empno from emp where empno=1").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[=($0, 1)]"));
+        sortsAs("[=($0, 1)]"));
   }
 
   @Test void testPullUpPredicatesFromUnion1() {
@@ -2005,7 +2000,7 @@ public class RelMetadataTest {
         + "select empno, deptno from emp where empno=3 or deptno=4").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[OR(SEARCH($0, Sarg[1, 3]), SEARCH($1, Sarg[2, 4]))]"));
+        sortsAs("[OR(SEARCH($0, Sarg[1, 3]), SEARCH($1, Sarg[2, 4]))]"));
   }
 
   @Test void testPullUpPredicatesFromUnion2() {
@@ -2019,9 +2014,8 @@ public class RelMetadataTest {
         // OR(AND(=($1, 2), =($2, 3)) and
         // OR(AND(=($2, 3), =($1, 2)) are the same, the result is flipped and not stable,
         // but they both are correct.
-        CoreMatchers.anyOf(
-            Matchers.sortsAs("[=($0, 1), OR(AND(=($1, 2), =($2, 3)), =($1, 4))]"),
-            Matchers.sortsAs("[=($0, 1), OR(AND(=($2, 3), =($1, 2)), =($1, 4))]")));
+        anyOf(sortsAs("[=($0, 1), OR(AND(=($1, 2), =($2, 3)), =($1, 4))]"),
+            sortsAs("[=($0, 1), OR(AND(=($2, 3), =($1, 2)), =($1, 4))]")));
 
   }
 
@@ -2032,7 +2026,7 @@ public class RelMetadataTest {
         + "select empno from emp where empno=1").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[=($0, 1)]"));
+        sortsAs("[=($0, 1)]"));
   }
 
   @Test void testPullUpPredicatesFromIntersect1() {
@@ -2042,7 +2036,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where empno=1 and comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[=($0, 1), =($1, 2), =($2, 3)]"));
+        sortsAs("[=($0, 1), =($1, 2), =($2, 3)]"));
 
   }
 
@@ -2053,7 +2047,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where 1=empno and (deptno=2 or comm=3)").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[=($0, 1), =($1, 2)]"));
+        sortsAs("[=($0, 1), =($1, 2)]"));
 
   }
 
@@ -2064,7 +2058,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where deptno=2 or empno=1 or comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[OR(=($0, 1), =($1, 2))]"));
+        sortsAs("[OR(=($0, 1), =($1, 2))]"));
   }
 
   @Test void testPullUpPredicatesFromMinus() {
@@ -2074,7 +2068,7 @@ public class RelMetadataTest {
         + "select empno, deptno, comm from emp where comm=3").toRel();
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     assertThat(mq.getPulledUpPredicates(rel).pulledUpPredicates,
-        Matchers.sortsAs("[=($0, 1), =($1, 2)]"));
+        sortsAs("[=($0, 1), =($1, 2)]"));
   }
 
   @Test void testDistributionSimple() {
@@ -2584,7 +2578,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7), "
+        sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7), "
             + "=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#2.$7), "
             + "=([CATALOG, SALES, EMP].#2.$7, [CATALOG, SALES, EMP].#3.$7), "
             + "true, "
@@ -2610,7 +2604,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        Matchers.sortsAs("[>([CATALOG, SALES, EMP].#0.$0, 5)]"));
+        sortsAs("[>([CATALOG, SALES, EMP].#0.$0, 5)]"));
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences.toString(),
@@ -2661,7 +2655,7 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7),"
+        sortsAs("[=([CATALOG, SALES, EMP].#0.$7, [CATALOG, SALES, EMP].#1.$7),"
             + " =([CATALOG, SALES, EMP].#2.$7, [CATALOG, SALES, EMP].#3.$7), "
             + "true, "
             + "true]"));
@@ -2714,13 +2708,13 @@ public class RelMetadataTest {
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences,
-        Matchers.sortsAs("[[CATALOG, SALES, DEPT].#0, "
+        sortsAs("[[CATALOG, SALES, DEPT].#0, "
             + "[CATALOG, SALES, EMP].#0, "
             + "[CATALOG, SALES, EMP].#1]"));
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     // Note that we reference [CATALOG, SALES, EMP].#1 rather than [CATALOG, SALES, EMP].#0
     assertThat(inputSet.pulledUpPredicates,
-        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#1.$0, 5), true, true]"));
+        sortsAs("[=([CATALOG, SALES, EMP].#1.$0, 5), true, true]"));
   }
 
   @Test void testTableReferencesJoinUnknownNode() {
@@ -2748,14 +2742,14 @@ public class RelMetadataTest {
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
     assertThat(tableReferences,
-        Matchers.sortsAs("[[CATALOG, SALES, EMP].#0, "
+        sortsAs("[[CATALOG, SALES, EMP].#0, "
             + "[CATALOG, SALES, EMP].#1, "
             + "[CATALOG, SALES, EMP].#2]"));
     // Note that we reference [CATALOG, SALES, EMP].#2 rather than
     // [CATALOG, SALES, EMP].#0 or [CATALOG, SALES, EMP].#1
     final RelOptPredicateList inputSet = mq.getAllPredicates(rel);
     assertThat(inputSet.pulledUpPredicates,
-        Matchers.sortsAs("[=([CATALOG, SALES, EMP].#2.$0, 5)]"));
+        sortsAs("[=([CATALOG, SALES, EMP].#2.$0, 5)]"));
   }
 
   @Test void testTableReferencesUnionUnknownNode() {

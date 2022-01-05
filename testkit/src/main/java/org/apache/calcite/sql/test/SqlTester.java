@@ -137,18 +137,18 @@ public interface SqlTester extends AutoCloseable {
    * value. If <code>result</code> is a {@link java.util.regex.Pattern}, the
    * result must match that pattern.
    *
-   * @param factory     Factory
-   * @param query       SQL query
-   * @param typeChecker Checks whether the result is the expected type; must
-   *                    not be null
-   * @param result      Expected result
-   * @param delta       The acceptable tolerance between the expected and actual
+   * @param factory       Factory
+   * @param query         SQL query
+   * @param typeChecker   Checks whether the result is the expected type
+   * @param resultChecker Checks whether the result has the expected value
    */
-  void check(SqlNewTestFactory factory,
+  default void check(SqlNewTestFactory factory,
       String query,
       TypeChecker typeChecker,
-      @Nullable Object result,
-      double delta);
+      ResultChecker resultChecker) {
+    check(factory, query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
+        resultChecker);
+  }
 
   /**
    * Tests that a SQL query returns a result of expected type and value.
@@ -188,14 +188,12 @@ public interface SqlTester extends AutoCloseable {
    * @param factory     Factory
    * @param expr        Aggregate expression, e.g. {@code SUM(DISTINCT x)}
    * @param inputValues Array of input values, e.g. {@code ["1", null, "2"]}
-   * @param result      Expected result
-   * @param delta       Allowable variance from expected result
+   * @param resultChecker Checks whether the result has the expected value
    */
   void checkAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
-      Object result,
-      double delta);
+      ResultChecker resultChecker);
 
   /**
    * Checks that a windowed aggregate expression returns the expected result.
@@ -207,16 +205,14 @@ public interface SqlTester extends AutoCloseable {
    * @param expr        Aggregate expression, e.g. {@code SUM(DISTINCT x)}
    * @param inputValues Array of input values, e.g. {@code ["1", null, "2"]}
    * @param type        Expected result type
-   * @param result      Expected result
-   * @param delta       Allowable variance from expected result
+   * @param resultChecker Checks whether the result has the expected value
    */
   void checkWinAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
       String windowSpec,
       String type,
-      Object result,
-      double delta);
+      ResultChecker resultChecker);
 
   /**
    * Tests that an aggregate expression fails at run time.

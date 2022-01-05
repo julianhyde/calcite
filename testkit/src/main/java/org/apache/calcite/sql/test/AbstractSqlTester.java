@@ -183,11 +183,10 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
   @Override public void checkAgg(SqlNewTestFactory factory,
       String expr,
       String[] inputValues,
-      Object result,
-      double delta) {
+      ResultChecker resultChecker) {
     String query =
         SqlTests.generateAggQuery(expr, inputValues);
-    check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
+    check(factory, query, SqlTests.ANY_TYPE_CHECKER, resultChecker);
   }
 
   @Override public void checkWinAgg(SqlNewTestFactory factory,
@@ -195,21 +194,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       String[] inputValues,
       String windowSpec,
       String type,
-      Object result,
-      double delta) {
+      ResultChecker resultChecker) {
     String query =
         SqlTests.generateWinAggQuery(
             expr, windowSpec, inputValues);
-    check(factory, query, SqlTests.ANY_TYPE_CHECKER, result, delta);
-  }
-
-  @Override public final void check(SqlNewTestFactory factory,
-      String query,
-      TypeChecker typeChecker,
-      @Nullable Object result,
-      double delta) {
-    check(factory, query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
-        SqlTests.createChecker(result, delta));
+    check(factory, query, SqlTests.ANY_TYPE_CHECKER, resultChecker);
   }
 
   @Override public void check(SqlNewTestFactory factory,

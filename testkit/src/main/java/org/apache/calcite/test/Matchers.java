@@ -59,6 +59,9 @@ public class Matchers {
 
   private static final Pattern PATTERN = Pattern.compile(", id = [0-9]+");
 
+  /** A small positive value. */
+  public static final double EPSILON = 1.0e-5;
+
   private Matchers() {}
 
   /** Allows passing the actual result from the {@code matchesSafely} method to
@@ -140,10 +143,18 @@ public class Matchers {
 
   /**
    * Creates a matcher that matches when the examined object is within
-   * {@code epsilon} of the specified <code>operand</code>.
+   * {@code epsilon} of the specified {@code value}.
    */
   public static <T extends Number> Matcher<T> within(T value, double epsilon) {
-    return new IsWithin<T>(value, epsilon);
+    return new IsWithin<>(value, epsilon);
+  }
+
+  /**
+   * Creates a matcher that matches when the examined object is within
+   * {@link #EPSILON} of the specified <code>operand</code>.
+   */
+  public static Matcher<Double> isAlmost(double value) {
+    return within(value, EPSILON);
   }
 
   /**
@@ -275,7 +286,7 @@ public class Matchers {
    * is equal to the given {@code value}.
    *
    * <p>This method is necessary because {@link RangeSet#toString()} changed
-   * behavior. Guava 19 - 28 used a unicode symbol;Guava 29 onwards uses "..".
+   * behavior. Guava 19 - 28 used a unicode symbol; Guava 29 onwards uses "..".
    */
   @SuppressWarnings("BetaApi")
   public static Matcher<RangeSet> isRangeSet(final String value) {
@@ -372,8 +383,10 @@ public class Matchers {
    *
    * <p>For example:
    *
-   * <blockquote><pre>List&lt;Integer&gt; ints = Arrays.asList(2, 500, 12);
-   * assertThat(ints, sortsAs("[12, 2, 500]");</pre></blockquote>
+   * <pre>{@code
+   * List<Integer> ints = Arrays.asList(2, 500, 12);
+   * assertThat(ints, sortsAs("[12, 2, 500]");
+   * }</pre>
    */
   public static <T> Matcher<Iterable<T>> sortsAs(final String value) {
     return compose(equalTo(value), item -> {

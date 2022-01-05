@@ -80,7 +80,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
@@ -104,6 +103,11 @@ import static org.apache.calcite.sql.test.SqlFixture.INVALID_EXTRACT_UNIT_VALIDA
 import static org.apache.calcite.sql.test.SqlFixture.LITERAL_OUT_OF_RANGE_MESSAGE;
 import static org.apache.calcite.sql.test.SqlFixture.OUT_OF_RANGE_MESSAGE;
 import static org.apache.calcite.sql.test.SqlFixture.STRING_TRUNC_MESSAGE;
+import static org.apache.calcite.test.ConnectionFactories.isExactly;
+import static org.apache.calcite.test.ConnectionFactories.isNullValue;
+import static org.apache.calcite.test.ConnectionFactories.isSet;
+import static org.apache.calcite.test.ConnectionFactories.isSingle;
+import static org.apache.calcite.test.ConnectionFactories.isWithin;
 import static org.apache.calcite.util.DateTimeStringUtils.getDateFormatter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -199,61 +203,84 @@ public abstract class SqlOperatorBaseTest {
       Pattern.compile(
           "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
 
-  public static final String[] NUMERIC_TYPE_NAMES = {
-      "TINYINT", "SMALLINT", "INTEGER", "BIGINT",
-      "DECIMAL(5, 2)", "REAL", "FLOAT", "DOUBLE"
-  };
+  /** Minimum and maximum values for each exact and approximate numeric
+   * type. */
+  enum Numeric {
+    TINYINT("TINYINT", Long.toString(Byte.MIN_VALUE),
+        Long.toString(Byte.MIN_VALUE - 1),
+        Long.toString(Byte.MAX_VALUE),
+        Long.toString(Byte.MAX_VALUE + 1)),
+    SMALLINT("SMALLINT", Long.toString(Short.MIN_VALUE),
+        Long.toString(Short.MIN_VALUE - 1),
+        Long.toString(Short.MAX_VALUE),
+        Long.toString(Short.MAX_VALUE + 1)),
+    INTEGER("INTEGER", Long.toString(Integer.MIN_VALUE),
+        Long.toString((long) Integer.MIN_VALUE - 1),
+        Long.toString(Integer.MAX_VALUE),
+        Long.toString((long) Integer.MAX_VALUE + 1)),
+    BIGINT("BIGINT", Long.toString(Long.MIN_VALUE),
+        new BigDecimal(Long.MIN_VALUE).subtract(BigDecimal.ONE).toString(),
+        Long.toString(Long.MAX_VALUE),
+        new BigDecimal(Long.MAX_VALUE).add(BigDecimal.ONE).toString()),
+    DECIMAL5_2("DECIMAL(5, 2)", "-999.99",
+        "-1000.00", "999.99", "1000.00"),
+    REAL("REAL", "1E-37", // or Float.toString(Float.MIN_VALUE)
+        "1e-46", "3.4028234E38", // or Float.toString(Float.MAX_VALUE)
+        "1e39"),
+    FLOAT("FLOAT", "2E-307", // or Double.toString(Double.MIN_VALUE)
+        "1e-324", "1.79769313486231E308", // or Double.toString(Double.MAX_VALUE)
+        "-1e309"),
+    DOUBLE("DOUBLE", "2E-307", // or Double.toString(Double.MIN_VALUE)
+        "1e-324", "1.79769313486231E308", // or Double.toString(Double.MAX_VALUE)
+        "1e309");
 
-  // REVIEW jvs 27-Apr-2006:  for Float and Double, MIN_VALUE
-  // is the smallest positive value, not the smallest negative value
-  public static final String[] MIN_NUMERIC_STRINGS = {
-      Long.toString(Byte.MIN_VALUE),
-      Long.toString(Short.MIN_VALUE),
-      Long.toString(Integer.MIN_VALUE),
-      Long.toString(Long.MIN_VALUE),
-      "-999.99",
+    private final String typeName;
 
-      // NOTE jvs 26-Apr-2006:  Win32 takes smaller values from win32_values.h
-      "1E-37", /*Float.toString(Float.MIN_VALUE)*/
-      "2E-307", /*Double.toString(Double.MIN_VALUE)*/
-      "2E-307" /*Double.toString(Double.MIN_VALUE)*/,
-  };
+    /** For Float and Double Java types, MIN_VALUE
+     * is the smallest positive value, not the smallest negative value.
+     * For REAL, FLOAT, DOUBLE, Win32 takes smaller values from
+     * win32_values.h. */
+    private final String minNumericString;
+    private final String minOverflowNumericString;
 
-  public static final String[] MIN_OVERFLOW_NUMERIC_STRINGS = {
-      Long.toString(Byte.MIN_VALUE - 1),
-      Long.toString(Short.MIN_VALUE - 1),
-      Long.toString((long) Integer.MIN_VALUE - 1),
-      new BigDecimal(Long.MIN_VALUE).subtract(BigDecimal.ONE).toString(),
-      "-1000.00",
-      "1e-46",
-      "1e-324",
-      "1e-324"
-  };
+    /** For REAL, FLOAT and DOUBLE SQL types (Flaot and Double Java types), we
+     * use something slightly less than MAX_VALUE because round-tripping string
+     * to approx to string doesn't preserve MAX_VALUE on win32. */
+    private final String maxNumericString;
+    private final String maxOverflowNumericString;
 
-  public static final String[] MAX_NUMERIC_STRINGS = {
-      Long.toString(Byte.MAX_VALUE),
-      Long.toString(Short.MAX_VALUE),
-      Long.toString(Integer.MAX_VALUE),
-      Long.toString(Long.MAX_VALUE), "999.99",
+    Numeric(String typeName, String minNumericString,
+        String minOverflowNumericString, String maxNumericString,
+        String maxOverflowNumericString) {
+      this.typeName = typeName;
+      this.minNumericString = minNumericString;
+      this.minOverflowNumericString = minOverflowNumericString;
+      this.maxNumericString = maxNumericString;
+      this.maxOverflowNumericString = maxOverflowNumericString;
+    }
 
-      // NOTE jvs 26-Apr-2006:  use something slightly less than MAX_VALUE
-      // because roundtripping string to approx to string doesn't preserve
-      // MAX_VALUE on win32
-      "3.4028234E38", /*Float.toString(Float.MAX_VALUE)*/
-      "1.79769313486231E308", /*Double.toString(Double.MAX_VALUE)*/
-      "1.79769313486231E308" /*Double.toString(Double.MAX_VALUE)*/
-  };
+    /** Calls a consumer for each value. Similar effect to a {@code for}
+     * loop, but the calling line number will show up in the call stack. */
+    static void forEach(Consumer<Numeric> consumer) {
+      consumer.accept(TINYINT);
+      consumer.accept(SMALLINT);
+      consumer.accept(INTEGER);
+      consumer.accept(BIGINT);
+      consumer.accept(DECIMAL5_2);
+      consumer.accept(REAL);
+      consumer.accept(FLOAT);
+      consumer.accept(DOUBLE);
+    }
 
-  public static final String[] MAX_OVERFLOW_NUMERIC_STRINGS = {
-      Long.toString(Byte.MAX_VALUE + 1),
-      Long.toString(Short.MAX_VALUE + 1),
-      Long.toString((long) Integer.MAX_VALUE + 1),
-      (new BigDecimal(Long.MAX_VALUE)).add(BigDecimal.ONE).toString(),
-      "1000.00",
-      "1e39",
-      "-1e309",
-      "1e309"
-  };
+    double maxNumericAsDouble() {
+      return Double.parseDouble(maxNumericString);
+    }
+
+    double minNumericAsDouble() {
+      return Double.parseDouble(minNumericString);
+    }
+  }
+
   private static final boolean[] FALSE_TRUE = {false, true};
   private static final VmName VM_FENNEL = VmName.FENNEL;
   private static final VmName VM_JAVA = VmName.JAVA;
@@ -482,60 +509,60 @@ public abstract class SqlOperatorBaseTest {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     // Test casting for min,max, out of range for exact numeric types
-    for (int i = 0; i < NUMERIC_TYPE_NAMES.length; i++) {
-      String type = NUMERIC_TYPE_NAMES[i];
-
-      if (type.equalsIgnoreCase("DOUBLE")
-          || type.equalsIgnoreCase("FLOAT")
-          || type.equalsIgnoreCase("REAL")) {
+    Numeric.forEach(numeric -> {
+      final String type = numeric.typeName;
+      switch (numeric) {
+      case DOUBLE:
+      case FLOAT:
+      case REAL:
         // Skip approx types
-        continue;
+        return;
       }
 
       // Convert from literal to type
-      f.checkCastToScalarOkay(MAX_NUMERIC_STRINGS[i], type);
-      f.checkCastToScalarOkay(MIN_NUMERIC_STRINGS[i], type);
+      f.checkCastToScalarOkay(numeric.maxNumericString, type);
+      f.checkCastToScalarOkay(numeric.minNumericString, type);
 
       // Overflow test
-      if (type.equalsIgnoreCase("BIGINT")) {
+      if (numeric == Numeric.BIGINT) {
         // Literal of range
-        f.checkCastFails(MAX_OVERFLOW_NUMERIC_STRINGS[i],
+        f.checkCastFails(numeric.maxOverflowNumericString,
             type, LITERAL_OUT_OF_RANGE_MESSAGE, false);
-        f.checkCastFails(MIN_OVERFLOW_NUMERIC_STRINGS[i],
+        f.checkCastFails(numeric.minOverflowNumericString,
             type, LITERAL_OUT_OF_RANGE_MESSAGE, false);
       } else {
         if (Bug.CALCITE_2539_FIXED) {
-          f.checkCastFails(MAX_OVERFLOW_NUMERIC_STRINGS[i],
+          f.checkCastFails(numeric.maxOverflowNumericString,
               type, OUT_OF_RANGE_MESSAGE, true);
-          f.checkCastFails(MIN_OVERFLOW_NUMERIC_STRINGS[i],
+          f.checkCastFails(numeric.minOverflowNumericString,
               type, OUT_OF_RANGE_MESSAGE, true);
         }
       }
 
       // Convert from string to type
-      f.checkCastToScalarOkay("'" + MAX_NUMERIC_STRINGS[i] + "'",
-          type, MAX_NUMERIC_STRINGS[i]);
-      f.checkCastToScalarOkay("'" + MIN_NUMERIC_STRINGS[i] + "'",
-          type, MIN_NUMERIC_STRINGS[i]);
+      f.checkCastToScalarOkay("'" + numeric.maxNumericString + "'",
+          type, numeric.maxNumericString);
+      f.checkCastToScalarOkay("'" + numeric.minNumericString + "'",
+          type, numeric.minNumericString);
 
       if (Bug.CALCITE_2539_FIXED) {
-        f.checkCastFails("'" + MAX_OVERFLOW_NUMERIC_STRINGS[i] + "'",
+        f.checkCastFails("'" + numeric.maxOverflowNumericString + "'",
             type, OUT_OF_RANGE_MESSAGE, true);
-        f.checkCastFails("'" + MIN_OVERFLOW_NUMERIC_STRINGS[i] + "'",
+        f.checkCastFails("'" + numeric.minOverflowNumericString + "'",
             type, OUT_OF_RANGE_MESSAGE, true);
       }
 
       // Convert from type to string
-      f.checkCastToString(MAX_NUMERIC_STRINGS[i], null, null);
-      f.checkCastToString(MAX_NUMERIC_STRINGS[i], type, null);
+      f.checkCastToString(numeric.maxNumericString, null, null);
+      f.checkCastToString(numeric.maxNumericString, type, null);
 
-      f.checkCastToString(MIN_NUMERIC_STRINGS[i], null, null);
-      f.checkCastToString(MIN_NUMERIC_STRINGS[i], type, null);
+      f.checkCastToString(numeric.minNumericString, null, null);
+      f.checkCastToString(numeric.minNumericString, type, null);
 
       if (Bug.CALCITE_2539_FIXED) {
         f.checkCastFails("'notnumeric'", type, INVALID_CHAR_MESSAGE, true);
       }
-    }
+    });
   }
 
   @Test void testCastToExactNumeric() {
@@ -561,10 +588,9 @@ public abstract class SqlOperatorBaseTest {
     f.checkCastToScalarOkay("' -00 '", "INTEGER", "0");
 
     // string to integer
-    f.checkScalarExact("cast('6543' as integer)", "6543");
-    f.checkScalarExact("cast(' -123 ' as int)", "-123");
-    f.checkScalarExact(
-        "cast('654342432412312' as bigint)",
+    f.checkScalarExact("cast('6543' as integer)", 6543);
+    f.checkScalarExact("cast(' -123 ' as int)", -123);
+    f.checkScalarExact("cast('654342432412312' as bigint)",
         "BIGINT NOT NULL",
         "654342432412312");
   }
@@ -822,34 +848,37 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
-    f.checkScalarExact("cast( cast(1.25 as double) as integer)", "1");
-    f.checkScalarExact("cast( cast(-1.25 as double) as integer)", "-1");
+    f.checkScalarExact("cast( cast(1.25 as double) as integer)", 1);
+    f.checkScalarExact("cast( cast(-1.25 as double) as integer)", -1);
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkScalarExact("cast( cast(1.75 as double) as integer)", "2");
-    f.checkScalarExact("cast( cast(-1.75 as double) as integer)", "-2");
-    f.checkScalarExact("cast( cast(1.5 as double) as integer)", "2");
-    f.checkScalarExact("cast( cast(-1.5 as double) as integer)", "-2");
+    f.checkScalarExact("cast( cast(1.75 as double) as integer)", 2);
+    f.checkScalarExact("cast( cast(-1.75 as double) as integer)", -2);
+    f.checkScalarExact("cast( cast(1.5 as double) as integer)", 2);
+    f.checkScalarExact("cast( cast(-1.5 as double) as integer)", -2);
   }
 
   @Test void testCastApproxNumericLimits() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
-    // Test casting for min,max, out of range for approx numeric types
-    for (int i = 0; i < NUMERIC_TYPE_NAMES.length; i++) {
-      String type = NUMERIC_TYPE_NAMES[i];
+    // Test casting for min, max, out of range for approx numeric types
+    Numeric.forEach(numeric -> {
+      String type = numeric.typeName;
       boolean isFloat;
 
-      if (type.equalsIgnoreCase("DOUBLE")
-          || type.equalsIgnoreCase("FLOAT")) {
+      switch (numeric) {
+      case DOUBLE:
+      case FLOAT:
         isFloat = false;
-      } else if (type.equalsIgnoreCase("REAL")) {
+        break;
+      case REAL:
         isFloat = true;
-      } else {
+        break;
+      default:
         // Skip non-approx types
-        continue;
+        return;
       }
 
       if (!f.brokenTestsEnabled()) {
@@ -857,81 +886,85 @@ public abstract class SqlOperatorBaseTest {
       }
 
       // Convert from literal to type
-      f.checkCastToApproxOkay(MAX_NUMERIC_STRINGS[i], type,
-          Double.parseDouble(MAX_NUMERIC_STRINGS[i]),
-          isFloat ? 1E32 : 0);
-      f.checkCastToApproxOkay(MIN_NUMERIC_STRINGS[i], type,
-          Double.parseDouble(MIN_NUMERIC_STRINGS[i]), 0);
+      f.checkCastToApproxOkay(numeric.maxNumericString, type,
+          isFloat
+              ? isWithin(numeric.maxNumericAsDouble(), 1E32)
+              : isExactly(numeric.maxNumericAsDouble()));
+      f.checkCastToApproxOkay(numeric.minNumericString, type,
+          isExactly(numeric.minNumericString));
 
       if (isFloat) {
-        f.checkCastFails(MAX_OVERFLOW_NUMERIC_STRINGS[i], type,
+        f.checkCastFails(numeric.maxOverflowNumericString, type,
             OUT_OF_RANGE_MESSAGE, true);
       } else {
         // Double: Literal out of range
-        f.checkCastFails(MAX_OVERFLOW_NUMERIC_STRINGS[i], type,
+        f.checkCastFails(numeric.maxOverflowNumericString, type,
             LITERAL_OUT_OF_RANGE_MESSAGE, false);
       }
 
       // Underflow: goes to 0
-      f.checkCastToApproxOkay(MIN_OVERFLOW_NUMERIC_STRINGS[i], type, 0, 0);
+      f.checkCastToApproxOkay(numeric.minOverflowNumericString, type,
+          isExactly(0));
 
       // Convert from string to type
-      f.checkCastToApproxOkay("'" + MAX_NUMERIC_STRINGS[i] + "'", type,
-          Double.parseDouble(MAX_NUMERIC_STRINGS[i]), isFloat ? 1E32 : 0);
-      f.checkCastToApproxOkay("'" + MIN_NUMERIC_STRINGS[i] + "'", type,
-          Double.parseDouble(MIN_NUMERIC_STRINGS[i]), 0);
+      f.checkCastToApproxOkay("'" + numeric.maxNumericString + "'", type,
+          isFloat
+              ? isWithin(numeric.maxNumericAsDouble(), 1E32)
+              : isExactly(numeric.maxNumericAsDouble()));
+      f.checkCastToApproxOkay("'" + numeric.minNumericString + "'", type,
+          isExactly(numeric.minNumericAsDouble()));
 
-      f.checkCastFails("'" + MAX_OVERFLOW_NUMERIC_STRINGS[i] + "'", type,
+      f.checkCastFails("'" + numeric.maxOverflowNumericString + "'", type,
           OUT_OF_RANGE_MESSAGE, true);
 
       // Underflow: goes to 0
-      f.checkCastToApproxOkay("'" + MIN_OVERFLOW_NUMERIC_STRINGS[i] + "'",
-          type, 0, 0);
+      f.checkCastToApproxOkay("'" + numeric.minOverflowNumericString + "'",
+          type, isExactly(0));
 
       // Convert from type to string
 
       // Treated as DOUBLE
-      f.checkCastToString(MAX_NUMERIC_STRINGS[i], null,
+      f.checkCastToString(numeric.maxNumericString, null,
           isFloat ? null : "1.79769313486231E308");
 
       // TODO: The following tests are slightly different depending on
       // whether the java or fennel calc are used.
       // Try to make them the same
       if (false /* fennel calc*/) { // Treated as FLOAT or DOUBLE
-        f.checkCastToString(MAX_NUMERIC_STRINGS[i], type,
+        f.checkCastToString(numeric.maxNumericString, type,
             // Treated as DOUBLE
             isFloat ? "3.402824E38" : "1.797693134862316E308");
-        f.checkCastToString(MIN_NUMERIC_STRINGS[i], null,
+        f.checkCastToString(numeric.minNumericString, null,
             // Treated as FLOAT or DOUBLE
             isFloat ? null : "4.940656458412465E-324");
-        f.checkCastToString(MIN_NUMERIC_STRINGS[i], type,
+        f.checkCastToString(numeric.minNumericString, type,
             isFloat ? "1.401299E-45" : "4.940656458412465E-324");
       } else if (false /* JavaCalc */) {
         // Treated as FLOAT or DOUBLE
-        f.checkCastToString(MAX_NUMERIC_STRINGS[i], type,
+        f.checkCastToString(numeric.maxNumericString, type,
             // Treated as DOUBLE
             isFloat ? "3.402823E38" : "1.797693134862316E308");
-        f.checkCastToString(MIN_NUMERIC_STRINGS[i], null,
+        f.checkCastToString(numeric.minNumericString, null,
             isFloat ? null : null); // Treated as FLOAT or DOUBLE
-        f.checkCastToString(MIN_NUMERIC_STRINGS[i], type,
+        f.checkCastToString(numeric.minNumericString, type,
             isFloat ? "1.401298E-45" : null);
       }
 
       f.checkCastFails("'notnumeric'", type, INVALID_CHAR_MESSAGE, true);
-    }
+    });
   }
 
   @Test void testCastToApproxNumeric() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
-    f.checkCastToApproxOkay("1", "DOUBLE", 1, 0);
-    f.checkCastToApproxOkay("1.0", "DOUBLE", 1, 0);
-    f.checkCastToApproxOkay("-2.3", "FLOAT", -2.3, 0.000001);
-    f.checkCastToApproxOkay("'1'", "DOUBLE", 1, 0);
-    f.checkCastToApproxOkay("'  -1e-37  '", "DOUBLE", -1e-37, 0);
-    f.checkCastToApproxOkay("1e0", "DOUBLE", 1, 0);
-    f.checkCastToApproxOkay("0e0", "REAL", 0, 0);
+    f.checkCastToApproxOkay("1", "DOUBLE", isExactly(1));
+    f.checkCastToApproxOkay("1.0", "DOUBLE", isExactly(1));
+    f.checkCastToApproxOkay("-2.3", "FLOAT", isWithin(-2.3, 0.000001));
+    f.checkCastToApproxOkay("'1'", "DOUBLE", isExactly(1));
+    f.checkCastToApproxOkay("'  -1e-37  '", "DOUBLE", isExactly("-1.0E-37"));
+    f.checkCastToApproxOkay("1e0", "DOUBLE", isExactly(1));
+    f.checkCastToApproxOkay("0e0", "REAL", isExactly(0));
   }
 
   @Test void testCastNull() {
@@ -1210,7 +1243,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testCase() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CASE, VmName.EXPAND);
-    f.checkScalarExact("case when 'a'='a' then 1 end", "1");
+    f.checkScalarExact("case when 'a'='a' then 1 end", 1);
 
     f.checkString("case 2 when 1 then 'a' when 2 then 'bcd' end",
         "bcd", "CHAR(3)");
@@ -1227,22 +1260,22 @@ public abstract class SqlOperatorBaseTest {
               + "when 2 then 4.543 else null end",
           "DECIMAL(5, 3)", "11.200");
     }
-    f.checkScalarExact("case 'a' when 'a' then 1 end", "1");
+    f.checkScalarExact("case 'a' when 'a' then 1 end", 1);
     f.checkScalarApprox("case 1 when 1 then 11.2e0 "
             + "when 2 then cast(4 as bigint) else 3 end",
-        "DOUBLE NOT NULL", 11.2, 0);
+        "DOUBLE NOT NULL", isExactly("11.2"));
     f.checkScalarApprox("case 1 when 1 then 11.2e0 "
             + "when 2 then 4 else null end",
-        "DOUBLE", 11.2, 0);
+        "DOUBLE", isExactly("11.2"));
     f.checkScalarApprox("case 2 when 1 then 11.2e0 "
             + "when 2 then 4 else null end",
-        "DOUBLE", 4, 0);
+        "DOUBLE", isExactly(4));
     f.checkScalarApprox("case 1 when 1 then 11.2e0 "
             + "when 2 then 4.543 else null end",
-        "DOUBLE", 11.2, 0);
+        "DOUBLE", isExactly("11.2"));
     f.checkScalarApprox("case 2 when 1 then 11.2e0 "
             + "when 2 then 4.543 else null end",
-        "DOUBLE", 4.543, 0);
+        "DOUBLE", isExactly("4.543"));
     f.checkNull("case 'a' when 'b' then 1 end");
 
     // Per spec, 'case x when y then ...'
@@ -1257,7 +1290,7 @@ public abstract class SqlOperatorBaseTest {
 
     f.checkScalarExact("case when 'a'=cast(null as varchar(1)) then 1 "
             + "else 2 end",
-        "2");
+        2);
 
     // equivalent to "nullif('a',cast(null as varchar(1)))"
     f.checkString("case when 'a' = cast(null as varchar(1)) then null "
@@ -1324,7 +1357,7 @@ public abstract class SqlOperatorBaseTest {
         "VARCHAR(18) NOT NULL");
     f2.checkScalarExact("case when 'a'=cast(null as varchar(1)) then 1 "
             + "else 2 end",
-        "2");
+        2);
 
     // equivalent to "nullif('a',cast(null as varchar(1)))"
     f2.checkString("case when 'a' = cast(null as varchar(1)) then null "
@@ -1367,7 +1400,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testCaseNull() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CASE, VmName.EXPAND);
-    f.checkScalarExact("case when 1 = 1 then 10 else null end", "10");
+    f.checkScalarExact("case when 1 = 1 then 10 else null end", 10);
     f.checkNull("case when 1 = 2 then 10 else null end");
   }
 
@@ -1402,32 +1435,48 @@ public abstract class SqlOperatorBaseTest {
 
     // Numeric Functions
     f.checkScalar("{fn ABS(-3)}", 3, "INTEGER NOT NULL");
-    f.checkScalarApprox("{fn ACOS(0.2)}", "DOUBLE NOT NULL", 1.36943, 0.001);
-    f.checkScalarApprox("{fn ASIN(0.2)}", "DOUBLE NOT NULL", 0.20135, 0.001);
-    f.checkScalarApprox("{fn ATAN(0.2)}", "DOUBLE NOT NULL", 0.19739, 0.001);
-    f.checkScalarApprox("{fn ATAN2(-2, 2)}", "DOUBLE NOT NULL", -0.78539, 0.001);
+    f.checkScalarApprox("{fn ACOS(0.2)}", "DOUBLE NOT NULL",
+        isWithin(1.36943, 0.001));
+    f.checkScalarApprox("{fn ASIN(0.2)}", "DOUBLE NOT NULL",
+        isWithin(0.20135, 0.001));
+    f.checkScalarApprox("{fn ATAN(0.2)}", "DOUBLE NOT NULL",
+        isWithin(0.19739, 0.001));
+    f.checkScalarApprox("{fn ATAN2(-2, 2)}", "DOUBLE NOT NULL",
+        isWithin(-0.78539, 0.001));
     f.checkScalar("{fn CBRT(8)}", 2.0, "DOUBLE NOT NULL");
     f.checkScalar("{fn CEILING(-2.6)}", -2, "DECIMAL(2, 0) NOT NULL");
-    f.checkScalarApprox("{fn COS(0.2)}", "DOUBLE NOT NULL", 0.98007, 0.001);
-    f.checkScalarApprox("{fn COT(0.2)}", "DOUBLE NOT NULL", 4.93315, 0.001);
-    f.checkScalarApprox("{fn DEGREES(-1)}", "DOUBLE NOT NULL", -57.29578, 0.001);
+    f.checkScalarApprox("{fn COS(0.2)}", "DOUBLE NOT NULL",
+        isWithin(0.98007, 0.001));
+    f.checkScalarApprox("{fn COT(0.2)}", "DOUBLE NOT NULL",
+        isWithin(4.93315, 0.001));
+    f.checkScalarApprox("{fn DEGREES(-1)}", "DOUBLE NOT NULL",
+        isWithin(-57.29578, 0.001));
 
-    f.checkScalarApprox("{fn EXP(2)}", "DOUBLE NOT NULL", 7.389, 0.001);
+    f.checkScalarApprox("{fn EXP(2)}", "DOUBLE NOT NULL",
+        isWithin(7.389, 0.001));
     f.checkScalar("{fn FLOOR(2.6)}", 2, "DECIMAL(2, 0) NOT NULL");
-    f.checkScalarApprox("{fn LOG(10)}", "DOUBLE NOT NULL", 2.30258, 0.001);
-    f.checkScalarApprox("{fn LOG10(100)}", "DOUBLE NOT NULL", 2, 0);
+    f.checkScalarApprox("{fn LOG(10)}", "DOUBLE NOT NULL",
+        isWithin(2.30258, 0.001));
+    f.checkScalarApprox("{fn LOG10(100)}", "DOUBLE NOT NULL", isExactly(2));
     f.checkScalar("{fn MOD(19, 4)}", 3, "INTEGER NOT NULL");
-    f.checkScalarApprox("{fn PI()}", "DOUBLE NOT NULL", 3.14159, 0.0001);
-    f.checkScalarApprox("{fn POWER(2, 3)}", "DOUBLE NOT NULL", 8.0, 0.001);
-    f.checkScalarApprox("{fn RADIANS(90)}", "DOUBLE NOT NULL", 1.57080, 0.001);
-    f.checkScalarApprox("{fn RAND(42)}", "DOUBLE NOT NULL", 0.63708, 0.001);
+    f.checkScalarApprox("{fn PI()}", "DOUBLE NOT NULL",
+        isWithin(3.14159, 0.0001));
+    f.checkScalarApprox("{fn POWER(2, 3)}", "DOUBLE NOT NULL",
+        isWithin(8.0, 0.001));
+    f.checkScalarApprox("{fn RADIANS(90)}", "DOUBLE NOT NULL",
+        isWithin(1.57080, 0.001));
+    f.checkScalarApprox("{fn RAND(42)}", "DOUBLE NOT NULL",
+        isWithin(0.63708, 0.001));
     f.checkScalar("{fn ROUND(1251, -2)}", 1300, "INTEGER NOT NULL");
     f.checkFails("^{fn ROUND(1251)}^", "Cannot apply '\\{fn ROUND\\}' to "
         + "arguments of type '\\{fn ROUND\\}\\(<INTEGER>\\)'.*", false);
     f.checkScalar("{fn SIGN(-1)}", -1, "INTEGER NOT NULL");
-    f.checkScalarApprox("{fn SIN(0.2)}", "DOUBLE NOT NULL", 0.19867, 0.001);
-    f.checkScalarApprox("{fn SQRT(4.2)}", "DOUBLE NOT NULL", 2.04939, 0.001);
-    f.checkScalarApprox("{fn TAN(0.2)}", "DOUBLE NOT NULL", 0.20271, 0.001);
+    f.checkScalarApprox("{fn SIN(0.2)}", "DOUBLE NOT NULL",
+        isWithin(0.19867, 0.001));
+    f.checkScalarApprox("{fn SQRT(4.2)}", "DOUBLE NOT NULL",
+        isWithin(2.04939, 0.001));
+    f.checkScalarApprox("{fn TAN(0.2)}", "DOUBLE NOT NULL",
+        isWithin(0.20271, 0.001));
     f.checkScalar("{fn TRUNCATE(12.34, 1)}", 12.3, "DECIMAL(4, 2) NOT NULL");
     f.checkScalar("{fn TRUNCATE(-12.34, -1)}", -10, "DECIMAL(4, 2) NOT NULL");
 
@@ -1587,8 +1636,7 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testSelect() {
     final SqlFixture f = fixture();
-    f.check("select * from (values(1))", SqlTests.INTEGER_TYPE_CHECKER,
-        "1", 0);
+    f.check("select * from (values(1))", SqlTests.INTEGER_TYPE_CHECKER, 1);
 
     // Check return type on scalar sub-query in select list.  Note return
     // type is always nullable even if sub-query select value is NOT NULL.
@@ -1655,11 +1703,11 @@ public abstract class SqlOperatorBaseTest {
   @Test void testComplexLiteral() {
     final SqlFixture f = fixture();
     f.check("select 2 * 2 * x from (select 2 as x)",
-        new SqlTests.StringTypeChecker("INTEGER NOT NULL"), "8", 0);
+        SqlTests.INTEGER_TYPE_CHECKER, 8);
     f.check("select 1 * 2 * 3 * x from (select 2 as x)",
-        new SqlTests.StringTypeChecker("INTEGER NOT NULL"), "12", 0);
+        SqlTests.INTEGER_TYPE_CHECKER, 12);
     f.check("select 1 + 2 + 3 + 4 + x from (select 2 as x)",
-        new SqlTests.StringTypeChecker("INTEGER NOT NULL"), "12", 0);
+        SqlTests.INTEGER_TYPE_CHECKER, 12);
   }
 
   @Test void testRow() {
@@ -1764,11 +1812,11 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f0 = fixture();
     final SqlFixture f = f0.withConformance(SqlConformanceEnum.MYSQL_5);
     f.setFor(SqlStdOperatorTable.PERCENT_REMAINDER);
-    f.checkScalarExact("4%2", "0");
-    f.checkScalarExact("8%5", "3");
-    f.checkScalarExact("-12%7", "-5");
-    f.checkScalarExact("-12%-7", "-5");
-    f.checkScalarExact("12%-7", "5");
+    f.checkScalarExact("4%2", 0);
+    f.checkScalarExact("8%5", 3);
+    f.checkScalarExact("-12%7", -5);
+    f.checkScalarExact("-12%-7", -5);
+    f.checkScalarExact("12%-7", 5);
     f.checkScalarExact("cast(12 as tinyint) % cast(-7 as tinyint)",
         "TINYINT NOT NULL", "5");
     if (!DECIMAL) {
@@ -1787,8 +1835,8 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f0 = fixture();
     final SqlFixture f = f0.withConformance(SqlConformanceEnum.MYSQL_5);
     f.setFor(SqlStdOperatorTable.PERCENT_REMAINDER);
-    f.checkScalarExact("1 + 5 % 3 % 4 * 14 % 17", "12");
-    f.checkScalarExact("(1 + 5 % 3) % 4 + 14 % 17", "17");
+    f.checkScalarExact("1 + 5 % 3 % 4 * 14 % 17", 12);
+    f.checkScalarExact("(1 + 5 % 3) % 4 + 14 % 17", 17);
   }
 
   @Test void testModOperatorNull() {
@@ -1824,11 +1872,11 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalarExact("-10 / 5", "INTEGER NOT NULL", "-2");
     f.checkScalarExact("-10 / 5.0", "DECIMAL(17, 6) NOT NULL", "-2");
     f.checkScalarApprox(" cast(10.0 as double) / 5", "DOUBLE NOT NULL",
-        2.0, 0);
+        isExactly(2));
     f.checkScalarApprox(" cast(10.0 as real) / 4", "REAL NOT NULL",
-        2.5, 0);
+        isExactly("2.5"));
     f.checkScalarApprox(" 6.0 / cast(10.0 as real) ", "DOUBLE NOT NULL",
-        0.6, 0);
+        isExactly("0.6"));
     f.checkScalarExact("10.0 / 5.0", "DECIMAL(9, 6) NOT NULL", "2");
     if (DECIMAL) {
       f.checkScalarExact("1.0 / 3.0", "DECIMAL(8, 6) NOT NULL", "0.333333");
@@ -2371,15 +2419,16 @@ public abstract class SqlOperatorBaseTest {
   @Test void testMinusOperator() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.MINUS, VmName.EXPAND);
-    f.checkScalarExact("-2-1", "-3");
-    f.checkScalarExact("-2-1-5", "-8");
-    f.checkScalarExact("2-1", "1");
-    f.checkScalarApprox("cast(2.0 as double) -1", "DOUBLE NOT NULL", 1, 0);
+    f.checkScalarExact("-2-1", -3);
+    f.checkScalarExact("-2-1-5", -8);
+    f.checkScalarExact("2-1", 1);
+    f.checkScalarApprox("cast(2.0 as double) -1", "DOUBLE NOT NULL",
+        isExactly(1));
     f.checkScalarApprox("cast(1 as smallint)-cast(2.0 as real)",
-        "REAL NOT NULL", -1, 0);
+        "REAL NOT NULL", isExactly(-1));
     f.checkScalarApprox("2.4-cast(2.0 as real)", "DOUBLE NOT NULL",
-        0.4, 0.00000001);
-    f.checkScalarExact("1-2", "-1");
+        isWithin(0.4, 0.00000001));
+    f.checkScalarExact("1-2", -1);
     f.checkScalarExact("10.0 - 5.0", "DECIMAL(4, 1) NOT NULL", "5.0");
     f.checkScalarExact("19.68 - 4.2", "DECIMAL(5, 2) NOT NULL", "15.48");
     f.checkNull("1e1-cast(null as double)");
@@ -2499,16 +2548,16 @@ public abstract class SqlOperatorBaseTest {
   @Test void testMultiplyOperator() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.MULTIPLY, VmName.EXPAND);
-    f.checkScalarExact("2*3", "6");
-    f.checkScalarExact("2*-3", "-6");
-    f.checkScalarExact("+2*3", "6");
-    f.checkScalarExact("2*0", "0");
+    f.checkScalarExact("2*3", 6);
+    f.checkScalarExact("2*-3", -6);
+    f.checkScalarExact("+2*3", 6);
+    f.checkScalarExact("2*0", 0);
     f.checkScalarApprox("cast(2.0 as float)*3",
-        "FLOAT NOT NULL", 6, 0);
+        "FLOAT NOT NULL", isExactly(6));
     f.checkScalarApprox("3*cast(2.0 as real)",
-        "REAL NOT NULL", 6, 0);
+        "REAL NOT NULL", isExactly(6));
     f.checkScalarApprox("cast(2.0 as real)*3.2",
-        "DOUBLE NOT NULL", 6.4, 0);
+        "DOUBLE NOT NULL", isExactly("6.4"));
     f.checkScalarExact("10.0 * 5.0",
         "DECIMAL(5, 2) NOT NULL", "50.00");
     f.checkScalarExact("19.68 * 4.2",
@@ -2658,17 +2707,18 @@ public abstract class SqlOperatorBaseTest {
   @Test void testPlusOperator() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.PLUS, VmName.EXPAND);
-    f.checkScalarExact("1+2", "3");
-    f.checkScalarExact("-1+2", "1");
-    f.checkScalarExact("1+2+3", "6");
-    f.checkScalarApprox("1+cast(2.0 as double)", "DOUBLE NOT NULL", 3, 0);
+    f.checkScalarExact("1+2", 3);
+    f.checkScalarExact("-1+2", 1);
+    f.checkScalarExact("1+2+3", 6);
+    f.checkScalarApprox("1+cast(2.0 as double)", "DOUBLE NOT NULL",
+        isExactly(3));
     f.checkScalarApprox("1+cast(2.0 as double)+cast(6.0 as float)",
-        "DOUBLE NOT NULL", 9, 0);
+        "DOUBLE NOT NULL", isExactly(9));
     f.checkScalarExact("10.0 + 5.0", "DECIMAL(4, 1) NOT NULL", "15.0");
     f.checkScalarExact("19.68 + 4.2", "DECIMAL(5, 2) NOT NULL", "23.88");
     f.checkScalarExact("19.68 + 4.2 + 6", "DECIMAL(13, 2) NOT NULL", "29.88");
     f.checkScalarApprox("19.68 + cast(4.2 as float)", "DOUBLE NOT NULL",
-        23.88, 0.02);
+        isWithin(23.88, 0.02));
     f.checkNull("cast(null as tinyint)+1");
     f.checkNull("1e-2+cast(null as double)");
 
@@ -2942,9 +2992,9 @@ public abstract class SqlOperatorBaseTest {
             "(?s)Cannot apply '-' to arguments of type '-<CHAR\\(1\\)>'.*",
             false);
     f.checkType("'a' + - 'b' + 'c'", "DECIMAL(19, 9) NOT NULL");
-    f.checkScalarExact("-1", "-1");
+    f.checkScalarExact("-1", -1);
     f.checkScalarExact("-1.23", "DECIMAL(3, 2) NOT NULL", "-1.23");
-    f.checkScalarApprox("-1.0e0", "DOUBLE NOT NULL", -1, 0);
+    f.checkScalarApprox("-1.0e0", "DOUBLE NOT NULL", isExactly(-1));
     f.checkNull("-cast(null as integer)");
     f.checkNull("-cast(null as tinyint)");
   }
@@ -2963,9 +3013,9 @@ public abstract class SqlOperatorBaseTest {
   @Test void testPrefixPlusOperator() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.UNARY_PLUS, VM_EXPAND);
-    f.checkScalarExact("+1", "1");
+    f.checkScalarExact("+1", 1);
     f.checkScalarExact("+1.23", "DECIMAL(3, 2) NOT NULL", "1.23");
-    f.checkScalarApprox("+1.0e0", "DOUBLE NOT NULL", 1, 0);
+    f.checkScalarApprox("+1.0e0", "DOUBLE NOT NULL", isExactly(1));
     f.checkNull("+cast(null as integer)");
     f.checkNull("+cast(null as tinyint)");
   }
@@ -2994,8 +3044,7 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.VALUES, VM_EXPAND);
     f.check("select 'abc' from (values(true))",
-        new SqlTests.StringTypeChecker("CHAR(3) NOT NULL"),
-        "abc", 0);
+        "CHAR(3) NOT NULL", "abc");
   }
 
   @Test void testNotLikeOperator() {
@@ -3454,27 +3503,27 @@ public abstract class SqlOperatorBaseTest {
   @Test void testPositionFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.POSITION, VmName.EXPAND);
-    f.checkScalarExact("position('b' in 'abc')", "2");
-    f.checkScalarExact("position('' in 'abc')", "1");
-    f.checkScalarExact("position('b' in 'abcabc' FROM 3)", "5");
-    f.checkScalarExact("position('b' in 'abcabc' FROM 5)", "5");
-    f.checkScalarExact("position('b' in 'abcabc' FROM 6)", "0");
-    f.checkScalarExact("position('b' in 'abcabc' FROM -5)", "0");
-    f.checkScalarExact("position('' in 'abc' FROM 3)", "3");
-    f.checkScalarExact("position('' in 'abc' FROM 10)", "0");
+    f.checkScalarExact("position('b' in 'abc')", 2);
+    f.checkScalarExact("position('' in 'abc')", 1);
+    f.checkScalarExact("position('b' in 'abcabc' FROM 3)", 5);
+    f.checkScalarExact("position('b' in 'abcabc' FROM 5)", 5);
+    f.checkScalarExact("position('b' in 'abcabc' FROM 6)", 0);
+    f.checkScalarExact("position('b' in 'abcabc' FROM -5)", 0);
+    f.checkScalarExact("position('' in 'abc' FROM 3)", 3);
+    f.checkScalarExact("position('' in 'abc' FROM 10)", 0);
 
-    f.checkScalarExact("position(x'bb' in x'aabbcc')", "2");
-    f.checkScalarExact("position(x'' in x'aabbcc')", "1");
-    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM 3)", "5");
-    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM 5)", "5");
-    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM 6)", "0");
-    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM -5)", "0");
-    f.checkScalarExact("position(x'cc' in x'aabbccdd' FROM 2)", "3");
-    f.checkScalarExact("position(x'' in x'aabbcc' FROM 3)", "3");
-    f.checkScalarExact("position(x'' in x'aabbcc' FROM 10)", "0");
+    f.checkScalarExact("position(x'bb' in x'aabbcc')", 2);
+    f.checkScalarExact("position(x'' in x'aabbcc')", 1);
+    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM 3)", 5);
+    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM 5)", 5);
+    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM 6)", 0);
+    f.checkScalarExact("position(x'bb' in x'aabbccaabbcc' FROM -5)", 0);
+    f.checkScalarExact("position(x'cc' in x'aabbccdd' FROM 2)", 3);
+    f.checkScalarExact("position(x'' in x'aabbcc' FROM 3)", 3);
+    f.checkScalarExact("position(x'' in x'aabbcc' FROM 10)", 0);
 
     // FRG-211
-    f.checkScalarExact("position('tra' in 'fdgjklewrtra')", "10");
+    f.checkScalarExact("position('tra' in 'fdgjklewrtra')", 10);
 
     f.checkNull("position(cast(null as varchar(1)) in '0010')");
     f.checkNull("position('a' in cast(null as varchar(1)))");
@@ -3498,35 +3547,35 @@ public abstract class SqlOperatorBaseTest {
   @Test void testCharLengthFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CHAR_LENGTH, VmName.EXPAND);
-    f.checkScalarExact("char_length('abc')", "3");
+    f.checkScalarExact("char_length('abc')", 3);
     f.checkNull("char_length(cast(null as varchar(1)))");
   }
 
   @Test void testCharacterLengthFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CHARACTER_LENGTH, VmName.EXPAND);
-    f.checkScalarExact("CHARACTER_LENGTH('abc')", "3");
+    f.checkScalarExact("CHARACTER_LENGTH('abc')", 3);
     f.checkNull("CHARACTER_LENGTH(cast(null as varchar(1)))");
   }
 
   @Test void testOctetLengthFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.OCTET_LENGTH, VmName.EXPAND);
-    f.checkScalarExact("OCTET_LENGTH(x'aabbcc')", "3");
+    f.checkScalarExact("OCTET_LENGTH(x'aabbcc')", 3);
     f.checkNull("OCTET_LENGTH(cast(null as varbinary(1)))");
   }
 
   @Test void testAsciiFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.ASCII, VmName.EXPAND);
-    f.checkScalarExact("ASCII('')", "0");
-    f.checkScalarExact("ASCII('a')", "97");
-    f.checkScalarExact("ASCII('1')", "49");
-    f.checkScalarExact("ASCII('abc')", "97");
-    f.checkScalarExact("ASCII('ABC')", "65");
-    f.checkScalarExact("ASCII(_UTF8'\u0082')", "130");
-    f.checkScalarExact("ASCII(_UTF8'\u5B57')", "23383");
-    f.checkScalarExact("ASCII(_UTF8'\u03a9')", "937"); // omega
+    f.checkScalarExact("ASCII('')", 0);
+    f.checkScalarExact("ASCII('a')", 97);
+    f.checkScalarExact("ASCII('1')", 49);
+    f.checkScalarExact("ASCII('abc')", 97);
+    f.checkScalarExact("ASCII('ABC')", 65);
+    f.checkScalarExact("ASCII(_UTF8'\u0082')", 130);
+    f.checkScalarExact("ASCII(_UTF8'\u5B57')", 23383);
+    f.checkScalarExact("ASCII(_UTF8'\u03a9')", 937); // omega
     f.checkNull("ASCII(cast(null as varchar(1)))");
   }
 
@@ -3698,14 +3747,14 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.DIFFERENCE)
         .withLibrary2(SqlLibrary.POSTGRESQL);
-    f.checkScalarExact("DIFFERENCE('Miller', 'miller')", "4");
-    f.checkScalarExact("DIFFERENCE('Miller', 'myller')", "4");
-    f.checkScalarExact("DIFFERENCE('muller', 'miller')", "4");
-    f.checkScalarExact("DIFFERENCE('muller', 'miller')", "4");
-    f.checkScalarExact("DIFFERENCE('muller', 'milk')", "2");
-    f.checkScalarExact("DIFFERENCE('muller', 'mile')", "2");
-    f.checkScalarExact("DIFFERENCE('muller', 'm')", "1");
-    f.checkScalarExact("DIFFERENCE('muller', 'lee')", "0");
+    f.checkScalarExact("DIFFERENCE('Miller', 'miller')", 4);
+    f.checkScalarExact("DIFFERENCE('Miller', 'myller')", 4);
+    f.checkScalarExact("DIFFERENCE('muller', 'miller')", 4);
+    f.checkScalarExact("DIFFERENCE('muller', 'miller')", 4);
+    f.checkScalarExact("DIFFERENCE('muller', 'milk')", 2);
+    f.checkScalarExact("DIFFERENCE('muller', 'mile')", 2);
+    f.checkScalarExact("DIFFERENCE('muller', 'm')", 1);
+    f.checkScalarExact("DIFFERENCE('muller', 'lee')", 0);
     f.checkNull("DIFFERENCE('muller', cast(null as varchar(1)))");
     f.checkNull("DIFFERENCE(cast(null as varchar(1)), 'muller')");
   }
@@ -3916,9 +3965,9 @@ public abstract class SqlOperatorBaseTest {
     f.checkFails("json_value('{\"foo\":\"100\"}', 'strict $.foo' returning boolean)",
         INVALID_CHAR_MESSAGE, true);
     f.checkScalar("json_value('{\"foo\":100}', 'lax $.foo1' returning integer "
-        + "null on empty)", null, "INTEGER");
+        + "null on empty)", isNullValue(), "INTEGER");
     f.checkScalar("json_value('{\"foo\":\"100\"}', 'strict $.foo1' returning boolean "
-        + "null on error)", null, "BOOLEAN");
+        + "null on error)", isNullValue(), "BOOLEAN");
 
     // lax test
     f.checkString("json_value('{\"foo\":100}', 'lax $.foo' null on empty)",
@@ -4366,16 +4415,13 @@ public abstract class SqlOperatorBaseTest {
     };
     f.checkAggWithMultipleArgs("json_objectagg(x: x2)",
         values,
-        "{\"foo\":\"bar\",\"foo2\":null,\"foo3\":\"bar3\"}",
-        0.0D);
+        isSingle("{\"foo\":\"bar\",\"foo2\":null,\"foo3\":\"bar3\"}"));
     f.checkAggWithMultipleArgs("json_objectagg(x: x2 null on null)",
         values,
-        "{\"foo\":\"bar\",\"foo2\":null,\"foo3\":\"bar3\"}",
-        0.0D);
+        isSingle("{\"foo\":\"bar\",\"foo2\":null,\"foo3\":\"bar3\"}"));
     f.checkAggWithMultipleArgs("json_objectagg(x: x2 absent on null)",
         values,
-        "{\"foo\":\"bar\",\"foo3\":\"bar3\"}",
-        0.0D);
+        isSingle("{\"foo\":\"bar\",\"foo3\":\"bar3\"}"));
   }
 
   @Test void testJsonValueExpressionOperator() {
@@ -4419,18 +4465,11 @@ public abstract class SqlOperatorBaseTest {
         "cast(null as varchar(2000))",
         "'foo3'"
     };
-    f.checkAgg("json_arrayagg(x)",
-        values,
-        "[\"foo\",\"foo3\"]",
-        0.0D);
-    f.checkAgg("json_arrayagg(x null on null)",
-        values,
-        "[\"foo\",null,\"foo3\"]",
-        0.0D);
-    f.checkAgg("json_arrayagg(x absent on null)",
-        values,
-        "[\"foo\",\"foo3\"]",
-        0.0D);
+    f.checkAgg("json_arrayagg(x)", values, isSingle("[\"foo\",\"foo3\"]"));
+    f.checkAgg("json_arrayagg(x null on null)", values,
+        isSingle("[\"foo\",null,\"foo3\"]"));
+    f.checkAgg("json_arrayagg(x absent on null)", values,
+        isSingle("[\"foo\",\"foo3\"]"));
   }
 
   @Test void testJsonPredicate() {
@@ -4677,17 +4716,12 @@ public abstract class SqlOperatorBaseTest {
   @Test void testPowerFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.POWER, VmName.EXPAND);
-    f.checkScalarApprox(
-        "power(2,-2)",
-        "DOUBLE NOT NULL",
-        0.25,
-        0);
+    f.checkScalarApprox("power(2,-2)", "DOUBLE NOT NULL", isExactly("0.25"));
     f.checkNull("power(cast(null as integer),2)");
     f.checkNull("power(2,cast(null as double))");
 
     // 'pow' is an obsolete form of the 'power' function
-    f.checkFails(
-        "^pow(2,-2)^",
+    f.checkFails("^pow(2,-2)^",
         "No match found for function signature POW\\(<NUMERIC>, <NUMERIC>\\)",
         false);
   }
@@ -4705,9 +4739,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'SQRT\\(<NUMERIC>\\)'",
             false);
     f.checkType("sqrt('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("sqrt(2)", "DOUBLE NOT NULL", 1.4142d, 0.0001d);
-    f.checkScalarApprox("sqrt(cast(2 as decimal(2, 0)))",
-        "DOUBLE NOT NULL", 1.4142d, 0.0001d);
+    f.checkScalarApprox("sqrt(2)", "DOUBLE NOT NULL",
+        isWithin(1.4142d, 0.0001d));
+    f.checkScalarApprox("sqrt(cast(2 as decimal(2, 0)))", "DOUBLE NOT NULL",
+        isWithin(1.4142d, 0.0001d));
     f.checkNull("sqrt(cast(null as integer))");
     f.checkNull("sqrt(cast(null as double))");
   }
@@ -4715,8 +4750,10 @@ public abstract class SqlOperatorBaseTest {
   @Test void testExpFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.EXP, VM_FENNEL);
-    f.checkScalarApprox("exp(2)", "DOUBLE NOT NULL", 7.389056, 0.000001);
-    f.checkScalarApprox("exp(-2)", "DOUBLE NOT NULL", 0.1353, 0.0001);
+    f.checkScalarApprox("exp(2)", "DOUBLE NOT NULL",
+        isWithin(7.389056, 0.000001));
+    f.checkScalarApprox("exp(-2)", "DOUBLE NOT NULL",
+        isWithin(0.1353, 0.0001));
     f.checkNull("exp(cast(null as integer))");
     f.checkNull("exp(cast(null as double))");
   }
@@ -4724,28 +4761,24 @@ public abstract class SqlOperatorBaseTest {
   @Test void testModFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.MOD, VmName.EXPAND);
-    f.checkScalarExact("mod(4,2)", "0");
-    f.checkScalarExact("mod(8,5)", "3");
-    f.checkScalarExact("mod(-12,7)", "-5");
-    f.checkScalarExact("mod(-12,-7)", "-5");
-    f.checkScalarExact("mod(12,-7)", "5");
+    f.checkScalarExact("mod(4,2)", 0);
+    f.checkScalarExact("mod(8,5)", 3);
+    f.checkScalarExact("mod(-12,7)", -5);
+    f.checkScalarExact("mod(-12,-7)", -5);
+    f.checkScalarExact("mod(12,-7)", 5);
     f.checkScalarExact("mod(cast(12 as tinyint), cast(-7 as tinyint))",
-        "TINYINT NOT NULL",
-        "5");
+        "TINYINT NOT NULL", "5");
 
     if (!DECIMAL) {
       return;
     }
     f.checkScalarExact("mod(cast(9 as decimal(2, 0)), 7)",
-        "INTEGER NOT NULL",
-        "2");
+        "INTEGER NOT NULL", "2");
     f.checkScalarExact("mod(7, cast(9 as decimal(2, 0)))",
-        "DECIMAL(2, 0) NOT NULL",
-        "7");
+        "DECIMAL(2, 0) NOT NULL", "7");
     f.checkScalarExact("mod(cast(-9 as decimal(2, 0)), "
             + "cast(7 as decimal(1, 0)))",
-        "DECIMAL(1, 0) NOT NULL",
-        "-2");
+        "DECIMAL(1, 0) NOT NULL", "-2");
   }
 
   @Test void testModFuncNull() {
@@ -4773,22 +4806,26 @@ public abstract class SqlOperatorBaseTest {
   @Test void testLnFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.LN, VmName.EXPAND);
-    f.checkScalarApprox("ln(2.71828)", "DOUBLE NOT NULL", 1.0, 0.000001);
-    f.checkScalarApprox("ln(2.71828)", "DOUBLE NOT NULL", 0.999999327, 0.0000001);
+    f.checkScalarApprox("ln(2.71828)", "DOUBLE NOT NULL",
+        isWithin(1.0, 0.000001));
+    f.checkScalarApprox("ln(2.71828)", "DOUBLE NOT NULL",
+        isWithin(0.999999327, 0.0000001));
     f.checkNull("ln(cast(null as tinyint))");
   }
 
   @Test void testLogFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.LOG10, VmName.EXPAND);
-    f.checkScalarApprox("log10(10)", "DOUBLE NOT NULL", 1.0, 0.000001);
-    f.checkScalarApprox("log10(100.0)", "DOUBLE NOT NULL", 2.0, 0.000001);
-    f.checkScalarApprox("log10(cast(10e8 as double))",
-        "DOUBLE NOT NULL", 9.0, 0.000001);
-    f.checkScalarApprox("log10(cast(10e2 as float))",
-        "DOUBLE NOT NULL", 3.0, 0.000001);
-    f.checkScalarApprox("log10(cast(10e-3 as real))",
-        "DOUBLE NOT NULL", -2.0, 0.000001);
+    f.checkScalarApprox("log10(10)", "DOUBLE NOT NULL",
+        isWithin(1.0, 0.000001));
+    f.checkScalarApprox("log10(100.0)", "DOUBLE NOT NULL",
+        isWithin(2.0, 0.000001));
+    f.checkScalarApprox("log10(cast(10e8 as double))", "DOUBLE NOT NULL",
+        isWithin(9.0, 0.000001));
+    f.checkScalarApprox("log10(cast(10e2 as float))", "DOUBLE NOT NULL",
+        isWithin(3.0, 0.000001));
+    f.checkScalarApprox("log10(cast(10e-3 as real))", "DOUBLE NOT NULL",
+        isWithin(-2.0, 0.000001));
     f.checkNull("log10(cast(null as real))");
   }
 
@@ -4798,15 +4835,15 @@ public abstract class SqlOperatorBaseTest {
     f.checkFails("^rand^", "Column 'RAND' not found in any table", false);
     for (int i = 0; i < 100; i++) {
       // Result must always be between 0 and 1, inclusive.
-      f.checkScalarApprox("rand()", "DOUBLE NOT NULL", 0.5, 0.5);
+      f.checkScalarApprox("rand()", "DOUBLE NOT NULL", isWithin(0.5, 0.5));
     }
   }
 
   @Test void testRandSeedFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.RAND, VmName.EXPAND);
-    f.checkScalarApprox("rand(1)", "DOUBLE NOT NULL", 0.6016, 0.0001);
-    f.checkScalarApprox("rand(2)", "DOUBLE NOT NULL", 0.4728, 0.0001);
+    f.checkScalarApprox("rand(1)", "DOUBLE NOT NULL", isWithin(0.6016, 0.0001));
+    f.checkScalarApprox("rand(2)", "DOUBLE NOT NULL", isWithin(0.4728, 0.0001));
   }
 
   @Test void testRandIntegerFunc() {
@@ -4814,8 +4851,8 @@ public abstract class SqlOperatorBaseTest {
     f.setFor(SqlStdOperatorTable.RAND_INTEGER, VmName.EXPAND);
     for (int i = 0; i < 100; i++) {
       // Result must always be between 0 and 10, inclusive.
-      f.checkScalarApprox("rand_integer(11)", "INTEGER NOT NULL", 5.0,
-          5.0);
+      f.checkScalarApprox("rand_integer(11)", "INTEGER NOT NULL",
+          isWithin(5.0, 5.0));
     }
   }
 
@@ -4896,17 +4933,21 @@ public abstract class SqlOperatorBaseTest {
   @Test void testAbsFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.ABS, VmName.EXPAND);
-    f.checkScalarExact("abs(-1)", "1");
+    f.checkScalarExact("abs(-1)", 1);
     f.checkScalarExact("abs(cast(10 as TINYINT))", "TINYINT NOT NULL", "10");
     f.checkScalarExact("abs(cast(-20 as SMALLINT))", "SMALLINT NOT NULL", "20");
     f.checkScalarExact("abs(cast(-100 as INT))", "INTEGER NOT NULL", "100");
     f.checkScalarExact("abs(cast(1000 as BIGINT))", "BIGINT NOT NULL", "1000");
     f.checkScalarExact("abs(54.4)", "DECIMAL(3, 1) NOT NULL", "54.4");
     f.checkScalarExact("abs(-54.4)", "DECIMAL(3, 1) NOT NULL", "54.4");
-    f.checkScalarApprox("abs(-9.32E-2)", "DOUBLE NOT NULL", 0.0932, 0);
-    f.checkScalarApprox("abs(cast(-3.5 as double))", "DOUBLE NOT NULL", 3.5, 0);
-    f.checkScalarApprox("abs(cast(-3.5 as float))", "FLOAT NOT NULL", 3.5, 0);
-    f.checkScalarApprox("abs(cast(3.5 as real))", "REAL NOT NULL", 3.5, 0);
+    f.checkScalarApprox("abs(-9.32E-2)", "DOUBLE NOT NULL",
+        isExactly("0.0932"));
+    f.checkScalarApprox("abs(cast(-3.5 as double))", "DOUBLE NOT NULL",
+        isExactly("3.5"));
+    f.checkScalarApprox("abs(cast(-3.5 as float))", "FLOAT NOT NULL",
+        isExactly("3.5"));
+    f.checkScalarApprox("abs(cast(3.5 as real))", "REAL NOT NULL",
+        isExactly("3.5"));
     f.checkNull("abs(cast(null as double))");
   }
 
@@ -4931,9 +4972,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'ACOS\\(<NUMERIC>\\)'",
         false);
     f.checkType("acos('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("acos(0.5)", "DOUBLE NOT NULL", 1.0472d, 0.0001d);
-    f.checkScalarApprox("acos(cast(0.5 as decimal(1, 1)))",
-        "DOUBLE NOT NULL", 1.0472d, 0.0001d);
+    f.checkScalarApprox("acos(0.5)", "DOUBLE NOT NULL",
+        isWithin(1.0472d, 0.0001d));
+    f.checkScalarApprox("acos(cast(0.5 as decimal(1, 1)))", "DOUBLE NOT NULL",
+        isWithin(1.0472d, 0.0001d));
     f.checkNull("acos(cast(null as integer))");
     f.checkNull("acos(cast(null as double))");
   }
@@ -4951,9 +4993,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'ASIN\\(<NUMERIC>\\)'",
         false);
     f.checkType("asin('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("asin(0.5)", "DOUBLE NOT NULL", 0.5236d, 0.0001d);
-    f.checkScalarApprox("asin(cast(0.5 as decimal(1, 1)))",
-        "DOUBLE NOT NULL", 0.5236d, 0.0001d);
+    f.checkScalarApprox("asin(0.5)", "DOUBLE NOT NULL",
+        isWithin(0.5236d, 0.0001d));
+    f.checkScalarApprox("asin(cast(0.5 as decimal(1, 1)))", "DOUBLE NOT NULL",
+        isWithin(0.5236d, 0.0001d));
     f.checkNull("asin(cast(null as integer))");
     f.checkNull("asin(cast(null as double))");
   }
@@ -4971,9 +5014,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'ATAN\\(<NUMERIC>\\)'",
         false);
     f.checkType("atan('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("atan(2)", "DOUBLE NOT NULL", 1.1071d, 0.0001d);
-    f.checkScalarApprox("atan(cast(2 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 1.1071d, 0.0001d);
+    f.checkScalarApprox("atan(2)", "DOUBLE NOT NULL",
+        isWithin(1.1071d, 0.0001d));
+    f.checkScalarApprox("atan(cast(2 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(1.1071d, 0.0001d));
     f.checkNull("atan(cast(null as integer))");
     f.checkNull("atan(cast(null as double))");
   }
@@ -4982,8 +5026,8 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.ATAN2, VmName.EXPAND);
     f.checkType("atan2(2, -2)", "DOUBLE NOT NULL");
-    f.checkScalarApprox("atan2(cast(1 as float), -1)",
-        "DOUBLE NOT NULL", 2.3562d, 0.0001d);
+    f.checkScalarApprox("atan2(cast(1 as float), -1)", "DOUBLE NOT NULL",
+        isWithin(2.3562d, 0.0001d));
     f.checkType("atan2(case when false then 0.5 else null end, -1)",
         "DOUBLE");
     f.enableTypeCoercion(false)
@@ -4993,11 +5037,11 @@ public abstract class SqlOperatorBaseTest {
                 + "Supported form\\(s\\): 'ATAN2\\(<NUMERIC>, <NUMERIC>\\)'",
         false);
     f.checkType("atan2('abc', 'def')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("atan2(0.5, -0.5)",
-        "DOUBLE NOT NULL", 2.3562d, 0.0001d);
+    f.checkScalarApprox("atan2(0.5, -0.5)", "DOUBLE NOT NULL",
+        isWithin(2.3562d, 0.0001d));
     f.checkScalarApprox("atan2(cast(0.5 as decimal(1, 1)),"
-            + " cast(-0.5 as decimal(1, 1)))",
-        "DOUBLE NOT NULL", 2.3562d, 0.0001d);
+            + " cast(-0.5 as decimal(1, 1)))", "DOUBLE NOT NULL",
+        isWithin(2.3562d, 0.0001d));
     f.checkNull("atan2(cast(null as integer), -1)");
     f.checkNull("atan2(1, cast(null as double))");
   }
@@ -5036,9 +5080,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'COS\\(<NUMERIC>\\)'",
         false);
     f.checkType("cos('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("cos(1)", "DOUBLE NOT NULL", 0.5403d, 0.0001d);
-    f.checkScalarApprox("cos(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 0.5403d, 0.0001d);
+    f.checkScalarApprox("cos(1)", "DOUBLE NOT NULL",
+        isWithin(0.5403d, 0.0001d));
+    f.checkScalarApprox("cos(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(0.5403d, 0.0001d));
     f.checkNull("cos(cast(null as integer))");
     f.checkNull("cos(cast(null as double))");
   }
@@ -5054,9 +5099,10 @@ public abstract class SqlOperatorBaseTest {
             "No match found for function signature COSH\\(<CHARACTER>\\)",
             false);
     f.checkType("cosh('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("cosh(1)", "DOUBLE NOT NULL", 1.5430d, 0.0001d);
-    f.checkScalarApprox("cosh(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 1.5430d, 0.0001d);
+    f.checkScalarApprox("cosh(1)", "DOUBLE NOT NULL",
+        isWithin(1.5430d, 0.0001d));
+    f.checkScalarApprox("cosh(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(1.5430d, 0.0001d));
     f.checkNull("cosh(cast(null as integer))");
     f.checkNull("cosh(cast(null as double))");
   }
@@ -5073,9 +5119,10 @@ public abstract class SqlOperatorBaseTest {
             + "'COT\\(<NUMERIC>\\)'",
         false);
     f.checkType("cot('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("cot(1)", "DOUBLE NOT NULL", 0.6421d, 0.0001d);
-    f.checkScalarApprox("cot(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 0.6421d, 0.0001d);
+    f.checkScalarApprox("cot(1)", "DOUBLE NOT NULL",
+        isWithin(0.6421d, 0.0001d));
+    f.checkScalarApprox("cot(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(0.6421d, 0.0001d));
     f.checkNull("cot(cast(null as integer))");
     f.checkNull("cot(cast(null as double))");
   }
@@ -5093,9 +5140,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'DEGREES\\(<NUMERIC>\\)'",
         false);
     f.checkType("degrees('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("degrees(1)", "DOUBLE NOT NULL", 57.2958d, 0.0001d);
-    f.checkScalarApprox("degrees(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 57.2958d, 0.0001d);
+    f.checkScalarApprox("degrees(1)", "DOUBLE NOT NULL",
+        isWithin(57.2958d, 0.0001d));
+    f.checkScalarApprox("degrees(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(57.2958d, 0.0001d));
     f.checkNull("degrees(cast(null as integer))");
     f.checkNull("degrees(cast(null as double))");
   }
@@ -5103,7 +5151,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testPiFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.PI, VmName.EXPAND);
-    f.checkScalarApprox("PI", "DOUBLE NOT NULL", 3.1415d, 0.0001d);
+    f.checkScalarApprox("PI", "DOUBLE NOT NULL", isWithin(3.1415d, 0.0001d));
     f.checkFails("^PI()^",
         "No match found for function signature PI\\(\\)", false);
 
@@ -5125,9 +5173,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'RADIANS\\(<NUMERIC>\\)'",
             false);
     f.checkType("radians('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("radians(42)", "DOUBLE NOT NULL", 0.7330d, 0.0001d);
-    f.checkScalarApprox("radians(cast(42 as decimal(2, 0)))",
-        "DOUBLE NOT NULL", 0.7330d, 0.0001d);
+    f.checkScalarApprox("radians(42)", "DOUBLE NOT NULL",
+        isWithin(0.7330d, 0.0001d));
+    f.checkScalarApprox("radians(cast(42 as decimal(2, 0)))", "DOUBLE NOT NULL",
+        isWithin(0.7330d, 0.0001d));
     f.checkNull("radians(cast(null as integer))");
     f.checkNull("radians(cast(null as double))");
   }
@@ -5200,9 +5249,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'SIN\\(<NUMERIC>\\)'",
             false);
     f.checkType("sin('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("sin(1)", "DOUBLE NOT NULL", 0.8415d, 0.0001d);
-    f.checkScalarApprox("sin(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 0.8415d, 0.0001d);
+    f.checkScalarApprox("sin(1)", "DOUBLE NOT NULL",
+        isWithin(0.8415d, 0.0001d));
+    f.checkScalarApprox("sin(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(0.8415d, 0.0001d));
     f.checkNull("sin(cast(null as integer))");
     f.checkNull("sin(cast(null as double))");
   }
@@ -5218,9 +5268,10 @@ public abstract class SqlOperatorBaseTest {
             "No match found for function signature SINH\\(<CHARACTER>\\)",
             false);
     f.checkType("sinh('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("sinh(1)", "DOUBLE NOT NULL", 1.1752d, 0.0001d);
-    f.checkScalarApprox("sinh(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 1.1752d, 0.0001d);
+    f.checkScalarApprox("sinh(1)", "DOUBLE NOT NULL",
+        isWithin(1.1752d, 0.0001d));
+    f.checkScalarApprox("sinh(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(1.1752d, 0.0001d));
     f.checkNull("sinh(cast(null as integer))");
     f.checkNull("sinh(cast(null as double))");
   }
@@ -5238,9 +5289,10 @@ public abstract class SqlOperatorBaseTest {
                 + "'TAN\\(<NUMERIC>\\)'",
             false);
     f.checkType("tan('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("tan(1)", "DOUBLE NOT NULL", 1.5574d, 0.0001d);
-    f.checkScalarApprox("tan(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 1.5574d, 0.0001d);
+    f.checkScalarApprox("tan(1)", "DOUBLE NOT NULL",
+        isWithin(1.5574d, 0.0001d));
+    f.checkScalarApprox("tan(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(1.5574d, 0.0001d));
     f.checkNull("tan(cast(null as integer))");
     f.checkNull("tan(cast(null as double))");
   }
@@ -5256,9 +5308,10 @@ public abstract class SqlOperatorBaseTest {
             "No match found for function signature TANH\\(<CHARACTER>\\)",
             false);
     f.checkType("tanh('abc')", "DOUBLE NOT NULL");
-    f.checkScalarApprox("tanh(1)", "DOUBLE NOT NULL", 0.7615d, 0.0001d);
-    f.checkScalarApprox("tanh(cast(1 as decimal(1, 0)))",
-        "DOUBLE NOT NULL", 0.7615d, 0.0001d);
+    f.checkScalarApprox("tanh(1)", "DOUBLE NOT NULL",
+        isWithin(0.7615d, 0.0001d));
+    f.checkScalarApprox("tanh(cast(1 as decimal(1, 0)))", "DOUBLE NOT NULL",
+        isWithin(0.7615d, 0.0001d));
     f.checkNull("tanh(cast(null as integer))");
     f.checkNull("tanh(cast(null as double))");
   }
@@ -5305,12 +5358,12 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalarExact("nullif(13.56, 1.5)", "DECIMAL(4, 2)", "13.56");
     f.checkScalarExact("nullif(1.5, 3)", "DECIMAL(2, 1)", "1.5");
     f.checkScalarExact("nullif(3, 1.5)", "INTEGER", "3");
-    f.checkScalarApprox("nullif(1.5e0, 3e0)", "DOUBLE", 1.5, 0);
+    f.checkScalarApprox("nullif(1.5e0, 3e0)", "DOUBLE", isExactly("1.5"));
     f.checkScalarApprox("nullif(1.5, cast(3e0 as REAL))", "DECIMAL(2, 1)",
-        1.5, 0);
+        isExactly("1.5"));
     f.checkScalarExact("nullif(3, 1.5e0)", "INTEGER", "3");
     f.checkScalarExact("nullif(3, cast(1.5e0 as REAL))", "INTEGER", "3");
-    f.checkScalarApprox("nullif(1.5e0, 3.4)", "DOUBLE", 1.5, 0);
+    f.checkScalarApprox("nullif(1.5e0, 3.4)", "DOUBLE", isExactly("1.5"));
     f.checkScalarExact("nullif(3.4, 1.5e0)", "DECIMAL(2, 1)", "3.4");
     f.checkString("nullif('a','bc')", "a", "CHAR(1)");
     f.checkString("nullif('a',cast(null as varchar(1)))", "a", "CHAR(1)");
@@ -5343,7 +5396,7 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.COALESCE, VM_EXPAND);
     f.checkString("coalesce('a','b')", "a", "CHAR(1) NOT NULL");
-    f.checkScalarExact("coalesce(null,null,3)", "3");
+    f.checkScalarExact("coalesce(null,null,3)", 3);
     f.enableTypeCoercion(false)
         .checkFails("1 + ^coalesce('a', 'b', 1, null)^ + 2",
             "Illegal mixing of types in CASE or COALESCE statement",
@@ -6025,7 +6078,8 @@ public abstract class SqlOperatorBaseTest {
     f.checkString("greatest('on', 'earth')", "on   ", "CHAR(5) NOT NULL");
     f.checkString("greatest('show', 'on', 'earth')", "show ",
         "CHAR(5) NOT NULL");
-    f.checkScalar("greatest(12, CAST(NULL AS INTEGER), 3)", null, "INTEGER");
+    f.checkScalar("greatest(12, CAST(NULL AS INTEGER), 3)", isNullValue(),
+        "INTEGER");
     f.checkScalar("greatest(false, true)", true, "BOOLEAN NOT NULL");
 
     final SqlFixture f12 = f.forOracle(SqlConformanceEnum.ORACLE_12);
@@ -6041,7 +6095,8 @@ public abstract class SqlOperatorBaseTest {
     f.checkString("least('on', 'earth')", "earth", "CHAR(5) NOT NULL");
     f.checkString("least('show', 'on', 'earth')", "earth",
         "CHAR(5) NOT NULL");
-    f.checkScalar("least(12, CAST(NULL AS INTEGER), 3)", null, "INTEGER");
+    f.checkScalar("least(12, CAST(NULL AS INTEGER), 3)", isNullValue(),
+        "INTEGER");
     f.checkScalar("least(false, true)", false, "BOOLEAN NOT NULL");
 
     final SqlFixture f12 = f.forOracle(SqlConformanceEnum.ORACLE_12);
@@ -6089,7 +6144,8 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalar("decode(1, 0, 'a', 1, 'b', 1, 'z', 2, 'c')", "b",
         "CHAR(1)");
     // if there's no match, and no "else", return null
-    f.checkScalar("decode(3, 0, 'a', 1, 'b', 2, 'c')", null, "CHAR(1)");
+    f.checkScalar("decode(3, 0, 'a', 1, 'b', 2, 'c')", isNullValue(),
+        "CHAR(1)");
     // if there's no match, return the "else" value
     f.checkScalar("decode(3, 0, 'a', 1, 'b', 2, 'c', 'd')", "d",
         "CHAR(1) NOT NULL");
@@ -6103,15 +6159,10 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testWindow() {
     final SqlFixture f = fixture();
-    if (!f.brokenTestsEnabled()) {
-      return;
-    }
     f.check("select sum(1) over (order by x)\n"
             + "from (select 1 as x, 2 as y\n"
             + "  from (values (true)))",
-        new SqlTests.StringTypeChecker("INTEGER"),
-        "1",
-        0);
+        SqlTests.INTEGER_TYPE_CHECKER, 1);
   }
 
   @Test void testElementFunc() {
@@ -6124,18 +6175,17 @@ public abstract class SqlOperatorBaseTest {
   @Test void testCardinalityFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CARDINALITY, VM_FENNEL, VM_JAVA);
-    f.checkScalarExact("cardinality(multiset[cast(null as integer),2])",
-        "2");
+    f.checkScalarExact("cardinality(multiset[cast(null as integer),2])", 2);
 
     if (!f.brokenTestsEnabled()) {
       return;
     }
 
     // applied to array
-    f.checkScalarExact("cardinality(array['foo', 'bar'])", "2");
+    f.checkScalarExact("cardinality(array['foo', 'bar'])", 2);
 
     // applied to map
-    f.checkScalarExact("cardinality(map['foo', 1, 'bar', 2])", "2");
+    f.checkScalarExact("cardinality(map['foo', 1, 'bar', 2])", 2);
   }
 
   @Test void testMemberOfOperator() {
@@ -6280,20 +6330,17 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'COLLECT'. Was expecting 1 arguments",
         false);
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    f.checkAgg("collect(x)", values,
-        Collections.singletonList("[0, 2, 2]"), 0d);
+    f.checkAgg("collect(x)", values, isSet("[0, 2, 2]"));
     f.checkAgg("collect(x) within group(order by x desc)", values,
-        Collections.singletonList("[2, 2, 0]"), 0d);
-    Object result1 = -3;
+        isSet("[2, 2, 0]"));
     if (!f.brokenTestsEnabled()) {
       return;
     }
     f.checkAgg("collect(CASE x WHEN 0 THEN NULL ELSE -1 END)", values,
-        result1, 0d);
-    Object result = -1;
+        isSingle(-3));
     f.checkAgg("collect(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, result, 0d);
-    f.checkAgg("collect(DISTINCT x)", values, 2, 0d);
+        values, isSingle(-1));
+    f.checkAgg("collect(DISTINCT x)", values, isSingle(2));
   }
 
   @Test void testListAggFunc() {
@@ -6317,9 +6364,9 @@ public abstract class SqlOperatorBaseTest {
     f.checkAggType("listagg('test')", "CHAR(4) NOT NULL");
     f.checkAggType("listagg('test', ', ')", "CHAR(4) NOT NULL");
     final String[] values1 = {"'hello'", "CAST(null AS CHAR)", "'world'", "'!'"};
-    f.checkAgg("listagg(x)", values1, "hello,world,!", 0d);
+    f.checkAgg("listagg(x)", values1, isSingle("hello,world,!"));
     final String[] values2 = {"0", "1", "2", "3"};
-    f.checkAgg("listagg(cast(x as CHAR))", values2, "0,1,2,3", 0d);
+    f.checkAgg("listagg(cast(x as CHAR))", values2, isSingle("0,1,2,3"));
   }
 
   @Test void testStringAggFunc() {
@@ -6331,11 +6378,10 @@ public abstract class SqlOperatorBaseTest {
 
   private void checkStringAggFunc(SqlFixture f) {
     final String[] values = {"'x'", "null", "'yz'"};
-    f.checkAgg("string_agg(x)", values, "x,yz", 0);
-    f.checkAgg("string_agg(x,':')", values, "x:yz", 0);
-    f.checkAgg("string_agg(x,':' order by x)", values, "x:yz", 0);
-    f.checkAgg("string_agg(x order by char_length(x) desc)", values,
-        "yz,x", 0);
+    f.checkAgg("string_agg(x)", values, isSingle("x,yz"));
+    f.checkAgg("string_agg(x,':')", values, isSingle("x:yz"));
+    f.checkAgg("string_agg(x,':' order by x)", values, isSingle("x:yz"));
+    f.checkAgg("string_agg(x order by char_length(x) desc)", values, isSingle("yz,x"));
     f.checkAggFails("^string_agg(x respect nulls order by x desc)^", values,
         "Cannot specify IGNORE NULLS or RESPECT NULLS following 'STRING_AGG'",
         false);
@@ -6368,12 +6414,13 @@ public abstract class SqlOperatorBaseTest {
 
   private void checkGroupConcatFunc(SqlFixture f) {
     final String[] values = {"'x'", "null", "'yz'"};
-    f.checkAgg("group_concat(x)", values, "x,yz", 0);
-    f.checkAgg("group_concat(x,':')", values, "x:yz", 0);
-    f.checkAgg("group_concat(x,':' order by x)", values, "x:yz", 0);
-    f.checkAgg("group_concat(x order by x separator '|')", values, "x|yz", 0);
+    f.checkAgg("group_concat(x)", values, isSingle("x,yz"));
+    f.checkAgg("group_concat(x,':')", values, isSingle("x:yz"));
+    f.checkAgg("group_concat(x,':' order by x)", values, isSingle("x:yz"));
+    f.checkAgg("group_concat(x order by x separator '|')", values,
+        isSingle("x|yz"));
     f.checkAgg("group_concat(x order by char_length(x) desc)", values,
-        "yz,x", 0);
+        isSingle("yz,x"));
     f.checkAggFails("^group_concat(x respect nulls order by x desc)^", values,
         "Cannot specify IGNORE NULLS or RESPECT NULLS following 'GROUP_CONCAT'",
         false);
@@ -6407,16 +6454,16 @@ public abstract class SqlOperatorBaseTest {
   private void checkArrayAggFunc(SqlFixture f) {
     f.setFor(SqlLibraryOperators.ARRAY_CONCAT_AGG, VM_FENNEL, VM_JAVA);
     final String[] values = {"'x'", "null", "'yz'"};
-    f.checkAgg("array_agg(x)", values, "[x, yz]", 0);
-    f.checkAgg("array_agg(x ignore nulls)", values, "[x, yz]", 0);
-    f.checkAgg("array_agg(x respect nulls)", values, "[x, yz]", 0);
+    f.checkAgg("array_agg(x)", values, isSingle("[x, yz]"));
+    f.checkAgg("array_agg(x ignore nulls)", values, isSingle("[x, yz]"));
+    f.checkAgg("array_agg(x respect nulls)", values, isSingle("[x, yz]"));
     final String expectedError = "Invalid number of arguments "
         + "to function 'ARRAY_AGG'. Was expecting 1 arguments";
     f.checkAggFails("^array_agg(x,':')^", values, expectedError, false);
     f.checkAggFails("^array_agg(x,':' order by x)^", values, expectedError,
         false);
     f.checkAgg("array_agg(x order by char_length(x) desc)", values,
-        "[yz, x]", 0);
+        isSingle("[yz, x]"));
   }
 
   private void checkArrayAggFuncFails(SqlFixture t) {
@@ -6455,10 +6502,10 @@ public abstract class SqlOperatorBaseTest {
     t.checkFails("^array_concat_agg(12)^", expectedError1, false);
 
     final String[] values1 = {"ARRAY[0]", "ARRAY[1]", "ARRAY[2]", "ARRAY[3]"};
-    t.checkAgg("array_concat_agg(x)", values1, "[0, 1, 2, 3]", 0);
+    t.checkAgg("array_concat_agg(x)", values1, isSingle("[0, 1, 2, 3]"));
 
     final String[] values2 = {"ARRAY[0,1]", "ARRAY[1, 2]"};
-    t.checkAgg("array_concat_agg(x)", values2, "[0, 1, 1, 2]", 0);
+    t.checkAgg("array_concat_agg(x)", values2, isSingle("[0, 1, 1, 2]"));
   }
 
   void checkArrayConcatAggFuncFails(SqlFixture t) {
@@ -6482,9 +6529,9 @@ public abstract class SqlOperatorBaseTest {
     f.enableTypeCoercion(false).checkFails("^fusion(12)^",
         "Cannot apply 'FUSION' to arguments of type .*", false);
     final String[] values1 = {"MULTISET[0]", "MULTISET[1]", "MULTISET[2]", "MULTISET[3]"};
-    f.checkAgg("fusion(x)", values1, "[0, 1, 2, 3]", 0);
+    f.checkAgg("fusion(x)", values1, isSingle("[0, 1, 2, 3]"));
     final String[] values2 = {"MULTISET[0,1]", "MULTISET[1, 2]"};
-    f.checkAgg("fusion(x)", values2, "[0, 1, 1, 2]", 0);
+    f.checkAgg("fusion(x)", values2, isSingle("[0, 1, 1, 2]"));
   }
 
   @Test void testIntersectionFunc() {
@@ -6495,11 +6542,11 @@ public abstract class SqlOperatorBaseTest {
     f.enableTypeCoercion(false).checkFails("^intersection(12)^",
         "Cannot apply 'INTERSECTION' to arguments of type .*", false);
     final String[] values1 = {"MULTISET[0]", "MULTISET[1]", "MULTISET[2]", "MULTISET[3]"};
-    f.checkAgg("intersection(x)", values1, "[]", 0);
+    f.checkAgg("intersection(x)", values1, isSingle("[]"));
     final String[] values2 = {"MULTISET[0, 1]", "MULTISET[1, 2]"};
-    f.checkAgg("intersection(x)", values2, "[1]", 0);
+    f.checkAgg("intersection(x)", values2, isSingle("[1]"));
     final String[] values3 = {"MULTISET[0, 1, 1]", "MULTISET[0, 1, 2]"};
-    f.checkAgg("intersection(x)", values3, "[0, 1, 1]", 0);
+    f.checkAgg("intersection(x)", values3, isSingle("[0, 1, 1]"));
   }
 
   @Test void testModeFunc() {
@@ -6526,16 +6573,16 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("mode(cast(null as varchar(2)))", "VARCHAR(2)");
 
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2", "3", "3", "3" };
-    f.checkAgg("mode(x)", values, "3", 0d);
+    f.checkAgg("mode(x)", values, isSingle("3"));
     final String[] values2 = {"0", null, null, null, "2", "2"};
-    f.checkAgg("mode(x)", values2, "2", 0d);
+    f.checkAgg("mode(x)", values2, isSingle("2"));
     final String[] values3 = {};
-    f.checkAgg("mode(x)", values3, null, 0d);
+    f.checkAgg("mode(x)", values3, isNullValue());
     f.checkAgg("mode(CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, -1, 0d);
+        values, isSingle(-1));
     f.checkAgg("mode(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, -1, 0d);
-    f.checkAgg("mode(DISTINCT x)", values, 0, 0d);
+        values, isSingle(-1));
+    f.checkAgg("mode(DISTINCT x)", values, isSingle(0));
   }
 
   @Test void testYear() {
@@ -6865,7 +6912,7 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalar("extract(week from timestamp '2008-2-23 01:23:45')",
         "8", "BIGINT NOT NULL");
     f.checkScalar("extract(week from cast(null as date))",
-        null, "BIGINT");
+        isNullValue(), "BIGINT");
 
     f.checkScalar("extract(decade from date '2008-2-23')",
         "200", "BIGINT NOT NULL");
@@ -7057,9 +7104,9 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.ITEM, VmName.EXPAND);
     f.checkScalar("ARRAY ['foo', 'bar'][1]", "foo", "CHAR(3)");
-    f.checkScalar("ARRAY ['foo', 'bar'][0]", null, "CHAR(3)");
+    f.checkScalar("ARRAY ['foo', 'bar'][0]", isNullValue(), "CHAR(3)");
     f.checkScalar("ARRAY ['foo', 'bar'][2]", "bar", "CHAR(3)");
-    f.checkScalar("ARRAY ['foo', 'bar'][3]", null, "CHAR(3)");
+    f.checkScalar("ARRAY ['foo', 'bar'][3]", isNullValue(), "CHAR(3)");
     f.checkNull("ARRAY ['foo', 'bar'][1 + CAST(NULL AS INTEGER)]");
     f.checkFails("^ARRAY ['foo', 'bar']['baz']^",
         "Cannot apply 'ITEM' to arguments of type 'ITEM\\(<CHAR\\(3\\) ARRAY>, "
@@ -7071,29 +7118,29 @@ public abstract class SqlOperatorBaseTest {
     // Array of INTEGER NOT NULL is interesting because we might be tempted
     // to represent the result as Java "int".
     f.checkScalar("ARRAY [2, 4, 6][2]", "4", "INTEGER");
-    f.checkScalar("ARRAY [2, 4, 6][4]", null, "INTEGER");
+    f.checkScalar("ARRAY [2, 4, 6][4]", isNullValue(), "INTEGER");
 
     // Map item
     f.checkScalarExact("map['foo', 3, 'bar', 7]['bar']", "INTEGER", "7");
     f.checkScalarExact("map['foo', CAST(NULL AS INTEGER), 'bar', 7]"
         + "['bar']", "INTEGER", "7");
-    f.checkScalarExact("map['foo', CAST(NULL AS INTEGER), 'bar', 7]"
-        + "['baz']", "INTEGER", null);
+    f.checkScalarExact("map['foo', CAST(NULL AS INTEGER), 'bar', 7]['baz']",
+        "INTEGER", isNullValue());
     f.checkColumnType("select cast(null as any)['x'] from (values(1))",
         "ANY");
 
     // Row item
     final String intStructQuery = "select \"T\".\"X\"[1] "
         + "from (VALUES (ROW(ROW(3, 7), ROW(4, 8)))) as T(x, y)";
-    f.check(intStructQuery, SqlTests.INTEGER_TYPE_CHECKER, 3, 0);
+    f.check(intStructQuery, SqlTests.INTEGER_TYPE_CHECKER, 3);
     f.checkColumnType(intStructQuery, "INTEGER NOT NULL");
 
     f.check("select \"T\".\"X\"[1] "
             + "from (VALUES (ROW(ROW(3, CAST(NULL AS INTEGER)), ROW(4, 8)))) as T(x, y)",
-        SqlTests.INTEGER_TYPE_CHECKER, 3, 0);
+        SqlTests.INTEGER_TYPE_CHECKER, 3);
     f.check("select \"T\".\"X\"[2] "
             + "from (VALUES (ROW(ROW(3, CAST(NULL AS INTEGER)), ROW(4, 8)))) as T(x, y)",
-        SqlTests.ANY_TYPE_CHECKER, null, 0);
+        SqlTests.ANY_TYPE_CHECKER, isNullValue());
     f.checkFails("select \"T\".\"X\"[1 + CAST(NULL AS INTEGER)] "
         + "from (VALUES (ROW(ROW(3, CAST(NULL AS INTEGER)), ROW(4, 8)))) as T(x, y)",
         "Cannot infer type of field at position null within ROW type: "
@@ -7109,23 +7156,23 @@ public abstract class SqlOperatorBaseTest {
         "Map requires an even number of arguments", false);
     f.checkFails("^map[1, 1, 2, 'x']^",
         "Parameters must be of the same type", false);
-    f.checkScalarExact("map['washington', 1, 'obama', 44]",
-        "(CHAR(10) NOT NULL, INTEGER NOT NULL) MAP NOT NULL",
-        "{washington=1, obama=44}");
+    f.checkScalar("map['washington', 1, 'obama', 44]",
+        "{washington=1, obama=44}",
+        "(CHAR(10) NOT NULL, INTEGER NOT NULL) MAP NOT NULL");
 
     final SqlFixture f1 =
         f.withConformance(SqlConformanceEnum.PRAGMATIC_2003);
-    f1.checkScalarExact("map['washington', 1, 'obama', 44]",
-        "(VARCHAR(10) NOT NULL, INTEGER NOT NULL) MAP NOT NULL",
-        "{washington=1, obama=44}");
+    f1.checkScalar("map['washington', 1, 'obama', 44]",
+        "{washington=1, obama=44}",
+        "(VARCHAR(10) NOT NULL, INTEGER NOT NULL) MAP NOT NULL");
   }
 
   @Test void testCeilFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CEIL, VM_FENNEL);
-    f.checkScalarApprox("ceil(10.1e0)", "DOUBLE NOT NULL", 11, 0);
+    f.checkScalarApprox("ceil(10.1e0)", "DOUBLE NOT NULL", isExactly(11));
     f.checkScalarApprox("ceil(cast(-11.2e0 as real))", "REAL NOT NULL",
-        -11, 0);
+        isExactly(-11));
     f.checkScalarExact("ceil(100)", "INTEGER NOT NULL", "100");
     f.checkScalarExact("ceil(1.3)", "DECIMAL(2, 0) NOT NULL", "2");
     f.checkScalarExact("ceil(-1.7)", "DECIMAL(2, 0) NOT NULL", "-1");
@@ -7152,14 +7199,12 @@ public abstract class SqlOperatorBaseTest {
   @Test void testFloorFunc() {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.FLOOR, VM_FENNEL);
-    f.checkScalarApprox("floor(2.5e0)", "DOUBLE NOT NULL", 2, 0);
-    f.checkScalarApprox("floor(cast(-1.2e0 as real))", "REAL NOT NULL", -2,
-        0);
+    f.checkScalarApprox("floor(2.5e0)", "DOUBLE NOT NULL", isExactly(2));
+    f.checkScalarApprox("floor(cast(-1.2e0 as real))", "REAL NOT NULL",
+        isExactly(-2));
     f.checkScalarExact("floor(100)", "INTEGER NOT NULL", "100");
-    f.checkScalarExact(
-        "floor(1.7)", "DECIMAL(2, 0) NOT NULL", "1");
-    f.checkScalarExact(
-        "floor(-1.7)", "DECIMAL(2, 0) NOT NULL", "-2");
+    f.checkScalarExact("floor(1.7)", "DECIMAL(2, 0) NOT NULL", "1");
+    f.checkScalarExact("floor(-1.7)", "DECIMAL(2, 0) NOT NULL", "-2");
     f.checkNull("floor(cast(null as decimal(2,0)))");
     f.checkNull("floor(cast(null as real))");
   }
@@ -7321,9 +7366,8 @@ public abstract class SqlOperatorBaseTest {
     f.checkNull("timestampadd(HOUR, -200, CAST(NULL AS TIMESTAMP))");
     f.checkScalar("timestampadd(MONTH, 3, timestamp '2016-02-24 12:42:25')",
         "2016-05-24 12:42:25", "TIMESTAMP(0) NOT NULL");
-    f.checkScalar(
-        "timestampadd(MONTH, 3, cast(null as timestamp))",
-        null, "TIMESTAMP(0)");
+    f.checkScalar("timestampadd(MONTH, 3, cast(null as timestamp))",
+        isNullValue(), "TIMESTAMP(0)");
 
     // TIMESTAMPADD with DATE; returns a TIMESTAMP value for sub-day intervals.
     f.checkScalar("timestampadd(MONTH, 1, date '2016-06-15')",
@@ -7339,9 +7383,9 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalar("timestampadd(SECOND, 1, date '2016-06-15')",
         "2016-06-15 00:00:01", "TIMESTAMP(0) NOT NULL");
     f.checkScalar("timestampadd(SECOND, 1, cast(null as date))",
-        null, "TIMESTAMP(0)");
+        isNullValue(), "TIMESTAMP(0)");
     f.checkScalar("timestampadd(DAY, 1, cast(null as date))",
-        null, "DATE");
+        isNullValue(), "DATE");
 
     // Round to the last day of previous month
     f.checkScalar("timestampadd(MONTH, 1, date '2016-05-31')",
@@ -7461,11 +7505,11 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalar("timestampdiff(QUARTER, "
         + "timestamp '2014-02-24 12:42:25', "
         + "cast(null as timestamp))",
-        null, "INTEGER");
+        isNullValue(), "INTEGER");
     f.checkScalar("timestampdiff(QUARTER, "
         + "cast(null as timestamp), "
         + "timestamp '2014-02-24 12:42:25')",
-        null, "INTEGER");
+        isNullValue(), "INTEGER");
 
     // timestampdiff with date
     f.checkScalar("timestampdiff(MONTH, date '2016-03-15', date '2016-06-14')",
@@ -7481,9 +7525,9 @@ public abstract class SqlOperatorBaseTest {
     f.checkScalar("timestampdiff(MINUTE, date '2016-06-15',  date '2016-06-15')",
         "0", "INTEGER NOT NULL");
     f.checkScalar("timestampdiff(SECOND, cast(null as date), date '2016-06-15')",
-        null, "INTEGER");
+        isNullValue(), "INTEGER");
     f.checkScalar("timestampdiff(DAY, date '2016-06-15', cast(null as date))",
-        null, "INTEGER");
+        isNullValue(), "INTEGER");
   }
 
   @Test void testDenseRankFunc() {
@@ -7560,19 +7604,19 @@ public abstract class SqlOperatorBaseTest {
     f.checkType("count(1, 2)", "BIGINT NOT NULL");
     f.checkType("count(1, 2, 'x', 'y')", "BIGINT NOT NULL");
     final String[] values = {"0", "CAST(null AS INTEGER)", "1", "0"};
-    f.checkAgg("COUNT(x)", values, 3, 0d);
-    f.checkAgg("COUNT(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, 2,
-        0d);
-    f.checkAgg("COUNT(DISTINCT x)", values, 2, 0d);
+    f.checkAgg("COUNT(x)", values, isSingle(3));
+    f.checkAgg("COUNT(CASE x WHEN 0 THEN NULL ELSE -1 END)", values,
+        isSingle(2));
+    f.checkAgg("COUNT(DISTINCT x)", values, isSingle(2));
 
     // string values -- note that empty string is not null
     final String[] stringValues = {
         "'a'", "CAST(NULL AS VARCHAR(1))", "''"
     };
-    f.checkAgg("COUNT(*)", stringValues, 3, 0d);
-    f.checkAgg("COUNT(x)", stringValues, 2, 0d);
-    f.checkAgg("COUNT(DISTINCT x)", stringValues, 2, 0d);
-    f.checkAgg("COUNT(DISTINCT 123)", stringValues, 1, 0d);
+    f.checkAgg("COUNT(*)", stringValues, isSingle(3));
+    f.checkAgg("COUNT(x)", stringValues, isSingle(2));
+    f.checkAgg("COUNT(DISTINCT x)", stringValues, isSingle(2));
+    f.checkAgg("COUNT(DISTINCT 123)", stringValues, isSingle(1));
   }
 
   @Test void testCountifFunc() {
@@ -7593,14 +7637,14 @@ public abstract class SqlOperatorBaseTest {
     f.checkFails("^COUNTIF(1)^", expectedError2, false);
 
     final String[] values = {"1", "2", "CAST(NULL AS INTEGER)", "1"};
-    f.checkAgg("countif(x > 0)", values, 3, 0d);
-    f.checkAgg("countif(x < 2)", values, 2, 0d);
+    f.checkAgg("countif(x > 0)", values, isSingle(3));
+    f.checkAgg("countif(x < 2)", values, isSingle(2));
     f.checkAgg("countif(x is not null) filter (where x < 2)",
-        values, 2, 0d);
+        values, isSingle(2));
     f.checkAgg("countif(x < 2) filter (where x is not null)",
-        values, 2, 0d);
-    f.checkAgg("countif(x between 1 and 2)", values, 3, 0d);
-    f.checkAgg("countif(x < 0)", values, 0, 0d);
+        values, isSingle(2));
+    f.checkAgg("countif(x between 1 and 2)", values, isSingle(3));
+    f.checkAgg("countif(x < 0)", values, isSingle(0));
   }
 
   @Test void testApproxCountDistinctFunc() {
@@ -7621,20 +7665,19 @@ public abstract class SqlOperatorBaseTest {
         "BIGINT NOT NULL");
     final String[] values = {"0", "CAST(null AS INTEGER)", "1", "0"};
     // currently APPROX_COUNT_DISTINCT(x) returns the same as COUNT(DISTINCT x)
-    f.checkAgg("APPROX_COUNT_DISTINCT(x)", values, 2, 0d);
-    f.checkAgg(
-        "APPROX_COUNT_DISTINCT(CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, 1, 0d);
+    f.checkAgg("APPROX_COUNT_DISTINCT(x)", values, isSingle(2));
+    f.checkAgg("APPROX_COUNT_DISTINCT(CASE x WHEN 0 THEN NULL ELSE -1 END)",
+        values, isSingle(1));
     // DISTINCT keyword is allowed but has no effect
-    f.checkAgg("APPROX_COUNT_DISTINCT(DISTINCT x)", values, 2, 0d);
+    f.checkAgg("APPROX_COUNT_DISTINCT(DISTINCT x)", values, isSingle(2));
 
     // string values -- note that empty string is not null
     final String[] stringValues = {
         "'a'", "CAST(NULL AS VARCHAR(1))", "''"
     };
-    f.checkAgg("APPROX_COUNT_DISTINCT(x)", stringValues, 2, 0d);
-    f.checkAgg("APPROX_COUNT_DISTINCT(DISTINCT x)", stringValues, 2, 0d);
-    f.checkAgg("APPROX_COUNT_DISTINCT(DISTINCT 123)", stringValues, 1, 0d);
+    f.checkAgg("APPROX_COUNT_DISTINCT(x)", stringValues, isSingle(2));
+    f.checkAgg("APPROX_COUNT_DISTINCT(DISTINCT x)", stringValues, isSingle(2));
+    f.checkAgg("APPROX_COUNT_DISTINCT(DISTINCT 123)", stringValues, isSingle(1));
   }
 
   @Test void testSumFunc() {
@@ -7665,17 +7708,15 @@ public abstract class SqlOperatorBaseTest {
         false);
     f.checkType("sum(cast(null as varchar(2)))", "DECIMAL(19, 9)");
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    f.checkAgg("sum(x)", values, 4, 0d);
-    Object result1 = -3;
+    f.checkAgg("sum(x)", values, isSingle(4));
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg("sum(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, result1,
-        0d);
-    Object result = -1;
+    f.checkAgg("sum(CASE x WHEN 0 THEN NULL ELSE -1 END)", values,
+        isSingle(-3));
     f.checkAgg("sum(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values,
-        result, 0d);
-    f.checkAgg("sum(DISTINCT x)", values, 2, 0d);
+        isSingle(-1));
+    f.checkAgg("sum(DISTINCT x)", values, isSingle(2));
   }
 
   @Test void testAvgFunc() {
@@ -7699,11 +7740,10 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
-    f.checkAgg("AVG(x)", values, 2d, 0d);
-    f.checkAgg("AVG(DISTINCT x)", values, 1.5d, 0d);
-    Object result = -1;
+    f.checkAgg("AVG(x)", values, isExactly(2d));
+    f.checkAgg("AVG(DISTINCT x)", values, isExactly(1.5d));
     f.checkAgg("avg(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values,
-        result, 0d);
+        isSingle(-1));
   }
 
   @Test void testCovarPopFunc() {
@@ -7723,7 +7763,7 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     // with zero values
-    f.checkAgg("covar_pop(x)", new String[]{}, null, 0d);
+    f.checkAgg("covar_pop(x)", new String[]{}, isNullValue());
   }
 
   @Test void testCovarSampFunc() {
@@ -7746,7 +7786,7 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     // with zero values
-    f.checkAgg("covar_samp(x)", new String[]{}, null, 0d);
+    f.checkAgg("covar_samp(x)", new String[]{}, isNullValue());
   }
 
   @Test void testRegrSxxFunc() {
@@ -7769,7 +7809,7 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     // with zero values
-    f.checkAgg("regr_sxx(x)", new String[]{}, null, 0d);
+    f.checkAgg("regr_sxx(x)", new String[]{}, isNullValue());
   }
 
   @Test void testRegrSyyFunc() {
@@ -7792,7 +7832,7 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     // with zero values
-    f.checkAgg("regr_syy(x)", new String[]{}, null, 0d);
+    f.checkAgg("regr_syy(x)", new String[]{}, isNullValue());
   }
 
   @Test void testStddevPopFunc() {
@@ -7808,17 +7848,17 @@ public abstract class SqlOperatorBaseTest {
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
     if (f.brokenTestsEnabled()) {
       // verified on Oracle 10g
-      f.checkAgg("stddev_pop(x)", values, 1.414213562373095d,
-          0.000000000000001d);
+      f.checkAgg("stddev_pop(x)", values,
+          isWithin(1.414213562373095d, 0.000000000000001d));
       // Oracle does not allow distinct
-      f.checkAgg("stddev_pop(DISTINCT x)", values, 1.5d, 0d);
+      f.checkAgg("stddev_pop(DISTINCT x)", values, isExactly(1.5d));
       f.checkAgg("stddev_pop(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-          values, 0, 0d);
+          values, isExactly(0));
     }
     // with one value
-    f.checkAgg("stddev_pop(x)", new String[]{"5"}, 0, 0d);
+    f.checkAgg("stddev_pop(x)", new String[]{"5"}, isSingle(0));
     // with zero values
-    f.checkAgg("stddev_pop(x)", new String[]{}, null, 0d);
+    f.checkAgg("stddev_pop(x)", new String[]{}, isNullValue());
   }
 
   @Test void testStddevSampFunc() {
@@ -7838,29 +7878,18 @@ public abstract class SqlOperatorBaseTest {
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
     if (f.brokenTestsEnabled()) {
       // verified on Oracle 10g
-      f.checkAgg("stddev_samp(x)", values, 1.732050807568877d,
-          0.000000000000001d);
+      f.checkAgg("stddev_samp(x)", values,
+          isWithin(1.732050807568877d, 0.000000000000001d));
       // Oracle does not allow distinct
-      f.checkAgg("stddev_samp(DISTINCT x)", values, 2.121320343559642d,
-          0.000000000000001d);
-      f.checkAgg(
-          "stddev_samp(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-          values,
-          null,
-          0d);
+      f.checkAgg("stddev_samp(DISTINCT x)", values,
+          isWithin(2.121320343559642d, 0.000000000000001d));
+      f.checkAgg("stddev_samp(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
+          values, isNullValue());
     }
     // with one value
-    f.checkAgg(
-        "stddev_samp(x)",
-        new String[]{"5"},
-        null,
-        0d);
+    f.checkAgg("stddev_samp(x)", new String[]{"5"}, isNullValue());
     // with zero values
-    f.checkAgg(
-        "stddev_samp(x)",
-        new String[]{},
-        null,
-        0d);
+    f.checkAgg("stddev_samp(x)", new String[]{}, isNullValue());
   }
 
   @Test void testStddevFunc() {
@@ -7879,17 +7908,9 @@ public abstract class SqlOperatorBaseTest {
     f.checkAggType("stddev(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
     final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
     // with one value
-    f.checkAgg(
-        "stddev(x)",
-        new String[]{"5"},
-        null,
-        0d);
+    f.checkAgg("stddev(x)", new String[]{"5"}, isNullValue());
     // with zero values
-    f.checkAgg(
-        "stddev(x)",
-        new String[]{},
-        null,
-        0d);
+    f.checkAgg("stddev(x)", new String[]{}, isNullValue());
   }
 
   @Test void testVarPopFunc() {
@@ -7910,33 +7931,15 @@ public abstract class SqlOperatorBaseTest {
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg(
-        "var_pop(x)",
-        values,
-        2d, // verified on Oracle 10g
-        0d);
-    f.checkAgg(
-        "var_pop(DISTINCT x)", // Oracle does not allow distinct
-        values,
-        2.25d,
-        0.0001d);
-    f.checkAgg(
-        "var_pop(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values,
-        0,
-        0d);
+    f.checkAgg("var_pop(x)", values, isExactly(2d)); // verified on Oracle 10g
+    f.checkAgg("var_pop(DISTINCT x)", // Oracle does not allow distinct
+        values, isWithin(2.25d, 0.0001d));
+    f.checkAgg("var_pop(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
+        values, isExactly(0));
     // with one value
-    f.checkAgg(
-        "var_pop(x)",
-        new String[]{"5"},
-        0,
-        0d);
+    f.checkAgg("var_pop(x)", new String[]{"5"}, isExactly(0));
     // with zero values
-    f.checkAgg(
-        "var_pop(x)",
-        new String[]{},
-        null,
-        0d);
+    f.checkAgg("var_pop(x)", new String[]{}, isNullValue());
   }
 
   @Test void testVarSampFunc() {
@@ -7957,31 +7960,15 @@ public abstract class SqlOperatorBaseTest {
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg(
-        "var_samp(x)", values, 3d, // verified on Oracle 10g
-        0d);
-    f.checkAgg(
-        "var_samp(DISTINCT x)", // Oracle does not allow distinct
-        values,
-        4.5d,
-        0.0001d);
-    f.checkAgg(
-        "var_samp(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values,
-        null,
-        0d);
+    f.checkAgg("var_samp(x)", values, isExactly(3d)); // verified on Oracle 10g
+    f.checkAgg("var_samp(DISTINCT x)", // Oracle does not allow distinct
+        values, isWithin(4.5d, 0.0001d));
+    f.checkAgg("var_samp(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
+        values, isNullValue());
     // with one value
-    f.checkAgg(
-        "var_samp(x)",
-        new String[]{"5"},
-        null,
-        0d);
+    f.checkAgg("var_samp(x)", new String[]{"5"}, isNullValue());
     // with zero values
-    f.checkAgg(
-        "var_samp(x)",
-        new String[]{},
-        null,
-        0d);
+    f.checkAgg("var_samp(x)", new String[]{}, isNullValue());
   }
 
   @Test void testVarFunc() {
@@ -8002,31 +7989,15 @@ public abstract class SqlOperatorBaseTest {
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg(
-        "variance(x)", values, 3d, // verified on Oracle 10g
-        0d);
-    f.checkAgg(
-        "variance(DISTINCT x)", // Oracle does not allow distinct
-        values,
-        4.5d,
-        0.0001d);
-    f.checkAgg(
-        "variance(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values,
-        null,
-        0d);
+    f.checkAgg("variance(x)", values, isExactly(3d)); // verified on Oracle 10g
+    f.checkAgg("variance(DISTINCT x)", // Oracle does not allow distinct
+        values, isWithin(4.5d, 0.0001d));
+    f.checkAgg("variance(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
+        values, isNullValue());
     // with one value
-    f.checkAgg(
-        "variance(x)",
-        new String[]{"5"},
-        null,
-        0d);
+    f.checkAgg("variance(x)", new String[]{"5"}, isNullValue());
     // with zero values
-    f.checkAgg(
-        "variance(x)",
-        new String[]{},
-        null,
-        0d);
+    f.checkAgg("variance(x)", new String[]{}, isNullValue());
   }
 
   @Test void testMinFunc() {
@@ -8051,26 +8022,10 @@ public abstract class SqlOperatorBaseTest {
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg(
-        "min(x)",
-        values,
-        "0",
-        0d);
-    f.checkAgg(
-        "min(CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values,
-        "-1",
-        0d);
-    f.checkAgg(
-        "min(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values,
-        "-1",
-        0d);
-    f.checkAgg(
-        "min(DISTINCT x)",
-        values,
-        "0",
-        0d);
+    f.checkAgg("min(x)", values, isSingle("0"));
+    f.checkAgg("min(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, isSingle("-1"));
+    f.checkAgg("min(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, isSingle("-1"));
+    f.checkAgg("min(DISTINCT x)", values, isSingle("0"));
   }
 
   @Test void testMaxFunc() {
@@ -8090,11 +8045,10 @@ public abstract class SqlOperatorBaseTest {
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg("max(x)", values, "2", 0d);
-    f.checkAgg("max(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, "-1", 0d);
-    f.checkAgg("max(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, "-1", 0d);
-    f.checkAgg("max(DISTINCT x)", values, "2", 0d);
+    f.checkAgg("max(x)", values, isSingle("2"));
+    f.checkAgg("max(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, isSingle("-1"));
+    f.checkAgg("max(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, isSingle("-1"));
+    f.checkAgg("max(DISTINCT x)", values, isSingle("2"));
   }
 
   @Test void testLastValueFunc() {
@@ -8105,13 +8059,13 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     f.checkWinAgg("last_value(x)", values, "ROWS 3 PRECEDING", "INTEGER",
-        Arrays.asList("3", "0"), 0d);
+        isSet("3", "0"));
     final String[] values2 = {"1.6", "1.2"};
     f.checkWinAgg("last_value(x)", values2, "ROWS 3 PRECEDING",
-        "DECIMAL(2, 1) NOT NULL", Arrays.asList("1.6", "1.2"), 0d);
+        "DECIMAL(2, 1) NOT NULL", isSet("1.6", "1.2"));
     final String[] values3 = {"'foo'", "'bar'", "'name'"};
     f.checkWinAgg("last_value(x)", values3, "ROWS 3 PRECEDING",
-        "CHAR(4) NOT NULL", Arrays.asList("foo ", "bar ", "name"), 0d);
+        "CHAR(4) NOT NULL", isSet("foo ", "bar ", "name"));
   }
 
   @Test void testFirstValueFunc() {
@@ -8122,13 +8076,13 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     f.checkWinAgg("first_value(x)", values, "ROWS 3 PRECEDING", "INTEGER",
-        Arrays.asList("0"), 0d);
+        isSet("0"));
     final String[] values2 = {"1.6", "1.2"};
     f.checkWinAgg("first_value(x)", values2, "ROWS 3 PRECEDING",
-        "DECIMAL(2, 1) NOT NULL", Arrays.asList("1.6"), 0d);
+        "DECIMAL(2, 1) NOT NULL", isSet("1.6"));
     final String[] values3 = {"'foo'", "'bar'", "'name'"};
     f.checkWinAgg("first_value(x)", values3, "ROWS 3 PRECEDING",
-        "CHAR(4) NOT NULL", Arrays.asList("foo "), 0d);
+        "CHAR(4) NOT NULL", isSet("foo "));
   }
 
   @Test void testEveryFunc() {
@@ -8145,7 +8099,7 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'EVERY'. Was expecting 1 arguments",
         false);
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    f.checkAgg("every(x = 2)", values, "false", 0d);
+    f.checkAgg("every(x = 2)", values, isSingle("false"));
   }
 
   @Test void testSomeAggFunc() {
@@ -8162,7 +8116,7 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'SOME'. Was expecting 1 arguments",
         false);
     final String[] values = {"0", "CAST(null AS INTEGER)", "2", "2"};
-    f.checkAgg("some(x = 2)", values, "true", 0d);
+    f.checkAgg("some(x = 2)", values, isSingle("true"));
   }
 
 
@@ -8183,13 +8137,10 @@ public abstract class SqlOperatorBaseTest {
     if (!f.brokenTestsEnabled()) {
       return;
     }
-    f.checkAgg("any_value(x)", values, "0", 0d);
-    f.checkAgg("any_value(CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, "-1", 0d);
-    f.checkAgg("any_value(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)",
-        values, "-1", 0d);
-    f.checkAgg("any_value(DISTINCT x)",
-        values, "0", 0d);
+    f.checkAgg("any_value(x)", values, isSingle("0"));
+    f.checkAgg("any_value(CASE x WHEN 0 THEN NULL ELSE -1 END)", values, isSingle("-1"));
+    f.checkAgg("any_value(DISTINCT CASE x WHEN 0 THEN NULL ELSE -1 END)", values, isSingle("-1"));
+    f.checkAgg("any_value(DISTINCT x)", values, isSingle("0"));
   }
 
   @Test void testBoolAndFunc() {
@@ -8219,13 +8170,13 @@ public abstract class SqlOperatorBaseTest {
         false);
 
     final String[] values1 = {"true", "true", "null"};
-    f.checkAgg("bool_and(x)", values1, true, 0d);
+    f.checkAgg("bool_and(x)", values1, isSingle(true));
     String[] values2 = {"true", "false", "null"};
-    f.checkAgg("bool_and(x)", values2, false, 0d);
+    f.checkAgg("bool_and(x)", values2, isSingle(false));
     String[] values3 = {"true", "false", "false"};
-    f.checkAgg("bool_and(x)", values3, false, 0d);
+    f.checkAgg("bool_and(x)", values3, isSingle(false));
     String[] values4 = {"null"};
-    f.checkAgg("bool_and(x)", values4, null, 0d);
+    f.checkAgg("bool_and(x)", values4, isNullValue());
   }
 
   @Test void testBoolOrFunc() {
@@ -8255,13 +8206,13 @@ public abstract class SqlOperatorBaseTest {
         false);
 
     final String[] values1 = {"true", "true", "null"};
-    f.checkAgg("bool_or(x)", values1, true, 0d);
+    f.checkAgg("bool_or(x)", values1, isSingle(true));
     String[] values2 = {"true", "false", "null"};
-    f.checkAgg("bool_or(x)", values2, true, 0d);
+    f.checkAgg("bool_or(x)", values2, isSingle(true));
     String[] values3 = {"false", "false", "false"};
-    f.checkAgg("bool_or(x)", values3, false, 0d);
+    f.checkAgg("bool_or(x)", values3, isSingle(false));
     String[] values4 = {"null"};
-    f.checkAgg("bool_or(x)", values4, null, 0d);
+    f.checkAgg("bool_or(x)", values4, isNullValue());
   }
 
   @Test void testLogicalAndFunc() {
@@ -8291,13 +8242,13 @@ public abstract class SqlOperatorBaseTest {
         false);
 
     final String[] values1 = {"true", "true", "null"};
-    f.checkAgg("logical_and(x)", values1, true, 0d);
+    f.checkAgg("logical_and(x)", values1, isSingle(true));
     String[] values2 = {"true", "false", "null"};
-    f.checkAgg("logical_and(x)", values2, false, 0d);
+    f.checkAgg("logical_and(x)", values2, isSingle(false));
     String[] values3 = {"true", "false", "false"};
-    f.checkAgg("logical_and(x)", values3, false, 0d);
+    f.checkAgg("logical_and(x)", values3, isSingle(false));
     String[] values4 = {"null"};
-    f.checkAgg("logical_and(x)", values4, null, 0d);
+    f.checkAgg("logical_and(x)", values4, isNullValue());
   }
 
   @Test void testLogicalOrFunc() {
@@ -8327,13 +8278,13 @@ public abstract class SqlOperatorBaseTest {
         false);
 
     final String[] values1 = {"true", "true", "null"};
-    f.checkAgg("logical_or(x)", values1, true, 0d);
+    f.checkAgg("logical_or(x)", values1, isSingle(true));
     String[] values2 = {"true", "false", "null"};
-    f.checkAgg("logical_or(x)", values2, true, 0d);
+    f.checkAgg("logical_or(x)", values2, isSingle(true));
     String[] values3 = {"false", "false", "false"};
-    f.checkAgg("logical_or(x)", values3, false, 0d);
+    f.checkAgg("logical_or(x)", values3, isSingle(false));
     String[] values4 = {"null"};
-    f.checkAgg("logical_or(x)", values4, null, 0d);
+    f.checkAgg("logical_or(x)", values4, isNullValue());
   }
 
   @Test void testBitAndFunc() {
@@ -8356,14 +8307,14 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'BIT_AND'. Was expecting 1 arguments",
         false);
     final String[] values = {"3", "2", "2"};
-    f.checkAgg("bit_and(x)", values, "2", 0);
+    f.checkAgg("bit_and(x)", values, isSingle("2"));
     final String[] binaryValues = {
         "CAST(x'03' AS BINARY)",
         "cast(x'02' as BINARY)",
         "cast(x'02' AS BINARY)",
         "cast(null AS BINARY)"};
-    f.checkAgg("bit_and(x)", binaryValues, "02", 0);
-    f.checkAgg("bit_and(x)", new String[]{"CAST(x'02' AS BINARY)"}, "02", 0);
+    f.checkAgg("bit_and(x)", binaryValues, isSingle("02"));
+    f.checkAgg("bit_and(x)", new String[]{"CAST(x'02' AS BINARY)"}, isSingle("02"));
 
     f.checkAggFails("bit_and(x)",
         new String[]{"CAST(x'0201' AS VARBINARY)", "CAST(x'02' AS VARBINARY)"},
@@ -8397,14 +8348,15 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'BIT_OR'. Was expecting 1 arguments",
         false);
     final String[] values = {"1", "2", "2"};
-    f.checkAgg("bit_or(x)", values, 3, 0);
+    f.checkAgg("bit_or(x)", values, isSingle(3));
     final String[] binaryValues = {
         "CAST(x'01' AS BINARY)",
         "cast(x'02' as BINARY)",
         "cast(x'02' AS BINARY)",
         "cast(null AS BINARY)"};
-    f.checkAgg("bit_or(x)", binaryValues, "03", 0);
-    f.checkAgg("bit_or(x)", new String[]{"CAST(x'02' AS BINARY)"}, "02", 0);
+    f.checkAgg("bit_or(x)", binaryValues, isSingle("03"));
+    f.checkAgg("bit_or(x)", new String[]{"CAST(x'02' AS BINARY)"},
+        isSingle("02"));
   }
 
   @Test void testBitXorFunc() {
@@ -8429,16 +8381,18 @@ public abstract class SqlOperatorBaseTest {
         "Invalid number of arguments to function 'BIT_XOR'. Was expecting 1 arguments",
         false);
     final String[] values = {"1", "2", "1"};
-    f.checkAgg("bit_xor(x)", values, 2, 0);
+    f.checkAgg("bit_xor(x)", values, isSingle(2));
     final String[] binaryValues = {
         "CAST(x'01' AS BINARY)",
         "cast(x'02' as BINARY)",
         "cast(x'01' AS BINARY)",
         "cast(null AS BINARY)"};
-    f.checkAgg("bit_xor(x)", binaryValues, "02", 0);
-    f.checkAgg("bit_xor(x)", new String[]{"CAST(x'02' AS BINARY)"}, "02", 0);
+    f.checkAgg("bit_xor(x)", binaryValues, isSingle("02"));
+    f.checkAgg("bit_xor(x)", new String[]{"CAST(x'02' AS BINARY)"},
+        isSingle("02"));
     f.checkAgg("bit_xor(distinct(x))",
-        new String[]{"CAST(x'02' AS BINARY)", "CAST(x'02' AS BINARY)"}, "02", 0);
+        new String[]{"CAST(x'02' AS BINARY)", "CAST(x'02' AS BINARY)"},
+        isSingle("02"));
   }
 
   /**
