@@ -41,7 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.rel.type.RelDataTypeImpl.NON_NULLABLE_SUFFIX;
-import static org.apache.calcite.test.ConnectionFactories.isSingle;
+import static org.apache.calcite.sql.test.ResultCheckers.isSingle;
 
 /**
  * SqlTester defines a callback for testing SQL queries and expressions.
@@ -225,7 +225,7 @@ public interface SqlFixture extends AutoCloseable {
       String resultType) {
     checkType(expression, resultType);
     checkScalar(expression, SqlTests.ANY_TYPE_CHECKER,
-        SqlTests.createChecker(result));
+        ResultCheckers.createChecker(result));
   }
 
   /**
@@ -402,7 +402,7 @@ public interface SqlFixture extends AutoCloseable {
       TypeChecker typeChecker,
       Object result) {
     check(query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER,
-        SqlTests.createChecker(result));
+        ResultCheckers.createChecker(result));
   }
 
   default void check(String query, String expectedType, Object result) {

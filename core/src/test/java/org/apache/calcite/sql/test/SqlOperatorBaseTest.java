@@ -103,11 +103,11 @@ import static org.apache.calcite.sql.test.SqlFixture.INVALID_EXTRACT_UNIT_VALIDA
 import static org.apache.calcite.sql.test.SqlFixture.LITERAL_OUT_OF_RANGE_MESSAGE;
 import static org.apache.calcite.sql.test.SqlFixture.OUT_OF_RANGE_MESSAGE;
 import static org.apache.calcite.sql.test.SqlFixture.STRING_TRUNC_MESSAGE;
-import static org.apache.calcite.test.ConnectionFactories.isExactly;
-import static org.apache.calcite.test.ConnectionFactories.isNullValue;
-import static org.apache.calcite.test.ConnectionFactories.isSet;
-import static org.apache.calcite.test.ConnectionFactories.isSingle;
-import static org.apache.calcite.test.ConnectionFactories.isWithin;
+import static org.apache.calcite.sql.test.ResultCheckers.isExactly;
+import static org.apache.calcite.sql.test.ResultCheckers.isNullValue;
+import static org.apache.calcite.sql.test.ResultCheckers.isSet;
+import static org.apache.calcite.sql.test.ResultCheckers.isSingle;
+import static org.apache.calcite.sql.test.ResultCheckers.isWithin;
 import static org.apache.calcite.util.DateTimeStringUtils.getDateFormatter;
 
 import static org.hamcrest.CoreMatchers.equalTo;

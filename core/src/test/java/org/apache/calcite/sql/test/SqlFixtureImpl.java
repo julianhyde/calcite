@@ -30,8 +30,8 @@ import org.hamcrest.Matcher;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-import static org.apache.calcite.test.ConnectionFactories.isNullValue;
-import static org.apache.calcite.test.ConnectionFactories.isSingle;
+import static org.apache.calcite.sql.test.ResultCheckers.isNullValue;
+import static org.apache.calcite.sql.test.ResultCheckers.isSingle;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -228,7 +228,7 @@ class SqlFixtureImpl implements SqlFixture {
       Object result) {
     SqlTester.TypeChecker typeChecker =
         new SqlTests.StringTypeChecker(expectedType);
-    final SqlTester.ResultChecker checker = SqlTests.createChecker(result);
+    final SqlTester.ResultChecker checker = ResultCheckers.createChecker(result);
     tester.forEachQuery(factory, expression, sql ->
         tester.check(factory, sql, typeChecker, checker));
   }
@@ -240,7 +240,7 @@ class SqlFixtureImpl implements SqlFixture {
       checkNull(expression);
     } else {
       SqlTester.ResultChecker resultChecker =
-          SqlTests.createChecker(is(result), JdbcType.BOOLEAN);
+          ResultCheckers.createChecker(is(result), JdbcType.BOOLEAN);
       tester.forEachQuery(factory, expression, sql ->
           tester.check(factory, sql, SqlTests.BOOLEAN_TYPE_CHECKER,
               SqlTests.ANY_PARAMETER_CHECKER, resultChecker));
