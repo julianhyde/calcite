@@ -21,8 +21,8 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.test.SqlTests.JdbcTypes;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.util.JdbcType;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
@@ -240,7 +240,7 @@ class SqlFixtureImpl implements SqlFixture {
       checkNull(expression);
     } else {
       SqlTester.ResultChecker resultChecker =
-          SqlTests.createChecker(is(result), JdbcTypes.BOOLEAN);
+          SqlTests.createChecker(is(result), JdbcType.BOOLEAN);
       tester.forEachQuery(factory, expression, sql ->
           tester.check(factory, sql, SqlTests.BOOLEAN_TYPE_CHECKER,
               SqlTests.ANY_PARAMETER_CHECKER, resultChecker));

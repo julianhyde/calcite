@@ -23,6 +23,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlTests;
+import org.apache.calcite.util.JdbcType;
 
 import org.apache.commons.dbcp2.PoolableConnection;
 import org.apache.commons.dbcp2.PoolableConnectionFactory;
@@ -231,17 +232,17 @@ public abstract class ConnectionFactories {
 
   public static SqlTester.ResultChecker isExactly(double value) {
     return new SqlTests.MatcherResultChecker<>(is(value),
-        SqlTests.JdbcTypes.DOUBLE);
+        JdbcType.DOUBLE);
   }
 
   public static SqlTester.ResultChecker isExactly(String value) {
     return new SqlTests.MatcherResultChecker<>(is(new BigDecimal(value)),
-        SqlTests.JdbcTypes.BIG_DECIMAL);
+        JdbcType.BIG_DECIMAL);
   }
 
   public static SqlTester.ResultChecker isWithin(double value, double delta) {
     return new SqlTests.MatcherResultChecker<>(Matchers.within(value, delta),
-        SqlTests.JdbcTypes.DOUBLE);
+        JdbcType.DOUBLE);
   }
 
   public static SqlTester.ResultChecker isSingle(double delta, String value) {
@@ -251,27 +252,27 @@ public abstract class ConnectionFactories {
 
   public static SqlTester.ResultChecker isSingle(String value) {
     return new SqlTests.MatcherResultChecker<>(is(value),
-        SqlTests.JdbcTypes.STRING);
+        JdbcType.STRING_NULLABLE);
   }
 
   public static SqlTester.ResultChecker isSingle(StringBuilder value) { // TODO remove
     return new SqlTests.MatcherResultChecker<>(is("value"),
-        SqlTests.JdbcTypes.STRING);
+        JdbcType.STRING);
   }
 
   public static SqlTester.ResultChecker isSingle(boolean value) {
     return new SqlTests.MatcherResultChecker<>(is(value),
-        SqlTests.JdbcTypes.BOOLEAN);
+        JdbcType.BOOLEAN);
   }
 
   public static SqlTester.ResultChecker isSingle(int value) {
     return new SqlTests.MatcherResultChecker<>(is(value),
-        SqlTests.JdbcTypes.INTEGER);
+        JdbcType.INTEGER);
   }
 
   public static SqlTester.ResultChecker isDecimal(String value) {
     return new SqlTests.MatcherResultChecker<>(is(new BigDecimal(value)),
-        SqlTests.JdbcTypes.BIG_DECIMAL);
+        JdbcType.BIG_DECIMAL);
   }
 
   public static SqlTester.ResultChecker isSet(String... values) {

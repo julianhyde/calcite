@@ -24,15 +24,14 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.JdbcType;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 
-import java.math.BigDecimal;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collection;
@@ -592,7 +591,7 @@ public abstract class SqlTests {
     } else if (result instanceof ResultChecker) {
       return (ResultChecker) result;
     } else if (result instanceof Matcher) {
-      return createChecker((Matcher) result, JdbcTypes.DOUBLE);
+      return createChecker((Matcher) result, JdbcType.DOUBLE);
     } else if (result instanceof Collection) {
       //noinspection unchecked
       final Collection<String> collection = (Collection<String>) result;
@@ -650,70 +649,5 @@ public abstract class SqlTests {
     @Override public void checkResult(ResultSet resultSet) throws Exception {
       compareResultSet(resultSet, expected);
     }
-  }
-
-  /** Maps Java types to their corresponding getters and setters in JDBC.
-   *
-   * @param <T> Result type */
-  public interface JdbcType<T> {
-    T get(int column, ResultSet resultSet) throws SQLException;
-  }
-
-  /** Implementation of JdbcType.
-   *
-   * @see JdbcTypes */
-  @SuppressWarnings("rawtypes")
-  private enum JdbcTypeImpl implements JdbcType {
-    BIG_DECIMAL(BigDecimal.class) {
-      @Override public BigDecimal get(int column,
-          ResultSet resultSet) throws SQLException {
-        return resultSet.getBigDecimal(column);
-      }
-    },
-
-    BOOLEAN(Boolean.class) {
-      @Override public Boolean get(int column,
-          ResultSet resultSet) throws SQLException {
-        return resultSet.getBoolean(column);
-      }
-    },
-
-    DOUBLE(Double.class) {
-      @Override public Double get(int column,
-          ResultSet resultSet) throws SQLException {
-        return resultSet.getDouble(column);
-      }
-    },
-
-    INTEGER(Integer.class) {
-      @Override public Integer get(int column,
-          ResultSet resultSet) throws SQLException {
-        return resultSet.getInt(column);
-      }
-    },
-
-    STRING(String.class) {
-      @Override public String get(int column,
-          ResultSet resultSet) throws SQLException {
-        return resultSet.getString(column);
-      }
-    };
-
-    JdbcTypeImpl(Class<?> unusedClass) {
-    }
-  }
-
-  /** Utilities for {@link JdbcType}.
-   *
-   * <p>At times like this, we wish Java had Generalized Algebraic Data Types
-   * (GADTs). */
-  @SuppressWarnings("unchecked")
-  public abstract static class JdbcTypes {
-    public static final JdbcType<Boolean> BOOLEAN = JdbcTypeImpl.BOOLEAN;
-    public static final JdbcType<BigDecimal> BIG_DECIMAL =
-        JdbcTypeImpl.BIG_DECIMAL;
-    public static final JdbcType<Double> DOUBLE = JdbcTypeImpl.DOUBLE;
-    public static final JdbcType<Integer> INTEGER = JdbcTypeImpl.INTEGER;
-    public static final JdbcType<String> STRING = JdbcTypeImpl.STRING;
   }
 }
