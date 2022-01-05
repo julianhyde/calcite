@@ -551,15 +551,6 @@ public interface SqlFixture extends AutoCloseable {
                 .with(CalciteConnectionProperty.FUN, library.fun));
   }
 
-  default SqlFixture withLibrary2(SqlLibrary library) { // TODO obsolete and use withLibrary
-    return withOperatorTable(
-        SqlLibraryOperatorTableFactory.INSTANCE
-            .getOperatorTable(SqlLibrary.STANDARD, library))
-        .withConnectionFactory(cf ->
-            cf.with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR))
-                .with("fun", library.name()));
-  }
-
   default SqlFixture forOracle(SqlConformance conformance) {
     return withConformance(conformance)
         .withOperatorTable(

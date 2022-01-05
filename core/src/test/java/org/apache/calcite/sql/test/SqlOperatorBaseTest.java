@@ -1774,9 +1774,9 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testConcatFunc() {
     final SqlFixture f = fixture();
-    checkConcatFunc(f.withLibrary2(SqlLibrary.MYSQL));
-    checkConcatFunc(f.withLibrary2(SqlLibrary.POSTGRESQL));
-    checkConcat2Func(f.withLibrary2(SqlLibrary.ORACLE));
+    checkConcatFunc(f.withLibrary(SqlLibrary.MYSQL));
+    checkConcatFunc(f.withLibrary(SqlLibrary.POSTGRESQL));
+    checkConcat2Func(f.withLibrary(SqlLibrary.ORACLE));
   }
 
   private void checkConcatFunc(SqlFixture f) {
@@ -3580,7 +3580,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testToBase64() {
-    final SqlFixture f = fixture().withLibrary2(SqlLibrary.MYSQL);
+    final SqlFixture f = fixture().withLibrary(SqlLibrary.MYSQL);
     f.setFor(SqlLibraryOperators.TO_BASE64);
     f.checkString("to_base64(x'546869732069732061207465737420537472696e672e')",
         "VGhpcyBpcyBhIHRlc3QgU3RyaW5nLg==",
@@ -3636,7 +3636,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testFromBase64() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.FROM_BASE64)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("from_base64('VGhpcyBpcyBhIHRlc3QgU3RyaW5nLg==')",
         "546869732069732061207465737420537472696e672e",
         "VARBINARY NOT NULL");
@@ -3656,7 +3656,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testMd5() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.MD5)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("md5(x'')",
         "d41d8cd98f00b204e9800998ecf8427e",
         "VARCHAR NOT NULL");
@@ -3674,7 +3674,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testSha1() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.SHA1)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("sha1(x'')",
         "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "VARCHAR NOT NULL");
@@ -3692,7 +3692,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testRepeatFunc() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.REPEAT)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("REPEAT('a', -100)", "", "VARCHAR(1) NOT NULL");
     f.checkString("REPEAT('a', -1)", "", "VARCHAR(1) NOT NULL");
     f.checkString("REPEAT('a', 0)", "", "VARCHAR(1) NOT NULL");
@@ -3707,7 +3707,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testSpaceFunc() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.SPACE)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("SPACE(-100)", "", "VARCHAR(2000) NOT NULL");
     f.checkString("SPACE(-1)", "", "VARCHAR(2000) NOT NULL");
     f.checkString("SPACE(0)", "", "VARCHAR(2000) NOT NULL");
@@ -3719,7 +3719,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testStrcmpFunc() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.STRCMP)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("STRCMP('mytesttext', 'mytesttext')", "0", "INTEGER NOT NULL");
     f.checkString("STRCMP('mytesttext', 'mytest_text')", "-1", "INTEGER NOT NULL");
     f.checkString("STRCMP('mytest_text', 'mytesttext')", "1", "INTEGER NOT NULL");
@@ -3746,7 +3746,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testDifferenceFunc() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.DIFFERENCE)
-        .withLibrary2(SqlLibrary.POSTGRESQL);
+        .withLibrary(SqlLibrary.POSTGRESQL);
     f.checkScalarExact("DIFFERENCE('Miller', 'miller')", 4);
     f.checkScalarExact("DIFFERENCE('Miller', 'myller')", 4);
     f.checkScalarExact("DIFFERENCE('muller', 'miller')", 4);
@@ -3762,7 +3762,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testReverseFunc() {
     final SqlFixture f = fixture()
         .setFor(SqlLibraryOperators.REVERSE)
-        .withLibrary2(SqlLibrary.MYSQL);
+        .withLibrary(SqlLibrary.MYSQL);
     f.checkString("reverse('')", "", "VARCHAR(0) NOT NULL");
     f.checkString("reverse('123')", "321", "VARCHAR(3) NOT NULL");
     f.checkString("reverse('abc')", "cba", "VARCHAR(3) NOT NULL");
@@ -3776,9 +3776,9 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testIfFunc() {
     final SqlFixture f = fixture();
-    checkIf(f.withLibrary2(SqlLibrary.BIG_QUERY));
-    checkIf(f.withLibrary2(SqlLibrary.HIVE));
-    checkIf(f.withLibrary2(SqlLibrary.SPARK));
+    checkIf(f.withLibrary(SqlLibrary.BIG_QUERY));
+    checkIf(f.withLibrary(SqlLibrary.HIVE));
+    checkIf(f.withLibrary(SqlLibrary.SPARK));
   }
 
   private void checkIf(SqlFixture f) {
@@ -3809,7 +3809,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testLeftFunc() {
     final SqlFixture f = fixture();
     Stream.of(SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL)
-        .map(f::withLibrary2)
+        .map(f::withLibrary)
         .forEach(t -> {
           t.setFor(SqlLibraryOperators.LEFT);
           t.checkString("left('abcd', 3)", "abc", "VARCHAR(4) NOT NULL");
@@ -3833,7 +3833,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testRightFunc() {
     final SqlFixture f = fixture();
     Stream.of(SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL)
-        .map(f::withLibrary2)
+        .map(f::withLibrary)
         .forEach(t -> {
           t.setFor(SqlLibraryOperators.RIGHT);
           t.checkString("right('abcd', 3)", "bcd", "VARCHAR(4) NOT NULL");
@@ -3857,7 +3857,7 @@ public abstract class SqlOperatorBaseTest {
   @Test void testRegexpReplaceFunc() {
     final SqlFixture f = fixture();
     Stream.of(SqlLibrary.MYSQL, SqlLibrary.ORACLE)
-        .map(f::withLibrary2)
+        .map(f::withLibrary)
         .forEach(t -> {
           t.setFor(SqlLibraryOperators.REGEXP_REPLACE);
           t.checkString("regexp_replace('a b c', 'b', 'X')", "a X c",
@@ -4493,7 +4493,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testCompress() {
-    SqlFixture f = fixture().withLibrary2(SqlLibrary.MYSQL);
+    SqlFixture f = fixture().withLibrary(SqlLibrary.MYSQL);
     f.checkNull("COMPRESS(NULL)");
     f.checkString("COMPRESS('')", "",
         "VARBINARY NOT NULL");
@@ -4510,7 +4510,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testExtractValue() {
-    SqlFixture f = fixture().withLibrary2(SqlLibrary.MYSQL);
+    SqlFixture f = fixture().withLibrary(SqlLibrary.MYSQL);
     f.checkNull("ExtractValue(NULL, '//b')");
     f.checkNull("ExtractValue('', NULL)");
     f.checkFails("ExtractValue('<a><b/></a>', '#/a/b')",
@@ -4533,7 +4533,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testXmlTransform() {
-    SqlFixture f = fixture().withLibrary2(SqlLibrary.ORACLE);
+    SqlFixture f = fixture().withLibrary(SqlLibrary.ORACLE);
     f.checkNull("XMLTRANSFORM('', NULL)");
     f.checkNull("XMLTRANSFORM(NULL,'')");
 
@@ -4574,7 +4574,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testExtractXml() {
-    SqlFixture f = fixture().withLibrary2(SqlLibrary.ORACLE);
+    SqlFixture f = fixture().withLibrary(SqlLibrary.ORACLE);
 
     f.checkFails("\"EXTRACT\"('', '<','a')",
         "Invalid input for EXTRACT xpath: '.*", true);
@@ -4620,7 +4620,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   @Test void testExistsNode() {
-    SqlFixture f = fixture().withLibrary2(SqlLibrary.ORACLE);
+    SqlFixture f = fixture().withLibrary(SqlLibrary.ORACLE);
 
     f.checkFails("EXISTSNODE('', '<','a')",
         "Invalid input for EXISTSNODE xpath: '.*", true);
@@ -5090,7 +5090,7 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testCoshFunc() {
     final SqlFixture f0 = fixture();
-    final SqlFixture f = f0.withLibrary2(SqlLibrary.ORACLE);
+    final SqlFixture f = f0.withLibrary(SqlLibrary.ORACLE);
     f.checkType("cosh(1)", "DOUBLE NOT NULL");
     f.checkType("cosh(cast(1 as float))", "DOUBLE NOT NULL");
     f.checkType("cosh(case when false then 1 else null end)", "DOUBLE");
@@ -5259,7 +5259,7 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testSinhFunc() {
     final SqlFixture f0 = fixture();
-    final SqlFixture f = f0.withLibrary2(SqlLibrary.ORACLE);
+    final SqlFixture f = f0.withLibrary(SqlLibrary.ORACLE);
     f.checkType("sinh(1)", "DOUBLE NOT NULL");
     f.checkType("sinh(cast(1 as float))", "DOUBLE NOT NULL");
     f.checkType("sinh(case when false then 1 else null end)", "DOUBLE");
@@ -5299,7 +5299,7 @@ public abstract class SqlOperatorBaseTest {
 
   @Test void testTanhFunc() {
     SqlFixture f0 = fixture();
-    final SqlFixture f = f0.withLibrary2(SqlLibrary.ORACLE);
+    final SqlFixture f = f0.withLibrary(SqlLibrary.ORACLE);
     f.checkType("tanh(1)", "DOUBLE NOT NULL");
     f.checkType("tanh(cast(1 as float))", "DOUBLE NOT NULL");
     f.checkType("tanh(case when false then 1 else null end)", "DOUBLE");
@@ -5839,7 +5839,7 @@ public abstract class SqlOperatorBaseTest {
   }
 
   SubFunChecker substrChecker(SqlLibrary library, SqlFunction function) {
-    return new SubFunChecker(fixture().withLibrary2(library), library, function);
+    return new SubFunChecker(fixture().withLibrary(library), library, function);
   }
 
   /** Tests various configurations of {@code SUBSTR} and {@code SUBSTRING}
