@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.sql.test;
 
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -35,16 +34,19 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Objects.requireNonNull;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import static java.util.Objects.requireNonNull;
+
 /** Utilities for {@link SqlTester.ResultChecker}. */
 public class ResultCheckers {
+  private ResultCheckers() {
+  }
+
   public static SqlTester.ResultChecker isExactly(double value) {
     return new MatcherResultChecker<>(is(value),
         JdbcType.DOUBLE);
@@ -273,8 +275,8 @@ public class ResultCheckers {
   static class PatternResultChecker implements SqlTester.ResultChecker {
     final Pattern pattern;
 
-    public PatternResultChecker(Pattern pattern) {
-      this.pattern = requireNonNull(pattern);
+    PatternResultChecker(Pattern pattern) {
+      this.pattern = requireNonNull(pattern, "pattern");
     }
 
     @Override public void checkResult(ResultSet resultSet) throws Exception {
@@ -291,7 +293,7 @@ public class ResultCheckers {
     private final Matcher<T> matcher;
     private final JdbcType<T> jdbcType;
 
-    public MatcherResultChecker(Matcher<T> matcher, JdbcType<T> jdbcType) {
+    MatcherResultChecker(Matcher<T> matcher, JdbcType<T> jdbcType) {
       this.matcher = requireNonNull(matcher, "matcher");
       this.jdbcType = requireNonNull(jdbcType, "jdbcType");
     }

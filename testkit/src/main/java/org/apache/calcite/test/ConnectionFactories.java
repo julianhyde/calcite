@@ -21,9 +21,6 @@ import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.test.SqlTester;
-import org.apache.calcite.sql.test.SqlTests;
-import org.apache.calcite.util.JdbcType;
 
 import org.apache.commons.dbcp2.PoolableConnection;
 import org.apache.commons.dbcp2.PoolableConnectionFactory;
@@ -32,18 +29,13 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-
-import static org.hamcrest.CoreMatchers.is;
 
 import static java.util.Objects.requireNonNull;
 
