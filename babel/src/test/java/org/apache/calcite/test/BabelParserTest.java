@@ -27,6 +27,7 @@ import org.apache.calcite.tools.Hoist;
 
 import com.google.common.base.Throwables;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -290,8 +291,8 @@ class BabelParserTest extends SqlParserTest {
    */
   public static class BabelTesterImpl extends TesterImpl {
     @Override protected void checkEx(String expectedMsgPattern,
-        StringAndPos sap, Throwable thrown) {
-      if (thrownByBabelTest(thrown)) {
+        StringAndPos sap, @Nullable Throwable thrown) {
+      if (thrown != null && thrownByBabelTest(thrown)) {
         super.checkEx(expectedMsgPattern, sap, thrown);
       } else {
         checkExNotNull(sap, thrown);
@@ -311,7 +312,7 @@ class BabelParserTest extends SqlParserTest {
     }
 
     private void checkExNotNull(StringAndPos sap,
-        Throwable thrown) {
+        @Nullable Throwable thrown) {
       if (thrown == null) {
         throw new AssertionError("Expected query to throw exception, "
             + "but it did not; query [" + sap.sql

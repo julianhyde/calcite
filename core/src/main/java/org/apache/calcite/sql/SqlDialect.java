@@ -19,6 +19,7 @@ package org.apache.calcite.sql;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.config.CharLiteralStyle;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -1133,7 +1134,8 @@ public class SqlDialect {
     return config.withQuotedCasing(getQuotedCasing())
         .withUnquotedCasing(getUnquotedCasing())
         .withCaseSensitive(isCaseSensitive())
-        .withConformance(getConformance());
+        .withConformance(getConformance())
+        .withCharLiteralStyles(ImmutableSet.of(CharLiteralStyle.STANDARD));
   }
 
   @Deprecated // to be removed before 2.0
