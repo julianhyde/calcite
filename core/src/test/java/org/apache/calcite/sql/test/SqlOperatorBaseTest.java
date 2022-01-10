@@ -121,18 +121,18 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Contains unit tests for all operators. Each of the methods is named after an
  * operator.
  *
- * <p>The class is abstract. It contains a test for every operator, but does not
- * provide a mechanism to execute the tests: parse, validate, and execute
+ * <p>To run, you also need an execution mechanism: parse, validate, and execute
  * expressions on the operators. This is left to a {@link SqlTester} object
- * which the derived class must provide.</p>
+ * which is obtained via the {@link #fixture()} method. The default tester
+ * merely validates calls to operators, but {@code CalciteSqlOperatorTest}
+ * uses a tester that executes calls and checks that results are valid.
  *
- * <p>Different implementations of {@link SqlTester} are possible, such as:</p>
+ * <p>Different implementations of {@link SqlTester} are possible, such as:
  *
  * <ul>
- * <li>Execute against a real farrago database
- * <li>Execute in pure java (parsing and validation can be done, but expression
- * evaluation is not possible)
- * <li>Generate a SQL script.
+ * <li>Execute against a JDBC database;
+ * <li>Parse and validate but do not evaluate expressions;
+ * <li>Generate a SQL script;
  * <li>Analyze which operators are adequately tested.
  * </ul>
  *

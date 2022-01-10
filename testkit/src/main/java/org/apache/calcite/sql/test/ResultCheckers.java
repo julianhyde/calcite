@@ -147,7 +147,7 @@ public class ResultCheckers {
         assertThat(resultSet.getDouble(1), equalTo(d));
         break;
       default:
-        // TODO: verify value
+        // fall through; no type-specific validation is necessary
       }
       final boolean wasNull1 = resultSet.wasNull();
       final Object object = resultSet.getObject(1);
