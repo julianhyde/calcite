@@ -16,14 +16,13 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.sql.test.SqlOperatorBaseTest;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 /**
- * Embodiment of {@link org.apache.calcite.sql.test.SqlOperatorBaseTest}
+ * Embodiment of {@link SqlOperatorTest}
  * that checks against a {@link SqlValidator}.
  *
  * <p>Tests that involve execution trivially succeed.
  */
-class CoreSqlOperatorTest extends SqlOperatorBaseTest {
+class CoreSqlOperatorTest extends SqlOperatorTest {
 }

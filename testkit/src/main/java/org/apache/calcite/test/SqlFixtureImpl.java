@@ -14,13 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.sql.test;
+package org.apache.calcite.test;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.StringAndPos;
+import org.apache.calcite.sql.test.ResultCheckers;
+import org.apache.calcite.sql.test.SqlFixture;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTester;
+import org.apache.calcite.sql.test.SqlTests;
+import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.JdbcType;
 

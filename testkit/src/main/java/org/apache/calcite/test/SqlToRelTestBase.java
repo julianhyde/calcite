@@ -108,10 +108,11 @@ public abstract class SqlToRelTestBase {
 
   //~ Inner Interfaces -------------------------------------------------------
 
-  // TODO combine Tester with SqlTester
   /**
    * Helper class which contains default implementations of methods used for
    * running sql-to-rel conversion tests.
+   *
+   * <p>TODO combine with {@link SqlTester}
    */
   public interface Tester {
     /**

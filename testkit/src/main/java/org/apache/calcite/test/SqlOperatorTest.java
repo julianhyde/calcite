@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.sql.test;
+package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -43,7 +43,12 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.sql.test.AbstractSqlTester;
+import org.apache.calcite.sql.test.SqlFixture;
 import org.apache.calcite.sql.test.SqlFixture.VmName;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTester;
+import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -53,10 +58,6 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
-import org.apache.calcite.test.CalciteAssert;
-import org.apache.calcite.test.ConnectionFactories;
-import org.apache.calcite.test.ConnectionFactory;
-import org.apache.calcite.test.SqlLimitsTest;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
@@ -171,13 +172,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * null arguments or null results.</li>
  * </ul>
  */
-public abstract class SqlOperatorBaseTest {
+public class SqlOperatorTest {
   //~ Static fields/initializers ---------------------------------------------
 
   public static final TesterImpl TESTER = new TesterImpl();
 
   private static final Logger LOGGER =
-      CalciteTrace.getTestTracer(SqlOperatorBaseTest.class);
+      CalciteTrace.getTestTracer(SqlOperatorTest.class);
 
   public static final boolean TODO = false;
 
@@ -8412,7 +8413,7 @@ public abstract class SqlOperatorBaseTest {
       return;
     }
     final List<RelDataType> types =
-        SqlLimitsTest.getTypes(f.getFactory().getTypeFactory());
+        SqlTests.getTypes(f.getFactory().getTypeFactory());
     for (RelDataType type : types) {
       for (Object o : getValues((BasicSqlType) type, true)) {
         SqlLiteral literal =
@@ -8453,7 +8454,7 @@ public abstract class SqlOperatorBaseTest {
     final SqlFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     final List<RelDataType> types =
-        SqlLimitsTest.getTypes(f.getFactory().getTypeFactory());
+        SqlTests.getTypes(f.getFactory().getTypeFactory());
     for (RelDataType type : types) {
       for (Object o : getValues((BasicSqlType) type, false)) {
         SqlLiteral literal =
@@ -8747,8 +8748,8 @@ public abstract class SqlOperatorBaseTest {
     }
 
     @Override public void check(SqlNewTestFactory factory, String query,
-        TypeChecker typeChecker,
-        ParameterChecker parameterChecker, ResultChecker resultChecker) {
+        SqlTester.TypeChecker typeChecker,
+        SqlTester.ParameterChecker parameterChecker, SqlTester.ResultChecker resultChecker) {
       super.check(factory, query, typeChecker, parameterChecker, resultChecker);
       final ConnectionFactory connectionFactory =
           factory.connectionFactory;

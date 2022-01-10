@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.sql.test;
+package org.apache.calcite.test;
 
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.StringAndPos;
+import org.apache.calcite.sql.test.AbstractSqlTester;
+import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
