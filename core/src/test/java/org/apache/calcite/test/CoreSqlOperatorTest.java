@@ -14,13 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.sql.test;
+package org.apache.calcite.test;
 
+import org.apache.calcite.sql.test.SqlOperatorBaseTest;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 /**
- * Concrete subclass of {@link SqlOperatorBaseTest} which checks against
- * a {@link SqlValidator}. Tests that involve execution trivially succeed.
+ * Embodiment of {@link org.apache.calcite.sql.test.SqlOperatorBaseTest}
+ * that checks against a {@link SqlValidator}.
+ *
+ * <p>Tests that involve execution trivially succeed.
  */
-class SqlOperatorTest extends SqlOperatorBaseTest {
+class CoreSqlOperatorTest extends SqlOperatorBaseTest {
 }

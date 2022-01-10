@@ -1642,8 +1642,7 @@ public abstract class SqlOperatorBaseTest {
     // type is always nullable even if sub-query select value is NOT NULL.
     // Bug FRG-189 causes this test to fail only in SqlOperatorTest; not
     // in subtypes.
-    if (Bug.FRG189_FIXED
-        || (getClass() != SqlOperatorTest.class) && Bug.TODO_FIXED) {
+    if (Bug.FRG189_FIXED) {
       f.checkType("SELECT *,\n"
               + "  (SELECT * FROM (VALUES(1)))\n"
               + "FROM (VALUES(2))",
