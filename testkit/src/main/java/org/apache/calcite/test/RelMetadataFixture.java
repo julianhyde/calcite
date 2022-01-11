@@ -330,7 +330,7 @@ public class RelMetadataFixture {
    * and {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
    * return consistent results.
    */
-  private void checkUniqueConsistent(RelNode rel) {
+  private static void checkUniqueConsistent(RelNode rel) {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<ImmutableBitSet> uniqueKeys = mq.getUniqueKeys(rel);
     assertThat(uniqueKeys, notNullValue());

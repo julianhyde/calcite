@@ -517,7 +517,8 @@ public class DiffRepository {
     flushDoc();
   }
 
-  private Node ref(String testCaseName, List<Pair<String, Element>> map) {
+  private static Node ref(String testCaseName,
+      List<Pair<String, Element>> map) {
     if (map.isEmpty()) {
       return null;
     }

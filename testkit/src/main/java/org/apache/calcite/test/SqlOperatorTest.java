@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperandCountRange;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
@@ -518,6 +519,8 @@ public class SqlOperatorTest {
       case REAL:
         // Skip approx types
         return;
+      default:
+        // fall through
       }
 
       // Convert from literal to type
@@ -1779,7 +1782,7 @@ public class SqlOperatorTest {
     checkConcat2Func(f.withLibrary(SqlLibrary.ORACLE));
   }
 
-  private void checkConcatFunc(SqlFixture f) {
+  private static void checkConcatFunc(SqlFixture f) {
     f.setFor(SqlLibraryOperators.CONCAT_FUNCTION);
     f.checkString("concat('a', 'b', 'c')", "abc", "VARCHAR(3) NOT NULL");
     f.checkString("concat(cast('a' as varchar), cast('b' as varchar), "
@@ -1791,7 +1794,7 @@ public class SqlOperatorTest {
     f.checkFails("^concat()^", INVALID_ARGUMENTS_NUMBER, false);
   }
 
-  private void checkConcat2Func(SqlFixture f) {
+  private static void checkConcat2Func(SqlFixture f) {
     f.setFor(SqlLibraryOperators.CONCAT2);
     f.checkString("concat(cast('fe' as char(2)), cast('df' as varchar(65535)))",
         "fedf", "VARCHAR NOT NULL");
@@ -2204,7 +2207,7 @@ public class SqlOperatorTest {
     checkOverlaps(new OverlapChecker(f, timestamps));
   }
 
-  private void checkOverlaps(OverlapChecker c) {
+  static void checkOverlaps(OverlapChecker c) {
     c.isTrue("($0,$0) OVERLAPS ($0,$0)");
     c.isFalse("($0,$1) OVERLAPS ($2,$3)");
     c.isTrue("($0,$1) OVERLAPS ($1,$2)");
@@ -5892,6 +5895,8 @@ public class SqlOperatorTest {
         assertReturns("abc", 0, 3, "");
         assertReturns("abc", 0, 2, "");
         break;
+      default:
+        throw new AssertionError(library);
       }
       assertReturns("abc", 0, 0, "");
       assertReturns("abc", 2, 8, "bc");
@@ -5947,6 +5952,8 @@ public class SqlOperatorTest {
         assertReturns("abc", -3, 8, "abc");
         assertReturns("abc", -1, 4, "ab");
         break;
+      default:
+        throw new AssertionError(library);
       }
 
       // For negative start and start + length between 0 and actual-length,
@@ -5962,6 +5969,8 @@ public class SqlOperatorTest {
       case POSTGRESQL:
         assertReturns("abc", -4, 6, "a");
         break;
+      default:
+        throw new AssertionError(library);
       }
       // For very negative start, BigQuery differs from Oracle and PostgreSQL.
       switch (library) {
@@ -5979,6 +5988,8 @@ public class SqlOperatorTest {
         assertReturns("abc", -10, 2, "");
         assertReturns("abc", -500, 1, "");
         break;
+      default:
+        throw new AssertionError(library);
       }
     }
 
@@ -7906,7 +7917,6 @@ public class SqlOperatorTest {
     f.checkType("stddev(cast(null as varchar(2)))", "DECIMAL(19, 9)");
     f.checkType("stddev(CAST(NULL AS INTEGER))", "INTEGER");
     f.checkAggType("stddev(DISTINCT 1.5)", "DECIMAL(2, 1) NOT NULL");
-    final String[] values = {"0", "CAST(null AS FLOAT)", "3", "3"};
     // with one value
     f.checkAgg("stddev(x)", new String[]{"5"}, isNullValue());
     // with zero values
@@ -8568,8 +8578,7 @@ public class SqlOperatorTest {
       if (operatorsToSkip.contains(op)) {
         continue;
       }
-      switch (op.getSyntax()) {
-      case SPECIAL:
+      if (op.getSyntax() == SqlSyntax.SPECIAL) {
         continue;
       }
       final SqlOperandTypeChecker typeChecker =
@@ -8664,38 +8673,6 @@ public class SqlOperatorTest {
     return values;
   }
 
-  // TODO: Test other stuff
-
-  /**
-   * Result checker that considers a test to have succeeded if it throws an
-   * exception that matches one of a list of patterns.
-   */
-  private static class ExceptionResultChecker
-      implements SqlTester.ResultChecker {
-    private final Pattern[] patterns;
-
-    ExceptionResultChecker(Pattern... patterns) {
-      this.patterns = patterns;
-    }
-
-    public void checkResult(ResultSet result) throws Exception {
-      Throwable thrown = null;
-      try {
-        result.next();
-        fail("expected exception");
-      } catch (SQLException e) {
-        thrown = e;
-      }
-      final String stack = Throwables.getStackTraceAsString(thrown);
-      for (Pattern pattern : patterns) {
-        if (pattern.matcher(stack).matches()) {
-          return;
-        }
-      }
-      fail("Stack did not match any pattern; " + stack);
-    }
-  }
-
   /**
    * Result checker that considers a test to have succeeded if it returns a
    * particular value or throws an exception that matches one of a list of
@@ -8715,7 +8692,7 @@ public class SqlOperatorTest {
       this.patterns = patterns;
     }
 
-    public void checkResult(ResultSet result) throws Exception {
+    @Override public void checkResult(ResultSet result) throws Exception {
       Throwable thrown = null;
       try {
         if (!result.next()) {
@@ -8749,7 +8726,8 @@ public class SqlOperatorTest {
 
     @Override public void check(SqlNewTestFactory factory, String query,
         SqlTester.TypeChecker typeChecker,
-        SqlTester.ParameterChecker parameterChecker, SqlTester.ResultChecker resultChecker) {
+        SqlTester.ParameterChecker parameterChecker,
+        SqlTester.ResultChecker resultChecker) {
       super.check(factory, query, typeChecker, parameterChecker, resultChecker);
       final ConnectionFactory connectionFactory =
           factory.connectionFactory;
@@ -8762,7 +8740,6 @@ public class SqlOperatorTest {
         throw TestUtil.rethrow(e);
       }
     }
-
   }
 
   /** A type, a value, and its {@link SqlNode} representation. */
