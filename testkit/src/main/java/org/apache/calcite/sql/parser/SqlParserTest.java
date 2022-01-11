@@ -9840,7 +9840,7 @@ public class SqlParserTest {
       return true;
     }
 
-    private UnaryOperator<SqlWriterConfig> simple() {
+    static UnaryOperator<SqlWriterConfig> simple() {
       return c -> c.withSelectListItemsOnSeparateLines(false)
           .withUpdateSetListNewline(false)
           .withIndentation(0)
