@@ -9847,23 +9847,23 @@ public class SqlParserTest {
           .withFromFolding(SqlWriterConfig.LineFolding.TALL);
     }
 
-    private SqlWriterConfig simpleWithParens(SqlWriterConfig c) {
-      return simple().andThen(this::withParens).apply(c);
+    static SqlWriterConfig simpleWithParens(SqlWriterConfig c) {
+      return simple().andThen(UnparsingTesterImpl::withParens).apply(c);
     }
 
-    private SqlWriterConfig simpleWithParensAnsi(SqlWriterConfig c) {
+    static SqlWriterConfig simpleWithParensAnsi(SqlWriterConfig c) {
       return withAnsi(simpleWithParens(c));
     }
 
-    private SqlWriterConfig withParens(SqlWriterConfig c) {
+    static SqlWriterConfig withParens(SqlWriterConfig c) {
       return c.withAlwaysUseParentheses(true);
     }
 
-    private SqlWriterConfig withAnsi(SqlWriterConfig c) {
+    static SqlWriterConfig withAnsi(SqlWriterConfig c) {
       return c.withDialect(AnsiSqlDialect.DEFAULT);
     }
 
-    private UnaryOperator<SqlWriterConfig> randomize(Random random) {
+    static UnaryOperator<SqlWriterConfig> randomize(Random random) {
       return c -> c.withFoldLength(random.nextInt(5) * 20 + 3)
           .withHavingFolding(nextLineFolding(random))
           .withWhereFolding(nextLineFolding(random))
@@ -9881,11 +9881,11 @@ public class SqlParserTest {
           .collect(Collectors.joining(";"));
     }
 
-    private SqlWriterConfig.LineFolding nextLineFolding(Random random) {
+    static SqlWriterConfig.LineFolding nextLineFolding(Random random) {
       return nextEnum(random, SqlWriterConfig.LineFolding.class);
     }
 
-    private <E extends Enum<E>> E nextEnum(Random random, Class<E> enumClass) {
+    static <E extends Enum<E>> E nextEnum(Random random, Class<E> enumClass) {
       final E[] constants = enumClass.getEnumConstants();
       return constants[random.nextInt(constants.length)];
     }
@@ -9898,7 +9898,8 @@ public class SqlParserTest {
         SqlNode sqlNode = sqlNodeList.get(i);
         // Unparse with no dialect, always parenthesize.
         final String actual =
-            sqlNode.toSqlString(this::simpleWithParensAnsi).getSql();
+            sqlNode.toSqlString(UnparsingTesterImpl::simpleWithParensAnsi)
+                .getSql();
         assertEquals(expected.get(i), converter.apply(actual));
       }
     }
