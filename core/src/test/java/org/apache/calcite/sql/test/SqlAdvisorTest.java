@@ -24,6 +24,7 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlMoniker;
 import org.apache.calcite.sql.validate.SqlMonikerType;
+import org.apache.calcite.test.SqlValidatorFixture;
 import org.apache.calcite.test.SqlValidatorTestCase;
 
 import com.google.common.collect.ImmutableMap;
@@ -1490,7 +1491,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   }
 
   /** Fixture for the advisor test. */
-  static class Fixture extends Sql {
+  static class Fixture extends SqlValidatorFixture {
     protected Fixture(SqlTester tester, SqlNewTestFactory factory,
         StringAndPos sap, boolean query, boolean whole) {
       super(tester, factory, sap, query, whole);

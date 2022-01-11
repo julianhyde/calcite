@@ -60,17 +60,17 @@ class TypeCoercionTest {
     return DEFAULT_FIXTURE;
   }
 
-  public static SqlValidatorTestCase.Sql sql(String sql) {
+  public static SqlValidatorFixture sql(String sql) {
     return validatorFixture()
         .withSql(sql);
   }
 
-  public static SqlValidatorTestCase.Sql expr(String sql) {
+  public static SqlValidatorFixture expr(String sql) {
     return validatorFixture()
         .withExpr(sql);
   }
 
-  private static SqlValidatorTestCase.Sql validatorFixture() {
+  private static SqlValidatorFixture validatorFixture() {
     return SqlValidatorTestCase.FIXTURE
         .withCatalogReader(TCatalogReader::create);
   }
@@ -269,7 +269,7 @@ class TypeCoercionTest {
 
   /** Test arithmetic expressions with string type arguments. */
   @Test void testArithmeticExpressionsWithStrings() {
-    SqlValidatorTestCase.Sql f = validatorFixture();
+    SqlValidatorFixture f = validatorFixture();
     // for null type in binary arithmetic.
     expr("1 + null").ok();
     expr("1 - null").ok();

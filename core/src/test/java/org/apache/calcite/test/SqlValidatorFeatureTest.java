@@ -38,7 +38,7 @@ class SqlValidatorFeatureTest extends SqlValidatorTestCase {
 
   private Feature disabledFeature;
 
-  @Override public Sql fixture() {
+  @Override public SqlValidatorFixture fixture() {
     return super.fixture()
         .withFactory(f -> f.withValidator(FeatureValidator::new));
   }

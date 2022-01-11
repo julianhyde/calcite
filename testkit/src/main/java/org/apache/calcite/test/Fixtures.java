@@ -29,7 +29,7 @@ public class Fixtures {
   }
 
   /** Creates a fixture for validation tests. */
-  public static SqlValidatorTestCase.Sql forValidator() {
+  public static SqlValidatorFixture forValidator() {
     return SqlValidatorTestCase.FIXTURE;
   }
 

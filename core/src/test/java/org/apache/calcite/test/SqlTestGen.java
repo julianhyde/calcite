@@ -98,7 +98,7 @@ class SqlTestGen {
       this.pw = pw;
     }
 
-    @Override public Sql fixture() {
+    @Override public SqlValidatorFixture fixture() {
       return super.fixture()
           .withTester(t -> new SpoolerTester(pw))
           .withFactory(t -> SPOOLER_TEST_FACTORY);

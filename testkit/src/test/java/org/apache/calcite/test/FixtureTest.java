@@ -70,7 +70,7 @@ public class FixtureTest {
   /** Tests that you can run validator tests via
    * {@link Fixtures#forValidator()}. */
   @Test void testValidatorFixture() {
-    final SqlValidatorTestCase.Sql f = Fixtures.forValidator();
+    final SqlValidatorFixture f = Fixtures.forValidator();
     f.withSql("select ^1 + date '2002-03-04'^")
         .fails("(?s).*Cannot apply '\\+' to arguments of"
             + " type '<INTEGER> \\+ <DATE>'.*");

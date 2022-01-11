@@ -101,7 +101,7 @@ class BabelTest {
 
   /** Tests that you can run tests via {@link Fixtures}. */
   @Test void testFixtures() {
-    final SqlValidatorTestCase.Sql v = Fixtures.forValidator();
+    final SqlValidatorFixture v = Fixtures.forValidator();
     v.withSql("select ^1 + date '2002-03-04'^")
         .fails("(?s).*Cannot apply '\\+' to arguments of"
             + " type '<INTEGER> \\+ <DATE>'.*");

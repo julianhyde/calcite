@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test
  *
  * If you want to run these same tests in a different environment, create a
  * derived class whose [fixture] returns a different implementation of
- * [SqlValidatorTestCase.Sql].
+ * [SqlValidatorFixture].
  */
 @LocaleEnUs
 class SqlValidatorDynamicTest : SqlValidatorTestCase() {
@@ -35,7 +35,7 @@ class SqlValidatorDynamicTest : SqlValidatorTestCase() {
      * Dynamic schema should not be reused since it is mutable, so
      * we create new SqlTestFactory for each test
      */
-    override fun fixture(): Sql {
+    override fun fixture(): SqlValidatorFixture {
         return super.fixture()
             .withCatalogReader { typeFactory: RelDataTypeFactory, caseSensitive: Boolean ->
                 MockCatalogReaderDynamic.create(typeFactory, caseSensitive)

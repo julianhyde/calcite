@@ -98,7 +98,7 @@ import static java.util.Arrays.asList;
  *
  * <p>If you want to run these same tests in a different environment, create a
  * derived class whose {@link #fixture()} returns a different implementation of
- * {@link SqlValidatorTest.Sql}.
+ * {@link SqlValidatorFixture}.
  */
 @LocaleEnUs
 public class SqlValidatorTest extends SqlValidatorTestCase {
@@ -718,7 +718,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * standard but only in the ORACLE and POSTGRESQL libraries. */
   @Test void testConcatFunction() {
     // CONCAT is not in the library operator table
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withOperatorTable(operatorTableFor(SqlLibrary.POSTGRESQL));
     s.withExpr("concat('a', 'b')").ok();
     s.withExpr("concat(x'12', x'34')").ok();
@@ -1011,7 +1011,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testIlike() {
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withOperatorTable(operatorTableFor(SqlLibrary.POSTGRESQL));
     s.withExpr("'a' ilike 'b'").columnType("BOOLEAN NOT NULL");
     s.withExpr("'a' ilike cast(null as varchar(99))").columnType("BOOLEAN");
@@ -1025,7 +1025,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testRlike() {
     // RLIKE is supported for SPARK
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withOperatorTable(operatorTableFor(SqlLibrary.SPARK));
     s.withExpr("'first_name' rlike '%Ted%'").columnType("BOOLEAN NOT NULL");
     s.withExpr("'first_name' rlike '^M+'").columnType("BOOLEAN NOT NULL");
@@ -1532,7 +1532,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testCurrentDatetime() throws SqlParseException, ValidationException {
     final String currentDateTimeExpr = "select ^current_datetime^";
-    Sql shouldFail = sql(currentDateTimeExpr)
+    SqlValidatorFixture shouldFail = sql(currentDateTimeExpr)
         .withConformance(SqlConformanceEnum.BIG_QUERY);
     final String expectedError = "query [select CURRENT_DATETIME]; exception "
         + "[Column 'CURRENT_DATETIME' not found in any table]; class "
@@ -1565,7 +1565,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUnknownFunctionHandling() {
-    final Sql s = fixture().withLenientOperatorLookup(true);
+    final SqlValidatorFixture s = fixture().withLenientOperatorLookup(true);
     s.withExpr("concat('a', 2)").ok();
     s.withExpr("foo('2001-12-21')").ok();
     s.withExpr("\"foo\"('b')").ok();
@@ -8350,7 +8350,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testBoolAndBoolOrFunction() {
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withOperatorTable(operatorTableFor(SqlLibrary.POSTGRESQL));
     s.withSql("SELECT bool_and(true) from emp").ok();
     s.withSql("SELECT bool_or(true) from emp").ok();
@@ -9010,7 +9010,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testBrackets() {
-    final Sql s = fixture().withQuoting(Quoting.BRACKET);
+    final SqlValidatorFixture s = fixture().withQuoting(Quoting.BRACKET);
     s.withSql("select [e].EMPNO from [EMP] as [e]")
         .type("RecordType(INTEGER NOT NULL EMPNO) NOT NULL");
 
@@ -9034,7 +9034,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testLexJava() {
-    final Sql s = fixture().withLex(Lex.JAVA);
+    final SqlValidatorFixture s = fixture().withLex(Lex.JAVA);
     s.withSql("select e.EMPNO from EMP as e")
         .type("RecordType(INTEGER NOT NULL EMPNO) NOT NULL");
 
@@ -9067,7 +9067,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-145">[CALCITE-145]
    * Unexpected upper-casing of keywords when using java lexer</a>. */
   @Test void testLexJavaKeyword() {
-    final Sql s = fixture().withLex(Lex.JAVA);
+    final SqlValidatorFixture s = fixture().withLex(Lex.JAVA);
     s.withSql("select path, x from (select 1 as path, 2 as x from (values (true)))")
         .type("RecordType(INTEGER NOT NULL path, INTEGER NOT NULL x) NOT NULL");
     s.withSql("select path, x from (select 1 as `path`, 2 as x from (values (true)))")
@@ -9103,10 +9103,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   /** Tests using case-insensitive matching of identifiers. */
   @Test void testCaseInsensitive() {
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withCaseSensitive(false)
         .withQuoting(Quoting.BRACKET);
-    final Sql sensitive = fixture()
+    final SqlValidatorFixture sensitive = fixture()
         .withQuoting(Quoting.BRACKET);
 
     s.withSql("select EMPNO from EMP").ok();
@@ -9132,11 +9132,11 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final MockSqlOperatorTable operatorTable =
         new MockSqlOperatorTable(SqlStdOperatorTable.instance());
     MockSqlOperatorTable.addRamp(operatorTable);
-    final Sql insensitive = fixture()
+    final SqlValidatorFixture insensitive = fixture()
         .withCaseSensitive(false)
         .withQuoting(Quoting.BRACKET)
         .withOperatorTable(operatorTable);
-    final Sql sensitive = fixture()
+    final SqlValidatorFixture sensitive = fixture()
         .withQuoting(Quoting.BRACKET)
         .withOperatorTable(operatorTable);
 
@@ -9163,7 +9163,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   /** Tests using case-sensitive matching of builtin functions. */
   @Test void testCaseSensitiveBuiltinFunction() {
-    final Sql sensitive = fixture()
+    final SqlValidatorFixture sensitive = fixture()
         .withCaseSensitive(true)
         .withUnquotedCasing(Casing.UNCHANGED)
         .withQuoting(Quoting.BRACKET)
@@ -9185,10 +9185,11 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-319">[CALCITE-319]
    * Table aliases should follow case-sensitivity policy</a>. */
   @Test void testCaseInsensitiveTableAlias() {
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withCaseSensitive(false)
         .withQuoting(Quoting.BRACKET);
-    final Sql sensitive = fixture().withQuoting(Quoting.BRACKET);
+    final SqlValidatorFixture sensitive = fixture()
+        .withQuoting(Quoting.BRACKET);
 
     // Table aliases should follow case-sensitivity preference.
     //
@@ -9206,7 +9207,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1305">[CALCITE-1305]
    * Case-insensitive table aliases and GROUP BY</a>. */
   @Test void testCaseInsensitiveTableAliasInGroupBy() {
-    final Sql s = fixture()
+    final SqlValidatorFixture s = fixture()
         .withCaseSensitive(false)
         .withUnquotedCasing(Casing.UNCHANGED);
     s.withSql("select deptno, count(*) from EMP AS emp\n"
@@ -9308,11 +9309,11 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   /** Tests matching of built-in operator names. */
   @Test void testUnquotedBuiltInFunctionNames() {
-    final Sql mysql = fixture()
+    final SqlValidatorFixture mysql = fixture()
         .withUnquotedCasing(Casing.UNCHANGED)
         .withQuoting(Quoting.BACK_TICK)
         .withCaseSensitive(false);
-    final Sql oracle = fixture()
+    final SqlValidatorFixture oracle = fixture()
         .withUnquotedCasing(Casing.TO_UPPER)
         .withCaseSensitive(true);
 
@@ -9610,10 +9611,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * names. (The standard says it should be an error, but we don't right
    * now.) */
   @Test void testCaseInsensitiveSubQuery() {
-    final Sql insensitive = fixture()
+    final SqlValidatorFixture insensitive = fixture()
         .withCaseSensitive(false)
         .withQuoting(Quoting.BRACKET);
-    final Sql sensitive = fixture()
+    final SqlValidatorFixture sensitive = fixture()
         .withCaseSensitive(true)
         .withUnquotedCasing(Casing.UNCHANGED)
         .withQuoting(Quoting.BRACKET);
@@ -9630,7 +9631,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   /** Tests using case-insensitive matching of table names. */
   @Test void testCaseInsensitiveTables() {
-    final Sql mssql = fixture().withLex(Lex.SQL_SERVER);
+    final SqlValidatorFixture mssql = fixture().withLex(Lex.SQL_SERVER);
     mssql.withSql("select eMp.* from (select * from emp) as EmP").ok();
     mssql.withSql("select ^eMp^.* from (select * from emp as EmP)")
         .fails("Unknown identifier 'eMp'");
@@ -9683,7 +9684,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertSubset() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     final String sql1 = "insert into empnullables\n"
         + "values (1, 'nom', 'job', 0, timestamp '1970-01-01 00:00:00')";
@@ -9700,7 +9701,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * check for default value only when target field is null. */
   @Test void testInsertShouldNotCheckForDefaultValue() {
     final int c = CountingFactory.THREAD_CALL_COUNT.get().get();
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     final String sql1 = "insert into emp values(1, 'nom', 'job', 0, "
         + "timestamp '1970-01-01 00:00:00', 1, 1, 1, false)";
@@ -9755,7 +9756,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("insert into EMP_MODIFIABLEVIEW (empno, ename, job)\n"
         + "values (1, 'Arthur', 'clown')").ok();
     s.withSql("insert into EMP_MODIFIABLEVIEW2 (empno, ename, job, extra)\n"
@@ -9763,7 +9764,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertSubsetModifiableView() {
-    final Sql s = fixture().withExtendedCatalog()
+    final SqlValidatorFixture s = fixture().withExtendedCatalog()
         .withConformance(SqlConformanceEnum.PRAGMATIC_2003);
     s.withSql("insert into EMP_MODIFIABLEVIEW2\n"
         + "values ('Arthur', 1)").ok();
@@ -9861,7 +9862,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertBindSubset() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     // VALUES
     final String sql0 = "insert into empnullables\n"
@@ -9930,7 +9931,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertModifiableViewFailConstraint() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW2 (deptno, empno, ename)"
         + " values (^21^, 100, 'Lex')";
     final String error0 = "Modifiable view constraint is not satisfied"
@@ -9952,7 +9953,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateModifiableViewPassConstraint() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("update EMP_MODIFIABLEVIEW2"
         + " set deptno = 20, empno = 99"
         + " where ename = 'Lex'").ok();
@@ -9962,7 +9963,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateModifiableViewFailConstraint() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "update EMP_MODIFIABLEVIEW2"
         + " set deptno = ^21^, empno = 99"
         + " where ename = 'Lex'";
@@ -9977,7 +9978,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertTargetTableWithVirtualColumns() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("insert into VIRTUALCOLUMNS.VC_T1\n"
         + "select a, b, c from VIRTUALCOLUMNS.VC_T2").ok();
 
@@ -10020,7 +10021,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertSubsetFailNullability() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     s.withSql("insert into ^emp^ values (1)")
         .fails("Column 'ENAME' has no default value and does not allow NULLs");
@@ -10040,7 +10041,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertSubsetViewFailNullability() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     s.withSql("insert into ^EMP_20^ values (1)")
         .fails("Column 'ENAME' has no default value and does not allow NULLs");
@@ -10060,7 +10061,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertBindSubsetFailNullability() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     s.withSql("insert into ^emp^ values (?)")
         .fails("Column 'ENAME' has no default value and does not allow NULLs");
@@ -10110,7 +10111,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .fails("Duplicate name 'EXTRA' in column list");
     sql("select deptno, extra from emp (extra int, ^extra^ boolean)")
         .fails("Duplicate name 'EXTRA' in column list");
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "select deptno, extra\n"
         + "from EMP_MODIFIABLEVIEW (extra int, ^extra^ int)";
     s.withSql(sql0).fails("Duplicate name 'EXTRA' in column list");
@@ -10127,7 +10128,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testSelectViewExtendedColumnCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR\n"
         + " from EMP_MODIFIABLEVIEW3 extend (SAL int)\n"
         + " where SAL = 20").ok();
@@ -10137,7 +10138,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testSelectViewExtendedColumnExtendedCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR, EXTRA\n"
         + " from EMP_MODIFIABLEVIEW2 extend (EXTRA boolean)\n"
         + " where SAL = 20").ok();
@@ -10148,7 +10149,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testSelectViewExtendedColumnUnderlyingCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR, COMM\n"
         + " from EMP_MODIFIABLEVIEW3 extend (COMM int)\n"
         + " where SAL = 20").ok();
@@ -10185,7 +10186,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testSelectViewExtendedColumnFailCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE,"
         + " MGR, EXTRA\n"
         + "from EMP_MODIFIABLEVIEW2 extend (^SLACKER^ integer)\n"
@@ -10204,7 +10205,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testSelectViewExtendedColumnFailExtendedCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE,"
         + " MGR, EXTRA\n"
         + "from EMP_MODIFIABLEVIEW2 extend (^EXTRA^ integer)\n"
@@ -10221,7 +10222,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testSelectViewExtendedColumnFailUnderlyingCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE,"
         + " MGR, COMM\n"
         + "from EMP_MODIFIABLEVIEW3 extend (^COMM^ boolean)\n"
@@ -10247,7 +10248,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertFailCaseSensitivity() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW"
         + " (^\"empno\"^, ename, deptno)"
         + " values (45, 'Jake', 5)";
@@ -10265,7 +10266,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertFailExcludedColumn() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql = ""
         + "insert into EMP_MODIFIABLEVIEW (empno, ename, ^deptno^)"
         + " values (45, 'Jake', 5)";
@@ -10273,7 +10274,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertBindViewFailExcludedColumn() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql = "insert into EMP_MODIFIABLEVIEW (empno, ename, ^deptno^)"
         + " values (?, ?, ?)";
     s.withSql(sql).fails("Unknown target column 'DEPTNO'");
@@ -10290,7 +10291,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertSubsetWithCustomInitializerExpressionFactory() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
 
     s.withSql("insert into empdefaults values (101)").ok();
     s.withSql("insert into empdefaults values (101, 'Coral')").ok();
@@ -10313,7 +10314,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertBindSubsetWithCustomInitializerExpressionFactory() {
-    final Sql s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
+    final SqlValidatorFixture s = fixture().withConformance(SqlConformanceEnum.PRAGMATIC_2003);
     s.withSql("insert into empdefaults values (101, ?)").ok()
         .assertBindType(is("RecordType(VARCHAR(20) ?0)"));
     s.withSql("insert into empdefaults ^values (null, ?)^")
@@ -11110,7 +11111,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW2(extra2 BOOLEAN,"
         + " note VARCHAR) (deptno, empno, ename, extra2, note)\n"
         + "values (20, 10, '2', true, 'ok')";
@@ -11123,7 +11124,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertBindExtendedColumnModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("insert into EMP_MODIFIABLEVIEW2(extra2 BOOLEAN, note VARCHAR)"
         + " (deptno, empno, ename, extra2, note) values (20, 10, '2', true, ?)").ok();
     s.withSql("insert into EMP_MODIFIABLEVIEW2(\"rank\" INT, extra2 BOOLEAN)"
@@ -11132,7 +11133,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnModifiableViewFailConstraint() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW2(extra2 BOOLEAN,"
         + " note VARCHAR) (deptno, empno, ename, extra2, note)\n"
         + "values (^1^, 10, '2', true, 'ok')";
@@ -11153,7 +11154,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnModifiableViewFailColumnCount() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into ^EMP_MODIFIABLEVIEW2(\"rank\" INT, extra2 BOOLEAN)^"
         + " values ('nom', 1, 'job', 0, true, 0, false,"
         + " timestamp '1970-01-01 00:00:00', 1, 1,  1)";
@@ -11169,7 +11170,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnFailDuplicate() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW2(extcol INT,"
         + " ^extcol^ BOOLEAN)\n"
         + "values ('nom', 1, 'job', 0, true, 0, false,"
@@ -11278,7 +11279,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateExtendedColumnModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("update EMP_MODIFIABLEVIEW2(extra2 BOOLEAN, note VARCHAR)"
         + " set deptno = 20, extra2 = true, empno = 20, ename = 'Bob', note = 'legion'"
         + " where ename = 'Jane'").ok();
@@ -11288,7 +11289,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateBindExtendedColumnModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("update EMP_MODIFIABLEVIEW2(extra2 BOOLEAN, note VARCHAR)"
         + " set deptno = 20, extra2 = true, empno = 20, ename = 'Bob', note = ?"
         + " where ename = 'Jane'").ok();
@@ -11298,7 +11299,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateExtendedColumnModifiableViewFailConstraint() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "update EMP_MODIFIABLEVIEW2(extra2 BOOLEAN,"
         + " note VARCHAR)\n"
         + "set deptno = ^1^, extra2 = true, empno = 20, ename = 'Bob',"
@@ -11321,7 +11322,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateExtendedColumnModifiableViewCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("update EMP_MODIFIABLEVIEW3(empno INTEGER NOT NULL,"
         + " deptno INTEGER)\n"
         + "set deptno = 20, empno = 20, ename = 'Bob'\n"
@@ -11352,7 +11353,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateExtendedColumnModifiableViewFailCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql = "update EMP_MODIFIABLEVIEW3(^empno^ BOOLEAN,"
         + " deptno INTEGER)\n"
         + "set deptno = 1, empno = false, ename = 'Bob'\n"
@@ -11373,7 +11374,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateExtendedColumnModifiableViewFailUnderlyingCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql = "update EMP_MODIFIABLEVIEW3(^comm^ BOOLEAN,"
         + " deptno INTEGER)\n"
         + "set deptno = 1, empno = 20, ename = 'Bob', comm = true\n"
@@ -11384,7 +11385,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testUpdateExtendedColumnFailDuplicate() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "update emp(comm BOOLEAN, ^comm^ INTEGER)\n"
         + "set deptno = 1, empno = 20, ename = 'Bob', comm = 1\n"
         + "where deptno = 10";
@@ -11453,7 +11454,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnModifiableViewFailCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW2(^slacker^ INTEGER)"
         + " (empno, ename, job, slacker) values (1, 'Arthur', 'clown', true)";
     final String error0 = "Cannot assign to target field 'SLACKER' of type"
@@ -11477,7 +11478,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnModifiableViewFailExtendedCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "insert into EMP_MODIFIABLEVIEW2(^extra^ INTEGER)"
         + " (empno, ename, job, extra) values (1, 'Arthur', 'clown', true)";
     final String error0 = "Cannot assign to target field 'EXTRA' of type"
@@ -11508,7 +11509,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testInsertExtendedColumnModifiableViewFailUnderlyingCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String error0 = "Cannot assign to target field 'COMM' of type"
         + " INTEGER from source field 'COMM' of type BOOLEAN";
     final String sql0 = "insert into EMP_MODIFIABLEVIEW3(^comm^ BOOLEAN)"
@@ -11544,14 +11545,14 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testDeleteModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("delete from EMP_MODIFIABLEVIEW2 where deptno = 10").ok();
     s.withSql("delete from EMP_MODIFIABLEVIEW2 where deptno = 20").ok();
     s.withSql("delete from EMP_MODIFIABLEVIEW2 where empno = 30").ok();
   }
 
   @Test void testDeleteExtendedColumnModifiableView() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     s.withSql("delete from EMP_MODIFIABLEVIEW2(extra BOOLEAN) where sal > 10")
         .ok();
     s.withSql("delete from EMP_MODIFIABLEVIEW2(note BOOLEAN) where note = 'fired'")
@@ -11565,7 +11566,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testDeleteExtendedColumnModifiableViewCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "delete from EMP_MODIFIABLEVIEW2("
         + "empno INTEGER NOT NULL) where sal > 10";
     s.withSql(sql0).ok();
@@ -11587,7 +11588,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testDeleteExtendedColumnFailCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "delete from EMP_MODIFIABLEVIEW2(^empno^ BOOLEAN)\n"
         + "where sal > 10";
     final String error0 = "Cannot assign to target field 'EMPNO' of type"
@@ -11605,7 +11606,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testDeleteExtendedColumnModifiableViewFailCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String sql0 = "delete from EMP_MODIFIABLEVIEW(^deptno^ BOOLEAN)\n"
         + "where sal > 10";
     final String error = "Cannot assign to target field 'DEPTNO' of type"
@@ -11617,7 +11618,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testDeleteExtendedColumnModifiableViewFailExtendedCollision() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     final String error = "Cannot assign to target field 'SLACKER' of type"
         + " BOOLEAN from source field 'SLACKER' of type INTEGER";
     final String sql0 = "delete from EMP_MODIFIABLEVIEW(^slacker^ INTEGER)\n"
@@ -11629,7 +11630,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testDeleteExtendedColumnFailDuplicate() {
-    final Sql s = fixture().withExtendedCatalog();
+    final SqlValidatorFixture s = fixture().withExtendedCatalog();
     sql("delete from emp (extra VARCHAR, ^extra^ VARCHAR)")
         .fails("Duplicate name 'EXTRA' in column list");
     s.withSql("delete from EMP_MODIFIABLEVIEW (extra VARCHAR, ^extra^ VARCHAR)"
