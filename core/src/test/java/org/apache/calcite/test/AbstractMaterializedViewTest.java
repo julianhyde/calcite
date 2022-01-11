@@ -54,19 +54,19 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.value.Value;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.apache.calcite.test.CalciteAssert.SchemaSpec;
-
 /**
- * Abstract class to provide testing environment and utilities for extensions.
+ * Abstract base class for testing materialized views.
+ *
+ * @see MaterializedViewFixture
  */
 public abstract class AbstractMaterializedViewTest {
+  protected MaterializedViewFixture fixture(String query) {
+    return MaterializedViewFixture.create(query, this);
+  }
 
   /**
    * Abstract method to customize materialization matching approach.
@@ -89,19 +89,20 @@ public abstract class AbstractMaterializedViewTest {
     };
   }
 
-  protected Sql sql(String materialize, String query) {
-    return ImmutableSql.of(query, this)
+  protected final MaterializedViewFixture sql(String materialize,
+      String query) {
+    return fixture(query)
         .withMaterializations(ImmutableList.of(Pair.of(materialize, "MV0")));
   }
 
   /** Checks that a given query can use a materialized view with a given
    * definition. */
-  private void checkMaterialize(Sql sql) {
-    final TestConfig testConfig = build(sql);
+  void checkMaterialize(MaterializedViewFixture f) {
+    final TestConfig testConfig = build(f);
     final Function<String, Boolean> checker;
 
-    if (sql.getChecker() != null) {
-      checker = sql.getChecker();
+    if (f.getChecker() != null) {
+      checker = f.getChecker();
     } else {
       checker = resultContains(
           "EnumerableTableScan(table=[[" + testConfig.defaultSchema + ", MV0]]");
@@ -113,14 +114,14 @@ public abstract class AbstractMaterializedViewTest {
         substituteMessages.append(RelOptUtil.toString(sub)).append("\n");
       }
       throw new AssertionError("Materialized view failed to be matched by optimized results:\n"
-          + substituteMessages.toString());
+          + substituteMessages);
     }
   }
 
   /** Checks that a given query cannot use a materialized view with a given
    * definition. */
-  private void checkNoMaterialize(Sql sql) {
-    final TestConfig testConfig = build(sql);
+  void checkNoMaterialize(MaterializedViewFixture f) {
+    final TestConfig testConfig = build(f);
     final List<RelNode> results = optimize(testConfig);
     if (results.isEmpty()
         || (results.size() == 1
@@ -135,25 +136,25 @@ public abstract class AbstractMaterializedViewTest {
     throw new AssertionError(errMsgBuilder.toString());
   }
 
-  private TestConfig build(Sql sql) {
-    assert sql != null;
+  private TestConfig build(MaterializedViewFixture f) {
+    assert f != null;
     return Frameworks.withPlanner((cluster, relOptSchema, rootSchema) -> {
       cluster.getPlanner().setExecutor(new RexExecutorImpl(DataContexts.EMPTY));
       try {
         final SchemaPlus defaultSchema;
-        if (sql.getDefaultSchemaSpec() == null) {
+        if (f.getDefaultSchemaSpec() == null) {
           defaultSchema = rootSchema.add("hr",
               new ReflectiveSchema(new MaterializationTest.HrFKUKSchema()));
         } else {
-          defaultSchema = CalciteAssert.addSchema(rootSchema, sql.getDefaultSchemaSpec());
+          defaultSchema = CalciteAssert.addSchema(rootSchema, f.getDefaultSchemaSpec());
         }
-        final RelNode queryRel = toRel(cluster, rootSchema, defaultSchema, sql.getQuery());
+        final RelNode queryRel = toRel(cluster, rootSchema, defaultSchema, f.getQuery());
         final List<RelOptMaterialization> mvs = new ArrayList<>();
         final RelBuilder relBuilder =
             RelFactories.LOGICAL_BUILDER.create(cluster, relOptSchema);
         final MaterializationService.DefaultTableFactory tableFactory =
             new MaterializationService.DefaultTableFactory();
-        for (Pair<String, String> pair: sql.getMaterializations()) {
+        for (Pair<String, String> pair: f.getMaterializations()) {
           final RelNode mvRel = toRel(cluster, rootSchema, defaultSchema, pair.left);
           final Table table = tableFactory.createTable(CalciteSchema.from(rootSchema),
               pair.left, ImmutableList.of(defaultSchema.getName()));
@@ -222,33 +223,4 @@ public abstract class AbstractMaterializedViewTest {
     }
   }
 
-  /** Fluent class that contains information necessary to run a test. */
-  @Value.Immutable(singleton = false, builder = true)
-  public interface Sql {
-
-    default void ok() {
-      getTester().checkMaterialize(this);
-    }
-
-    default void noMat() {
-      getTester().checkNoMaterialize(this);
-    }
-
-    @Nullable SchemaSpec getDefaultSchemaSpec();
-    Sql withDefaultSchemaSpec(@Nullable SchemaSpec spec);
-
-    List<Pair<String, String>> getMaterializations();
-    Sql withMaterializations(Iterable<? extends Pair<String, String>> materialize);
-
-    @Value.Parameter
-    String getQuery();
-    Sql withQuery(String query);
-
-    @Nullable Function<String, Boolean> getChecker();
-    Sql withChecker(@Nullable Function<String, Boolean> checker);
-
-    @Value.Parameter
-    AbstractMaterializedViewTest getTester();
-    Sql withTester(AbstractMaterializedViewTest tester);
-  }
 }
