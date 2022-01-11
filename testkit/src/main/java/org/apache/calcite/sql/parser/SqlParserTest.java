@@ -9694,7 +9694,7 @@ public class SqlParserTest {
   protected static class TesterImpl implements Tester {
     static final TesterImpl DEFAULT = new TesterImpl();
 
-    private void check0(SqlNode sqlNode,
+    private static void check0(SqlNode sqlNode,
         SqlWriterConfig sqlWriterConfig,
         UnaryOperator<String> converter,
         String expected) {
@@ -9717,7 +9717,7 @@ public class SqlParserTest {
       }
     }
 
-    public void check(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void check(SqlNewTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         String expected, Consumer<SqlParser> parserChecker) {
       final SqlNode sqlNode =
