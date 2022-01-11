@@ -31,12 +31,12 @@ import java.util.function.Function;
  * The source of a {@link RelNode} for running a test.
  */
 interface RelSupplier {
-  RelNode apply(RelOptTestBase.Sql fixture);
+  RelNode apply(RelOptFixture fixture);
   RelNode apply2(RelMetadataFixture metadataFixture);
 
 
   RelSupplier NONE = new RelSupplier() {
-    @Override public RelNode apply(RelOptTestBase.Sql fixture) {
+    @Override public RelNode apply(RelOptFixture fixture) {
       throw new UnsupportedOperationException();
     }
 
@@ -92,7 +92,7 @@ interface RelSupplier {
       return 3709 + sql.hashCode();
     }
 
-    @Override public RelNode apply(RelOptTestBase.Sql fixture) {
+    @Override public RelNode apply(RelOptFixture fixture) {
       String sql2 = fixture.diffRepos().expand("sql", sql);
       return fixture.tester
           .convertSqlToRel(fixture.factory, sql2, fixture.decorrelate,
@@ -127,7 +127,7 @@ interface RelSupplier {
           && ((FnRelSupplier) o).relFn == relFn;
     }
 
-    @Override public RelNode apply(RelOptTestBase.Sql fixture) {
+    @Override public RelNode apply(RelOptFixture fixture) {
       return relFn.apply(RelBuilder.create(FRAMEWORK_CONFIG));
     }
 

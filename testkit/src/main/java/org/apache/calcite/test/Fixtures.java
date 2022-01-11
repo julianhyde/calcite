@@ -39,8 +39,8 @@ public class Fixtures {
   }
 
   /** Creates a fixture for rule tests. */
-  public static RelOptTestBase.Sql forRules() {
-    return RelOptTestBase.Sql.DEFAULT;
+  public static RelOptFixture forRules() {
+    return RelOptFixture.DEFAULT;
   }
 
   /** Creates a fixture for metadata tests. */

@@ -23,7 +23,6 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.test.RelOptTestBase.Sql;
 
 import org.junit.jupiter.api.Test;
 
@@ -64,12 +63,12 @@ import java.util.function.Consumer;
  * </ol>
  */
 class TopDownOptTest {
-  Sql fixture() {
-    return Sql.DEFAULT
+  RelOptFixture fixture() {
+    return RelOptFixture.DEFAULT
         .withDiffRepos(DiffRepository.lookup(TopDownOptTest.class));
   }
 
-  Sql sql(String sql, Consumer<VolcanoPlanner> init) {
+  RelOptFixture sql(String sql, Consumer<VolcanoPlanner> init) {
     return fixture().sql(sql)
         .withVolcanoPlanner(true, init);
   }

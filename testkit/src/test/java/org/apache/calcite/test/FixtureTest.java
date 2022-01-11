@@ -146,7 +146,7 @@ public class FixtureTest {
     final String sql = "select * from dept\n"
         + "union\n"
         + "select * from dept";
-    final RelOptTestBase.Sql f =
+    final RelOptFixture f =
         Fixtures.forRules()
             .withDiffRepos(DiffRepository.lookup(FixtureTest.class));
     f.sql(sql)
@@ -161,7 +161,7 @@ public class FixtureTest {
       final String sql = "select * from dept\n"
           + "union\n"
           + "select * from dept";
-      final RelOptTestBase.Sql f = Fixtures.forRules();
+      final RelOptFixture f = Fixtures.forRules();
       f.sql(sql)
           .withRule(CoreRules.UNION_TO_DISTINCT)
           .check();

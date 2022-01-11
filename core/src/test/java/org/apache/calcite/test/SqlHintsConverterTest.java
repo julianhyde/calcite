@@ -99,8 +99,8 @@ class SqlHintsConverterTest {
               f.withSqlToRelConfig(c ->
                   c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE)));
 
-  static final RelOptTestBase.Sql RULE_FIXTURE =
-      RelOptTestBase.Sql.DEFAULT
+  static final RelOptFixture RULE_FIXTURE =
+      RelOptFixture.DEFAULT
           .withDiffRepos(DiffRepository.lookup(SqlHintsConverterTest.class))
           .withConfig(c ->
               c.withHintStrategyTable(HintTools.HINT_STRATEGY_TABLE));
@@ -109,7 +109,7 @@ class SqlHintsConverterTest {
     return FIXTURE;
   }
 
-  protected RelOptTestBase.Sql ruleFixture() {
+  protected RelOptFixture ruleFixture() {
     return RULE_FIXTURE;
   }
 

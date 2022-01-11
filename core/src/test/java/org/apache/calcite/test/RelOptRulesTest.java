@@ -186,7 +186,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class RelOptRulesTest extends RelOptTestBase {
   //~ Methods ----------------------------------------------------------------
 
-  @Override Sql fixture() {
+  @Override RelOptFixture fixture() {
     return super.fixture()
         .withDiffRepos(DiffRepository.lookup(RelOptRulesTest.class));
   }
@@ -612,7 +612,7 @@ class RelOptRulesTest extends RelOptTestBase {
     sql(sql).withRule(CoreRules.FILTER_AGGREGATE_TRANSPOSE).check();
   }
 
-  private Sql basePushFilterPastAggWithGroupingSets() {
+  private RelOptFixture basePushFilterPastAggWithGroupingSets() {
     return sql("${sql}")
         .withPreRule(CoreRules.PROJECT_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE)
@@ -956,7 +956,7 @@ class RelOptRulesTest extends RelOptTestBase {
     final String sql = "select mgr from sales.emp\n"
         + "union select mgr from sales.emp\n"
         + "order by mgr limit 10 offset 5";
-    final Sql fixture = sql(sql)
+    final RelOptFixture fixture = sql(sql)
         .withVolcanoPlanner(false)
         .withDecorrelate(true);
     RelNode rel = fixture.toRel();
@@ -1593,7 +1593,7 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
-  private Sql checkPushProjectPastFilter3(ProjectFilterTransposeRule rule) {
+  RelOptFixture checkPushProjectPastFilter3(ProjectFilterTransposeRule rule) {
     final String sql = "select empno + deptno as x, ename, job, mgr,\n"
         + "  hiredate, sal, comm, slacker\n"
         + "from emp\n"
@@ -2666,7 +2666,7 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   /** Creates an environment for testing multi-join queries. */
-  private Sql multiJoin(String query) {
+  private RelOptFixture multiJoin(String query) {
     HepProgram program = new HepProgramBuilder()
         .addMatchOrder(HepMatchOrder.BOTTOM_UP)
         .addRuleInstance(CoreRules.PROJECT_REMOVE)
@@ -2836,7 +2836,7 @@ class RelOptRulesTest extends RelOptTestBase {
     checkDynamicFunctions(false).checkUnchanged();
   }
 
-  private Sql checkDynamicFunctions(boolean treatDynamicCallsAsConstant) {
+  RelOptFixture checkDynamicFunctions(boolean treatDynamicCallsAsConstant) {
     // Create a customized executor with given context operator that reduces
     // "USER" to "happyCalciteUser"
     final RexExecutorImpl executor =
@@ -3197,8 +3197,8 @@ class RelOptRulesTest extends RelOptTestBase {
     checkEmptyJoin(relFn(relFn));
   }
 
-  private void checkEmptyJoin(RelOptTestBase.Sql sql) {
-    sql.withRule(
+  private void checkEmptyJoin(RelOptFixture f) {
+    f.withRule(
         CoreRules.FILTER_REDUCE_EXPRESSIONS,
         PruneEmptyRules.PROJECT_INSTANCE,
         PruneEmptyRules.JOIN_LEFT_INSTANCE,
@@ -3987,11 +3987,13 @@ class RelOptRulesTest extends RelOptTestBase {
         + "and e1.sal > (select avg(sal) from emp e2 where e1.empno = e2.empno)";
 
     // Convert sql to rel
-    final Sql fixture = sql(sql);
+    final RelOptFixture fixture = sql(sql);
     final RelNode rel = fixture.toRel();
 
-    // Create a duplicate rel tree with a custom correlate instead of logical correlate
-    LogicalCorrelate logicalCorrelate = (LogicalCorrelate) rel.getInput(0).getInput(0);
+    // Create a duplicate rel tree with a CustomCorrelate instead of
+    // LogicalCorrelate.
+    final LogicalCorrelate logicalCorrelate =
+        (LogicalCorrelate) rel.getInput(0).getInput(0);
     CustomCorrelate customCorrelate = new CustomCorrelate(
         logicalCorrelate.getCluster(),
         logicalCorrelate.getTraitSet(),
@@ -6082,7 +6084,7 @@ class RelOptRulesTest extends RelOptTestBase {
   }
 
   /** Creates an environment for testing spatial queries. */
-  private Sql spatial(String sql) {
+  private RelOptFixture spatial(String sql) {
     final HepProgram program = new HepProgramBuilder()
         .addRuleInstance(CoreRules.PROJECT_REDUCE_EXPRESSIONS)
         .addRuleInstance(CoreRules.FILTER_REDUCE_EXPRESSIONS)

@@ -29,7 +29,6 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.rules.CoerceInputsRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.test.RelOptTestBase.Sql;
 
 import com.google.common.collect.ImmutableList;
 
@@ -84,13 +83,13 @@ class HepPlannerTest {
 
   //~ Methods ----------------------------------------------------------------
 
-  public Sql fixture() {
-    return Sql.DEFAULT
+  public RelOptFixture fixture() {
+    return RelOptFixture.DEFAULT
         .withDiffRepos(DiffRepository.lookup(HepPlannerTest.class));
   }
 
   /** Sets the SQL statement for a test. */
-  public final Sql sql(String sql) {
+  public final RelOptFixture sql(String sql) {
     return fixture().sql(sql);
   }
 
