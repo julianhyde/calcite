@@ -16,10 +16,12 @@
  */
 package org.apache.calcite.sql.test;
 
-import org.apache.calcite.sql.validate.SqlValidator;
-
 /**
- * Tester of {@link SqlValidator}.
+ * Implementation of {@link SqlTester} that can parse and validate SQL,
+ * and convert it to relational algebra.
+ *
+ * <p>This tester is therefore suitable for many general-purpose tests,
+ * including SQL parsing, validation, and SQL-to-Rel conversion.
  */
 public class SqlValidatorTester extends AbstractSqlTester {
   /** Default instance of this tester. */

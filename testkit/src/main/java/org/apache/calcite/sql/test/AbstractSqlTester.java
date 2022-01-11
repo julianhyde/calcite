@@ -16,8 +16,13 @@
  */
 package org.apache.calcite.sql.test;
 
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlLiteral;
@@ -34,6 +39,10 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.RelFieldTrimmer;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.test.DiffRepository;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
@@ -48,6 +57,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static org.apache.calcite.test.Matchers.relIsValid;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -64,6 +75,8 @@ import static java.util.Objects.requireNonNull;
  * {@link SqlValidator}.
  */
 public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
+  private  static final String NL = System.getProperty("line.separator");
+
   public AbstractSqlTester() {
   }
 
@@ -151,6 +164,12 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       throws SqlParseException {
     SqlParser parser = factory.createParser(sql);
     return parser.parseQuery();
+  }
+
+  @Override public SqlNode parseExpression(SqlNewTestFactory factory,
+      String expr) throws SqlParseException {
+    SqlParser parser = factory.createParser(expr);
+    return parser.parseExpression();
   }
 
   @Override public void checkColumnType(SqlNewTestFactory factory, String sql,
@@ -423,4 +442,127 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     consumer.accept(buildQuery2(factory, expression));
   }
 
+  @Override public void assertConvertsTo(SqlNewTestFactory factory,
+      DiffRepository diffRepos,
+      String sql,
+      String plan,
+      boolean trim,
+      boolean expression,
+      boolean decorrelate) {
+    if (expression) {
+      assertExprConvertsTo(factory, diffRepos, sql, plan);
+    } else {
+      assertSqlConvertsTo(factory, diffRepos, sql, plan, trim, decorrelate);
+    }
+  }
+
+  private void assertExprConvertsTo(SqlNewTestFactory factory,
+      DiffRepository diffRepos, String expr, String plan) {
+    String expr2 = diffRepos.expand("sql", expr);
+    RexNode rex = convertExprToRex(factory, expr2);
+    assertNotNull(rex);
+    // NOTE jvs 28-Mar-2006:  insert leading newline so
+    // that plans come out nicely stacked instead of first
+    // line immediately after CDATA start
+    String actual = NL + rex + NL;
+    diffRepos.assertEquals("plan", plan, actual);
+  }
+
+  private void assertSqlConvertsTo(SqlNewTestFactory factory,
+      DiffRepository diffRepos, String sql, String plan,
+      boolean trim,
+      boolean decorrelate) {
+    String sql2 = diffRepos.expand("sql", sql);
+    final Pair<SqlValidator, RelRoot> pair =
+        convertSqlToRel2(factory, sql2, decorrelate, trim);
+    final RelRoot root = requireNonNull(pair.right);
+    final SqlValidator validator = requireNonNull(pair.left);
+    RelNode rel = root.project();
+
+    assertNotNull(rel);
+    assertThat(rel, relIsValid());
+
+    if (trim) {
+      final RelBuilder relBuilder =
+          RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+      final RelFieldTrimmer trimmer =
+          createFieldTrimmer(validator, relBuilder);
+      rel = trimmer.trim(rel);
+      assertNotNull(rel);
+      assertThat(rel, relIsValid());
+    }
+
+    // NOTE jvs 28-Mar-2006:  insert leading newline so
+    // that plans come out nicely stacked instead of first
+    // line immediately after CDATA start
+    String actual = NL + RelOptUtil.toString(rel);
+    diffRepos.assertEquals("plan", plan, actual);
+  }
+
+  private RexNode convertExprToRex(SqlNewTestFactory factory, String expr) {
+    requireNonNull(expr, "expr");
+    final SqlNode sqlQuery;
+    try {
+      sqlQuery = parseExpression(factory, expr);
+    } catch (RuntimeException | Error e) {
+      throw e;
+    } catch (Exception e) {
+      throw TestUtil.rethrow(e);
+    }
+
+    final SqlToRelConverter converter = factory.createSqlToRelConverter();
+    final SqlValidator validator = requireNonNull(converter.validator);
+    final SqlNode validatedQuery = validator.validate(sqlQuery);
+    return converter.convertExpression(validatedQuery);
+  }
+
+  @Override public Pair<SqlValidator, RelRoot> convertSqlToRel2(
+      SqlNewTestFactory factory, String sql, boolean decorrelate,
+      boolean trim) {
+    requireNonNull(sql, "sql");
+    final SqlNode sqlQuery;
+    try {
+      sqlQuery = parseQuery(factory, sql);
+    } catch (RuntimeException | Error e) {
+      throw e;
+    } catch (Exception e) {
+      throw TestUtil.rethrow(e);
+    }
+    final SqlToRelConverter converter = factory.createSqlToRelConverter();
+    final SqlValidator validator = requireNonNull(converter.validator);
+
+    final SqlNode validatedQuery = validator.validate(sqlQuery);
+    RelRoot root =
+        converter.convertQuery(validatedQuery, false, true);
+    requireNonNull(root, "root");
+    if (decorrelate || trim) {
+      root = root.withRel(converter.flattenTypes(root.rel, true));
+    }
+    if (decorrelate) {
+      root = root.withRel(converter.decorrelate(sqlQuery, root.rel));
+    }
+    if (trim) {
+      root = root.withRel(converter.trimUnusedFields(true, root.rel));
+    }
+    return Pair.of(validator, root);
+  }
+
+  @Override public RelNode trimRelNode(SqlNewTestFactory factory,
+      RelNode relNode) {
+    final SqlToRelConverter converter = factory.createSqlToRelConverter();
+    RelNode r2 = converter.flattenTypes(relNode, true);
+    return converter.trimUnusedFields(true, r2);
+  }
+
+  /**
+   * Creates a RelFieldTrimmer.
+   *
+   * @param validator Validator
+   * @param relBuilder Builder
+   * @return Field trimmer
+   */
+  public RelFieldTrimmer createFieldTrimmer(SqlValidator validator,
+      RelBuilder relBuilder) {
+    return new RelFieldTrimmer(validator, relBuilder);
+  }
 }

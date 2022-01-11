@@ -36,11 +36,11 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.test.SqlToRelTestBase.Tester;
 import org.apache.calcite.test.catalog.MockCatalogReaderDynamic;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Closer;
@@ -103,10 +103,10 @@ abstract class RelOptTestBase {
 
     /** The tester for this test. The field is vestigial; there is no
      * {@code withTester} method, and the same tester is always used. */
-    final Tester tester;
+    final SqlTester tester;
     final RelSupplier relSupplier;
     final SqlNewTestFactory factory;
-    final DiffRepository diffRepos;
+    final @Nullable DiffRepository diffRepos;
     final HepProgram preProgram;
     final RelOptPlanner planner;
     final ImmutableMap<Hook, Consumer<Object>> hooks;
@@ -115,7 +115,7 @@ abstract class RelOptTestBase {
     final boolean decorrelate;
     final boolean lateDecorrelate;
 
-    Sql(Tester tester, SqlNewTestFactory factory,
+    Sql(SqlTester tester, SqlNewTestFactory factory,
         @Nullable DiffRepository diffRepos,
         RelSupplier relSupplier, HepProgram preProgram, RelOptPlanner planner,
         ImmutableMap<Hook, Consumer<Object>> hooks,

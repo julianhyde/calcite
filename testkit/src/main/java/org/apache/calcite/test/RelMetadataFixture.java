@@ -32,6 +32,7 @@ import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -79,13 +80,13 @@ public class RelMetadataFixture {
                           b.withAggregateUnique(true)
                               .withPruneInputOfAggregate(false))));
 
-  private final SqlToRelTestBase.Tester tester;
+  private final SqlTester tester;
   private final SqlNewTestFactory factory;
   private final RelSupplier relSupplier;
   private final boolean convertAsCalc;
   private final UnaryOperator<RelNode> relTransform;
 
-  private RelMetadataFixture(SqlToRelTestBase.Tester tester,
+  private RelMetadataFixture(SqlTester tester,
       SqlNewTestFactory factory, RelSupplier relSupplier,
       boolean convertAsCalc, UnaryOperator<RelNode> relTransform) {
     this.tester = tester;
@@ -123,9 +124,8 @@ public class RelMetadataFixture {
         relTransform);
   }
 
-  public RelMetadataFixture withTester(
-      UnaryOperator<SqlToRelTestBase.Tester> transform) {
-    final SqlToRelTestBase.Tester tester = transform.apply(this.tester);
+  public RelMetadataFixture withTester(UnaryOperator<SqlTester> transform) {
+    final SqlTester tester = transform.apply(this.tester);
     return new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
         relTransform);
   }

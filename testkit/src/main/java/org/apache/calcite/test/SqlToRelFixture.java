@@ -19,6 +19,8 @@ package org.apache.calcite.test;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTester;
+import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -42,8 +44,7 @@ import static java.util.Objects.requireNonNull;
  * Parameters for a SQL-to-RelNode test.
  */
 public class SqlToRelFixture {
-  public static final SqlToRelTestBase.Tester TESTER =
-      new SqlToRelTestBase.TesterImpl();
+  public static final SqlTester TESTER = SqlValidatorTester.DEFAULT;
 
   public static final SqlToRelFixture DEFAULT =
       new SqlToRelFixture("?", true, TESTER, SqlNewTestFactory.INSTANCE, false,
@@ -68,13 +69,13 @@ public class SqlToRelFixture {
   private final String sql;
   private final @Nullable DiffRepository diffRepos;
   private final boolean decorrelate;
-  private final SqlToRelTestBase.Tester tester;
+  private final SqlTester tester;
   private final SqlNewTestFactory factory;
   private final boolean trim;
   private final boolean expression;
 
   SqlToRelFixture(String sql, boolean decorrelate,
-      SqlToRelTestBase.Tester tester, SqlNewTestFactory factory, boolean trim,
+      SqlTester tester, SqlNewTestFactory factory, boolean trim,
       boolean expression,
       @Nullable DiffRepository diffRepos) {
     this.sql = requireNonNull(sql, "sql");

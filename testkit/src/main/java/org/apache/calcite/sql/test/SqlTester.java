@@ -16,17 +16,23 @@
  */
 package org.apache.calcite.sql.test;
 
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.test.DiffRepository;
+import org.apache.calcite.util.Pair;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.ResultSet;
 import java.util.function.Consumer;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Callback for testing SQL queries and expressions.
@@ -65,6 +71,10 @@ public interface SqlTester extends AutoCloseable {
 
   /** Parses a query. */
   SqlNode parseQuery(SqlNewTestFactory factory, String sql)
+      throws SqlParseException;
+
+  /** Parses an expression. */
+  SqlNode parseExpression(SqlNewTestFactory factory, String expr)
       throws SqlParseException;
 
   /** Parses and validates a query, then calls an action on the result. */
@@ -264,6 +274,47 @@ public interface SqlTester extends AutoCloseable {
    */
   void checkQueryFails(SqlNewTestFactory factory, StringAndPos sap,
       String expectedError);
+
+  /**
+   * Converts a SQL string to a {@link RelNode} tree.
+   *
+   * @param factory Factory
+   * @param sql SQL statement
+   * @param decorrelate Whether to decorrelate
+   * @param trim Whether to trim
+   * @return Relational expression, never null
+   */
+  default RelRoot convertSqlToRel(SqlNewTestFactory factory,
+      String sql, boolean decorrelate, boolean trim) {
+    Pair<SqlValidator, RelRoot> pair =
+        convertSqlToRel2(factory, sql, decorrelate, trim);
+    return requireNonNull(pair.right);
+  }
+
+  /** Converts a SQL string to a (SqlValidator, RelNode) pair. */
+  Pair<SqlValidator, RelRoot> convertSqlToRel2(SqlNewTestFactory factory,
+      String sql, boolean decorrelate, boolean trim);
+
+  /**
+   * Checks that a SQL statement converts to a given plan, optionally
+   * trimming columns that are not needed.
+   *
+   * @param factory Factory
+   * @param diffRepos Diff repository
+   * @param sql  SQL query or expression
+   * @param plan Expected plan
+   * @param trim Whether to trim columns that are not needed
+   * @param expression True if {@code sql} is an expression, false if it is a query
+   */
+  void assertConvertsTo(SqlNewTestFactory factory, DiffRepository diffRepos,
+      String sql,
+      String plan,
+      boolean trim,
+      boolean expression,
+      boolean decorrelate);
+
+  /** Trims a RelNode. */
+  RelNode trimRelNode(SqlNewTestFactory factory, RelNode relNode);
 
   //~ Inner Interfaces -------------------------------------------------------
 

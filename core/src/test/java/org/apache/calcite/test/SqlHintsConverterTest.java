@@ -57,7 +57,8 @@ import org.apache.calcite.sql.SqlTableRef;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.test.SqlNewTestFactory;
-import org.apache.calcite.test.SqlToRelTestBase.Tester;
+import org.apache.calcite.sql.test.SqlTester;
+import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Litmus;
@@ -599,7 +600,7 @@ class SqlHintsConverterTest {
     private final String sql;
     private final DiffRepository diffRepos;
     private final SqlNewTestFactory factory;
-    private final Tester tester = SqlToRelFixture.TESTER;
+    private final SqlTester tester = SqlToRelFixture.TESTER;
     private final List<String> hintsCollect = new ArrayList<>();
     private final boolean decorrelate;
     private final boolean trim;
