@@ -17,6 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.sql.parser.SqlParserTest;
+import org.apache.calcite.sql.test.SqlFixture;
 
 /** Fluent test fixtures for typical Calcite tests (parser, validator,
  * sql-to-rel and rel-rules) that can easily be used in dependent projects. */
@@ -41,6 +42,13 @@ public class Fixtures {
   /** Creates a fixture for rule tests. */
   public static RelOptFixture forRules() {
     return RelOptFixture.DEFAULT;
+  }
+
+  /** Creates a fixture for operator tests. */
+  public static SqlFixture forOperators(boolean execute) {
+    return execute
+        ? SqlFixtureImpl.DEFAULT.withTester(t -> SqlOperatorTest.TESTER)
+        : SqlFixtureImpl.DEFAULT;
   }
 
   /** Creates a fixture for metadata tests. */

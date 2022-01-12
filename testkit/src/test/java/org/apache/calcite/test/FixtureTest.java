@@ -19,6 +19,7 @@ package org.apache.calcite.test;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.sql.parser.SqlParserTest;
+import org.apache.calcite.sql.test.SqlFixture;
 
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
@@ -29,6 +30,7 @@ import java.util.function.UnaryOperator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Tests test fixtures.
  *
@@ -77,6 +79,50 @@ public class FixtureTest {
 
     f.withSql("select 1 + 2 as three")
         .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
+  }
+
+  /** Tests that you can run operator tests via
+   * {@link Fixtures#forValidator()}. */
+  @Test void testOperatorFixture() {
+    // The first fixture only validates, does not execute.
+    final SqlFixture validateFixture = Fixtures.forOperators(false);
+    final SqlFixture executeFixture = Fixtures.forOperators(true);
+
+    // Passes with and without execution
+    validateFixture.checkBoolean("1 < 5", true);
+    executeFixture.checkBoolean("1 < 5", true);
+
+    // The fixture that executes fails, because the result value is incorrect.
+    validateFixture.checkBoolean("1 < 5", false);
+    assertFails(() -> executeFixture.checkBoolean("1 < 5", false),
+        "<false>", "<true>");
+
+    // The fixture that executes fails, because the result value is incorrect.
+    validateFixture.checkScalarExact("1 + 2", "INTEGER NOT NULL", "foo");
+    assertFails(() -> validateFixture.checkScalarExact("1 + 2", "DATE", "foo"),
+        "\"DATE\"", "\"INTEGER NOT NULL\"");
+
+    // Both fixtures pass.
+    validateFixture.checkScalarExact("1 + 2", "INTEGER NOT NULL", "3");
+    executeFixture.checkScalarExact("1 + 2", "INTEGER NOT NULL", "3");
+
+    // Both fixtures fail, because the type is incorrect.
+    assertFails(() -> validateFixture.checkScalarExact("1 + 2", "DATE", "foo"),
+        "\"DATE\"", "\"INTEGER NOT NULL\"");
+    assertFails(() -> executeFixture.checkScalarExact("1 + 2", "DATE", "foo"),
+        "\"DATE\"", "\"INTEGER NOT NULL\"");
+  }
+
+  static void assertFails(Runnable runnable, String expected, String actual) {
+    try {
+      runnable.run();
+      fail("expected error");
+    } catch (AssertionError e) {
+      String expectedMessage = "\n"
+          + "Expected: is " + expected + "\n"
+          + "     but: was " + actual;
+      assertThat(e.getMessage(), is(expectedMessage));
+    }
   }
 
   /** Tests that you can run SQL-to-Rel tests via
