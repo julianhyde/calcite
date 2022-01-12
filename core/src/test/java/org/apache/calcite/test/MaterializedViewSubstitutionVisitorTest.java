@@ -34,6 +34,9 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.util.Pair;
+
+import com.google.common.collect.ImmutableList;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -49,9 +52,58 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit test for SubstutionVisitor.
+ * Unit test for {@link SubstitutionVisitor}.
  */
-public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterializedViewTest {
+public class MaterializedViewSubstitutionVisitorTest {
+  private static final HepProgram HEP_PROGRAM =
+      new HepProgramBuilder()
+          .addRuleInstance(CoreRules.FILTER_PROJECT_TRANSPOSE)
+          .addRuleInstance(CoreRules.FILTER_MERGE)
+          .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
+          .addRuleInstance(CoreRules.JOIN_CONDITION_PUSH)
+          .addRuleInstance(CoreRules.FILTER_AGGREGATE_TRANSPOSE)
+          .addRuleInstance(CoreRules.PROJECT_MERGE)
+          .addRuleInstance(CoreRules.PROJECT_REMOVE)
+          .addRuleInstance(CoreRules.PROJECT_JOIN_TRANSPOSE)
+          .addRuleInstance(CoreRules.PROJECT_SET_OP_TRANSPOSE)
+          .addRuleInstance(CoreRules.AGGREGATE_PROJECT_PULL_UP_CONSTANTS)
+          .addRuleInstance(CoreRules.FILTER_TO_CALC)
+          .addRuleInstance(CoreRules.PROJECT_TO_CALC)
+          .addRuleInstance(CoreRules.FILTER_CALC_MERGE)
+          .addRuleInstance(CoreRules.PROJECT_CALC_MERGE)
+          .addRuleInstance(CoreRules.CALC_MERGE)
+          .build();
+
+  public static final MaterializedViewTester TESTER =
+      new MaterializedViewTester() {
+        @Override protected List<RelNode> optimize(RelNode queryRel,
+            List<RelOptMaterialization> materializationList) {
+          RelOptMaterialization materialization = materializationList.get(0);
+          SubstitutionVisitor substitutionVisitor =
+              new SubstitutionVisitor(canonicalize(materialization.queryRel),
+                  canonicalize(queryRel));
+          return substitutionVisitor
+              .go(materialization.tableRel);
+        }
+
+        private RelNode canonicalize(RelNode rel) {
+          final HepPlanner hepPlanner = new HepPlanner(HEP_PROGRAM);
+          hepPlanner.setRoot(rel);
+          return hepPlanner.findBestExp();
+        }
+      };
+
+  /** Creates a fixture. */
+  protected MaterializedViewFixture fixture(String query) {
+    return MaterializedViewFixture.create(query, TESTER);
+  }
+
+  /** Creates a fixture with a given query. */
+  protected final MaterializedViewFixture sql(String materialize,
+      String query) {
+    return fixture(query)
+        .withMaterializations(ImmutableList.of(Pair.of(materialize, "MV0")));
+  }
 
   @Test void testFilter() {
     sql("select * from \"emps\" where \"deptno\" = 10",
@@ -122,11 +174,10 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
   @Test void testFilterQueryOnProjectView5() {
     sql("select \"deptno\" - 10 as \"x\", \"empid\" + 1 as ee, \"name\" from \"emps\"",
         "select \"name\", \"empid\" + 1 as e from \"emps\" where \"deptno\" - 10 = 2")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=[2], "
             + "expr#4=[=($t0, $t3)], name=[$t2], E=[$t1], $condition=[$t4])\n"
-            + "  EnumerableTableScan(table=[[hr, MV0]]"))
+            + "  EnumerableTableScan(table=[[hr, MV0]]")
         .ok();
   }
 
@@ -181,12 +232,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
     sql("select \"deptno\", \"empid\", \"name\" from \"emps\"\n"
             + "where \"deptno\" = 10 or \"deptno\" = 20 or \"empid\" < 160",
         "select \"empid\" + 1 as x, \"name\" from \"emps\" where \"deptno\" = 10")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=[1], expr#4=[+($t1, $t3)], expr#5=[10], "
             + "expr#6=[CAST($t0):INTEGER NOT NULL], expr#7=[=($t5, $t6)], X=[$t4], "
             + "name=[$t2], $condition=[$t7])\n"
-            + "  EnumerableTableScan(table=[[hr, MV0]])"))
+            + "  EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -250,7 +300,7 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
    * has unsupported type being checked on query. */
   @Test void testFilterQueryOnFilterView10() {
     sql("select \"name\", \"deptno\" from \"emps\" where \"deptno\" > 10 "
-            + "and \"name\" = \'calcite\'",
+            + "and \"name\" = 'calcite'",
         "select \"name\", \"empid\" from \"emps\" where \"deptno\" > 30 "
             + "or \"empid\" > 10")
         .noMat();
@@ -488,12 +538,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
     sql("select \"empid\", \"deptno\", count(*) as c, sum(\"empid\") as s\n"
             + "from \"emps\" group by \"empid\", \"deptno\"",
         "select count(*) + 1 as c, \"deptno\" from \"emps\" group by \"deptno\"")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..1=[{inputs}], expr#2=[1], "
             + "expr#3=[+($t1, $t2)], C=[$t3], deptno=[$t0])\n"
             + "  LogicalAggregate(group=[{1}], agg#0=[$SUM0($2)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -520,12 +569,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
             + "from \"emps\" group by \"empid\", \"deptno\"",
         "select count(*) + 1 as c, \"deptno\"\n"
             + "from \"emps\" group by cube(\"empid\",\"deptno\")")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=[1], "
             + "expr#4=[+($t2, $t3)], C=[$t4], deptno=[$t1])\n"
             + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {0}, {1}, {}]], agg#0=[$SUM0($2)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -533,12 +581,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
     sql("select \"empid\", \"deptno\", count(*) as c, sum(\"empid\") as s from \"emps\" "
             + "group by \"empid\", \"deptno\"",
         "select count(*) + 1 as c,  \"deptno\" from \"emps\" group by cube(\"empid\",\"deptno\")")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=[1], "
             + "expr#4=[+($t2, $t3)], C=[$t4], deptno=[$t1])\n"
             + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {0}, {1}, {}]], agg#0=[$SUM0($2)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -556,12 +603,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
     sql("select \"empid\", \"deptno\", count(*) as c, sum(\"salary\") as s from \"emps\" "
             + "group by \"empid\", \"deptno\"",
         "select count(*) + 1 as c,  \"deptno\" from \"emps\" group by cube(\"deptno\", \"empid\")")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=[1], "
             + "expr#4=[+($t2, $t3)], C=[$t4], deptno=[$t1])\n"
             + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {0}, {1}, {}]], agg#0=[$SUM0($2)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -570,12 +616,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
             + "from \"emps\" group by \"empid\", \"deptno\"",
         "select count(*) + 1 as c,  \"deptno\"\n"
             + "from \"emps\" group by rollup(\"deptno\", \"empid\")")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=[1], "
             + "expr#4=[+($t2, $t3)], C=[$t4], deptno=[$t1])\n"
             + "  LogicalAggregate(group=[{0, 1}], groups=[[{0, 1}, {1}, {}]], agg#0=[$SUM0($2)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -584,12 +629,11 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
             + "from \"emps\" group by \"salary\", \"empid\", \"deptno\"",
         "select count(*) + 1 as c,  \"deptno\"\n"
             + "from \"emps\" group by rollup(\"empid\", \"deptno\", \"salary\")")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..3=[{inputs}], expr#4=[1], "
             + "expr#5=[+($t3, $t4)], C=[$t5], deptno=[$t2])\n"
             + "  LogicalAggregate(group=[{0, 1, 2}], groups=[[{0, 1, 2}, {1, 2}, {1}, {}]], agg#0=[$SUM0($3)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -601,11 +645,10 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
     sql("select \"empid\", \"deptno\", \"name\", count(*) from \"emps\"\n"
             + "group by \"empid\", \"deptno\", \"name\"",
         "select \"name\", \"empid\", count(*) from \"emps\" group by \"name\", \"empid\"")
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], name=[$t1], empid=[$t0], EXPR$2=[$t2])\n"
             + "  LogicalAggregate(group=[{0, 2}], EXPR$2=[$SUM0($3)])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -816,13 +859,12 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
         + "union all select * from \"emps\" where \"empid\" < 200";
     String m = "select * from \"emps\" where \"empid\" < 500";
     sql(m, q)
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalUnion(all=[true])\n"
             + "  LogicalCalc(expr#0..4=[{inputs}], expr#5=[300], expr#6=[>($t0, $t5)], proj#0..4=[{exprs}], $condition=[$t6])\n"
             + "    LogicalTableScan(table=[[hr, emps]])\n"
             + "  LogicalCalc(expr#0..4=[{inputs}], expr#5=[200], expr#6=[<($t0, $t5)], proj#0..4=[{exprs}], $condition=[$t6])\n"
-            + "    EnumerableTableScan(table=[[hr, MV0]])"))
+            + "    EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -841,14 +883,13 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
         + "join (select * from \"emps\" where \"empid\" < 200) using (\"empid\")";
     String m = "select * from \"emps\" where \"empid\" < 500";
     sql(m, q)
-        .withChecker(
-            resultContains(""
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..9=[{inputs}], proj#0..4=[{exprs}], deptno0=[$t6], name0=[$t7], salary0=[$t8], commission0=[$t9])\n"
             + "  LogicalJoin(condition=[=($0, $5)], joinType=[inner])\n"
             + "    LogicalCalc(expr#0..4=[{inputs}], expr#5=[300], expr#6=[<($t0, $t5)], proj#0..4=[{exprs}], $condition=[$t6])\n"
             + "      EnumerableTableScan(table=[[hr, MV0]])\n"
             + "    LogicalCalc(expr#0..4=[{inputs}], expr#5=[200], expr#6=[<($t0, $t5)], proj#0..4=[{exprs}], $condition=[$t6])\n"
-            + "      EnumerableTableScan(table=[[hr, MV0]])"))
+            + "      EnumerableTableScan(table=[[hr, MV0]])")
         .ok();
   }
 
@@ -977,11 +1018,12 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
     final String query = ""
         + "select count(distinct \"deptno\") as cnt\n"
         + "from \"emps\" where \"name\" = 'hello'";
-    sql(mv, query).withChecker(
-        resultContains(""
+    sql(mv, query)
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..1=[{inputs}], expr#2=['hello':VARCHAR], expr#3=[CAST($t0)"
             + ":VARCHAR], expr#4=[=($t2, $t3)], CNT=[$t1], $condition=[$t4])\n"
-            + "  EnumerableTableScan(table=[[hr, MV0]])")).ok();
+            + "  EnumerableTableScan(table=[[hr, MV0]])")
+        .ok();
   }
 
   @Test void testConstantFilterInAgg2() {
@@ -993,11 +1035,12 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
         + "select \"deptno\", count(distinct \"commission\") as cnt\n"
         + "from \"emps\" where \"name\" = 'hello'\n"
         + "group by \"deptno\"";
-    sql(mv, query).withChecker(
-        resultContains(""
+    sql(mv, query)
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=['hello':VARCHAR], expr#4=[CAST($t0)"
             + ":VARCHAR], expr#5=[=($t3, $t4)], deptno=[$t1], CNT=[$t2], $condition=[$t5])\n"
-            + "  EnumerableTableScan(table=[[hr, MV0]])")).ok();
+            + "  EnumerableTableScan(table=[[hr, MV0]])")
+        .ok();
   }
 
   @Test void testConstantFilterInAgg3() {
@@ -1009,13 +1052,14 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
         + "select \"deptno\", count(distinct \"commission\") as cnt\n"
         + "from \"emps\" where \"name\" = 'hello' and \"deptno\" = 1\n"
         + "group by \"deptno\"";
-    sql(mv, query).withChecker(
-        resultContains(""
+    sql(mv, query)
+        .checkingThatResultContains(""
             + "LogicalCalc(expr#0..2=[{inputs}], expr#3=['hello':VARCHAR], expr#4=[CAST($t0)"
             + ":VARCHAR], expr#5=[=($t3, $t4)], expr#6=[1], expr#7=[CAST($t1):INTEGER NOT NULL], "
             + "expr#8=[=($t6, $t7)], expr#9=[AND($t5, $t8)], deptno=[$t1], CNT=[$t2], "
             + "$condition=[$t9])\n"
-            + "  EnumerableTableScan(table=[[hr, MV0]])")).ok();
+            + "  EnumerableTableScan(table=[[hr, MV0]])")
+        .ok();
   }
 
   @Test void testConstantFilterInAgg4() {
@@ -1749,9 +1793,10 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
         + "from \"emps\"\n"
         + "where \"deptno\" > 100"
         + "group by \"name\"";
-    sql(mv, query).withChecker(
-        resultContains(""
-            + "EnumerableTableScan(table=[[hr, MV0]])")).ok();
+    sql(mv, query)
+        .checkingThatResultContains(""
+            + "EnumerableTableScan(table=[[hr, MV0]])")
+        .ok();
   }
 
   @Test void testRexPredicate1() {
@@ -1765,9 +1810,10 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
         + "from \"emps\"\n"
         + "where \"deptno\" > 100"
         + "group by \"name\"";
-    sql(mv, query).withChecker(
-        resultContains(""
-            + "EnumerableTableScan(table=[[hr, MV0]])")).ok();
+    sql(mv, query)
+        .checkingThatResultContains(""
+            + "EnumerableTableScan(table=[[hr, MV0]])")
+        .ok();
   }
 
   /** Test case for
@@ -1804,36 +1850,4 @@ public class MaterializedViewSubstitutionVisitorTest extends AbstractMaterialize
       new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR)
           .withParanoid(true);
 
-  protected List<RelNode> optimize(TestConfig testConfig) {
-    RelNode queryRel = testConfig.queryRel;
-    RelOptMaterialization materialization = testConfig.materializations.get(0);
-    List<RelNode> substitutes =
-        new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(queryRel))
-            .go(materialization.tableRel);
-    return substitutes;
-  }
-
-  private RelNode canonicalize(RelNode rel) {
-    HepProgram program =
-        new HepProgramBuilder()
-            .addRuleInstance(CoreRules.FILTER_PROJECT_TRANSPOSE)
-            .addRuleInstance(CoreRules.FILTER_MERGE)
-            .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
-            .addRuleInstance(CoreRules.JOIN_CONDITION_PUSH)
-            .addRuleInstance(CoreRules.FILTER_AGGREGATE_TRANSPOSE)
-            .addRuleInstance(CoreRules.PROJECT_MERGE)
-            .addRuleInstance(CoreRules.PROJECT_REMOVE)
-            .addRuleInstance(CoreRules.PROJECT_JOIN_TRANSPOSE)
-            .addRuleInstance(CoreRules.PROJECT_SET_OP_TRANSPOSE)
-            .addRuleInstance(CoreRules.AGGREGATE_PROJECT_PULL_UP_CONSTANTS)
-            .addRuleInstance(CoreRules.FILTER_TO_CALC)
-            .addRuleInstance(CoreRules.PROJECT_TO_CALC)
-            .addRuleInstance(CoreRules.FILTER_CALC_MERGE)
-            .addRuleInstance(CoreRules.PROJECT_CALC_MERGE)
-            .addRuleInstance(CoreRules.CALC_MERGE)
-            .build();
-    final HepPlanner hepPlanner = new HepPlanner(program);
-    hepPlanner.setRoot(rel);
-    return hepPlanner.findBestExp();
-  }
 }

@@ -17,53 +17,99 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
+
+import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.value.Value;
 
-import java.util.List;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Fluent class that contains information necessary to run a test.
  */
-@Value.Immutable(singleton = false, builder = true)
-public interface MaterializedViewFixture {
-  static MaterializedViewFixture create(String query,
-      AbstractMaterializedViewTest tester) {
-    return ImmutableMaterializedViewFixture.of(query, tester);
+public class MaterializedViewFixture {
+  public final String query;
+  public final MaterializedViewTester tester;
+  public final CalciteAssert.@Nullable SchemaSpec schemaSpec;
+  public final ImmutableList<Pair<String, String>> materializationList;
+  public final @Nullable Predicate<String> checker;
+
+  public static MaterializedViewFixture create(String query,
+      MaterializedViewTester tester) {
+    return new MaterializedViewFixture(tester, query, null, ImmutableList.of(),
+        null);
   }
 
-  default void ok() {
-    getTester().checkMaterialize(this);
+  private MaterializedViewFixture(MaterializedViewTester tester, String query,
+      CalciteAssert.@Nullable SchemaSpec schemaSpec,
+      ImmutableList<Pair<String, String>> materializationList,
+      @Nullable Predicate<String> checker) {
+    this.query = query;
+    this.tester = tester;
+    this.schemaSpec = schemaSpec;
+    this.materializationList = materializationList;
+    this.checker = checker;
   }
 
-  default void noMat() {
-    getTester().checkNoMaterialize(this);
+  public void ok() {
+    tester.checkMaterialize(this);
   }
 
-  CalciteAssert.@Nullable SchemaSpec getDefaultSchemaSpec();
+  public void noMat() {
+    tester.checkNoMaterialize(this);
+  }
 
-  MaterializedViewFixture withDefaultSchemaSpec(
-      CalciteAssert.@Nullable SchemaSpec spec);
+  public MaterializedViewFixture withDefaultSchemaSpec(
+      CalciteAssert.@Nullable SchemaSpec schemaSpec) {
+    if (schemaSpec == this.schemaSpec) {
+      return this;
+    }
+    return new MaterializedViewFixture(tester, query, schemaSpec,
+        materializationList, checker);
+  }
 
-  List<Pair<String, String>> getMaterializations();
+  public MaterializedViewFixture withMaterializations(
+      Iterable<? extends Pair<String, String>> materialize) {
+    final ImmutableList<Pair<String, String>> materializationList =
+        ImmutableList.copyOf(materialize);
+    if (materializationList.equals(this.materializationList)) {
+      return this;
+    }
+    return new MaterializedViewFixture(tester, query, schemaSpec,
+        materializationList, checker);
+  }
 
-  MaterializedViewFixture withMaterializations(
-      Iterable<? extends Pair<String, String>> materialize);
+  public MaterializedViewFixture withQuery(String query) {
+    if (query.equals(this.query)) {
+      return this;
+    }
+    return new MaterializedViewFixture(tester, query, schemaSpec,
+        materializationList, checker);
+  }
 
-  @Value.Parameter
-  String getQuery();
+  public MaterializedViewFixture withChecker(Predicate<String> checker) {
+    if (checker == this.checker) {
+      return this;
+    }
+    return new MaterializedViewFixture(tester, query, schemaSpec,
+        materializationList, checker);
+  }
 
-  MaterializedViewFixture withQuery(String query);
+  public MaterializedViewFixture checkingThatResultContains(
+      String... expectedStrings) {
+    return withChecker(s -> resultContains(s, expectedStrings));
+  }
 
-  @Nullable Function<String, Boolean> getChecker();
+  /** Returns whether the result contains all the given strings. */
+  public static boolean resultContains(String result, final String... expected) {
+    String sLinux = Util.toLinux(result);
+    for (String st : expected) {
+      if (!sLinux.contains(Util.toLinux(st))) {
+        return false;
+      }
+    }
+    return true;
+  }
 
-  MaterializedViewFixture withChecker(
-      @Nullable Function<String, Boolean> checker);
-
-  @Value.Parameter
-  AbstractMaterializedViewTest getTester();
-
-  MaterializedViewFixture withTester(AbstractMaterializedViewTest tester);
 }
