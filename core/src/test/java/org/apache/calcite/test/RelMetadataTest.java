@@ -91,7 +91,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.catalog.MockCatalogReaderSimple;
@@ -1123,7 +1123,7 @@ public class RelMetadataTest {
   }
 
   @Test void testCompositeKeysTableScanUniqueKeys() {
-    SqlNewTestFactory.CatalogReaderFactory factory = (typeFactory, caseSensitive) -> {
+    SqlTestFactory.CatalogReaderFactory factory = (typeFactory, caseSensitive) -> {
       CompositeKeysCatalogReader catalogReader =
           new CompositeKeysCatalogReader(typeFactory, false);
       catalogReader.init();

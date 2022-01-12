@@ -32,7 +32,7 @@ import org.apache.calcite.sql.SqlWriterConfig;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.dialect.SparkSqlDialect;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -9657,27 +9657,27 @@ public class SqlParserTest {
    * Callback to control how test actions are performed.
    */
   protected interface Tester {
-    void checkList(SqlNewTestFactory factory, StringAndPos sap,
+    void checkList(SqlTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         List<String> expected);
 
-    void check(SqlNewTestFactory factory, StringAndPos sap,
+    void check(SqlTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         String expected, Consumer<SqlParser> parserChecker);
 
-    void checkExp(SqlNewTestFactory factory, StringAndPos sap,
+    void checkExp(SqlTestFactory factory, StringAndPos sap,
         UnaryOperator<String> converter, String expected,
         Consumer<SqlParser> parserChecker);
 
-    void checkFails(SqlNewTestFactory factory, StringAndPos sap,
+    void checkFails(SqlTestFactory factory, StringAndPos sap,
         boolean list, String expectedMsgPattern);
 
     /** Tests that an expression throws an exception that matches the given
      * pattern. */
-    void checkExpFails(SqlNewTestFactory factory, StringAndPos sap,
+    void checkExpFails(SqlTestFactory factory, StringAndPos sap,
         String expectedMsgPattern);
 
-    void checkNode(SqlNewTestFactory factory, StringAndPos sap,
+    void checkNode(SqlTestFactory factory, StringAndPos sap,
         Matcher<SqlNode> matcher);
 
     /** Whether this is a sub-class that tests un-parsing as well as parsing. */
@@ -9702,7 +9702,7 @@ public class SqlParserTest {
       TestUtil.assertEqualsVerbose(expected, converter.apply(actual));
     }
 
-    @Override public void checkList(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void checkList(SqlTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         List<String> expected) {
       final SqlNodeList sqlNodeList = parseStmtsAndHandleEx(factory, sap.sql);
@@ -9717,7 +9717,7 @@ public class SqlParserTest {
       }
     }
 
-    @Override public void check(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void check(SqlTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         String expected, Consumer<SqlParser> parserChecker) {
       final SqlNode sqlNode =
@@ -9728,7 +9728,7 @@ public class SqlParserTest {
       check0(sqlNode, sqlWriterConfig, converter, expected);
     }
 
-    protected SqlNode parseStmtAndHandleEx(SqlNewTestFactory factory,
+    protected SqlNode parseStmtAndHandleEx(SqlTestFactory factory,
         String sql, Consumer<SqlParser> parserChecker) {
       final SqlParser parser = factory.createParser(sql);
       final SqlNode sqlNode;
@@ -9742,7 +9742,7 @@ public class SqlParserTest {
     }
 
     /** Parses a list of statements. */
-    protected SqlNodeList parseStmtsAndHandleEx(SqlNewTestFactory factory,
+    protected SqlNodeList parseStmtsAndHandleEx(SqlTestFactory factory,
         String sql) {
       final SqlParser parser = factory.createParser(sql);
       final SqlNodeList sqlNodeList;
@@ -9754,7 +9754,7 @@ public class SqlParserTest {
       return sqlNodeList;
     }
 
-    @Override public void checkExp(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void checkExp(SqlTestFactory factory, StringAndPos sap,
         UnaryOperator<String> converter, String expected,
         Consumer<SqlParser> parserChecker) {
       final SqlNode sqlNode =
@@ -9763,7 +9763,7 @@ public class SqlParserTest {
       TestUtil.assertEqualsVerbose(expected, converter.apply(actual));
     }
 
-    protected SqlNode parseExpressionAndHandleEx(SqlNewTestFactory factory,
+    protected SqlNode parseExpressionAndHandleEx(SqlTestFactory factory,
         String sql, Consumer<SqlParser> parserChecker) {
       final SqlNode sqlNode;
       try {
@@ -9776,7 +9776,7 @@ public class SqlParserTest {
       return sqlNode;
     }
 
-    @Override public void checkFails(SqlNewTestFactory factory,
+    @Override public void checkFails(SqlTestFactory factory,
         StringAndPos sap, boolean list, String expectedMsgPattern) {
       Throwable thrown = null;
       try {
@@ -9795,7 +9795,7 @@ public class SqlParserTest {
       checkEx(expectedMsgPattern, sap, thrown);
     }
 
-    @Override public void checkNode(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void checkNode(SqlTestFactory factory, StringAndPos sap,
         Matcher<SqlNode> matcher) {
       try {
         final SqlParser parser = factory.createParser(sap.sql);
@@ -9806,7 +9806,7 @@ public class SqlParserTest {
       }
     }
 
-    @Override public void checkExpFails(SqlNewTestFactory factory,
+    @Override public void checkExpFails(SqlTestFactory factory,
         StringAndPos sap, String expectedMsgPattern) {
       Throwable thrown = null;
       try {
@@ -9904,7 +9904,7 @@ public class SqlParserTest {
       }
     }
 
-    @Override public void checkList(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void checkList(SqlTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         List<String> expected) {
       SqlNodeList sqlNodeList = parseStmtsAndHandleEx(factory, sap.sql);
@@ -9935,7 +9935,7 @@ public class SqlParserTest {
       assertThat(sql3, notNullValue());
     }
 
-    @Override public void check(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void check(SqlTestFactory factory, StringAndPos sap,
         @Nullable SqlDialect dialect, UnaryOperator<String> converter,
         String expected, Consumer<SqlParser> parserChecker) {
       SqlNode sqlNode = parseStmtAndHandleEx(factory, sap.sql, parserChecker);
@@ -9953,7 +9953,7 @@ public class SqlParserTest {
       final String sql1 = sqlNode.toSqlString(simple()).getSql();
 
       // Parse and unparse again.
-      SqlNewTestFactory factory2 =
+      SqlTestFactory factory2 =
           factory.withParserConfig(c -> c.withQuoting(Quoting.DOUBLE_QUOTE));
       SqlNode sqlNode2 =
           parseStmtAndHandleEx(factory2, sql1, parser -> { });
@@ -9979,7 +9979,7 @@ public class SqlParserTest {
       assertEquals(sql1, sql4);
     }
 
-    @Override public void checkExp(SqlNewTestFactory factory, StringAndPos sap,
+    @Override public void checkExp(SqlTestFactory factory, StringAndPos sap,
         UnaryOperator<String> converter, String expected,
         Consumer<SqlParser> parserChecker) {
       SqlNode sqlNode =
@@ -10000,7 +10000,7 @@ public class SqlParserTest {
       // Parse and unparse again.
       // (Turn off parser checking, and use double-quotes.)
       final Consumer<SqlParser> nullChecker = parser -> { };
-      final SqlNewTestFactory dqFactory =
+      final SqlTestFactory dqFactory =
           factory.withParserConfig(c -> c.withQuoting(Quoting.DOUBLE_QUOTE));
       SqlNode sqlNode2 =
           parseExpressionAndHandleEx(dqFactory, sql1, nullChecker);
@@ -10017,12 +10017,12 @@ public class SqlParserTest {
       assertEquals(expected, converter.apply(actual2));
     }
 
-    @Override public void checkFails(SqlNewTestFactory factory,
+    @Override public void checkFails(SqlTestFactory factory,
         StringAndPos sap, boolean list, String expectedMsgPattern) {
       // Do nothing. We're not interested in unparsing invalid SQL
     }
 
-    @Override public void checkExpFails(SqlNewTestFactory factory,
+    @Override public void checkExpFails(SqlTestFactory factory,
         StringAndPos sap, String expectedMsgPattern) {
       // Do nothing. We're not interested in unparsing invalid SQL
     }
@@ -10031,8 +10031,8 @@ public class SqlParserTest {
   /** Helper class for building fluent code such as
    * {@code sql("values 1").ok();}. */
   public static class Fixture {
-    static final SqlNewTestFactory FACTORY =
-        SqlNewTestFactory.INSTANCE.withParserConfig(c ->
+    static final SqlTestFactory FACTORY =
+        SqlTestFactory.INSTANCE.withParserConfig(c ->
             c.withQuoting(Quoting.DOUBLE_QUOTE)
                 .withUnquotedCasing(Casing.TO_UPPER)
                 .withQuotedCasing(Casing.UNCHANGED)
@@ -10042,7 +10042,7 @@ public class SqlParserTest {
         new Fixture(FACTORY, StringAndPos.of("?"), false,
             TesterImpl.DEFAULT, null, true, parser -> { });
 
-    private final SqlNewTestFactory factory;
+    private final SqlTestFactory factory;
     private final StringAndPos sap;
     private final boolean expression;
     private final Tester tester;
@@ -10050,7 +10050,7 @@ public class SqlParserTest {
     private final @Nullable SqlDialect dialect;
     private final Consumer<SqlParser> parserChecker;
 
-    Fixture(SqlNewTestFactory factory, StringAndPos sap, boolean expression,
+    Fixture(SqlTestFactory factory, StringAndPos sap, boolean expression,
         Tester tester, @Nullable SqlDialect dialect, boolean convertToLinux,
         Consumer<SqlParser> parserChecker) {
       this.factory = requireNonNull(factory, "factory");
@@ -10131,15 +10131,15 @@ public class SqlParserTest {
       if (dialect == this.dialect) {
         return this;
       }
-      SqlNewTestFactory factory =
+      SqlTestFactory factory =
           this.factory.withParserConfig(dialect::configureParser);
       return new Fixture(factory, sap, expression, tester, dialect,
           convertToLinux, parserChecker);
     }
 
     /** Creates a copy of this fixture with a new test factory. */
-    public Fixture withFactory(UnaryOperator<SqlNewTestFactory> transform) {
-      final SqlNewTestFactory factory = transform.apply(this.factory);
+    public Fixture withFactory(UnaryOperator<SqlTestFactory> transform) {
+      final SqlTestFactory factory = transform.apply(this.factory);
       if (factory == this.factory) {
         return this;
       }
@@ -10194,13 +10194,13 @@ public class SqlParserTest {
    * a list of statements, such as
    * {@code sqlList("select * from a;").ok();}. */
   protected static class SqlList {
-    private final SqlNewTestFactory factory;
+    private final SqlTestFactory factory;
     private final Tester tester;
     private final @Nullable SqlDialect dialect;
     private final boolean convertToLinux;
     private final StringAndPos sap;
 
-    SqlList(SqlNewTestFactory factory, Tester tester,
+    SqlList(SqlTestFactory factory, Tester tester,
         @Nullable SqlDialect dialect, boolean convertToLinux,
         StringAndPos sap) {
       this.factory = factory;

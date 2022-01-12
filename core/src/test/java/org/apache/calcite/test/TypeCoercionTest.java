@@ -22,7 +22,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -52,7 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class TypeCoercionTest {
 
   public static final Fixture DEFAULT_FIXTURE =
-      Fixture.create(SqlNewTestFactory.INSTANCE);
+      Fixture.create(SqlTestFactory.INSTANCE);
 
   //~ Helper methods ---------------------------------------------------------
 
@@ -651,7 +651,7 @@ class TypeCoercionTest {
     final RelDataType varchar20Type;
 
     /** Creates a Fixture. */
-    public static Fixture create(SqlNewTestFactory testFactory) {
+    public static Fixture create(SqlTestFactory testFactory) {
       final SqlValidator validator = testFactory.createValidator();
       return new Fixture(validator.getTypeFactory(), validator.getTypeCoercion());
     }

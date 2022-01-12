@@ -19,7 +19,7 @@ package org.apache.calcite.test;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.AbstractSqlTester;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.validate.SqlValidator;
 
@@ -34,7 +34,7 @@ class SqlRuntimeTester extends AbstractSqlTester {
   SqlRuntimeTester() {
   }
 
-  @Override public void checkFails(SqlNewTestFactory factory, StringAndPos sap,
+  @Override public void checkFails(SqlTestFactory factory, StringAndPos sap,
       String expectedError, boolean runtime) {
     final StringAndPos sap2 =
         StringAndPos.of(runtime ? buildQuery2(factory, sap.addCarets())
@@ -42,7 +42,7 @@ class SqlRuntimeTester extends AbstractSqlTester {
     assertExceptionIsThrown(factory, sap2, expectedError, runtime);
   }
 
-  @Override public void checkAggFails(SqlNewTestFactory factory,
+  @Override public void checkAggFails(SqlTestFactory factory,
       String expr,
       String[] inputValues,
       String expectedError,
@@ -53,12 +53,12 @@ class SqlRuntimeTester extends AbstractSqlTester {
     assertExceptionIsThrown(factory, sap, expectedError, runtime);
   }
 
-  @Override public void assertExceptionIsThrown(SqlNewTestFactory factory,
+  @Override public void assertExceptionIsThrown(SqlTestFactory factory,
       StringAndPos sap, @Nullable String expectedMsgPattern) {
     assertExceptionIsThrown(factory, sap, expectedMsgPattern, false);
   }
 
-  public void assertExceptionIsThrown(SqlNewTestFactory factory,
+  public void assertExceptionIsThrown(SqlTestFactory factory,
       StringAndPos sap, @Nullable String expectedMsgPattern, boolean runtime) {
     final SqlNode sqlNode;
     try {

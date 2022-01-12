@@ -59,8 +59,8 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings({"unchecked", "ArraysAsListWithZeroOrOneArgument"})
 class SqlAdvisorTest extends SqlValidatorTestCase {
-  public static final SqlNewTestFactory ADVISOR_NEW_TEST_FACTORY =
-      SqlNewTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
+  public static final SqlTestFactory ADVISOR_NEW_TEST_FACTORY =
+      SqlTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
 
   static final Fixture LOCAL_FIXTURE =
       new Fixture(SqlValidatorTester.DEFAULT, ADVISOR_NEW_TEST_FACTORY,
@@ -1489,7 +1489,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
 
   /** Fixture for the advisor test. */
   static class Fixture extends SqlValidatorFixture {
-    protected Fixture(SqlTester tester, SqlNewTestFactory factory,
+    protected Fixture(SqlTester tester, SqlTestFactory factory,
         StringAndPos sap, boolean query, boolean whole) {
       super(tester, factory, sap, query, whole);
     }
@@ -1501,8 +1501,8 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
     @Override public Fixture withFactory(
-        UnaryOperator<SqlNewTestFactory> transform) {
-      final SqlNewTestFactory factory = transform.apply(this.factory);
+        UnaryOperator<SqlTestFactory> transform) {
+      final SqlTestFactory factory = transform.apply(this.factory);
       return new Fixture(tester, factory, sap, query, whole);
     }
 

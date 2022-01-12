@@ -66,23 +66,23 @@ public interface SqlTester extends AutoCloseable {
    * @param expression Scalar expression
    * @param consumer   Action to be called for each query
    */
-  void forEachQuery(SqlNewTestFactory factory, String expression,
+  void forEachQuery(SqlTestFactory factory, String expression,
       Consumer<String> consumer);
 
   /** Parses a query. */
-  SqlNode parseQuery(SqlNewTestFactory factory, String sql)
+  SqlNode parseQuery(SqlTestFactory factory, String sql)
       throws SqlParseException;
 
   /** Parses an expression. */
-  SqlNode parseExpression(SqlNewTestFactory factory, String expr)
+  SqlNode parseExpression(SqlTestFactory factory, String expr)
       throws SqlParseException;
 
   /** Parses and validates a query, then calls an action on the result. */
-  void validateAndThen(SqlNewTestFactory factory, StringAndPos sap,
+  void validateAndThen(SqlTestFactory factory, StringAndPos sap,
       ValidatedNodeConsumer consumer);
 
   /** Parses and validates a query, then calls a function on the result. */
-  <R> R validateAndApply(SqlNewTestFactory factory, StringAndPos sap,
+  <R> R validateAndApply(SqlTestFactory factory, StringAndPos sap,
       ValidatedNodeFunction<R> function);
 
   /**
@@ -100,7 +100,7 @@ public interface SqlTester extends AutoCloseable {
    * @param sap                SQL statement
    * @param expectedMsgPattern If this parameter is null the query must be
    */
-  void assertExceptionIsThrown(SqlNewTestFactory factory, StringAndPos sap,
+  void assertExceptionIsThrown(SqlTestFactory factory, StringAndPos sap,
       @Nullable String expectedMsgPattern);
 
   /**
@@ -111,9 +111,9 @@ public interface SqlTester extends AutoCloseable {
    *
    * <p>Fails if query returns more than one column.
    *
-   * @see #getResultType(SqlNewTestFactory, String)
+   * @see #getResultType(SqlTestFactory, String)
    */
-  RelDataType getColumnType(SqlNewTestFactory factory, String sql);
+  RelDataType getColumnType(SqlTestFactory factory, String sql);
 
   /**
    * Returns the data type of the row returned by a SQL query.
@@ -121,7 +121,7 @@ public interface SqlTester extends AutoCloseable {
    * <p>For example, <code>getResultType("VALUES (1, 'foo')")</code>
    * returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
    */
-  RelDataType getResultType(SqlNewTestFactory factory, String sql);
+  RelDataType getResultType(SqlTestFactory factory, String sql);
 
   /**
    * Checks that a query returns one column of an expected type. For example,
@@ -131,7 +131,7 @@ public interface SqlTester extends AutoCloseable {
    * @param sql        Query expression
    * @param type       Type string
    */
-  void checkColumnType(SqlNewTestFactory factory,
+  void checkColumnType(SqlTestFactory factory,
       String sql,
       String type);
 
@@ -152,7 +152,7 @@ public interface SqlTester extends AutoCloseable {
    * @param typeChecker   Checks whether the result is the expected type
    * @param resultChecker Checks whether the result has the expected value
    */
-  default void check(SqlNewTestFactory factory,
+  default void check(SqlTestFactory factory,
       String query,
       TypeChecker typeChecker,
       ResultChecker resultChecker) {
@@ -172,7 +172,7 @@ public interface SqlTester extends AutoCloseable {
    *                      types
    * @param resultChecker Checks whether the result has the expected value
    */
-  void check(SqlNewTestFactory factory,
+  void check(SqlTestFactory factory,
       String query,
       TypeChecker typeChecker,
       ParameterChecker parameterChecker,
@@ -200,7 +200,7 @@ public interface SqlTester extends AutoCloseable {
    * @param inputValues Array of input values, e.g. {@code ["1", null, "2"]}
    * @param resultChecker Checks whether the result has the expected value
    */
-  void checkAgg(SqlNewTestFactory factory,
+  void checkAgg(SqlTestFactory factory,
       String expr,
       String[] inputValues,
       ResultChecker resultChecker);
@@ -217,7 +217,7 @@ public interface SqlTester extends AutoCloseable {
    * @param type        Expected result type
    * @param resultChecker Checks whether the result has the expected value
    */
-  void checkWinAgg(SqlNewTestFactory factory,
+  void checkWinAgg(SqlTestFactory factory,
       String expr,
       String[] inputValues,
       String windowSpec,
@@ -234,7 +234,7 @@ public interface SqlTester extends AutoCloseable {
    * @param runtime       If true, must fail at runtime; if false, must fail at
    *                      validate time
    */
-  void checkAggFails(SqlNewTestFactory factory,
+  void checkAggFails(SqlTestFactory factory,
       String expr,
       String[] inputValues,
       String expectedError,
@@ -250,14 +250,14 @@ public interface SqlTester extends AutoCloseable {
    * @param runtime       If true, must fail at runtime; if false, must fail at
    *                      validate time
    */
-  void checkFails(SqlNewTestFactory factory,
+  void checkFails(SqlTestFactory factory,
       StringAndPos expression,
       String expectedError,
       boolean runtime);
 
-  /** As {@link #checkFails(SqlNewTestFactory, StringAndPos, String, boolean)},
+  /** As {@link #checkFails(SqlTestFactory, StringAndPos, String, boolean)},
    * but with a string that contains carets. */
-  default void checkFails(SqlNewTestFactory factory,
+  default void checkFails(SqlTestFactory factory,
       String expression,
       String expectedError,
       boolean runtime) {
@@ -272,7 +272,7 @@ public interface SqlTester extends AutoCloseable {
    * @param expectedError Pattern for expected error. Must
    *                      include an error location.
    */
-  void checkQueryFails(SqlNewTestFactory factory, StringAndPos sap,
+  void checkQueryFails(SqlTestFactory factory, StringAndPos sap,
       String expectedError);
 
   /**
@@ -284,7 +284,7 @@ public interface SqlTester extends AutoCloseable {
    * @param trim Whether to trim
    * @return Relational expression, never null
    */
-  default RelRoot convertSqlToRel(SqlNewTestFactory factory,
+  default RelRoot convertSqlToRel(SqlTestFactory factory,
       String sql, boolean decorrelate, boolean trim) {
     Pair<SqlValidator, RelRoot> pair =
         convertSqlToRel2(factory, sql, decorrelate, trim);
@@ -292,7 +292,7 @@ public interface SqlTester extends AutoCloseable {
   }
 
   /** Converts a SQL string to a (SqlValidator, RelNode) pair. */
-  Pair<SqlValidator, RelRoot> convertSqlToRel2(SqlNewTestFactory factory,
+  Pair<SqlValidator, RelRoot> convertSqlToRel2(SqlTestFactory factory,
       String sql, boolean decorrelate, boolean trim);
 
   /**
@@ -306,7 +306,7 @@ public interface SqlTester extends AutoCloseable {
    * @param trim Whether to trim columns that are not needed
    * @param expression True if {@code sql} is an expression, false if it is a query
    */
-  void assertConvertsTo(SqlNewTestFactory factory, DiffRepository diffRepos,
+  void assertConvertsTo(SqlTestFactory factory, DiffRepository diffRepos,
       String sql,
       String plan,
       boolean trim,
@@ -314,7 +314,7 @@ public interface SqlTester extends AutoCloseable {
       boolean decorrelate);
 
   /** Trims a RelNode. */
-  RelNode trimRelNode(SqlNewTestFactory factory, RelNode relNode);
+  RelNode trimRelNode(SqlTestFactory factory, RelNode relNode);
 
   //~ Inner Interfaces -------------------------------------------------------
 

@@ -35,7 +35,7 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -79,7 +79,7 @@ import static java.util.Objects.requireNonNull;
  */
 class RelOptFixture {
   static final RelOptFixture DEFAULT =
-      new RelOptFixture(SqlToRelFixture.TESTER, SqlNewTestFactory.INSTANCE,
+      new RelOptFixture(SqlToRelFixture.TESTER, SqlTestFactory.INSTANCE,
           null, RelSupplier.NONE, null, null,
           ImmutableMap.of(), (f, r) -> r, (f, r) -> r, false, false)
           .withFactory(f ->
@@ -93,7 +93,7 @@ class RelOptFixture {
    */
   final SqlTester tester;
   final RelSupplier relSupplier;
-  final SqlNewTestFactory factory;
+  final SqlTestFactory factory;
   final @Nullable DiffRepository diffRepos;
   final @Nullable HepProgram preProgram;
   final RelOptPlanner planner;
@@ -103,7 +103,7 @@ class RelOptFixture {
   final boolean decorrelate;
   final boolean lateDecorrelate;
 
-  RelOptFixture(SqlTester tester, SqlNewTestFactory factory,
+  RelOptFixture(SqlTester tester, SqlTestFactory factory,
       @Nullable DiffRepository diffRepos, RelSupplier relSupplier,
       @Nullable HepProgram preProgram, RelOptPlanner planner,
       ImmutableMap<Hook, Consumer<Object>> hooks,
@@ -173,8 +173,8 @@ class RelOptFixture {
     return withCatalogReaderFactory(MockCatalogReaderDynamic::create);
   }
 
-  public RelOptFixture withFactory(UnaryOperator<SqlNewTestFactory> transform) {
-    final SqlNewTestFactory factory = transform.apply(this.factory);
+  public RelOptFixture withFactory(UnaryOperator<SqlTestFactory> transform) {
+    final SqlTestFactory factory = transform.apply(this.factory);
     if (factory.equals(this.factory)) {
       return this;
     }
@@ -283,7 +283,7 @@ class RelOptFixture {
   }
 
   public RelOptFixture withCatalogReaderFactory(
-      SqlNewTestFactory.CatalogReaderFactory factory) {
+      SqlTestFactory.CatalogReaderFactory factory) {
     return withFactory(f -> f.withCatalogReader(factory));
   }
 

@@ -47,7 +47,7 @@ import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.test.AbstractSqlTester;
 import org.apache.calcite.sql.test.SqlFixture;
 import org.apache.calcite.sql.test.SqlFixture.VmName;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.type.BasicSqlType;
@@ -8724,7 +8724,7 @@ public class SqlOperatorTest {
     public TesterImpl() {
     }
 
-    @Override public void check(SqlNewTestFactory factory, String query,
+    @Override public void check(SqlTestFactory factory, String query,
         SqlTester.TypeChecker typeChecker,
         SqlTester.ParameterChecker parameterChecker,
         SqlTester.ResultChecker resultChecker) {

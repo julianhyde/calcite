@@ -110,10 +110,10 @@ public interface SqlFixture extends AutoCloseable {
   //~ Methods ----------------------------------------------------------------
 
   /** Returns the test factory. */
-  SqlNewTestFactory getFactory();
+  SqlTestFactory getFactory();
 
   /** Creates a copy of this fixture with a new test factory. */
-  SqlFixture withFactory(UnaryOperator<SqlNewTestFactory> transform);
+  SqlFixture withFactory(UnaryOperator<SqlTestFactory> transform);
 
   /** Returns the tester. */
   SqlTester getTester();

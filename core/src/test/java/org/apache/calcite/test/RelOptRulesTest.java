@@ -103,7 +103,7 @@ import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
@@ -6878,7 +6878,7 @@ class RelOptRulesTest extends RelOptTestBase {
       }
     };
 
-    SqlNewTestFactory.TypeFactoryFactory typeFactorySupplier =
+    SqlTestFactory.TypeFactoryFactory typeFactorySupplier =
         conformance -> new SqlTypeFactoryImpl(typeSystem);
 
     // Expected plan:
@@ -6921,7 +6921,7 @@ class RelOptRulesTest extends RelOptTestBase {
       }
     };
 
-    SqlNewTestFactory.TypeFactoryFactory typeFactoryFactory =
+    SqlTestFactory.TypeFactoryFactory typeFactoryFactory =
         conformance -> new SqlTypeFactoryImpl(typeSystem);
 
     // Expected plan:

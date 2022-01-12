@@ -18,7 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.util.SqlOperatorTables;
@@ -47,7 +47,7 @@ public class SqlToRelFixture {
   public static final SqlTester TESTER = SqlValidatorTester.DEFAULT;
 
   public static final SqlToRelFixture DEFAULT =
-      new SqlToRelFixture("?", true, TESTER, SqlNewTestFactory.INSTANCE, false,
+      new SqlToRelFixture("?", true, TESTER, SqlTestFactory.INSTANCE, false,
           false, null)
           .withFactory(f ->
               f.withValidator((opTab, catalogReader, typeFactory, config) -> {
@@ -70,12 +70,12 @@ public class SqlToRelFixture {
   private final @Nullable DiffRepository diffRepos;
   private final boolean decorrelate;
   private final SqlTester tester;
-  private final SqlNewTestFactory factory;
+  private final SqlTestFactory factory;
   private final boolean trim;
   private final boolean expression;
 
   SqlToRelFixture(String sql, boolean decorrelate,
-      SqlTester tester, SqlNewTestFactory factory, boolean trim,
+      SqlTester tester, SqlTestFactory factory, boolean trim,
       boolean expression,
       @Nullable DiffRepository diffRepos) {
     this.sql = requireNonNull(sql, "sql");
@@ -141,8 +141,8 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withFactory(
-      UnaryOperator<SqlNewTestFactory> transform) {
-    final SqlNewTestFactory factory = transform.apply(this.factory);
+      UnaryOperator<SqlTestFactory> transform) {
+    final SqlTestFactory factory = transform.apply(this.factory);
     if (factory == this.factory) {
       return this;
     }
@@ -151,7 +151,7 @@ public class SqlToRelFixture {
   }
 
   public SqlToRelFixture withCatalogReader(
-      SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory) {
+      SqlTestFactory.CatalogReaderFactory catalogReaderFactory) {
     return withFactory(f -> f.withCatalogReader(catalogReaderFactory));
   }
 

@@ -17,7 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.BarfingInvocationHandler;
@@ -40,8 +40,8 @@ import java.util.List;
 class SqlTestGen {
   private SqlTestGen() {}
 
-  private static final SqlNewTestFactory SPOOLER_TEST_FACTORY =
-      SqlNewTestFactory.INSTANCE.withValidator(
+  private static final SqlTestFactory SPOOLER_TEST_FACTORY =
+      SqlTestFactory.INSTANCE.withValidator(
           (opTab, catalogReader, typeFactory, config) ->
               (SqlValidator) Proxy.newProxyInstance(
                   SqlValidatorSpooler.class.getClassLoader(),
@@ -133,7 +133,7 @@ class SqlTestGen {
         this.pw = pw;
       }
 
-      @Override public void assertExceptionIsThrown(SqlNewTestFactory factory,
+      @Override public void assertExceptionIsThrown(SqlTestFactory factory,
           StringAndPos sap, @Nullable String expectedMsgPattern) {
         if (expectedMsgPattern == null) {
           // This SQL statement is supposed to succeed.
@@ -149,7 +149,7 @@ class SqlTestGen {
         }
       }
 
-      @Override public void validateAndThen(SqlNewTestFactory factory,
+      @Override public void validateAndThen(SqlTestFactory factory,
           StringAndPos sap, ValidatedNodeConsumer consumer) {
       }
     }

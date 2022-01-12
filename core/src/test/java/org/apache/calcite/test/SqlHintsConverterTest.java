@@ -56,7 +56,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlTableRef;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -92,7 +92,7 @@ import static java.util.Objects.requireNonNull;
 class SqlHintsConverterTest {
 
   static final Fixture FIXTURE =
-      new Fixture(SqlNewTestFactory.INSTANCE,
+      new Fixture(SqlTestFactory.INSTANCE,
           DiffRepository.lookup(SqlHintsConverterTest.class),
           "?", false, false)
           .withFactory(f ->
@@ -598,13 +598,13 @@ class SqlHintsConverterTest {
   private static class Fixture {
     private final String sql;
     private final DiffRepository diffRepos;
-    private final SqlNewTestFactory factory;
+    private final SqlTestFactory factory;
     private final SqlTester tester = SqlToRelFixture.TESTER;
     private final List<String> hintsCollect = new ArrayList<>();
     private final boolean decorrelate;
     private final boolean trim;
 
-    Fixture(SqlNewTestFactory factory, DiffRepository diffRepos, String sql,
+    Fixture(SqlTestFactory factory, DiffRepository diffRepos, String sql,
         boolean decorrelate, boolean trim) {
       this.factory = requireNonNull(factory, "factory");
       this.sql = requireNonNull(sql, "sql");
@@ -619,8 +619,8 @@ class SqlHintsConverterTest {
 
     /** Creates a new Sql instance with new factory
      * applied with the {@code transform}. */
-    Fixture withFactory(UnaryOperator<SqlNewTestFactory> transform) {
-      final SqlNewTestFactory factory = transform.apply(this.factory);
+    Fixture withFactory(UnaryOperator<SqlTestFactory> transform) {
+      final SqlTestFactory factory = transform.apply(this.factory);
       return new Fixture(factory, diffRepos, sql, decorrelate, trim);
     }
 

@@ -23,7 +23,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.ResultCheckers;
 import org.apache.calcite.sql.test.SqlFixture;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.test.SqlValidatorTester;
@@ -51,14 +51,14 @@ import static java.util.Objects.requireNonNull;
  */
 class SqlFixtureImpl implements SqlFixture {
   public static final SqlFixtureImpl DEFAULT =
-      new SqlFixtureImpl(SqlNewTestFactory.INSTANCE,
+      new SqlFixtureImpl(SqlTestFactory.INSTANCE,
           SqlValidatorTester.DEFAULT, false);
 
-  private final SqlNewTestFactory factory;
+  private final SqlTestFactory factory;
   private final SqlTester tester;
   private final boolean brokenTestsEnabled;
 
-  SqlFixtureImpl(SqlNewTestFactory factory, SqlTester tester,
+  SqlFixtureImpl(SqlTestFactory factory, SqlTester tester,
       boolean brokenTestsEnabled) {
     this.factory = requireNonNull(factory, "factory");
     this.tester = requireNonNull(tester, "tester");
@@ -68,7 +68,7 @@ class SqlFixtureImpl implements SqlFixture {
   @Override public void close() {
   }
 
-  @Override public SqlNewTestFactory getFactory() {
+  @Override public SqlTestFactory getFactory() {
     return factory;
   }
 
@@ -77,8 +77,8 @@ class SqlFixtureImpl implements SqlFixture {
   }
 
   @Override public SqlFixtureImpl withFactory(
-      UnaryOperator<SqlNewTestFactory> transform) {
-    final SqlNewTestFactory factory = transform.apply(this.factory);
+      UnaryOperator<SqlTestFactory> transform) {
+    final SqlTestFactory factory = transform.apply(this.factory);
     if (factory == this.factory) {
       return this;
     }

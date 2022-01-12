@@ -17,7 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.sql.parser.StringAndPos;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlValidatorTester;
 import org.apache.calcite.sql.validate.SqlValidator;
 
@@ -35,7 +35,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 public class SqlValidatorTestCase {
   public static final SqlValidatorFixture FIXTURE =
       new SqlValidatorFixture(SqlValidatorTester.DEFAULT,
-          SqlNewTestFactory.INSTANCE, StringAndPos.of("?"), true, false);
+          SqlTestFactory.INSTANCE, StringAndPos.of("?"), true, false);
 
   /** Creates a test case. */
   public SqlValidatorTestCase() {

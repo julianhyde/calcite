@@ -31,7 +31,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -72,7 +72,7 @@ public class RelMetadataFixture {
    * to this fixture, it won't break other tests. */
   public static final RelMetadataFixture DEFAULT =
       new RelMetadataFixture(SqlToRelFixture.TESTER,
-          SqlNewTestFactory.INSTANCE, RelSupplier.NONE, false, r -> r)
+          SqlTestFactory.INSTANCE, RelSupplier.NONE, false, r -> r)
           .withFactory(f ->
               f.withValidatorConfig(c -> c.withIdentifierExpansion(true))
                   .withSqlToRelConfig(c ->
@@ -81,13 +81,13 @@ public class RelMetadataFixture {
                               .withPruneInputOfAggregate(false))));
 
   private final SqlTester tester;
-  private final SqlNewTestFactory factory;
+  private final SqlTestFactory factory;
   private final RelSupplier relSupplier;
   private final boolean convertAsCalc;
   private final UnaryOperator<RelNode> relTransform;
 
   private RelMetadataFixture(SqlTester tester,
-      SqlNewTestFactory factory, RelSupplier relSupplier,
+      SqlTestFactory factory, RelSupplier relSupplier,
       boolean convertAsCalc, UnaryOperator<RelNode> relTransform) {
     this.tester = tester;
     this.factory = factory;
@@ -118,8 +118,8 @@ public class RelMetadataFixture {
   }
 
   public RelMetadataFixture withFactory(
-      UnaryOperator<SqlNewTestFactory> transform) {
-    final SqlNewTestFactory factory = transform.apply(this.factory);
+      UnaryOperator<SqlTestFactory> transform) {
+    final SqlTestFactory factory = transform.apply(this.factory);
     return new RelMetadataFixture(tester, factory, relSupplier, convertAsCalc,
         relTransform);
   }
@@ -136,7 +136,7 @@ public class RelMetadataFixture {
   }
 
   public RelMetadataFixture withCatalogReaderFactory(
-      SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory) {
+      SqlTestFactory.CatalogReaderFactory catalogReaderFactory) {
     return withFactory(t -> t.withCatalogReader(catalogReaderFactory));
   }
 

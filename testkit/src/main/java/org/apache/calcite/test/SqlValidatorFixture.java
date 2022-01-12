@@ -34,7 +34,7 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.AbstractSqlTester;
-import org.apache.calcite.sql.test.SqlNewTestFactory;
+import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -75,7 +75,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlValidatorFixture {
   public final SqlTester tester;
-  public final SqlNewTestFactory factory;
+  public final SqlTestFactory factory;
   public final StringAndPos sap;
   public final boolean query;
   public final boolean whole;
@@ -89,7 +89,7 @@ public class SqlValidatorFixture {
    * @param whole  Whether the failure location is the whole query or
    *               expression
    */
-  protected SqlValidatorFixture(SqlTester tester, SqlNewTestFactory factory,
+  protected SqlValidatorFixture(SqlTester tester, SqlTestFactory factory,
       StringAndPos sap, boolean query, boolean whole) {
     this.tester = tester;
     this.factory = factory;
@@ -104,8 +104,8 @@ public class SqlValidatorFixture {
   }
 
   public SqlValidatorFixture withFactory(
-      UnaryOperator<SqlNewTestFactory> transform) {
-    final SqlNewTestFactory factory = transform.apply(this.factory);
+      UnaryOperator<SqlTestFactory> transform) {
+    final SqlTestFactory factory = transform.apply(this.factory);
     return new SqlValidatorFixture(tester, factory, sap, query, whole);
   }
 
@@ -138,7 +138,7 @@ public class SqlValidatorFixture {
   }
 
   public SqlValidatorFixture withCatalogReader(
-      SqlNewTestFactory.CatalogReaderFactory catalogReaderFactory) {
+      SqlTestFactory.CatalogReaderFactory catalogReaderFactory) {
     return withFactory(f -> f.withCatalogReader(catalogReaderFactory));
   }
 
