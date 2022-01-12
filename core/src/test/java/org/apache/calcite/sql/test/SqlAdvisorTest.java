@@ -59,9 +59,6 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings({"unchecked", "ArraysAsListWithZeroOrOneArgument"})
 class SqlAdvisorTest extends SqlValidatorTestCase {
-  public static final SqlTestFactory ADVISOR_TEST_FACTORY =
-      SqlTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
-
   public static final SqlNewTestFactory ADVISOR_NEW_TEST_FACTORY =
       SqlNewTestFactory.INSTANCE.withValidator(SqlAdvisorValidator::new);
 
