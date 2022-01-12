@@ -45,6 +45,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1262,22 +1263,25 @@ public class MaterializedViewSubstitutionVisitorTest {
    * {@link org.apache.calcite.plan.SubstitutionVisitor#mayBeSatisfiable} and
    * {@link RexUtil#simplify}. */
   @Test void testSatisfiable() {
+    final SatisfiabilityFixture f = new SatisfiabilityFixture();
+    final RexBuilder rexBuilder = f.rexBuilder;
+
     // TRUE may be satisfiable
-    checkSatisfiable(rexBuilder.makeLiteral(true), "true");
+    f.checkSatisfiable(rexBuilder.makeLiteral(true), "true");
 
     // FALSE is not satisfiable
-    checkNotSatisfiable(rexBuilder.makeLiteral(false));
+    f.checkNotSatisfiable(rexBuilder.makeLiteral(false));
 
     // The expression "$0 = 1".
     final RexNode i0_eq_0 =
         rexBuilder.makeCall(
             SqlStdOperatorTable.EQUALS,
             rexBuilder.makeInputRef(
-                typeFactory.createType(int.class), 0),
+                f.typeFactory.createType(int.class), 0),
             rexBuilder.makeExactLiteral(BigDecimal.ZERO));
 
     // "$0 = 1" may be satisfiable
-    checkSatisfiable(i0_eq_0, "=($0, 0)");
+    f.checkSatisfiable(i0_eq_0, "=($0, 0)");
 
     // "$0 = 1 AND TRUE" may be satisfiable
     final RexNode e0 =
@@ -1285,7 +1289,7 @@ public class MaterializedViewSubstitutionVisitorTest {
             SqlStdOperatorTable.AND,
             i0_eq_0,
             rexBuilder.makeLiteral(true));
-    checkSatisfiable(e0, "=($0, 0)");
+    f.checkSatisfiable(e0, "=($0, 0)");
 
     // "$0 = 1 AND FALSE" is not satisfiable
     final RexNode e1 =
@@ -1293,7 +1297,7 @@ public class MaterializedViewSubstitutionVisitorTest {
             SqlStdOperatorTable.AND,
             i0_eq_0,
             rexBuilder.makeLiteral(false));
-    checkNotSatisfiable(e1);
+    f.checkNotSatisfiable(e1);
 
     // "$0 = 0 AND NOT $0 = 0" is not satisfiable
     final RexNode e2 =
@@ -1303,7 +1307,7 @@ public class MaterializedViewSubstitutionVisitorTest {
             rexBuilder.makeCall(
                 SqlStdOperatorTable.NOT,
                 i0_eq_0));
-    checkNotSatisfiable(e2);
+    f.checkNotSatisfiable(e2);
 
     // "TRUE AND NOT $0 = 0" may be satisfiable. Can simplify.
     final RexNode e3 =
@@ -1313,14 +1317,14 @@ public class MaterializedViewSubstitutionVisitorTest {
             rexBuilder.makeCall(
                 SqlStdOperatorTable.NOT,
                 i0_eq_0));
-    checkSatisfiable(e3, "<>($0, 0)");
+    f.checkSatisfiable(e3, "<>($0, 0)");
 
     // The expression "$1 = 1".
     final RexNode i1_eq_1 =
         rexBuilder.makeCall(
             SqlStdOperatorTable.EQUALS,
             rexBuilder.makeInputRef(
-                typeFactory.createType(int.class), 1),
+                f.typeFactory.createType(int.class), 1),
             rexBuilder.makeExactLiteral(BigDecimal.ONE));
 
     // "$0 = 0 AND $1 = 1 AND NOT $0 = 0" is not satisfiable
@@ -1333,7 +1337,7 @@ public class MaterializedViewSubstitutionVisitorTest {
                 i1_eq_1,
                 rexBuilder.makeCall(
                     SqlStdOperatorTable.NOT, i0_eq_0)));
-    checkNotSatisfiable(e4);
+    f.checkNotSatisfiable(e4);
 
     // "$0 = 0 AND NOT $1 = 1" may be satisfiable. Can't simplify.
     final RexNode e5 =
@@ -1343,7 +1347,7 @@ public class MaterializedViewSubstitutionVisitorTest {
             rexBuilder.makeCall(
                 SqlStdOperatorTable.NOT,
                 i1_eq_1));
-    checkSatisfiable(e5, "AND(=($0, 0), <>($1, 1))");
+    f.checkSatisfiable(e5, "AND(=($0, 0), <>($1, 1))");
 
     // "$0 = 0 AND NOT ($0 = 0 AND $1 = 1)" may be satisfiable. Can simplify.
     final RexNode e6 =
@@ -1356,7 +1360,7 @@ public class MaterializedViewSubstitutionVisitorTest {
                     SqlStdOperatorTable.AND,
                     i0_eq_0,
                     i1_eq_1)));
-    checkSatisfiable(e6, "AND(=($0, 0), <>($1, 1))");
+    f.checkSatisfiable(e6, "AND(=($0, 0), <>($1, 1))");
 
     // "$0 = 0 AND ($1 = 1 AND NOT ($0 = 0))" is not satisfiable.
     final RexNode e7 =
@@ -1369,22 +1373,22 @@ public class MaterializedViewSubstitutionVisitorTest {
                 rexBuilder.makeCall(
                     SqlStdOperatorTable.NOT,
                     i0_eq_0)));
-    checkNotSatisfiable(e7);
+    f.checkNotSatisfiable(e7);
 
     // The expression "$2".
     final RexInputRef i2 =
         rexBuilder.makeInputRef(
-            typeFactory.createType(boolean.class), 2);
+            f.typeFactory.createType(boolean.class), 2);
 
     // The expression "$3".
     final RexInputRef i3 =
         rexBuilder.makeInputRef(
-            typeFactory.createType(boolean.class), 3);
+            f.typeFactory.createType(boolean.class), 3);
 
     // The expression "$4".
     final RexInputRef i4 =
         rexBuilder.makeInputRef(
-            typeFactory.createType(boolean.class), 4);
+            f.typeFactory.createType(boolean.class), 4);
 
     // "$0 = 0 AND $2 AND $3 AND NOT ($2 AND $3 AND $4) AND NOT ($2 AND $4)" may
     // be satisfiable. Can't simplify.
@@ -1408,28 +1412,20 @@ public class MaterializedViewSubstitutionVisitorTest {
                     rexBuilder.makeCall(
                         SqlStdOperatorTable.NOT,
                         i4))));
-    checkSatisfiable(e8,
+    f.checkSatisfiable(e8,
         "AND(=($0, 0), $2, $3, OR(NOT($2), NOT($3), NOT($4)), NOT($4))");
   }
 
-  private void checkNotSatisfiable(RexNode e) {
-    assertFalse(SubstitutionVisitor.mayBeSatisfiable(e));
-    final RexNode simple = simplify.simplifyUnknownAsFalse(e);
-    assertFalse(RexLiteral.booleanValue(simple));
-  }
-
-  private void checkSatisfiable(RexNode e, String s) {
-    assertTrue(SubstitutionVisitor.mayBeSatisfiable(e));
-    final RexNode simple = simplify.simplifyUnknownAsFalse(e);
-    assertEquals(s, simple.toString());
-  }
-
   @Test void testSplitFilter() {
+    final SatisfiabilityFixture f = new SatisfiabilityFixture();
+    final RexBuilder rexBuilder = f.rexBuilder;
+    final RexSimplify simplify = f.simplify;
+
     final RexLiteral i1 = rexBuilder.makeExactLiteral(BigDecimal.ONE);
     final RexLiteral i2 = rexBuilder.makeExactLiteral(BigDecimal.valueOf(2));
     final RexLiteral i3 = rexBuilder.makeExactLiteral(BigDecimal.valueOf(3));
 
-    final RelDataType intType = typeFactory.createType(int.class);
+    final RelDataType intType = f.typeFactory.createType(int.class);
     final RexInputRef x = rexBuilder.makeInputRef(intType, 0); // $0
     final RexInputRef y = rexBuilder.makeInputRef(intType, 1); // $1
     final RexInputRef z = rexBuilder.makeInputRef(intType, 2); // $2
@@ -1484,6 +1480,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
         rexBuilder.makeCall(SqlStdOperatorTable.OR, y_eq_2, x_eq_1_b));
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
     // Example 2.
@@ -1494,6 +1491,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         x_eq_1,
         rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, z_eq_3));
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(), equalTo("=($0, 1)"));
 
     // 2b.
@@ -1504,6 +1502,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
         rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2, z_eq_3));
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(), equalTo("OR(=($0, 1), =($1, 2))"));
 
     // 2c.
@@ -1514,6 +1513,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         x_eq_1,
         rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2, z_eq_3));
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(),
         equalTo("=($0, 1)"));
 
@@ -1525,6 +1525,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
         rexBuilder.makeCall(SqlStdOperatorTable.OR, y_eq_2, x_eq_1));
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
     // 2e.
@@ -1533,6 +1534,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:   true
     newFilter = SubstitutionVisitor.splitFilter(simplify, x_eq_1, x_eq_1_b);
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
     // 2f.
@@ -1552,6 +1554,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2),
         rexBuilder.makeCall(SqlStdOperatorTable.AND, y_eq_2, x_eq_1));
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
     // Example 4.
@@ -1562,6 +1565,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2),
         y_eq_2);
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(), equalTo("=($0, 1)"));
 
     // Example 5.
@@ -1602,6 +1606,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         x_plus_y_gt,
         y_plus_x_gt);
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
     // Example 9.
@@ -1612,6 +1617,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         x_plus_x_gt,
         x_plus_x_gt);
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
     // Example 10.
@@ -1622,6 +1628,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     newFilter = SubstitutionVisitor.splitFilter(simplify,
         x_times_y_gt,
         y_times_x_gt);
+    assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
   }
 
@@ -1843,11 +1850,27 @@ public class MaterializedViewSubstitutionVisitorTest {
     sql(mv2, query2).ok();
   }
 
-  final JavaTypeFactoryImpl typeFactory =
-      new JavaTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
-  private final RexBuilder rexBuilder = new RexBuilder(typeFactory);
-  private final RexSimplify simplify =
-      new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR)
-          .withParanoid(true);
+  /** Fixture for tests for whether expressions are satisfiable,
+   * specifically {@link SubstitutionVisitor#mayBeSatisfiable(RexNode)}. */
+  private static class SatisfiabilityFixture {
+    final JavaTypeFactoryImpl typeFactory =
+        new JavaTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
+    final RexBuilder rexBuilder = new RexBuilder(typeFactory);
+    final RexSimplify simplify =
+        new RexSimplify(rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR)
+            .withParanoid(true);
+
+    void checkNotSatisfiable(RexNode e) {
+      assertFalse(SubstitutionVisitor.mayBeSatisfiable(e));
+      final RexNode simple = simplify.simplifyUnknownAsFalse(e);
+      assertFalse(RexLiteral.booleanValue(simple));
+    }
+
+    void checkSatisfiable(RexNode e, String s) {
+      assertTrue(SubstitutionVisitor.mayBeSatisfiable(e));
+      final RexNode simple = simplify.simplifyUnknownAsFalse(e);
+      assertEquals(s, simple.toString());
+    }
+  }
 
 }
