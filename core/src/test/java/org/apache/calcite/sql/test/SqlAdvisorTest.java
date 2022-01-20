@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -705,8 +706,18 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
             EMP_COLUMNS,
             Arrays.asList("TABLE(EMP)"));
 
-    sql = "select emp.^ from sales.emp";
-    f.withSql(sql).assertComplete(EMP_COLUMNS, STAR_KEYWORD);
+    // Suggest columns for a table name or table alias in the SELECT clause.
+    final Consumer<String> c = sql_ ->
+        f.withSql(sql_).assertComplete(EMP_COLUMNS, STAR_KEYWORD);
+    c.accept("select emp.^ from sales.emp");
+    c.accept("select emp.^ from sales.emp as emp");
+    c.accept("select emp.^ from sales.emp emp");
+    c.accept("select e.^ from sales.emp as e");
+    c.accept("select e.^ from sales.emp e");
+    c.accept("select e.^ from sales.emp e, sales.dept d");
+    c.accept("select e.^ from sales.emp e cross join sales.dept d");
+    c.accept("select e.^ from sales.emp e where deptno = 20");
+    c.accept("select e.^ from sales.emp e order by deptno");
   }
 
   @Test void testOrderByList() {
