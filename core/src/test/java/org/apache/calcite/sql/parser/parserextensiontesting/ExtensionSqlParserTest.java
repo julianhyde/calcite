@@ -17,6 +17,7 @@
 package org.apache.calcite.sql.parser.parserextensiontesting;
 
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.parser.SqlParserTest;
 
 import org.hamcrest.core.IsNull;
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.Test;
  */
 class ExtensionSqlParserTest extends SqlParserTest {
 
-  @Override public Fixture fixture() {
+  @Override public SqlParserFixture fixture() {
     return super.fixture()
         .withConfig(c -> c.withParserFactory(ExtensionSqlParserImpl.FACTORY));
   }

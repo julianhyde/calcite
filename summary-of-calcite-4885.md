@@ -8,7 +8,6 @@ commit message.
 
 # TODO
 
-* rename class SqlParserTest.Fixture to SqlParserFixture
 * obsolete SqlToRelTestBase?
 * rename SqlPrettyWriterTestFixture to SqlPrettyWriterFixture
 * static import Assertions.assertEquals, Objects.requireNonNull
@@ -89,8 +88,10 @@ Refactor/rename a few methods, and change 'query' field to 'expression'.
 
 # Remove state from `class SqlParserTest`
 
-State is now in the fixture (`class SqlParserTest.Fixture`) or
+State is now in the fixture (`class SqlParserFixture`) or
 `SqlTestFactory`.
+
+Create a fixture (`class SqlParserListFixture`) for list-based parser tests.
 
 Remove fixture's `transform` field; config is now transformed
 immediately, not deferred.
@@ -109,7 +110,7 @@ Move classes `DiffRepository`, `MockRelOptPlanner`,
 
 Fields `SqlToRelFixture.expression` and `SqlValidatorFixture.expression`
 were each previously called `query` and had the opposite sense;
-both are now consistent with `SqlParserTest.Fixture.expression`.
+both are now consistent with `SqlParserFixture.expression`.
 
 Rename method `sql` to `withSql`, `config` to `withConfig`, etc.
 

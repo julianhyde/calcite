@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.sql.test.SqlFixture;
 
@@ -25,7 +26,7 @@ public class Fixtures {
   private Fixtures() {}
 
   /** Creates a fixture for parser tests. */
-  public static SqlParserTest.Fixture forParser() {
+  public static SqlParserFixture forParser() {
     return new SqlParserTest().fixture();
   }
 

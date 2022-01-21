@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql.parser;
 
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDialect;
@@ -35,7 +34,6 @@ import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTests;
 import org.apache.calcite.sql.util.SqlShuttle;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.test.DiffTestCase;
 import org.apache.calcite.tools.Hoist;
@@ -84,16 +82,17 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A <code>SqlParserTest</code> is a unit-test for
  * {@link SqlParser the SQL parser}.
  *
  * <p>To reuse this test for an extension parser, override the
  * {@link #fixture()} method,
- * calling {@link Fixture#withConfig(UnaryOperator)}
+ * calling {@link SqlParserFixture#withConfig(UnaryOperator)}
  * and then {@link SqlParser.Config#withParserFactory(SqlParserImplFactory)}.
+ *
+ * @see SqlParserFixture
+ * @see SqlParserListFixture
  */
 public class SqlParserTest {
   /**
@@ -602,20 +601,20 @@ public class SqlParserTest {
   /** Creates the test fixture that determines the behavior of tests.
    * Sub-classes that, say, test different parser implementations should
    * override. */
-  public Fixture fixture() {
-    return Fixture.DEFAULT;
+  public SqlParserFixture fixture() {
+    return SqlParserFixture.DEFAULT;
   }
 
-  protected Fixture sql(String sql) {
+  protected SqlParserFixture sql(String sql) {
     return fixture().sql(sql);
   }
 
-  protected Fixture expr(String sql) {
+  protected SqlParserFixture expr(String sql) {
     return sql(sql).expression(true);
   }
 
   /** Converts a string to linux format (LF line endings rather than CR-LF),
-   * except if disabled in {@link Fixture#convertToLinux}. */
+   * except if disabled in {@link SqlParserFixture#convertToLinux}. */
   static UnaryOperator<String> linux(boolean convertToLinux) {
     return convertToLinux ? Util::toLinux : UnaryOperator.identity();
   }
@@ -2254,7 +2253,7 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickIdentifier() {
-    Fixture f = fixture()
+    SqlParserFixture f = fixture()
         .withConfig(c -> c.withQuoting(Quoting.BACK_TICK))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2276,7 +2275,7 @@ public class SqlParserTest {
   }
 
   @Test void testBackTickBackslashIdentifier() {
-    Fixture f = fixture()
+    SqlParserFixture f = fixture()
         .withConfig(c -> c.withQuoting(Quoting.BACK_TICK_BACKSLASH))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2300,7 +2299,7 @@ public class SqlParserTest {
   }
 
   @Test void testBracketIdentifier() {
-    Fixture f = fixture()
+    SqlParserFixture f = fixture()
         .withConfig(c -> c.withQuoting(Quoting.BRACKET))
         .expression();
     f.sql("ab").ok("`AB`");
@@ -2369,7 +2368,7 @@ public class SqlParserTest {
     // valid on MSSQL (alias contains a single quote)
     final String sql2 = "with t as (select 1 as ^'x''y'^)\n"
         + "select [x'y] from t as [u]";
-    final Fixture f2 = sql(sql2)
+    final SqlParserFixture f2 = sql(sql2)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET)
             .withConformance(SqlConformanceEnum.DEFAULT));
     f2.fails(expectingAlias);
@@ -2386,7 +2385,7 @@ public class SqlParserTest {
     final String sql3 = "with [t] as (select 1 as [x]) select [x] from [t]";
     final String sql3b = "WITH `t` AS (SELECT 1 AS `x`) (SELECT `x`\n"
         + "FROM `t`)";
-    final Fixture f3 = sql(sql3)
+    final SqlParserFixture f3 = sql(sql3)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET)
             .withConformance(SqlConformanceEnum.DEFAULT));
     f3.ok(sql3b);
@@ -2400,7 +2399,7 @@ public class SqlParserTest {
     // char literal as table alias is invalid on MSSQL (and others)
     final String sql4 = "with t as (select 1 as x) select x from t as ^'u'^";
     final String sql4b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
-    final Fixture f4 = sql(sql4)
+    final SqlParserFixture f4 = sql(sql4)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET)
             .withConformance(SqlConformanceEnum.DEFAULT));
     f4.fails(sql4b);
@@ -2414,7 +2413,7 @@ public class SqlParserTest {
     // char literal as table alias (without AS) is invalid on MSSQL (and others)
     final String sql5 = "with t as (select 1 as x) select x from t ^'u'^";
     final String sql5b = "(?s)Encountered \"\\\\'u\\\\'\" at .*";
-    final Fixture f5 = sql(sql5)
+    final SqlParserFixture f5 = sql(sql5)
         .withConfig(c -> c.withQuoting(Quoting.BRACKET)
             .withConformance(SqlConformanceEnum.DEFAULT));
     f5.fails(sql5b);
@@ -10025,201 +10024,6 @@ public class SqlParserTest {
     @Override public void checkExpFails(SqlTestFactory factory,
         StringAndPos sap, String expectedMsgPattern) {
       // Do nothing. We're not interested in unparsing invalid SQL
-    }
-  }
-
-  /** Helper class for building fluent code such as
-   * {@code sql("values 1").ok();}. */
-  public static class Fixture {
-    static final SqlTestFactory FACTORY =
-        SqlTestFactory.INSTANCE.withParserConfig(c ->
-            c.withQuoting(Quoting.DOUBLE_QUOTE)
-                .withUnquotedCasing(Casing.TO_UPPER)
-                .withQuotedCasing(Casing.UNCHANGED)
-                .withConformance(SqlConformanceEnum.DEFAULT));
-
-    static final Fixture DEFAULT =
-        new Fixture(FACTORY, StringAndPos.of("?"), false,
-            TesterImpl.DEFAULT, null, true, parser -> { });
-
-    private final SqlTestFactory factory;
-    private final StringAndPos sap;
-    private final boolean expression;
-    private final Tester tester;
-    private final boolean convertToLinux;
-    private final @Nullable SqlDialect dialect;
-    private final Consumer<SqlParser> parserChecker;
-
-    Fixture(SqlTestFactory factory, StringAndPos sap, boolean expression,
-        Tester tester, @Nullable SqlDialect dialect, boolean convertToLinux,
-        Consumer<SqlParser> parserChecker) {
-      this.factory = requireNonNull(factory, "factory");
-      this.sap = requireNonNull(sap, "sap");
-      this.expression = expression;
-      this.tester = requireNonNull(tester, "tester");
-      this.dialect = dialect;
-      this.convertToLinux = convertToLinux;
-      this.parserChecker = requireNonNull(parserChecker, "parserChecker");
-    }
-
-    public Fixture same() {
-      return ok(sap.sql);
-    }
-
-    public Fixture ok(String expected) {
-      final UnaryOperator<String> converter = linux(convertToLinux);
-      if (expression) {
-        tester.checkExp(factory, sap, converter, expected, parserChecker);
-      } else {
-        tester.check(factory, sap, dialect, converter, expected, parserChecker);
-      }
-      return this;
-    }
-
-    public Fixture fails(String expectedMsgPattern) {
-      if (expression) {
-        tester.checkExpFails(factory, sap, expectedMsgPattern);
-      } else {
-        tester.checkFails(factory, sap, false, expectedMsgPattern);
-      }
-      return this;
-    }
-
-    public Fixture hasWarning(Consumer<List<? extends Throwable>> messageMatcher) {
-      final Consumer<SqlParser> parserConsumer = parser ->
-          messageMatcher.accept(parser.getWarnings());
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserConsumer);
-    }
-
-    public Fixture node(Matcher<SqlNode> matcher) {
-      tester.checkNode(factory, sap, matcher);
-      return this;
-    }
-
-    /** Changes the SQL. */
-    public Fixture sql(String sql) {
-      if (sql.equals(this.sap.addCarets())) {
-        return this;
-      }
-      StringAndPos sap = StringAndPos.of(sql);
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserChecker);
-    }
-
-    /** Flags that this is an expression, not a whole query. */
-    public Fixture expression() {
-      return expression(true);
-    }
-
-    /** Sets whether this is an expression (as opposed to a whole query). */
-    public Fixture expression(boolean expression) {
-      if (this.expression == expression) {
-        return this;
-      }
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserChecker);
-    }
-
-    /** Creates an instance of helper class {@link SqlList} to test parsing a
-     * list of statements. */
-    protected SqlList list() {
-      return new SqlList(factory, tester, dialect, convertToLinux, sap);
-    }
-
-    public Fixture withDialect(SqlDialect dialect) {
-      if (dialect == this.dialect) {
-        return this;
-      }
-      SqlTestFactory factory =
-          this.factory.withParserConfig(dialect::configureParser);
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserChecker);
-    }
-
-    /** Creates a copy of this fixture with a new test factory. */
-    public Fixture withFactory(UnaryOperator<SqlTestFactory> transform) {
-      final SqlTestFactory factory = transform.apply(this.factory);
-      if (factory == this.factory) {
-        return this;
-      }
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserChecker);
-    }
-
-    public Fixture withConfig(UnaryOperator<SqlParser.Config> transform) {
-      return withFactory(f -> f.withParserConfig(transform));
-    }
-
-    public Fixture withConformance(SqlConformance conformance) {
-      return withConfig(c -> c.withConformance(conformance));
-    }
-
-    public Fixture withTester(Tester tester) {
-      if (tester == this.tester) {
-        return this;
-      }
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserChecker);
-    }
-
-    /** Sets whether to convert actual strings to Linux (converting Windows
-     * CR-LF line endings to Linux LF) before comparing them to expected.
-     * Default is true. */
-    public Fixture withConvertToLinux(boolean convertToLinux) {
-      if (convertToLinux == this.convertToLinux) {
-        return this;
-      }
-      return new Fixture(factory, sap, expression, tester, dialect,
-          convertToLinux, parserChecker);
-    }
-
-    public SqlParser parser() {
-      return factory.createParser(sap.addCarets());
-    }
-
-    public SqlNode node() {
-      return ((TesterImpl) tester)
-          .parseStmtAndHandleEx(factory, sap.addCarets(), parser -> { });
-    }
-
-    public SqlNodeList nodeList() {
-      return ((TesterImpl) tester)
-          .parseStmtsAndHandleEx(factory, sap.addCarets());
-    }
-  }
-
-  /** Helper class for building fluent code,
-   * similar to {@link Fixture}, but used to manipulate
-   * a list of statements, such as
-   * {@code sqlList("select * from a;").ok();}. */
-  protected static class SqlList {
-    private final SqlTestFactory factory;
-    private final Tester tester;
-    private final @Nullable SqlDialect dialect;
-    private final boolean convertToLinux;
-    private final StringAndPos sap;
-
-    SqlList(SqlTestFactory factory, Tester tester,
-        @Nullable SqlDialect dialect, boolean convertToLinux,
-        StringAndPos sap) {
-      this.factory = factory;
-      this.tester = tester;
-      this.dialect = dialect;
-      this.convertToLinux = convertToLinux;
-      this.sap = sap;
-    }
-
-    public SqlList ok(String... expected) {
-      final UnaryOperator<String> converter = linux(convertToLinux);
-      tester.checkList(factory, sap, dialect, converter,
-          ImmutableList.copyOf(expected));
-      return this;
-    }
-
-    public SqlList fails(String expectedMsgPattern) {
-      tester.checkFails(factory, sap, true, expectedMsgPattern);
-      return this;
     }
   }
 

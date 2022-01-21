@@ -17,7 +17,7 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.config.CalciteConnectionProperty;
-import org.apache.calcite.sql.parser.SqlParserTest;
+import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 
 import org.junit.jupiter.api.Test;
@@ -110,7 +110,7 @@ class BabelTest {
         .type("RecordType(INTEGER NOT NULL THREE) NOT NULL");
 
     // 'as' as identifier is invalid with Core parser
-    final SqlParserTest.Fixture p = Fixtures.forParser();
+    final SqlParserFixture p = Fixtures.forParser();
     p.sql("select ^as^ from t")
         .fails("(?s)Encountered \"as\".*");
 

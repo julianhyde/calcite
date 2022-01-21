@@ -18,7 +18,7 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.sql.parser.SqlParserTest;
+import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.test.SqlFixture;
 
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,7 @@ public class FixtureTest {
   /** Tests that you can write parser tests via {@link Fixtures#forParser()}. */
   @Test void testParserFixture() {
     // 'as' as identifier is invalid with Core parser
-    final SqlParserTest.Fixture f = Fixtures.forParser();
+    final SqlParserFixture f = Fixtures.forParser();
     f.sql("select ^as^ from t")
         .fails("(?s)Encountered \"as\".*");
 

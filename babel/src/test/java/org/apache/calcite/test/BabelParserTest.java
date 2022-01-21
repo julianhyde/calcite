@@ -20,6 +20,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
@@ -43,7 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 class BabelParserTest extends SqlParserTest {
 
-  @Override public Fixture fixture() {
+  @Override public SqlParserFixture fixture() {
     return super.fixture()
         .withTester(new BabelTesterImpl())
         .withConfig(c -> c.withParserFactory(SqlBabelParserImpl.FACTORY));

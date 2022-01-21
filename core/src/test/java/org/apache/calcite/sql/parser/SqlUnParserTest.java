@@ -21,7 +21,7 @@ package org.apache.calcite.sql.parser;
  * un-parse successfully.
  */
 class SqlUnParserTest extends SqlParserTest {
-  @Override public Fixture fixture() {
+  @Override public SqlParserFixture fixture() {
     return super.fixture()
         .withTester(new UnparsingTesterImpl());
   }
