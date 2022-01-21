@@ -10,7 +10,6 @@ commit message.
 
 * obsolete SqlToRelTestBase?
 * rename SqlFixture to SqlOperatorFixture, ditto SqlFixtureImpl, and fix javadoc
-* rename TryThreadLocal.withValue to let
 
 # Goal and strategy
 
@@ -211,5 +210,5 @@ In `class SqlValidator.Config`, rename method `sqlConformance()` to
 `conformance()`, to be consistent with conformance properties
 elsewhere.
 
-In `class TryThreadLocal`, add methods `withValue(T, Supplier)` and
-`withValue(T, Runnable)`.
+In `class TryThreadLocal`, add methods `letIn(T, Supplier)` and
+`letIn(T, Runnable)`.

@@ -2349,25 +2349,21 @@ class UtilTest {
   }
 
   /** Tests
-   * {@link org.apache.calcite.util.TryThreadLocal#withValue(Object, Runnable)}
+   * {@link org.apache.calcite.util.TryThreadLocal#letIn(Object, Runnable)}
    * and
-   * {@link org.apache.calcite.util.TryThreadLocal#withValue(Object, java.util.function.Supplier)}.
-   *
-   * <p>TryThreadLocal was introduced to fix
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-915">[CALCITE-915]
-   * Tests do not unset ThreadLocal values on exit</a>. */
-  @Test void testTryThreadLocalWithValue() {
+   * {@link org.apache.calcite.util.TryThreadLocal#letIn(Object, java.util.function.Supplier)}. */
+  @Test void testTryThreadLocalLetIn() {
     final TryThreadLocal<Integer> local = TryThreadLocal.of(2);
-    String s3 = local.withValue(3, () -> "the value is " + local.get());
+    String s3 = local.letIn(3, () -> "the value is " + local.get());
     assertThat(s3, is("the value is 3"));
     assertThat(local.get(), is(2));
 
-    String s2 = local.withValue(2, () -> "the value is " + local.get());
+    String s2 = local.letIn(2, () -> "the value is " + local.get());
     assertThat(s2, is("the value is 2"));
     assertThat(local.get(), is(2));
 
     final StringBuilder sb = new StringBuilder();
-    local.withValue(4, () -> sb.append("the value is ").append(local.get()));
+    local.letIn(4, () -> sb.append("the value is ").append(local.get()));
     assertThat(sb.toString(), is("the value is 4"));
     assertThat(local.get(), is(2));
 
@@ -2375,7 +2371,7 @@ class UtilTest {
     local.set(10);
     sb.setLength(0);
     try {
-      local.withValue(5, () -> {
+      local.letIn(5, () -> {
         sb.append("the value is ").append(local.get());
         throw new IllegalArgumentException("oops");
       });

@@ -71,8 +71,11 @@ public class TryThreadLocal<@Nullable T> extends ThreadLocal<T> {
   }
 
   /** Performs an action with this ThreadLocal set to a particular value
-   * in this thread, and restores the previous value afterwards. */
-  public void withValue(T t, Runnable runnable) {
+   * in this thread, and restores the previous value afterwards.
+   *
+   * <p>This method is named after the Standard ML {@code let} construct,
+   * for example {@code let val x = 1 in x + 2 end}. */
+  public void letIn(T t, Runnable runnable) {
     final T previous = get();
     if (previous == t) {
       runnable.run();
@@ -86,9 +89,12 @@ public class TryThreadLocal<@Nullable T> extends ThreadLocal<T> {
     }
   }
 
-  /** Calls a function with this ThreadLocal set to a particular value,
-   * in this thread, and restores the previous value afterwards. */
-  public <R> R withValue(T t, Supplier<R> supplier) {
+  /** Calls a Supplier with this ThreadLocal set to a particular value,
+   * in this thread, and restores the previous value afterwards.
+   *
+   * <p>This method is named after the Standard ML {@code let} construct,
+   * for example {@code let val x = 1 in x + 2 end}. */
+  public <R> R letIn(T t, Supplier<R> supplier) {
     final T previous = get();
     if (previous == t) {
       return supplier.get();
