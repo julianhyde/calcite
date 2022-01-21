@@ -213,4 +213,3 @@ elsewhere.
 
 In `class TryThreadLocal`, add methods `withValue(T, Supplier)` and
 `withValue(T, Runnable)`.
-
