@@ -35,7 +35,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 public class SqlValidatorTestCase {
   public static final SqlValidatorFixture FIXTURE =
       new SqlValidatorFixture(SqlValidatorTester.DEFAULT,
-          SqlTestFactory.INSTANCE, StringAndPos.of("?"), true, false);
+          SqlTestFactory.INSTANCE, StringAndPos.of("?"), false, false);
 
   /** Creates a test case. */
   public SqlValidatorTestCase() {

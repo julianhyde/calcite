@@ -10,8 +10,6 @@ commit message.
 
 * rename class SqlParserTest.Fixture to SqlParserFixture
 * obsolete SqlToRelTestBase?
-* flip SqlValidatorFixture.query to expression (then update
-  SqlToRelFixture.expression, below)
 * rename SqlPrettyWriterTestFixture to SqlPrettyWriterFixture
 * static import Assertions.assertEquals, Objects.requireNonNull
 * rename SqlFixture to SqlOperatorFixture, ditto SqlFixtureImpl, and fix javadoc
@@ -87,7 +85,7 @@ Method `SqlToRelTestBase.assertValid` becomes `Matchers.relIsValid`.
 
 # Rename `interface SqlValidatorTestCase.Sql` to `SqlValidatorFixture`
 
-Refactor/rename a few methods.
+Refactor/rename a few methods, and change 'query' field to 'expression'.
 
 # Remove state from `class SqlParserTest`
 
@@ -109,9 +107,9 @@ Move classes `DiffRepository`, `MockRelOptPlanner`,
 
 # Rename `class SqlToRelConverterTest.Sql` to `class SqlToRelFixture`
 
-Field `SqlToRelFixture.expression` used to be called `query` and have
-the opposite sense; but now it is consistent with
-`SqlParserTest.Fixture.expression`.
+Fields `SqlToRelFixture.expression` and `SqlValidatorFixture.expression`
+were each previously called `query` and had the opposite sense;
+both are now consistent with `SqlParserTest.Fixture.expression`.
 
 Rename method `sql` to `withSql`, `config` to `withConfig`, etc.
 
@@ -193,8 +191,8 @@ Remove method `withLibrary2`.
 
 Move `class SqlToRelConverterTest.RelValidityChecker` to top-level.
 
-In class `SqlLimitsTest`, move method `checkTypes` to `class
-SqlTests`.
+In class `SqlLimitsTest`, move method `checkTypes` to
+`class SqlTests`.
 
 In a few cases we would built complex transforms (instances of
 `UnaryOperator`) that were applied just before the test ran. Now we
@@ -209,7 +207,7 @@ Remove some uses of `assert` in `TypeCoercionTest`. (Never use
 
 # Changes in non-test code
 
-In `classSqlValidator.Config`, rename method `sqlConformance()` to
+In `class SqlValidator.Config`, rename method `sqlConformance()` to
 `conformance()`, to be consistent with conformance properties
 elsewhere.
 

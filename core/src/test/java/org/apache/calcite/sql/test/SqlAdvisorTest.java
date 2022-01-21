@@ -65,7 +65,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
 
   static final Fixture LOCAL_FIXTURE =
       new Fixture(SqlValidatorTester.DEFAULT, ADVISOR_NEW_TEST_FACTORY,
-          StringAndPos.of("?"), true, false);
+          StringAndPos.of("?"), false, false);
 
   private static final List<String> STAR_KEYWORD =
       Collections.singletonList(
@@ -1501,20 +1501,20 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
   /** Fixture for the advisor test. */
   static class Fixture extends SqlValidatorFixture {
     protected Fixture(SqlTester tester, SqlTestFactory factory,
-        StringAndPos sap, boolean query, boolean whole) {
-      super(tester, factory, sap, query, whole);
+        StringAndPos sap, boolean expression, boolean whole) {
+      super(tester, factory, sap, expression, whole);
     }
 
     @SuppressWarnings("deprecation")
     @Override public Fixture withTester(UnaryOperator<SqlTester> transform) {
       final SqlTester tester = transform.apply(this.tester);
-      return new Fixture(tester, factory, sap, query, whole);
+      return new Fixture(tester, factory, sap, expression, whole);
     }
 
     @Override public Fixture withFactory(
         UnaryOperator<SqlTestFactory> transform) {
       final SqlTestFactory factory = transform.apply(this.factory);
-      return new Fixture(tester, factory, sap, query, whole);
+      return new Fixture(tester, factory, sap, expression, whole);
     }
 
     @Override public Fixture withLex(Lex lex) {
@@ -1522,8 +1522,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
     @Override public Fixture withSql(String sql) {
-      return new Fixture(tester, factory, StringAndPos.of(sql), true, false
-      );
+      return new Fixture(tester, factory, StringAndPos.of(sql), false, false);
     }
 
     private void assertTokenizesTo(String expected) {

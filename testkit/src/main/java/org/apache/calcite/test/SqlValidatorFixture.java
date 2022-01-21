@@ -77,36 +77,37 @@ public class SqlValidatorFixture {
   public final SqlTester tester;
   public final SqlTestFactory factory;
   public final StringAndPos sap;
-  public final boolean query;
+  public final boolean expression;
   public final boolean whole;
 
   /**
    * Creates a SqlValidatorFixture.
    *
-   * @param tester Tester
-   * @param sap    SQL query or expression
-   * @param query  True if {@code sql} is a query, false if it is an expression
-   * @param whole  Whether the failure location is the whole query or
-   *               expression
+   * @param tester     Tester
+   * @param sap        SQL query or expression
+   * @param expression True if {@code sql} is an expression,
+   *                   false if it is a query
+   * @param whole      Whether the failure location is the whole query or
+   *                   expression
    */
   protected SqlValidatorFixture(SqlTester tester, SqlTestFactory factory,
-      StringAndPos sap, boolean query, boolean whole) {
+      StringAndPos sap, boolean expression, boolean whole) {
     this.tester = tester;
     this.factory = factory;
-    this.query = query;
+    this.expression = expression;
     this.sap = sap;
     this.whole = whole;
   }
 
   public SqlValidatorFixture withTester(UnaryOperator<SqlTester> transform) {
     final SqlTester tester = transform.apply(this.tester);
-    return new SqlValidatorFixture(tester, factory, sap, query, whole);
+    return new SqlValidatorFixture(tester, factory, sap, expression, whole);
   }
 
   public SqlValidatorFixture withFactory(
       UnaryOperator<SqlTestFactory> transform) {
     final SqlTestFactory factory = transform.apply(this.factory);
-    return new SqlValidatorFixture(tester, factory, sap, query, whole);
+    return new SqlValidatorFixture(tester, factory, sap, expression, whole);
   }
 
   public SqlValidatorFixture withParserConfig(
@@ -120,17 +121,18 @@ public class SqlValidatorFixture {
 
   public SqlValidatorFixture withSql(String sql) {
     StringAndPos sap = StringAndPos.of(sql);
-    return new SqlValidatorFixture(tester, factory, sap, true, false);
+    return new SqlValidatorFixture(tester, factory, sap, false, false);
   }
 
   public SqlValidatorFixture withExpr(String sql) {
     StringAndPos sap = StringAndPos.of(sql);
-    return new SqlValidatorFixture(tester, factory, sap, false, false);
+    return new SqlValidatorFixture(tester, factory, sap, true, false);
   }
 
   public StringAndPos toSql(boolean withCaret) {
-    return query ? sap
-        : StringAndPos.of(AbstractSqlTester.buildQuery(sap.addCarets()));
+    return expression
+        ? StringAndPos.of(AbstractSqlTester.buildQuery(sap.addCarets()))
+        : sap;
   }
 
   public SqlValidatorFixture withExtendedCatalog() {
@@ -181,7 +183,7 @@ public class SqlValidatorFixture {
   SqlValidatorFixture withWhole(boolean whole) {
     Preconditions.checkArgument(sap.cursor < 0);
     final StringAndPos sap = StringAndPos.of("^" + this.sap.sql + "^");
-    return new SqlValidatorFixture(tester, factory, sap, query, whole);
+    return new SqlValidatorFixture(tester, factory, sap, expression, whole);
   }
 
   SqlValidatorFixture ok() {
