@@ -92,7 +92,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -107,6 +106,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Tests for {@link RelToSqlConverter}.
@@ -6221,7 +6222,7 @@ class RelToSqlConverterTest {
       this.transforms = ImmutableList.copyOf(transforms);
       this.parserConfig = parserConfig;
       this.config = config;
-      this.typeSystem = Objects.requireNonNull(typeSystem, "typeSystem");
+      this.typeSystem = requireNonNull(typeSystem, "typeSystem");
     }
 
     Sql withSql(String sql) {

@@ -47,8 +47,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Set of tests for ES adapter. Uses real instance via {@link EmbeddedElasticsearchPolicy}. Document
@@ -227,7 +228,7 @@ class ElasticSearchAdapterTest {
    */
   private static Consumer<ResultSet> sortedResultSetChecker(String column,
       RelFieldCollation.Direction direction) {
-    Objects.requireNonNull(column, "column");
+    requireNonNull(column, "column");
     return rset -> {
       try {
         final List<Comparable<?>> states = new ArrayList<>();

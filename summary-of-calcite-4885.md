@@ -9,7 +9,6 @@ commit message.
 # TODO
 
 * obsolete SqlToRelTestBase?
-* static import Assertions.assertEquals, Objects.requireNonNull
 * rename SqlFixture to SqlOperatorFixture, ditto SqlFixtureImpl, and fix javadoc
 * rename TryThreadLocal.withValue to let
 
@@ -203,6 +202,8 @@ added in [CALCITE-2571] but was never used.
 
 Remove some uses of `assert` in `TypeCoercionTest`. (Never use
 `assert` in tests!)
+
+Use `Assertions.assertEquals`, `Objects.requireNonNull` via static import.
 
 # Changes in non-test code
 

@@ -54,11 +54,12 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.apache.calcite.util.DateTimeStringUtils.getDateFormatter;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * <code>SqlDialect</code> encapsulates the differences between dialects of SQL.
@@ -207,16 +208,13 @@ public class SqlDialect {
    * @param context All the information necessary to create a dialect
    */
   public SqlDialect(Context context) {
-    this.nullCollation = Objects.requireNonNull(context.nullCollation());
-    this.dataTypeSystem = Objects.requireNonNull(context.dataTypeSystem());
-    this.databaseProduct =
-        Objects.requireNonNull(context.databaseProduct());
-    this.literalQuoteString =
-        Objects.requireNonNull(context.literalQuoteString());
-    this.literalEndQuoteString =
-        Objects.requireNonNull(context.literalQuoteString());
+    this.nullCollation = requireNonNull(context.nullCollation());
+    this.dataTypeSystem = requireNonNull(context.dataTypeSystem());
+    this.databaseProduct = requireNonNull(context.databaseProduct());
+    this.literalQuoteString = requireNonNull(context.literalQuoteString());
+    this.literalEndQuoteString = requireNonNull(context.literalQuoteString());
     this.literalEscapedQuote =
-        Objects.requireNonNull(context.literalEscapedQuoteString());
+        requireNonNull(context.literalEscapedQuoteString());
     String identifierQuoteString = context.identifierQuoteString();
     if (identifierQuoteString != null) {
       identifierQuoteString = identifierQuoteString.trim();
@@ -235,8 +233,8 @@ public class SqlDialect {
                 ? null
                 : this.identifierEndQuoteString + this.identifierEndQuoteString
             : context.identifierEscapedQuoteString();
-    this.unquotedCasing = Objects.requireNonNull(context.unquotedCasing());
-    this.quotedCasing = Objects.requireNonNull(context.quotedCasing());
+    this.unquotedCasing = requireNonNull(context.unquotedCasing());
+    this.quotedCasing = requireNonNull(context.quotedCasing());
     this.caseSensitive = context.caseSensitive();
   }
 
@@ -1323,8 +1321,8 @@ public class SqlDialect {
     @SuppressWarnings("argument.type.incompatible")
     DatabaseProduct(String databaseProductName, @Nullable String quoteString,
         NullCollation nullCollation) {
-      Objects.requireNonNull(databaseProductName, "databaseProductName");
-      Objects.requireNonNull(nullCollation, "nullCollation");
+      requireNonNull(databaseProductName, "databaseProductName");
+      requireNonNull(nullCollation, "nullCollation");
       // Note: below lambda accesses uninitialized DatabaseProduct.this, so it might be
       // worth refactoring
       dialect = Suppliers.memoize(() -> {
@@ -1427,7 +1425,7 @@ public class SqlDialect {
         SqlConformance conformance, NullCollation nullCollation,
         RelDataTypeSystem dataTypeSystem,
         JethroDataSqlDialect.JethroInfo jethroInfo) {
-      this.databaseProduct = Objects.requireNonNull(databaseProduct, "databaseProduct");
+      this.databaseProduct = requireNonNull(databaseProduct, "databaseProduct");
       this.databaseProductName = databaseProductName;
       this.databaseVersion = databaseVersion;
       this.databaseMajorVersion = databaseMajorVersion;
@@ -1436,13 +1434,13 @@ public class SqlDialect {
       this.literalEscapedQuoteString = literalEscapedQuoteString;
       this.identifierQuoteString = identifierQuoteString;
       this.identifierEscapedQuoteString = identifierEscapedQuoteString;
-      this.quotedCasing = Objects.requireNonNull(quotedCasing, "quotedCasing");
-      this.unquotedCasing = Objects.requireNonNull(unquotedCasing, "unquotedCasing");
+      this.quotedCasing = requireNonNull(quotedCasing, "quotedCasing");
+      this.unquotedCasing = requireNonNull(unquotedCasing, "unquotedCasing");
       this.caseSensitive = caseSensitive;
-      this.conformance = Objects.requireNonNull(conformance, "conformance");
-      this.nullCollation = Objects.requireNonNull(nullCollation, "nullCollation");
-      this.dataTypeSystem = Objects.requireNonNull(dataTypeSystem, "dataTypeSystem");
-      this.jethroInfo = Objects.requireNonNull(jethroInfo, "jethroInfo");
+      this.conformance = requireNonNull(conformance, "conformance");
+      this.nullCollation = requireNonNull(nullCollation, "nullCollation");
+      this.dataTypeSystem = requireNonNull(dataTypeSystem, "dataTypeSystem");
+      this.jethroInfo = requireNonNull(jethroInfo, "jethroInfo");
     }
 
     @Override public DatabaseProduct databaseProduct() {

@@ -30,7 +30,6 @@ import org.apache.calcite.test.SqlValidatorTestCase;
 import com.google.common.collect.ImmutableMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +47,7 @@ import java.util.function.UnaryOperator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -1537,7 +1536,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
         }
         buf.append(token).append("\n");
       }
-      Assertions.assertEquals(expected, buf.toString());
+      assertEquals(expected, buf.toString());
     }
 
     protected void assertHint(List<String>... expectedLists) {
@@ -1559,7 +1558,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
           advisor.getCompletionHints(
               sap.sql,
               requireNonNull(sap.pos, "sap.pos"));
-      Assertions.assertEquals(
+      assertEquals(
           expectedResults, convertCompletionHints(results));
     }
 
@@ -1572,7 +1571,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
       SqlAdvisor advisor = factory.createAdvisor();
 
       String actual = advisor.simplifySql(sap.sql, sap.cursor);
-      Assertions.assertEquals(expected, actual);
+      assertEquals(expected, actual);
       return this;
     }
 
@@ -1609,10 +1608,10 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
       final String[] replaced = {null};
       List<SqlMoniker> results =
           advisor.getCompletionHints(sap.sql, sap.cursor, replaced);
-      Assertions.assertEquals(expectedResults, convertCompletionHints(results),
+      assertEquals(expectedResults, convertCompletionHints(results),
           () -> "Completion hints for " + sap);
       if (expectedWord != null) {
-        Assertions.assertEquals(expectedWord, replaced[0],
+        assertEquals(expectedWord, replaced[0],
             "replaced[0] for " + sap);
       } else {
         assertNotNull(replaced[0]);
@@ -1634,7 +1633,7 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
         }
         missingReplacemenets.remove(id);
         String actualReplacement = advisor.getReplacement(result, word);
-        Assertions.assertEquals(expectedReplacement, actualReplacement,
+        assertEquals(expectedReplacement, actualReplacement,
             () -> sap + ", replacement of " + word + " with " + id);
       }
       if (missingReplacemenets.isEmpty()) {
@@ -1642,23 +1641,6 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
       }
       fail("Sql " + sap + " did not produce replacement hints "
           + missingReplacemenets);
-    }
-
-    protected void assertEquals(
-        String[] actualResults,
-        List<String>... expectedResults) throws Exception {
-      List<String> expectedList = plus(expectedResults);
-      Map<String, String> uniqueResults = new HashMap<>();
-      for (String actualResult : actualResults) {
-        uniqueResults.put(actualResult, actualResult);
-      }
-      if (!(expectedList.containsAll(uniqueResults.values())
-          && (expectedList.size() == uniqueResults.values().size()))) {
-        fail(
-            "SqlAdvisorTest: completion hints results not as salesTables:\n"
-                + uniqueResults.values() + "\nExpected:\n"
-                + expectedList);
-      }
     }
 
     private String convertCompletionHints(List<SqlMoniker> hints) {

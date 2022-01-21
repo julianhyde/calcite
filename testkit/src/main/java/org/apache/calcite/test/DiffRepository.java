@@ -56,6 +56,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A collection of resources used by tests.
  *
@@ -199,7 +201,7 @@ public class DiffRepository {
     this.baseRepository = baseRepository;
     this.filter = filter;
     this.indent = indent;
-    this.refFile = Objects.requireNonNull(refFile, "refFile");
+    this.refFile = requireNonNull(refFile, "refFile");
     this.logFile = logFile;
     this.modCountAtLastWrite = 0;
     this.modCount = 0;
@@ -872,7 +874,7 @@ public class DiffRepository {
 
     Key(Class<?> clazz, DiffRepository baseRepository, Filter filter,
         int indent) {
-      this.clazz = Objects.requireNonNull(clazz, "clazz");
+      this.clazz = requireNonNull(clazz, "clazz");
       this.baseRepository = baseRepository;
       this.filter = filter;
       this.indent = indent;

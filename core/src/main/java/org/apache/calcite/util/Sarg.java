@@ -27,8 +27,9 @@ import com.google.common.collect.RangeSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Objects;
 import java.util.function.BiConsumer;
+
+import static java.util.Objects.requireNonNull;
 
 /** Set of values (or ranges) that are the target of a search.
  *
@@ -114,8 +115,8 @@ public class Sarg<C extends Comparable<C>> implements Comparable<Sarg<C>> {
           "Sarg[=]", 7);
 
   private Sarg(ImmutableRangeSet<C> rangeSet, RexUnknownAs nullAs) {
-    this.rangeSet = Objects.requireNonNull(rangeSet, "rangeSet");
-    this.nullAs = Objects.requireNonNull(nullAs, "nullAs");
+    this.rangeSet = requireNonNull(rangeSet, "rangeSet");
+    this.nullAs = requireNonNull(nullAs, "nullAs");
     this.pointCount = RangeSets.countPoints(rangeSet);
   }
 
