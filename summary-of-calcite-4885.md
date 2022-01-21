@@ -9,7 +9,6 @@ commit message.
 # TODO
 
 * obsolete SqlToRelTestBase?
-* rename SqlPrettyWriterTestFixture to SqlPrettyWriterFixture
 * static import Assertions.assertEquals, Objects.requireNonNull
 * rename SqlFixture to SqlOperatorFixture, ditto SqlFixtureImpl, and fix javadoc
 * rename TryThreadLocal.withValue to let
@@ -160,8 +159,7 @@ Implement methods `toString`, `equals`, `hashCode`.
 
 # `class SqlPrettyWriterTest`
 
-Move inner `class Sql` to top-level `class
-SqlPrettyWriterTestFixture`.
+Move inner `class Sql` to top-level `class SqlPrettyWriterTestFixture`.
 
 # Move `interface CalciteAssert.ConnectionFactory` to top-level `interface ConnectionFactory`
 

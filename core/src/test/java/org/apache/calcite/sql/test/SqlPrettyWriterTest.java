@@ -34,32 +34,32 @@ import org.junit.jupiter.api.Test;
  */
 class SqlPrettyWriterTest {
   /** Fixture that can be re-used by other tests. */
-  public static final SqlPrettyWriterTestFixture FIXTURE =
-      new SqlPrettyWriterTestFixture(null, "?", false, null, "${formatted}",
+  public static final SqlPrettyWriterFixture FIXTURE =
+      new SqlPrettyWriterFixture(null, "?", false, null, "${formatted}",
           w -> w);
 
   /** Fixture that is local to this test. */
-  private static final SqlPrettyWriterTestFixture LOCAL_FIXTURE =
+  private static final SqlPrettyWriterFixture LOCAL_FIXTURE =
       FIXTURE.withDiffRepos(DiffRepository.lookup(SqlPrettyWriterTest.class));
 
   /** Returns the default fixture for tests. Sub-classes may override. */
-  protected SqlPrettyWriterTestFixture fixture() {
+  protected SqlPrettyWriterFixture fixture() {
     return LOCAL_FIXTURE;
   }
 
   /** Returns a fixture with a given SQL query. */
-  public final SqlPrettyWriterTestFixture sql(String sql) {
+  public final SqlPrettyWriterFixture sql(String sql) {
     return fixture().withSql(sql);
   }
 
   /** Returns a fixture with a given SQL expression. */
-  public final SqlPrettyWriterTestFixture expr(String sql) {
+  public final SqlPrettyWriterFixture expr(String sql) {
     return fixture().withSql(sql).withExpr(true);
   }
 
   /** Creates a fluent test for a SQL statement that has most common lexical
    * features. */
-  private SqlPrettyWriterTestFixture simple() {
+  private SqlPrettyWriterFixture simple() {
     return sql("select x as a, b as b, c as c, d,"
         + " 'mixed-Case string',"
         + " unquotedCamelCaseId,"
@@ -77,7 +77,7 @@ class SqlPrettyWriterTest {
   }
 
   /** Creates a fluent test for a SQL statement that contains "tableAlias.*". */
-  private SqlPrettyWriterTestFixture tableDotStar() {
+  private SqlPrettyWriterFixture tableDotStar() {
     return sql("select x as a, b, s.*, t.* "
         + "from"
         + " (select *"

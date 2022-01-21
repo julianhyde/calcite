@@ -38,55 +38,66 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Helper.
+ * A fixture for testing the SQL pretty writer.
+ *
+ * <p>It provides a fluent API so that you can write tests by chaining method
+ * calls.
+ *
+ * <p>It is immutable. If you have two test cases that require a similar set up,
+ * it is safe to use the same fixture object as a starting point for both tests.
+ *
+ * @see org.apache.calcite.sql.pretty.SqlPrettyWriter
  */
-class SqlPrettyWriterTestFixture {
+class SqlPrettyWriterFixture {
   private final @Nullable DiffRepository diffRepos;
   public final String sql;
-  public final boolean expr;
+  public final boolean expression;
   public final @Nullable String desc;
   public final String formatted;
   public final UnaryOperator<SqlWriterConfig> transform;
 
-  SqlPrettyWriterTestFixture(@Nullable DiffRepository diffRepos, String sql,
-      boolean expr, @Nullable String desc, String formatted,
+  SqlPrettyWriterFixture(@Nullable DiffRepository diffRepos, String sql,
+      boolean expression, @Nullable String desc, String formatted,
       UnaryOperator<SqlWriterConfig> transform) {
     this.diffRepos = diffRepos;
     this.sql = requireNonNull(sql, "sql");
-    this.expr = expr;
+    this.expression = expression;
     this.desc = desc;
     this.formatted = requireNonNull(formatted, "formatted");
     this.transform = requireNonNull(transform, "transform");
   }
 
-  SqlPrettyWriterTestFixture withWriter(
+  SqlPrettyWriterFixture withWriter(
       UnaryOperator<SqlWriterConfig> transform) {
     requireNonNull(transform, "transform");
     final UnaryOperator<SqlWriterConfig> transform1 =
         this.transform.andThen(transform)::apply;
-    return new SqlPrettyWriterTestFixture(diffRepos, sql, expr, desc, formatted,
-        transform1);
+    return new SqlPrettyWriterFixture(diffRepos, sql, expression, desc,
+        formatted, transform1);
   }
 
-  SqlPrettyWriterTestFixture withSql(String sql) {
-    return sql.equals(this.sql)
-        ? this
-        : new SqlPrettyWriterTestFixture(diffRepos, sql, expr, desc, formatted,
-            transform);
+  SqlPrettyWriterFixture withSql(String sql) {
+    if (sql.equals(this.sql)) {
+      return this;
+    }
+    return new SqlPrettyWriterFixture(diffRepos, sql, expression, desc,
+        formatted, transform);
   }
 
-  SqlPrettyWriterTestFixture withExpr(boolean expr) {
-    return this.expr == expr
-        ? this
-        : new SqlPrettyWriterTestFixture(diffRepos, sql, expr, desc, formatted,
-            transform);
+  SqlPrettyWriterFixture withExpr(boolean expression) {
+    if (this.expression == expression) {
+      return this;
+    }
+    return new SqlPrettyWriterFixture(diffRepos, sql, expression, desc,
+        formatted, transform);
   }
 
-  SqlPrettyWriterTestFixture withDiffRepos(DiffRepository diffRepos) {
-    return Objects.equals(this.diffRepos, diffRepos)
-        ? this
-        : new SqlPrettyWriterTestFixture(diffRepos, sql, expr, desc, formatted,
-            transform);
+  SqlPrettyWriterFixture withDiffRepos(DiffRepository diffRepos) {
+    if (Objects.equals(this.diffRepos, diffRepos)) {
+      return this;
+    }
+    return new SqlPrettyWriterFixture(diffRepos, sql, expression, desc,
+        formatted, transform);
   }
 
   /** Returns the diff repository, checking that it is not null.
@@ -96,18 +107,20 @@ class SqlPrettyWriterTestFixture {
     return DiffRepository.castNonNull(diffRepos);
   }
 
-  SqlPrettyWriterTestFixture expectingDesc(@Nullable String desc) {
-    return Objects.equals(this.desc, desc)
-        ? this
-        : new SqlPrettyWriterTestFixture(diffRepos, sql, expr, desc, formatted,
-            transform);
+  SqlPrettyWriterFixture expectingDesc(@Nullable String desc) {
+    if (Objects.equals(this.desc, desc)) {
+      return this;
+    }
+    return new SqlPrettyWriterFixture(diffRepos, sql, expression, desc,
+        formatted, transform);
   }
 
-  SqlPrettyWriterTestFixture expectingFormatted(String formatted) {
-    return Objects.equals(this.formatted, formatted)
-        ? this
-        : new SqlPrettyWriterTestFixture(diffRepos, sql, expr, desc, formatted,
-            transform);
+  SqlPrettyWriterFixture expectingFormatted(String formatted) {
+    if (Objects.equals(this.formatted, formatted)) {
+      return this;
+    }
+    return new SqlPrettyWriterFixture(diffRepos, sql, expression, desc,
+        formatted, transform);
   }
 
   /** Parses a SQL query. To use a different parser, override this method. */
@@ -124,13 +137,13 @@ class SqlPrettyWriterTestFixture {
     return node;
   }
 
-  SqlPrettyWriterTestFixture check() {
+  SqlPrettyWriterFixture check() {
     final SqlWriterConfig config =
         transform.apply(SqlPrettyWriter.config()
             .withDialect(AnsiSqlDialect.DEFAULT));
     final SqlPrettyWriter prettyWriter = new SqlPrettyWriter(config);
     final SqlNode node;
-    if (expr) {
+    if (expression) {
       final SqlCall valuesCall = (SqlCall) parseQuery("VALUES (" + sql + ")");
       final SqlCall rowCall = valuesCall.operand(0);
       node = rowCall.operand(0);
@@ -156,7 +169,7 @@ class SqlPrettyWriterTestFixture {
     // to the original.
     final String actual2 = formatted.replace("`", "\"");
     final SqlNode node2;
-    if (expr) {
+    if (expression) {
       final SqlCall valuesCall =
           (SqlCall) parseQuery("VALUES (" + actual2 + ")");
       final SqlCall rowCall = valuesCall.operand(0);
