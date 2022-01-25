@@ -4525,6 +4525,8 @@ public class SqlToRelConverter {
 
     final List<RelNode> cursors = new ArrayList<>();
 
+    final Map<RelDataType, Map<String, Integer>> relDataTypeFieldMap = new HashMap();
+
     /**
      * List of <code>IN</code> and <code>EXISTS</code> nodes inside this
      * <code>SELECT</code> statement (but not inside sub-queries).
@@ -4817,6 +4819,9 @@ public class SqlToRelConverter {
         if (node == null) {
           return null;
         } else {
+          if(relDataTypeFieldMap.containsKey(rowType)){
+            return Pair.of(node, relDataTypeFieldMap.get(rowType));
+          }
           final Map<String, Integer> fieldOffsets = new HashMap<>();
           for (RelDataTypeField f : resolve.rowType().getFieldList()) {
             if (!fieldOffsets.containsKey(f.getName())) {
@@ -4824,6 +4829,7 @@ public class SqlToRelConverter {
             }
           }
           final Map<String, Integer> map = ImmutableMap.copyOf(fieldOffsets);
+          relDataTypeFieldMap.put(rowType, map);
           return Pair.of(node, map);
         }
       } else {
