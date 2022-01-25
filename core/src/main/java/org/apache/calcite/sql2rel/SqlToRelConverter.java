@@ -4819,7 +4819,7 @@ public class SqlToRelConverter {
         if (node == null) {
           return null;
         } else {
-          if(relDataTypeFieldMap.containsKey(rowType)){
+          if (relDataTypeFieldMap.containsKey(rowType)) {
             return Pair.of(node, relDataTypeFieldMap.get(rowType));
           }
           final Map<String, Integer> fieldOffsets = new HashMap<>();
