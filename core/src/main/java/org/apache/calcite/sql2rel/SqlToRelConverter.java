@@ -4816,22 +4816,19 @@ public class SqlToRelConverter {
         final LookupContext rels =
             new LookupContext(this, inputs, systemFieldList.size());
         final RexNode node = lookup(resolve.path.steps().get(0).i, rels);
-        if (node == null) {
-          return null;
-        } else {
-          if (relDataTypeFieldMap.containsKey(rowType)) {
-            return Pair.of(node, relDataTypeFieldMap.get(rowType));
-          }
-          final Map<String, Integer> fieldOffsets = new HashMap<>();
-          for (RelDataTypeField f : resolve.rowType().getFieldList()) {
-            if (!fieldOffsets.containsKey(f.getName())) {
-              fieldOffsets.put(f.getName(), f.getIndex());
-            }
-          }
-          final Map<String, Integer> map = ImmutableMap.copyOf(fieldOffsets);
-          relDataTypeFieldMap.put(rowType, map);
-          return Pair.of(node, map);
+        assert node != null;
+        if (relDataTypeFieldMap.containsKey(rowType)) {
+          return Pair.of(node, relDataTypeFieldMap.get(rowType));
         }
+        final Map<String, Integer> fieldOffsets = new HashMap<>();
+        for (RelDataTypeField f : resolve.rowType().getFieldList()) {
+          if (!fieldOffsets.containsKey(f.getName())) {
+            fieldOffsets.put(f.getName(), f.getIndex());
+          }
+        }
+        final Map<String, Integer> map = ImmutableMap.copyOf(fieldOffsets);
+        relDataTypeFieldMap.put(rowType, map);
+        return Pair.of(node, map);
       } else {
         // We're referencing a relational expression which has not been
         // converted yet. This occurs when from items are correlated,
