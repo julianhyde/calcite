@@ -26,6 +26,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
@@ -33,8 +34,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
@@ -56,9 +60,14 @@ public abstract class RelDataTypeImpl
    */
   public static final String NON_NULLABLE_SUFFIX = " NOT NULL";
 
+  /** Minimum number of fields where it is worth populating
+   * {@link #fieldNameMap}. */
+  private static final int THRESHOLD = 20;
+
   //~ Instance fields --------------------------------------------------------
 
   protected final @Nullable List<RelDataTypeField> fieldList;
+  protected final @Nullable Map<String, Integer> fieldNameMap;
   protected @Nullable String digest;
 
   //~ Constructors -----------------------------------------------------------
@@ -72,8 +81,16 @@ public abstract class RelDataTypeImpl
     if (fieldList != null) {
       // Create a defensive copy of the list.
       this.fieldList = ImmutableList.copyOf(fieldList);
+      if (this.fieldList.size() > THRESHOLD) {
+        final Map<String, Integer> builder = new HashMap<>();
+        fieldList.forEach(f -> builder.putIfAbsent(f.getName(), f.getIndex()));
+        this.fieldNameMap = ImmutableMap.copyOf(builder);
+      } else {
+        this.fieldNameMap = null;
+      }
     } else {
       this.fieldList = null;
+      this.fieldNameMap = null;
     }
   }
 
@@ -96,6 +113,10 @@ public abstract class RelDataTypeImpl
     if (fieldList == null) {
       throw new IllegalStateException("Trying to access field " + fieldName
           + " in a type with no fields: " + this);
+    }
+    if (fieldNameMap != null && caseSensitive) {
+      @Nullable Integer ordinal = fieldNameMap.get(fieldName);
+      return ordinal == null ? null : fieldList.get(ordinal);
     }
     for (RelDataTypeField field : fieldList) {
       if (Util.matches(caseSensitive, field.getName(), fieldName)) {
