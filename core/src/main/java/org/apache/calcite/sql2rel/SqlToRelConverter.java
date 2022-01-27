@@ -4107,15 +4107,12 @@ public class SqlToRelConverter {
     } else {
       qualified = SqlQualified.create(null, 1, null, identifier);
     }
-    final Pair<RexNode, @Nullable Function<String, Integer>> e0 = requireNonNull(
-        bb.lookupExp(qualified),
-        () -> "no expression found for " + qualified);
+    final Pair<RexNode, @Nullable Function<String, Integer>> e0 =
+        bb.lookupExp(qualified);
     RexNode e = e0.left;
     for (String name : qualified.suffix()) {
       if (e == e0.left && e0.right != null) {
-        Integer i = requireNonNull(
-            e0.right.apply(name),
-            () -> "e0.right.get(name) produced null for " + name);
+        int i = e0.right.apply(name);
         e = rexBuilder.makeFieldAccess(e, i);
       } else {
         final boolean caseSensitive = true; // name already fully-qualified
@@ -4780,13 +4777,13 @@ public class SqlToRelConverter {
     }
 
     /**
-     * Returns an expression with which to reference a from-list item.
+     * Returns an expression with which to reference a from-list item;
+     * throws if not found.
      *
-     * @param qualified the alias of the from item
-     * @return a {@link RexFieldAccess} or {@link RexRangeRef}, or null if
-     * not found
+     * @param qualified The alias of the FROM item
+     * @return a {@link RexFieldAccess} or {@link RexRangeRef}, never null
      */
-    @Nullable Pair<RexNode, @Nullable Function<String, Integer>> lookupExp(
+    Pair<RexNode, @Nullable Function<String, Integer>> lookupExp(
         SqlQualified qualified) {
       if (nameToNodeMap != null && qualified.prefixLength == 1) {
         RexNode node = nameToNodeMap.get(qualified.identifier.names.get(0));
@@ -4801,8 +4798,9 @@ public class SqlToRelConverter {
       final SqlValidatorScope.ResolvedImpl resolved =
           new SqlValidatorScope.ResolvedImpl();
       scope().resolve(qualified.prefix(), nameMatcher, false, resolved);
-      if (!(resolved.count() == 1)) {
-        return null;
+      if (resolved.count() != 1) {
+        throw new AssertionError("no unique expression found for " + qualified
+            + "; count is " + resolved.count());
       }
       final SqlValidatorScope.Resolve resolve = resolved.only();
       final RelDataType rowType = resolve.rowType();
@@ -4817,10 +4815,9 @@ public class SqlToRelConverter {
             new LookupContext(this, inputs, systemFieldList.size());
         final RexNode node = lookup(resolve.path.steps().get(0).i, rels);
         assert node != null;
-        return Pair.of(node, fieldName -> {
-          final RelDataTypeField f = rowType.getField(fieldName, true, false);
-          return f == null ? null : f.getIndex();
-        });
+        return Pair.of(node, fieldName ->
+            requireNonNull(rowType.getField(fieldName, true, false),
+                () -> "field " + fieldName).getIndex());
       } else {
         // We're referencing a relational expression which has not been
         // converted yet. This occurs when from items are correlated,
