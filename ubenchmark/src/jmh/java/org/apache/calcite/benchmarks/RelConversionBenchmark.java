@@ -57,6 +57,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -70,13 +71,13 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 @Threads(1)
-public class SqlToRelBenchmark {
+public class RelConversionBenchmark {
 
   /**
    * A state holding information needed to parse.
    */
   @State(Scope.Thread)
-  public static class BenchmarkState {
+  public static class SqlToRelBenchmarkState {
     @Param({"10000"})
     int length;
 
@@ -95,7 +96,7 @@ public class SqlToRelBenchmark {
       for (int i = 0; i < length; i++) {
         sb.append(", ");
         sb.append(
-            String.format("c%s / CASE WHEN c%s > %d THEN c%s ELSE c%s END ",
+            String.format(Locale.ROOT, "c%s / CASE WHEN c%s > %d THEN c%s ELSE c%s END ",
                 String.valueOf(rnd.nextInt(columnLength)), String.valueOf(i % columnLength),
                 rnd.nextInt(columnLength), String.valueOf(rnd.nextInt(columnLength)),
                 String.valueOf(rnd.nextInt(columnLength)))
@@ -118,7 +119,7 @@ public class SqlToRelBenchmark {
         @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
           RelDataTypeFactory.Builder builder = typeFactory.builder();
           for (int i = 0; i < columnLength; i++) {
-            builder.add(String.format("c%d", i), SqlTypeName.INTEGER);
+            builder.add(String.format(Locale.ROOT, "c%d", i), SqlTypeName.INTEGER);
           }
           return builder.build();
         }
@@ -147,13 +148,95 @@ public class SqlToRelBenchmark {
   }
 
   @Benchmark
-  public RelNode parse(BenchmarkState state) throws Exception {
+  public RelNode parse(SqlToRelBenchmarkState state) throws Exception {
     return state.parse();
+  }
+
+  /**
+   * A state holding information needed to convert To Rel.
+   */
+  @State(Scope.Thread)
+  public static class SqlNodeToRelBenchmarkState {
+    @Param({"10000"})
+    int length;
+
+    @Param({"10", "100", "1000"})
+    int columnLength;
+    SqlNode sqlNode;
+    Planner p;
+
+    @Setup(Level.Iteration)
+    public void setUp() {
+      String sql;
+      // Create Sql
+      StringBuilder sb = new StringBuilder();
+      sb.append("select 1 ");
+      Random rnd = new Random();
+      rnd.setSeed(424242);
+      for (int i = 0; i < length; i++) {
+        sb.append(", ");
+        sb.append(
+            String.format(Locale.ROOT, "c%s / CASE WHEN c%s > %d THEN c%s ELSE c%s END ",
+                String.valueOf(rnd.nextInt(columnLength)), String.valueOf(i % columnLength),
+                rnd.nextInt(columnLength), String.valueOf(rnd.nextInt(columnLength)),
+                String.valueOf(rnd.nextInt(columnLength)))
+        );
+      }
+      sb.append(" FROM test1");
+      sql = sb.toString();
+
+      // Create Schema and Table
+
+      AbstractTable t = new AbstractQueryableTable(Integer.class) {
+        List<Integer> items = ImmutableList.of();
+        final Enumerable<Integer> enumerable = Linq4j.asEnumerable(items);
+
+        @Override public <E> Queryable<E> asQueryable(
+            QueryProvider queryProvider, SchemaPlus schema, String tableName) {
+          return (Queryable<E>) enumerable.asQueryable();
+        }
+
+        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+          RelDataTypeFactory.Builder builder = typeFactory.builder();
+          for (int i = 0; i < columnLength; i++) {
+            builder.add(String.format(Locale.ROOT, "c%d", i), SqlTypeName.INTEGER);
+          }
+          return builder.build();
+        }
+      };
+
+      // Create Planner
+      final SchemaPlus schema = Frameworks.createRootSchema(true);
+      schema.add("test1", t);
+
+      final FrameworkConfig config = Frameworks.newConfigBuilder()
+          .parserConfig(SqlParser.config().withLex(Lex.MYSQL))
+          .defaultSchema(schema)
+          .programs(Programs.ofRules(Programs.RULE_SET))
+          .build();
+      p = Frameworks.getPlanner(config);
+
+      try {
+        sqlNode = p.validate(p.parse(sql));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+    }
+
+    public RelNode convertToRel() throws Exception {
+      return p.rel(sqlNode).project();
+    }
+  }
+
+  @Benchmark
+  public RelNode convertToRel(SqlNodeToRelBenchmarkState state) throws Exception {
+    return state.convertToRel();
   }
 
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
-        .include(SqlToRelBenchmark.class.getSimpleName())
+        .include(RelConversionBenchmark.class.getSimpleName())
         .addProfiler(GCProfiler.class)
         .addProfiler(FlightRecorderProfiler.class)
         .detectJvmArgs()
