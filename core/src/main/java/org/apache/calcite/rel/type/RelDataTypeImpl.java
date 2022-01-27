@@ -60,14 +60,13 @@ public abstract class RelDataTypeImpl
    */
   public static final String NON_NULLABLE_SUFFIX = " NOT NULL";
 
-  /** Minimum number of fields where it is worth populating
-   * {@link #fieldNameMap}. */
+  /** Minimum number of fields where it is worth using a {@link MapBackedList}
+   * to accelerate lookups by field name. */
   private static final int THRESHOLD = 20;
 
   //~ Instance fields --------------------------------------------------------
 
   protected final @Nullable List<RelDataTypeField> fieldList;
-  protected final @Nullable Map<String, Integer> fieldNameMap;
   protected @Nullable String digest;
 
   //~ Constructors -----------------------------------------------------------
@@ -79,18 +78,15 @@ public abstract class RelDataTypeImpl
    */
   protected RelDataTypeImpl(@Nullable List<? extends RelDataTypeField> fieldList) {
     if (fieldList != null) {
-      // Create a defensive copy of the list.
-      this.fieldList = ImmutableList.copyOf(fieldList);
-      if (this.fieldList.size() > THRESHOLD) {
-        final Map<String, Integer> builder = new HashMap<>();
-        fieldList.forEach(f -> builder.putIfAbsent(f.getName(), f.getIndex()));
-        this.fieldNameMap = ImmutableMap.copyOf(builder);
+      if (fieldList.size() <= THRESHOLD) {
+        // Create a defensive copy of the list.
+        this.fieldList = ImmutableList.copyOf(fieldList);
       } else {
-        this.fieldNameMap = null;
+        // Create a list combined with a map to assist name lookups.
+        this.fieldList = new MapBackedList(fieldList);
       }
     } else {
       this.fieldList = null;
-      this.fieldNameMap = null;
     }
   }
 
@@ -108,19 +104,23 @@ public abstract class RelDataTypeImpl
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public @Nullable RelDataTypeField getField(String fieldName, boolean caseSensitive,
-      boolean elideRecord) {
+  @Override public @Nullable RelDataTypeField getField(String fieldName,
+      boolean caseSensitive, boolean elideRecord) {
     if (fieldList == null) {
       throw new IllegalStateException("Trying to access field " + fieldName
           + " in a type with no fields: " + this);
     }
-    if (fieldNameMap != null && caseSensitive) {
-      @Nullable Integer ordinal = fieldNameMap.get(fieldName);
-      return ordinal == null ? null : fieldList.get(ordinal);
-    }
-    for (RelDataTypeField field : fieldList) {
-      if (Util.matches(caseSensitive, field.getName(), fieldName)) {
-        return field;
+    if (caseSensitive && fieldList instanceof MapBackedList) {
+      @Nullable Integer ordinal =
+          ((MapBackedList) fieldList).fieldNameMap.get(fieldName);
+      if (ordinal != null) {
+        return fieldList.get(ordinal);
+      }
+    } else {
+      for (RelDataTypeField field : fieldList) {
+        if (Util.matches(caseSensitive, field.getName(), fieldName)) {
+          return field;
+        }
       }
     }
     if (elideRecord) {
@@ -430,5 +430,26 @@ public abstract class RelDataTypeImpl
   private static class Slot {
     int count;
     @Nullable RelDataTypeField field;
+  }
+
+  /** List that contains a map. */
+  static class MapBackedList extends AbstractList<RelDataTypeField> {
+    final ImmutableList<RelDataTypeField> fieldList;
+    final Map<String, Integer> fieldNameMap;
+
+    protected MapBackedList(List<? extends RelDataTypeField> fieldList) {
+      this.fieldList = ImmutableList.copyOf(fieldList);
+      final Map<String, Integer> map = new HashMap<>();
+      fieldList.forEach(f -> map.putIfAbsent(f.getName(), f.getIndex()));
+      this.fieldNameMap = ImmutableMap.copyOf(map);
+    }
+
+    @Override public RelDataTypeField get(int index) {
+      return fieldList.get(index);
+    }
+
+    @Override public int size() {
+      return fieldList.size();
+    }
   }
 }
