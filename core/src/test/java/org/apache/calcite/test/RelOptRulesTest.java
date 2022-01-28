@@ -4911,7 +4911,6 @@ class RelOptRulesTest extends RelOptTestBase {
     sql(sql).withRule(CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW).check();
   }
 
-  @Disabled // until feature works
   @Test void testMeasureSort() {
     final String sql = "select deptno, c1\n"
         + "from (select deptno, job, count(*) + 1 as measure c1\n"
