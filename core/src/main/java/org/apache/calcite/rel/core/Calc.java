@@ -80,7 +80,6 @@ public abstract class Calc extends SingleRel implements Hintable {
     this.program = program;
     this.hints = ImmutableList.copyOf(hints);
     assert isValid(Litmus.THROW, null);
-    assert !RexUtil.M2V_FINDER.inCalc(this);
   }
 
   @Deprecated // to be removed before 2.0
@@ -153,6 +152,9 @@ public abstract class Calc extends SingleRel implements Hintable {
     }
     if (!program.isNormalized(litmus, getCluster().getRexBuilder())) {
       return litmus.fail(null);
+    }
+    if (RexUtil.M2V_FINDER.inProgram(program)) {
+      return litmus.fail("program contains M2V");
     }
     return litmus.succeed();
   }
