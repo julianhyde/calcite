@@ -3012,9 +3012,10 @@ public class RexUtil {
       return !inFilter(filter);
     }
 
-    /** Returns whether a {@link Calc} contains kind of expression we seek. */
+    /** Returns whether a {@link Calc} contains the kind of expression we
+     * seek. */
     public boolean inCalc(Calc calc) {
-      return anyContain(calc.getProgram().getExprList());
+      return inProgram(calc.getProgram());
     }
 
     /** Returns not {@link #inCalc(Calc)}. */
@@ -3022,7 +3023,14 @@ public class RexUtil {
       return !inCalc(calc);
     }
 
-    /** Returns whether a {@link Join} contains kind of expression we seek. */
+    /** Returns whether a {@link RexProgram} contains the kind of expression we
+     * seek. */
+    public boolean inProgram(RexProgram program) {
+      return anyContain(program.getExprList());
+    }
+
+    /** Returns whether a {@link Join} contains the kind of expression we
+     * seek. */
     public boolean inJoin(Join join) {
       return contains(join.getCondition());
     }
