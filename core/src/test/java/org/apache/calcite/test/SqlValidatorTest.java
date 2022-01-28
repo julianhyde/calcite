@@ -6472,21 +6472,23 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
       x /= 3;
     }
 
-    // E.g. large = "deptno * 1 + deptno * 2 + deptno * 3".
-    String large = list(" + ", "deptno * ", x);
-    f.accept("select " + large + "from emp");
-    f.accept("select distinct " + large + "from emp");
-    f.accept("select " + large + " from emp " + "group by deptno");
-    f.accept("select * from emp where " + large + " > 5");
-    f.accept("select * from emp order by " + large + " desc");
-    f.accept("select " + large + " from emp order by 1");
-    f.accept("select distinct " + large + " from emp order by " + large);
+    if (false) {
+      // E.g. large = "deptno * 1 + deptno * 2 + deptno * 3".
+      String large = list(" + ", "deptno * ", x);
+      f.accept("select " + large + "from emp");
+      f.accept("select distinct " + large + "from emp");
+      f.accept("select " + large + " from emp " + "group by deptno");
+      f.accept("select * from emp where " + large + " > 5");
+      f.accept("select * from emp order by " + large + " desc");
+      f.accept("select " + large + " from emp order by 1");
+      f.accept("select distinct " + large + " from emp order by " + large);
 
-    // E.g. "in (0, 1, 2, ...)"
-    f.accept("select * from emp where deptno in (" + list(", ", "", x) + ")");
+      // E.g. "in (0, 1, 2, ...)"
+      f.accept("select * from emp where deptno in (" + list(", ", "", x) + ")");
 
-    // E.g. "where x = 1 or x = 2 or x = 3 ..."
-    f.accept("select * from emp where " + list(" or ", "deptno = ", x));
+      // E.g. "where x = 1 or x = 2 or x = 3 ..."
+      f.accept("select * from emp where " + list(" or ", "deptno = ", x));
+    }
 
     // E.g. "select x1, x2 ... from (
     // select 'a' as x1, 'a' as x2, ... from emp union

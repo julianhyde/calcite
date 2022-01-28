@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.RandomAccess;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
@@ -67,6 +68,7 @@ public abstract class RelDataTypeImpl
   //~ Instance fields --------------------------------------------------------
 
   protected final @Nullable List<RelDataTypeField> fieldList;
+  private final @Nullable Map<String, Integer> map;
   protected @Nullable String digest;
 
   //~ Constructors -----------------------------------------------------------
@@ -81,12 +83,19 @@ public abstract class RelDataTypeImpl
       if (fieldList.size() <= THRESHOLD) {
         // Create a defensive copy of the list.
         this.fieldList = ImmutableList.copyOf(fieldList);
+        this.map = null;
       } else {
         // Create a list combined with a map to assist name lookups.
-        this.fieldList = new MapBackedList(fieldList);
+        final MapBackedList fieldList1 = new MapBackedList(fieldList);
+        this.fieldList = fieldList1.fieldList;
+        this.map = fieldList1.fieldNameMap;
+//        if (true) {
+//          System.out.println(fieldList);
+//        }
       }
     } else {
       this.fieldList = null;
+      this.map = null;
     }
   }
 
@@ -110,9 +119,8 @@ public abstract class RelDataTypeImpl
       throw new IllegalStateException("Trying to access field " + fieldName
           + " in a type with no fields: " + this);
     }
-    if (caseSensitive && fieldList instanceof MapBackedList) {
-      @Nullable Integer ordinal =
-          ((MapBackedList) fieldList).fieldNameMap.get(fieldName);
+    if (caseSensitive && map != null) {
+      @Nullable Integer ordinal = map.get(fieldName);
       if (ordinal != null) {
         return fieldList.get(ordinal);
       }
@@ -433,7 +441,8 @@ public abstract class RelDataTypeImpl
   }
 
   /** List that contains a map. */
-  static class MapBackedList extends AbstractList<RelDataTypeField> {
+  static class MapBackedList extends AbstractList<RelDataTypeField>
+      implements RandomAccess {
     final ImmutableList<RelDataTypeField> fieldList;
     final Map<String, Integer> fieldNameMap;
 
