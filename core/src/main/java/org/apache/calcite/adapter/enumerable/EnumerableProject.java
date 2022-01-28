@@ -25,6 +25,7 @@ import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
@@ -57,6 +58,7 @@ public class EnumerableProject extends Project implements EnumerableRel {
       RelDataType rowType) {
     super(cluster, traitSet, ImmutableList.of(), input, projects, rowType, ImmutableSet.of());
     assert getConvention() instanceof EnumerableConvention;
+    assert !RexUtil.M2V_FINDER.inProject(this);
   }
 
   @Deprecated // to be removed before 2.0
