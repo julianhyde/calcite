@@ -175,7 +175,6 @@ public class ProjectMergeRule
     default Config withOperandFor(Class<? extends Project> projectClass) {
       return withOperandSupplier(b0 ->
           b0.operand(projectClass)
-              .predicate(RexUtil.M2V_FINDER::inProject)
               .oneInput(b1 ->
                   b1.operand(projectClass).anyInputs()))
           .as(Config.class);
