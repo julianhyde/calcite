@@ -6035,7 +6035,8 @@ SqlNode BuiltinFunctionCall() :
         <CONVERT> { s = span(); }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
-        <USING> name = SimpleIdentifier() { args.add(name); }
+        <COMMA> e = SimpleIdentifier() { args.add(e); }
+        <COMMA> e = SimpleIdentifier() { args.add(e); }
         <RPAREN> {
             return SqlStdOperatorTable.CONVERT.createCall(s.end(this), args);
         }

@@ -1560,6 +1560,11 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       SqlBasicFunction.create("REPLACE", ReturnTypes.ARG0_NULLABLE_VARYING,
           OperandTypes.STRING_STRING_STRING, SqlFunctionCategory.STRING);
 
+  /**
+   * The <code>CONVERT(<i>char_value</i>, <i>src_charsetName</i>, <i>dest_charsetName</i>)</code>
+   * function converts char_value with dest_charsetName,
+   * whose original encoding is specified by src_charsetName.
+   */
   public static final SqlFunction CONVERT =
       new SqlConvertFunction("CONVERT");
 

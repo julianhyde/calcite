@@ -3870,8 +3870,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         checkRollUp(grandParent, parent, stripDot, scope, contextClause);
       } else {
         List<? extends @Nullable SqlNode> children = ((SqlCall) stripDot).getOperandList();
-        for (SqlNode child : children) {
-          checkRollUp(parent, current, child, scope, contextClause);
+        if (stripDot.getKind() == SqlKind.CONVERT) {
+          // operand[1] doesn't need to be checked for CONVERT
+          checkRollUp(parent, current, children.get(0), scope, contextClause);
+        } else {
+          for (SqlNode child : children) {
+            checkRollUp(parent, current, child, scope, contextClause);
+          }
         }
       }
     } else if (current instanceof SqlIdentifier) {

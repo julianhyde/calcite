@@ -5329,8 +5329,14 @@ public class SqlParserTest {
   }
 
   @Test void testConvertAndTranslate() {
+    expr("convert('abc', utf8, utf16)")
+        .ok("CONVERT('abc', `UTF8`, `UTF16`)");
+
+    // CONVERT function in Mysql
     expr("convert('abc' using conversion)")
         .ok("CONVERT('abc' USING `CONVERSION`)");
+
+    // TRANSLATE need to be implemented
     expr("translate('abc' using lazy_translation)")
         .ok("TRANSLATE('abc' USING `LAZY_TRANSLATION`)");
   }
