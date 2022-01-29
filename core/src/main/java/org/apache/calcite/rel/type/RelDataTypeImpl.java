@@ -26,7 +26,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
@@ -34,13 +33,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
-import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.RandomAccess;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
@@ -61,14 +57,9 @@ public abstract class RelDataTypeImpl
    */
   public static final String NON_NULLABLE_SUFFIX = " NOT NULL";
 
-  /** Minimum number of fields where it is worth using a {@link MapBackedList}
-   * to accelerate lookups by field name. */
-  private static final int THRESHOLD = 20;
-
   //~ Instance fields --------------------------------------------------------
 
   protected final @Nullable List<RelDataTypeField> fieldList;
-  private final @Nullable Map<String, Integer> map;
   protected @Nullable String digest;
 
   //~ Constructors -----------------------------------------------------------
@@ -80,22 +71,10 @@ public abstract class RelDataTypeImpl
    */
   protected RelDataTypeImpl(@Nullable List<? extends RelDataTypeField> fieldList) {
     if (fieldList != null) {
-      if (fieldList.size() <= THRESHOLD) {
-        // Create a defensive copy of the list.
-        this.fieldList = ImmutableList.copyOf(fieldList);
-        this.map = null;
-      } else {
-        // Create a list combined with a map to assist name lookups.
-        final MapBackedList fieldList1 = new MapBackedList(fieldList);
-        this.fieldList = fieldList1.fieldList;
-        this.map = fieldList1.fieldNameMap;
-//        if (true) {
-//          System.out.println(fieldList);
-//        }
-      }
+      // Create a defensive copy of the list.
+      this.fieldList = ImmutableList.copyOf(fieldList);
     } else {
       this.fieldList = null;
-      this.map = null;
     }
   }
 
@@ -119,10 +98,11 @@ public abstract class RelDataTypeImpl
       throw new IllegalStateException("Trying to access field " + fieldName
           + " in a type with no fields: " + this);
     }
-    if (caseSensitive && map != null) {
-      @Nullable Integer ordinal = map.get(fieldName);
-      if (ordinal != null) {
-        return fieldList.get(ordinal);
+    final Map<String, RelDataTypeField> fieldMap = getFieldMap();
+    if (caseSensitive && fieldMap != null) {
+      RelDataTypeField field = fieldMap.get(fieldName);
+      if (field != null) {
+        return field;
       }
     } else {
       for (RelDataTypeField field : fieldList) {
@@ -156,13 +136,32 @@ public abstract class RelDataTypeImpl
     }
 
     // a dynamic * field will match any field name.
-    for (RelDataTypeField field : fieldList) {
-      if (field.isDynamicStar()) {
-        // the requested field could be in the unresolved star
-        return field;
+    if (fieldMap != null) {
+      return fieldMap.get("");
+    } else {
+      for (RelDataTypeField field : fieldList) {
+        if (field.isDynamicStar()) {
+          // the requested field could be in the unresolved star
+          return field;
+        }
       }
     }
 
+    return null;
+  }
+
+  /** Returns a map from field names to fields.
+   *
+   * <p>Matching is case-sensitive.
+   *
+   * <p>If several fields have the same name, the map contains the first.
+   *
+   * <p>A {@link RelDataTypeField#isDynamicStar() dynamic star field} is indexed
+   * under its own name and "" (the empty string).
+   *
+   * <p>If the map is null, the type must do lookup the long way.
+   */
+  protected @Nullable Map<String, RelDataTypeField> getFieldMap() {
     return null;
   }
 
@@ -438,27 +437,5 @@ public abstract class RelDataTypeImpl
   private static class Slot {
     int count;
     @Nullable RelDataTypeField field;
-  }
-
-  /** List that contains a map. */
-  static class MapBackedList extends AbstractList<RelDataTypeField>
-      implements RandomAccess {
-    final ImmutableList<RelDataTypeField> fieldList;
-    final Map<String, Integer> fieldNameMap;
-
-    protected MapBackedList(List<? extends RelDataTypeField> fieldList) {
-      this.fieldList = ImmutableList.copyOf(fieldList);
-      final Map<String, Integer> map = new HashMap<>();
-      fieldList.forEach(f -> map.putIfAbsent(f.getName(), f.getIndex()));
-      this.fieldNameMap = ImmutableMap.copyOf(map);
-    }
-
-    @Override public RelDataTypeField get(int index) {
-      return fieldList.get(index);
-    }
-
-    @Override public int size() {
-      return fieldList.size();
-    }
   }
 }
