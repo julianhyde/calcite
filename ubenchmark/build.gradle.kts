@@ -30,10 +30,6 @@ dependencies {
     jmhImplementation("org.hsqldb:hsqldb")
 }
 
-jmh {
-    include = listOf("convertToRel")
-}
-
 // See https://github.com/melix/jmh-gradle-plugin
 // Unfortunately, current jmh-gradle-plugin does not allow to cusomize jmh parameters from the
 // command line, so the workarounds are:

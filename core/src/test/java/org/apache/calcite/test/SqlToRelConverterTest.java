@@ -3662,15 +3662,9 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     final int x = 300;
     final SqlToRelFixture fixture = fixture();
     SqlValidatorTest.checkLarge(x, input -> {
-      RelRoot root;
-      final SqlToRelFixture f = fixture.withSql(input);
-      for (int i = 0; i < 100; i++) {
-        root = f.toRoot();
-        if (i == 50) {
-          final String s = RelOptUtil.toString(root.project());
-          assertThat(s, notNullValue());
-        }
-      }
+      final RelRoot root = fixture.withSql(input).toRoot();
+      final String s = RelOptUtil.toString(root.project());
+      assertThat(s, notNullValue());
     });
   }
 
