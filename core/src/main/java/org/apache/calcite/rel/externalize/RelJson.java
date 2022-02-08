@@ -207,7 +207,7 @@ public class RelJson {
   /** Default implementation of
    * {@link InputTranslator#translateInput(RelJson, int, Map, RelInput)}. */
   private static RexNode translateInput(RelJson relJson, int input,
-      Map<String, Object> map, RelInput relInput) {
+      Map<String, @Nullable Object> map, RelInput relInput) {
     final RelOptCluster cluster = relInput.getCluster();
     final RexBuilder rexBuilder = cluster.getRexBuilder();
 
@@ -944,7 +944,7 @@ public class RelJson {
      * @param relInput Description of input(s)
      * @return RexNode representing an input reference
      */
-    RexNode translateInput(RelJson relJson, int input, Map<String, Object> map,
+    RexNode translateInput(RelJson relJson, int input, Map<String, @Nullable Object> map,
         RelInput relInput);
   }
 }

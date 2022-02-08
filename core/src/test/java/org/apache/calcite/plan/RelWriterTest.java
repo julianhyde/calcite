@@ -771,7 +771,7 @@ class RelWriterTest {
    * translates input {@code input} into an INTEGER literal
    * "{@code 1000 + input}". */
   private static RexNode translateInput(RelJson relJson, int input,
-      Map<String, Object> map, RelInput relInput) {
+      Map<String, @Nullable Object> map, RelInput relInput) {
     final RexBuilder rexBuilder = relInput.getCluster().getRexBuilder();
     return rexBuilder.makeExactLiteral(BigDecimal.valueOf(1000 + input));
   }
