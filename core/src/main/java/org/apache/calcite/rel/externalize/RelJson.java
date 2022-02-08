@@ -944,7 +944,7 @@ public class RelJson {
      * @param relInput Description of input(s)
      * @return RexNode representing an input reference
      */
-    RexNode translateInput(RelJson relJson, int input, Map<String, @Nullable Object> map,
-        RelInput relInput);
+    RexNode translateInput(RelJson relJson, int input,
+        Map<String, @Nullable Object> map, RelInput relInput);
   }
 }
