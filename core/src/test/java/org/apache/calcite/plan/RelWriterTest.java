@@ -68,7 +68,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.JsonBuilder;
-import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.TestUtil;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
