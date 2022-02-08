@@ -173,7 +173,7 @@ public class RuleMatchVisualizer implements RelOptListener {
    * Get the inputs for a node, unwrapping {@link HepRelVertex} nodes.
    * (Workaround for HepPlanner)
    */
-  private Collection<RelNode> getInputs(final RelNode node) {
+  private static List<RelNode> getInputs(final RelNode node) {
     return node.getInputs().stream().map(n -> {
       if (n instanceof HepRelVertex) {
         return ((HepRelVertex) n).getCurrentRel();
