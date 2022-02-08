@@ -24,6 +24,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelDistributionTraitDef;
 import org.apache.calcite.rel.RelDistributions;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -67,6 +68,7 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.JsonBuilder;
+import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.TestUtil;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -716,59 +718,63 @@ class RelWriterTest {
   @Test void testJsonToRex() throws JsonProcessingException {
     // Test simple literal without inputs
     final String jsonString1 = "{\n"
-        + "            \"literal\": 10,\n"
-        + "            \"type\": {\n"
-        + "              \"type\": \"INTEGER\",\n"
-        + "              \"nullable\": false\n"
-        + "            }\n"
-        + "          }\n";
+        + "  \"literal\": 10,\n"
+        + "  \"type\": {\n"
+        + "    \"type\": \"INTEGER\",\n"
+        + "    \"nullable\": false\n"
+        + "  }\n"
+        + "}\n";
 
     assertThatReadExpressionResult(jsonString1, is("10"));
 
-    // Test Binary with an input
+    // Test binary operator ('+') with an input and a literal
     final String jsonString2 = "{ \"op\": \n"
-        + "      { \"name\": \"+\",\n"
-        + "        \"kind\": \"PLUS\",\n"
-        + "        \"syntax\": \"BINARY\"\n"
-        + "      },\n"
-        + "      \"operands\": [\n"
-        + "        {\n"
-        + "          \"input\": 1,\n"
-        + "          \"name\": \"$1\"\n"
-        + "        },\n"
-        + "        {\n"
-        + "          \"literal\": 1,\n"
-        + "          \"type\": { \"type\": \"INTEGER\", \"nullable\": false }\n"
-        + "        }\n"
-        + "      ]\n"
-        + "    }";
-    assertThatReadExpressionResult(jsonString2, is("+(1, 1)"));
+        + "  { \"name\": \"+\",\n"
+        + "    \"kind\": \"PLUS\",\n"
+        + "    \"syntax\": \"BINARY\"\n"
+        + "  },\n"
+        + "  \"operands\": [\n"
+        + "    {\n"
+        + "      \"input\": 1,\n"
+        + "      \"name\": \"$1\"\n"
+        + "    },\n"
+        + "    {\n"
+        + "      \"literal\": 2,\n"
+        + "      \"type\": { \"type\": \"INTEGER\", \"nullable\": false }\n"
+        + "    }\n"
+        + "  ]\n"
+        + "}";
+    assertThatReadExpressionResult(jsonString2, is("+(1001, 2)"));
   }
 
-  private void assertThatReadExpressionResult(String jsonString1, Matcher<String> expected)
-      throws JsonProcessingException {
+  private void assertThatReadExpressionResult(String json, Matcher<String> matcher) {
     final FrameworkConfig config = RelBuilderTest.config().build();
     final RelBuilder builder = RelBuilder.create(config);
     final RelOptCluster cluster = builder.getCluster();
     final ObjectMapper mapper = new ObjectMapper();
-    Map<String, Object> o = mapper
-        .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
-        .readValue(jsonString1, new TypeReference<LinkedHashMap<String, Object>>() {
-        });
-    RexNode resRex = RelJson.readExpression(cluster, RelWriterTest::translateInput, o);
-    assertThat(resRex.toString(), is(expected));
+    final TypeReference<LinkedHashMap<String, Object>> typeRef =
+        new TypeReference<LinkedHashMap<String, Object>>() {
+    };
+    final Map<String, Object> o;
+    try {
+      o = mapper
+          .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+          .readValue(json, typeRef);
+    } catch (JsonProcessingException e) {
+      throw TestUtil.rethrow(e);
+    }
+    RexNode e =
+        RelJson.readExpression(cluster, RelWriterTest::translateInput, o);
+    assertThat(e.toString(), is(matcher));
   }
 
-  /**
-   * Intended as an instance of {@link RelJson.InputTranslator}.
-   * @returns a Int Literal of the input
-   */
-  private static RexNode translateInput(
-      Map<String, Object> map,
-      RexBuilder rexBuilder,
-      List<RelNode> inputs) {
-    int input = (int) map.get("input");
-    return rexBuilder.makeExactLiteral(BigDecimal.valueOf(input));
+  /** Intended as an instance of {@link RelJson.InputTranslator},
+   * translates input {@code input} into an INTEGER literal
+   * "{@code 1000 + input}". */
+  private static RexNode translateInput(RelJson relJson, int input,
+      Map<String, Object> map, RelInput relInput) {
+    final RexBuilder rexBuilder = relInput.getCluster().getRexBuilder();
+    return rexBuilder.makeExactLiteral(BigDecimal.valueOf(1000 + input));
   }
 
   @Test void testTrim() {

@@ -101,34 +101,24 @@ public class RelJson {
           "org.apache.calcite.adapter.jdbc.",
           "org.apache.calcite.adapter.jdbc.JdbcRules$");
 
-  public RelJson(@Nullable JsonBuilder jsonBuilder) {
-    this(jsonBuilder, RelJson::inputTranslatorImpl);
-  }
-
-  private static RexNode inputTranslatorImpl(
-      Map<String, Object> stringObjectMap,
-      RexBuilder rexBuilder,
-      List<RelNode> relNodes) {
-    final Integer input = (Integer) stringObjectMap.get("input");
-    if (input != null) {
-      int i = input;
-      for (RelNode inputNode : relNodes) {
-        final RelDataType rowType = inputNode.getRowType();
-        if (i < rowType.getFieldCount()) {
-          final RelDataTypeField field = rowType.getFieldList().get(i);
-          return rexBuilder.makeInputRef(field.getType(), input);
-        }
-        i -= rowType.getFieldCount();
-      }
-      throw new RuntimeException("input field " + input + " is out of range");
-    } else {
-      throw new RuntimeException("input not defined");
-    }
-  }
-
-  public RelJson(@Nullable JsonBuilder jsonBuilder, InputTranslator inputTranslator) {
+  /** Private constructor. */
+  private RelJson(@Nullable JsonBuilder jsonBuilder,
+      InputTranslator inputTranslator) {
     this.jsonBuilder = jsonBuilder;
-    this.inputTranslator = inputTranslator;
+    this.inputTranslator = requireNonNull(inputTranslator, "inputTranslator");
+  }
+
+  /** Creates a RelJson. */
+  public RelJson(@Nullable JsonBuilder jsonBuilder) {
+    this(jsonBuilder, RelJson::translateInput);
+  }
+
+  /** Returns a RelJson with a given InputTranslator. */
+  public RelJson withInputTranslator(InputTranslator inputTranslator) {
+    if (inputTranslator == this.inputTranslator) {
+      return this;
+    }
+    return new RelJson(jsonBuilder, inputTranslator);
   }
 
   private JsonBuilder jsonBuilder() {
@@ -212,6 +202,32 @@ public class RelJson {
       }
     }
     return canonicalName;
+  }
+
+  /** Default implementation of
+   * {@link InputTranslator#translateInput(RelJson, int, Map, RelInput)}. */
+  private static RexNode translateInput(RelJson relJson, int input,
+      Map<String, Object> map, RelInput relInput) {
+    final RelOptCluster cluster = relInput.getCluster();
+    final RexBuilder rexBuilder = cluster.getRexBuilder();
+
+    // Check if it is a local ref.
+    if (map.containsKey("type")) {
+      final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+      final RelDataType type = relJson.toType(typeFactory, map.get("type"));
+      return rexBuilder.makeLocalRef(type, input);
+    }
+    int i = input;
+    final List<RelNode> relNodes = relInput.getInputs();
+    for (RelNode inputNode : relNodes) {
+      final RelDataType rowType = inputNode.getRowType();
+      if (i < rowType.getFieldCount()) {
+        final RelDataTypeField field = rowType.getFieldList().get(i);
+        return rexBuilder.makeInputRef(field.getType(), input);
+      }
+      i -= rowType.getFieldCount();
+    }
+    throw new RuntimeException("input field " + input + " is out of range");
   }
 
   public Object toJson(RelCollationImpl node) {
@@ -580,21 +596,21 @@ public class RelJson {
     return map;
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @PolyNull RexNode toRex(RelInput relInput, @PolyNull Object o) {
     final RelOptCluster cluster = relInput.getCluster();
     final RexBuilder rexBuilder = cluster.getRexBuilder();
     if (o == null) {
       return null;
     } else if (o instanceof Map) {
-      Map map = (Map) o;
-      final Map<String, @Nullable Object> opMap = (Map) map.get("op");
+      final Map<String, Object> map = (Map) o;
       final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-      if (opMap != null) {
+      if (map.containsKey("op")) {
+        final Map<String, Object> opMap = get(map, "op");
         if (map.containsKey("class")) {
           opMap.put("class", map.get("class"));
         }
-        @SuppressWarnings("unchecked")
-        final List operands = get((Map<String, Object>) map, "operands");
+        final List operands = get(map, "operands");
         final List<RexNode> rexOperands = toRexList(relInput, operands);
         final Object jsonType = map.get("type");
         final Map window = (Map) map.get("window");
@@ -648,13 +664,7 @@ public class RelJson {
       }
       final Integer input = (Integer) map.get("input");
       if (input != null) {
-        // Check if it is a local ref.
-        if (map.containsKey("type")) {
-          final RelDataType type = toType(typeFactory, map.get("type"));
-          return rexBuilder.makeLocalRef(type, input);
-        }
-        return inputTranslator.translate(map, rexBuilder, relInput.getInputs());
-
+        return inputTranslator.translateInput(this, input, map, relInput);
       }
       final String field = (String) map.get("field");
       if (field != null) {
@@ -798,18 +808,16 @@ public class RelJson {
 
   /**
    * Translates a JSON expression into a RexNode,
-   * applying a special method to inputs instead of transforming them into inputRef.
+   * using a given {@link InputTranslator} to transform JSON objects that
+   * represent input references into RexNodes.
+   *
    * @param cluster The optimization environment
-   * @param translator is a InputTranslator lambda transforming the JSON representing input
-   *               references into a RexNode
-   * @param o the map derived from a RexNode transformed into a JSON
+   * @param translator Input translator
+   * @param o JSON object
    * @return the transformed RexNode
    */
-  public static RexNode readExpression(
-      RelOptCluster cluster,
-      InputTranslator translator,
-      Map<String, Object> o) {
-
+  public static RexNode readExpression(RelOptCluster cluster,
+      InputTranslator translator, Map<String, Object> o) {
     RelInput relInput = new RelInputForCluster(cluster);
     return new RelJson(null, translator).toRex(relInput, o);
   }
@@ -817,7 +825,9 @@ public class RelJson {
   /**
    * Special context from which a relational expression can be initialized,
    * reading from a serialized form of the relational expression.
-   * Containing only a cluster and an empty list of inputs.
+   *
+   * <p>Contains only a cluster and an empty list of inputs;
+   * most methods throw {@link UnsupportedOperationException}.
    */
   private static class RelInputForCluster implements RelInput {
     private final RelOptCluster cluster;
@@ -920,19 +930,20 @@ public class RelJson {
   }
 
   /**
-   *  Translates a JSON expression representing an input reference into a RexNode.
+   * Translates a JSON object that represents an input reference into a RexNode.
    */
   @FunctionalInterface
   public interface InputTranslator {
-
     /**
-     * Transforms an input reference map into RexNode.
-     * @param map map representing input references
-     * @param rexBuilder the current builder
-     * @param inputs the list of RelNode inputs
-     * @return the new input RexNode
+     * Transforms an input reference into a RexNode.
+     *
+     * @param relJson RelJson
+     * @param input Ordinal of input field
+     * @param map JSON object representing an input reference
+     * @param relInput Description of input(s)
+     * @return RexNode representing an input reference
      */
-    RexNode translate(Map<String, Object> map,
-        RexBuilder rexBuilder, List<RelNode> inputs);
+    RexNode translateInput(RelJson relJson, int input, Map<String, Object> map,
+        RelInput relInput);
   }
 }
