@@ -214,7 +214,7 @@ public class RelJson {
     // Check if it is a local ref.
     if (map.containsKey("type")) {
       final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-      final RelDataType type = relJson.toType(typeFactory, map.get("type"));
+      final RelDataType type = relJson.toType(typeFactory, get(map, "type"));
       return rexBuilder.makeLocalRef(type, input);
     }
     int i = input;
@@ -603,12 +603,12 @@ public class RelJson {
     if (o == null) {
       return null;
     } else if (o instanceof Map) {
-      final Map<String, Object> map = (Map) o;
+      final Map<String, @Nullable Object> map = (Map) o;
       final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
       if (map.containsKey("op")) {
-        final Map<String, Object> opMap = get(map, "op");
+        final Map<String, @Nullable Object> opMap = get(map, "op");
         if (map.containsKey("class")) {
-          opMap.put("class", map.get("class"));
+          opMap.put("class", get(map, "class"));
         }
         final List operands = get(map, "operands");
         final List<RexNode> rexOperands = toRexList(relInput, operands);
@@ -680,16 +680,17 @@ public class RelJson {
       }
       if (map.containsKey("literal")) {
         Object literal = map.get("literal");
-        final RelDataType type = toType(typeFactory, map.get("type"));
         if (literal == null) {
+          final RelDataType type = toType(typeFactory, get(map, "type"));
           return rexBuilder.makeNullLiteral(type);
         }
-        if (type == null) {
+        if (!map.containsKey("type")) {
           // In previous versions, type was not specified for all literals.
           // To keep backwards compatibility, if type is not specified
           // we just interpret the literal
           return toRex(relInput, literal);
         }
+        final RelDataType type = toType(typeFactory, get(map, "type"));
         if (type.getSqlTypeName() == SqlTypeName.SYMBOL) {
           literal = RelEnumTypes.toEnum((String) literal);
         }
