@@ -104,6 +104,14 @@ public abstract class SqlInternalOperators {
           ReturnTypes.ARG0.andThen(SqlTypeTransforms.TO_MEASURE), null,
           OperandTypes.ANY);
 
+  /** {@code M2X} operator evaluates an expression in a context. As for
+   * {@link #V2M}, the expression may involve aggregate functions, so that it
+   * can be evaluated in any aggregation context. */
+  public static final SqlOperator M2X =
+      new SqlInternalOperator("M2X", SqlKind.M2X, 2, true,
+          ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE), null,
+          OperandTypes.MEASURE_BOOLEAN);
+
   /** {@code AGG_M2M} aggregate function takes a measure as its argument and
    * returns a measure. It is used to propagate measures through the
    * {@code Aggregate} relational operator.
@@ -119,6 +127,45 @@ public abstract class SqlInternalOperators {
       SqlBasicAggFunction.create(SqlKind.AGG_M2V,
           ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE),
           OperandTypes.ANY);
+
+  /** {@code SAME_PARTITION} operator takes a number of expressions and returns
+   * whether the values of those expressions in current row are all the same as
+   * the values of those expressions in the 'anchor' row of a call to
+   * {@link #M2X}.
+   *
+   * <p>Its role in {@code M2X} is the same as the {@code PARTITION BY} clause
+   * of a windowed aggregate. For example,
+   *
+   * <pre>{@code
+   * SUM(sal) OVER (PARTITION BY deptno, job)
+   * }</pre>
+   *
+   * <p>is equivalent to
+   *
+   * <pre>{@code
+   * M2X(SUM(sal), SAME_PARTITION(deptno, job))
+   * }</pre>
+   *
+   * <p>You may think of it as expanding to a {@code BOOLEAN} expression in
+   * terms of the {@code ANCHOR} record; for example,
+   *
+   * <pre>{@code
+   * SAME_PARTITION(deptno, job)
+   * }</pre>
+   *
+   * <p>expands to
+   *
+   * <pre>{@code
+   * deptno IS NOT DISTINCT FROM anchor.deptno
+   * AND job IS NOT DISTINCT FROM anchor.job
+   * AND GROUPING(deptno, job) = GROUPING(anchor.deptno, anchor.job)
+   * }</pre>
+   *
+   * <p>But we prefer to leave it intact for easier matching and eventual
+   * elimination in transformation rules. */
+  public static final SqlOperator SAME_PARTITION =
+      new SqlInternalOperator("SAME_PARTITION", SqlKind.SAME_PARTITION, 2, true,
+          ReturnTypes.BOOLEAN, InferTypes.ANY_NULLABLE, OperandTypes.VARIADIC);
 
   /** An IN operator for Druid.
    *

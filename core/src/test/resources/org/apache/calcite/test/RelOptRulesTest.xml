@@ -1799,8 +1799,12 @@ and e1.sal > (select avg(sal) from emp e2 where e1.empno = e2.empno)]]>
   </TestCase>
   <TestCase name="testDecorrelateAggWithConstantGroupKey">
     <Resource name="sql">
-      <![CDATA[SELECT * FROM emp A where sal in
-(SELECT max(sal) FROM emp B where A.mgr = B.empno group by deptno, 'abc')]]>
+      <![CDATA[SELECT *
+FROM emp A
+where sal in (SELECT max(sal)
+  FROM emp B
+  where A.mgr = B.empno
+  group by deptno, 'abc')]]>
     </Resource>
     <Resource name="planBefore">
       <![CDATA[
@@ -2763,7 +2767,8 @@ LogicalAggregate(group=[{0}], EXPR$1=[SUM($3)], EXPR$2=[MIN($4)], EXPR$3=[COUNT(
   </TestCase>
   <TestCase name="testDynamicStarWithUnion">
     <Resource name="sql">
-      <![CDATA[(select n_nationkey from SALES.CUSTOMER) union all
+      <![CDATA[(select n_nationkey from SALES.CUSTOMER)
+union all
 (select n_name from CUSTOMER_MODIFIABLEVIEW)]]>
     </Resource>
     <Resource name="planBefore">
@@ -4920,6 +4925,31 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($0)], EXPR$1=[COUNT($0)], EXPR$2=[MAX($
   LogicalAggregate(group=[{0}])
     LogicalProject(DEPTNO=[$7])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testMeasureAggregate">
+    <Resource name="sql">
+      <![CDATA[select deptno, c1
+from (select deptno, job, count(*) + 1 as measure c1
+  from emp)
+group by deptno]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], C1=[$1])
+  LogicalAggregate(group=[{0}], agg#0=[AGG_M2V($1)])
+    LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], C1=[$1])
+  LogicalAggregate(group=[{0}], agg#0=[SINGLE_VALUE($1)])
+    LogicalProject(DEPTNO=[$0], $f2=[M2X($1, SAME_PARTITION($0))])
+      LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
+        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>
@@ -12562,7 +12592,11 @@ LogicalProject(DEPTNO=[$0], NAME=[$1], EMPNO=[$2], ENAME=[$3], JOB=[$4], MGR=[$5
   </TestCase>
   <TestCase name="testSubQueryWithDynamicStarHang">
     <Resource name="sql">
-      <![CDATA[select n.n_regionkey from (select * from (select * from sales.customer) t) n where n.n_nationkey >1]]>
+      <![CDATA[select n.n_regionkey
+from (select *
+  from (select *
+    from sales.customer) t) n
+where n.n_nationkey > 1]]>
     </Resource>
     <Resource name="planBefore">
       <![CDATA[

@@ -19,6 +19,7 @@ package org.apache.calcite.rel.rules;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
@@ -29,13 +30,20 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import org.immutables.value.Value;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Collection of planner rules that deal with measures.
@@ -50,22 +58,130 @@ public abstract class MeasureRules {
 
   private MeasureRules() { }
 
+  /** Rule that matches an {@link Aggregate}
+   * that contains a {@code M2V} call
+   * and pushes down the {@code M2V} call into a {@link Project}. */
+  public static final RelOptRule AGGREGATE =
+      AggregateMeasureRuleConfig.DEFAULT
+          .toRule();
+
+  /** Configuration for {@link AggregateMeasureRule}. */
+  @Value.Immutable
+  public interface AggregateMeasureRuleConfig extends RelRule.Config {
+    AggregateMeasureRuleConfig DEFAULT = ImmutableAggregateMeasureRuleConfig.of()
+        .withOperandSupplier(b ->
+            b.operand(Aggregate.class)
+                .predicate(b2 ->
+                    b2.getAggCallList().stream().anyMatch(c ->
+                        c.getAggregation() == SqlInternalOperators.AGG_M2V))
+                .anyInputs());
+
+    @Override default AggregateMeasureRule toRule() {
+      return new AggregateMeasureRule(this);
+    }
+  }
+
+  /** Rule that matches an {@link Aggregate} with at least one call to
+   * {@link SqlInternalOperators#AGG_M2V} and converts those calls
+   * to {@link org.apache.calcite.rex.RexOver}.
+   *
+   * <p>Converts
+   *
+   * <pre>{@code
+   * Aggregate(a, b, AGG_M2V(c), SUM(d), AGG_M2V(e))
+   *   R
+   * }</pre>
+   *
+   * <p>to
+   *
+   * <pre>{@code
+   * Aggregate(a, b, SINGLE_VALUE(c), SUM(d), SINGLE_VALUE(e))
+   *   Project(a, b, c, d, e, M2X(c, SAME_PARTITION(a, b)),
+   *        M2X(e, SAME_PARTITION(a, b)))
+   *     R
+   * }</pre>
+   *
+   * @see MeasureRules#AGGREGATE
+   * @see AggregateMeasureRuleConfig */
+  @SuppressWarnings("WeakerAccess")
+  public static class AggregateMeasureRule
+      extends RelRule<AggregateMeasureRuleConfig>
+      implements TransformationRule {
+    /** Creates a AggregateMeasureRule. */
+    protected AggregateMeasureRule(AggregateMeasureRuleConfig config) {
+      super(config);
+    }
+
+    @Override public void onMatch(RelOptRuleCall call) {
+      final Aggregate aggregate = call.rel(0);
+      final RelBuilder b = call.builder();
+      b.push(aggregate.getInput());
+      final List<Function<RelBuilder, RelBuilder.AggCall>> aggCallList =
+          new ArrayList<>();
+      final List<RexNode> extraProjects = new ArrayList<>();
+      aggregate.getAggCallList().forEach(c -> {
+        if (c.getAggregation().kind == SqlKind.AGG_M2V) {
+          final int arg = Iterables.getOnlyElement(c.getArgList());
+          final int i = b.fields().size() + extraProjects.size();
+          extraProjects.add(
+              b.call(SqlInternalOperators.M2X, b.field(arg),
+                  b.call(SqlInternalOperators.SAME_PARTITION,
+                      b.fields(aggregate.getGroupSet()))));
+          aggCallList.add(b2 ->
+              b2.aggregateCall(SqlStdOperatorTable.SINGLE_VALUE, b2.field(i)));
+        } else {
+          aggCallList.add(b2 -> b2.aggregateCall(c));
+        }
+      });
+      b.projectPlus(extraProjects);
+      b.aggregate(
+          b.groupKey(aggregate.getGroupSet(), aggregate.groupSets),
+          bind(aggCallList).apply(b));
+      call.transformTo(b.build());
+    }
+
+    /** Converts a list of functions into a function that returns a list.
+     * It is named after the Monad bind operator. */
+    private static <T, E> Function<T, List<E>> bind(List<Function<T, E>> list) {
+      return t -> {
+        final ImmutableList.Builder<E> builder = ImmutableList.builder();
+        list.forEach(f -> builder.add(f.apply(t)));
+        return builder.build();
+      };
+    }
+  }
+
   /** Rule that matches a {@link Filter} that contains a {@code M2V} call
    * on top of a {@link Sort} and pushes down the {@code M2V} call. */
   public static final RelOptRule FILTER_SORT =
-      FilterSortMeasureRule.SortMeasureRuleConfig.DEFAULT
-          .as(FilterSortMeasureRule.SortMeasureRuleConfig.class)
+      FilterSortMeasureRuleConfig.DEFAULT
+          .as(FilterSortMeasureRuleConfig.class)
           .toRule();
+
+  /** Configuration for {@link FilterSortMeasureRule}. */
+  @Value.Immutable
+  public interface FilterSortMeasureRuleConfig extends RelRule.Config {
+    FilterSortMeasureRuleConfig DEFAULT = ImmutableFilterSortMeasureRuleConfig.of()
+        .withOperandSupplier(b ->
+            b.operand(Filter.class)
+                .oneInput(b2 -> b2.operand(Sort.class)
+                    .anyInputs()));
+
+    @Override default FilterSortMeasureRule toRule() {
+      return new FilterSortMeasureRule(this);
+    }
+  }
 
   /** Rule that ...
    *
-   * @see MeasureRules#FILTER_SORT */
+   * @see MeasureRules#FILTER_SORT
+   * @see FilterSortMeasureRuleConfig */
   @SuppressWarnings("WeakerAccess")
   public static class FilterSortMeasureRule
-      extends RelRule<FilterSortMeasureRule.SortMeasureRuleConfig>
+      extends RelRule<FilterSortMeasureRuleConfig>
       implements TransformationRule {
     /** Creates a FilterSortMeasureRule. */
-    protected FilterSortMeasureRule(SortMeasureRuleConfig config) {
+    protected FilterSortMeasureRule(FilterSortMeasureRuleConfig config) {
       super(config);
     }
 
@@ -80,20 +196,6 @@ public abstract class MeasureRules {
       relBuilder.push(filter.getInput())
           .filter(condition);
       call.transformTo(relBuilder.build());
-    }
-
-    /** Rule configuration. */
-    @Value.Immutable
-    public interface SortMeasureRuleConfig extends Config {
-      SortMeasureRuleConfig DEFAULT = ImmutableSortMeasureRuleConfig.of()
-          .withOperandSupplier(b ->
-              b.operand(Filter.class)
-                  .oneInput(b2 -> b2.operand(Sort.class)
-                      .anyInputs()));
-
-      @Override default FilterSortMeasureRule toRule() {
-        return new FilterSortMeasureRule(this);
-      }
     }
   }
 
