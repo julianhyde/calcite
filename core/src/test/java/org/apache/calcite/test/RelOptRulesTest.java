@@ -4917,8 +4917,17 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  from emp)\n"
         + "order by deptno";
     sql(sql)
-        .withRule(MeasureRules.FILTER_SORT,
-            MeasureRules.PROJECT_SORT)
+        .withRule(MeasureRules.PROJECT_SORT)
+        .check();
+  }
+
+  @Test void testMeasureAggregate() {
+    final String sql = "select deptno, c1\n"
+        + "from (select deptno, job, count(*) + 1 as measure c1\n"
+        + "  from emp)\n"
+        + "group by deptno";
+    sql(sql)
+        .withRule(MeasureRules.AGGREGATE)
         .check();
   }
 
