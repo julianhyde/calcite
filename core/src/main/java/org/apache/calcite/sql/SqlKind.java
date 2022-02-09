@@ -214,6 +214,9 @@ public enum SqlKind {
   /** {@code M2V} (measure-to-value) internal operator. */
   M2V,
 
+  /** {@code M2X} (evaluate measure in context) internal operator. */
+  M2X,
+
   /** {@code AGG_M2M} (aggregate measure to measure) internal aggregate
    * function. */
   AGG_M2M,
@@ -221,6 +224,9 @@ public enum SqlKind {
   /** {@code AGG_M2V} (aggregate measure to value) internal aggregate
    * function. */
   AGG_M2V,
+
+  /** {@code SAME_PARTITION} pseudo-function. */
+  SAME_PARTITION,
 
   /** Argument assignment operator, {@code =>}. */
   ARGUMENT_ASSIGNMENT,
