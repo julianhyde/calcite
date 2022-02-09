@@ -74,6 +74,26 @@ where job = 'CLERK';
 
 !ok
 
+# Measure used in GROUP BY query
+!if (false) {
+select deptno, count_plus_100
+from (
+  select empno, deptno, job, count(*) + 100 as measure count_plus_100
+  from "scott".emp)
+group by deptno;
+!ok
+!}
+
+# As above, using AGGREGATE function
+!if (false) {
+select deptno, count_plus_100
+from (
+  select empno, deptno, job, count(*) + 100 as measure count_plus_100
+  from "scott".emp)
+group by deptno;
+!ok
+!}
+
 # Aggregate measure used in non-aggregate query
 select empno, count_plus_100
 from (
