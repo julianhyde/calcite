@@ -118,7 +118,9 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static org.apache.calcite.test.Matchers.hasFieldNames;
 import static org.apache.calcite.test.Matchers.hasHints;
+import static org.apache.calcite.test.Matchers.hasRowType;
 import static org.apache.calcite.test.Matchers.hasTree;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -1154,7 +1156,7 @@ public class RelBuilderTest {
             .rename(ImmutableList.of("x", "y z"))
             .build();
     assertThat(root, hasTree(expected));
-    assertThat(root.getRowType().getFieldNames().toString(), is("[x, y z]"));
+    assertThat(root, hasFieldNames("[x, y z]"));
   }
 
   /** Tests conditional rename using {@link RelBuilder#let}. */
@@ -2986,6 +2988,43 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-xxxx">[CALCITE-xxxx]
+   * In RelBuilder add method aggregateExtended, to allow aggregating complex
+   * expressions such as "1 + SUM(x + 2)"</a>. */
+  @Test void testAggregateExtended() {
+    // SELECT deptno,
+    //   deptno + 2 AS d2,
+    //   3 + SUM(4 + sal) AS s
+    // FROM emp
+    // GROUP BY deptno
+    Function<RelBuilder, RelNode> f = b ->
+        b.scan("EMP")
+            .aggregateRex(b.groupKey(b.field("DEPTNO")),
+                ImmutableList.of(b.field("DEPTNO"),
+                    b.alias(
+                        b.call(SqlStdOperatorTable.PLUS, b.field("DEPTNO"),
+                            b.literal(2)),
+                        "d2"),
+                    b.alias(
+                        b.call(SqlStdOperatorTable.PLUS, b.literal(3),
+                            b.call(SqlStdOperatorTable.SUM,
+                                b.call(SqlStdOperatorTable.PLUS, b.literal(4),
+                                    b.field("SAL")))),
+                        "s")))
+            .build();
+    final String expected = ""
+        + "LogicalProject(DEPTNO=[$0], d2=[+($0, 2)], s=[+(3, $1)])\n"
+        + "  LogicalAggregate(group=[{0}], agg#0=[SUM($1)])\n"
+        + "    LogicalProject(DEPTNO=[$7], $f8=[+(4, $5)])\n"
+        + "      LogicalTableScan(table=[[scott, EMP]])\n";
+    final String expectedRowType =
+        "RecordType(TINYINT DEPTNO, INTEGER d2, DECIMAL(19, 2) s) NOT NULL";
+    final RelNode r = f.apply(createBuilder());
+    assertThat(r, hasTree(expected));
+    assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
+  }
+
   /** Tests that a projection retains field names after a join. */
   @Test void testProjectJoin() {
     final RelBuilder builder = RelBuilder.create(config().build());
@@ -3472,10 +3511,11 @@ public class RelBuilderTest {
             .build();
     final String expected =
         "LogicalValues(tuples=[[{ 1, true }, { 2, false }]])\n";
-    final String expectedRowType = "RecordType(INTEGER x, BOOLEAN y)";
-    assertThat(f.apply(createBuilder()), hasTree(expected));
-    assertThat(f.apply(createBuilder()).getRowType().toString(),
-        is(expectedRowType));
+    final String expectedRowType =
+        "RecordType(INTEGER NOT NULL x, BOOLEAN NOT NULL y) NOT NULL";
+    final RelNode r = f.apply(createBuilder());
+    assertThat(r, hasTree(expected));
+    assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
   }
 
   /** Tests that {@code Union(Project(Values), ... Project(Values))} is
