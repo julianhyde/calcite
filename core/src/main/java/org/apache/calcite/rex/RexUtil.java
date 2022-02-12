@@ -574,6 +574,18 @@ public class RexUtil {
     };
   }
 
+  /** Returns a visitor that finds a call to an aggregate function. */
+  public static RexFinder findAggregate() {
+    return new RexFinder() {
+      @Override public Void visitCall(RexCall call) {
+        if (call.op.isAggregator()) {
+          throw Util.FoundOne.NULL;
+        }
+        return super.visitCall(call);
+      }
+    };
+  }
+
   /** Expands all the calls to {@link SqlStdOperatorTable#SEARCH} in an expression. */
   public static RexNode expandSearch(RexBuilder rexBuilder,
       @Nullable RexProgram program, RexNode node) {
@@ -684,6 +696,10 @@ public class RexUtil {
           .getExprList().get(((RexLocalRef) node).index);
     }
     return node;
+  }
+
+  public static boolean containsKind(SqlKind kind) {
+    return false;
   }
 
   /**
