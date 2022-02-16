@@ -711,7 +711,8 @@ public class SqlToRelConverter {
           || validator().isAggregate(select)
           || select.isDistinct()
           || select.hasOrderBy()
-          || select.getFetch() != null) {
+          || select.getFetch() != null
+          || select.getOffset() != null) {
         bb.setRoot(castNonNull(bb.root).getInput(0), true);
       }
     }
