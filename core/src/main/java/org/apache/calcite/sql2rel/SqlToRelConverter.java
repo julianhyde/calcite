@@ -689,13 +689,16 @@ public class SqlToRelConverter {
     //
     // Top-level example. Given the view definition
     //   CREATE VIEW v AS SELECT * FROM t ORDER BY x
-    // we would retain the ORDER BY in
+    // we would retain the view's ORDER BY in
     //   SELECT * FROM v
     // or
     //   SELECT * FROM v WHERE y = 5
-    // but remove the ORDER BY in
+    // but remove the view's ORDER BY in
     //   SELECT * FROM v ORDER BY z
-    // because in the latter the view is not 'top level' in the query.
+    // and
+    //   SELECT deptno, COUNT(*) FROM v GROUP BY deptno
+    // because the ORDER BY and GROUP BY mean that the view is not 'top level' in
+    // the query.
     //
     // Semantics example. Given the view definition
     //   CREATE VIEW v2 AS SELECT * FROM t ORDER BY x LIMIT 10
@@ -707,7 +710,6 @@ public class SqlToRelConverter {
       // if there are other nodes, which will cause the view to be in the
       // sub-query.
       if (!bb.top
-          || select.hasWhere()
           || validator().isAggregate(select)
           || select.isDistinct()
           || select.hasOrderBy()
