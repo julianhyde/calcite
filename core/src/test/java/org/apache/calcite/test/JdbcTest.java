@@ -146,6 +146,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.sql.DataSource;
 
+import static org.apache.calcite.test.CalciteAssert.checkResult;
 import static org.apache.calcite.test.Matchers.isLinux;
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -5889,7 +5890,8 @@ public class JdbcTest {
     // Keep sort, because view is top node
     with.query("select * from \"adhoc\".V")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
+            checkResult("PLAN="
+                + "LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
                 + "salary=[$3], commission=[$4])\n"
                 + "  LogicalSort(sort0=[$1], dir0=[ASC])\n"
                 + "    LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
@@ -5898,7 +5900,8 @@ public class JdbcTest {
     // Remove sort, because view not is top node
     with.query("select * from \"adhoc\".V union all select * from  \"adhoc\".\"EMPLOYEES\"")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalUnion(all=[true])\n"
+            checkResult("PLAN="
+                + "LogicalUnion(all=[true])\n"
                 + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
                 + "commission=[$4])\n"
                 + "    LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n"
@@ -5908,13 +5911,15 @@ public class JdbcTest {
     with.query("select * from "
             + "(select \"empid\", \"deptno\" from  \"adhoc\".V) where \"deptno\" > 10")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalProject(empid=[$0], deptno=[$1])\n"
+            checkResult("PLAN="
+                + "LogicalProject(empid=[$0], deptno=[$1])\n"
                 + "  LogicalFilter(condition=[>($1, 10)])\n"
                 + "    LogicalProject(empid=[$0], deptno=[$1])\n"
                 + "      LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n\n"));
     with.query("select * from \"adhoc\".\"EMPLOYEES\" where exists (select * from \"adhoc\".V)")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
+            checkResult("PLAN="
+                + "LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
                 + "salary=[$3], commission=[$4])\n"
                 + "  LogicalFilter(condition=[EXISTS({\n"
                 + "LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n"
@@ -5924,13 +5929,15 @@ public class JdbcTest {
     // Still remove sort
     with.query("select * from \"adhoc\".V order by \"empid\"")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalSort(sort0=[$0], dir0=[ASC])\n"
+            checkResult("PLAN="
+                + "LogicalSort(sort0=[$0], dir0=[ASC])\n"
                 + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
                 + "commission=[$4])\n"
                 + "    LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n\n"));
     with.query("select * from \"adhoc\".V, \"adhoc\".\"EMPLOYEES\"")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
+            checkResult("PLAN="
+                + "LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
                 + "salary=[$3], commission=[$4], empid0=[$5], deptno0=[$6], name0=[$7], salary0=[$8],"
                 + " commission0=[$9])\n"
                 + "  LogicalJoin(condition=[true], joinType=[inner])\n"
@@ -5940,12 +5947,14 @@ public class JdbcTest {
                 + "    LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n\n"));
     with.query("select \"empid\", count(*) from \"adhoc\".V group by \"empid\"")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalAggregate(group=[{0}], EXPR$1=[COUNT()])\n"
+            checkResult("PLAN="
+                + "LogicalAggregate(group=[{0}], EXPR$1=[COUNT()])\n"
                 + "  LogicalProject(empid=[$0])\n"
                 + "    LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n\n"));
     with.query("select distinct * from \"adhoc\".V")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalAggregate(group=[{0, 1, 2, 3, 4}])\n"
+            checkResult("PLAN="
+                + "LogicalAggregate(group=[{0, 1, 2, 3, 4}])\n"
                 + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
                 + "commission=[$4])\n"
                 + "    LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n\n"));
@@ -5957,7 +5966,8 @@ public class JdbcTest {
     // Some cases where we may or may not want to keep the Sort
     with.query("select * from \"adhoc\".V where \"deptno\" > 10")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
+            checkResult("PLAN="
+                + "LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
                 + "salary=[$3], commission=[$4])\n"
                 + "  LogicalFilter(condition=[>($1, 10)])\n"
                 + "    LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
@@ -5968,7 +5978,8 @@ public class JdbcTest {
             (Consumer<Holder<Config>>) configHolder ->
                 configHolder.set(configHolder.get().withRemoveSortInSubQuery(false)))
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
+            checkResult("PLAN="
+                + "LogicalProject(empid=[$0], deptno=[$1], name=[$2], "
                 + "salary=[$3], commission=[$4])\n"
                 + "  LogicalFilter(condition=[>($1, 10)])\n"
                 + "    LogicalSort(sort0=[$1], dir0=[ASC])\n"
@@ -5978,7 +5989,8 @@ public class JdbcTest {
 
     with.query("select * from \"adhoc\".V limit 10")
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalSort(fetch=[10])\n"
+            checkResult("PLAN="
+                + "LogicalSort(fetch=[10])\n"
                 + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
                 + "commission=[$4])\n"
                 + "    LogicalTableScan(table=[[adhoc, EMPLOYEES]])\n\n"));
@@ -5987,7 +5999,8 @@ public class JdbcTest {
             (Consumer<Holder<Config>>) configHolder ->
                 configHolder.set(configHolder.get().withRemoveSortInSubQuery(false)))
         .explainMatches(" without implementation ",
-            CalciteAssert.checkResult("PLAN=LogicalSort(fetch=[10])\n"
+            checkResult("PLAN="
+                + "LogicalSort(fetch=[10])\n"
                 + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], "
                 + "commission=[$4])\n"
                 + "    LogicalSort(sort0=[$1], dir0=[ASC])\n"
