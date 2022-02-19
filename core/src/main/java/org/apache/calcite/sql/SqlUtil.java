@@ -29,6 +29,7 @@ import org.apache.calcite.rel.type.RelDataTypePrecedenceList;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Resources;
+import org.apache.calcite.sql.SqlWriter.FrameTypeEnum;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlOperandMetadata;
@@ -417,6 +418,32 @@ public abstract class SqlUtil {
     writer.endList(frame);
   }
 
+  /**
+   * Unparse operand for binary operation.
+   */
+  private static void unparseBinaryOperand(
+      SqlNode sqlNode,
+      SqlWriter writer,
+      int leftPrec,
+      int rightPrec,
+      boolean isSetOp) {
+    // We would like to write parentheses if the operation is SetOp
+    // and the operand need parentheses to maintain semantics
+    if (isSetOp && sqlNode.getKind() == SqlKind.SELECT) {
+      SqlSelect sqlSelect = (SqlSelect) sqlNode;
+      // "ORDER BY ... LIMIT ... OFFSET" is about semantics
+      if (sqlSelect.getOrderList() != null
+          || sqlSelect.getFetch() != null
+          || sqlSelect.getOffset() != null) {
+        final SqlWriter.Frame operandFrame = writer.startList(FrameTypeEnum.SETOP, "(", ")");
+        sqlSelect.unparse(writer, leftPrec, rightPrec);
+        writer.endList(operandFrame);
+        return;
+      }
+    }
+    sqlNode.unparse(writer, leftPrec, rightPrec);
+  }
+
   public static void unparseBinarySyntax(
       SqlOperator operator,
       SqlCall call,
@@ -424,17 +451,18 @@ public abstract class SqlUtil {
       int leftPrec,
       int rightPrec) {
     assert call.operandCount() == 2;
+    boolean isSetOp = operator instanceof SqlSetOperator;
     final SqlWriter.Frame frame =
         writer.startList(
-            (operator instanceof SqlSetOperator)
+            isSetOp
                 ? SqlWriter.FrameTypeEnum.SETOP
                 : SqlWriter.FrameTypeEnum.SIMPLE);
-    call.operand(0).unparse(writer, leftPrec, operator.getLeftPrec());
+    unparseBinaryOperand(call.operand(0), writer, leftPrec, operator.getLeftPrec(), isSetOp);
     final boolean needsSpace = operator.needsSpace();
     writer.setNeedWhitespace(needsSpace);
     writer.sep(operator.getName());
     writer.setNeedWhitespace(needsSpace);
-    call.operand(1).unparse(writer, operator.getRightPrec(), rightPrec);
+    unparseBinaryOperand(call.operand(1), writer, operator.getRightPrec(), rightPrec, isSetOp);
     writer.endList(frame);
   }
 
