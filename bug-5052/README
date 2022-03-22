@@ -1,0 +1,8 @@
+On ubuntu, first install go and basilisk:
+  sudo apt install golang-go
+  go get github.com/bazelbuild/bazelisk
+  export PATH=$PATH:$(go env GOPATH)/bin
+
+Now build:
+  bazelisk build //:ExampleTest
+
