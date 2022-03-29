@@ -3364,6 +3364,19 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"product_id\")";
     sql(retainOrderQuery).withConfig(c -> c.withRemoveSortInSubQuery(false)).ok(retainOrderResult);
+
+    // Parentheses are required to keep ORDER and LIMIT on the sub-query.
+    final String retainLimitQuery = "SELECT \"product_id\" FROM \"product\""
+        + "UNION ALL\n"
+        + "(SELECT \"product_id\" FROM \"product\" ORDER BY \"product_id\" LIMIT 2)";
+    final String retainLimitResult = "SELECT \"product_id\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "UNION ALL\n"
+        + "(SELECT \"product_id\"\n"
+        + "FROM \"foodmart\".\"product\"\n"
+        + "ORDER BY \"product_id\"\n"
+        + "FETCH NEXT 2 ROWS ONLY)";
+    sql(retainLimitQuery).ok(retainLimitResult);
   }
 
   /** Test case for
