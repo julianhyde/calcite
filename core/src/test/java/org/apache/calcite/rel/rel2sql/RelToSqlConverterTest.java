@@ -3325,7 +3325,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\")";
     sql(discardedParenthesesQuery).ok(discardedParenthesesRes);
 
-    // Parentheses will be retained because subquery has limit or offset.
+    // Parentheses will be retained because sub-query has LIMIT or OFFSET.
     // If parentheses are discarded the semantics of parsing will be affected.
     final String allSetOpQuery = "SELECT \"product_id\" FROM \"product\""
         + "UNION ALL\n"
