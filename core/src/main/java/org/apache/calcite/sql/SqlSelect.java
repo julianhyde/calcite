@@ -17,7 +17,6 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.sql.fun.SqlInternalOperators;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
