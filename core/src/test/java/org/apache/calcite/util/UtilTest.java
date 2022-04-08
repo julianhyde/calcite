@@ -1588,12 +1588,18 @@ class UtilTest {
     map.put("foo", 1);
     map.put("baz", true);
     map.put("bar", "can't");
+    final String tricky = "string with doublequote\", singlequote', "
+        + "backslash\\, percent20%20, plus+, ampersand&, linefeed\n"
+        + ", carriage return\r, lfcr\n"
+        + "\r.";
+    map.put("tricky", tricky);
     List<Object> list = builder.list();
     map.put("list", list);
     list.add(2);
     list.add(3);
     list.add(builder.list());
     list.add(builder.map());
+    list.add(tricky);
     list.add(null);
     map.put("nullValue", null);
     assertEquals(
