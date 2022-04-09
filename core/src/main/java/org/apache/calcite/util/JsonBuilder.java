@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.util;
 
+import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.avatica.util.Spaces;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -33,7 +35,7 @@ public class JsonBuilder {
   /** Maps control characters (0 .. 31) to JSON escaped strings.
    * Tab, newline, form feed and carriage return are mapped to '\t', '\n',
    * '\f', 'r' respectively; others are mapped to '\\u00xx' for some 'xx'. */
-  private static final String[] ESCAPED = {
+  private static final ImmutableList<String> ESCAPED = ImmutableList.of(
       "\\u0000",
       "\\u0001",
       "\\u0002",
@@ -65,8 +67,7 @@ public class JsonBuilder {
       "\\u001C",
       "\\u001D",
       "\\u001E",
-      "\\u001F",
-  };
+      "\\u001F");
 
   /**
    * Creates a JSON object (represented by a {@link Map}).
@@ -140,7 +141,7 @@ public class JsonBuilder {
     for (int i = 0; i < n; i++) {
       char c = s.charAt(i);
       if (c < 32) {
-        buf.append(ESCAPED[c]);
+        buf.append(ESCAPED.get(c));
       } else if (c == '\\') {
         buf.append("\\\\");
       } else if (c == '"') {
