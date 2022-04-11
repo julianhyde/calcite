@@ -1350,10 +1350,13 @@ class RelWriterTest {
                 b.field(1, 0, 10),
                 b.literal("a"))
             .let(b2 -> {
-              // for sql:
-              // merge into emp using dept on emp.deptno = dept.deptno
-              // when matched then update set job = 'a'
-              // when not matched then insert values(0, 'x', 'x', 0, '20200501 10:00:00', 0, 0, 0, 0)
+              // For SQL:
+              //   MERGE INTO emp USING dept ON emp.deptno = dept.deptno
+              //   WHEN MATCHED THEN
+              //     UPDATE SET job = 'a'
+              //   WHEN NOT MATCHED THEN
+              //     INSERT VALUES (0, 'x', 'x', 0, '20200501 10:00:00',
+              //         0, 0, 0, 0)
               final RelNode project = b.build();
               LogicalTableModify modify =
                   LogicalTableModify.create(emp.get(),
