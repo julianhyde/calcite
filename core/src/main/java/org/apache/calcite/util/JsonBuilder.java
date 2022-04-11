@@ -16,9 +16,9 @@
  */
 package org.apache.calcite.util;
 
-import com.google.common.collect.ImmutableList;
-
 import org.apache.calcite.avatica.util.Spaces;
+
+import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 

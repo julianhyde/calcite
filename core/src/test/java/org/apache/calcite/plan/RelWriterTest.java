@@ -94,14 +94,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.util.Objects.requireNonNull;
-
 import static org.apache.calcite.test.Matchers.isLinux;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Unit test for {@link org.apache.calcite.rel.externalize.RelJson}.
