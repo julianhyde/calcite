@@ -17,7 +17,6 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.ImmutableNullableList;
@@ -264,12 +263,10 @@ public class SqlJoin extends SqlCall {
   }
 
   @Override public SqlString toSqlString(UnaryOperator<SqlWriterConfig> transform) {
-    final SqlWriterConfig config = transform.apply(SqlPrettyWriter.config());
-    SqlPrettyWriter writer = new SqlPrettyWriter(config);
-    SqlNode selectWrapper = new SqlSelect(SqlParserPos.ZERO, SqlNodeList.EMPTY,
-        SqlNodeList.SINGLETON_STAR, this, null, null, null,
-        SqlNodeList.EMPTY, null, null, null, SqlNodeList.EMPTY);
-    selectWrapper.unparse(writer, 0, 0);
-    return writer.toSqlString();
+    SqlNode selectWrapper =
+        new SqlSelect(SqlParserPos.ZERO, SqlNodeList.EMPTY,
+            SqlNodeList.SINGLETON_STAR, this, null, null, null,
+            SqlNodeList.EMPTY, null, null, null, SqlNodeList.EMPTY);
+    return selectWrapper.toSqlString(transform);
   }
 }

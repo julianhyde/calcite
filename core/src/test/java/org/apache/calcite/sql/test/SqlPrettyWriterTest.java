@@ -28,9 +28,11 @@ import org.apache.calcite.test.DiffRepository;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.apache.calcite.test.Matchers.isLinux;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Unit test for {@link SqlPrettyWriter}.
@@ -384,17 +386,19 @@ class SqlPrettyWriterTest {
         + "INNER JOIN (SELECT o_custkey, o_totalprice\n"
         + "FROM tpch.out_tpch_vw__orders) AS t0 ON t.c_custkey = t0.o_custkey";
 
-    final String expectedJoinString = "SELECT *\r\n"
-        + "FROM (SELECT `C_CUSTKEY`, `REGION_NAME`\r\n"
-        + "FROM `TPCH`.`OUT_TPCH_VW__CUSTOMER`) AS `T`\r\n"
-        + "INNER JOIN (SELECT `O_CUSTKEY`, `O_TOTALPRICE`\r\n"
-        + "FROM `TPCH`.`OUT_TPCH_VW__ORDERS`) AS `T0` ON `T`.`C_CUSTKEY` = `T0`.`O_CUSTKEY`";
+    final String expectedJoinString = "SELECT *\n"
+        + "FROM (SELECT `C_CUSTKEY`, `REGION_NAME`\n"
+        + "FROM `TPCH`.`OUT_TPCH_VW__CUSTOMER`) AS `T`\n"
+        + "INNER JOIN (SELECT `O_CUSTKEY`, `O_TOTALPRICE`\n"
+        + "FROM `TPCH`.`OUT_TPCH_VW__ORDERS`) AS `T0`"
+        + " ON `T`.`C_CUSTKEY` = `T0`.`O_CUSTKEY`";
 
     sql(sql)
         .checkTransformedNode(root -> {
           assertThat(root, instanceOf(SqlSelect.class));
           SqlNode from = ((SqlSelect) root).getFrom();
-          assertThat(from.toString(), is(expectedJoinString));
+          assertThat(from, notNullValue());
+          assertThat(from.toString(), isLinux(expectedJoinString));
           return from;
         });
   }
