@@ -1220,7 +1220,7 @@ class RelWriterTest {
         + "  LogicalTableScan(table=[[scott, EMP]])\n";
     relFn(relFn)
         .assertThatJson(is(XX3))
-        .assertThatPlan(is(expected));
+        .assertThatPlan(isLinux(expected));
   }
 
   @Test void testWriteSortExchangeWithRandomDistribution() {
