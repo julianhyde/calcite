@@ -117,7 +117,6 @@ import java.util.stream.Collectors;
 
 import static org.apache.calcite.test.Matchers.hasFieldNames;
 import static org.apache.calcite.test.Matchers.hasHints;
-import static org.apache.calcite.test.Matchers.hasRowType;
 import static org.apache.calcite.test.Matchers.hasTree;
 
 import static org.hamcrest.CoreMatchers.allOf;

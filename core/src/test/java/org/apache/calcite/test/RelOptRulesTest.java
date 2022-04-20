@@ -4706,7 +4706,9 @@ class RelOptRulesTest extends RelOptTestBase {
         + "  from emp)\n"
         + "group by deptno";
     sql(sql)
-        .withRule(MeasureRules.AGGREGATE)
+        .withRule(MeasureRules.AGGREGATE,
+            CoreRules.PROJECT_MERGE,
+            MeasureRules.PROJECT)
         .check();
   }
 
