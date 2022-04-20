@@ -6154,9 +6154,8 @@ LogicalProject(DEPTNO=[$0], C1=[$1])
       <![CDATA[
 LogicalProject(DEPTNO=[$0], C1=[$1])
   LogicalAggregate(group=[{0}], agg#0=[SINGLE_VALUE($1)])
-    LogicalProject(DEPTNO=[$0], $f2=[M2X($1, SAME_PARTITION($0))])
-      LogicalProject(DEPTNO=[$7], C1=[V2M(+(COUNT(), 1))])
-        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalProject(DEPTNO=[$7], $f2=[M2X(V2M(+(COUNT(), 1)), SAME_PARTITION($7))])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>
