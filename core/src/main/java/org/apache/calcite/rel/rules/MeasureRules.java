@@ -20,6 +20,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
@@ -33,6 +34,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -83,7 +85,7 @@ public abstract class MeasureRules {
 
   /** Rule that matches an {@link Aggregate} with at least one call to
    * {@link SqlInternalOperators#AGG_M2V} and converts those calls
-   * to {@link org.apache.calcite.rex.RexOver}.
+   * to {@link SqlInternalOperators#M2X}.
    *
    * <p>Converts
    *
@@ -100,6 +102,9 @@ public abstract class MeasureRules {
    *        M2X(e, SAME_PARTITION(a, b)))
    *     R
    * }</pre>
+   *
+   * <p>We rely on those {@code M2X} calls being pushed down until they merge
+   * with {@code V2M2} and {@link ProjectMeasureRule} can apply.
    *
    * @see MeasureRules#AGGREGATE
    * @see AggregateMeasureRuleConfig */
@@ -148,6 +153,94 @@ public abstract class MeasureRules {
         list.forEach(f -> builder.add(f.apply(t)));
         return builder.build();
       };
+    }
+  }
+
+  /** Rule that merges an {@link Aggregate}
+   * onto a {@code Project} that contains a {@code M2X} call. */
+  // TODO rename field and class
+  public static final RelOptRule PROJECT =
+      ProjectMeasureRuleConfig.DEFAULT
+          .toRule();
+
+  /** Configuration for {@link ProjectMeasureRule}. */
+  @Value.Immutable
+  public interface ProjectMeasureRuleConfig extends RelRule.Config {
+    ProjectMeasureRuleConfig DEFAULT = ImmutableProjectMeasureRuleConfig.of()
+        .withOperandSupplier(b ->
+            b.operand(Aggregate.class)
+                .oneInput(b2 ->
+                    b2.operand(Project.class)
+//                        .predicate(RexUtil.find(SqlKind.V2M)::inProject)
+                        .anyInputs()));
+
+    @Override default ProjectMeasureRule toRule() {
+      return new ProjectMeasureRule(this);
+    }
+  }
+
+  /** Rule that merges an {@link Aggregate} onto a {@link Project}.
+   *
+   * <p>Converts
+   *
+   * <pre>{@code
+   * Aggregate(a, b, SINGLE_VALUE(d) AS e)
+   *   Project(a, b, M2X(M2V(SUM(c) + 1), SAME_PARTITION(a, b)) AS d)
+   *     R
+   * }</pre>
+   *
+   * <p>to
+   *
+   * <pre>{@code
+   * Project(a, b, sum_c + 1 AS e),
+   *   Aggregate(a, b, SUM(c) AS sum_c)
+   *     R
+   * }</pre>
+   *
+   * @see ProjectMeasureRuleConfig */
+  @SuppressWarnings("WeakerAccess")
+  public static class ProjectMeasureRule
+      extends RelRule<ProjectMeasureRuleConfig>
+      implements TransformationRule {
+    /** Creates a ProjectMeasureRule. */
+    protected ProjectMeasureRule(ProjectMeasureRuleConfig config) {
+      super(config);
+    }
+
+    @Override public void onMatch(RelOptRuleCall call) {
+      final Aggregate aggregate = call.rel(0);
+      final Project project = call.rel(1);
+      final List<RexNode> nodes =
+          Util.transform(aggregate.getAggCallList(),
+              aggregateCall -> toRex(aggregateCall, project));
+      final RelBuilder b = call.builder();
+      b.push(aggregate.getInput())
+          .aggregateRex(
+              b.groupKey(aggregate.getGroupSet(), aggregate.getGroupSets()),
+              nodes);
+      call.transformTo(b.build());
+    }
+
+    private RexNode toRex(AggregateCall aggregateCall, Project project) {
+      switch (aggregateCall.getAggregation().kind) {
+      case SINGLE_VALUE:
+        final int arg = Iterables.getOnlyElement(aggregateCall.getArgList());
+        final RexNode e = project.getProjects().get(arg);
+        switch (e.getKind()) {
+        case M2X:
+          final RexCall callM2x = (RexCall) e;
+          switch (callM2x.operands.get(0).getKind()) {
+          case V2M:
+            final RexCall callV2m = (RexCall) callM2x.operands.get(0);
+            return callV2m.operands.get(0);
+          }
+        }
+      }
+      return toRex(aggregateCall);
+    }
+
+    private RexNode toRex(AggregateCall aggregateCall) {
+      throw new UnsupportedOperationException();
     }
   }
 
