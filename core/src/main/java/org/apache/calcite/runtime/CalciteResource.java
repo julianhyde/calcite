@@ -320,6 +320,9 @@ public interface CalciteResource {
   @BaseMessage("OVER clause is necessary for window functions")
   ExInst<SqlValidatorException> absentOverClause();
 
+  @BaseMessage("Argument to function ''{0}'' must be a measure")
+  ExInst<SqlValidatorException> argumentMustBeMeasure(String functionName);
+
   @BaseMessage("Window ''{0}'' not found")
   ExInst<SqlValidatorException> windowNotFound(String a0);
 
