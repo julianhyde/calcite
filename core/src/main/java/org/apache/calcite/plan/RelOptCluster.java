@@ -50,6 +50,7 @@ public class RelOptCluster {
   private RelMetadataProvider metadataProvider;
   private MetadataFactory metadataFactory;
   private final RelTraitSet emptyTraitSet;
+  private final ImmutableList<RelTraitDef> traitDefs;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -94,6 +95,7 @@ public class RelOptCluster {
     }
     this.emptyTraitSet = traitSet;
     assert emptyTraitSet.size() == traitDefs.size();
+    this.traitDefs = ImmutableList.copyOf(traitDefs);
   }
 
   /** Creates a cluster. */
@@ -173,6 +175,11 @@ public class RelOptCluster {
 
   public RelTraitSet traitSetOf(RelTrait trait) {
     return emptyTraitSet.replace(trait);
+  }
+
+  /** Returns the allowed trait types. */
+  public ImmutableList<RelTraitDef> getTraitDefs() {
+    return traitDefs;
   }
 }
 

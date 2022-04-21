@@ -232,6 +232,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     if (classes.add(clazz)) {
       onNewClass(node);
     }
+    if (false)
     for (RelTrait trait : node.getTraitSet()) {
       if (traits.add(trait)) {
         trait.register((HepProgramBuilder) (Object) this); // TODO:

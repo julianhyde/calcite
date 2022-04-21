@@ -86,7 +86,7 @@ public abstract class TableScan extends AbstractRelNode {
     double dRows = table.getRowCount();
     double dCpu = dRows + 1; // ensure non-zero cost
     double dIo = 0;
-    return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
+    return getCluster().xyz.getCostFactory().makeCost(dRows, dCpu, dIo);
   }
 
   @Override public RelDataType deriveRowType() {

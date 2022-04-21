@@ -68,6 +68,7 @@ public interface RelOptPlanner {
   /**
    * Clear all the registered RelTraitDef.
    */
+  @Deprecated // TODO: remove method (trait defs must exist in RelOptCluster)
   void clearRelTraitDefs();
 
   /**

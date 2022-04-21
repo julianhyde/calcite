@@ -133,7 +133,9 @@ import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
+import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -496,76 +498,19 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final VolcanoPlanner planner =
         new VolcanoPlanner(cluster, costFactory, externalContext);
     assert cluster.traitSet().isEnabled(ConventionTraitDef.INSTANCE);
-    if (ENABLE_COLLATION_TRAIT) {
-      assert cluster.traitSet().isEnabled(RelCollationTraitDef.INSTANCE);
-      planner.registerAbstractRelationalRules();
-    }
-    RelOptUtil.registerAbstractRels(planner);
-    for (RelOptRule rule : DEFAULT_RULES) {
-      planner.addRule(rule);
-    }
-    if (prepareContext.config().materializationsEnabled()) {
-      planner.addRule(MaterializedViewFilterScanRule.INSTANCE);
-    }
-    if (enableBindable) {
-      for (RelOptRule rule : Bindables.RULES) {
-        planner.addRule(rule);
-      }
-    }
-    planner.addRule(Bindables.BINDABLE_TABLE_SCAN_RULE);
-    planner.addRule(ProjectTableScanRule.INSTANCE);
-    planner.addRule(ProjectTableScanRule.INTERPRETER);
-
-    if (ENABLE_ENUMERABLE) {
-      for (RelOptRule rule : ENUMERABLE_RULES) {
-        planner.addRule(rule);
-      }
-      planner.addRule(EnumerableInterpreterRule.INSTANCE);
-    }
-
-    if (enableBindable && ENABLE_ENUMERABLE) {
-      planner.addRule(
-          EnumerableBindable.EnumerableToBindableConverterRule.INSTANCE);
-    }
-
-    if (ENABLE_STREAM) {
-      for (RelOptRule rule : StreamRules.RULES) {
-        planner.addRule(rule);
-      }
-    }
-
-    // Change the below to enable constant-reduction.
-    if (false) {
-      for (RelOptRule rule : CONSTANT_REDUCTION_RULES) {
-        planner.addRule(rule);
-      }
-    }
-
-    final SparkHandler spark = prepareContext.spark();
-    if (spark.enabled()) {
-      spark.registerRules(
-          new SparkHandler.RuleSetBuilder() {
-          public void addRule(RelOptRule rule) {
-            // TODO:
-          }
-
-          public void removeRule(RelOptRule rule) {
-            // TODO:
-          }
-        });
-    }
-
-    Hook.PLANNER.run(planner); // allow test to add or remove rules
-
+    final Program program = createProgram(prepareContext, costFactory);
     return planner;
   }
 
-  protected RelOptPlanner createProgram(
-      final CalcitePrepare.Context prepareContext,
+  protected Program createProgram(
+      final Context prepareContext,
       RelOptCostFactory costFactory) {
     final List<RelOptRule> rules = new ArrayList<>();
     if (ENABLE_COLLATION_TRAIT) {
       rules.addAll(Programs.ABSTRACT_RULES);
+      if (CalcitePrepareImpl.COMMUTE) {
+        rules.add(JoinAssociateRule.INSTANCE);
+      }
     }
     rules.addAll(Programs.ABSTRACT_RULES2);
     rules.addAll(DEFAULT_RULES);
@@ -585,8 +530,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     }
 
     if (enableBindable && ENABLE_ENUMERABLE) {
-      rules.add(
-          EnumerableBindable.EnumerableToBindableConverterRule.INSTANCE);
+      rules.add(EnumerableBindable.EnumerableToBindableConverterRule.INSTANCE);
     }
 
     if (ENABLE_STREAM) {
@@ -602,19 +546,19 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     if (spark.enabled()) {
       spark.registerRules(
           new SparkHandler.RuleSetBuilder() {
-          public void addRule(RelOptRule rule) {
-            // TODO:
-          }
+            public void addRule(RelOptRule rule) {
+              // TODO:
+            }
 
-          public void removeRule(RelOptRule rule) {
-            // TODO:
-          }
-        });
+            public void removeRule(RelOptRule rule) {
+              // TODO:
+            }
+          });
     }
 
-    Hook.PLANNER.run(planner); // allow test to add or remove rules
+    Hook.RULE_LIST.run(rules); // allow test to add or remove rules
 
-    return planner;
+    return Programs.of(RuleSets.ofList(rules));
   }
 
   public <T> CalciteSignature<T> prepareQueryable(

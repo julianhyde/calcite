@@ -186,11 +186,6 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   final RuleQueue ruleQueue = new RuleQueue(this);
 
   /**
-   * Holds the currently registered RelTraitDefs.
-   */
-  private final List<RelTraitDef> traitDefs = new ArrayList<>();
-
-  /**
    * Set of all registered rules.
    */
   protected final Set<RelOptRule> ruleSet = new HashSet<>();
@@ -415,28 +410,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     return null;
   }
 
-  @Override public boolean addRelTraitDef(RelTraitDef relTraitDef) {
-    return !traitDefs.contains(relTraitDef) && traitDefs.add(relTraitDef);
-  }
-
-  @Override public void clearRelTraitDefs() {
-    traitDefs.clear();
-  }
-
   @Override public List<RelTraitDef> getRelTraitDefs() {
-    return traitDefs;
+    return cluster.getTraitDefs();
   }
 
   @Override public RelTraitSet emptyTraitSet() {
-    RelTraitSet traitSet = super.emptyTraitSet();
-    for (RelTraitDef traitDef : traitDefs) {
-      if (traitDef.multiple()) {
-        // TODO: restructure RelTraitSet to allow a list of entries
-        //  for any given trait
-      }
-      traitSet = traitSet.plus(traitDef.getDefault());
-    }
-    return traitSet;
+    return cluster.traitSet();
   }
 
   @Override public void clear() {
@@ -499,7 +478,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
       final RelTrait ruleTrait = converterRule.getInTrait();
       final RelTraitDef ruleTraitDef = ruleTrait.getTraitDef();
-      if (traitDefs.contains(ruleTraitDef)) {
+      if (getRelTraitDefs().contains(ruleTraitDef)) {
         ruleTraitDef.registerConverterRule(this, converterRule);
       }
     }
@@ -531,7 +510,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       ConverterRule converterRule = (ConverterRule) rule;
       final RelTrait ruleTrait = converterRule.getInTrait();
       final RelTraitDef ruleTraitDef = ruleTrait.getTraitDef();
-      if (traitDefs.contains(ruleTraitDef)) {
+      if (getRelTraitDefs().contains(ruleTraitDef)) {
         ruleTraitDef.deregisterConverterRule(this, converterRule);
       }
     }
@@ -1481,10 +1460,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
           + " but does not implement the required interface '"
           + convention.getInterface() + "' of that convention");
     }
-    if (traits.size() != traitDefs.size()) {
+    if (traits.size() != getRelTraitDefs().size()) {
       throw new AssertionError("Relational expression " + rel
           + " does not have the correct number of traits: " + traits.size()
-          + " != " + traitDefs.size());
+          + " != " + getRelTraitDefs().size());
     }
 
     // Ensure that its sub-expressions are registered.

@@ -54,8 +54,15 @@ public enum Hook {
   /** Called with the output of sql-to-rel-converter. */
   CONVERTED,
 
-  /** Called with the created planner. */
+  /** Called with the created planner.
+   *
+   * @deprecated Replaced by {@link #RULE_LIST} */
+  @Deprecated // to be removed before 2.0
   PLANNER,
+
+  /** Called with a list of planner rules. List is mutable; test can add or
+   * remove rules. */
+  RULE_LIST,
 
   /** Called after de-correlation and field trimming, but before
    * optimization. */

@@ -17,6 +17,7 @@
 package org.apache.calcite.plan;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.jdbc.CalciteMetaImpl;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
@@ -89,6 +90,9 @@ import java.util.List;
  *
  * <li>Deprecate {@link RelOptPlanner#getExecutor()} and remove uses
  *
+ * <li>Figure out when in the life cycle trait defs are specified;
+ * remove {@link CalciteMetaImpl#TRAIT_DEFS}
+ *
  * </ul>
  *
  * <p>Deferred:</p>
@@ -105,12 +109,16 @@ import java.util.List;
  */
 public class Xyz {
   private RexExecutor executor;
+  private RelOptCostFactory costFactory;
 
   //~ Static fields/initializers ---------------------------------------------
 
 //  Logger LOGGER = CalciteTrace.getPlannerTracer();
 
   //~ Methods ----------------------------------------------------------------
+
+  public Xyz() {
+  }
 
   /**
    * Sets the root node of this query.
@@ -260,7 +268,7 @@ public class Xyz {
    * Returns the factory that creates
    * {@link RelOptCost}s.
    */
-//  RelOptCostFactory getCostFactory();
+  RelOptCostFactory getCostFactory();
 
   /**
    * Computes the cost of a RelNode. In most cases, this just dispatches to

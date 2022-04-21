@@ -36,8 +36,10 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -77,6 +79,11 @@ import java.util.regex.Pattern;
  * {@link org.apache.calcite.avatica.AvaticaDatabaseMetaData#getTables}.
  */
 public class CalciteMetaImpl extends MetaImpl {
+  /** Traits that are used by the default planner. Experimental. */
+  static final List<RelTraitDef> TRAIT_DEFS =
+      ImmutableList.<RelTraitDef>of(
+          ConventionTraitDef.INSTANCE,
+          RelCollationTraitDef.INSTANCE);
   static final Driver DRIVER = new Driver();
 
   public CalciteMetaImpl(CalciteConnectionImpl connection) {
@@ -595,7 +602,7 @@ public class CalciteMetaImpl extends MetaImpl {
         CalciteServerStatement statement =
             calciteConnection.server.getStatement(h);
         signature = calciteConnection.parseQuery(CalcitePrepare.Query.of(sql),
-            statement.createPrepareContext(ImmutableList.<RelTraitDef>of()),
+            statement.createPrepareContext(TRAIT_DEFS),
             maxRowCount);
         statement.setSignature(signature);
         callback.assign(signature, null, -1);
