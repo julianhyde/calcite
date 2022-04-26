@@ -34,7 +34,7 @@ public class MeasureSqlType extends ApplySqlType {
   }
 
   /** Creates a MeasureSqlType. */
-  public static MeasureSqlType create(RelDataType elementType) {
+  static MeasureSqlType create(RelDataType elementType) {
     return new MeasureSqlType(elementType, elementType.isNullable());
   }
 }
