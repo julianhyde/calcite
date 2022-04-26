@@ -128,7 +128,8 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     empmTable.addColumn("COMM", f.intType);
     empmTable.addColumn("DEPTNO", f.intType);
     empmTable.addColumn("SLACKER", f.booleanType);
-    empmTable.addColumn("COUNT_PLUS_100", f.booleanType);
+    empmTable.addColumn("COUNT_PLUS_100",
+        f.typeFactory.createMeasureType(f.intType));
     registerTable(empmTable);
 
     MockSchema structTypeSchema = new MockSchema("STRUCT");

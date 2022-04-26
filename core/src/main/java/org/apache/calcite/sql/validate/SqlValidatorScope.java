@@ -25,6 +25,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlWindow;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
@@ -129,12 +130,16 @@ public interface SqlValidatorScope {
     if (node instanceof SqlIdentifier) {
       final SqlQualified q = fullyQualify((SqlIdentifier) node);
       if (q.suffix().size() == 1
-          && q.namespace instanceof SelectNamespace) {
+          && q.namespace != null) {
         final @Nullable RelDataTypeField f =
             q.namespace.field(q.suffix().get(0));
-        final SqlSelect select = ((SelectNamespace) q.namespace).getNode();
+        if (q.namespace instanceof SelectNamespace) {
+          final SqlSelect select = ((SelectNamespace) q.namespace).getNode();
+          return f != null
+              && SqlValidatorUtil.isMeasure(select.getSelectList().get(f.getIndex()));
+        }
         return f != null
-            && SqlValidatorUtil.isMeasure(select.getSelectList().get(f.getIndex()));
+            && f.getType().getSqlTypeName() == SqlTypeName.MEASURE;
       }
     }
     return false;
