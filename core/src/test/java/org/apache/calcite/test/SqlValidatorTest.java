@@ -5396,17 +5396,17 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     f.withSql("select deptno, count_plus_100, ename\n"
             + "from empm")
         .type("RecordType(INTEGER NOT NULL DEPTNO, "
-            + "BIGINT NOT NULL COUNT_PLUS_100, "
+            + "MEASURE<INTEGER NOT NULL> NOT NULL COUNT_PLUS_100, "
             + "VARCHAR(20) NOT NULL ENAME) NOT NULL")
         .isAggregate(is(false));
 
     // as above, wrapping the measure in AGGREGATE
-    f.withSql("select deptno, aggregate(count_plus_100), ename\n"
+    f.withSql("select deptno, aggregate(count_plus_100) as x, ename\n"
             + "from empm\n"
             + "group by deptno, ename")
         .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
         .type("RecordType(INTEGER NOT NULL DEPTNO, "
-            + "BIGINT NOT NULL EXPR$1, "
+            + "MEASURE<INTEGER NOT NULL> NOT NULL X, "
             + "VARCHAR(20) NOT NULL ENAME) NOT NULL");
 
     // you can apply the AGGREGATE function only to measures
