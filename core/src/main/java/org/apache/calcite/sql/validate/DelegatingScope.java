@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -623,7 +624,12 @@ public abstract class DelegatingScope implements SqlValidatorScope {
           Pair.forEach(select.getSelectList(),
               child.namespace.getRowType().getFieldList(),
               (selectItem, field) -> {
-                // TODO
+                if (SqlValidatorUtil.isMeasure(selectItem)) {
+                  analyzer.measureExprs.add(
+                      new SqlIdentifier(
+                          Arrays.asList(child.name, field.getName()),
+                          SqlParserPos.ZERO));
+                }
               });
         }
       }
