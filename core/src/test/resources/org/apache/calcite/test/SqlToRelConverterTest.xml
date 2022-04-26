@@ -4503,7 +4503,7 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(+($0, 1), CAST($7):DECIMAL(19, 9))])
+LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(+($0, 1), $7)])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
@@ -4518,7 +4518,7 @@ LogicalProject(DEPTNO=[$7], $f1=[+($0, 1)], $f2=[+(+($0, 1), CAST($7):DECIMAL(19
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], $f2=[+(CAST(+($0, 1)):DECIMAL(19, 9), CAST($7):DECIMAL(19, 9))])
+LogicalProject(DEPTNO=[$7], E1=[+($0, 1)], E2=[+(+($0, 1), $7)])
   LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
@@ -4538,7 +4538,7 @@ group by deptno]]>
       <![CDATA[
 LogicalProject(DEPTNO=[$0], COUNT_PLUS_10=[$1], MIN_JOB=[$2])
   LogicalAggregate(group=[{0}], agg#0=[AGG_M2V($1)], MIN_JOB=[MIN($3)])
-    LogicalProject(DEPTNO=[$7], COUNT_PLUS_10=[V2M(+(COUNT(), 10))], E2=[V2M(+(+(COUNT(), 10), CAST($7):DECIMAL(19, 9)))], JOB=[$2])
+    LogicalProject(DEPTNO=[$7], COUNT_PLUS_10=[V2M(+(COUNT(), 10))], E2=[V2M(+(+(COUNT(), 10), $7))], JOB=[$2])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
