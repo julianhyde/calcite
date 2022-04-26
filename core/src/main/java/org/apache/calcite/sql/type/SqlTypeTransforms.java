@@ -199,7 +199,7 @@ public abstract class SqlTypeTransforms {
    * {@code MEASURE<T>} for some type T. */
   public static final SqlTypeTransform TO_MEASURE =
       (opBinding, typeToTransform) ->
-          MeasureSqlType.create(typeToTransform);
+          opBinding.getTypeFactory().createMeasureType(typeToTransform);
 
   /** Parameter type-inference transform that transforms {@code MEASURE<T>} to
    * {@code T} for some type T. Inverse of {@link #TO_MEASURE}. */
