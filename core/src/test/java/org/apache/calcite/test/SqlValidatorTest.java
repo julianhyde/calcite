@@ -3883,6 +3883,20 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "  deptno + 1 as measure d1,\n"
         + "  ^d1^ + 2 as d3\n"
         + "from emp").fails("Column 'D1' not found in any table");
+
+    // sub-query
+    sql("select * from (\n"
+        + "  select deptno,\n"
+        + "    empno + 1 as measure e1,\n"
+        + "    e1 + deptno as measure e2\n"
+        + "  from emp)").ok();
+    // as previous, but references a non-measure
+    sql("select * from (\n"
+        + "  select deptno,\n"
+        + "    empno + 1 as e1,\n"
+        + "    e1 + deptno as measure e2\n"
+        + "  from emp)").ok();
+
     // non-measures don't even see measures - fall back to columns
     final String intVarcharType =
         "RecordType(INTEGER NOT NULL ENAME, VARCHAR(20) NOT NULL N) NOT NULL";
