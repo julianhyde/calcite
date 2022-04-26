@@ -30,6 +30,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
@@ -619,10 +620,11 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     if (selectScope != null) {
       // Find all expressions in this scope that reference measures
       for (ScopeChild child : selectScope.children) {
+        final RelDataType rowType = child.namespace.getRowType();
         if (child.namespace instanceof SelectNamespace) {
           final SqlSelect select = ((SelectNamespace) child.namespace).getNode();
           Pair.forEach(select.getSelectList(),
-              child.namespace.getRowType().getFieldList(),
+              rowType.getFieldList(),
               (selectItem, field) -> {
                 if (SqlValidatorUtil.isMeasure(selectItem)) {
                   analyzer.measureExprs.add(
@@ -631,6 +633,15 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                           SqlParserPos.ZERO));
                 }
               });
+        } else {
+          rowType.getFieldList().forEach(field -> {
+            if (field.getType().getSqlTypeName() == SqlTypeName.MEASURE) {
+              analyzer.measureExprs.add(
+                  new SqlIdentifier(
+                      Arrays.asList(child.name, field.getName()),
+                      SqlParserPos.ZERO));
+            }
+          });
         }
       }
     }
