@@ -98,7 +98,8 @@ public class MeasureScope extends DelegatingScope {
           activeOrdinals.remove(aliasOrdinal);
         }
       }
-      return validator.unknownType; // non-measure
+      final SqlNode expression = SqlUtil.stripAs(selectItem);
+      return validator.deriveType(parent, expression);
     }
     return super.resolveColumn(name, ctx);
   }
