@@ -76,7 +76,7 @@ public abstract class SqlLibraryOperators {
    * This is a Calcite-specific extension.
    *
    * <p>This operator is for SQL (and AST); for internal use (RexNode and
-   * Aggregate) use {@link SqlInternalOperators#AGG_M2M}. */
+   * Aggregate) use {@code AGG_M2M}. */
   @LibraryOperator(libraries = {CALCITE})
   public static final SqlFunction AGGREGATE =
       SqlBasicAggFunction.create("AGGREGATE", SqlKind.AGGREGATE_FN,
