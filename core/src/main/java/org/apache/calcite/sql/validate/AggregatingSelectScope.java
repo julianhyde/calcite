@@ -130,7 +130,8 @@ public class AggregatingSelectScope
    * <p>Also identifies measure expressions, which are not in {@code GROUP BY}
    * but can still be referenced without aggregate functions. (Some dialects
    * require measures to be wrapped in
-   * {@link org.apache.calcite.sql.fun.SqlLibraryOperators#AGGREGATE}.)
+   * {@link org.apache.calcite.sql.fun.SqlLibraryOperators#AGGREGATE};
+   * see {@link SqlValidator.Config#nakedMeasures()}.)
    *
    * <p>The expressions are fully-qualified, and any "*" in select clauses are
    * expanded.
