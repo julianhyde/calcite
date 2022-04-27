@@ -57,7 +57,7 @@ public abstract class SqlToRelTestBase {
 
   /** Sets the SQL statement for a test. */
   public final SqlToRelFixture sql(String sql) {
-    return fixture().expression(false).withSql(sql);
+    return fixture().withSql(sql);
   }
 
   public final SqlToRelFixture expr(String sql) {
