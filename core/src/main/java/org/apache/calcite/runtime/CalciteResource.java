@@ -359,6 +359,12 @@ public interface CalciteResource {
   @BaseMessage("Aggregate expressions cannot be nested")
   ExInst<SqlValidatorException> nestedAggIllegal();
 
+  @BaseMessage("Measure expressions can only occur within AGGREGATE function")
+  ExInst<SqlValidatorException> measureIllegal();
+
+  @BaseMessage("Measure expressions can only occur within a GROUP BY query")
+  ExInst<SqlValidatorException> measureMustBeInAggregateQuery();
+
   @BaseMessage("FILTER must not contain aggregate expression")
   ExInst<SqlValidatorException> aggregateInFilterIllegal();
 

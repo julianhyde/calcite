@@ -93,9 +93,29 @@ class AggChecker extends SqlBasicVisitor<Void> {
     return false;
   }
 
+  boolean isMeasureExp(SqlNode e) {
+    for (SqlNode expr : measureExprs) {
+      if (expr.equalsDeep(e, Litmus.IGNORE)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override public Void visit(SqlIdentifier id) {
-    if (isGroupExpr(id) || id.isStar()) {
+    if (id.isStar()) {
       // Star may validly occur in "SELECT COUNT(*) OVER w"
+      return null;
+    }
+
+    if (!validator.config().nakedMeasures()
+        && isMeasureExp(id)) {
+      SqlNode originalExpr = validator.getOriginal(id);
+      throw validator.newValidationError(originalExpr,
+          RESOURCE.measureIllegal());
+    }
+
+    if (isGroupExpr(id)) {
       return null;
     }
 
