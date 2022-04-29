@@ -18,6 +18,8 @@
 !set outputformat mysql
 !use scott
 
+!if (false) {
+
 # Measure that references another measure
 select *
 from (
@@ -36,5 +38,7 @@ from (
 (3 rows)
 
 !ok
+
+!}
 
 # End measure.iq
