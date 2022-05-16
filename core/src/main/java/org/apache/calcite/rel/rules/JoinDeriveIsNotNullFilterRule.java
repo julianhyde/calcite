@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.rel.rules;
 
-import com.google.common.collect.ImmutableList;
-
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
@@ -30,6 +28,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
+
+import com.google.common.collect.ImmutableList;
 
 import org.immutables.value.Value;
 
