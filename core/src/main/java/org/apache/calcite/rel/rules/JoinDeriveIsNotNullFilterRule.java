@@ -16,7 +16,8 @@
  */
 package org.apache.calcite.rel.rules;
 
-import org.apache.calcite.plan.RelOptPredicateList;
+import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
@@ -26,20 +27,15 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexSimplify;
-import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.Util;
 
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Planner rule that derives IS NOT NULL filter from inner join.
@@ -66,49 +62,35 @@ public class JoinDeriveIsNotNullFilterRule
       }
     });
 
-    final ImmutableBitSet.Builder leftKeys = ImmutableBitSet.builder();
-    final ImmutableBitSet.Builder rightKeys = ImmutableBitSet.builder();
+    final List<Integer> leftKeys = new ArrayList<>();
+    final List<Integer> rightKeys = new ArrayList<>();
 
     final int offset = join.getLeft().getRowType().getFieldCount();
-    notNullableKeys.build().asList().forEach(i -> {
+    notNullableKeys.build().forEach(i -> {
       if (i < offset) {
-        leftKeys.set(i);
+        leftKeys.add(i);
       } else {
-        rightKeys.set(i - offset);
+        rightKeys.add(i - offset);
       }
     });
 
-    final RelNode newLeftNode = createIsNotNullFilter(join.getLeft(), leftKeys.build(),
-        relBuilder, mq);
-    final RelNode newRightNode = createIsNotNullFilter(join.getRight(), rightKeys.build(),
-        relBuilder, mq);
+    relBuilder.push(join.getLeft())
+        .withPredicates(mq, r ->
+            r.filter(leftKeys.stream().map(r::field).map(r::isNotNull)
+                .collect(Collectors.toList())));
+    final RelNode newLeft = relBuilder.build();
 
-    if (newLeftNode != join.getLeft() || newRightNode != join.getRight()) {
-      final List<RelNode> inputs = new ArrayList<>(2);
-      inputs.add(newLeftNode);
-      inputs.add(newRightNode);
-      final RelNode newJoin = join.copy(join.getTraitSet(), inputs);
+    relBuilder.push(join.getRight())
+        .withPredicates(mq, r ->
+            r.filter(rightKeys.stream().map(r::field).map(r::isNotNull)
+                .collect(Collectors.toList())));
+    final RelNode newRight = relBuilder.build();
+
+    if (newLeft != join.getLeft() || newRight != join.getRight()) {
+      final RelNode newJoin =
+          join.copy(join.getTraitSet(), ImmutableList.of(newLeft, newRight));
       call.transformTo(newJoin);
     }
-  }
-
-  private RelNode createIsNotNullFilter(RelNode input, ImmutableBitSet keys,
-      RelBuilder relBuilder, RelMetadataQuery mq) {
-    final RelOptPredicateList relOptPredicateList = mq.getPulledUpPredicates(input);
-    final RexExecutor executor =
-        Util.first(input.getCluster().getPlanner().getExecutor(), RexUtil.EXECUTOR);
-    final RexBuilder rexBuilder = input.getCluster().getRexBuilder();
-    final RexSimplify simplify = new RexSimplify(rexBuilder, relOptPredicateList, executor);
-    final List<RexNode> nodes = new ArrayList<>();
-    keys.asList().forEach(i -> {
-      final RexNode expr = relBuilder
-          .call(SqlStdOperatorTable.IS_NOT_NULL, rexBuilder.makeInputRef(input, i));
-      RexNode simplified = simplify.simplify(expr);
-      if (!simplified.isAlwaysTrue()) {
-        nodes.add(expr);
-      }
-    });
-    return nodes.isEmpty() ? input : relBuilder.push(input).filter(nodes).build();
   }
 
   /**
