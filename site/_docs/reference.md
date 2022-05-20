@@ -203,7 +203,7 @@ select:
           { * | projectItem [, projectItem ]* }
       FROM tableExpression
       [ WHERE booleanExpression ]
-      [ GROUP BY [ ALL | DISTINCT] { groupItem [, groupItem ]* } ]
+      [ GROUP BY [ ALL | DISTINCT ] { groupItem [, groupItem ]* } ]
       [ HAVING booleanExpression ]
       [ WINDOW windowName AS windowSpec [, windowName AS windowSpec ]* ]
 
@@ -370,9 +370,10 @@ function).
 An IN, EXISTS, UNIQUE or scalar sub-query may be correlated; that is, it
 may refer to tables in the FROM clause of an enclosing query.
 
-GROUP BY ALL is equivalent to GROUP BY, GROUP BY DISTINCT will remove
-duplicate grouping sets (such as GROUP BY DISTINCT grouping sets ((a), (a))
-is equivalent to GROUP BY grouping sets ((a))).
+GROUP BY DISTINCT removes duplicate grouping sets (for example,
+"GROUP BY DISTINCT GROUPING SETS ((a), (a, b), (a))" is equivalent to
+"GROUP BY GROUPING SETS ((a), (a, b))");
+GROUP BY ALL is equivalent to GROUP BY.
 
 *selectWithoutFrom* is equivalent to VALUES,
 but is not standard SQL and is only allowed in certain
