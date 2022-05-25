@@ -630,28 +630,25 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
 {
     SqlNode e;
     SqlNodeList orderBy = null;
+    final Span s = Span.of();
     SqlNode[] offsetFetch = {null, null};
 }
 {
-    (
-        e = QueryOrExpr(exprContext)
-    )
+    e = QueryOrExpr(exprContext)
     [
         // use the syntactic type of the expression we just parsed
         // to decide whether ORDER BY makes sense
         orderBy = OrderBy(e.isA(SqlKind.QUERY))
     ]
     [
-        LimitClause(offsetFetch)
-        [ OffsetClause(offsetFetch) ]
+        LimitClause(s, offsetFetch)
+        [ OffsetClause(s, offsetFetch) ]
     |
-        OffsetClause(offsetFetch)
+        OffsetClause(s, offsetFetch)
         [
-            LimitClause(offsetFetch) {
+            LimitClause(s, offsetFetch) {
                 if (!this.conformance.isOffsetLimitAllowed()) {
-                    throw SqlUtil.newContextException(
-                        offsetFetch[0].getParserPosition()
-                            .plus(offsetFetch[1].getParserPosition()),
+                    throw SqlUtil.newContextException(s.end(this),
                         RESOURCE.offsetLimitNotAllowed());
                 }
             }
@@ -675,13 +672,15 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
 /**
  * Parses an OFFSET clause in an ORDER BY expression.
  */
-void OffsetClause(SqlNode[] offsetFetch) :
+void OffsetClause(Span s, SqlNode[] offsetFetch) :
 {
 }
 {
     // ROW or ROWS is required in SQL:2008 but we make it optional
     // because it is not present in Postgres-style syntax.
-    <OFFSET> offsetFetch[0] = UnsignedNumericLiteralOrParam() [ <ROW> | <ROWS> ]
+    <OFFSET> { s.add(this); }
+    offsetFetch[0] = UnsignedNumericLiteralOrParam()
+    [ <ROW> | <ROWS> ]
 }
 
 /**
@@ -700,19 +699,20 @@ void FetchClause(SqlNode[] offsetFetch) :
 /**
  * Parses a LIMIT clause in an ORDER BY expression.
  */
-void LimitClause(SqlNode[] offsetFetch) :
+void LimitClause(Span s, SqlNode[] offsetFetch) :
 {
 }
 {
     // Postgres-style syntax. "LIMIT ... OFFSET ..."
-    <LIMIT>
+    <LIMIT> { s.add(this); }
     (
         // MySQL-style syntax. "LIMIT start, count"
         LOOKAHEAD(2)
         offsetFetch[0] = UnsignedNumericLiteralOrParam()
         <COMMA> offsetFetch[1] = UnsignedNumericLiteralOrParam() {
             if (!this.conformance.isLimitStartCountAllowed()) {
-                throw SqlUtil.newContextException(getPos(), RESOURCE.limitStartCountNotAllowed());
+                throw SqlUtil.newContextException(s.end(this),
+                    RESOURCE.limitStartCountNotAllowed());
             }
         }
     |
