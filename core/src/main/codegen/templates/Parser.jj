@@ -630,7 +630,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
 {
     SqlNode e;
     SqlNodeList orderBy = null;
-    SqlNode[] startCount = {null, null};
+    SqlNode[] offsetFetch = {null, null};
 }
 {
     (
@@ -642,54 +642,65 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
         orderBy = OrderBy(e.isA(SqlKind.QUERY))
     ]
     [
-        OffsetClause(startCount)
+        LimitClause(offsetFetch)
+        [ OffsetClause(offsetFetch) ]
+    |
+        OffsetClause(offsetFetch)
         [
-            LimitClause(startCount) {
-                if (!this.conformance.isOffsetStartLimitCountAllowed()) {
-                    throw SqlUtil.newContextException(getPos(), RESOURCE.offsetStartLimitCountNotAllowed());
+            LimitClause(offsetFetch) {
+                if (!this.conformance.isOffsetLimitAllowed()) {
+                    throw SqlUtil.newContextException(
+                        offsetFetch[0].getParserPosition()
+                            .plus(offsetFetch[1].getParserPosition()),
+                        RESOURCE.offsetLimitNotAllowed());
                 }
             }
-        ]
         |
-        LimitClause(startCount)
-        [
-            OffsetClause(startCount)
+            FetchClause(offsetFetch)
         ]
-    ]
-    [
-        // SQL:2008-style syntax. "OFFSET ... FETCH ...".
-        // If you specify both LIMIT and FETCH, FETCH wins.
-        <FETCH> ( <FIRST> | <NEXT> ) startCount[1] = UnsignedNumericLiteralOrParam()
-        ( <ROW> | <ROWS> ) <ONLY>
+    |
+        FetchClause(offsetFetch)
     ]
     {
-        if (orderBy != null || startCount[0] != null || startCount[1] != null) {
+        if (orderBy != null || offsetFetch[0] != null || offsetFetch[1] != null) {
             if (orderBy == null) {
                 orderBy = SqlNodeList.EMPTY;
             }
-            e = new SqlOrderBy(getPos(), e, orderBy, startCount[0], startCount[1]);
+            e = new SqlOrderBy(getPos(), e, orderBy, offsetFetch[0], offsetFetch[1]);
         }
         return e;
     }
 }
 
 /**
- * Parses an offset clause in an order by expression.
+ * Parses an OFFSET clause in an ORDER BY expression.
  */
-void OffsetClause(SqlNode[] startCount) :
+void OffsetClause(SqlNode[] offsetFetch) :
 {
 }
 {
     // ROW or ROWS is required in SQL:2008 but we make it optional
     // because it is not present in Postgres-style syntax.
-    // If you specify both LIMIT start and OFFSET, OFFSET wins.
-    <OFFSET> startCount[0] = UnsignedNumericLiteralOrParam() [ <ROW> | <ROWS> ]
+    <OFFSET> offsetFetch[0] = UnsignedNumericLiteralOrParam() [ <ROW> | <ROWS> ]
 }
 
 /**
- * Parses a limit clause in an order by expression.
+ * Parses a FETCH clause in an ORDER BY expression.
  */
-void LimitClause(SqlNode[] startCount) :
+void FetchClause(SqlNode[] offsetFetch) :
+{
+}
+{
+    // SQL:2008-style syntax. "OFFSET ... FETCH ...".
+    // If you specify both LIMIT and FETCH, FETCH wins.
+    <FETCH> ( <FIRST> | <NEXT> ) offsetFetch[1] = UnsignedNumericLiteralOrParam()
+    ( <ROW> | <ROWS> ) <ONLY>
+}
+
+/**
+ * Parses a LIMIT clause in an ORDER BY expression.
+ */
+void LimitClause(SqlNode[] offsetFetch) :
 {
 }
 {
@@ -698,14 +709,14 @@ void LimitClause(SqlNode[] startCount) :
     (
         // MySQL-style syntax. "LIMIT start, count"
         LOOKAHEAD(2)
-        startCount[0] = UnsignedNumericLiteralOrParam()
-        <COMMA> startCount[1] = UnsignedNumericLiteralOrParam() {
+        offsetFetch[0] = UnsignedNumericLiteralOrParam()
+        <COMMA> offsetFetch[1] = UnsignedNumericLiteralOrParam() {
             if (!this.conformance.isLimitStartCountAllowed()) {
                 throw SqlUtil.newContextException(getPos(), RESOURCE.limitStartCountNotAllowed());
             }
         }
     |
-        startCount[1] = UnsignedNumericLiteralOrParam()
+        offsetFetch[1] = UnsignedNumericLiteralOrParam()
     |
         <ALL>
     )
@@ -2521,7 +2532,7 @@ SqlNode WhereOpt() :
     {
         return condition;
     }
-    |
+|
     {
         return null;
     }

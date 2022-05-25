@@ -402,11 +402,13 @@ public interface SqlConformance {
   boolean isLimitStartCountAllowed();
 
   /**
-   * Whether to allow the SQL syntax "{@code OFFSET start LIMIT count}".
+   * Whether to allow the SQL syntax "{@code OFFSET start LIMIT count}"
+   * (that is, {@code OFFSET} before {@code LIMIT},
+   * in addition to {@code LIMIT} before {@code OFFSET}
+   * and {@code OFFSET} before {@code FETCH}).
    *
    * <p>The equivalent syntax in standard SQL is
-   * "{@code OFFSET start ROW FETCH FIRST count ROWS ONLY}",
-   * and in TrinoSQL "{@code OFFSET start LIMIT count}".
+   * "{@code OFFSET start ROW FETCH FIRST count ROWS ONLY}".
    *
    * <p>Trino allows this behavior.
    *
@@ -415,7 +417,7 @@ public interface SqlConformance {
    * {@link SqlConformanceEnum#LENIENT};
    * false otherwise.
    */
-  boolean isOffsetStartLimitCountAllowed();
+  boolean isOffsetLimitAllowed();
 
   /**
    * Whether to allow geo-spatial extensions, including the GEOMETRY type.

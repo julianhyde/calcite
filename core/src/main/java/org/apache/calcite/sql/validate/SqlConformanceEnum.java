@@ -319,7 +319,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
   }
 
-  @Override public boolean isOffsetStartLimitCountAllowed() {
+  @Override public boolean isOffsetLimitAllowed() {
     switch (this) {
     case BABEL:
     case LENIENT:
