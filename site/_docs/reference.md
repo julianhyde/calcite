@@ -386,7 +386,7 @@ but is only allowed in certain
 [conformance levels]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#isLimitStartCountAllowed--).
 
 "OFFSET start" may occur before "LIMIT count" in certain
-[conformance levels]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#isOffsetStartLimitCountAllowed--).
+[conformance levels]({{ site.apiRoot }}/org/apache/calcite/sql/validate/SqlConformance.html#isOffsetLimitAllowed--).
 
 ## Keywords
 
