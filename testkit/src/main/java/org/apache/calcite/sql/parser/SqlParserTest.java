@@ -7626,8 +7626,8 @@ public class SqlParserTest {
         "S", TimeUnit.SECOND
     );
     SqlParserFixture fixture = fixture()
-        .withConfig(config -> config.withIdentifierTimeUnitMap(identifierTimeUnitMap));
-    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.identifierTimeUnitMap().entrySet()) {
+        .withConfig(config -> config.withTimeUnitCodes(identifierTimeUnitMap));
+    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.withTimeUnitCodes().entrySet()) {
       fixture.sql("select extract(" + entry.getKey() + " from x)")
           .ok("SELECT EXTRACT(" + entry.getValue().name() + " FROM `X`)");
     }
