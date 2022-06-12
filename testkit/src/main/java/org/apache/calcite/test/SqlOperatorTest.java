@@ -2641,7 +2641,7 @@ public class SqlOperatorTest {
     checkNullOperand(f1, "<>");
   }
 
-  private void checkNullOperand(SqlOperatorFixture f, String op) {
+  private static void checkNullOperand(SqlOperatorFixture f, String op) {
     f.checkBoolean("1 " + op + " null", null);
     f.checkBoolean("null " + op + " -3", null);
     f.checkBoolean("null " + op + " null", null);

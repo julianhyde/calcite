@@ -9997,7 +9997,7 @@ public class SqlParserTest {
           .withClauseEndsLine(random.nextBoolean());
     }
 
-    private String toSqlString(SqlNodeList sqlNodeList,
+    static String toSqlString(SqlNodeList sqlNodeList,
         UnaryOperator<SqlWriterConfig> transform) {
       return sqlNodeList.stream()
           .map(node -> node.toSqlString(transform).getSql())
