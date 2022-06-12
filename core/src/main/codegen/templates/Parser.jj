@@ -4893,6 +4893,7 @@ TimeUnit TimeUnit() :
   TimeUnit unit;
 }
 {
+    LOOKAHEAD(1)
     <MILLISECOND> { return TimeUnit.MILLISECOND; }
 |   <SECOND> { return TimeUnit.SECOND; }
 |   <MINUTE> { return TimeUnit.MINUTE; }
