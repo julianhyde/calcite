@@ -4885,33 +4885,53 @@ SqlIntervalQualifier IntervalQualifierStart() :
 }
 
 /**
- * Parses time unit for EXTRACT, CEIL and FLOOR functions.
- * Note that it does't include NANOSECOND and MICROSECOND.
+ * Parses time unit for CEIL and FLOOR functions.
  */
 TimeUnit TimeUnit() :
 {
-  TimeUnit unit;
+    final TimeUnit unit;
 }
 {
     LOOKAHEAD(1)
-    <MILLISECOND> { return TimeUnit.MILLISECOND; }
-|   <SECOND> { return TimeUnit.SECOND; }
-|   <MINUTE> { return TimeUnit.MINUTE; }
-|   <HOUR> { return TimeUnit.HOUR; }
-|   <DAY> { return TimeUnit.DAY; }
-|   <DOW> { return TimeUnit.DOW; }
-|   <DOY> { return TimeUnit.DOY; }
-|   <ISODOW> { return TimeUnit.ISODOW; }
-|   <ISOYEAR> { return TimeUnit.ISOYEAR; }
-|   <WEEK> { return TimeUnit.WEEK; }
-|   <MONTH> { return TimeUnit.MONTH; }
-|   <QUARTER> { return TimeUnit.QUARTER; }
-|   <YEAR> { return TimeUnit.YEAR; }
-|   <EPOCH> { return TimeUnit.EPOCH; }
-|   <DECADE> { return TimeUnit.DECADE; }
-|   <CENTURY> { return TimeUnit.CENTURY; }
-|   <MILLENNIUM> { return TimeUnit.MILLENNIUM; }
-|   unit = TimeUnitIdentifier() { return unit; }
+    (
+        <MILLISECOND> { return TimeUnit.MILLISECOND; }
+    |   <SECOND> { return TimeUnit.SECOND; }
+    |   <MINUTE> { return TimeUnit.MINUTE; }
+    |   <HOUR> { return TimeUnit.HOUR; }
+    |   <DAY> { return TimeUnit.DAY; }
+    |   <DOW> { return TimeUnit.DOW; }
+    |   <DOY> { return TimeUnit.DOY; }
+    |   <ISODOW> { return TimeUnit.ISODOW; }
+    |   <ISOYEAR> { return TimeUnit.ISOYEAR; }
+    |   <WEEK> { return TimeUnit.WEEK; }
+    |   <MONTH> { return TimeUnit.MONTH; }
+    |   <QUARTER> { return TimeUnit.QUARTER; }
+    |   <YEAR> { return TimeUnit.YEAR; }
+    |   <EPOCH> { return TimeUnit.EPOCH; }
+    |   <DECADE> { return TimeUnit.DECADE; }
+    |   <CENTURY> { return TimeUnit.CENTURY; }
+    |   <MILLENNIUM> { return TimeUnit.MILLENNIUM; }
+    )
+|
+    unit = TimeUnitIdentifier() { return unit; }
+}
+
+/**
+ * Parses time unit for the EXTRACT function.
+ * As for FLOOR and CEIL, but also includes NANOSECOND and MICROSECOND.
+ */
+TimeUnit TimeUnitForExtract() :
+{
+    final TimeUnit unit;
+}
+{
+    LOOKAHEAD(1)
+    (
+        <NANOSECOND> { return TimeUnit.NANOSECOND; }
+    |   <MICROSECOND> { return TimeUnit.MICROSECOND; }
+    )
+|
+    unit = TimeUnit() { return unit; }
 }
 
 /**
@@ -5801,16 +5821,10 @@ SqlNode BuiltinFunctionCall() :
             return SqlStdOperatorTable.CAST.createCall(s.end(this), args);
         }
     |
-        <EXTRACT> {
-            s = span();
+        <EXTRACT> { s = span(); }
+        <LPAREN> unit = TimeUnitForExtract() {
+            args = startList(new SqlIntervalQualifier(unit, null, getPos()));
         }
-        <LPAREN>
-        (
-            <NANOSECOND> { unit = TimeUnit.NANOSECOND; }
-        |   <MICROSECOND> { unit = TimeUnit.MICROSECOND; }
-        |   unit = TimeUnit()
-        )
-        { args = startList(new SqlIntervalQualifier(unit, null, getPos())); }
         <FROM>
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
         <RPAREN> {
