@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -1630,18 +1631,6 @@ public class SqlParserTest {
             .build();
     SqlParserFixture fixture = fixture()
         .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
-    for (Map.Entry<String, TimeUnit> entry : timeUnitCodes.entrySet()) {
-      String unitAbbreviation = entry.getKey();
-      String unit = entry.getValue().name();
-      fixture.sql("select floor(x to " + unitAbbreviation + ")")
-          .ok("SELECT FLOOR(`X` TO " + unit + ")");
-      fixture.sql("select ceil(x to " + unitAbbreviation + ")")
-          .ok("SELECT CEIL(`X` TO " + unit + ")");
-    }
-    fixture.sql("SELECT FLOOR(x to ^A^)")
-        .fails("'A' is not a valid datetime format");
-    fixture.sql("SELECT CEIL(x to ^A^)")
-        .fails("'A' is not a valid datetime format");
   }
 
   @Test void testCast() {
@@ -7618,7 +7607,7 @@ public class SqlParserTest {
   }
 
   @Test void testExtractTimeUnitAbbreviation() {
-    ImmutableMap<String, TimeUnit> timeUnitCodes =
+    final Map<String, TimeUnit> simpleCodes =
         ImmutableMap.<String, TimeUnit>builder()
             .put("Y", TimeUnit.YEAR)
             .put("M", TimeUnit.MONTH)
@@ -7627,14 +7616,78 @@ public class SqlParserTest {
             .put("N", TimeUnit.MINUTE)
             .put("S", TimeUnit.SECOND)
             .build();
-    SqlParserFixture fixture = fixture()
+
+    // Time unit abbreviations for Microsoft SQL Server
+    final Map<String, TimeUnit> mssqlCodes =
+        ImmutableMap.<String, TimeUnit>builder()
+            .put("Y", TimeUnit.YEAR)
+            .put("YY", TimeUnit.YEAR)
+            .put("YYYY", TimeUnit.YEAR)
+            .put("Q", TimeUnit.QUARTER)
+            .put("QQ", TimeUnit.QUARTER)
+            .put("M", TimeUnit.MONTH)
+            .put("MM", TimeUnit.MONTH)
+            .put("W", TimeUnit.WEEK)
+            .put("WK", TimeUnit.WEEK)
+            .put("WW", TimeUnit.WEEK)
+            .put("DY", TimeUnit.DOY)
+            .put("DW", TimeUnit.DOW)
+            .put("D", TimeUnit.DAY)
+            .put("DD", TimeUnit.DAY)
+            .put("H", TimeUnit.HOUR)
+            .put("HH", TimeUnit.HOUR)
+            .put("N", TimeUnit.MINUTE)
+            .put("MI", TimeUnit.MINUTE)
+            .put("S", TimeUnit.SECOND)
+            .put("SS", TimeUnit.SECOND)
+            .put("MS", TimeUnit.MILLISECOND)
+            .build();
+
+    checkTimeUnitCodes(Config.DEFAULT.timeUnitCodes());
+    checkTimeUnitCodes(simpleCodes);
+    checkTimeUnitCodes(mssqlCodes);
+  }
+
+  /** Checks parsing of built-in functions that accept time unit
+   * abbreviations.
+   *
+   * <p>For example, {@code EXTRACT(Y FROM orderDate)} is using
+   * "Y" as an abbreviation for "YEAR".
+   *
+   * <p>Override if your parser supports more such functions. */
+  protected void checkTimeUnitCodes(Map<String, TimeUnit> timeUnitCodes) {
+    SqlParserFixture f = fixture()
         .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
-    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.timeUnitCodes().entrySet()) {
-      fixture.sql("select extract(" + entry.getKey() + " from x)")
-          .ok("SELECT EXTRACT(" + entry.getValue().name() + " FROM `X`)");
-    }
-    fixture.sql("select extract(^A^ from x)")
-        .fails("'A' is not a valid datetime format");
+    BiConsumer<String, TimeUnit> validConsumer = (abbrev, timeUnit) -> {
+      f.sql("select extract(" + abbrev + " from x)")
+          .ok("SELECT EXTRACT(" + timeUnit + " FROM `X`)");
+      f.sql("select floor(x to " + abbrev + ")")
+          .ok("SELECT FLOOR(`X` TO " + timeUnit + ")");
+      f.sql("select ceil(x to " + abbrev + ")")
+          .ok("SELECT CEIL(`X` TO " + timeUnit + ")");
+    };
+    BiConsumer<String, TimeUnit> invalidConsumer = (abbrev, timeUnit) -> {
+      final String upAbbrev = abbrev.toUpperCase(Locale.ROOT);
+      f.sql("select extract(^" + abbrev + "^ from x)")
+          .fails("'" + upAbbrev + "' is not a valid datetime format");
+      f.sql("SELECT FLOOR(x to ^" + abbrev + "^)")
+          .fails("'" + upAbbrev + "' is not a valid datetime format");
+      f.sql("SELECT CEIL(x to ^" + abbrev + "^)")
+          .fails("'" + upAbbrev + "' is not a valid datetime format");
+    };
+
+    // Check that each valid code passes each query that it should.
+    timeUnitCodes.forEach(validConsumer);
+
+    // If "M" is a valid code then "m" should be also.
+    timeUnitCodes.forEach((abbrev, timeUnit) ->
+        validConsumer.accept(abbrev.toLowerCase(Locale.ROOT), timeUnit));
+
+    // Check that invalid codes generate the right error messages.
+    final Map<String, TimeUnit> invalidCodes =
+        ImmutableMap.of("A", TimeUnit.YEAR,
+            "a", TimeUnit.YEAR);
+    invalidCodes.forEach(invalidConsumer);
   }
 
   @Test void testGeometry() {

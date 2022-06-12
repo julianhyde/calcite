@@ -28,8 +28,6 @@ import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 import org.apache.calcite.tools.Hoist;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Disabled;
@@ -188,52 +186,32 @@ class BabelParserTest extends SqlParserTest {
     sql(sql).ok(expected);
   }
 
-  /** SQL Server allow Time Unit Abbreviation.
-   **/
-  @Test public void testSqlServerTimeUnitAbbreviation() {
-    Builder<String, TimeUnit> b = ImmutableMap.builder();
-    b.put("Y", TimeUnit.YEAR);
-    b.put("YY", TimeUnit.YEAR);
-    b.put("YYYY", TimeUnit.YEAR);
-    b.put("Q", TimeUnit.QUARTER);
-    b.put("QQ", TimeUnit.QUARTER);
-    b.put("M", TimeUnit.MONTH);
-    b.put("MM", TimeUnit.MONTH);
-    b.put("W", TimeUnit.WEEK);
-    b.put("WK", TimeUnit.WEEK);
-    b.put("WW", TimeUnit.WEEK);
-    b.put("DY", TimeUnit.DOY);
-    b.put("DW", TimeUnit.DOW);
-    b.put("D", TimeUnit.DAY);
-    b.put("DD", TimeUnit.DAY);
-    b.put("H", TimeUnit.HOUR);
-    b.put("HH", TimeUnit.HOUR);
-    b.put("N", TimeUnit.MINUTE);
-    b.put("MI", TimeUnit.MINUTE);
-    b.put("S", TimeUnit.SECOND);
-    b.put("SS", TimeUnit.SECOND);
-    b.put("MS", TimeUnit.MILLISECOND);
-    ImmutableMap<String, TimeUnit> timeUnitCodes = b.build();
+  /** Overrides, adding tests for DATEADD, DATEDIFF, DATE_PART functions
+   * in addition to EXTRACT. */
+  @Override protected void checkTimeUnitCodes(
+      Map<String, TimeUnit> timeUnitCodes) {
+    super.checkTimeUnitCodes(timeUnitCodes);
 
-    SqlParserFixture fixture = fixture()
+    SqlParserFixture f = fixture()
         .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
 
-    for (Map.Entry<String, TimeUnit> entry : timeUnitCodes.entrySet()) {
-      String unitAbbreviation = entry.getKey();
-      String unitName = entry.getValue().name();
-      fixture.sql("SELECT "
-              + "DATEADD(" + unitAbbreviation + ", 1, '2022-06-03 15:30:00.000'),"
-              + "DATEDIFF(" + unitAbbreviation + ", '2021-06-03 12:00:00.000', '2022-06-03 15:30:00.000'),"
-              + "DATE_PART(" + unitAbbreviation + ", '2022-06-03 15:30:00.000')")
-          .ok("SELECT "
-              + "`DATEADD`(" + unitName + ", 1, '2022-06-03 15:30:00.000'), "
-              + "`DATEDIFF`(" + unitName + ", '2021-06-03 12:00:00.000', '2022-06-03 15:30:00.000'), "
-              + "`DATE_PART`(" + unitName + ", '2022-06-03 15:30:00.000')");
-    }
-    fixture.sql("SELECT DATEADD(^A^, 1, NOW())")
+    timeUnitCodes.forEach((abbrev, timeUnit) -> {
+      String sql = "SELECT "
+          + "DATEADD(" + abbrev + ", 1, '2022-06-03 15:30:00.000'),"
+          + "DATEDIFF(" + abbrev + ", '2021-06-03 12:00:00.000', '2022-06-03 15:30:00.000'),"
+          + "DATE_PART(" + abbrev + ", '2022-06-03 15:30:00.000')";
+      String expected = "SELECT "
+          + "`DATEADD`(" + timeUnit + ", 1, '2022-06-03 15:30:00.000'), "
+          + "`DATEDIFF`(" + timeUnit + ", '2021-06-03 12:00:00.000', '2022-06-03 15:30:00.000'), "
+          + "`DATE_PART`(" + timeUnit + ", '2022-06-03 15:30:00.000')";
+      f.sql(sql).ok(expected);
+    });
+    f.sql("SELECT DATEADD(^A^, 1, NOW())")
         .fails("'A' is not a valid datetime format");
-    fixture.sql("SELECT DATEADD(S^.^A, 1, NOW())")
-        .fails("(?s).*Encountered \".\" at .*");
+    if (timeUnitCodes.containsKey("S")) {
+      f.sql("SELECT DATEADD(S^.^A, 1, NOW())")
+          .fails("(?s).*Encountered \".\" at .*");
+    }
   }
 
   /** PostgreSQL and Redshift allow TIMESTAMP literals that contain only a
