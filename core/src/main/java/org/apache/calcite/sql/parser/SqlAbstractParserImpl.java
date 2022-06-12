@@ -16,10 +16,6 @@
  */
 package org.apache.calcite.sql.parser;
 
-import com.google.common.collect.ImmutableMap;
-
-import java.util.Map;
-
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.config.CharLiteralStyle;
@@ -40,7 +36,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Reader;
@@ -51,9 +46,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
@@ -497,7 +492,7 @@ public abstract class SqlAbstractParserImpl {
   /**
    * Sets the map from identifier to time unit.
    */
-  public abstract void setIdentifierTimeUnitMap(ImmutableMap<String, TimeUnit> identifierTimeUnitMap);
+  public abstract void setTimeUnitCodes(Map<String, TimeUnit> timeUnitCodes);
 
   /**
    * Sets the SQL language conformance level.

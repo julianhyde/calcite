@@ -48,8 +48,13 @@ import java.util.Set;
 @SuppressWarnings("deprecation")
 public class SqlParser {
   public static final int DEFAULT_IDENTIFIER_MAX_LENGTH = 128;
+
+  /** Default value of {@link Config#timeUnitCodes()}.
+   * The map is empty, which means that there are no abbreviations other than
+   * the time unit names ("YEAR", "SECOND", etc.) */
   public static final ImmutableMap<String, TimeUnit> DEFAULT_IDENTIFIER_TIMEUNIT_MAP =
       ImmutableMap.of();
+
   @Deprecated // to be removed before 2.0
   public static final boolean DEFAULT_ALLOW_BANG_EQUAL =
       SqlConformanceEnum.DEFAULT.isBangEqualAllowed();
@@ -65,7 +70,7 @@ public class SqlParser {
     parser.setQuotedCasing(config.quotedCasing());
     parser.setUnquotedCasing(config.unquotedCasing());
     parser.setIdentifierMaxLength(config.identifierMaxLength());
-    parser.setIdentifierTimeUnitMap(config.identifierTimeUnitMap());
+    parser.setTimeUnitCodes(config.timeUnitCodes());
     parser.setConformance(config.conformance());
     parser.switchTo(SqlAbstractParserImpl.LexicalState.forConfig(config));
   }
@@ -262,15 +267,9 @@ public class SqlParser {
     @Value.Default default int identifierMaxLength() {
       return DEFAULT_IDENTIFIER_MAX_LENGTH;
     }
+
     /** Sets {@link #identifierMaxLength()}. */
     Config withIdentifierMaxLength(int identifierMaxLength);
-
-    @Value.Default default ImmutableMap<String, TimeUnit> identifierTimeUnitMap() {
-      return DEFAULT_IDENTIFIER_TIMEUNIT_MAP;
-    }
-
-    /** Sets {@link #identifierTimeUnitMap()}. */
-    Config withIdentifierTimeUnitMap(Map<String, ? extends TimeUnit> identifierTimeUnitMap);
 
     @Value.Default default Casing quotedCasing() {
       return Casing.UNCHANGED;
@@ -320,6 +319,18 @@ public class SqlParser {
 
     /** Sets {@link #charLiteralStyles()}. */
     Config withCharLiteralStyles(Iterable<CharLiteralStyle> charLiteralStyles);
+
+    /** Returns a mapping from abbreviations to time units.
+     *
+     * <p>For example, if the map contains the entry
+     * ("Y", {@link TimeUnit#YEAR}) then you can write
+     * "{@code EXTRACT(S FROM orderDate)}". */
+    @Value.Default default Map<String, TimeUnit> timeUnitCodes() {
+      return DEFAULT_IDENTIFIER_TIMEUNIT_MAP;
+    }
+
+    /** Sets {@link #timeUnitCodes()}. */
+    Config withTimeUnitCodes(Map<String, ? extends TimeUnit> timeUnitCodes);
 
     @Value.Default default SqlParserImplFactory parserFactory() {
       return SqlParserImpl.FACTORY;
@@ -372,7 +383,7 @@ public class SqlParser {
 
     public ConfigBuilder setIdentifierTimeUnitMap(
         ImmutableMap<String, TimeUnit> identifierTimeUnitMap) {
-      return setConfig(config.withIdentifierTimeUnitMap(identifierTimeUnitMap));
+      return setConfig(config.withTimeUnitCodes(identifierTimeUnitMap));
     }
 
     @SuppressWarnings("unused")

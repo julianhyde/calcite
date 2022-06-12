@@ -138,6 +138,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -162,7 +163,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
     private Casing unquotedCasing;
     private Casing quotedCasing;
     private int identifierMaxLength;
-    private ImmutableMap<String, TimeUnit> identifierTimeUnitMap;
+    private ImmutableMap<String, TimeUnit> timeUnitCodes;
     private SqlConformance conformance;
 
     /**
@@ -224,8 +225,8 @@ public class ${parser.class} extends SqlAbstractParserImpl
         this.identifierMaxLength = identifierMaxLength;
     }
 
-    public void setIdentifierTimeUnitMap(ImmutableMap<String, TimeUnit> identifierTimeUnitMap) {
-        this.identifierTimeUnitMap = identifierTimeUnitMap;
+    public void setTimeUnitCodes(Map<String, TimeUnit> timeUnitCodes) {
+        this.timeUnitCodes = ImmutableMap.copyOf(timeUnitCodes);
     }
 
     public void setConformance(SqlConformance conformance) {
@@ -4913,8 +4914,8 @@ TimeUnit TimeUnit() :
 }
 
 /**
-* Parses a simple identifier as an TimeUnit.
-*/
+ * Parses a simple identifier as a TimeUnit.
+ */
 TimeUnit TimeUnitIdentifier() :
 {
     final List<String> names = new ArrayList<String>();
@@ -4922,12 +4923,12 @@ TimeUnit TimeUnitIdentifier() :
 }
 {
     IdentifierSegment(names, positions) {
-        TimeUnit unit = identifierTimeUnitMap.get(names.get(0));
+        TimeUnit unit = timeUnitCodes.get(names.get(0));
         if (unit != null) {
           return unit;
         }
         throw SqlUtil.newContextException(positions.get(0),
-        RESOURCE.invalidDatetimeFormat(SqlIdentifier.getString(names)));
+            RESOURCE.invalidDatetimeFormat(SqlIdentifier.getString(names)));
     }
 }
 
