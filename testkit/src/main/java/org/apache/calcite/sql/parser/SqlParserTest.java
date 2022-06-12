@@ -1619,20 +1619,6 @@ public class SqlParserTest {
         .ok("CEIL((`X` + INTERVAL '1:20' MINUTE TO SECOND) TO MILLENNIUM)");
   }
 
-  @Test void testFloorCeilTimeUnitAbbreviation() {
-    ImmutableMap<String, TimeUnit> timeUnitCodes =
-        ImmutableMap.<String, TimeUnit>builder()
-            .put("Y", TimeUnit.YEAR)
-            .put("M", TimeUnit.MONTH)
-            .put("D", TimeUnit.DAY)
-            .put("H", TimeUnit.HOUR)
-            .put("N", TimeUnit.MINUTE)
-            .put("S", TimeUnit.SECOND)
-            .build();
-    SqlParserFixture fixture = fixture()
-        .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
-  }
-
   @Test void testCast() {
     expr("cast(x as boolean)")
         .ok("CAST(`X` AS BOOLEAN)");
@@ -7606,7 +7592,10 @@ public class SqlParserTest {
         .fails("(?s)Encountered \"to\".*");
   }
 
-  @Test void testExtractTimeUnitAbbreviation() {
+  /** Tests that EXTRACT, FLOOR, CEIL functions accept abbreviations for
+   * time units (such as "Y" for "YEAR") when configured via
+   * {@link Config#timeUnitCodes()}. */
+  @Test void testTimeUnitCodes() {
     final Map<String, TimeUnit> simpleCodes =
         ImmutableMap.<String, TimeUnit>builder()
             .put("Y", TimeUnit.YEAR)
@@ -10013,7 +10002,7 @@ public class SqlParserTest {
       return constants[random.nextInt(constants.length)];
     }
 
-    private void checkList(SqlNodeList sqlNodeList,
+    static void checkList(SqlNodeList sqlNodeList,
         UnaryOperator<String> converter, List<String> expected) {
       assertThat(sqlNodeList.size(), is(expected.size()));
 
