@@ -7617,14 +7617,13 @@ public class SqlParserTest {
   }
 
   @Test void testExtractTimeUnitAbbreviation() {
-    ImmutableMap timeUnitCodes = ImmutableMap.of(
+    ImmutableMap<String, TimeUnit> timeUnitCodes = ImmutableMap.of(
         "Y", TimeUnit.YEAR,
         "M", TimeUnit.MONTH,
         "D", TimeUnit.DAY,
         "H", TimeUnit.HOUR,
         "N", TimeUnit.MINUTE,
-        "S", TimeUnit.SECOND
-    );
+        "S", TimeUnit.SECOND);
     SqlParserFixture fixture = fixture()
         .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
     for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.timeUnitCodes().entrySet()) {
