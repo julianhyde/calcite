@@ -1628,8 +1628,8 @@ public class SqlParserTest {
         "S", TimeUnit.SECOND
     );
     SqlParserFixture fixture = fixture()
-        .withConfig(config -> config.withIdentifierTimeUnitMap(identifierTimeUnitMap));
-    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.identifierTimeUnitMap().entrySet()) {
+        .withConfig(config -> config.withTimeUnitCodes(identifierTimeUnitMap));
+    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.timeUnitCodes().entrySet()) {
       String unitAbbreviation = entry.getKey();
       String unit = entry.getValue().name();
       fixture.sql("select floor(x to " + unitAbbreviation + ")")

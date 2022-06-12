@@ -216,7 +216,7 @@ class BabelParserTest extends SqlParserTest {
     ImmutableMap<String, TimeUnit> identifierTimeUnitMap = identifierTimeUnitMapBuilder.build();
 
     SqlParserFixture fixture = fixture()
-        .withConfig(config -> config.withIdentifierTimeUnitMap(identifierTimeUnitMap));
+        .withConfig(config -> config.withTimeUnitCodes(identifierTimeUnitMap));
 
     for (Map.Entry<String, TimeUnit> entry : identifierTimeUnitMap.entrySet()) {
       String unitAbbreviation = entry.getKey();
