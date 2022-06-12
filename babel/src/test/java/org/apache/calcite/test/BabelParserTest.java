@@ -191,34 +191,34 @@ class BabelParserTest extends SqlParserTest {
   /** SQL Server allow Time Unit Abbreviation.
    **/
   @Test public void testSqlServerTimeUnitAbbreviation() {
-    Builder identifierTimeUnitMapBuilder = ImmutableMap.builder();
-    identifierTimeUnitMapBuilder.put("Y", TimeUnit.YEAR);
-    identifierTimeUnitMapBuilder.put("YY", TimeUnit.YEAR);
-    identifierTimeUnitMapBuilder.put("YYYY", TimeUnit.YEAR);
-    identifierTimeUnitMapBuilder.put("Q", TimeUnit.QUARTER);
-    identifierTimeUnitMapBuilder.put("QQ", TimeUnit.QUARTER);
-    identifierTimeUnitMapBuilder.put("M", TimeUnit.MONTH);
-    identifierTimeUnitMapBuilder.put("MM", TimeUnit.MONTH);
-    identifierTimeUnitMapBuilder.put("W", TimeUnit.WEEK);
-    identifierTimeUnitMapBuilder.put("WK", TimeUnit.WEEK);
-    identifierTimeUnitMapBuilder.put("WW", TimeUnit.WEEK);
-    identifierTimeUnitMapBuilder.put("DY", TimeUnit.DOY);
-    identifierTimeUnitMapBuilder.put("DW", TimeUnit.DOW);
-    identifierTimeUnitMapBuilder.put("D", TimeUnit.DAY);
-    identifierTimeUnitMapBuilder.put("DD", TimeUnit.DAY);
-    identifierTimeUnitMapBuilder.put("H", TimeUnit.HOUR);
-    identifierTimeUnitMapBuilder.put("HH", TimeUnit.HOUR);
-    identifierTimeUnitMapBuilder.put("N", TimeUnit.MINUTE);
-    identifierTimeUnitMapBuilder.put("MI", TimeUnit.MINUTE);
-    identifierTimeUnitMapBuilder.put("S", TimeUnit.SECOND);
-    identifierTimeUnitMapBuilder.put("SS", TimeUnit.SECOND);
-    identifierTimeUnitMapBuilder.put("MS", TimeUnit.MILLISECOND);
-    ImmutableMap<String, TimeUnit> identifierTimeUnitMap = identifierTimeUnitMapBuilder.build();
+    Builder<String, TimeUnit> b = ImmutableMap.builder();
+    b.put("Y", TimeUnit.YEAR);
+    b.put("YY", TimeUnit.YEAR);
+    b.put("YYYY", TimeUnit.YEAR);
+    b.put("Q", TimeUnit.QUARTER);
+    b.put("QQ", TimeUnit.QUARTER);
+    b.put("M", TimeUnit.MONTH);
+    b.put("MM", TimeUnit.MONTH);
+    b.put("W", TimeUnit.WEEK);
+    b.put("WK", TimeUnit.WEEK);
+    b.put("WW", TimeUnit.WEEK);
+    b.put("DY", TimeUnit.DOY);
+    b.put("DW", TimeUnit.DOW);
+    b.put("D", TimeUnit.DAY);
+    b.put("DD", TimeUnit.DAY);
+    b.put("H", TimeUnit.HOUR);
+    b.put("HH", TimeUnit.HOUR);
+    b.put("N", TimeUnit.MINUTE);
+    b.put("MI", TimeUnit.MINUTE);
+    b.put("S", TimeUnit.SECOND);
+    b.put("SS", TimeUnit.SECOND);
+    b.put("MS", TimeUnit.MILLISECOND);
+    ImmutableMap<String, TimeUnit> timeUnitCodes = b.build();
 
     SqlParserFixture fixture = fixture()
-        .withConfig(config -> config.withTimeUnitCodes(identifierTimeUnitMap));
+        .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
 
-    for (Map.Entry<String, TimeUnit> entry : identifierTimeUnitMap.entrySet()) {
+    for (Map.Entry<String, TimeUnit> entry : timeUnitCodes.entrySet()) {
       String unitAbbreviation = entry.getKey();
       String unitName = entry.getValue().name();
       fixture.sql("SELECT "

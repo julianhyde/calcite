@@ -7617,7 +7617,7 @@ public class SqlParserTest {
   }
 
   @Test void testExtractTimeUnitAbbreviation() {
-    ImmutableMap identifierTimeUnitMap = ImmutableMap.of(
+    ImmutableMap timeUnitCodes = ImmutableMap.of(
         "Y", TimeUnit.YEAR,
         "M", TimeUnit.MONTH,
         "D", TimeUnit.DAY,
@@ -7626,8 +7626,8 @@ public class SqlParserTest {
         "S", TimeUnit.SECOND
     );
     SqlParserFixture fixture = fixture()
-        .withConfig(config -> config.withTimeUnitCodes(identifierTimeUnitMap));
-    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.withTimeUnitCodes().entrySet()) {
+        .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
+    for (Map.Entry<String, TimeUnit> entry : Config.DEFAULT.timeUnitCodes().entrySet()) {
       fixture.sql("select extract(" + entry.getKey() + " from x)")
           .ok("SELECT EXTRACT(" + entry.getValue().name() + " FROM `X`)");
     }
