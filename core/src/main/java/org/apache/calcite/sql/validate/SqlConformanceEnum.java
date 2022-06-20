@@ -165,13 +165,13 @@ public enum SqlConformanceEnum implements SqlConformance {
     switch (this) {
     case DEFAULT:
     case BABEL:
+    case BIG_QUERY:
     case LENIENT:
     case MYSQL_5:
     case ORACLE_10:
     case ORACLE_12:
     case STRICT_92:
     case SQL_SERVER_2008:
-    case BIG_QUERY:
       return true;
     default:
       return false;

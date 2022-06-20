@@ -78,7 +78,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static org.apache.calcite.sql.validate.SqlConformanceEnum.BIG_QUERY;
 import static org.apache.calcite.test.Matchers.isCharset;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -370,7 +369,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   @Test void testNiladicForBigQuery() {
     sql("select current_time, current_time(), current_date, "
         + "current_date(), current_timestamp, current_timestamp()")
-        .withConformance(BIG_QUERY).ok();
+        .withConformance(SqlConformanceEnum.BIG_QUERY).ok();
   }
 
   @Test void testEqualNotEqual() {
@@ -1534,7 +1533,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   @Test void testCurrentDatetime() throws SqlParseException, ValidationException {
     final String currentDateTimeExpr = "select ^current_datetime^";
     SqlValidatorFixture shouldFail = sql(currentDateTimeExpr)
-        .withConformance(BIG_QUERY);
+        .withConformance(SqlConformanceEnum.BIG_QUERY);
     final String expectedError = "query [select CURRENT_DATETIME]; exception "
         + "[Column 'CURRENT_DATETIME' not found in any table]; class "
         + "[class org.apache.calcite.sql.validate.SqlValidatorException]; pos [line 1 col 8 thru line 1 col 8]";
@@ -1542,13 +1541,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
     final SqlOperatorTable opTable = operatorTableFor(SqlLibrary.BIG_QUERY);
     sql("select current_datetime()")
-        .withConformance(BIG_QUERY)
+        .withConformance(SqlConformanceEnum.BIG_QUERY)
         .withOperatorTable(opTable).ok();
     sql("select CURRENT_DATETIME('America/Los_Angeles')")
-        .withConformance(BIG_QUERY)
+        .withConformance(SqlConformanceEnum.BIG_QUERY)
         .withOperatorTable(opTable).ok();
     sql("select CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))")
-        .withConformance(BIG_QUERY)
+        .withConformance(SqlConformanceEnum.BIG_QUERY)
         .withOperatorTable(opTable).ok();
   }
 
@@ -6711,6 +6710,17 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql("select 'foo' as empno from emp order by empno + 5").ok();
   }
 
+  /** Tests that you can reference a column alias in the ORDER BY clause if
+   * {@link SqlConformance#isSortByAlias()}. */
+  @Test void testOrderByAlias() {
+    sql("select count(*) as total from emp order by ^total^")
+        .ok()
+        .withConformance(SqlConformanceEnum.BIG_QUERY)
+        .ok()
+        .withConformance(SqlConformanceEnum.STRICT_2003)
+        .fails("Column 'TOTAL' not found in any table");
+  }
+
   @Test void testOrderJoin() {
     sql("select * from emp as e, dept as d order by e.empno").ok();
   }
@@ -7354,11 +7364,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // alias in GROUP BY query has been known to cause problems
     sql("select deptno as d, count(*) as c from emp group by deptno").ok();
   }
-
-  @Test void testSortByAliasColumnBigQuery() {
-    sql("select count(*) as total from emp order by total").withConformance(BIG_QUERY).ok();
-  }
-
 
   @Test void testNestedAggFails() {
     // simple case
