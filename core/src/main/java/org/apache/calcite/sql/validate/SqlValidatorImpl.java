@@ -117,7 +117,6 @@ import com.google.common.collect.Sets;
 
 import org.apiguardian.api.API;
 import org.checkerframework.checker.nullness.qual.KeyFor;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
@@ -3712,10 +3711,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @param node The node to strip DOT
    * @return the DOT's first operand
    */
-  private static @NonNull SqlNode stripDot(@NonNull SqlNode node) {
+  private static SqlNode stripDot(SqlNode node) {
     SqlNode res = node;
     while (res.getKind() == SqlKind.DOT) {
-      res = ((SqlCall) res).operand(0);
+      res = requireNonNull(((SqlCall) res).operand(0), "operand");
     }
     return res;
   }
@@ -3728,7 +3727,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       checkRollUpInWindow(getWindowInOver(current), scope);
       current = stripOver(current);
 
-      SqlNode stripDot = requireNonNull(stripDot(current), "stripDot(current)");
+      SqlNode stripDot = stripDot(current);
       if (stripDot != current) {
         // we stripped the field access. Recurse to this method, the DOT's operand
         // can be another SqlCall, or an SqlIdentifier.
@@ -3757,7 +3756,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     checkRollUp(grandParent, parent, current, scope, null);
   }
 
-  private static @Nullable SqlWindow getWindowInOver(@NonNull SqlNode over) {
+  private static @Nullable SqlWindow getWindowInOver(SqlNode over) {
     if (over.getKind() == SqlKind.OVER) {
       SqlNode window = ((SqlCall) over).getOperandList().get(1);
       if (window instanceof SqlWindow) {
