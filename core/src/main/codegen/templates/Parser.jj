@@ -1978,6 +1978,9 @@ SqlNode FromClause() :
 SqlNode Join() :
 {
     SqlNode e;
+    final List<Object> list = new ArrayList<Object>();
+    SqlOperator op;
+    SqlParserPos pos;
 }
 {
     e = TableRefOrParenthesizedQuery()
@@ -1985,8 +1988,28 @@ SqlNode Join() :
         LOOKAHEAD(2)
         e = JoinTable(e)
     )*
+    { list.add(e); }
+    (
+        {
+            if (!e.isA(SqlKind.QUERY)) {
+                // whoops, expression we just parsed wasn't a query,
+                // but we're about to see something like UNION, so
+                // force an exception retroactively
+                checkNonQueryExpression(ExprContext.ACCEPT_QUERY);
+            }
+        }
+        op = BinaryQueryOperator() {
+            // ensure a query is legal in this context
+            pos = getPos();
+            checkQueryExpression(ExprContext.ACCEPT_QUERY);
+        }
+        e = LeafQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+            list.add(new SqlParserUtil.ToTreeListItem(op, pos));
+            list.add(e);
+        }
+    )*
     {
-        return e;
+        return SqlParserUtil.toTree(list);
     }
 }
 
@@ -2077,14 +2100,12 @@ SqlNode JoinTable(SqlNode e) :
     }
 }
 
+// TODO: inline
 SqlNode TableRefOrParenthesizedQuery() :
 {
     final SqlNode e;
 }
 {
-    LOOKAHEAD(<LPAREN>)
-    e = ParenthesizedExpression(ExprContext.ACCEPT_QUERY) { return e; }
-|
     e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN) { return e; }
 }
 
