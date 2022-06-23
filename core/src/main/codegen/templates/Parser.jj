@@ -2082,9 +2082,10 @@ SqlNode TableRefOrParenthesizedQuery() :
     final SqlNode e;
 }
 {
-    e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN) { return e; }
+    LOOKAHEAD(<LPAREN>)
+    e = ParenthesizedExpression(ExprContext.ACCEPT_QUERY) { return e; }
 |
-    { return e; }
+    e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN) { return e; }
 }
 
 /**
