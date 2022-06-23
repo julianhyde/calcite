@@ -8057,6 +8057,24 @@ public class SqlParserTest {
     sql(sql2).ok(expected2);
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5194">[CALCITE-5194]
+   * Cannot parse parenthesized UNION in FROM</a>. */
+  @Test void testParenthesizedUnionInFrom() {
+    final String sql = "select *\n"
+        + "from (\n"
+        + "  (select x from a)\n"
+        + "  union\n"
+        + "  (select y from b))";
+    final String expected = "SELECT *\n"
+        + "FROM (SELECT `COLUMNS`[0] AS `COL0`\n"
+        + "FROM `EMPS` AS `T1`\n"
+        + "UNION ALL\n"
+        + "SELECT `COLUMNS`[0] AS `C2`\n"
+        + "FROM `EMPS` AS `T2`)";
+    sql(sql).ok(expected);
+  }
+
   @Test void testFromExpr() {
     String sql0 = "select * from a cross join b";
     String sql1 = "select * from (a cross join b)";

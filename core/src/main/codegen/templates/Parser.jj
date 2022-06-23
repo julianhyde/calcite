@@ -1980,7 +1980,7 @@ SqlNode Join() :
     SqlNode e;
 }
 {
-    e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN)
+    e = TableRefOrParenthesizedQuery()
     (
         LOOKAHEAD(2)
         e = JoinTable(e)
@@ -2013,7 +2013,7 @@ SqlNode JoinTable(SqlNode e) :
     LOOKAHEAD(3)
     natural = Natural()
     joinType = JoinType()
-    e2 = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN)
+    e2 = TableRefOrParenthesizedQuery()
     (
         <ON> { on = JoinConditionType.ON.symbol(getPos()); }
         condition = Expression(ExprContext.ACCEPT_SUB_QUERY) {
@@ -2075,6 +2075,16 @@ SqlNode JoinTable(SqlNode e) :
             JoinConditionType.ON.symbol(SqlParserPos.ZERO),
             SqlLiteral.createBoolean(true, joinType.getParserPosition()));
     }
+}
+
+SqlNode TableRefOrParenthesizedQuery() :
+{
+    final SqlNode e;
+}
+{
+    e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN) { return e; }
+|
+    { return e; }
 }
 
 /**
