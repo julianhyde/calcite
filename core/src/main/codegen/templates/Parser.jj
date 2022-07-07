@@ -1978,38 +1978,15 @@ SqlNode FromClause() :
 SqlNode Join() :
 {
     SqlNode e;
-    final List<Object> list = new ArrayList<Object>();
-    SqlOperator op;
-    SqlParserPos pos;
 }
 {
-    e = TableRefOrParenthesizedQuery()
+    e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN)
     (
         LOOKAHEAD(2)
         e = JoinTable(e)
     )*
-    { list.add(e); }
-    (
-        {
-            if (!e.isA(SqlKind.QUERY)) {
-                // whoops, expression we just parsed wasn't a query,
-                // but we're about to see something like UNION, so
-                // force an exception retroactively
-                checkNonQueryExpression(ExprContext.ACCEPT_QUERY);
-            }
-        }
-        op = BinaryQueryOperator() {
-            // ensure a query is legal in this context
-            pos = getPos();
-            checkQueryExpression(ExprContext.ACCEPT_QUERY);
-        }
-        e = LeafQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-            list.add(new SqlParserUtil.ToTreeListItem(op, pos));
-            list.add(e);
-        }
-    )*
     {
-        return SqlParserUtil.toTree(list);
+        return e;
     }
 }
 
@@ -2036,7 +2013,7 @@ SqlNode JoinTable(SqlNode e) :
     LOOKAHEAD(3)
     natural = Natural()
     joinType = JoinType()
-    e2 = TableRefOrParenthesizedQuery()
+    e2 = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN)
     (
         <ON> { on = JoinConditionType.ON.symbol(getPos()); }
         condition = Expression(ExprContext.ACCEPT_SUB_QUERY) {
@@ -2098,15 +2075,6 @@ SqlNode JoinTable(SqlNode e) :
             JoinConditionType.ON.symbol(SqlParserPos.ZERO),
             SqlLiteral.createBoolean(true, joinType.getParserPosition()));
     }
-}
-
-// TODO: inline
-SqlNode TableRefOrParenthesizedQuery() :
-{
-    final SqlNode e;
-}
-{
-    e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN) { return e; }
 }
 
 /**
