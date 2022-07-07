@@ -8075,6 +8075,20 @@ public class SqlParserTest {
     sql(sql).ok(expected);
   }
 
+  @Test void testParenthesizedUnion() {
+    final String sql = "(select x from a\n"
+        + "  union\n"
+        + "  select y from b)\n"
+        + "except\n"
+        + "(select z from c)";
+    final String expected = "(SELECT `X`\n"
+        + "FROM `A`\n"
+        + "UNION\n"
+        + "SELECT `Y`\n"
+        + "FROM `B`)";
+    sql(sql).ok(expected);
+  }
+
   @Test void testFromExpr() {
     String sql0 = "select * from a cross join b";
     String sql1 = "select * from (a cross join b)";
