@@ -2178,9 +2178,6 @@ SqlNode TableRef2(boolean lateral) :
 SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
 {
     SqlNode tableRef;
-    final SqlNode over;
-    final SqlNode snapshot;
-    final SqlNode match;
     SqlNodeList extendList = null;
     final SqlIdentifier alias;
     final Span s, s2;
@@ -2198,12 +2195,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
                 tableRef = extend(tableRef, extendList);
             }
         ]
-        over = TableOverOpt() {
-            if (over != null) {
-                tableRef = SqlStdOperatorTable.OVER.createCall(
-                    getPos(), tableRef, over);
-            }
-        }
+        tableRef = Over(tableRef)
         [
             tableRef = Snapshot(tableRef)
         ]
@@ -2214,17 +2206,8 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         LOOKAHEAD(2)
         [ <LATERAL> { lateral = true; } ]
         tableRef = ParenthesizedExpression(exprContext)
-        over = TableOverOpt()
-        {
-            if (over != null) {
-                tableRef = SqlStdOperatorTable.OVER.createCall(
-                    getPos(), checkNotJoin(tableRef), over);
-            }
-            if (lateral) {
-                tableRef = SqlStdOperatorTable.LATERAL.createCall(
-                    getPos(), checkNotJoin(tableRef));
-            }
-        }
+        tableRef = Over(tableRef)
+        tableRef = Lateral(tableRef, lateral)
         [
             tableRef = MatchRecognize(tableRef)
         ]
@@ -2242,12 +2225,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
     |
         [ <LATERAL> { lateral = true; } ]
         tableRef = TableFunctionCall()
-        {
-            if (lateral) {
-                tableRef = SqlStdOperatorTable.LATERAL.createCall(
-                    tableRef.getParserPosition(), tableRef);
-            }
-        }
+        tableRef = Lateral(tableRef, lateral)
     |
         tableRef = ExtendedTableRef()
     )
@@ -2896,6 +2874,38 @@ SqlNode OrderItem() :
     )?
     {
         return e;
+    }
+}
+
+/** Wraps a table reference in a call to OVER if an optional "OVER" clause
+ * is present (if the dialect supports OVER for table expressions). */
+SqlNode Over(SqlNode tableRef) :
+{
+    final SqlNode over;
+}
+{
+    over = TableOverOpt() {
+        if (over != null) {
+            return SqlStdOperatorTable.OVER.createCall(
+                getPos(), checkNotJoin(tableRef), over);
+        } else {
+            return tableRef;
+        }
+    }
+}
+
+/** Wraps a table reference in a call to LATERAL if {@code lateral} is true. */
+SqlNode Lateral(SqlNode tableRef, boolean lateral) :
+{
+}
+{
+    {
+        if (lateral) {
+            return SqlStdOperatorTable.LATERAL.createCall(
+                getPos(), checkNotJoin(tableRef));
+        } else {
+            return tableRef;
+        }
     }
 }
 
