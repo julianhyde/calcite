@@ -274,7 +274,8 @@ public abstract class FilterJoinRule<C extends FilterJoinRule.Config>
    * @param leftNodes where the conditions not feasible for equal sets are put
    * @return the equal sets
    */
-  private List<Set<Integer>> splitEqualSets(List<RexNode> rexNodes, List<RexNode> leftNodes) {
+  private static List<Set<Integer>> splitEqualSets(List<RexNode> rexNodes,
+      List<RexNode> leftNodes) {
     final List<Set<Integer>> equalSets = new ArrayList<>();
     for (RexNode rexNode : rexNodes) {
       if (rexNode.isA(SqlKind.EQUALS)) {
