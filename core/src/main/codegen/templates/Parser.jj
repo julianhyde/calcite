@@ -349,6 +349,7 @@ SqlNode FloorCeilOptions(Span s, boolean floorFlag) :
 JAVACODE
 void E() {}
 
+/** @Deprecated */
 JAVACODE List startList(Object o)
 {
     List list = new ArrayList();
@@ -683,8 +684,7 @@ SqlNode OrderByLimitOpt(SqlNode e) :
         // use the syntactic type of the expression we just parsed
         // to decide whether ORDER BY makes sense
         orderBy = OrderBy(e.isA(SqlKind.QUERY))
-    |
-        { orderBy = null; }
+    |   { orderBy = null; }
     )
     [
         LimitClause(s, offsetFetch)
@@ -1005,8 +1005,7 @@ void Arg0(List<SqlNode> list, ExprContext exprContext) :
 {
     (
         LOOKAHEAD(2) name = SimpleIdentifier() <NAMED_ARGUMENT_ASSIGNMENT>
-    |
-        { name = null; }
+    |   { name = null; }
     )
     (
         e = Default()
@@ -1030,8 +1029,7 @@ void Arg(List<SqlNode> list, ExprContext exprContext) :
 {
     (
         LOOKAHEAD(2) name = SimpleIdentifier() <NAMED_ARGUMENT_ASSIGNMENT>
-    |
-        { name = null; }
+    |   { name = null; }
     )
     (
         e = Default()
@@ -1294,29 +1292,18 @@ void Hint(List<SqlNode> hints) :
     }
 }
 
-/**
- * Parses a table reference with optional hints.
- */
-SqlNode TableRefWithHintsOpt() :
+/** Parses hints following a table reference,
+ * and returns the wrapped table reference. */
+SqlNode TableHints(SqlIdentifier tableName) :
 {
-    final SqlIdentifier tableRef;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
-    final Span s;
 }
 {
-    { s = span(); }
-    tableRef = CompoundTableIdentifier()
-    (
-        LOOKAHEAD(2)
-        <HINT_BEG> CommaSeparatedSqlHints(hints) <COMMENT_END> {
-            final SqlNodeList hintList =
-                new SqlNodeList(hints, s.addAll(hints).end(this));
-            return new SqlTableRef(Span.of(tableRef, hintList).pos(),
-                    tableRef, hintList);
-        }
-    |
-        { return tableRef; }
-    )
+    <HINT_BEG> CommaSeparatedSqlHints(hints) <COMMENT_END> {
+        final SqlParserPos pos = Span.of(tableName).addAll(hints).end(this);
+        final SqlNodeList hintList = new SqlNodeList(hints, pos);
+        return new SqlTableRef(pos, tableName, hintList);
+    }
 }
 
 /**
@@ -1361,9 +1348,9 @@ SqlSelect SqlSelect() :
     selectList = SelectList()
     (
         <FROM> fromClause = FromClause()
-        where = WhereOpt()
-        groupBy = GroupByOpt()
-        having = HavingOpt()
+        ( where = Where() | { where = null; } )
+        ( groupBy = GroupBy() | { groupBy = null; } )
+        ( having = Having() | { having = null; } )
         ( windowDecls = Window() | { windowDecls = null; } )
     |
         E() {
@@ -1615,11 +1602,12 @@ SqlNode SqlInsert() :
 {
     final List<SqlLiteral> keywords = new ArrayList<SqlLiteral>();
     final SqlNodeList keywordList;
-    SqlNode table;
-    final SqlNodeList extendList;
+    final SqlIdentifier tableName;
+    SqlNode tableRef;
     SqlNode source;
     final SqlNodeList columnList;
     final Span s;
+    final Pair<SqlNodeList, SqlNodeList> p;
 }
 {
     (
@@ -1631,20 +1619,14 @@ SqlNode SqlInsert() :
     SqlInsertKeywords(keywords) {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
     }
-    <INTO> table = TableRefWithHintsOpt()
-    [
-        LOOKAHEAD(5)
-        [ <EXTEND> ]
-        extendList = ExtendList() {
-            table = extend(table, extendList);
-        }
-    ]
+    <INTO> tableName = CompoundTableIdentifier()
+    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    [ LOOKAHEAD(5) tableRef = ExtendTable(tableRef) ]
     (
         LOOKAHEAD(2)
-        { final Pair<SqlNodeList, SqlNodeList> p; }
         p = ParenthesizedCompoundIdentifierList() {
             if (p.right.size() > 0) {
-                table = extend(table, p.right);
+                tableRef = extend(tableRef, p.right);
             }
             if (p.left.size() > 0) {
                 columnList = p.left;
@@ -1652,11 +1634,10 @@ SqlNode SqlInsert() :
                 columnList = null;
             }
         }
-    |
-        { columnList = null; }
+    |   { columnList = null; }
     )
     source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new SqlInsert(s.end(source), keywordList, table, source,
+        return new SqlInsert(s.end(source), keywordList, tableRef, source,
             columnList);
     }
 }
@@ -1674,28 +1655,24 @@ SqlNode SqlInsert() :
  */
 SqlNode SqlDelete() :
 {
-    SqlNode table;
-    final SqlNodeList extendList;
+    final SqlIdentifier tableName;
+    SqlNode tableRef;
     final SqlIdentifier alias;
-    final SqlNode condition;
+    final SqlNode where;
     final Span s;
 }
 {
     <DELETE> {
         s = span();
     }
-    <FROM> table = TableRefWithHintsOpt()
-    [
-        [ <EXTEND> ]
-        extendList = ExtendList() {
-            table = extend(table, extendList);
-        }
-    ]
+    <FROM> tableName = CompoundTableIdentifier()
+    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    [ tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
-    condition = WhereOpt()
+    ( where = Where() | { where = null; } )
     {
-        return new SqlDelete(s.add(table).addIf(alias).addIf(condition).pos(),
-            table, condition, null, alias);
+        return new SqlDelete(s.add(tableRef).addIf(alias).addIf(where).pos(),
+            tableRef, where, null, alias);
     }
 }
 
@@ -1704,10 +1681,10 @@ SqlNode SqlDelete() :
  */
 SqlNode SqlUpdate() :
 {
-    SqlNode table;
-    final SqlNodeList extendList;
+    final SqlIdentifier tableName;
+    SqlNode tableRef;
     final SqlIdentifier alias;
-    SqlNode condition;
+    final SqlNode where;
     final SqlNodeList sourceExpressionList;
     final SqlNodeList targetColumnList;
     SqlIdentifier id;
@@ -1715,17 +1692,14 @@ SqlNode SqlUpdate() :
     final Span s;
 }
 {
-    <UPDATE> { s = span(); }
-    table = TableRefWithHintsOpt() {
+    <UPDATE> {
+        s = span();
         targetColumnList = new SqlNodeList(s.pos());
         sourceExpressionList = new SqlNodeList(s.pos());
     }
-    [
-        [ <EXTEND> ]
-        extendList = ExtendList() {
-            table = extend(table, extendList);
-        }
-    ]
+    tableName = CompoundTableIdentifier()
+    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    [ tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
     <SET> id = SimpleIdentifier() {
         targetColumnList.add(id);
@@ -1745,11 +1719,12 @@ SqlNode SqlUpdate() :
             sourceExpressionList.add(exp);
         }
     )*
-    condition = WhereOpt()
+    ( where = Where() | { where = null; } )
     {
-        return new SqlUpdate(s.addAll(targetColumnList)
-            .addAll(sourceExpressionList).addIf(condition).pos(), table,
-            targetColumnList, sourceExpressionList, condition, null, alias);
+        final SqlParserPos pos = s.addAll(targetColumnList)
+            .addAll(sourceExpressionList).addIf(where).pos();
+        return new SqlUpdate(pos, tableRef, targetColumnList,
+            sourceExpressionList, where, null, alias);
     }
 }
 
@@ -1758,8 +1733,8 @@ SqlNode SqlUpdate() :
  */
 SqlNode SqlMerge() :
 {
-    SqlNode table;
-    final SqlNodeList extendList;
+    final SqlIdentifier tableName;
+    SqlNode tableRef;
     final SqlIdentifier alias;
     final SqlNode sourceTableRef;
     final SqlNode condition;
@@ -1768,27 +1743,24 @@ SqlNode SqlMerge() :
     final Span s;
 }
 {
-    <MERGE> { s = span(); } <INTO> table = TableRefWithHintsOpt()
-    [
-        [ <EXTEND> ]
-        extendList = ExtendList() {
-            table = extend(table, extendList);
-        }
-    ]
+    <MERGE> { s = span(); } <INTO> tableName = CompoundTableIdentifier()
+    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    [ tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
     <USING> sourceTableRef = TableRef()
     <ON> condition = Expression(ExprContext.ACCEPT_SUB_QUERY)
     (
         LOOKAHEAD(2)
-        updateCall = WhenMatchedClause(table, alias)
-        ( insertCall = WhenNotMatchedClause(table) | { insertCall = null; } )
+        updateCall = WhenMatchedClause(tableRef, alias)
+        ( insertCall = WhenNotMatchedClause(tableRef) | { insertCall = null; } )
     |
         { updateCall = null; }
-        insertCall = WhenNotMatchedClause(table)
+        insertCall = WhenNotMatchedClause(tableRef)
     )
     {
-        return new SqlMerge(s.addIf(updateCall).addIf(insertCall).pos(), table,
-            condition, sourceTableRef, updateCall, insertCall, null, alias);
+        final SqlParserPos pos = s.addIf(updateCall).addIf(insertCall).pos();
+        return new SqlMerge(pos, tableRef, condition, sourceTableRef,
+            updateCall, insertCall, null, alias);
     }
 }
 
@@ -1842,8 +1814,7 @@ SqlInsert WhenNotMatchedClause(SqlNode table) :
     (
         LOOKAHEAD(2)
         insertColumnList = ParenthesizedSimpleIdentifierList()
-    |
-        { insertColumnList = null; }
+    |   { insertColumnList = null; }
     )
     (
         <LPAREN>
@@ -2139,8 +2110,8 @@ SqlNode TableRef2(boolean lateral) :
 
 SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
 {
+    final SqlIdentifier tableName;
     SqlNode tableRef;
-    final SqlNodeList extendList;
     final SqlIdentifier alias;
     final Span s;
     SqlNodeList args;
@@ -2150,13 +2121,9 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
 {
     (
         LOOKAHEAD(2)
-        tableRef = TableRefWithHintsOpt()
-        [
-            [ <EXTEND> ]
-            extendList = ExtendList() {
-                tableRef = extend(tableRef, extendList);
-            }
-        ]
+        tableName = CompoundTableIdentifier()
+        ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+        [ tableRef = ExtendTable(tableRef) ]
         tableRef = Over(tableRef)
         [ tableRef = Snapshot(tableRef) ]
         [ tableRef = MatchRecognize(tableRef) ]
@@ -2197,8 +2164,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         [ <AS> ] alias = SimpleIdentifier()
         (
             columnAliasList = ParenthesizedSimpleIdentifierList()
-        |
-            { columnAliasList = null; }
+        |   { columnAliasList = null; }
         )
         {
             // Standard SQL (and Postgres) allow applying "AS alias" to a JOIN,
@@ -2290,6 +2256,19 @@ SqlNode Tablesample(SqlNode tableRef) :
         }
     )
     { return tableRef; }
+}
+
+/** Wraps a table reference in a call to EXTEND if an optional "EXTEND" clause
+ * is present. */
+SqlNode ExtendTable(SqlNode tableRef) :
+{
+    final SqlNodeList extendList;
+}
+{
+    [ <EXTEND> ]
+    extendList = ExtendList() {
+        return extend(tableRef, extendList);
+    }
 }
 
 SqlNodeList ExtendList() :
@@ -2497,49 +2476,39 @@ SqlNode RowConstructor() :
     }
 }
 
-/**
- * Parses the optional WHERE clause for SELECT, DELETE, and UPDATE.
- */
-SqlNode WhereOpt() :
+/** Parses a WHERE clause for SELECT, DELETE, and UPDATE. */
+SqlNode Where() :
 {
     SqlNode condition;
 }
 {
-    <WHERE> condition = Expression(ExprContext.ACCEPT_SUB_QUERY)
-    {
+    <WHERE> condition = Expression(ExprContext.ACCEPT_SUB_QUERY) {
         return condition;
-    }
-|
-    {
-        return null;
     }
 }
 
-/**
- * Parses the optional GROUP BY clause for SELECT.
- */
-SqlNodeList GroupByOpt() :
+/** Parses a GROUP BY clause for SELECT. */
+SqlNodeList GroupBy() :
 {
-    List<SqlNode> list = new ArrayList<SqlNode>();
-    boolean distinct = false;
+    final List<SqlNode> list;
+    final boolean distinct;
     final Span s;
 }
 {
     <GROUP> { s = span(); }
     <BY>
-    [ <DISTINCT> { distinct = true; } | <ALL> ]
+    (
+        <DISTINCT> { distinct = true; }
+    |   <ALL> { distinct = false; }
+    |   { distinct = false; }
+    )
     list = GroupingElementList() {
-        if (distinct) {
-            SqlNode groupByDistinct =
-                SqlInternalOperators.GROUP_BY_DISTINCT.createCall(
-                    s.add(getPos()).pos(), list);
-            list = ImmutableList.of(groupByDistinct);
-        }
-        return new SqlNodeList(list, s.addAll(list).pos());
-    }
-|
-    {
-        return null;
+        final SqlParserPos pos = s.end(this);
+        final List<SqlNode> list2 = distinct
+            ? ImmutableList.of(
+                SqlInternalOperators.GROUP_BY_DISTINCT.createCall(pos, list))
+            : list;
+        return new SqlNodeList(list2, pos);
     }
 }
 
@@ -2627,22 +2596,16 @@ void ExpressionCommaList2(List<SqlNode> list, ExprContext exprContext) :
     )*
 }
 
-/**
- * Parses the optional HAVING clause for SELECT.
- */
-SqlNode HavingOpt() :
+/** Parses a HAVING clause for SELECT. */
+SqlNode Having() :
 {
     SqlNode e;
 }
 {
     <HAVING> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { return e; }
-|
-    { return null; }
 }
 
-/**
- * Parses the WINDOW clause for SELECT
- */
+/** Parses a WINDOW clause for SELECT. */
 SqlNodeList Window() :
 {
     final List<SqlNode> list = new ArrayList<SqlNode>();
@@ -2689,20 +2652,17 @@ SqlWindow WindowSpecification() :
     <LPAREN> { s = span(); }
     (
         id = SimpleIdentifier()
-    |
-        { id = null; }
+    |   { id = null; }
     )
     (
         <PARTITION> { s1 = span(); }
         <BY>
         partitionList = ExpressionCommaList(s1, ExprContext.ACCEPT_NON_QUERY)
-    |
-        { partitionList = SqlNodeList.EMPTY; }
+    |   { partitionList = SqlNodeList.EMPTY; }
     )
     (
         orderList = OrderBy(true)
-    |
-        { orderList = SqlNodeList.EMPTY; }
+    |   { orderList = SqlNodeList.EMPTY; }
     )
     (
         (
@@ -2731,13 +2691,11 @@ SqlWindow WindowSpecification() :
         <DISALLOW> { s2 = span(); } <PARTIAL> {
             allowPartial = SqlLiteral.createBoolean(false, s2.end(this));
         }
-    |
-        { allowPartial = null; }
+    |   { allowPartial = null; }
     )
     <RPAREN>
     {
-        return SqlWindow.create(
-            null, id, partitionList, orderList,
+        return SqlWindow.create(null, id, partitionList, orderList,
             isRows, lowerBound, upperBound, allowPartial, s.end(this));
     }
 }
@@ -3048,8 +3006,7 @@ SqlMatchRecognize MatchRecognize(SqlNode tableRef) :
         <ALL> { s0 = span(); } <ROWS> <PER> <MATCH> {
             rowsPerMatch = SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS.symbol(s0.end(this));
         }
-    |
-        { rowsPerMatch = null; }
+    |   { rowsPerMatch = null; }
     )
     (
         <AFTER> { s1 = span(); } <MATCH> <SKIP_>
@@ -3089,33 +3046,27 @@ SqlMatchRecognize MatchRecognize(SqlNode tableRef) :
                      .symbol(s1.end(this));
             }
         )
-    |
-        { after = null; }
+    |   { after = null; }
     )
     <PATTERN>
     <LPAREN>
     (
         <CARET> { isStrictStarts = SqlLiteral.createBoolean(true, getPos()); }
-    |
-        { isStrictStarts = SqlLiteral.createBoolean(false, getPos()); }
+    |   { isStrictStarts = SqlLiteral.createBoolean(false, getPos()); }
     )
     pattern = PatternExpression()
     (
         <DOLLAR> { isStrictEnds = SqlLiteral.createBoolean(true, getPos()); }
-    |
-        { isStrictEnds = SqlLiteral.createBoolean(false, getPos()); }
+    |   { isStrictEnds = SqlLiteral.createBoolean(false, getPos()); }
     )
     <RPAREN>
     (
         <WITHIN> interval = IntervalLiteral()
-    |
-        { interval = null; }
+    |   { interval = null; }
     )
     (
-        <SUBSET>
-        subsetList = SubsetDefinitionCommaList(span())
-    |
-        { subsetList = SqlNodeList.EMPTY; }
+        <SUBSET> subsetList = SubsetDefinitionCommaList(span())
+    |   { subsetList = SqlNodeList.EMPTY; }
     )
     <DEFINE>
     patternDefList = PatternDefinitionCommaList(span())
@@ -3132,18 +3083,9 @@ SqlNodeList MeasureColumnCommaList(Span s) :
     final List<SqlNode> eList = new ArrayList<SqlNode>();
 }
 {
-    e = MeasureColumn() {
-        eList.add(e);
-    }
-    (
-        <COMMA>
-        e = MeasureColumn() {
-            eList.add(e);
-        }
-    )*
-    {
-        return new SqlNodeList(eList, s.addAll(eList).pos());
-    }
+    e = MeasureColumn() { eList.add(e); }
+    ( <COMMA> e = MeasureColumn() { eList.add(e); } )*
+    { return new SqlNodeList(eList, s.addAll(eList).pos()); }
 }
 
 SqlNode MeasureColumn() :
@@ -3863,8 +3805,7 @@ SqlNode Expression3(ExprContext exprContext) :
 |
     (
         <ROW> { rowSpan = span(); }
-    |
-        { rowSpan = null; }
+    |   { rowSpan = null; }
     )
     list1 = ParenthesizedQueryOrCommaList(exprContext) {
         if (rowSpan != null) {
@@ -4038,8 +3979,7 @@ SqlCall StringAggFunctionCall() :
     <LPAREN>
     (
         qualifier = AllOrDistinct()
-    |
-        { qualifier = null; }
+    |   { qualifier = null; }
     )
     Arg(args, ExprContext.ACCEPT_SUB_QUERY)
     (
@@ -4052,8 +3992,7 @@ SqlCall StringAggFunctionCall() :
     )*
     (
         nullTreatment = NullTreatment()
-    |
-        { nullTreatment = null; }
+    |   { nullTreatment = null; }
     )
     [
         orderBy = OrderBy(true) {
@@ -4908,21 +4847,23 @@ SqlIntervalQualifier IntervalQualifier() :
 {
     final Span s;
     final TimeUnit start;
-    TimeUnit end = null;
-    int startPrec = RelDataType.PRECISION_NOT_SPECIFIED;
+    final TimeUnit end;
+    final int startPrec;
     int secondFracPrec = RelDataType.PRECISION_NOT_SPECIFIED;
 }
 {
     (
         start = Year() { s = span(); } startPrec = PrecisionOpt()
-        [
+        (
             LOOKAHEAD(2) <TO> end = Month()
-        ]
+        |   { end = null; }
+        )
     |
         start = Month() { s = span(); } startPrec = PrecisionOpt()
+        { end = null; }
     |
         start = Day() { s = span(); } startPrec = PrecisionOpt()
-        [
+        (
             LOOKAHEAD(2) <TO>
             (
                 end = Hour()
@@ -4931,10 +4872,11 @@ SqlIntervalQualifier IntervalQualifier() :
             |
                 end = Second() secondFracPrec = PrecisionOpt()
             )
-        ]
+        |   { end = null; }
+        )
     |
         start = Hour() { s = span(); } startPrec = PrecisionOpt()
-        [
+        (
             LOOKAHEAD(2) <TO>
             (
                 end = Minute()
@@ -4942,20 +4884,25 @@ SqlIntervalQualifier IntervalQualifier() :
                 end = Second()
                 [ <LPAREN> secondFracPrec = UnsignedIntLiteral() <RPAREN> ]
             )
-        ]
+        |   { end = null; }
+        )
     |
         start = Minute() { s = span(); } startPrec = PrecisionOpt()
-        [
-            LOOKAHEAD(2) <TO> end = Second()
+        (
+            LOOKAHEAD(2) <TO>
+            end = Second()
             [ <LPAREN> secondFracPrec = UnsignedIntLiteral() <RPAREN> ]
-        ]
+        |   { end = null; }
+        )
     |
         start = Second() { s = span(); }
-        [
+        (
             <LPAREN> startPrec = UnsignedIntLiteral()
             [ <COMMA> secondFracPrec = UnsignedIntLiteral() ]
             <RPAREN>
-        ]
+        |   { startPrec = -1; }
+        )
+        { end = null; }
     )
     {
         return new SqlIntervalQualifier(start, startPrec, end, secondFracPrec,
@@ -6547,14 +6494,8 @@ SqlNodeList JsonArrayAggOrderByClause() :
     final SqlNodeList orderList;
 }
 {
-    (
-        orderList = OrderBy(true)
-    |
-        { orderList = null; }
-    )
-    {
-        return orderList;
-    }
+    orderList = OrderBy(true)
+    { return orderList; }
 }
 
 SqlCall JsonArrayAggFunctionCall() :
@@ -6562,8 +6503,7 @@ SqlCall JsonArrayAggFunctionCall() :
     final SqlNode valueExpr;
     final SqlNodeList orderList;
     final Span span;
-    SqlJsonConstructorNullClause nullClause =
-        SqlJsonConstructorNullClause.ABSENT_ON_NULL;
+    final SqlJsonConstructorNullClause nullClause;
     SqlNode e;
     final SqlNode aggCall;
 }
@@ -6572,12 +6512,13 @@ SqlCall JsonArrayAggFunctionCall() :
     <LPAREN> e = Expression(ExprContext.ACCEPT_NON_QUERY) {
         valueExpr = e;
     }
-    orderList = JsonArrayAggOrderByClause()
-    [
+    ( orderList = JsonArrayAggOrderByClause() | { orderList = null; } )
+    (
         e = JsonConstructorNullClause() {
             nullClause = (SqlJsonConstructorNullClause) ((SqlLiteral) e).getValue();
         }
-    ]
+    |   { nullClause = SqlJsonConstructorNullClause.ABSENT_ON_NULL; }
+    )
     <RPAREN>
     {
         aggCall = SqlStdOperatorTable.JSON_ARRAYAGG.with(nullClause)
@@ -6736,8 +6677,7 @@ SqlCall MatchRecognizeNavigationLogical() :
         <RUNNING> { runningOp = SqlStdOperatorTable.RUNNING; s.add(this); }
     |
         <FINAL> { runningOp = SqlStdOperatorTable.FINAL; s.add(this); }
-    |
-        { runningOp = null; }
+    |   { runningOp = null; }
     )
     (
         <FIRST> { funcOp = SqlStdOperatorTable.FIRST; }
