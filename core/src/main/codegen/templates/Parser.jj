@@ -627,7 +627,7 @@ SqlNode ExprOrJoinOrOrderedQuery(ExprContext exprContext) :
         e = TableRef1(ExprContext.ACCEPT_QUERY_OR_JOIN)
         ( e = JoinTable(e) )*
         { list.add(e); }
-        ( SetOpQuery(exprContext, list) )*
+        ( AddSetOpQuery(list, exprContext) )*
         { return SqlParserUtil.toTree(list); }
     )
 }
@@ -874,7 +874,7 @@ SqlNodeList ParenthesizedQueryOrCommaList(
             // a comma-list can't appear where only a query is expected
             checkNonQueryExpression(exprContext);
         }
-        e = Expression(exprContext) { list.add(e); }
+        AddExpression(list, exprContext)
     )*
     <RPAREN>
     {
@@ -962,13 +962,13 @@ List<SqlNode> FunctionParameterList(ExprContext exprContext) :
     |
         { list.add(null); }
     )
-    Arg0(list, exprContext)
+    AddArg0(list, exprContext)
     (
         <COMMA> {
             // a comma-list can't appear where only a query is expected
             checkNonQueryExpression(exprContext);
         }
-        Arg(list, exprContext)
+        AddArg(list, exprContext)
     )*
     <RPAREN>
     {
@@ -985,7 +985,7 @@ SqlLiteral AllOrDistinct() :
     <ALL> { return SqlSelectKeyword.ALL.symbol(getPos()); }
 }
 
-void Arg0(List<SqlNode> list, ExprContext exprContext) :
+void AddArg0(List<SqlNode> list, ExprContext exprContext) :
 {
     final SqlIdentifier name;
     SqlNode e;
@@ -1025,7 +1025,7 @@ void Arg0(List<SqlNode> list, ExprContext exprContext) :
     }
 }
 
-void Arg(List<SqlNode> list, ExprContext exprContext) :
+void AddArg(List<SqlNode> list, ExprContext exprContext) :
 {
     final SqlIdentifier name;
     SqlNode e;
@@ -1172,10 +1172,10 @@ SqlNodeList ParenthesizedKeyValueOptionCommaList() :
 {
     { s = span(); }
     <LPAREN>
-    KeyValueOption(list)
+    AddKeyValueOption(list)
     (
         <COMMA>
-        KeyValueOption(list)
+        AddKeyValueOption(list)
     )*
     <RPAREN> {
         return new SqlNodeList(list, s.end(this));
@@ -1186,7 +1186,7 @@ SqlNodeList ParenthesizedKeyValueOptionCommaList() :
 * Parses an option with format key=val whose key is a simple identifier or string literal
 * and value is a string literal.
 */
-void KeyValueOption(List<SqlNode> list) :
+void AddKeyValueOption(List<SqlNode> list) :
 {
     final SqlNode key;
     final SqlNode value;
@@ -1204,22 +1204,17 @@ void KeyValueOption(List<SqlNode> list) :
     }
 }
 
-/**
-* Parses an option value, it's either a string or a numeric.
-*/
-SqlNode OptionValue() :
+/** Parses an option value (either a string or a numeric) and adds to a list. */
+void AddOptionValue(List<SqlNode> list) :
 {
     final SqlNode value;
 }
 {
     (
-        value = NumericLiteral()
+        value = NumericLiteral() { list.add(value); }
     |
-        value = StringLiteral()
+        value = StringLiteral() { list.add(value); }
     )
-    {
-        return value;
-    }
 }
 
 /**
@@ -1229,36 +1224,17 @@ SqlNodeList ParenthesizedLiteralOptionCommaList() :
 {
     final Span s;
     final List<SqlNode> list = new ArrayList<SqlNode>();
-    SqlNode optionVal;
 }
 {
     { s = span(); }
     <LPAREN>
-    optionVal = OptionValue()
-    {
-        list.add(optionVal);
-    }
-    (
-        <COMMA>
-        optionVal = OptionValue()
-        {
-            list.add(optionVal);
-        }
-    )*
+    AddOptionValue(list) ( <COMMA> AddOptionValue(list) )*
     <RPAREN> {
         return new SqlNodeList(list, s.end(this));
     }
 }
 
-void CommaSeparatedSqlHints(List<SqlNode> hints) :
-{
-}
-{
-    Hint(hints)
-    ( <COMMA> Hint(hints) )*
-}
-
-void Hint(List<SqlNode> hints) :
+void AddHint(List<SqlNode> hints) :
 {
     final SqlIdentifier hintName;
     final SqlNodeList hintOptions;
@@ -1303,7 +1279,7 @@ SqlNode TableHints(SqlIdentifier tableName) :
     final List<SqlNode> hints = new ArrayList<SqlNode>();
 }
 {
-    <HINT_BEG> CommaSeparatedSqlHints(hints) <COMMENT_END> {
+    <HINT_BEG> AddHint(hints) ( <COMMA> AddHint(hints) )* <COMMENT_END> {
         final SqlParserPos pos = Span.of(tableName).addAll(hints).end(this);
         final SqlNodeList hintList = new SqlNodeList(hints, pos);
         return new SqlTableRef(pos, tableName, hintList);
@@ -1318,7 +1294,7 @@ SqlSelect SqlSelect() :
     final List<SqlLiteral> keywords = new ArrayList<SqlLiteral>();
     final SqlLiteral keyword;
     final SqlNodeList keywordList;
-    List<SqlNode> selectList;
+    final List<SqlNode> selectList = new ArrayList<SqlNode>();
     final SqlNode fromClause;
     final SqlNode where;
     final SqlNodeList groupBy;
@@ -1328,15 +1304,8 @@ SqlSelect SqlSelect() :
     final Span s;
 }
 {
-    <SELECT>
-    {
-        s = span();
-    }
-    [
-        <HINT_BEG>
-        CommaSeparatedSqlHints(hints)
-        <COMMENT_END>
-    ]
+    <SELECT> { s = span(); }
+    [ <HINT_BEG> AddHint(hints) ( <COMMA> AddHint(hints) )* <COMMENT_END> ]
     SqlSelectKeywords(keywords)
     (
         <STREAM> {
@@ -1349,7 +1318,8 @@ SqlSelect SqlSelect() :
     {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
     }
-    selectList = SelectList()
+    AddSelectItem(selectList)
+    ( <COMMA> AddSelectItem(selectList) )*
     (
         <FROM> fromClause = FromClause()
         ( where = Where() | { where = null; } )
@@ -1584,13 +1554,13 @@ SqlNode NamedRoutineCall(
     }
     <LPAREN>
     [
-        Arg0(list, exprContext)
+        AddArg0(list, exprContext)
         (
             <COMMA> {
                 // a comma-list can't appear where only a query is expected
                 checkNonQueryExpression(exprContext);
             }
-            Arg(list, exprContext)
+            AddArg(list, exprContext)
         )*
     ]
     <RPAREN>
@@ -1692,7 +1662,6 @@ SqlNode SqlUpdate() :
     final SqlNodeList sourceExpressionList;
     final SqlNodeList targetColumnList;
     SqlIdentifier id;
-    SqlNode exp;
     final Span s;
 }
 {
@@ -1708,20 +1677,12 @@ SqlNode SqlUpdate() :
     <SET> id = SimpleIdentifier() {
         targetColumnList.add(id);
     }
-    <EQ> exp = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        // TODO:  support DEFAULT also
-        sourceExpressionList.add(exp);
-    }
+    // TODO:  support DEFAULT also
+    <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     (
         <COMMA>
-        id = SimpleIdentifier()
-        {
-            targetColumnList.add(id);
-        }
-        <EQ> exp = Expression(ExprContext.ACCEPT_SUB_QUERY)
-        {
-            sourceExpressionList.add(exp);
-        }
+        id = SimpleIdentifier() { targetColumnList.add(id); }
+        <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     ( where = Where() | { where = null; } )
     {
@@ -1773,7 +1734,6 @@ SqlUpdate WhenMatchedClause(SqlNode table, SqlIdentifier alias) :
     SqlIdentifier id;
     final Span s;
     final SqlNodeList updateColumnList = new SqlNodeList(SqlParserPos.ZERO);
-    SqlNode exp;
     final SqlNodeList updateExprList = new SqlNodeList(SqlParserPos.ZERO);
 }
 {
@@ -1781,17 +1741,13 @@ SqlUpdate WhenMatchedClause(SqlNode table, SqlIdentifier alias) :
     <UPDATE> <SET> id = CompoundIdentifier() {
         updateColumnList.add(id);
     }
-    <EQ> exp = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        updateExprList.add(exp);
-    }
+    <EQ> AddExpression(updateExprList, ExprContext.ACCEPT_SUB_QUERY)
     (
         <COMMA>
         id = CompoundIdentifier() {
             updateColumnList.add(id);
         }
-        <EQ> exp = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-            updateExprList.add(exp);
-        }
+        <EQ> AddExpression(updateExprList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     {
         return new SqlUpdate(s.addAll(updateExprList).pos(), table,
@@ -1839,38 +1795,16 @@ SqlInsert WhenNotMatchedClause(SqlNode table) :
 }
 
 /**
- * Parses the select list of a SELECT statement.
- */
-List<SqlNode> SelectList() :
-{
-    final List<SqlNode> list = new ArrayList<SqlNode>();
-    SqlNode item;
-}
-{
-    item = SelectItem() {
-        list.add(item);
-    }
-    (
-        <COMMA> item = SelectItem() {
-            list.add(item);
-        }
-    )*
-    {
-        return list;
-    }
-}
-
-/**
  * Parses one item in a select list.
  */
-SqlNode SelectItem() :
+void AddSelectItem(List<SqlNode> list) :
 {
-    SqlNode e;
+    final SqlNode e;
     final SqlIdentifier id;
 }
 {
     e = SelectExpression()
-    [
+    (
         [ <AS> ]
         (
             id = SimpleIdentifier()
@@ -1880,13 +1814,9 @@ SqlNode SelectItem() :
             LOOKAHEAD(1)
             id = SimpleIdentifierFromStringLiteral()
         )
-        {
-            e = SqlStdOperatorTable.AS.createCall(span().end(e), e, id);
-        }
-    ]
-    {
-        return e;
-    }
+        { list.add(SqlStdOperatorTable.AS.createCall(span().end(e), e, id)); }
+    |   { list.add(e); }
+    )
 }
 
 /**
@@ -2282,16 +2212,16 @@ SqlNodeList ExtendList() :
 }
 {
     <LPAREN> { s = span(); }
-    ColumnType(list)
+    AddColumnType(list)
     (
-        <COMMA> ColumnType(list)
+        <COMMA> AddColumnType(list)
     )*
     <RPAREN> {
         return new SqlNodeList(list, s.end(this));
     }
 }
 
-void ColumnType(List<SqlNode> list) :
+void AddColumnType(List<SqlNode> list) :
 {
     final SqlIdentifier name;
     final SqlDataTypeSpec type;
@@ -2300,11 +2230,7 @@ void ColumnType(List<SqlNode> list) :
 {
     name = CompoundIdentifier()
     type = DataType()
-    (
-        <NOT> <NULL> { nullable = false; }
-    |
-        { nullable = true; }
-    )
+    nullable = NotNullOpt()
     {
         list.add(name);
         list.add(type.withNullable(nullable, getPos()));
@@ -2314,7 +2240,7 @@ void ColumnType(List<SqlNode> list) :
 /**
  * Parses a compound identifier with optional type.
  */
-void CompoundIdentifierType(List<SqlNode> list, List<SqlNode> extendList) :
+void AddCompoundIdentifierType(List<SqlNode> list, List<SqlNode> extendList) :
 {
     final SqlIdentifier name;
     final SqlDataTypeSpec type;
@@ -2324,11 +2250,7 @@ void CompoundIdentifierType(List<SqlNode> list, List<SqlNode> extendList) :
     name = CompoundIdentifier()
     (
         type = DataType()
-        (
-            <NOT> <NULL> { nullable = false; }
-        |
-            { nullable = true; }
-        )
+        nullable = NotNullOpt()
     |
         { type = null; nullable = true; }
     )
@@ -2402,31 +2324,28 @@ SqlNode ExplicitTable(SqlParserPos pos) :
  */
 SqlNode TableConstructor() :
 {
-    final List<SqlNode> rowConstructorList = new ArrayList<SqlNode>();
+    final List<SqlNode> list = new ArrayList<SqlNode>();
     final Span s;
 }
 {
     <VALUES> { s = span(); }
-    RowConstructorList(rowConstructorList)
+    AddRowConstructor(list)
+    (
+        LOOKAHEAD(2)
+        <COMMA> AddRowConstructor(list)
+    )*
     {
-        return SqlStdOperatorTable.VALUES.createCall(
-            s.end(this), rowConstructorList);
+        return SqlStdOperatorTable.VALUES.createCall(s.end(this), list);
     }
 }
 
-/**
- * Parses one or more rows in a VALUES expression.
- */
-void RowConstructorList(List<SqlNode> list) :
+/** Parses a row constructor and adds it to a list. */
+void AddRowConstructor(List<SqlNode> list) :
 {
-    SqlNode rowConstructor;
+    SqlNode e;
 }
 {
-    rowConstructor = RowConstructor() { list.add(rowConstructor); }
-    (
-        LOOKAHEAD(2)
-        <COMMA> rowConstructor = RowConstructor() { list.add(rowConstructor); }
-    )*
+    e = RowConstructor() { list.add(e); }
 }
 
 /**
@@ -2434,8 +2353,8 @@ void RowConstructorList(List<SqlNode> list) :
  */
 SqlNode RowConstructor() :
 {
-    SqlNodeList valueList;
-    SqlNode value;
+    final SqlNodeList valueList;
+    final SqlNode value;
     final Span s;
 }
 {
@@ -2464,7 +2383,7 @@ SqlNode RowConstructor() :
             // not.  Taken together with multi-row table constructors, it leads
             // to very easy mistakes if you forget the parentheses on a
             // single-row constructor.  This is also the reason for the
-            // LOOKAHEAD in RowConstructorList().  It would be so much more
+            // LOOKAHEAD in TableConstructor().  It would be so much more
             // reasonable to require parentheses.  Sigh.
             s = Span.of(value);
             valueList = new SqlNodeList(ImmutableList.of(value),
@@ -2518,51 +2437,44 @@ SqlNodeList GroupBy() :
 
 List<SqlNode> GroupingElementList() :
 {
-    List<SqlNode> list = new ArrayList<SqlNode>();
-    SqlNode e;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
 }
 {
-    e = GroupingElement() { list.add(e); }
-    (
-        LOOKAHEAD(2)
-        <COMMA>
-        e = GroupingElement() { list.add(e); }
-    )*
+    AddGroupingElement(list)
+    ( LOOKAHEAD(2) <COMMA> AddGroupingElement(list) )*
     { return list; }
 }
 
-SqlNode GroupingElement() :
+void AddGroupingElement(List<SqlNode> list) :
 {
-    List<SqlNode> list;
+    final List<SqlNode> subList;
     final SqlNodeList nodes;
-    final SqlNode e;
     final Span s;
 }
 {
     LOOKAHEAD(2)
     <GROUPING> { s = span(); }
-    <SETS> <LPAREN> list = GroupingElementList() <RPAREN> {
-        return SqlStdOperatorTable.GROUPING_SETS.createCall(s.end(this), list);
+    <SETS> <LPAREN> subList = GroupingElementList() <RPAREN> {
+        list.add(
+            SqlStdOperatorTable.GROUPING_SETS.createCall(s.end(this), subList));
     }
 |   <ROLLUP> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.ROLLUP.createCall(s.end(this),
-            nodes.getList());
+        list.add(
+            SqlStdOperatorTable.ROLLUP.createCall(s.end(this), nodes.getList()));
     }
 |   <CUBE> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.CUBE.createCall(s.end(this),
-            nodes.getList());
+        list.add(
+            SqlStdOperatorTable.CUBE.createCall(s.end(this), nodes.getList()));
     }
 |   LOOKAHEAD(3)
-    <LPAREN> <RPAREN> {
-        return new SqlNodeList(getPos());
+    <LPAREN> { s = span(); } <RPAREN> {
+        list.add(new SqlNodeList(s.end(this)));
     }
-|   e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        return e;
-    }
+|   AddExpression(list, ExprContext.ACCEPT_SUB_QUERY)
 }
 
 /**
@@ -2575,7 +2487,7 @@ SqlNodeList ExpressionCommaList(
     final List<SqlNode> list = new ArrayList<SqlNode>();
 }
 {
-    ExpressionCommaList2(list, exprContext) {
+    AddExpressions(list, exprContext) {
         return new SqlNodeList(list, s.addAll(list).pos());
     }
 }
@@ -2584,19 +2496,16 @@ SqlNodeList ExpressionCommaList(
  * Parses a list of expressions separated by commas,
  * appending expressions to a given list.
  */
-void ExpressionCommaList2(List<SqlNode> list, ExprContext exprContext) :
+void AddExpressions(List<SqlNode> list, ExprContext exprContext) :
 {
-    SqlNode e;
 }
 {
-    e = Expression(exprContext) { list.add(e); }
+    AddExpression(list, exprContext)
     (
         // NOTE jvs 6-Feb-2004:  See comments at top of file for why
         // hint is necessary here.
         LOOKAHEAD(2)
-        <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-            list.add(e);
-        }
+        <COMMA> AddExpression(list, ExprContext.ACCEPT_SUB_QUERY)
     )*
 }
 
@@ -2617,17 +2526,17 @@ SqlNodeList Window() :
 }
 {
     <WINDOW> { s = span(); }
-    WindowSpec(list)
+    AddWindowSpec(list)
     (
         LOOKAHEAD(2)
-        <COMMA> WindowSpec(list)
+        <COMMA> AddWindowSpec(list)
     )*
     {
         return new SqlNodeList(list, s.addAll(list).pos());
     }
 }
 
-void WindowSpec(List<SqlNode> list) :
+void AddWindowSpec(List<SqlNode> list) :
 {
     final SqlIdentifier id;
     final SqlWindow e;
@@ -2745,7 +2654,6 @@ SqlNode WindowRange() :
 SqlNodeList OrderBy(boolean accept) :
 {
     final List<SqlNode> list = new ArrayList<SqlNode>();
-    SqlNode e;
     final Span s;
 }
 {
@@ -2758,11 +2666,11 @@ SqlNodeList OrderBy(boolean accept) :
             throw SqlUtil.newContextException(s.pos(), RESOURCE.illegalOrderBy());
         }
     }
-    <BY> e = OrderItem() { list.add(e); }
+    <BY> AddOrderItem(list)
     (
         // NOTE jvs 6-Feb-2004:  See comments at top of file for why
         // hint is necessary here.
-        LOOKAHEAD(2) <COMMA> e = OrderItem() { list.add(e); }
+        LOOKAHEAD(2) <COMMA> AddOrderItem(list)
     )*
     {
         return new SqlNodeList(list, s.addAll(list).pos());
@@ -2770,9 +2678,9 @@ SqlNodeList OrderBy(boolean accept) :
 }
 
 /**
- * Parses one list item in an ORDER BY clause.
+ * Parses one item in an ORDER BY clause, and adds it to a list.
  */
-SqlNode OrderItem() :
+void AddOrderItem(List<SqlNode> list) :
 {
     SqlNode e;
 }
@@ -2795,7 +2703,7 @@ SqlNode OrderItem() :
         }
     )?
     {
-        return e;
+        list.add(e);
     }
 }
 
@@ -2861,10 +2769,10 @@ SqlNode Pivot(SqlNode tableRef) :
 {
     <PIVOT> { s = span(); checkNotJoin(tableRef); }
     <LPAREN>
-    PivotAgg(aggList) ( <COMMA> PivotAgg(aggList) )*
+    AddPivotAgg(aggList) ( <COMMA> AddPivotAgg(aggList) )*
     <FOR> axisList = SimpleIdentifierOrList()
     <IN> <LPAREN> { s2 = span(); }
-    [ PivotValue(valueList) ( <COMMA> PivotValue(valueList) )* ]
+    [ AddPivotValue(valueList) ( <COMMA> AddPivotValue(valueList) )* ]
     <RPAREN> {
         inList = new SqlNodeList(valueList, s2.end(this));
     }
@@ -2876,7 +2784,7 @@ SqlNode Pivot(SqlNode tableRef) :
     }
 }
 
-void PivotAgg(List<SqlNode> list) :
+void AddPivotAgg(List<SqlNode> list) :
 {
     final SqlNode e;
     final SqlIdentifier alias;
@@ -2894,7 +2802,7 @@ void PivotAgg(List<SqlNode> list) :
     )
 }
 
-void PivotValue(List<SqlNode> list) :
+void AddPivotValue(List<SqlNode> list) :
 {
     final SqlNode e;
     final SqlNodeList tuple;
@@ -2936,7 +2844,7 @@ SqlNode Unpivot(SqlNode tableRef) :
     <FOR> axisList = SimpleIdentifierOrList()
     <IN>
     <LPAREN> { s2 = span(); }
-    UnpivotValue(values) ( <COMMA> UnpivotValue(values) )*
+    AddUnpivotValue(values) ( <COMMA> AddUnpivotValue(values) )*
     <RPAREN>
     { inList = new SqlNodeList(values, s2.end(this)); }
     <RPAREN> {
@@ -2945,7 +2853,7 @@ SqlNode Unpivot(SqlNode tableRef) :
     }
 }
 
-void UnpivotValue(List<SqlNode> list) :
+void AddUnpivotValue(List<SqlNode> list) :
 {
     final SqlNodeList columnList;
     final SqlNode values;
@@ -3083,25 +2991,24 @@ SqlMatchRecognize MatchRecognize(SqlNode tableRef) :
 
 SqlNodeList MeasureColumnCommaList(Span s) :
 {
-    SqlNode e;
-    final List<SqlNode> eList = new ArrayList<SqlNode>();
+    final List<SqlNode> list = new ArrayList<SqlNode>();
 }
 {
-    e = MeasureColumn() { eList.add(e); }
-    ( <COMMA> e = MeasureColumn() { eList.add(e); } )*
-    { return new SqlNodeList(eList, s.addAll(eList).pos()); }
+    AddMeasureColumn(list)
+    ( <COMMA> AddMeasureColumn(list) )*
+    { return new SqlNodeList(list, s.addAll(list).pos()); }
 }
 
-SqlNode MeasureColumn() :
+void AddMeasureColumn(List<SqlNode> list) :
 {
-    SqlNode e;
-    SqlIdentifier alias;
+    final SqlNode e;
+    final SqlIdentifier alias;
 }
 {
     e = Expression(ExprContext.ACCEPT_NON_QUERY)
     <AS>
     alias = SimpleIdentifier() {
-        return SqlStdOperatorTable.AS.createCall(Span.of(e).end(this), e, alias);
+        list.add(SqlStdOperatorTable.AS.createCall(Span.of(e).end(this), e, alias));
     }
 }
 
@@ -3220,66 +3127,42 @@ SqlNode PatternPrimary() :
 {
     final Span s;
     SqlNode e;
-    List<SqlNode> eList;
+    final List<SqlNode> list;
 }
 {
-    (
-        e = SimpleIdentifier()
-    |
-        <LPAREN> e = PatternExpression() <RPAREN>
-    |
-        <LBRACE> { s = span(); }
-        <MINUS> e = PatternExpression()
-        <MINUS> <RBRACE> {
-            e = SqlStdOperatorTable.PATTERN_EXCLUDE.createCall(s.end(this), e);
-        }
-    |
-        (
-            <PERMUTE> { s = span(); }
-            <LPAREN>
-            e = PatternExpression() {
-                eList = new ArrayList<SqlNode>();
-                eList.add(e);
-            }
-            (
-                <COMMA>
-                e = PatternExpression()
-                {
-                    eList.add(e);
-                }
-            )*
-            <RPAREN> {
-                e = SqlStdOperatorTable.PATTERN_PERMUTE.createCall(
-                    s.end(this), eList);
-            }
-        )
-    )
-    {
-        return e;
+    e = SimpleIdentifier() { return e; }
+|
+    <LPAREN> e = PatternExpression() <RPAREN> { return e; }
+|
+    <LBRACE> { s = span(); }
+    <MINUS> e = PatternExpression()
+    <MINUS> <RBRACE> {
+        return SqlStdOperatorTable.PATTERN_EXCLUDE.createCall(s.end(this), e);
     }
+|
+    (
+        <PERMUTE> { s = span(); list = new ArrayList<SqlNode>(); }
+        <LPAREN>
+        e = PatternExpression() { list.add(e); }
+        ( <COMMA> e = PatternExpression() { list.add(e); } )*
+        <RPAREN> {
+            return SqlStdOperatorTable.PATTERN_PERMUTE.createCall(
+                s.end(this), list);
+        }
+    )
 }
 
 SqlNodeList SubsetDefinitionCommaList(Span s) :
 {
-    SqlNode e;
-    final List<SqlNode> eList = new ArrayList<SqlNode>();
+    final List<SqlNode> list = new ArrayList<SqlNode>();
 }
 {
-    e = SubsetDefinition() {
-        eList.add(e);
-    }
-    (
-        <COMMA>
-        e = SubsetDefinition() {
-            eList.add(e);
-        }
-    )*
-    {
-        return new SqlNodeList(eList, s.addAll(eList).pos());
-    }
+    AddSubsetDefinition(list)
+    ( <COMMA> AddSubsetDefinition(list) )*
+    { return new SqlNodeList(list, s.addAll(list).pos()); }
 }
 
-SqlNode SubsetDefinition() :
+void AddSubsetDefinition(List<SqlNode> list) :
 {
     final SqlNode var;
     final SqlNodeList varList;
@@ -3290,8 +3173,9 @@ SqlNode SubsetDefinition() :
     <LPAREN>
     varList = ExpressionCommaList(span(), ExprContext.ACCEPT_NON_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.EQUALS.createCall(span().end(var), var,
-            varList);
+        list.add(
+            SqlStdOperatorTable.EQUALS.createCall(span().end(var), var,
+                varList));
     }
 }
 
@@ -3375,7 +3259,7 @@ SqlNode QueryOrExpr(ExprContext exprContext) :
 {
     [ withList = WithList() ]
     e = LeafQueryOrExpr(exprContext) { list.add(e); }
-    ( SetOpQuery(exprContext, list) )*
+    ( AddSetOpQuery(list, exprContext) )*
     { return addWith(withList, SqlParserUtil.toTree(list)); }
 }
 
@@ -3388,7 +3272,7 @@ SqlNode Query(ExprContext exprContext) :
 {
     [ withList = WithList() ]
     e = LeafQuery(exprContext) { list.add(e); }
-    ( SetOpQuery(exprContext, list) )*
+    ( AddSetOpQuery(list, exprContext) )*
     { return addWith(withList, SqlParserUtil.toTree(list)); }
 }
 
@@ -3401,7 +3285,7 @@ JAVACODE SqlNode addWith(SqlNodeList withList, SqlNode e) {
 /** Parses a set operator (e.g. UNION or INTERSECT)
  * followed by a query or expression,
  * and adds both to {@code list}. */
-void SetOpQueryOrExpr(ExprContext exprContext, List<Object> list) :
+void AddSetOpQueryOrExpr(List<Object> list, ExprContext exprContext) :
 {
     final SqlOperator op;
     final SqlParserPos pos;
@@ -3430,7 +3314,7 @@ void SetOpQueryOrExpr(ExprContext exprContext, List<Object> list) :
 /** Parses a set operator (e.g. UNION or INTERSECT)
  * followed by a query,
  * and adds both to {@code list}. */
-void SetOpQuery(ExprContext exprContext, List<Object> list) :
+void AddSetOpQuery(List<Object> list, ExprContext exprContext) :
 {
     final SqlOperator op;
     final SqlParserPos pos;
@@ -3459,36 +3343,26 @@ void SetOpQuery(ExprContext exprContext, List<Object> list) :
 SqlNodeList WithList() :
 {
     final Span s;
-    SqlWithItem withItem;
-    final List<SqlNode> list = new ArrayList<SqlNode>();
+    final List<SqlWithItem> list = new ArrayList<SqlWithItem>();
 }
 {
     <WITH> { s = span(); }
-    withItem = WithItem() { list.add(withItem); }
-    (
-        <COMMA> withItem = WithItem() { list.add(withItem); }
-    )*
+    AddWithItem(list) ( <COMMA> AddWithItem(list) )*
     { return new SqlNodeList(list, s.end(this)); }
 }
 
-SqlWithItem WithItem() :
+void AddWithItem(List<SqlWithItem> list) :
 {
-    SqlIdentifier id;
-    SqlNodeList columnList = null;
-    SqlNode definition;
+    final SqlIdentifier id;
+    final SqlNodeList columnList;
+    final SqlNode definition;
 }
 {
     id = SimpleIdentifier()
-    [
-        LOOKAHEAD(2)
-        columnList = ParenthesizedSimpleIdentifierList()
-    ]
+    ( columnList = ParenthesizedSimpleIdentifierList() | { columnList = null; } )
     <AS>
     definition = ParenthesizedExpression(ExprContext.ACCEPT_QUERY)
-    {
-        return new SqlWithItem(id.getParserPosition(), id, columnList,
-            definition);
-    }
+    { list.add(new SqlWithItem(id.getParserPosition(), id, columnList, definition)); }
 }
 
 /**
@@ -3505,23 +3379,27 @@ SqlNode LeafQueryOrExpr(ExprContext exprContext) :
     e = LeafQuery(exprContext) { return e; }
 }
 
+/** As {@link #Expression} but appends to a list. */
+void AddExpression(List<SqlNode> list, ExprContext exprContext) :
+{
+    final SqlNode e;
+}
+{
+    e = Expression(exprContext) { list.add(e); }
+}
+
 /**
  * Parses a row expression or a parenthesized expression of any kind.
  */
 SqlNode Expression(ExprContext exprContext) :
 {
-    List<Object> list;
-    SqlNode e;
+    final List<Object> list;
 }
 {
-    list = Expression2(exprContext)
-    {
-        e = SqlParserUtil.toTree(list);
-        return e;
-    }
+    list = Expression2(exprContext) { return SqlParserUtil.toTree(list); }
 }
 
-void Expression2b(ExprContext exprContext, List<Object> list) :
+void AddExpression2b(List<Object> list, ExprContext exprContext) :
 {
     SqlNode e;
     SqlOperator op;
@@ -3575,7 +3453,7 @@ List<Object> Expression2(ExprContext exprContext) :
     final Span s = span();
 }
 {
-    Expression2b(exprContext, list)
+    AddExpression2b(list, exprContext)
     (
         LOOKAHEAD(2)
         (
@@ -3644,7 +3522,7 @@ List<Object> Expression2(ExprContext exprContext) :
                         <ASYMMETRIC>
                     ]
                 )
-                Expression2b(ExprContext.ACCEPT_SUB_QUERY, list3) {
+                AddExpression2b(list3, ExprContext.ACCEPT_SUB_QUERY) {
                     list.add(new SqlParserUtil.ToTreeListItem(op, s.pos()));
                     list.addAll(list3);
                     list3.clear();
@@ -3707,7 +3585,7 @@ List<Object> Expression2(ExprContext exprContext) :
                     checkNonQueryExpression(exprContext);
                     list.add(new SqlParserUtil.ToTreeListItem(op, getPos()));
                 }
-                Expression2b(ExprContext.ACCEPT_SUB_QUERY, list)
+                AddExpression2b(list, ExprContext.ACCEPT_SUB_QUERY)
             |
                 <LBRACKET>
                 e = Expression(ExprContext.ACCEPT_SUB_QUERY)
@@ -3985,14 +3863,14 @@ SqlCall StringAggFunctionCall() :
         qualifier = AllOrDistinct()
     |   { qualifier = null; }
     )
-    Arg(args, ExprContext.ACCEPT_SUB_QUERY)
+    AddArg(args, ExprContext.ACCEPT_SUB_QUERY)
     (
         <COMMA> {
             // a comma-list can't appear where only a query is expected
             // TODO: the following line is a no-op; remove it?
             checkNonQueryExpression(ExprContext.ACCEPT_SUB_QUERY);
         }
-        Arg(args, ExprContext.ACCEPT_SUB_QUERY)
+        AddArg(args, ExprContext.ACCEPT_SUB_QUERY)
     )*
     (
         nullTreatment = NullTreatment()
@@ -4071,16 +3949,17 @@ SqlNode CaseExpression() :
     final Span thenSpan = Span.of();
     final Span s;
     SqlNode e;
-    SqlNode caseIdentifier = null;
-    SqlNode elseClause = null;
-    List<SqlNode> whenList = new ArrayList<SqlNode>();
-    List<SqlNode> thenList = new ArrayList<SqlNode>();
+    final SqlNode caseIdentifier;
+    final SqlNode elseClause;
+    final List<SqlNode> whenList = new ArrayList<SqlNode>();
+    final List<SqlNode> thenList = new ArrayList<SqlNode>();
 }
 {
     <CASE> { s = span(); }
-    [
+    (
         caseIdentifier = Expression(ExprContext.ACCEPT_SUB_QUERY)
-    ]
+    |   { caseIdentifier = null; }
+    )
     (
         <WHEN> { whenSpan.add(this); }
         e = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY) {
@@ -4094,9 +3973,10 @@ SqlNode CaseExpression() :
             thenList.add(e);
         }
     )+
-    [
+    (
         <ELSE> elseClause = Expression(ExprContext.ACCEPT_SUB_QUERY)
-    ]
+    |   { elseClause = null; }
+    )
     <END> {
         return SqlCase.createSwitched(s.end(this), caseIdentifier,
             new SqlNodeList(whenList, whenSpan.addAll(whenList).pos()),
@@ -4623,10 +4503,8 @@ SqlNode MultisetConstructor() :
     |
         // by enumeration "MULTISET[e0, e1, ..., eN]"
         <LBRACKET> // TODO: do trigraph as well ??( ??)
-        e = Expression(ExprContext.ACCEPT_NON_QUERY) { args.add(e); }
-        (
-            <COMMA> e = Expression(ExprContext.ACCEPT_NON_QUERY) { args.add(e); }
-        )*
+        AddExpression(args, ExprContext.ACCEPT_NON_QUERY)
+        ( <COMMA> AddExpression(args, ExprContext.ACCEPT_NON_QUERY) )*
         <RBRACKET>
         {
             return SqlStdOperatorTable.MULTISET_VALUE.createCall(
@@ -4708,17 +4586,17 @@ SqlNode MapConstructor() :
 /** Parses a PERIOD constructor */
 SqlNode PeriodConstructor() :
 {
-    final SqlNode e0, e1;
+    final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
 }
 {
     <PERIOD> { s = span(); }
     <LPAREN>
-    e0 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
-    e1 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.ROW.createCall(s.end(this), e0, e1);
+        return SqlStdOperatorTable.ROW.createCall(s.end(this), args);
     }
 }
 
@@ -5005,7 +4883,7 @@ TimeUnit TimeUnitIdentifier() :
     final List<SqlParserPos> positions = new ArrayList<SqlParserPos>();
 }
 {
-    IdentifierSegment(names, positions) {
+    AddIdentifierSegment(names, positions) {
         TimeUnit unit = timeUnitCodes.get(names.get(0));
         if (unit != null) {
           return unit;
@@ -5062,7 +4940,7 @@ SqlDynamicParam DynamicParam() :
  * the entry in {@code positions} records its position and whether the
  * segment was quoted.
  */
-void IdentifierSegment(List<String> names, List<SqlParserPos> positions) :
+void AddIdentifierSegment(List<String> names, List<SqlParserPos> positions) :
 {
     final String id;
     char unicodeEscapeChar = BACKSLASH;
@@ -5140,18 +5018,17 @@ void IdentifierSegment(List<String> names, List<SqlParserPos> positions) :
     }
 }
 
-/** As {@link #IdentifierSegment} but part of a table name (for example,
+/** As {@link #AddIdentifierSegment} but part of a table name (for example,
  * following {@code FROM}, {@code INSERT} or {@code UPDATE}).
  *
  * <p>In some dialects the lexical rules for table names are different from
  * for other identifiers. For example, in BigQuery, table names may contain
  * hyphens. */
-void TableIdentifierSegment(List<String> names, List<SqlParserPos> positions) :
+void AddTableIdentifierSegment(List<String> names, List<SqlParserPos> positions) :
 {
 }
 {
-    IdentifierSegment(names, positions)
-    {
+    AddIdentifierSegment(names, positions) {
         final int n = names.size();
         if (n > 0
                 && positions.size() == n
@@ -5177,7 +5054,7 @@ String Identifier() :
     final List<String> names = new ArrayList<String>();
 }
 {
-    IdentifierSegment(names, null) {
+    AddIdentifierSegment(names, null) {
         return names.get(0);
     }
 }
@@ -5191,7 +5068,7 @@ SqlIdentifier SimpleIdentifier() :
     final List<SqlParserPos> positions = new ArrayList<SqlParserPos>();
 }
 {
-    IdentifierSegment(names, positions) {
+    AddIdentifierSegment(names, positions) {
         return new SqlIdentifier(names.get(0), positions.get(0));
     }
 }
@@ -5216,7 +5093,7 @@ SqlIdentifier SimpleIdentifierFromStringLiteral() :
 /**
  * Parses a comma-separated list of simple identifiers.
  */
-void SimpleIdentifierCommaList(List<SqlNode> list) :
+void AddSimpleIdentifiers(List<SqlNode> list) :
 {
     SqlIdentifier id;
 }
@@ -5240,7 +5117,7 @@ SqlNodeList ParenthesizedSimpleIdentifierList() :
 }
 {
     <LPAREN> { s = span(); }
-    SimpleIdentifierCommaList(list)
+    AddSimpleIdentifiers(list)
     <RPAREN> {
         return new SqlNodeList(list, s.end(this));
     }
@@ -5279,11 +5156,11 @@ SqlIdentifier CompoundIdentifier() :
     boolean star = false;
 }
 {
-    IdentifierSegment(nameList, posList)
+    AddIdentifierSegment(nameList, posList)
     (
         LOOKAHEAD(2)
         <DOT>
-        IdentifierSegment(nameList, posList)
+        AddIdentifierSegment(nameList, posList)
     )*
     (
         LOOKAHEAD(2)
@@ -5312,11 +5189,11 @@ SqlIdentifier CompoundTableIdentifier() :
     final List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
 }
 {
-    TableIdentifierSegment(nameList, posList)
+    AddTableIdentifierSegment(nameList, posList)
     (
         LOOKAHEAD(2)
         <DOT>
-        TableIdentifierSegment(nameList, posList)
+        AddTableIdentifierSegment(nameList, posList)
     )*
     {
         SqlParserPos pos = SqlParserPos.sum(posList);
@@ -5327,12 +5204,12 @@ SqlIdentifier CompoundTableIdentifier() :
 /**
  * Parses a comma-separated list of compound identifiers.
  */
-void CompoundIdentifierTypeCommaList(List<SqlNode> list, List<SqlNode> extendList) :
+void AddCompoundIdentifierTypes(List<SqlNode> list, List<SqlNode> extendList) :
 {
 }
 {
-    CompoundIdentifierType(list, extendList)
-    (<COMMA> CompoundIdentifierType(list, extendList))*
+    AddCompoundIdentifierType(list, extendList)
+    (<COMMA> AddCompoundIdentifierType(list, extendList))*
 }
 
 /**
@@ -5347,7 +5224,7 @@ Pair<SqlNodeList, SqlNodeList> ParenthesizedCompoundIdentifierList() :
 }
 {
     <LPAREN> { s = span(); }
-    CompoundIdentifierTypeCommaList(list, extendList)
+    AddCompoundIdentifierTypes(list, extendList)
     <RPAREN> {
         return Pair.of(new SqlNodeList(list, s.end(this)), new SqlNodeList(extendList, s.end(this)));
     }
@@ -5673,17 +5550,35 @@ boolean NullableOptDefaultFalse() :
     { return false; }
 }
 
+/** Parses NOT NULL and returns false, or parses nothing and returns true. */
+boolean NotNullOpt() :
+{
+}
+{
+    <NOT> <NULL> { return false; }
+|
+    { return true; }
+}
+
 /**
 * Parse a "name1 type1 [NULL | NOT NULL], name2 type2 [NULL | NOT NULL] ..." list,
 * the field type default is not nullable.
 */
-void FieldNameTypeCommaList(
-        List<SqlIdentifier> fieldNames,
-        List<SqlDataTypeSpec> fieldTypes) :
+void AddFieldNameTypes(List<SqlIdentifier> fieldNames,
+    List<SqlDataTypeSpec> fieldTypes) :
 {
-    SqlIdentifier fName;
-    SqlDataTypeSpec fType;
-    boolean nullable;
+}
+{
+    AddFieldNameType(fieldNames, fieldTypes)
+    ( <COMMA> AddFieldNameType(fieldNames, fieldTypes) )*
+}
+
+void AddFieldNameType(List<SqlIdentifier> fieldNames,
+    List<SqlDataTypeSpec> fieldTypes) :
+{
+    final SqlIdentifier fName;
+    final SqlDataTypeSpec fType;
+    final boolean nullable;
 }
 {
     fName = SimpleIdentifier()
@@ -5693,16 +5588,6 @@ void FieldNameTypeCommaList(
         fieldNames.add(fName);
         fieldTypes.add(fType.withNullable(nullable, getPos()));
     }
-    (
-        <COMMA>
-        fName = SimpleIdentifier()
-        fType = DataType()
-        nullable = NullableOptDefaultFalse()
-        {
-            fieldNames.add(fName);
-            fieldTypes.add(fType.withNullable(nullable, getPos()));
-        }
-    )*
 }
 
 /**
@@ -5717,7 +5602,7 @@ SqlTypeNameSpec RowTypeName() :
 }
 {
     <ROW>
-    <LPAREN> FieldNameTypeCommaList(fieldNames, fieldTypes) <RPAREN>
+    <LPAREN> AddFieldNameTypes(fieldNames, fieldTypes) <RPAREN>
     {
         return new SqlRowTypeNameSpec(getPos(), fieldNames, fieldTypes);
     }
@@ -5861,7 +5746,7 @@ SqlNode BuiltinFunctionCall() :
 {
     final SqlIdentifier name;
     final List<SqlNode> args = new ArrayList<SqlNode>();
-    SqlNode e = null;
+    SqlNode e;
     final Span s;
     SqlDataTypeSpec dt;
     final TimeUnit unit;
@@ -5871,7 +5756,7 @@ SqlNode BuiltinFunctionCall() :
     //~ FUNCTIONS WITH SPECIAL SYNTAX ---------------------------------------
     (
         <CAST> { s = span(); }
-        <LPAREN> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+        <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <AS>
         (
             dt = DataType() { args.add(dt); }
@@ -5887,7 +5772,7 @@ SqlNode BuiltinFunctionCall() :
             args.add(new SqlIntervalQualifier(unit, null, getPos()));
         }
         <FROM>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <RPAREN> {
             return SqlStdOperatorTable.EXTRACT.createCall(s.end(this), args);
         }
@@ -5899,18 +5784,15 @@ SqlNode BuiltinFunctionCall() :
         // because it matches the other kind of IN.
         e = AtomicRowExpression() { args.add(e); }
         <IN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e);}
-        [
-            <FROM>
-            e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
-        ]
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        [ <FROM> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) ]
         <RPAREN> {
             return SqlStdOperatorTable.POSITION.createCall(s.end(this), args);
         }
     |
         <CONVERT> { s = span(); }
         <LPAREN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <USING> name = SimpleIdentifier() { args.add(name); }
         <RPAREN> {
             return SqlStdOperatorTable.CONVERT.createCall(s.end(this), args);
@@ -5918,7 +5800,7 @@ SqlNode BuiltinFunctionCall() :
     |
         <TRANSLATE> { s = span(); }
         <LPAREN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         (
             <USING> name = SimpleIdentifier() { args.add(name); }
             <RPAREN> {
@@ -5926,9 +5808,7 @@ SqlNode BuiltinFunctionCall() :
                     args);
             }
         |
-            (
-                <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
-            )*
+            ( <COMMA> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) )*
             <RPAREN> {
                 return SqlLibraryOperators.TRANSLATE3.createCall(s.end(this),
                     args);
@@ -5936,10 +5816,10 @@ SqlNode BuiltinFunctionCall() :
         )
     |
         <OVERLAY> { s = span(); }
-        <LPAREN> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
-        <PLACING> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
-        <FROM> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
-        [ <FOR> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); } ]
+        <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <PLACING> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <FROM> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        [ <FOR> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) ]
         <RPAREN> {
             return SqlStdOperatorTable.OVERLAY.createCall(s.end(this), args);
         }
@@ -5956,12 +5836,12 @@ SqlNode BuiltinFunctionCall() :
     |
         <SUBSTRING> { s = span(); }
         <LPAREN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         ( <FROM> | <COMMA>)
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         [
             (<FOR> | <COMMA>)
-            e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+            AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         ]
         <RPAREN> {
             return SqlStdOperatorTable.SUBSTRING.createCall(
@@ -6057,7 +5937,6 @@ SqlNode BuiltinFunctionCall() :
 
 SqlJsonEncoding JsonRepresentation() :
 {
-
 }
 {
     <JSON>
@@ -6066,9 +5945,9 @@ SqlJsonEncoding JsonRepresentation() :
         LOOKAHEAD(2) <ENCODING>
         (
             <UTF8> { return SqlJsonEncoding.UTF8; }
-            |
+        |
             <UTF16> { return SqlJsonEncoding.UTF16; }
-            |
+        |
             <UTF32> { return SqlJsonEncoding.UTF32; }
         )
     ]
@@ -6079,7 +5958,6 @@ SqlJsonEncoding JsonRepresentation() :
 
 void JsonInputClause() :
 {
-
 }
 {
     <FORMAT> JsonRepresentation()
@@ -6120,18 +5998,12 @@ SqlNode JsonPathSpec() :
 List<SqlNode> JsonApiCommonSyntax() :
 {
     SqlNode e;
-    List<SqlNode> args = new ArrayList<SqlNode>();
+    final List<SqlNode> args = new ArrayList<SqlNode>();
 }
 {
-    e = Expression(ExprContext.ACCEPT_NON_QUERY) {
-        args.add(e);
-    }
-    (
-        <COMMA>
-        e = Expression(ExprContext.ACCEPT_NON_QUERY) {
-            args.add(e);
-        }
-    )
+    AddExpression(args, ExprContext.ACCEPT_NON_QUERY)
+    <COMMA>
+    AddExpression(args, ExprContext.ACCEPT_NON_QUERY)
     [
         // We currently don't support JSON passing clause, leave the java code blocks no-op
         <PASSING> e = Expression(ExprContext.ACCEPT_NON_QUERY) {
@@ -6193,7 +6065,6 @@ SqlCall JsonExistsFunctionCall() :
 List<SqlNode> JsonValueEmptyOrErrorBehavior() :
 {
     final List<SqlNode> list = new ArrayList<SqlNode>();
-    final SqlNode e;
 }
 {
     (
@@ -6205,10 +6076,10 @@ List<SqlNode> JsonValueEmptyOrErrorBehavior() :
             list.add(SqlJsonValueEmptyOrErrorBehavior.NULL.symbol(getPos()));
         }
     |
-        <DEFAULT_> e = Expression(ExprContext.ACCEPT_NON_QUERY) {
+        <DEFAULT_> {
             list.add(SqlJsonValueEmptyOrErrorBehavior.DEFAULT.symbol(getPos()));
-            list.add(e);
         }
+        AddExpression(list, ExprContext.ACCEPT_NON_QUERY)
     )
     <ON>
     (
@@ -6357,7 +6228,7 @@ SqlNode JsonName() :
 List<SqlNode> JsonNameAndValue() :
 {
     final List<SqlNode> list = new ArrayList<SqlNode>();
-    SqlNode e;
+    final SqlNode e;
     boolean kvMode = false;
 }
 {
@@ -6377,9 +6248,7 @@ List<SqlNode> JsonNameAndValue() :
             }
         }
     )
-    e = Expression(ExprContext.ACCEPT_NON_QUERY) {
-        list.add(e);
-    }
+    AddExpression(list, ExprContext.ACCEPT_NON_QUERY)
     {
         return list;
     }
@@ -6470,15 +6339,8 @@ SqlCall JsonArrayFunctionCall() :
     <JSON_ARRAY> { span = span(); }
     <LPAREN> [
         LOOKAHEAD(2)
-        e = Expression(ExprContext.ACCEPT_NON_QUERY) {
-            elements.add(e);
-        }
-        (
-            <COMMA>
-            e = Expression(ExprContext.ACCEPT_NON_QUERY) {
-                elements.add(e);
-            }
-        )*
+        AddExpression(elements, ExprContext.ACCEPT_NON_QUERY)
+        ( <COMMA> AddExpression(elements, ExprContext.ACCEPT_NON_QUERY) )*
     ]
     [
         e = JsonConstructorNullClause() {
@@ -6553,7 +6415,6 @@ SqlCall JsonArrayAggFunctionCall() :
 SqlCall TimestampAddFunctionCall() :
 {
     final List<SqlNode> args = new ArrayList<SqlNode>();
-    SqlNode e;
     final Span s;
     final TimeUnit interval;
 }
@@ -6564,9 +6425,9 @@ SqlCall TimestampAddFunctionCall() :
         args.add(SqlLiteral.createSymbol(interval, getPos()));
     }
     <COMMA>
-    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
-    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
         return SqlStdOperatorTable.TIMESTAMP_ADD.createCall(
             s.end(this), args);
@@ -6579,7 +6440,6 @@ SqlCall TimestampAddFunctionCall() :
 SqlCall TimestampDiffFunctionCall() :
 {
     final List<SqlNode> args = new ArrayList<SqlNode>();
-    SqlNode e;
     final Span s;
     final TimeUnit interval;
 }
@@ -6590,9 +6450,9 @@ SqlCall TimestampDiffFunctionCall() :
         args.add(SqlLiteral.createSymbol(interval, getPos()));
     }
     <COMMA>
-    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
-    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
         return SqlStdOperatorTable.TIMESTAMP_DIFF.createCall(
             s.end(this), args);
@@ -6690,7 +6550,7 @@ SqlCall MatchRecognizeNavigationLogical() :
     )
     { s.add(this); }
     <LPAREN>
-    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     (
         <COMMA> e = NumericLiteral() { args.add(e); }
     |
@@ -6721,7 +6581,7 @@ SqlCall MatchRecognizeNavigationPhysical() :
     )
     { s = span(); }
     <LPAREN>
-    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     (
         <COMMA> e = NumericLiteral() { args.add(e); }
     |
@@ -6903,7 +6763,7 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
     final Span s1;
 }
 {
-    <LPAREN> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     (
         <TO>
         unit = TimeUnit() {
