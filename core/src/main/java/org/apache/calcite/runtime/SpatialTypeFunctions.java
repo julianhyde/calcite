@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.runtime;
 
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Deterministic;
@@ -38,7 +39,12 @@ import java.util.Objects;
 
 import static org.apache.calcite.runtime.SpatialTypeUtils.GEOMETRY_FACTORY;
 import static org.apache.calcite.runtime.SpatialTypeUtils.NO_SRID;
+import static org.apache.calcite.runtime.SpatialTypeUtils.asEwkt;
+import static org.apache.calcite.runtime.SpatialTypeUtils.asGeoJson;
+import static org.apache.calcite.runtime.SpatialTypeUtils.asWkb;
 import static org.apache.calcite.runtime.SpatialTypeUtils.asWkt;
+import static org.apache.calcite.runtime.SpatialTypeUtils.fromGeoJson;
+import static org.apache.calcite.runtime.SpatialTypeUtils.fromWkb;
 import static org.apache.calcite.runtime.SpatialTypeUtils.fromWkt;
 
 /**
@@ -71,12 +77,24 @@ public class SpatialTypeFunctions {
 
   // Geometry conversion functions (2D and 3D) ================================
 
+  public static @Nullable String ST_AsGeoJSON(Geometry g) {
+    return asGeoJson(g);
+  }
+
   public static @Nullable String ST_AsText(Geometry g) {
     return asWkt(g);
   }
 
+  public static @Nullable ByteString ST_AsWKB(Geometry g) {
+    return new ByteString(asWkb(g));
+  }
+
   public static @Nullable String ST_AsWKT(Geometry g) {
     return asWkt(g);
+  }
+
+  public static @Nullable String ST_AsEWKT(Geometry g) {
+    return asEwkt(g);
   }
 
   public static @Nullable Geometry ST_GeomFromText(String s) {
@@ -87,6 +105,20 @@ public class SpatialTypeFunctions {
     final Geometry g = fromWkt(s);
     g.setSRID(srid);
     return g;
+  }
+
+  public static @Nullable Geometry ST_GeomFromWKB(ByteString b) {
+    return fromWkb(b.getBytes());
+  }
+
+  public static @Nullable Geometry ST_GeomFromWKB(byte[] b, int srid) {
+    final Geometry g = fromWkb(b);
+    g.setSRID(srid);
+    return g;
+  }
+
+  public static @Nullable Geometry ST_GeomFromGeoJSON(String geoJSON) {
+    return fromGeoJson(geoJSON);
   }
 
   public static @Nullable Geometry ST_LineFromText(String s) {
