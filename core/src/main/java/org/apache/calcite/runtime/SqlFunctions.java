@@ -462,24 +462,22 @@ public class SqlFunctions {
     return s.substring(len - n);
   }
 
-  /**
-   * SQL CHAR(long) function.
-   * Returns the ASCII character having the binary equivalent to long;
-   * If long is larger than 256 the result is equivalent to char(long % 256).
-   */
-  public static @Nullable String charN(long n) {
+  /** SQL CHAR(integer) function, as in MySQL and Spark.
+   *
+   * <p>Returns the ASCII character of {@code n} modulo 256,
+   * or null if {@code n} &lt; 0. */
+  public static @Nullable String charFromAscii(int n) {
     if (n < 0) {
       return null;
     }
-    return String.valueOf(Character.toChars((int) (n % 256)));
+    return String.valueOf(Character.toChars(n % 256));
   }
 
-  /**
-   * SQL CHR(long) function.
-   * Returns the UTF-8 character having the binary equivalent to long.
-   */
-  public static String chr(long n) {
-    return String.valueOf(Character.toChars((int) n));
+  /** SQL CHR(integer) function, as in Oracle and Postgres.
+   *
+   * <p>Returns the UTF-8 character whose code is {@code n}. */
+  public static String charFromUtf8(int n) {
+    return String.valueOf(Character.toChars(n));
   }
 
   /** SQL OCTET_LENGTH(binary) function. */

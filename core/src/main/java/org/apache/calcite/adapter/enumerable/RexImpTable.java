@@ -367,7 +367,7 @@ public class RexImpTable {
     defineMethod(RIGHT, BuiltInMethod.RIGHT.method, NullPolicy.ANY);
     defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
     defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
-    defineMethod(CHR, BuiltInMethod.CHR.method, NullPolicy.STRICT);
+    defineMethod(CHR, BuiltInMethod.CHAR_FROM_UTF8.method, NullPolicy.STRICT);
     defineMethod(CHARACTER_LENGTH, BuiltInMethod.CHAR_LENGTH.method,
         NullPolicy.STRICT);
     defineMethod(CHAR_LENGTH, BuiltInMethod.CHAR_LENGTH.method,
@@ -381,7 +381,8 @@ public class RexImpTable {
     defineMethod(OVERLAY, BuiltInMethod.OVERLAY.method, NullPolicy.STRICT);
     defineMethod(POSITION, BuiltInMethod.POSITION.method, NullPolicy.STRICT);
     defineMethod(ASCII, BuiltInMethod.ASCII.method, NullPolicy.STRICT);
-    defineMethod(CHAR, BuiltInMethod.CHAR.method, NullPolicy.STRICT);
+    defineMethod(CHAR, BuiltInMethod.CHAR_FROM_ASCII.method,
+        NullPolicy.SEMI_STRICT);
     defineMethod(REPEAT, BuiltInMethod.REPEAT.method, NullPolicy.STRICT);
     defineMethod(SPACE, BuiltInMethod.SPACE.method, NullPolicy.STRICT);
     defineMethod(STRCMP, BuiltInMethod.STRCMP.method, NullPolicy.STRICT);
