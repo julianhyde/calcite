@@ -27,6 +27,8 @@ public class JaninoCompilerTest {
   // Reproduces upstream issue from Janino https://github.com/janino-compiler/janino/issues/174
   @Test
   public void compile_long_method(@TempDir Path tempDir) throws Exception {
+    System.out.println("Java version: " + System.getProperty("java.version"));
+
     String code = getClassCode(getClassBody(1000));
     JaninoCompiler compiler = new JaninoCompiler();
     compiler.getArgs().setDestdir(tempDir.toFile().getAbsolutePath());

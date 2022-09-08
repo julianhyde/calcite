@@ -52,6 +52,8 @@ public class WideTableTest {
    * Janino upgrade breaks SELECTs with many projects causing JVM crashes</a>.
    */
   @Test void testWideTable() {
+    System.out.println("Java version: " + System.getProperty("java.version"));
+
     String expected = IntStream.range(0, 1000)
         .mapToObj(i -> String.format(Locale.ENGLISH, "$f%d=%d", i, i))
         .collect(Collectors.joining("; "));
