@@ -107,10 +107,8 @@ import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
-import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
@@ -7342,9 +7340,6 @@ class RelOptRulesTest extends RelOptTestBase {
       }
     };
 
-    SqlTestFactory.TypeFactoryFactory typeFactorySupplier =
-        conformance -> new SqlTypeFactoryImpl(typeSystem);
-
     // Expected plan:
     // LogicalProject(EXPR$0=[CAST($0):BIGINT NOT NULL], EXPR$1=[$1])
     //   LogicalAggregate(group=[{}], EXPR$0=[$SUM0($1)], EXPR$1=[COUNT($0)])
@@ -7356,7 +7351,7 @@ class RelOptRulesTest extends RelOptTestBase {
     // because type of original expression 'COUNT(DISTINCT comm)' is BIGINT
     // and type of SUM (of BIGINT) is DECIMAL.
     sql("SELECT count(comm), COUNT(DISTINCT comm) FROM emp")
-        .withFactory(f -> f.withTypeFactoryFactory(typeFactorySupplier))
+        .withFactory(f -> f.withTypeSystem(ignore -> typeSystem))
         .withRule(CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN)
         .check();
   }
@@ -7385,9 +7380,6 @@ class RelOptRulesTest extends RelOptTestBase {
       }
     };
 
-    SqlTestFactory.TypeFactoryFactory typeFactoryFactory =
-        conformance -> new SqlTypeFactoryImpl(typeSystem);
-
     // Expected plan:
     // LogicalProject(EXPR$0=[CAST($0):BIGINT], EXPR$1=[$1])
     //  LogicalAggregate(group=[{}], EXPR$0=[SUM($1)], EXPR$1=[SUM($0)]) // RowType[DECIMAL, BIGINT]
@@ -7399,7 +7391,7 @@ class RelOptRulesTest extends RelOptTestBase {
     // because type of original expression 'COUNT(DISTINCT comm)' is BIGINT
     // and type of SUM (of BIGINT) is DECIMAL.
     sql("SELECT SUM(comm), SUM(DISTINCT comm) FROM emp")
-        .withFactory(f -> f.withTypeFactoryFactory(typeFactoryFactory))
+        .withFactory(f -> f.withTypeSystem(ignore -> typeSystem))
         .withRule(CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN)
         .check();
   }
