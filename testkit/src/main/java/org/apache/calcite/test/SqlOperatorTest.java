@@ -20,8 +20,10 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.Strong;
+import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Hook;
@@ -7372,6 +7374,21 @@ public class SqlOperatorTest {
     f.checkScalar("ceiling(date '2015-02-19' to month)",
         "2015-03-01", "DATE NOT NULL");
     f.checkNull("ceiling(cast(null as timestamp) to month)");
+  }
+
+  @Test void testFloorCustomTimeUnit() {
+    final SqlOperatorFixture f = fixture()
+        .withFactory(tf ->
+            tf.withTypeSystem(typeSystem ->
+                new DelegatingTypeSystem(typeSystem) {
+                  @Override public TimeFrameSet customTimeUnits(
+                      TimeFrameSet timeFrameSet) {
+                    return TimeFrameSet.builder()
+                        .addAll(timeFrameSet)
+                        .addDivision("minute15", 4, "HOUR")
+                        .build();
+                  }
+                }));
   }
 
   @Test void testFloorFuncInterval() {
