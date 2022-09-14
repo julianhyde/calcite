@@ -18,11 +18,18 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.TimeFrame;
+import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.rel.type.TimeFrames;
 
 import org.apache.commons.math3.fraction.BigFraction;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+
+import static org.apache.calcite.avatica.util.DateTimeUtils.dateStringToUnixDate;
+import static org.apache.calcite.avatica.util.DateTimeUtils.timestampStringToUnixDate;
+import static org.apache.calcite.avatica.util.DateTimeUtils.unixDateToString;
+import static org.apache.calcite.avatica.util.DateTimeUtils.unixTimestampToString;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -71,5 +78,45 @@ public class TimeFrameTest {
     assertThat(nanoPerMinute,
         is(BigFraction.ONE.multiply(1_000).multiply(1_000).multiply(1_000)
             .multiply(60)));
+  }
+
+  @Test void testEvalFloor() {
+    checkDateFloor("1970-03-04", TimeUnit.WEEK, is("1970-03-02"));
+    checkDateFloor("1970-03-03", TimeUnit.WEEK, is("1970-03-02"));
+    checkDateFloor("1970-03-02", TimeUnit.WEEK, is("1970-03-02"));
+    checkDateFloor("1970-03-01", TimeUnit.WEEK, is("1970-02-23"));
+
+    checkTimestampFloor("1970-01-01 01:23:45", TimeUnit.HOUR,
+        0, is("1970-01-01 01:00:00"));
+    checkTimestampFloor("1970-01-01 01:23:45", TimeUnit.MINUTE,
+        0, is("1970-01-01 01:23:00"));
+    checkTimestampFloor("1970-01-01 01:23:45.67", TimeUnit.SECOND,
+        0, is("1970-01-01 01:23:45"));
+    checkTimestampFloor("1970-01-01 01:23:45.6789012345", TimeUnit.MILLISECOND,
+        4, is("1970-01-01 01:23:45.6790"));
+    // Time frames can represent unlimited precision, but out representation of
+    // timestamp can't represent more than millisecond precision.
+    checkTimestampFloor("1970-01-01 01:23:45.6789012345", TimeUnit.MICROSECOND,
+        7, is("1970-01-01 01:23:45.6790000"));
+
+    checkTimestampFloor("1971-12-25 01:23:45", TimeUnit.DAY,
+        0, is("1971-12-25 00:00:00"));
+    checkTimestampFloor("1971-12-25 01:23:45", TimeUnit.WEEK,
+        0, is("1971-12-20 00:00:00"));
+  }
+
+  void checkDateFloor(String in, TimeUnit unit, Matcher<String> matcher) {
+    TimeFrameSet timeFrameSet = TimeFrames.map();
+    int inDate = dateStringToUnixDate(in);
+    int outDate = timeFrameSet.floorDate(inDate, timeFrameSet.get(unit));
+    assertThat(in, unixDateToString(outDate), matcher);
+  }
+
+  void checkTimestampFloor(String in, TimeUnit unit, int precision,
+      Matcher<String> matcher) {
+    TimeFrameSet timeFrameSet = TimeFrames.map();
+    long inTs = timestampStringToUnixDate(in);
+    long outTs = timeFrameSet.floorTimestamp(inTs, timeFrameSet.get(unit));
+    assertThat(in, unixTimestampToString(outTs, precision), matcher);
   }
 }
