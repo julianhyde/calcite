@@ -37,20 +37,20 @@ public class TimeFrames {
   public static TimeFrameSet map() {
     final MyBuilder b = new MyBuilder();
     b.addCore(TimeUnit.SECOND);
-    b.addMultiple(TimeUnit.MINUTE, 60, TimeUnit.SECOND);
-    b.addMultiple(TimeUnit.HOUR, 60, TimeUnit.MINUTE);
-    b.addMultiple(TimeUnit.DAY, 24, TimeUnit.HOUR);
-    b.addMultiple(TimeUnit.WEEK, 7, TimeUnit.DAY)
-        .withEpoch(new TimestampString(1970, 1, 5, 0, 0, 0));
-    b.addDivision(TimeUnit.MILLISECOND, 1_000, TimeUnit.SECOND);
-    b.addDivision(TimeUnit.MICROSECOND, 1_000, TimeUnit.MILLISECOND);
-    b.addDivision(TimeUnit.NANOSECOND, 1_000, TimeUnit.MICROSECOND);
+    b.addSub(TimeUnit.MINUTE, false, 60, TimeUnit.SECOND);
+    b.addSub(TimeUnit.HOUR, false, 60, TimeUnit.MINUTE);
+    b.addSub(TimeUnit.DAY, false, 24, TimeUnit.HOUR);
+    b.addSub(TimeUnit.WEEK, false, 7, TimeUnit.DAY,
+        new TimestampString(1970, 1, 5, 0, 0, 0));
+    b.addSub(TimeUnit.MILLISECOND, true, 1_000, TimeUnit.SECOND);
+    b.addSub(TimeUnit.MICROSECOND, true, 1_000, TimeUnit.MILLISECOND);
+    b.addSub(TimeUnit.NANOSECOND, true, 1_000, TimeUnit.MICROSECOND);
 
     b.addCore(TimeUnit.MONTH);
-    b.addMultiple(TimeUnit.YEAR, 12, TimeUnit.MONTH);
-    b.addMultiple(TimeUnit.DECADE, 10, TimeUnit.YEAR);
-    b.addMultiple(TimeUnit.CENTURY, 100, TimeUnit.YEAR);
-    b.addMultiple(TimeUnit.MILLENNIUM, 1_000, TimeUnit.YEAR);
+    b.addSub(TimeUnit.YEAR, false, 12, TimeUnit.MONTH);
+    b.addSub(TimeUnit.DECADE, false, 10, TimeUnit.YEAR);
+    b.addSub(TimeUnit.CENTURY, false, 100, TimeUnit.YEAR);
+    b.addSub(TimeUnit.MILLENNIUM, false, 1_000, TimeUnit.YEAR);
 
     // Avatica time units:
 
@@ -101,18 +101,18 @@ public class TimeFrames {
   /** Specialization of {@link org.apache.calcite.rel.type.TimeFrameSet.Builder}
    * for Avatica's built-in time frames. */
   private static class MyBuilder extends TimeFrameSet.Builder {
-    TimeFrameSet.Builder addCore(TimeUnit unit) {
-      return super.addCore(unit.name());
+    void addCore(TimeUnit unit) {
+      super.addCore(unit.name());
     }
 
-    TimeFrameSet.Builder addMultiple(TimeUnit unit, Number count,
+    void addSub(TimeUnit unit, boolean divide, Number count,
         TimeUnit baseUnit) {
-      return super.addMultiple(unit.name(), count, baseUnit.name());
+      addSub(unit, divide, count, baseUnit, TimestampString.EPOCH);
     }
 
-    TimeFrameSet.Builder addDivision(TimeUnit unit, Number count,
-        TimeUnit baseUnit) {
-      return super.addDivision(unit.name(), count, baseUnit.name());
+    void addSub(TimeUnit unit, boolean divide, Number count,
+        TimeUnit baseUnit, TimestampString epoch) {
+      addSub(unit.name(), divide, count, baseUnit.name(), epoch);
     }
   }
 }
