@@ -17,8 +17,7 @@
 package org.apache.calcite.rel.type;
 
 import org.apache.calcite.avatica.util.TimeUnit;
-
-import org.apache.commons.math3.fraction.BigFraction;
+import org.apache.calcite.util.TimestampString;
 
 import static java.util.Objects.requireNonNull;
 
@@ -37,20 +36,21 @@ public class TimeFrames {
   /** Returns a map from Avatica time units to time frames. */
   public static TimeFrameSet map() {
     final MyBuilder b = new MyBuilder();
-    b.addCore(TimeUnit.SECOND)
-        .addMultiple(TimeUnit.MINUTE, 60, TimeUnit.SECOND)
-        .addMultiple(TimeUnit.HOUR, 60, TimeUnit.MINUTE)
-        .addMultiple(TimeUnit.DAY, 24, TimeUnit.HOUR)
-        .addMultiple(TimeUnit.WEEK, 7, TimeUnit.DAY)
-        .addDivision(TimeUnit.MILLISECOND, 1_000, TimeUnit.SECOND)
-        .addDivision(TimeUnit.MICROSECOND, 1_000, TimeUnit.MILLISECOND)
-        .addDivision(TimeUnit.NANOSECOND, 1_000, TimeUnit.MICROSECOND)
+    b.addCore(TimeUnit.SECOND);
+    b.addMultiple(TimeUnit.MINUTE, 60, TimeUnit.SECOND);
+    b.addMultiple(TimeUnit.HOUR, 60, TimeUnit.MINUTE);
+    b.addMultiple(TimeUnit.DAY, 24, TimeUnit.HOUR);
+    b.addMultiple(TimeUnit.WEEK, 7, TimeUnit.DAY)
+        .withEpoch(new TimestampString(1970, 1, 5, 0, 0, 0));
+    b.addDivision(TimeUnit.MILLISECOND, 1_000, TimeUnit.SECOND);
+    b.addDivision(TimeUnit.MICROSECOND, 1_000, TimeUnit.MILLISECOND);
+    b.addDivision(TimeUnit.NANOSECOND, 1_000, TimeUnit.MICROSECOND);
 
-        .addCore(TimeUnit.MONTH)
-        .addMultiple(TimeUnit.YEAR, 12, TimeUnit.MONTH)
-        .addMultiple(TimeUnit.DECADE, 10, TimeUnit.YEAR)
-        .addMultiple(TimeUnit.CENTURY, 100, TimeUnit.YEAR)
-        .addMultiple(TimeUnit.MILLENNIUM, 1_000, TimeUnit.YEAR);
+    b.addCore(TimeUnit.MONTH);
+    b.addMultiple(TimeUnit.YEAR, 12, TimeUnit.MONTH);
+    b.addMultiple(TimeUnit.DECADE, 10, TimeUnit.YEAR);
+    b.addMultiple(TimeUnit.CENTURY, 100, TimeUnit.YEAR);
+    b.addMultiple(TimeUnit.MILLENNIUM, 1_000, TimeUnit.YEAR);
 
     // Avatica time units:
 
@@ -101,20 +101,18 @@ public class TimeFrames {
   /** Specialization of {@link org.apache.calcite.rel.type.TimeFrameSet.Builder}
    * for Avatica's built-in time frames. */
   private static class MyBuilder extends TimeFrameSet.Builder {
-    public MyBuilder addCore(TimeUnit unit) {
-      super.addCore(unit.name());
-      return this;
+    TimeFrameSet.Builder addCore(TimeUnit unit) {
+      return super.addCore(unit.name());
     }
 
-    MyBuilder addMultiple(TimeUnit unit, Number count, TimeUnit baseUnit) {
-      super.addMultiple(unit.name(), count, baseUnit.name());
-      return this;
+    TimeFrameSet.Builder addMultiple(TimeUnit unit, Number count,
+        TimeUnit baseUnit) {
+      return super.addMultiple(unit.name(), count, baseUnit.name());
     }
 
-    MyBuilder addDivision(TimeUnit unit, Number count, TimeUnit baseUnit) {
-      final BigFraction f = toFraction(count);
-      super.addMultiple(unit.name(), BigFraction.ONE.divide(f), baseUnit.name());
-      return this;
+    TimeFrameSet.Builder addDivision(TimeUnit unit, Number count,
+        TimeUnit baseUnit) {
+      return super.addDivision(unit.name(), count, baseUnit.name());
     }
   }
 }

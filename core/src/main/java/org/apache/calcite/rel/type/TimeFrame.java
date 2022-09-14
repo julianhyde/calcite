@@ -85,5 +85,16 @@ public interface TimeFrame {
    *
    * <p>For example, MONTH.per(YEAR) returns 12; YEAR.per(MONTH) returns 1 / 12.
    */
-  @Nullable Number per(TimeFrame timeFrame);
+  @Nullable BigFraction per(TimeFrame timeFrame);
+
+  /** Returns a date where this time frame is at the start of a cycle.
+   *
+   * <p>For example, the WEEK time frame starts on a Monday, and 1970/01/05 was
+   * a Monday, and the date 1970/01/05 is represented as integer 5, so the WEEK
+   * time frame returns 5. But it would also be valid to return the date value
+   * of 1900/01/01, which was also a Monday. */
+  int dateEpoch();
+
+  /** Returns a timestamp where this time frame is at the start of a cycle. */
+  long timestampEpoch();
 }

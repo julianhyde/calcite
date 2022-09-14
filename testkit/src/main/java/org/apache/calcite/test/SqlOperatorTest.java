@@ -3816,7 +3816,7 @@ public class SqlOperatorTest {
     checkIf(f.withLibrary(SqlLibrary.SPARK));
   }
 
-  private void checkIf(SqlOperatorFixture f) {
+  private static void checkIf(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.IF);
     f.checkString("if(1 = 2, 1, 2)", "2", "INTEGER NOT NULL");
     f.checkString("if('abc'='xyz', 'abc', 'xyz')", "xyz",
@@ -7389,6 +7389,7 @@ public class SqlOperatorTest {
                         .build();
                   }
                 }));
+    f.checkNull("ceiling(cast(null as timestamp) to month)");
   }
 
   @Test void testFloorFuncInterval() {

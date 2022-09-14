@@ -16,12 +16,15 @@
  */
 package org.apache.calcite.rel.type;
 
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
 
 import org.apache.commons.math3.fraction.BigFraction;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -29,6 +32,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -53,12 +57,48 @@ public class TimeFrameSet {
         () -> "not found: " + name);
   }
 
+  /** Returns the time frame with the given name,
+   * or throws {@link NullPointerException}. */
+  public TimeFrame get(TimeUnit timeUnit) {
+    return get(timeUnit.name());
+  }
+
+  /** Computes "FLOOR(date TO frame)", where {@code date} is the number of
+   * days since UNIX Epoch. */
+  public int floorDate(int date, TimeFrame frame) {
+    final TimeFrame dayFrame = get(TimeUnit.DAY);
+    final BigFraction f = frame.per(dayFrame);
+    if (f != null
+        && f.getNumerator().equals(BigInteger.ONE)) {
+      final int m = f.getDenominator().intValueExact(); // 7 for WEEK
+      final long mod =
+          DateTimeUtils.floorMod(date - frame.dateEpoch(), m);
+      return date - (int) mod;
+    }
+    return date;
+  }
+
+  /** Computes "FLOOR(timestamp TO frame)", where {@code date} is the number of
+   * milliseconds since UNIX Epoch. */
+  public long floorTimestamp(long ts, TimeFrame frame) {
+    final TimeFrame secondFrame = get(TimeUnit.MILLISECOND.name());
+    final BigFraction f = frame.per(secondFrame);
+    if (f != null
+        && f.getNumerator().equals(BigInteger.ONE)) {
+      final long m = f.getDenominator().longValue(); // 60,000 for MINUTE
+      final long mod =
+          DateTimeUtils.floorMod(ts - frame.timestampEpoch(), m);
+      return ts - mod;
+    }
+    return ts;
+  }
+
   /** Builds a collection of time frames. */
   public static class Builder {
     Builder() {
     }
 
-    final Map<String, TimeFrameImpl> map = new HashMap<>();
+    final Map<String, TimeFrameImpl> map = new LinkedHashMap<>();
 
     public TimeFrameSet build() {
       return new TimeFrameSet(ImmutableMap.copyOf(map));
@@ -80,9 +120,10 @@ public class TimeFrameSet {
       }
     }
 
-    public void addCore(String name) {
+    public Builder addCore(String name) {
       map.put(name,
-          new TimeFrameImpl(name, null));
+          new TimeFrameImpl(name, null, TimestampString.EPOCH));
+      return this;
     }
 
     /** Defines a time unit that consists of {@code count} instances of
@@ -92,14 +133,16 @@ public class TimeFrameSet {
       final TimeFrameImpl baseFrame = map.get(baseName);
       map.put(name,
           new TimeFrameImpl(name,
-              Pair.of(baseFrame, toFraction(count))));
+              Pair.of(baseFrame, toFraction(count)),
+              TimestampString.EPOCH));
       return this;
     }
 
     /** Defines such that each {@code baseUnit} consists of {@code count}
      * instances of the new unit. */
-    public Builder addDivision(String name, int count, String baseName) {
-      return addMultiple(name, BigFraction.ONE.divide(count), baseName);
+    public Builder addDivision(String name, Number count, String baseName) {
+      BigFraction f = toFraction(count);
+      return addMultiple(name, BigFraction.ONE.divide(f), baseName);
     }
 
     /** Adds all time frames in {@code timeFrameSet} to this Builder. */
@@ -107,17 +150,27 @@ public class TimeFrameSet {
       timeFrameSet.map.forEach((k, v) -> map.put(k, (TimeFrameImpl) v));
       return this;
     }
+
+    /** Replaces the epoch of the most recently added frame. */
+    public void withEpoch(TimestampString epoch) {
+      Map.Entry<String, TimeFrameImpl> lastEntry =
+          Iterables.getLast(map.entrySet());
+      lastEntry.setValue(lastEntry.getValue().withEpoch(epoch));
+    }
   }
 
   /** Implementation of {@link TimeFrame}. */
   static class TimeFrameImpl implements TimeFrame {
     private final String name;
     private final @Nullable Pair<TimeFrameImpl, BigFraction> composedOf;
+    private final TimestampString epoch;
 
     TimeFrameImpl(String name,
-        @Nullable Pair<TimeFrameImpl, BigFraction> composedOf) {
+        @Nullable Pair<TimeFrameImpl, BigFraction> composedOf,
+        TimestampString epoch) {
       this.name = requireNonNull(name, "name");
       this.composedOf = composedOf;
+      this.epoch = epoch;
     }
 
     @Override public String toString() {
@@ -146,7 +199,7 @@ public class TimeFrameSet {
       return ImmutableMap.of();
     }
 
-    @Override public @Nullable Number per(TimeFrame timeFrame) {
+    @Override public @Nullable BigFraction per(TimeFrame timeFrame) {
       final Map<TimeFrame, BigFraction> map = new HashMap<>();
       final Map<TimeFrame, BigFraction> map2 = new HashMap<>();
       expand(map, BigFraction.ONE);
@@ -170,6 +223,21 @@ public class TimeFrameSet {
       if (composedOf != null && composedOf.right != null) {
         composedOf.left.expand(map, composedOf.right.multiply(f));
       }
+    }
+
+    @Override public int dateEpoch() {
+      return (int) DateTimeUtils.floorDiv(epoch.getMillisSinceEpoch(),
+          DateTimeUtils.MILLIS_PER_DAY);
+    }
+
+    @Override public long timestampEpoch() {
+      return epoch.getMillisSinceEpoch();
+    }
+
+    /** Returns a copy of this TimeFrameImpl with a given epoch. */
+    TimeFrameImpl withEpoch(TimestampString epoch) {
+      return this.epoch.equals(epoch) ? this
+          : new TimeFrameImpl(name, composedOf, epoch);
     }
   }
 
