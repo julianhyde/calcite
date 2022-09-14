@@ -18,7 +18,6 @@ package org.apache.calcite.rel.type;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
 
 import org.apache.commons.math3.fraction.BigFraction;
@@ -28,9 +27,7 @@ import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -104,25 +101,26 @@ public class TimeFrameSet {
       return new TimeFrameSet(ImmutableMap.copyOf(map));
     }
 
-    /** Converts a number to an exactly equivalent {@code BigFraction}.
+    /** Converts a number to an exactly equivalent {@code BigInteger}.
      * May silently lose precision if n is a {@code Float} or {@code Double}. */
-    static BigFraction toFraction(Number n) {
-      if (n instanceof BigFraction) {
-        return (BigFraction) n;
-      } else if (n instanceof BigInteger) {
-        return new BigFraction((BigInteger) n);
-      } else if (n instanceof BigDecimal) {
-        BigDecimal bd = (BigDecimal) n;
-        return new BigFraction(bd.unscaledValue())
-            .multiply(BigInteger.TEN.pow(-bd.scale()));
-      } else {
-        return new BigFraction(n.longValue());
-      }
+    static BigInteger toBigInteger(Number number) {
+      return number instanceof BigInteger ? (BigInteger) number
+          : BigInteger.valueOf(number.longValue());
     }
 
     public Builder addCore(String name) {
+      map.put(name, new CoreTimeFrame(name));
+      return this;
+    }
+
+    /** Defines a time unit that consists of {@code count} instances of
+     * {@code baseUnit}. */
+    Builder addSub(String name, boolean divide, Number count,
+        String baseName, TimestampString epoch) {
+      final TimeFrameImpl baseFrame = map.get(baseName);
       map.put(name,
-          new TimeFrameImpl(name, null, TimestampString.EPOCH));
+          new SubTimeFrame(name, baseFrame, divide, toBigInteger(count),
+              epoch));
       return this;
     }
 
@@ -130,73 +128,45 @@ public class TimeFrameSet {
      * {@code baseUnit}. */
     public Builder addMultiple(String name, Number count,
         String baseName) {
-      final TimeFrameImpl baseFrame = map.get(baseName);
-      map.put(name,
-          new TimeFrameImpl(name,
-              Pair.of(baseFrame, toFraction(count)),
-              TimestampString.EPOCH));
-      return this;
+      return addSub(name, false, count, baseName, TimestampString.EPOCH);
     }
 
     /** Defines such that each {@code baseUnit} consists of {@code count}
      * instances of the new unit. */
     public Builder addDivision(String name, Number count, String baseName) {
-      BigFraction f = toFraction(count);
-      return addMultiple(name, BigFraction.ONE.divide(f), baseName);
+      return addSub(name, true, count, baseName, TimestampString.EPOCH);
     }
 
     /** Adds all time frames in {@code timeFrameSet} to this Builder. */
     public Builder addAll(TimeFrameSet timeFrameSet) {
-      timeFrameSet.map.forEach((k, v) -> map.put(k, (TimeFrameImpl) v));
+      timeFrameSet.map.values().forEach(frame ->
+          ((TimeFrameImpl) frame).replicate(this));
       return this;
     }
 
     /** Replaces the epoch of the most recently added frame. */
-    public void withEpoch(TimestampString epoch) {
-      Map.Entry<String, TimeFrameImpl> lastEntry =
-          Iterables.getLast(map.entrySet());
-      lastEntry.setValue(lastEntry.getValue().withEpoch(epoch));
+    public Builder withEpoch(TimestampString epoch) {
+      final String name = Iterables.getLast(map.keySet());
+      final SubTimeFrame value =
+          requireNonNull((SubTimeFrame) map.remove(name));
+      return value.replicateWithEpoch(this, epoch);
     }
   }
 
   /** Implementation of {@link TimeFrame}. */
-  static class TimeFrameImpl implements TimeFrame {
-    private final String name;
-    private final @Nullable Pair<TimeFrameImpl, BigFraction> composedOf;
-    private final TimestampString epoch;
+  abstract static class TimeFrameImpl implements TimeFrame {
+    final String name;
 
-    TimeFrameImpl(String name,
-        @Nullable Pair<TimeFrameImpl, BigFraction> composedOf,
-        TimestampString epoch) {
+    TimeFrameImpl(String name) {
       this.name = requireNonNull(name, "name");
-      this.composedOf = composedOf;
-      this.epoch = epoch;
     }
 
     @Override public String toString() {
-      final StringBuilder b = new StringBuilder();
-      b.append(name);
-      if (composedOf != null) {
-        b.append(", composedOf ").append(composedOf.right)
-            .append(" ").append(composedOf.left);
-      }
-      return b.toString();
+      return name;
     }
 
     @Override public String name() {
       return name;
-    }
-
-    @Override public @Nullable Pair<TimeFrameImpl, BigFraction> composedOf() {
-      return composedOf;
-    }
-
-    @Override public Collection<TimeFrame> alignsWith() {
-      return null;
-    }
-
-    @Override public Map<TimeFrame, Pair<Number, TimestampString>> zero() {
-      return ImmutableMap.of();
     }
 
     @Override public @Nullable BigFraction per(TimeFrame timeFrame) {
@@ -218,11 +188,56 @@ public class TimeFrameSet {
       return null;
     }
 
-    private void expand(Map<TimeFrame, BigFraction> map, BigFraction f) {
+    protected void expand(Map<TimeFrame, BigFraction> map, BigFraction f) {
       map.put(this, f);
-      if (composedOf != null && composedOf.right != null) {
-        composedOf.left.expand(map, composedOf.right.multiply(f));
-      }
+    }
+
+    /** Adds a time frame like this to a builder. */
+    abstract Builder replicate(Builder b);
+  }
+
+  /** Core time frame (such as SECOND and MONTH). */
+  static class CoreTimeFrame extends TimeFrameImpl {
+    CoreTimeFrame(String name) {
+      super(name);
+    }
+
+    @Override Builder replicate(Builder b) {
+      b.addCore(name);
+      return b;
+    }
+  }
+
+  /** A time frame is composed of another time frame.
+   *
+   * <p>For example, {@code MINUTE} is composed of 60 {@code SECOND};
+   * (factor = 60, divide = false);
+   * {@code MILLISECOND} is composed of 1 / 1000 {@code SECOND}
+   * (factor = 1000, divide = true).
+   *
+   * <p>A sub-time frame S is aligned with its parent frame P;
+   * that is, every instance of S belongs to one instance of P.
+   * Every {@code MINUTE} belongs to one {@code HOUR};
+   * not every {@code WEEK} belongs to precisely one {@code MONTH} or
+   * {@code MILLENNIUM}.
+   */
+  static class SubTimeFrame extends TimeFrameImpl {
+    private final TimeFrameImpl base;
+    private final boolean divide;
+    private final BigInteger multiplier;
+    private final TimestampString epoch;
+
+    SubTimeFrame(String name, TimeFrameImpl base, boolean divide,
+        BigInteger multiplier, TimestampString epoch) {
+      super(name);
+      this.base = requireNonNull(base, "base");
+      this.divide = divide;
+      this.multiplier = requireNonNull(multiplier, "multiplier");
+      this.epoch = requireNonNull(epoch, "epoch");
+    }
+
+    @Override public String toString() {
+      return name + ", composedOf " + multiplier + " " + base.name;
     }
 
     @Override public int dateEpoch() {
@@ -234,11 +249,19 @@ public class TimeFrameSet {
       return epoch.getMillisSinceEpoch();
     }
 
+    @Override Builder replicate(Builder b) {
+      return b.addSub(name, divide, multiplier, base.name, epoch);
+    }
+
     /** Returns a copy of this TimeFrameImpl with a given epoch. */
-    TimeFrameImpl withEpoch(TimestampString epoch) {
-      return this.epoch.equals(epoch) ? this
-          : new TimeFrameImpl(name, composedOf, epoch);
+    Builder replicateWithEpoch(Builder b, TimestampString epoch) {
+      return b.addSub(name, divide, multiplier, base.name, epoch);
+    }
+
+    @Override protected void expand(Map<TimeFrame, BigFraction> map,
+        BigFraction f) {
+      super.expand(map, f);
+      base.expand(map, divide ? f.divide(multiplier) : f.multiply(multiplier));
     }
   }
-
 }
