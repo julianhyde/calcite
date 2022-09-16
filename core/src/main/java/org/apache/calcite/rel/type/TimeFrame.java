@@ -73,4 +73,16 @@ public interface TimeFrame {
   default long timestampEpoch() {
     return 0L;
   }
+
+  /** Whether this frame can roll up to {@code toFrame}.
+   *
+   * <p>Examples:
+   * <ul>
+   *   <li>SECOND can roll up to MINUTE, HOUR, DAY, WEEK, MONTH, MILLENNIUM;
+   *   <li>SECOND cannot roll up to MILLISECOND (because it is finer grained);
+   *   <li>WEEK cannot roll up to MONTH, YEAR, MILLENNIUM (because weeks cross
+   *   month boundaries)
+   * </ul>
+   */
+  boolean canRollUpTo(TimeFrame toFrame);
 }

@@ -47,10 +47,13 @@ public class TimeFrames {
     b.addSub(TimeUnit.NANOSECOND, true, 1_000, TimeUnit.MICROSECOND);
 
     b.addCore(TimeUnit.MONTH);
+    b.addSub(TimeUnit.QUARTER, false, 3, TimeUnit.MONTH);
     b.addSub(TimeUnit.YEAR, false, 12, TimeUnit.MONTH);
     b.addSub(TimeUnit.DECADE, false, 10, TimeUnit.YEAR);
     b.addSub(TimeUnit.CENTURY, false, 100, TimeUnit.YEAR);
     b.addSub(TimeUnit.MILLENNIUM, false, 1_000, TimeUnit.YEAR);
+
+    b.addRollup(TimeUnit.DAY, TimeUnit.MONTH);
 
     // Avatica time units:
 
@@ -113,6 +116,10 @@ public class TimeFrames {
     void addSub(TimeUnit unit, boolean divide, Number count,
         TimeUnit baseUnit, TimestampString epoch) {
       addSub(unit.name(), divide, count, baseUnit.name(), epoch);
+    }
+
+    void addRollup(TimeUnit fromUnit, TimeUnit toUnit) {
+      addRollup(fromUnit.name(), toUnit.name());
     }
   }
 }
