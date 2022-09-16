@@ -18,11 +18,13 @@ package org.apache.calcite.rel.type;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
 
 import org.apache.commons.math3.fraction.BigFraction;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -36,10 +38,14 @@ import static java.util.Objects.requireNonNull;
 
 /** Set of {@link TimeFrame} definitions. */
 public class TimeFrameSet {
-  private final ImmutableMap<String, TimeFrame> map;
+  private final ImmutableMap<String, TimeFrameImpl> map;
+  private final ImmutableMultimap<TimeFrameImpl, TimeFrameImpl> rollupMap;
 
-  private TimeFrameSet(ImmutableMap<String, TimeFrame> map) {
+  private TimeFrameSet(ImmutableMap<String, TimeFrameImpl> map,
+      ImmutableMultimap<TimeFrameImpl, TimeFrameImpl> rollupMap) {
     this.map = requireNonNull(map, "map");
+    this.rollupMap = requireNonNull(rollupMap, "rollupMap");
+    map.values().forEach(k -> k.set = this);
   }
 
   /** Creates a Builder. */
@@ -48,10 +54,13 @@ public class TimeFrameSet {
   }
 
   /** Returns the time frame with the given name,
-   * or throws {@link NullPointerException}. */
+   * or throws {@link IllegalArgumentException}. */
   public TimeFrame get(String name) {
-    return requireNonNull(map.get(name),
-        () -> "not found: " + name);
+    final TimeFrame timeFrame = map.get(name);
+    if (timeFrame == null) {
+      throw new IllegalArgumentException("unknown frame: " + name);
+    }
+    return timeFrame;
   }
 
   /** Returns the time frame with the given name,
@@ -96,9 +105,11 @@ public class TimeFrameSet {
     }
 
     final Map<String, TimeFrameImpl> map = new LinkedHashMap<>();
+    final ImmutableMultimap.Builder<TimeFrameImpl, TimeFrameImpl> rollupList =
+        ImmutableMultimap.builder();
 
     public TimeFrameSet build() {
-      return new TimeFrameSet(ImmutableMap.copyOf(map));
+      return new TimeFrameSet(ImmutableMap.copyOf(map), rollupList.build());
     }
 
     /** Converts a number to an exactly equivalent {@code BigInteger}.
@@ -117,11 +128,28 @@ public class TimeFrameSet {
      * {@code baseUnit}. */
     Builder addSub(String name, boolean divide, Number count,
         String baseName, TimestampString epoch) {
-      final TimeFrameImpl baseFrame = map.get(baseName);
+      final TimeFrameImpl baseFrame = get(baseName);
+      final BigInteger factor = toBigInteger(count);
+
+      final CoreTimeFrame coreFrame = baseFrame.core();
+      final BigFraction coreFactor = divide
+          ? baseFrame.coreMultiplier().divide(factor)
+          : baseFrame.coreMultiplier().multiply(factor);
+
       map.put(name,
-          new SubTimeFrame(name, baseFrame, divide, toBigInteger(count),
-              epoch));
+          new SubTimeFrame(name, baseFrame, divide, factor, coreFrame,
+              coreFactor, epoch));
       return this;
+    }
+
+    /** Returns the time frame with the given name,
+     * or throws {@link IllegalArgumentException}. */
+    TimeFrameImpl get(String name) {
+      final TimeFrameImpl timeFrame = map.get(name);
+      if (timeFrame == null) {
+        throw new IllegalArgumentException("unknown frame: " + name);
+      }
+      return timeFrame;
     }
 
     /** Defines a time unit that consists of {@code count} instances of
@@ -137,10 +165,21 @@ public class TimeFrameSet {
       return addSub(name, true, count, baseName, TimestampString.EPOCH);
     }
 
+    /** Defines a rollup from one frame to another.
+     *
+     * <p>An explicit rollup is not necessary for frames where one is a multiple
+     * of another (such as MILLISECOND to HOUR). Only use this method for frames
+     * that are not multiples (such as DAY to MONTH). */
+    public Builder addRollup(String fromName, String toName) {
+      final TimeFrameImpl fromFrame = get(fromName);
+      final TimeFrameImpl toFrame = get(toName);
+      rollupList.put(fromFrame, toFrame);
+      return this;
+    }
+
     /** Adds all time frames in {@code timeFrameSet} to this Builder. */
     public Builder addAll(TimeFrameSet timeFrameSet) {
-      timeFrameSet.map.values().forEach(frame ->
-          ((TimeFrameImpl) frame).replicate(this));
+      timeFrameSet.map.values().forEach(frame -> frame.replicate(this));
       return this;
     }
 
@@ -149,13 +188,18 @@ public class TimeFrameSet {
       final String name = Iterables.getLast(map.keySet());
       final SubTimeFrame value =
           requireNonNull((SubTimeFrame) map.remove(name));
-      return value.replicateWithEpoch(this, epoch);
+      value.replicateWithEpoch(this, epoch);
+      return this;
     }
   }
 
   /** Implementation of {@link TimeFrame}. */
   abstract static class TimeFrameImpl implements TimeFrame {
     final String name;
+
+    /** Mutable, set on build, and then not re-assigned. Ideally this would be
+     * final. */
+    private TimeFrameSet set;
 
     TimeFrameImpl(String name) {
       this.name = requireNonNull(name, "name");
@@ -193,7 +237,42 @@ public class TimeFrameSet {
     }
 
     /** Adds a time frame like this to a builder. */
-    abstract Builder replicate(Builder b);
+    abstract void replicate(Builder b);
+
+    protected abstract CoreTimeFrame core();
+
+    protected abstract BigFraction coreMultiplier();
+
+    @Override public boolean canRollUpTo(TimeFrame toFrame) {
+      if (toFrame == this) {
+        return true;
+      }
+      if (toFrame instanceof TimeFrameImpl) {
+        final TimeFrameImpl toFrame1 = (TimeFrameImpl) toFrame;
+        if (canDirectlyRollUp(this, toFrame1)) {
+          return true;
+        }
+        if (set.rollupMap.entries().contains(Pair.of(this, toFrame1))) {
+          return true;
+        }
+        // Hard-code roll-up via DAY-to-MONTH bridge, for now.
+        if (canDirectlyRollUp(this, (TimeFrameImpl) set.get(TimeUnit.DAY))
+            && canDirectlyRollUp((TimeFrameImpl) set.get(TimeUnit.MONTH), toFrame1)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private static boolean canDirectlyRollUp(TimeFrameImpl from, TimeFrameImpl to) {
+      if (from.core().equals(to.core())) {
+        return from.coreMultiplier()
+            .divide(to.coreMultiplier())
+            .getNumerator()
+            .equals(BigInteger.ONE);
+      }
+      return false;
+    }
   }
 
   /** Core time frame (such as SECOND and MONTH). */
@@ -202,9 +281,16 @@ public class TimeFrameSet {
       super(name);
     }
 
-    @Override Builder replicate(Builder b) {
+    @Override void replicate(Builder b) {
       b.addCore(name);
-      return b;
+    }
+
+    @Override protected CoreTimeFrame core() {
+      return this;
+    }
+
+    @Override protected BigFraction coreMultiplier() {
+      return BigFraction.ONE;
     }
   }
 
@@ -225,14 +311,23 @@ public class TimeFrameSet {
     private final TimeFrameImpl base;
     private final boolean divide;
     private final BigInteger multiplier;
+    private final CoreTimeFrame coreFrame;
+
+    /** The number of core frames that are equivalent to one of these. For
+     * example, MINUTE, HOUR, MILLISECOND all have core = SECOND, and have
+     * multipliers 60, 3,600, 1 / 1,000 respectively. */
+    private final BigFraction coreMultiplier;
     private final TimestampString epoch;
 
     SubTimeFrame(String name, TimeFrameImpl base, boolean divide,
-        BigInteger multiplier, TimestampString epoch) {
+        BigInteger multiplier, CoreTimeFrame coreFrame,
+        BigFraction coreMultiplier, TimestampString epoch) {
       super(name);
       this.base = requireNonNull(base, "base");
       this.divide = divide;
       this.multiplier = requireNonNull(multiplier, "multiplier");
+      this.coreFrame = requireNonNull(coreFrame, "coreFrame");
+      this.coreMultiplier = requireNonNull(coreMultiplier, "coreMultiplier");
       this.epoch = requireNonNull(epoch, "epoch");
     }
 
@@ -249,19 +344,27 @@ public class TimeFrameSet {
       return epoch.getMillisSinceEpoch();
     }
 
-    @Override Builder replicate(Builder b) {
-      return b.addSub(name, divide, multiplier, base.name, epoch);
+    @Override void replicate(Builder b) {
+      b.addSub(name, divide, multiplier, base.name, epoch);
     }
 
     /** Returns a copy of this TimeFrameImpl with a given epoch. */
-    Builder replicateWithEpoch(Builder b, TimestampString epoch) {
-      return b.addSub(name, divide, multiplier, base.name, epoch);
+    void replicateWithEpoch(Builder b, TimestampString epoch) {
+      b.addSub(name, divide, multiplier, base.name, epoch);
     }
 
     @Override protected void expand(Map<TimeFrame, BigFraction> map,
         BigFraction f) {
       super.expand(map, f);
       base.expand(map, divide ? f.divide(multiplier) : f.multiply(multiplier));
+    }
+
+    @Override protected CoreTimeFrame core() {
+      return coreFrame;
+    }
+
+    @Override protected BigFraction coreMultiplier() {
+      return coreMultiplier;
     }
   }
 }
