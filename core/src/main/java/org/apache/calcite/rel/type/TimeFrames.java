@@ -41,7 +41,7 @@ public class TimeFrames {
     b.addSub(TimeUnit.HOUR, false, 60, TimeUnit.MINUTE);
     b.addSub(TimeUnit.DAY, false, 24, TimeUnit.HOUR);
     b.addSub(TimeUnit.WEEK, false, 7, TimeUnit.DAY,
-        new TimestampString(1970, 1, 5, 0, 0, 0));
+        new TimestampString(1970, 1, 4, 0, 0, 0)); // a sunday
     b.addSub(TimeUnit.MILLISECOND, true, 1_000, TimeUnit.SECOND);
     b.addSub(TimeUnit.MICROSECOND, true, 1_000, TimeUnit.MILLISECOND);
     b.addSub(TimeUnit.NANOSECOND, true, 1_000, TimeUnit.MICROSECOND);
@@ -55,7 +55,12 @@ public class TimeFrames {
     b.addSub(TimeUnit.MILLENNIUM, false, 1_000, TimeUnit.YEAR,
         new TimestampString(2001, 1, 1, 0, 0, 0));
 
+    b.addCore(TimeUnit.ISOYEAR);
+    b.addSub("ISOWEEK", false, 7, TimeUnit.DAY.name(),
+        new TimestampString(1970, 1, 5, 0, 0, 0)); // a monday
+
     b.addRollup(TimeUnit.DAY, TimeUnit.MONTH);
+    b.addRollup("ISOWEEK", TimeUnit.ISOYEAR.name());
 
     // Avatica time units:
 
