@@ -38,6 +38,8 @@ import static org.apache.calcite.avatica.util.TimeUnit.CENTURY;
 import static org.apache.calcite.avatica.util.TimeUnit.DAY;
 import static org.apache.calcite.avatica.util.TimeUnit.DECADE;
 import static org.apache.calcite.avatica.util.TimeUnit.HOUR;
+import static org.apache.calcite.avatica.util.TimeUnit.ISODOW;
+import static org.apache.calcite.avatica.util.TimeUnit.ISOYEAR;
 import static org.apache.calcite.avatica.util.TimeUnit.MICROSECOND;
 import static org.apache.calcite.avatica.util.TimeUnit.MILLENNIUM;
 import static org.apache.calcite.avatica.util.TimeUnit.MILLISECOND;
@@ -100,10 +102,15 @@ public class TimeFrameTest {
 
   @Test void testEvalFloor() {
     final Fixture f = new Fixture();
-    f.checkDateFloor("1970-03-04", WEEK, is("1970-03-02"));
-    f.checkDateFloor("1970-03-03", WEEK, is("1970-03-02"));
-    f.checkDateFloor("1970-03-02", WEEK, is("1970-03-02"));
-    f.checkDateFloor("1970-03-01", WEEK, is("1970-02-23"));
+    f.checkDateFloor("1970-08-01", WEEK, is("1970-07-26")); // saturday
+    f.checkDateFloor("1970-08-02", WEEK, is("1970-08-02")); // sunday
+    f.checkDateFloor("1970-08-03", WEEK, is("1970-08-02")); // monday
+    f.checkDateFloor("1970-08-04", WEEK, is("1970-08-02")); // tuesday
+
+    f.checkDateFloor("1970-08-01", f.isoWeek, is("1970-07-27")); // saturday
+    f.checkDateFloor("1970-08-02", f.isoWeek, is("1970-07-27")); // sunday
+    f.checkDateFloor("1970-08-03", f.isoWeek, is("1970-08-03")); // monday
+    f.checkDateFloor("1970-08-04", f.isoWeek, is("1970-08-03")); // tuesday
 
     f.checkTimestampFloor("1970-01-01 01:23:45", HOUR,
         0, is("1970-01-01 01:00:00"));
@@ -121,7 +128,7 @@ public class TimeFrameTest {
     f.checkTimestampFloor("1971-12-25 01:23:45", DAY,
         0, is("1971-12-25 00:00:00"));
     f.checkTimestampFloor("1971-12-25 01:23:45", WEEK,
-        0, is("1971-12-20 00:00:00"));
+        0, is("1971-12-19 00:00:00"));
   }
 
   @Test void testCanRollUp() {
@@ -132,6 +139,8 @@ public class TimeFrameTest {
     f.checkCanRollUp(DAY, MONTH, true);
     f.checkCanRollUp(MONTH, DAY, false);
 
+    // Note 0: when we pass TimeUnit.ISODOW to tests, we mean f.ISOWEEK.
+
     f.checkCanRollUp(NANOSECOND, NANOSECOND, true);
     f.checkCanRollUp(NANOSECOND, MICROSECOND, true);
     f.checkCanRollUp(NANOSECOND, MILLISECOND, true);
@@ -140,9 +149,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(NANOSECOND, HOUR, true);
     f.checkCanRollUp(NANOSECOND, DAY, true);
     f.checkCanRollUp(NANOSECOND, WEEK, true);
+    f.checkCanRollUp(NANOSECOND, f.isoWeek, true); // see note 0
     f.checkCanRollUp(NANOSECOND, MONTH, true);
     f.checkCanRollUp(NANOSECOND, QUARTER, true);
     f.checkCanRollUp(NANOSECOND, YEAR, true);
+    f.checkCanRollUp(NANOSECOND, ISOYEAR, true);
     f.checkCanRollUp(NANOSECOND, CENTURY, true);
     f.checkCanRollUp(NANOSECOND, DECADE, true);
     f.checkCanRollUp(NANOSECOND, MILLENNIUM, true);
@@ -155,9 +166,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(MICROSECOND, HOUR, true);
     f.checkCanRollUp(MICROSECOND, DAY, true);
     f.checkCanRollUp(MICROSECOND, WEEK, true);
+    f.checkCanRollUp(MICROSECOND, f.isoWeek, true);
     f.checkCanRollUp(MICROSECOND, MONTH, true);
     f.checkCanRollUp(MICROSECOND, QUARTER, true);
     f.checkCanRollUp(MICROSECOND, YEAR, true);
+    f.checkCanRollUp(MICROSECOND, ISOYEAR, true);
     f.checkCanRollUp(MICROSECOND, CENTURY, true);
     f.checkCanRollUp(MICROSECOND, DECADE, true);
     f.checkCanRollUp(MICROSECOND, MILLENNIUM, true);
@@ -170,9 +183,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(MILLISECOND, HOUR, true);
     f.checkCanRollUp(MILLISECOND, DAY, true);
     f.checkCanRollUp(MILLISECOND, WEEK, true);
+    f.checkCanRollUp(MILLISECOND, f.isoWeek, true);
     f.checkCanRollUp(MILLISECOND, MONTH, true);
     f.checkCanRollUp(MILLISECOND, QUARTER, true);
     f.checkCanRollUp(MILLISECOND, YEAR, true);
+    f.checkCanRollUp(MILLISECOND, ISOYEAR, true);
     f.checkCanRollUp(MILLISECOND, CENTURY, true);
     f.checkCanRollUp(MILLISECOND, DECADE, true);
     f.checkCanRollUp(MILLISECOND, MILLENNIUM, true);
@@ -185,9 +200,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(SECOND, HOUR, true);
     f.checkCanRollUp(SECOND, DAY, true);
     f.checkCanRollUp(SECOND, WEEK, true);
+    f.checkCanRollUp(SECOND, f.isoWeek, true);
     f.checkCanRollUp(SECOND, MONTH, true);
     f.checkCanRollUp(SECOND, QUARTER, true);
     f.checkCanRollUp(SECOND, YEAR, true);
+    f.checkCanRollUp(SECOND, ISOYEAR, true);
     f.checkCanRollUp(SECOND, CENTURY, true);
     f.checkCanRollUp(SECOND, DECADE, true);
     f.checkCanRollUp(SECOND, MILLENNIUM, true);
@@ -200,9 +217,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(MINUTE, HOUR, true);
     f.checkCanRollUp(MINUTE, DAY, true);
     f.checkCanRollUp(MINUTE, WEEK, true);
+    f.checkCanRollUp(MINUTE, f.isoWeek, true);
     f.checkCanRollUp(MINUTE, MONTH, true);
     f.checkCanRollUp(MINUTE, QUARTER, true);
     f.checkCanRollUp(MINUTE, YEAR, true);
+    f.checkCanRollUp(MINUTE, ISOYEAR, true);
     f.checkCanRollUp(MINUTE, CENTURY, true);
     f.checkCanRollUp(MINUTE, DECADE, true);
     f.checkCanRollUp(MINUTE, MILLENNIUM, true);
@@ -215,9 +234,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(HOUR, HOUR, true);
     f.checkCanRollUp(HOUR, DAY, true);
     f.checkCanRollUp(HOUR, WEEK, true);
+    f.checkCanRollUp(HOUR, f.isoWeek, true);
     f.checkCanRollUp(HOUR, MONTH, true);
     f.checkCanRollUp(HOUR, QUARTER, true);
     f.checkCanRollUp(HOUR, YEAR, true);
+    f.checkCanRollUp(HOUR, ISOYEAR, true);
     f.checkCanRollUp(HOUR, DECADE, true);
     f.checkCanRollUp(HOUR, CENTURY, true);
     f.checkCanRollUp(HOUR, MILLENNIUM, true);
@@ -230,15 +251,21 @@ public class TimeFrameTest {
     f.checkCanRollUp(DAY, HOUR, false);
     f.checkCanRollUp(DAY, DAY, true);
     f.checkCanRollUp(DAY, WEEK, true);
+    f.checkCanRollUp(DAY, f.isoWeek, true);
     f.checkCanRollUp(DAY, MONTH, true);
     f.checkCanRollUp(DAY, QUARTER, true);
     f.checkCanRollUp(DAY, YEAR, true);
+    f.checkCanRollUp(DAY, ISOYEAR, true);
     f.checkCanRollUp(DAY, DECADE, true);
     f.checkCanRollUp(DAY, CENTURY, true);
     f.checkCanRollUp(DAY, MILLENNIUM, true);
 
     // Note 1. WEEK cannot roll up to MONTH, YEAR or higher.
     // Some weeks cross month, year, decade, century and millennium boundaries.
+
+    // Note 2. WEEK, MONTH, QUARTER, YEAR, DECADE, CENTURY, MILLENNIUM cannot
+    // roll up to ISOYEAR. Only f.ISOWEEK can roll up to ISOYEAR.
+
     f.checkCanRollUp(WEEK, NANOSECOND, false);
     f.checkCanRollUp(WEEK, MICROSECOND, false);
     f.checkCanRollUp(WEEK, MILLISECOND, false);
@@ -247,12 +274,31 @@ public class TimeFrameTest {
     f.checkCanRollUp(WEEK, HOUR, false);
     f.checkCanRollUp(WEEK, DAY, false);
     f.checkCanRollUp(WEEK, WEEK, true);
+    f.checkCanRollUp(WEEK, f.isoWeek, false);
     f.checkCanRollUp(WEEK, MONTH, false); // see note 1
     f.checkCanRollUp(WEEK, QUARTER, false); // see note 1
     f.checkCanRollUp(WEEK, YEAR, false); // see note 1
+    f.checkCanRollUp(WEEK, ISOYEAR, false); // see note 2
     f.checkCanRollUp(WEEK, DECADE, false); // see note 1
     f.checkCanRollUp(WEEK, CENTURY, false); // see note 1
     f.checkCanRollUp(WEEK, MILLENNIUM, false); // see note 1
+
+    f.checkCanRollUp(f.isoWeek, NANOSECOND, false);
+    f.checkCanRollUp(f.isoWeek, MICROSECOND, false);
+    f.checkCanRollUp(f.isoWeek, MILLISECOND, false);
+    f.checkCanRollUp(f.isoWeek, SECOND, false);
+    f.checkCanRollUp(f.isoWeek, MINUTE, false);
+    f.checkCanRollUp(f.isoWeek, HOUR, false);
+    f.checkCanRollUp(f.isoWeek, DAY, false);
+    f.checkCanRollUp(f.isoWeek, WEEK, false);
+    f.checkCanRollUp(f.isoWeek, f.isoWeek, true);
+    f.checkCanRollUp(f.isoWeek, MONTH, false); // see note 1
+    f.checkCanRollUp(f.isoWeek, QUARTER, false); // see note 1
+    f.checkCanRollUp(f.isoWeek, YEAR, false); // see note 1
+    f.checkCanRollUp(f.isoWeek, ISOYEAR, true); // see note 2
+    f.checkCanRollUp(f.isoWeek, DECADE, false); // see note 1
+    f.checkCanRollUp(f.isoWeek, CENTURY, false); // see note 1
+    f.checkCanRollUp(f.isoWeek, MILLENNIUM, false); // see note 1
 
     f.checkCanRollUp(MONTH, NANOSECOND, false);
     f.checkCanRollUp(MONTH, MICROSECOND, false);
@@ -262,9 +308,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(MONTH, HOUR, false);
     f.checkCanRollUp(MONTH, DAY, false);
     f.checkCanRollUp(MONTH, WEEK, false);
+    f.checkCanRollUp(MONTH, f.isoWeek, false);
     f.checkCanRollUp(MONTH, MONTH, true);
     f.checkCanRollUp(MONTH, QUARTER, true);
     f.checkCanRollUp(MONTH, YEAR, true);
+    f.checkCanRollUp(MONTH, ISOYEAR, false); // see note 2
     f.checkCanRollUp(MONTH, DECADE, true);
     f.checkCanRollUp(MONTH, CENTURY, true);
     f.checkCanRollUp(MONTH, MILLENNIUM, true);
@@ -277,9 +325,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(QUARTER, HOUR, false);
     f.checkCanRollUp(QUARTER, DAY, false);
     f.checkCanRollUp(QUARTER, WEEK, false);
+    f.checkCanRollUp(QUARTER, f.isoWeek, false);
     f.checkCanRollUp(QUARTER, MONTH, false);
     f.checkCanRollUp(QUARTER, QUARTER, true);
     f.checkCanRollUp(QUARTER, YEAR, true);
+    f.checkCanRollUp(QUARTER, ISOYEAR, false); // see note 2
     f.checkCanRollUp(QUARTER, DECADE, true);
     f.checkCanRollUp(QUARTER, CENTURY, true);
     f.checkCanRollUp(QUARTER, MILLENNIUM, true);
@@ -292,14 +342,16 @@ public class TimeFrameTest {
     f.checkCanRollUp(YEAR, HOUR, false);
     f.checkCanRollUp(YEAR, DAY, false);
     f.checkCanRollUp(YEAR, WEEK, false);
+    f.checkCanRollUp(YEAR, f.isoWeek, false);
     f.checkCanRollUp(YEAR, MONTH, false);
     f.checkCanRollUp(YEAR, QUARTER, false);
     f.checkCanRollUp(YEAR, YEAR, true);
+    f.checkCanRollUp(YEAR, ISOYEAR, false); // see note 2
     f.checkCanRollUp(YEAR, DECADE, true);
     f.checkCanRollUp(YEAR, CENTURY, true);
     f.checkCanRollUp(YEAR, MILLENNIUM, true);
 
-    // Note 2. DECADE cannot roll up to CENTURY or MILLENNIUM
+    // Note 3. DECADE cannot roll up to CENTURY or MILLENNIUM
     // because decade starts on year 0, the others start on year 1.
     // For example, 2000 is start of a decade, but 2001 is start of a century
     // and millennium.
@@ -311,12 +363,14 @@ public class TimeFrameTest {
     f.checkCanRollUp(DECADE, HOUR, false);
     f.checkCanRollUp(DECADE, DAY, false);
     f.checkCanRollUp(DECADE, WEEK, false);
+    f.checkCanRollUp(DECADE, f.isoWeek, false);
     f.checkCanRollUp(DECADE, MONTH, false);
     f.checkCanRollUp(DECADE, QUARTER, false);
     f.checkCanRollUp(DECADE, YEAR, false);
+    f.checkCanRollUp(DECADE, ISOYEAR, false); // see note 2
     f.checkCanRollUp(DECADE, DECADE, true);
-    f.checkCanRollUp(DECADE, CENTURY, false); // see note 2
-    f.checkCanRollUp(DECADE, MILLENNIUM, false); // see note 2
+    f.checkCanRollUp(DECADE, CENTURY, false); // see note 3
+    f.checkCanRollUp(DECADE, MILLENNIUM, false); // see note 3
 
     f.checkCanRollUp(CENTURY, NANOSECOND, false);
     f.checkCanRollUp(CENTURY, MICROSECOND, false);
@@ -326,9 +380,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(CENTURY, HOUR, false);
     f.checkCanRollUp(CENTURY, DAY, false);
     f.checkCanRollUp(CENTURY, WEEK, false);
+    f.checkCanRollUp(CENTURY, f.isoWeek, false);
     f.checkCanRollUp(CENTURY, MONTH, false);
     f.checkCanRollUp(CENTURY, QUARTER, false);
     f.checkCanRollUp(CENTURY, YEAR, false);
+    f.checkCanRollUp(CENTURY, ISOYEAR, false); // see note 2
     f.checkCanRollUp(CENTURY, DECADE, false);
     f.checkCanRollUp(CENTURY, CENTURY, true);
     f.checkCanRollUp(CENTURY, MILLENNIUM, true);
@@ -341,9 +397,11 @@ public class TimeFrameTest {
     f.checkCanRollUp(MILLENNIUM, HOUR, false);
     f.checkCanRollUp(MILLENNIUM, DAY, false);
     f.checkCanRollUp(MILLENNIUM, WEEK, false);
+    f.checkCanRollUp(MILLENNIUM, f.isoWeek, false);
     f.checkCanRollUp(MILLENNIUM, MONTH, false);
     f.checkCanRollUp(MILLENNIUM, QUARTER, false);
     f.checkCanRollUp(MILLENNIUM, YEAR, false);
+    f.checkCanRollUp(MILLENNIUM, ISOYEAR, false); // see note 2
     f.checkCanRollUp(MILLENNIUM, DECADE, false);
     f.checkCanRollUp(MILLENNIUM, CENTURY, false);
     f.checkCanRollUp(MILLENNIUM, MILLENNIUM, true);
@@ -351,6 +409,8 @@ public class TimeFrameTest {
 
   /** Test fixture. Contains everything you need to write fluent tests. */
   static class Fixture {
+    final TimeUnit isoWeek = TimeUnit.ISODOW;
+
     final TimeFrameSet timeFrameSet = TimeFrames.map();
 
     private final Map<String, String> floorMap =
@@ -362,18 +422,29 @@ public class TimeFrameTest {
             .put("MINUTE", "2022-06-25 12:34:00")
             .put("HOUR", "2022-06-25 12:00:00")
             .put("DAY", "2022-06-25 00:00:00")
-            .put("WEEK", "2022-06-20 00:00:00")
+            .put("WEEK", "2022-06-19 00:00:00")
+            .put("ISOWEEK", "2022-06-20 00:00:00")
             .put("MONTH", "2022-06-01 00:00:00")
             .put("QUARTER", "2022-04-01 00:00:00")
             .put("YEAR", "2022-01-01 00:00:00")
+            .put("ISOYEAR", "2022-01-03 00:00:00")
             .put("DECADE", "2020-01-01 00:00:00")
             .put("CENTURY", "2001-01-01 00:00:00")
             .put("MILLENNIUM", "2001-01-01 00:00:00")
             .build();
 
+    private TimeFrame frame(TimeUnit unit) {
+      if (unit == ISODOW) {
+        // Just for testing. We want to test f.ISOWEEK but there is no TimeUnit
+        // for it, so we use ISODOW as a stand-in.
+        return timeFrameSet.get("ISOWEEK");
+      }
+      return timeFrameSet.get(unit);
+    }
+
     void checkDateFloor(String in, TimeUnit unit, Matcher<String> matcher) {
       int inDate = dateStringToUnixDate(in);
-      int outDate = timeFrameSet.floorDate(inDate, timeFrameSet.get(unit));
+      int outDate = timeFrameSet.floorDate(inDate, frame(unit));
       assertThat("floor(" + in + " to " + unit + ")",
           unixDateToString(outDate), matcher);
     }
@@ -381,14 +452,14 @@ public class TimeFrameTest {
     void checkTimestampFloor(String in, TimeUnit unit, int precision,
         Matcher<String> matcher) {
       long inTs = timestampStringToUnixDate(in);
-      long outTs = timeFrameSet.floorTimestamp(inTs, timeFrameSet.get(unit));
+      long outTs = timeFrameSet.floorTimestamp(inTs, frame(unit));
       assertThat("floor(" + in + " to " + unit + ")",
           unixTimestampToString(outTs, precision), matcher);
     }
 
     void checkCanRollUp(TimeUnit fromUnit, TimeUnit toUnit, boolean can) {
-      TimeFrame fromFrame = timeFrameSet.get(fromUnit);
-      TimeFrame toFrame = timeFrameSet.get(toUnit);
+      TimeFrame fromFrame = frame(fromUnit);
+      TimeFrame toFrame = frame(toUnit);
       if (can) {
         assertThat("can roll up " + fromUnit + " to " + toUnit,
             fromFrame.canRollUpTo(toFrame),
@@ -411,8 +482,14 @@ public class TimeFrameTest {
         if (precision <= 3) {
           // Cannot test conversion to NANOSECOND or MICROSECOND because the
           // representation is milliseconds.
-          checkTimestampFloor(floorMap.get(fromFrame.name()), toUnit, precision,
-              is(floorMap.get(toFrame.name())));
+          final String timestampString = floorMap.get(fromFrame.name());
+          final String floorTimestampString = floorMap.get(toFrame.name());
+          checkTimestampFloor(timestampString, toUnit, precision,
+              is(floorTimestampString));
+
+          final String dateString = timestampString.substring(0, 10);
+          final String floorDateString = floorTimestampString.substring(0, 10);
+          checkDateFloor(dateString, toUnit, is(floorDateString));
         }
 
         // The 'canRollUpTo' method should be a partial order.

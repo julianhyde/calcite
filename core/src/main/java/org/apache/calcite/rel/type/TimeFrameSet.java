@@ -36,6 +36,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.apache.calcite.avatica.util.DateTimeUtils.EPOCH_JULIAN;
+import static org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY;
+
 import static java.lang.Math.floorDiv;
 import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
@@ -77,12 +80,32 @@ public class TimeFrameSet {
    * days since UNIX Epoch. */
   public int floorDate(int date, TimeFrame frame) {
     final TimeFrame dayFrame = get(TimeUnit.DAY);
-    final BigFraction f = frame.per(dayFrame);
-    if (f != null
-        && f.getNumerator().equals(BigInteger.ONE)) {
-      final int m = f.getDenominator().intValueExact(); // 7 for WEEK
+    final BigFraction perDay = frame.per(dayFrame);
+    if (perDay != null
+        && perDay.getNumerator().equals(BigInteger.ONE)) {
+      final int m = perDay.getDenominator().intValueExact(); // 7 for WEEK
       final int mod = floorMod(date - frame.dateEpoch(), m);
       return date - mod;
+    }
+    final TimeFrame monthFrame = get(TimeUnit.MONTH);
+    final BigFraction perMonth = frame.per(monthFrame);
+    if (perMonth != null
+        && perMonth.getNumerator().equals(BigInteger.ONE)) {
+      final int y2 =
+          (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, date);
+      final int m2 =
+          (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, date);
+      final int fullMonth = fullMonth(y2, m2);
+
+      final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
+      final int mod = floorMod(fullMonth - frame.monthEpoch(), m);
+      return mdToUnixDate(fullMonth - mod, 1);
+    }
+    final TimeFrame isoYearFrame = get(TimeUnit.ISOYEAR);
+    final BigFraction perIsoYear = frame.per(isoYearFrame);
+    if (perIsoYear != null
+        && perIsoYear.getNumerator().equals(BigInteger.ONE)) {
+      return floorIsoYear(date);
     }
     return date;
   }
@@ -91,17 +114,17 @@ public class TimeFrameSet {
    * milliseconds since UNIX Epoch. */
   public long floorTimestamp(long ts, TimeFrame frame) {
     final TimeFrame millisecondFrame = get(TimeUnit.MILLISECOND);
-    final BigFraction millisecond = frame.per(millisecondFrame);
-    if (millisecond != null
-        && millisecond.getNumerator().equals(BigInteger.ONE)) {
-      final long m = millisecond.getDenominator().longValue(); // e.g. 60,000 for MINUTE
+    final BigFraction perMillisecond = frame.per(millisecondFrame);
+    if (perMillisecond != null
+        && perMillisecond.getNumerator().equals(BigInteger.ONE)) {
+      final long m = perMillisecond.getDenominator().longValue(); // e.g. 60,000 for MINUTE
       final long mod = floorMod(ts - frame.timestampEpoch(), m);
       return ts - mod;
     }
     final TimeFrame monthFrame = get(TimeUnit.MONTH);
-    final BigFraction month = frame.per(monthFrame);
-    if (month != null
-        && month.getNumerator().equals(BigInteger.ONE)) {
+    final BigFraction perMonth = frame.per(monthFrame);
+    if (perMonth != null
+        && perMonth.getNumerator().equals(BigInteger.ONE)) {
       final long ts2 = floorTimestamp(ts, get(TimeUnit.DAY));
       final int d2 = (int) (ts2 / DateTimeUtils.MILLIS_PER_DAY);
       final int y2 =
@@ -110,11 +133,41 @@ public class TimeFrameSet {
           (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, d2);
       final int fullMonth = fullMonth(y2, m2);
 
-      final int m = month.getDenominator().intValueExact(); // e.g. 12 for YEAR
+      final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
       final int mod = floorMod(fullMonth - frame.monthEpoch(), m);
       return unixTimestamp(fullMonth - mod, 1, 0, 0, 0);
     }
+    final TimeFrame isoYearFrame = get(TimeUnit.ISOYEAR);
+    final BigFraction perIsoYear = frame.per(isoYearFrame);
+    if (perIsoYear != null
+        && perIsoYear.getNumerator().equals(BigInteger.ONE)) {
+      final long ts2 = floorTimestamp(ts, get(TimeUnit.DAY));
+      final int d2 = (int) (ts2 / DateTimeUtils.MILLIS_PER_DAY);
+      return (long) floorIsoYear(d2) * MILLIS_PER_DAY;
+    }
     return ts;
+  }
+
+  /** Given a date, returns the date of the first day of its ISO Year.
+   * Usually occurs in the same calendar year, but may be as early as Dec 29
+   * of the previous calendar year. */
+  // TODO: move it into DateTimeUtils.julianExtract,
+  // so that it can be called from DateTimeUtils.unixDateExtract
+  private static int floorIsoYear(int date) {
+    final int year =
+        (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, date);
+    return (int) firstMondayOfFirstWeek(year) - EPOCH_JULIAN;
+  }
+
+  /** Returns the first day of the first week of a year.
+   * Per ISO-8601 it is the Monday of the week that contains Jan 4,
+   * or equivalently, it is a Monday between Dec 29 and Jan 4.
+   * Sometimes it is in the year before the given year. */
+  // Note: copied from DateTimeUtils
+  private static long firstMondayOfFirstWeek(int year) {
+    final long janFirst = DateTimeUtils.ymdToJulian(year, 1, 1);
+    final long janFirstDow = floorMod(janFirst + 1, (long) 7); // sun=0, sat=6
+    return janFirst + (11 - janFirstDow) % 7 - 3;
   }
 
   /** Returns the number of months since 1 BCE.
@@ -153,7 +206,7 @@ public class TimeFrameSet {
   public static int mdToUnixDate(int fullMonth, int day) {
     final int year = fullMonthToYear(fullMonth);
     final int month = fullMonthToMonth(fullMonth);
-    return DateTimeUtils.ymdToJulian(year, month, day);
+    return DateTimeUtils.ymdToUnixDate(year, month, day);
   }
 
   /** Builds a collection of time frames. */
@@ -313,8 +366,21 @@ public class TimeFrameSet {
           return true;
         }
         // Hard-code roll-up via DAY-to-MONTH bridge, for now.
-        if (canDirectlyRollUp(this, (TimeFrameImpl) set.get(TimeUnit.DAY))
-            && canDirectlyRollUp((TimeFrameImpl) set.get(TimeUnit.MONTH), toFrame1)) {
+        final TimeFrameImpl day =
+            requireNonNull(set.map.get(TimeUnit.DAY.name()));
+        final TimeFrameImpl month =
+            requireNonNull(set.map.get(TimeUnit.MONTH.name()));
+        if (canDirectlyRollUp(this, day)
+            && canDirectlyRollUp(month, toFrame1)) {
+          return true;
+        }
+        // Hard-code roll-up via ISOWEEK-to-ISOYEAR bridge, for now.
+        final TimeFrameImpl isoYear =
+            requireNonNull(set.map.get(TimeUnit.ISOYEAR.name()));
+        final TimeFrameImpl isoWeek =
+            requireNonNull(set.map.get("ISOWEEK"));
+        if (canDirectlyRollUp(this, isoWeek)
+            && canDirectlyRollUp(isoYear, toFrame1)) {
           return true;
         }
       }
@@ -349,7 +415,7 @@ public class TimeFrameSet {
     }
   }
 
-  /** Core time frame (such as SECOND and MONTH). */
+  /** Core time frame (such as SECOND, MONTH, ISOYEAR). */
   static class CoreTimeFrame extends TimeFrameImpl {
     CoreTimeFrame(String name) {
       super(name);
