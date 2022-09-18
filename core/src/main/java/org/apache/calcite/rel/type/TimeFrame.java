@@ -74,6 +74,14 @@ public interface TimeFrame {
     return 0L;
   }
 
+  /** Returns a month number where this time frame is at the start of a cycle.
+   *
+   * @see #dateEpoch()
+   */
+  default int monthEpoch() {
+    return 0;
+  }
+
   /** Whether this frame can roll up to {@code toFrame}.
    *
    * <p>Examples:

@@ -18,6 +18,7 @@ package org.apache.calcite.rel.type;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
 
@@ -30,10 +31,13 @@ import com.google.common.collect.Iterables;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigInteger;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static java.lang.Math.floorDiv;
+import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
 
 /** Set of {@link TimeFrame} definitions. */
@@ -77,9 +81,8 @@ public class TimeFrameSet {
     if (f != null
         && f.getNumerator().equals(BigInteger.ONE)) {
       final int m = f.getDenominator().intValueExact(); // 7 for WEEK
-      final long mod =
-          DateTimeUtils.floorMod(date - frame.dateEpoch(), m);
-      return date - (int) mod;
+      final int mod = floorMod(date - frame.dateEpoch(), m);
+      return date - mod;
     }
     return date;
   }
@@ -87,16 +90,70 @@ public class TimeFrameSet {
   /** Computes "FLOOR(timestamp TO frame)", where {@code date} is the number of
    * milliseconds since UNIX Epoch. */
   public long floorTimestamp(long ts, TimeFrame frame) {
-    final TimeFrame secondFrame = get(TimeUnit.MILLISECOND.name());
-    final BigFraction f = frame.per(secondFrame);
-    if (f != null
-        && f.getNumerator().equals(BigInteger.ONE)) {
-      final long m = f.getDenominator().longValue(); // 60,000 for MINUTE
-      final long mod =
-          DateTimeUtils.floorMod(ts - frame.timestampEpoch(), m);
+    final TimeFrame millisecondFrame = get(TimeUnit.MILLISECOND);
+    final BigFraction millisecond = frame.per(millisecondFrame);
+    if (millisecond != null
+        && millisecond.getNumerator().equals(BigInteger.ONE)) {
+      final long m = millisecond.getDenominator().longValue(); // e.g. 60,000 for MINUTE
+      final long mod = floorMod(ts - frame.timestampEpoch(), m);
       return ts - mod;
     }
+    final TimeFrame monthFrame = get(TimeUnit.MONTH);
+    final BigFraction month = frame.per(monthFrame);
+    if (month != null
+        && month.getNumerator().equals(BigInteger.ONE)) {
+      final long ts2 = floorTimestamp(ts, get(TimeUnit.DAY));
+      final int d2 = (int) (ts2 / DateTimeUtils.MILLIS_PER_DAY);
+      final int y2 =
+          (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, d2);
+      final int m2 =
+          (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, d2);
+      final int fullMonth = fullMonth(y2, m2);
+
+      final int m = month.getDenominator().intValueExact(); // e.g. 12 for YEAR
+      final int mod = floorMod(fullMonth - frame.monthEpoch(), m);
+      return unixTimestamp(fullMonth - mod, 1, 0, 0, 0);
+    }
     return ts;
+  }
+
+  /** Returns the number of months since 1 BCE.
+   *
+   * <p>Parameters mean the same as in
+   * {@link DateTimeUtils#ymdToJulian(int, int, int)}.
+   *
+   * @param year Year (e.g. 2020 means 2020 CE, 0 means 1 BCE)
+   * @param month Month (e.g. 1 means January)
+   */
+  public static int fullMonth(int year, int month) {
+    return year * 12 + (month - 1);
+  }
+
+  /** Given a {@link #fullMonth(int, int)} value, returns the month
+   * (1 means January). */
+  private static int fullMonthToMonth(int fullMonth) {
+    return floorMod(fullMonth, 12) + 1;
+  }
+
+  /** Given a {@link #fullMonth(int, int)} value, returns the year
+   * (2020 means 2020 CE). */
+  private static int fullMonthToYear(int fullMonth) {
+    return floorDiv(fullMonth, 12);
+  }
+
+  /** As {@link DateTimeUtils#unixTimestamp(int, int, int, int, int, int)}
+   * but based on a fullMonth value (per {@link #fullMonth(int, int)}). */
+  private static long unixTimestamp(int fullMonth, int day, int hour,
+      int minute, int second) {
+    final int year = fullMonthToYear(fullMonth);
+    final int month = fullMonthToMonth(fullMonth);
+    return DateTimeUtils.unixTimestamp(year, month, day, hour, minute, second);
+  }
+
+  public static int mdToUnixDate(int fullMonth, int day) {
+    final int year = fullMonthToYear(fullMonth);
+    final int month = fullMonthToMonth(fullMonth);
+    return DateTimeUtils.ymdToJulian(year, month, day);
   }
 
   /** Builds a collection of time frames. */
@@ -264,14 +321,31 @@ public class TimeFrameSet {
       return false;
     }
 
-    private static boolean canDirectlyRollUp(TimeFrameImpl from, TimeFrameImpl to) {
+    private static boolean canDirectlyRollUp(TimeFrameImpl from,
+        TimeFrameImpl to) {
       if (from.core().equals(to.core())) {
-        return from.coreMultiplier()
-            .divide(to.coreMultiplier())
-            .getNumerator()
-            .equals(BigInteger.ONE);
+        if (divisible(from.coreMultiplier(), to.coreMultiplier())) {
+          BigFraction diff = new BigFraction(from.core().epochDiff(from, to));
+          return divisible(from.coreMultiplier(), diff);
+        }
+        return false;
       }
       return false;
+    }
+
+    /** Returns whether {@code numerator} is divisible by {@code denominator}.
+     *
+     * <p>For example, {@code divisible(6, 2)} returns {@code true};
+     * {@code divisible(0, 2)} also returns {@code true};
+     * {@code divisible(2, 6)} returns {@code false}. */
+    private static boolean divisible(BigFraction numerator,
+        BigFraction denominator) {
+      return denominator.equals(BigFraction.ZERO)
+          || numerator
+          .divide(denominator)
+          .getNumerator()
+          .abs()
+          .equals(BigInteger.ONE);
     }
   }
 
@@ -291,6 +365,21 @@ public class TimeFrameSet {
 
     @Override protected BigFraction coreMultiplier() {
       return BigFraction.ONE;
+    }
+
+    /** Returns the difference between the epochs of two frames, in the
+     * units of this core frame. */
+    BigInteger epochDiff(TimeFrameImpl from, TimeFrameImpl to) {
+      assert from.core() == this;
+      assert to.core() == this;
+      switch (name) {
+      case "MONTH":
+        return BigInteger.valueOf(from.monthEpoch())
+            .subtract(BigInteger.valueOf(to.monthEpoch()));
+      default:
+        return BigInteger.valueOf(from.timestampEpoch())
+            .subtract(BigInteger.valueOf(to.timestampEpoch()));
+      }
     }
   }
 
@@ -338,6 +427,13 @@ public class TimeFrameSet {
     @Override public int dateEpoch() {
       return (int) DateTimeUtils.floorDiv(epoch.getMillisSinceEpoch(),
           DateTimeUtils.MILLIS_PER_DAY);
+    }
+
+    @Override public int monthEpoch() {
+      final Calendar calendar = epoch.toCalendar();
+      int y = calendar.get(Calendar.YEAR); // 2020 CE is represented by 2020
+      int m = calendar.get(Calendar.MONTH) + 1; // January is represented by 1
+      return fullMonth(y, m);
     }
 
     @Override public long timestampEpoch() {
