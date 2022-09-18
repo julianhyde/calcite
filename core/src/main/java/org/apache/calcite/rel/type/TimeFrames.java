@@ -50,8 +50,10 @@ public class TimeFrames {
     b.addSub(TimeUnit.QUARTER, false, 3, TimeUnit.MONTH);
     b.addSub(TimeUnit.YEAR, false, 12, TimeUnit.MONTH);
     b.addSub(TimeUnit.DECADE, false, 10, TimeUnit.YEAR);
-    b.addSub(TimeUnit.CENTURY, false, 100, TimeUnit.YEAR);
-    b.addSub(TimeUnit.MILLENNIUM, false, 1_000, TimeUnit.YEAR);
+    b.addSub(TimeUnit.CENTURY, false, 100, TimeUnit.YEAR,
+        new TimestampString(2001, 1, 1, 0, 0, 0));
+    b.addSub(TimeUnit.MILLENNIUM, false, 1_000, TimeUnit.YEAR,
+        new TimestampString(2001, 1, 1, 0, 0, 0));
 
     b.addRollup(TimeUnit.DAY, TimeUnit.MONTH);
 
