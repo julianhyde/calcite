@@ -373,11 +373,11 @@ public abstract class PruneEmptyRules {
           final Union union = call.rel(0);
           final List<RelNode> inputs = union.getInputs();
           assert inputs != null;
-          final RelBuilder builder = call.builder();
+          final RelBuilder relBuilder = call.builder();
           int nonEmptyInputs = 0;
           for (RelNode input : inputs) {
             if (!isEmpty(input)) {
-              builder.push(input);
+              relBuilder.push(input);
               nonEmptyInputs++;
             }
           }
@@ -385,12 +385,12 @@ public abstract class PruneEmptyRules {
               : "planner promised us at least one Empty child: "
               + RelOptUtil.toString(union);
           if (nonEmptyInputs == 0) {
-            builder.push(union).empty();
+            relBuilder.push(union).empty();
           } else {
-            builder.union(union.all, nonEmptyInputs);
-            builder.convert(union.getRowType(), true);
+            relBuilder.union(union.all, nonEmptyInputs);
+            relBuilder.convert(union.getRowType(), true);
           }
-          call.transformTo(builder.build());
+          call.transformTo(relBuilder.build());
         }
       };
     }
@@ -406,10 +406,10 @@ public abstract class PruneEmptyRules {
           final List<RelNode> inputs = minus.getInputs();
           assert inputs != null;
           int nonEmptyInputs = 0;
-          final RelBuilder builder = call.builder();
+          final RelBuilder relBuilder = call.builder();
           for (RelNode input : inputs) {
             if (!isEmpty(input)) {
-              builder.push(input);
+              relBuilder.push(input);
               nonEmptyInputs++;
             } else if (nonEmptyInputs == 0) {
               // If the first input of Minus is empty, the whole thing is
@@ -421,12 +421,12 @@ public abstract class PruneEmptyRules {
               : "planner promised us at least one Empty child: "
               + RelOptUtil.toString(minus);
           if (nonEmptyInputs == 0) {
-            builder.push(minus).empty();
+            relBuilder.push(minus).empty();
           } else {
-            builder.minus(minus.all, nonEmptyInputs);
-            builder.convert(minus.getRowType(), true);
+            relBuilder.minus(minus.all, nonEmptyInputs);
+            relBuilder.convert(minus.getRowType(), true);
           }
-          call.transformTo(builder.build());
+          call.transformTo(relBuilder.build());
         }
       };
     }
@@ -441,9 +441,9 @@ public abstract class PruneEmptyRules {
       return new PruneEmptyRule(this) {
         @Override public void onMatch(RelOptRuleCall call) {
           Intersect intersect = call.rel(0);
-          final RelBuilder builder = call.builder();
-          builder.push(intersect).empty();
-          call.transformTo(builder.build());
+          final RelBuilder relBuilder = call.builder();
+          relBuilder.push(intersect).empty();
+          call.transformTo(relBuilder.build());
         }
       };
     }
@@ -484,22 +484,22 @@ public abstract class PruneEmptyRules {
           final Join join = call.rel(0);
           final Values empty = call.rel(1);
           final RelNode right = call.rel(2);
-          final RelBuilder b = call.builder();
+          final RelBuilder relBuilder = call.builder();
           if (join.getJoinType().generatesNullsOnLeft()) {
             // If "emp" is empty, "select * from emp right join dept" will have
             // the same number of rows as "dept", and null values for the
             // columns from "emp". The left side of the join can be removed.
             final List<RexLiteral> nullLiterals =
                 Collections.nCopies(empty.getRowType().getFieldCount(),
-                    b.literal(null));
+                    relBuilder.literal(null));
             call.transformTo(
-                b.push(right)
-                    .project(concat(nullLiterals, b.fields()))
+                relBuilder.push(right)
+                    .project(concat(nullLiterals, relBuilder.fields()))
                     .convert(join.getRowType(), true)
                     .build());
             return;
           }
-          call.transformTo(b.push(join).empty().build());
+          call.transformTo(relBuilder.push(join).empty().build());
         }
       };
     }
@@ -515,17 +515,17 @@ public abstract class PruneEmptyRules {
           final Join join = call.rel(0);
           final RelNode left = call.rel(1);
           final Values empty = call.rel(2);
-          final RelBuilder b = call.builder();
+          final RelBuilder relBuilder = call.builder();
           if (join.getJoinType().generatesNullsOnRight()) {
             // If "dept" is empty, "select * from emp left join dept" will have
             // the same number of rows as "emp", and null values for the
             // columns from "dept". The right side of the join can be removed.
             final List<RexLiteral> nullLiterals =
                 Collections.nCopies(empty.getRowType().getFieldCount(),
-                    b.literal(null));
+                    relBuilder.literal(null));
             call.transformTo(
-                b.push(left)
-                    .project(concat(b.fields(), nullLiterals))
+                relBuilder.push(left)
+                    .project(concat(relBuilder.fields(), nullLiterals))
                     .convert(join.getRowType(), true)
                     .build());
             return;
@@ -535,7 +535,7 @@ public abstract class PruneEmptyRules {
             call.transformTo(join.getLeft());
             return;
           }
-          call.transformTo(b.push(join).empty().build());
+          call.transformTo(relBuilder.push(join).empty().build());
         }
       };
     }
