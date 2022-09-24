@@ -47,7 +47,7 @@ SqlNode DateaddFunctionCall() :
     final SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
     final Span s;
     final SqlIdentifier qualifiedName;
-    final TimeUnit unit;
+    final SqlIntervalQualifier unit;
     final List<SqlNode> args;
     SqlNode e;
 }
@@ -56,8 +56,8 @@ SqlNode DateaddFunctionCall() :
         s = span();
         qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
     }
-    <LPAREN> unit = TimeUnit() {
-        args = startList(new SqlIntervalQualifier(unit, null, getPos()));
+    <LPAREN> unit = TimeUnitOrName() {
+        args = startList(unit);
     }
     (
         <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {

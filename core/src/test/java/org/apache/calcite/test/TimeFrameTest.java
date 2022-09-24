@@ -20,6 +20,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.TimeFrame;
 import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.rel.type.TimeFrames;
+import org.apache.calcite.util.Pair;
 
 import org.apache.commons.math3.fraction.BigFraction;
 
@@ -28,7 +29,7 @@ import com.google.common.collect.ImmutableMap;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import static java.util.Objects.requireNonNull;
 
 import static org.apache.calcite.avatica.util.DateTimeUtils.dateStringToUnixDate;
 import static org.apache.calcite.avatica.util.DateTimeUtils.timestampStringToUnixDate;
@@ -413,25 +414,36 @@ public class TimeFrameTest {
 
     final TimeFrameSet timeFrameSet = TimeFrames.map();
 
-    private final Map<String, String> floorMap =
-        ImmutableMap.<String, String>builder()
-            .put("NANOSECOND", "2022-06-25 12:34:56.123234456")
-            .put("MICROSECOND", "2022-06-25 12:34:56.123234")
-            .put("MILLISECOND", "2022-06-25 12:34:56.123")
-            .put("SECOND", "2022-06-25 12:34:56")
-            .put("MINUTE", "2022-06-25 12:34:00")
-            .put("HOUR", "2022-06-25 12:00:00")
-            .put("DAY", "2022-06-25 00:00:00")
-            .put("WEEK", "2022-06-19 00:00:00")
-            .put("ISOWEEK", "2022-06-20 00:00:00")
-            .put("MONTH", "2022-06-01 00:00:00")
-            .put("QUARTER", "2022-04-01 00:00:00")
-            .put("YEAR", "2022-01-01 00:00:00")
-            .put("ISOYEAR", "2022-01-03 00:00:00")
-            .put("DECADE", "2020-01-01 00:00:00")
-            .put("CENTURY", "2001-01-01 00:00:00")
-            .put("MILLENNIUM", "2001-01-01 00:00:00")
-            .build();
+    private static final ImmutableMap<String, Pair<String, String>> MAP;
+
+    static {
+      String[] values = {
+          "NANOSECOND", "2022-06-25 12:34:56.123234456",
+          "2022-06-25 12:34:56.123234456",
+          "MICROSECOND", "2022-06-25 12:34:56.123234",
+          "2022-06-25 12:34:56.123234",
+          "MILLISECOND", "2022-06-25 12:34:56.123", "2022-06-25 12:34:56.124",
+          "SECOND", "2022-06-25 12:34:56", "2022-06-25 12:34:57",
+          "MINUTE", "2022-06-25 12:34:00", "2022-06-25 12:35:00",
+          "HOUR", "2022-06-25 12:00:00", "2022-06-25 13:00:00",
+          "DAY", "2022-06-25 00:00:00", "2022-06-26 00:00:00",
+          "WEEK", "2022-06-19 00:00:00", "2022-06-26 00:00:00",
+          "ISOWEEK", "2022-06-20 00:00:00", "2022-06-27 00:00:00",
+          "MONTH", "2022-06-01 00:00:00", "2022-07-01 00:00:00",
+          "QUARTER", "2022-04-01 00:00:00", "2022-07-01 00:00:00",
+          "YEAR", "2022-01-01 00:00:00", "2023-01-01 00:00:00",
+          "ISOYEAR", "2022-01-03 00:00:00", "2023-01-02 00:00:00",
+          "DECADE", "2020-01-01 00:00:00", "2030-01-01 00:00:00",
+          "CENTURY", "2001-01-01 00:00:00", "2101-01-01 00:00:00",
+          "MILLENNIUM", "2001-01-01 00:00:00", "3001-01-01 00:00:00",
+      };
+      ImmutableMap.Builder<String, Pair<String, String>> b =
+          ImmutableMap.builder();
+      for (int i = 0; i < values.length;) {
+        b.put(values[i++], Pair.of(values[i++], values[i++]));
+      }
+      MAP = b.build();
+    }
 
     private TimeFrame frame(TimeUnit unit) {
       if (unit == ISODOW) {
@@ -454,6 +466,14 @@ public class TimeFrameTest {
       long inTs = timestampStringToUnixDate(in);
       long outTs = timeFrameSet.floorTimestamp(inTs, frame(unit));
       assertThat("floor(" + in + " to " + unit + ")",
+          unixTimestampToString(outTs, precision), matcher);
+    }
+
+    void checkTimestampCeil(String in, TimeUnit unit, int precision,
+        Matcher<String> matcher) {
+      long inTs = timestampStringToUnixDate(in);
+      long outTs = timeFrameSet.ceilTimestamp(inTs, frame(unit));
+      assertThat("ceil(" + in + " to " + unit + ")",
           unixTimestampToString(outTs, precision), matcher);
     }
 
@@ -482,10 +502,17 @@ public class TimeFrameTest {
         if (precision <= 3) {
           // Cannot test conversion to NANOSECOND or MICROSECOND because the
           // representation is milliseconds.
-          final String timestampString = floorMap.get(fromFrame.name());
-          final String floorTimestampString = floorMap.get(toFrame.name());
+          final Pair<String, String> fromPair =
+              requireNonNull(MAP.get(fromFrame.name()));
+          final String timestampString = requireNonNull(fromPair.left);
+          final Pair<String, String> toPair =
+              requireNonNull(MAP.get(toFrame.name()));
+          final String floorTimestampString = requireNonNull(toPair.left);
+          final String ceilTimestampString = requireNonNull(toPair.right);
           checkTimestampFloor(timestampString, toUnit, precision,
               is(floorTimestampString));
+          checkTimestampCeil(timestampString, toUnit, precision,
+              is(ceilTimestampString));
 
           final String dateString = timestampString.substring(0, 10);
           final String floorDateString = floorTimestampString.substring(0, 10);

@@ -32,6 +32,8 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.rel.type.TimeFrame;
+import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.runtime.FlatLists.ComparableList;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.util.NumberUtil;
@@ -2549,6 +2551,38 @@ public class SqlFunctions {
   @NonDeterministic
   public static Locale locale(DataContext root) {
     return (Locale) DataContext.Variable.LOCALE.get(root);
+  }
+
+  public static int customDateFloor(DataContext root,
+      String timeFrameName, int date) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.floorDate(date, timeFrame);
+  }
+
+  public static int customDateCeil(DataContext root,
+      String timeFrameName, int date) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.ceilDate(date, timeFrame);
+  }
+
+  public static long customTimestampFloor(DataContext root,
+      String timeFrameName, long timestamp) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.floorTimestamp(timestamp, timeFrame);
+  }
+
+  public static long customTimestampCeil(DataContext root,
+      String timeFrameName, long timestamp) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.ceilTimestamp(timestamp, timeFrame);
   }
 
   /** SQL {@code TRANSLATE(string, search_chars, replacement_chars)}

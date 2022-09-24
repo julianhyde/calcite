@@ -23,6 +23,7 @@ import org.apache.calcite.plan.Strong;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
@@ -66,6 +67,7 @@ import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.TimestampString;
+import org.apache.calcite.util.TryThreadLocal;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
@@ -7302,10 +7304,6 @@ public class SqlOperatorTest {
         "(?s)Cannot apply 'FLOOR' to arguments .*", false);
     f.checkFails("^floor('abcde' to minute)^",
         "(?s)Cannot apply 'FLOOR' to arguments .*", false);
-    f.checkFails("floor(timestamp '2015-02-19 12:34:56.78' to ^microsecond^)",
-        "'MICROSECOND' is not a valid datetime format", false);
-    f.checkFails("floor(timestamp '2015-02-19 12:34:56.78' to ^nanosecond^)",
-        "'NANOSECOND' is not a valid datetime format", false);
     f.checkScalar("floor(time '12:34:56' to minute)",
         "12:34:00", "TIME(0) NOT NULL");
     f.checkScalar("floor(timestamp '2015-02-19 12:34:56.78' to second)",
@@ -7343,10 +7341,6 @@ public class SqlOperatorTest {
         "(?s)Cannot apply 'CEIL' to arguments .*", false);
     f.checkFails("^ceil('abcde' to minute)^",
         "(?s)Cannot apply 'CEIL' to arguments .*", false);
-    f.checkFails("ceil(timestamp '2015-02-19 12:34:56.78' to ^microsecond^)",
-        "'MICROSECOND' is not a valid datetime format", false);
-    f.checkFails("ceil(timestamp '2015-02-19 12:34:56.78' to ^nanosecond^)",
-        "'NANOSECOND' is not a valid datetime format", false);
     f.checkScalar("ceil(time '12:34:56' to minute)",
         "12:35:00", "TIME(0) NOT NULL");
     f.checkScalar("ceil(time '12:59:56' to minute)",
@@ -7389,7 +7383,10 @@ public class SqlOperatorTest {
                         .build();
                   }
                 }));
-    f.checkNull("ceiling(cast(null as timestamp) to month)");
+    f.checkScalar("floor(timestamp '2020-06-27 12:34:56' to \"minute15\")",
+        "2020-06-27 12:30:00", "TIMESTAMP(0) NOT NULL");
+    f.checkScalar("ceil(timestamp '2020-06-27 12:34:56' to \"minute15\")",
+        "2020-06-27 12:45:00", "TIMESTAMP(0) NOT NULL");
   }
 
   @Test void testFloorFuncInterval() {
@@ -8814,9 +8811,14 @@ public class SqlOperatorTest {
         SqlTester.ParameterChecker parameterChecker,
         SqlTester.ResultChecker resultChecker) {
       super.check(factory, query, typeChecker, parameterChecker, resultChecker);
+      final RelDataTypeSystem typeSystem =
+          factory.typeSystemTransform.apply(RelDataTypeSystem.DEFAULT);
       final ConnectionFactory connectionFactory =
-          factory.connectionFactory;
-      try (Connection connection = connectionFactory.createConnection();
+          factory.connectionFactory
+              .with(CalciteConnectionProperty.TYPE_SYSTEM,
+                  FooTypeSystem.class.getName());
+      try (TryThreadLocal.Memo ignore = FooTypeSystem.DELEGATE.push(typeSystem);
+           Connection connection = connectionFactory.createConnection();
            Statement statement = connection.createStatement()) {
         final ResultSet resultSet =
             statement.executeQuery(query);
@@ -8825,6 +8827,26 @@ public class SqlOperatorTest {
         throw TestUtil.rethrow(e);
       }
     }
+  }
+
+  /** An implementation of {@code RelDataTypeSystem} that returns a
+   * {@link TimeFrameSet} from a thread-local. */
+  public static final RelDataTypeSystem FOO =
+      new DelegatingTypeSystem(RelDataTypeSystem.DEFAULT) {
+        @Override public TimeFrameSet customTimeUnits(
+            TimeFrameSet timeFrameSet) {
+          return FooTypeSystem.DELEGATE.get().customTimeUnits(timeFrameSet);
+        }
+      };
+
+  /** An implementation of {@code RelDataTypeSystem} that returns a
+   * {@link TimeFrameSet} from a thread-local. */
+  public static final RelDataTypeSystem foo() {
+    return new DelegatingTypeSystem(RelDataTypeSystem.DEFAULT) {
+      @Override public TimeFrameSet customTimeUnits(TimeFrameSet timeFrameSet) {
+        return FooTypeSystem.DELEGATE.get().customTimeUnits(timeFrameSet);
+      }
+    };
   }
 
   /** A type, a value, and its {@link SqlNode} representation. */
@@ -8918,6 +8940,29 @@ public class SqlOperatorTest {
           .replace("$1", values[1])
           .replace("$2", values[2])
           .replace("$3", values[3]);
+    }
+  }
+
+  /** Type system whose constructor reads from a thread-local. You must invoke
+   * the constructor in the same thread, but once constructed you can use from
+   * other threads.
+   *
+   * <p>It's a bit strange, but the best we can do to pass objects via Avatica's
+   * plugin system until
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5295">[CALCITE-5295]
+   * Read the values of plugins (such as connect string properties) from
+   * ThreadLocal fields</a> is fixed.
+   */
+  public static class FooTypeSystem extends DelegatingTypeSystem {
+    /** Assign to this thread-local before you instantiate a FooTypeSystem
+     * (in the same thread) and your FooTypeSystem will behave in the same
+     * way. */
+    public static final TryThreadLocal<RelDataTypeSystem> DELEGATE =
+        TryThreadLocal.of(DEFAULT);
+
+    /** Creates a FooTypeSystem, taking a snapshot of {@link #DELEGATE}. */
+    public FooTypeSystem() {
+      super(DELEGATE.get());
     }
   }
 }

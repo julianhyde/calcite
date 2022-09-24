@@ -59,6 +59,10 @@ public class TimeFrames {
     b.addSub("ISOWEEK", false, 7, TimeUnit.DAY.name(),
         new TimestampString(1970, 1, 5, 0, 0, 0)); // a monday
 
+    b.addQuotient(TimeUnit.DOY, TimeUnit.DAY, TimeUnit.YEAR);
+    b.addQuotient(TimeUnit.DOW, TimeUnit.DAY, TimeUnit.WEEK);
+    b.addQuotient(TimeUnit.ISODOW.name(), TimeUnit.DAY.name(), "ISOWEEK");
+
     b.addRollup(TimeUnit.DAY, TimeUnit.MONTH);
     b.addRollup("ISOWEEK", TimeUnit.ISOYEAR.name());
 
@@ -127,6 +131,10 @@ public class TimeFrames {
 
     void addRollup(TimeUnit fromUnit, TimeUnit toUnit) {
       addRollup(fromUnit.name(), toUnit.name());
+    }
+
+    void addQuotient(TimeUnit unit, TimeUnit minor, TimeUnit major) {
+      addQuotient(unit.name(), minor.name(), major.name());
     }
   }
 }

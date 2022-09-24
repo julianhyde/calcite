@@ -17,7 +17,6 @@
 package org.apache.calcite.sql.parser;
 
 import org.apache.calcite.avatica.util.Quoting;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlExplain;
@@ -67,7 +66,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -7921,88 +7919,37 @@ public class SqlParserTest {
   /** Tests that EXTRACT, FLOOR, CEIL functions accept abbreviations for
    * time units (such as "Y" for "YEAR") when configured via
    * {@link Config#timeUnitCodes()}. */
-  @Test void testTimeUnitCodes() {
-    final Map<String, TimeUnit> simpleCodes =
-        ImmutableMap.<String, TimeUnit>builder()
-            .put("Y", TimeUnit.YEAR)
-            .put("M", TimeUnit.MONTH)
-            .put("D", TimeUnit.DAY)
-            .put("H", TimeUnit.HOUR)
-            .put("N", TimeUnit.MINUTE)
-            .put("S", TimeUnit.SECOND)
-            .build();
+  @Test protected void testTimeUnitCodes() {
+    // YEAR is a built-in time frame. When unparsed, it looks like a keyword.
+    // (Note no backticks around YEAR.)
+    expr("floor(d to year)")
+        .ok("FLOOR(`D` TO YEAR)");
+    // Y is an extension time frame. (Or rather, it could be, if you configure
+    // it.) When unparsed, it looks like an identifier (backticks around Y.)
+    expr("floor(d to y)")
+        .ok("FLOOR(`D` TO `Y`)");
 
-    // Time unit abbreviations for Microsoft SQL Server
-    final Map<String, TimeUnit> mssqlCodes =
-        ImmutableMap.<String, TimeUnit>builder()
-            .put("Y", TimeUnit.YEAR)
-            .put("YY", TimeUnit.YEAR)
-            .put("YYYY", TimeUnit.YEAR)
-            .put("Q", TimeUnit.QUARTER)
-            .put("QQ", TimeUnit.QUARTER)
-            .put("M", TimeUnit.MONTH)
-            .put("MM", TimeUnit.MONTH)
-            .put("W", TimeUnit.WEEK)
-            .put("WK", TimeUnit.WEEK)
-            .put("WW", TimeUnit.WEEK)
-            .put("DY", TimeUnit.DOY)
-            .put("DW", TimeUnit.DOW)
-            .put("D", TimeUnit.DAY)
-            .put("DD", TimeUnit.DAY)
-            .put("H", TimeUnit.HOUR)
-            .put("HH", TimeUnit.HOUR)
-            .put("N", TimeUnit.MINUTE)
-            .put("MI", TimeUnit.MINUTE)
-            .put("S", TimeUnit.SECOND)
-            .put("SS", TimeUnit.SECOND)
-            .put("MS", TimeUnit.MILLISECOND)
-            .build();
+    // As for FLOOR, so for CEIL.
+    expr("ceil(d to year)").ok("CEIL(`D` TO YEAR)");
+    expr("ceil(d to y)").ok("CEIL(`D` TO `Y`)");
 
-    checkTimeUnitCodes(Config.DEFAULT.timeUnitCodes());
-    checkTimeUnitCodes(simpleCodes);
-    checkTimeUnitCodes(mssqlCodes);
-  }
+    // CEILING is a synonym for CEIL.
+    expr("ceiling(d to year)").ok("CEIL(`D` TO YEAR)");
+    expr("ceiling(d to y)").ok("CEIL(`D` TO `Y`)");
 
-  /** Checks parsing of built-in functions that accept time unit
-   * abbreviations.
-   *
-   * <p>For example, {@code EXTRACT(Y FROM orderDate)} is using
-   * "Y" as an abbreviation for "YEAR".
-   *
-   * <p>Override if your parser supports more such functions. */
-  protected void checkTimeUnitCodes(Map<String, TimeUnit> timeUnitCodes) {
-    SqlParserFixture f = fixture()
-        .withConfig(config -> config.withTimeUnitCodes(timeUnitCodes));
-    BiConsumer<String, TimeUnit> validConsumer = (abbrev, timeUnit) -> {
-      f.sql("select extract(" + abbrev + " from x)")
-          .ok("SELECT EXTRACT(" + timeUnit + " FROM `X`)");
-      f.sql("select floor(x to " + abbrev + ")")
-          .ok("SELECT FLOOR(`X` TO " + timeUnit + ")");
-      f.sql("select ceil(x to " + abbrev + ")")
-          .ok("SELECT CEIL(`X` TO " + timeUnit + ")");
-    };
-    BiConsumer<String, TimeUnit> invalidConsumer = (abbrev, timeUnit) -> {
-      final String upAbbrev = abbrev.toUpperCase(Locale.ROOT);
-      f.sql("select extract(^" + abbrev + "^ from x)")
-          .fails("'" + upAbbrev + "' is not a valid datetime format");
-      f.sql("SELECT FLOOR(x to ^" + abbrev + "^)")
-          .fails("'" + upAbbrev + "' is not a valid datetime format");
-      f.sql("SELECT CEIL(x to ^" + abbrev + "^)")
-          .fails("'" + upAbbrev + "' is not a valid datetime format");
-    };
+    // As for FLOOR, so for EXTRACT.
+    expr("extract(year from d)").ok("EXTRACT(YEAR FROM `D`)");
+    expr("extract(y from d)").ok("EXTRACT(`Y` FROM `D`)");
 
-    // Check that each valid code passes each query that it should.
-    timeUnitCodes.forEach(validConsumer);
-
-    // If "M" is a valid code then "m" should be also.
-    timeUnitCodes.forEach((abbrev, timeUnit) ->
-        validConsumer.accept(abbrev.toLowerCase(Locale.ROOT), timeUnit));
-
-    // Check that invalid codes generate the right error messages.
-    final Map<String, TimeUnit> invalidCodes =
-        ImmutableMap.of("A", TimeUnit.YEAR,
-            "a", TimeUnit.YEAR);
-    invalidCodes.forEach(invalidConsumer);
+    // MICROSECOND, NANOSECOND used to be native for EXTRACT but not for FLOOR
+    // or CEIL. Now they are native, and so appear as keywords, without
+    // backticks.
+    expr("floor(d to nanosecond)").ok("FLOOR(`D` TO NANOSECOND)");
+    expr("floor(d to microsecond)").ok("FLOOR(`D` TO MICROSECOND)");
+    expr("ceil(d to nanosecond)").ok("CEIL(`D` TO NANOSECOND)");
+    expr("ceiling(d to microsecond)").ok("CEIL(`D` TO MICROSECOND)");
+    expr("extract(nanosecond from d)").ok("EXTRACT(NANOSECOND FROM `D`)");
+    expr("extract(microsecond from d)").ok("EXTRACT(MICROSECOND FROM `D`)");
   }
 
   @Test void testGeometry() {
