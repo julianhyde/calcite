@@ -28,6 +28,9 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelRecordType;
+import org.apache.calcite.rel.type.TimeFrame;
+import org.apache.calcite.rel.type.TimeFrameSet;
+import org.apache.calcite.rel.type.TimeFrames;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexPatternFieldRef;
 import org.apache.calcite.rex.RexVisitor;
@@ -239,6 +242,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   protected final RelDataType unknownType;
   private final RelDataType booleanType;
 
+  protected final TimeFrameSet timeFrameSet;
+
   /**
    * Map of derived RelDataType for each node. This is an IdentityHashMap
    * since in some cases (such as null literals) we need to discriminate by
@@ -293,6 +298,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     this.opTab = requireNonNull(opTab, "opTab");
     this.catalogReader = requireNonNull(catalogReader, "catalogReader");
     this.typeFactory = requireNonNull(typeFactory, "typeFactory");
+    final RelDataTypeSystem typeSystem = typeFactory.getTypeSystem();
+    this.timeFrameSet =
+        requireNonNull(typeSystem.customTimeUnits(TimeFrames.map()),
+            "timeFrameSet");
     this.config = requireNonNull(config, "config");
 
     // It is assumed that unknown type is nullable by default
@@ -339,6 +348,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
   @Override public RelDataType getUnknownType() {
     return unknownType;
+  }
+
+  @Override public TimeFrameSet getTimeFrameSet() {
+    return timeFrameSet;
   }
 
   @Override public SqlNodeList expandStar(
@@ -3335,6 +3348,17 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           RESOURCE.intervalFractionalSecondPrecisionOutOfRange(
               fracPrecision,
               "INTERVAL " + qualifier));
+    }
+  }
+
+  @Override public void validateTimeFrame(SqlIntervalQualifier qualifier) {
+    if (qualifier.timeFrameName != null) {
+      final @Nullable TimeFrame timeFrame =
+          timeFrameSet.getOpt(qualifier.timeFrameName);
+      if (timeFrame == null) {
+        throw newValidationError(qualifier,
+            RESOURCE.invalidTimeFrame(qualifier.timeFrameName));
+      }
     }
   }
 

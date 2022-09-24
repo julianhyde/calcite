@@ -60,10 +60,20 @@ public class TimeFrameSet {
     return new Builder();
   }
 
+  /** Returns the time frame with the given name, or returns null. */
+  public @Nullable TimeFrame getOpt(String name) {
+    TimeFrame timeFrame = map.get(name);
+    while (timeFrame instanceof AliasFrame) {
+      timeFrame = ((AliasFrame) timeFrame).frame;
+    }
+    return timeFrame;
+  }
+
   /** Returns the time frame with the given name,
-   * or throws {@link IllegalArgumentException}. */
+   * or throws {@link IllegalArgumentException} if not found.
+   * If {@code name} is an alias, resolves to the underlying frame. */
   public TimeFrame get(String name) {
-    final TimeFrame timeFrame = map.get(name);
+    TimeFrame timeFrame = getOpt(name);
     if (timeFrame == null) {
       throw new IllegalArgumentException("unknown frame: " + name);
     }
@@ -71,7 +81,7 @@ public class TimeFrameSet {
   }
 
   /** Returns the time frame with the given name,
-   * or throws {@link NullPointerException}. */
+   * or throws {@link IllegalArgumentException}. */
   public TimeFrame get(TimeUnit timeUnit) {
     return get(timeUnit.name());
   }
@@ -79,13 +89,25 @@ public class TimeFrameSet {
   /** Computes "FLOOR(date TO frame)", where {@code date} is the number of
    * days since UNIX Epoch. */
   public int floorDate(int date, TimeFrame frame) {
+    return floorCeilDate(date, frame, false);
+  }
+
+  /** Computes "FLOOR(date TO frame)", where {@code date} is the number of
+   * days since UNIX Epoch. */
+  public int ceilDate(int date, TimeFrame frame) {
+    return floorCeilDate(date, frame, true);
+  }
+
+  /** Computes "FLOOR(timestamp TO frame)" or "FLOOR(timestamp TO frame)",
+   * where {@code date} is the number of days since UNIX Epoch. */
+  private int floorCeilDate(int date, TimeFrame frame, boolean ceil) {
     final TimeFrame dayFrame = get(TimeUnit.DAY);
     final BigFraction perDay = frame.per(dayFrame);
     if (perDay != null
         && perDay.getNumerator().equals(BigInteger.ONE)) {
       final int m = perDay.getDenominator().intValueExact(); // 7 for WEEK
       final int mod = floorMod(date - frame.dateEpoch(), m);
-      return date - mod;
+      return date - mod + (ceil ? m : 0);
     }
     final TimeFrame monthFrame = get(TimeUnit.MONTH);
     final BigFraction perMonth = frame.per(monthFrame);
@@ -99,27 +121,39 @@ public class TimeFrameSet {
 
       final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
       final int mod = floorMod(fullMonth - frame.monthEpoch(), m);
-      return mdToUnixDate(fullMonth - mod, 1);
+      return mdToUnixDate(fullMonth - mod + (ceil ? m : 0), 1);
     }
     final TimeFrame isoYearFrame = get(TimeUnit.ISOYEAR);
     final BigFraction perIsoYear = frame.per(isoYearFrame);
     if (perIsoYear != null
         && perIsoYear.getNumerator().equals(BigInteger.ONE)) {
-      return floorIsoYear(date);
+      return floorCeilIsoYear(date, ceil);
     }
     return date;
   }
 
-  /** Computes "FLOOR(timestamp TO frame)", where {@code date} is the number of
+  /** Computes "FLOOR(timestamp TO frame)", where {@code ts} is the number of
    * milliseconds since UNIX Epoch. */
   public long floorTimestamp(long ts, TimeFrame frame) {
+    return floorCeilTimestamp(ts, frame, false);
+  }
+
+  /** Computes "CEIL(timestamp TO frame)", where {@code ts} is the number of
+   * milliseconds since UNIX Epoch. */
+  public long ceilTimestamp(long ts, TimeFrame frame) {
+    return floorCeilTimestamp(ts, frame, true);
+  }
+
+  /** Computes "FLOOR(ts TO frame)" or "CEIL(ts TO frame)",
+   * where {@code ts} is the number of milliseconds since UNIX Epoch. */
+  private long floorCeilTimestamp(long ts, TimeFrame frame, boolean ceil) {
     final TimeFrame millisecondFrame = get(TimeUnit.MILLISECOND);
     final BigFraction perMillisecond = frame.per(millisecondFrame);
     if (perMillisecond != null
         && perMillisecond.getNumerator().equals(BigInteger.ONE)) {
       final long m = perMillisecond.getDenominator().longValue(); // e.g. 60,000 for MINUTE
       final long mod = floorMod(ts - frame.timestampEpoch(), m);
-      return ts - mod;
+      return ts - mod + (ceil ? m : 0);
     }
     final TimeFrame monthFrame = get(TimeUnit.MONTH);
     final BigFraction perMonth = frame.per(monthFrame);
@@ -135,7 +169,7 @@ public class TimeFrameSet {
 
       final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
       final int mod = floorMod(fullMonth - frame.monthEpoch(), m);
-      return unixTimestamp(fullMonth - mod, 1, 0, 0, 0);
+      return unixTimestamp(fullMonth - mod + (ceil ? m : 0), 1, 0, 0, 0);
     }
     final TimeFrame isoYearFrame = get(TimeUnit.ISOYEAR);
     final BigFraction perIsoYear = frame.per(isoYearFrame);
@@ -143,7 +177,7 @@ public class TimeFrameSet {
         && perIsoYear.getNumerator().equals(BigInteger.ONE)) {
       final long ts2 = floorTimestamp(ts, get(TimeUnit.DAY));
       final int d2 = (int) (ts2 / DateTimeUtils.MILLIS_PER_DAY);
-      return (long) floorIsoYear(d2) * MILLIS_PER_DAY;
+      return (long) floorCeilIsoYear(d2, ceil) * MILLIS_PER_DAY;
     }
     return ts;
   }
@@ -153,10 +187,10 @@ public class TimeFrameSet {
    * of the previous calendar year. */
   // TODO: move it into DateTimeUtils.julianExtract,
   // so that it can be called from DateTimeUtils.unixDateExtract
-  private static int floorIsoYear(int date) {
+  private static int floorCeilIsoYear(int date, boolean ceil) {
     final int year =
         (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, date);
-    return (int) firstMondayOfFirstWeek(year) - EPOCH_JULIAN;
+    return (int) firstMondayOfFirstWeek(year + (ceil ? 1 : 0)) - EPOCH_JULIAN;
   }
 
   /** Returns the first day of the first week of a year.
@@ -230,7 +264,7 @@ public class TimeFrameSet {
     }
 
     public Builder addCore(String name) {
-      map.put(name, new CoreTimeFrame(name));
+      map.put(name, new CoreFrame(name));
       return this;
     }
 
@@ -241,14 +275,23 @@ public class TimeFrameSet {
       final TimeFrameImpl baseFrame = get(baseName);
       final BigInteger factor = toBigInteger(count);
 
-      final CoreTimeFrame coreFrame = baseFrame.core();
+      final CoreFrame coreFrame = baseFrame.core();
       final BigFraction coreFactor = divide
           ? baseFrame.coreMultiplier().divide(factor)
           : baseFrame.coreMultiplier().multiply(factor);
 
       map.put(name,
-          new SubTimeFrame(name, baseFrame, divide, factor, coreFrame,
+          new SubFrame(name, baseFrame, divide, factor, coreFrame,
               coreFactor, epoch));
+      return this;
+    }
+
+    /** Defines a time unit that is the number of a minor unit within a major
+     * unit. For example, the "DOY" frame has minor "DAY" and major "YEAR". */
+    Builder addQuotient(String name, String minorName, String majorName) {
+      final TimeFrameImpl minorFrame = get(minorName);
+      final TimeFrameImpl majorFrame = get(majorName);
+      map.put(name, new QuotientFrame(name, minorFrame, majorFrame));
       return this;
     }
 
@@ -296,9 +339,25 @@ public class TimeFrameSet {
     /** Replaces the epoch of the most recently added frame. */
     public Builder withEpoch(TimestampString epoch) {
       final String name = Iterables.getLast(map.keySet());
-      final SubTimeFrame value =
-          requireNonNull((SubTimeFrame) map.remove(name));
+      final SubFrame value =
+          requireNonNull((SubFrame) map.remove(name));
       value.replicateWithEpoch(this, epoch);
+      return this;
+    }
+
+    /** Defines an alias for an existing frame.
+     *
+     * <p>For example, {@code add("Y", "YEAR")} adds "Y" as an alias for the
+     * built-in frame "YEAR".
+     *
+     * @param name The alias
+     * @param originalName Name of the existing frame
+     */
+    public Builder addAlias(String name, String originalName) {
+      final TimeFrameImpl frame =
+          requireNonNull(map.get(originalName),
+              () -> "unknown frame " + originalName);
+      map.put(name, new AliasFrame(name, frame));
       return this;
     }
   }
@@ -349,7 +408,7 @@ public class TimeFrameSet {
     /** Adds a time frame like this to a builder. */
     abstract void replicate(Builder b);
 
-    protected abstract CoreTimeFrame core();
+    protected abstract CoreFrame core();
 
     protected abstract BigFraction coreMultiplier();
 
@@ -416,8 +475,8 @@ public class TimeFrameSet {
   }
 
   /** Core time frame (such as SECOND, MONTH, ISOYEAR). */
-  static class CoreTimeFrame extends TimeFrameImpl {
-    CoreTimeFrame(String name) {
+  static class CoreFrame extends TimeFrameImpl {
+    CoreFrame(String name) {
       super(name);
     }
 
@@ -425,7 +484,7 @@ public class TimeFrameSet {
       b.addCore(name);
     }
 
-    @Override protected CoreTimeFrame core() {
+    @Override protected CoreFrame core() {
       return this;
     }
 
@@ -449,7 +508,7 @@ public class TimeFrameSet {
     }
   }
 
-  /** A time frame is composed of another time frame.
+  /** A time frame that is composed of another time frame.
    *
    * <p>For example, {@code MINUTE} is composed of 60 {@code SECOND};
    * (factor = 60, divide = false);
@@ -462,11 +521,11 @@ public class TimeFrameSet {
    * not every {@code WEEK} belongs to precisely one {@code MONTH} or
    * {@code MILLENNIUM}.
    */
-  static class SubTimeFrame extends TimeFrameImpl {
+  static class SubFrame extends TimeFrameImpl {
     private final TimeFrameImpl base;
     private final boolean divide;
     private final BigInteger multiplier;
-    private final CoreTimeFrame coreFrame;
+    private final CoreFrame coreFrame;
 
     /** The number of core frames that are equivalent to one of these. For
      * example, MINUTE, HOUR, MILLISECOND all have core = SECOND, and have
@@ -474,8 +533,8 @@ public class TimeFrameSet {
     private final BigFraction coreMultiplier;
     private final TimestampString epoch;
 
-    SubTimeFrame(String name, TimeFrameImpl base, boolean divide,
-        BigInteger multiplier, CoreTimeFrame coreFrame,
+    SubFrame(String name, TimeFrameImpl base, boolean divide,
+        BigInteger multiplier, CoreFrame coreFrame,
         BigFraction coreMultiplier, TimestampString epoch) {
       super(name);
       this.base = requireNonNull(base, "base");
@@ -521,12 +580,61 @@ public class TimeFrameSet {
       base.expand(map, divide ? f.divide(multiplier) : f.multiply(multiplier));
     }
 
-    @Override protected CoreTimeFrame core() {
+    @Override protected CoreFrame core() {
       return coreFrame;
     }
 
     @Override protected BigFraction coreMultiplier() {
       return coreMultiplier;
+    }
+  }
+
+  /** Frame that defines is based on a minor frame and resets whenever the major
+   * frame resets. For example, "DOY" (day of year) is based on DAY and resets
+   * every YEAR. */
+  static class QuotientFrame extends TimeFrameImpl {
+    private final TimeFrameImpl minorFrame;
+    private final TimeFrameImpl majorFrame;
+
+    QuotientFrame(String name, TimeFrameImpl minorFrame,
+        TimeFrameImpl majorFrame) {
+      super(name);
+      this.minorFrame = requireNonNull(minorFrame, "minorFrame");
+      this.majorFrame = requireNonNull(majorFrame, "majorFrame");
+    }
+
+    @Override void replicate(Builder b) {
+      b.addQuotient(name, minorFrame.name, majorFrame.name);
+    }
+
+    @Override protected CoreFrame core() {
+      return minorFrame.core();
+    }
+
+    @Override protected BigFraction coreMultiplier() {
+      return minorFrame.coreMultiplier();
+    }
+  }
+
+  /** Frame that defines an alias. */
+  static class AliasFrame extends TimeFrameImpl {
+    private final TimeFrameImpl frame;
+
+    AliasFrame(String name, TimeFrameImpl frame) {
+      super(name);
+      this.frame = requireNonNull(frame, "frame");
+    }
+
+    @Override void replicate(Builder b) {
+      b.addAlias(name, frame.name);
+    }
+
+    @Override protected CoreFrame core() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override protected BigFraction coreMultiplier() {
+      throw new UnsupportedOperationException();
     }
   }
 }

@@ -17,6 +17,8 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.rel.type.DelegatingTypeSystem;
+import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 
@@ -128,6 +130,37 @@ class BabelTest {
     // Postgres cast is invalid with core parser
     p.sql("select 1 ^:^: integer as x")
         .fails("(?s).*Encountered \":\" at .*");
+  }
+
+  /** Tests that DATEADD allows custom time frames. */
+  @Test void testTimeFrames() {
+    final SqlValidatorFixture f = Fixtures.forValidator();
+    f.withSql("SELECT DATEADD(^A^, 1, NOW())")
+        .fails("'A' is not a valid datetime format");
+    f.withSql("SELECT DATEADD(YEAR, 1, NOW())").ok();
+    f.withSql("SELECT DATEADD(HOUR^.^A, 1, NOW())")
+        .fails("(?s).*Encountered \".\" at .*");
+
+    final SqlValidatorFixture f2 = Fixtures.forValidator()
+        .withFactory(tf ->
+            tf.withTypeSystem(typeSystem ->
+                new DelegatingTypeSystem(typeSystem) {
+                  @Override public TimeFrameSet customTimeUnits(
+                      TimeFrameSet timeFrameSet) {
+                    return TimeFrameSet.builder()
+                        .addAll(timeFrameSet)
+                        .addDivision("minute15", 4, "HOUR")
+                        .build();
+                  }
+                }));
+    String ts = "timestamp '2020-06-27 12:34:56'";
+    String ts2 = "timestamp '2020-06-27 13:45:56'";
+    f2.withSql("SELECT DATEADD(minute15, 3, " + ts + ")")
+        .ok();
+    f2.withSql("SELECT DATE_DIFF(minute15, 3, " + ts + ", " + ts2 + ")")
+        .ok();
+    f2.withSql("SELECT DATEPART(minute15, 3, " + ts + ", " + ts2 + ")")
+        .ok();
   }
 
   @Test void testNullSafeEqual() {
