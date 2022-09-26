@@ -423,7 +423,7 @@ abstract class CalciteConnectionImpl
       final TimeZone timeZone = connection.getTimeZone();
       final TimeFrameSet timeFrameSet =
           connection.typeFactory.getTypeSystem()
-              .customTimeUnits(TimeFrames.map());
+              .customTimeUnits(TimeFrames.CORE);
       final long localOffset = timeZone.getOffset(time);
       final long currentOffset = localOffset;
       final String user = "sa";

@@ -26,16 +26,22 @@ public class TimeFrames {
   private TimeFrames() {
   }
 
-  private static final TimeFrameSet AVATICA = map();
+  /** The core time frame set. Includes the time frames for all Avatica time
+   * units plus ISOWEEK:
+   *
+   * <ul>
+   *   <li>SECOND, and multiples MINUTE, HOUR, DAY, WEEK (starts on a Sunday),
+   *   sub-multiples MILLISECOND, MICROSECOND, NANOSECOND,
+   *   quotients DOY, DOW;
+   *   <li>MONTH, and multiples QUARTER, YEAR, DECADE, CENTURY, MILLENNIUM;
+   *   <li>ISOYEAR, and sub-unit ISOWEEK (starts on a Monday), quotient ISODOW;
+   * </ul>
+   *
+   * <p>Does not include EPOCH.
+   */
+  public static final TimeFrameSet CORE = addCore(new MyBuilder()).build();
 
-  /** Returns a time frame for an Avatica time unit. */
-  public static TimeFrame of(TimeUnit unit) {
-    return requireNonNull(AVATICA.get(unit.name()));
-  }
-
-  /** Returns a map from Avatica time units to time frames. */
-  public static TimeFrameSet map() {
-    final MyBuilder b = new MyBuilder();
+  private static MyBuilder addCore(MyBuilder b) {
     b.addCore(TimeUnit.SECOND);
     b.addSub(TimeUnit.MINUTE, false, 60, TimeUnit.SECOND);
     b.addSub(TimeUnit.HOUR, false, 60, TimeUnit.MINUTE);
@@ -65,7 +71,10 @@ public class TimeFrames {
 
     b.addRollup(TimeUnit.DAY, TimeUnit.MONTH);
     b.addRollup("ISOWEEK", TimeUnit.ISOYEAR.name());
+    return b;
+  }
 
+  private void misc() {
     // Avatica time units:
 
     // ISOYEAR
@@ -108,8 +117,6 @@ public class TimeFrames {
     // fiscal_year, e.g. FY2017
     // day_of_year, e.g. 143
     // week_of_year, e.g. 17
-
-    return b.build();
   }
 
   /** Specialization of {@link org.apache.calcite.rel.type.TimeFrameSet.Builder}

@@ -59,14 +59,14 @@ import static org.hamcrest.core.Is.is;
 
 /** Unit test for {@link org.apache.calcite.rel.type.TimeFrame}. */
 public class TimeFrameTest {
-  /** Unit test for
-   * {@link org.apache.calcite.rel.type.TimeFrames#of(TimeUnit)}. */
+  /** Unit test for {@link org.apache.calcite.rel.type.TimeFrames#CORE}. */
   @Test void testAvaticaTimeFrame() {
-    final TimeFrame year = TimeFrames.of(TimeUnit.YEAR);
+    final TimeFrameSet timeFrameSet = TimeFrames.CORE;
+    final TimeFrame year = timeFrameSet.get(TimeUnit.YEAR);
     assertThat(year, notNullValue());
     assertThat(year.name(), is("YEAR"));
 
-    final TimeFrame month = TimeFrames.of(MONTH);
+    final TimeFrame month = timeFrameSet.get(MONTH);
     assertThat(month, notNullValue());
     assertThat(month.name(), is("MONTH"));
 
@@ -80,15 +80,15 @@ public class TimeFrameTest {
     assertThat(monthPerMonth, notNullValue());
     assertThat(monthPerMonth, is(BigFraction.ONE));
 
-    final TimeFrame second = TimeFrames.of(TimeUnit.SECOND);
+    final TimeFrame second = timeFrameSet.get(TimeUnit.SECOND);
     assertThat(second, notNullValue());
     assertThat(second.name(), is("SECOND"));
 
-    final TimeFrame minute = TimeFrames.of(TimeUnit.MINUTE);
+    final TimeFrame minute = timeFrameSet.get(TimeUnit.MINUTE);
     assertThat(minute, notNullValue());
     assertThat(minute.name(), is("MINUTE"));
 
-    final TimeFrame nano = TimeFrames.of(TimeUnit.NANOSECOND);
+    final TimeFrame nano = timeFrameSet.get(TimeUnit.NANOSECOND);
     assertThat(nano, notNullValue());
     assertThat(nano.name(), is("NANOSECOND"));
 
@@ -412,7 +412,7 @@ public class TimeFrameTest {
   static class Fixture {
     final TimeUnit isoWeek = TimeUnit.ISODOW;
 
-    final TimeFrameSet timeFrameSet = TimeFrames.map();
+    final TimeFrameSet timeFrameSet = TimeFrames.CORE;
 
     private static final ImmutableMap<String, Pair<String, String>> MAP;
 
