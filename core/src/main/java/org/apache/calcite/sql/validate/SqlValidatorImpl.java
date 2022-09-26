@@ -301,7 +301,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     this.typeFactory = requireNonNull(typeFactory, "typeFactory");
     final RelDataTypeSystem typeSystem = typeFactory.getTypeSystem();
     this.timeFrameSet =
-        requireNonNull(typeSystem.customTimeUnits(TimeFrames.map()),
+        requireNonNull(typeSystem.customTimeUnits(TimeFrames.CORE),
             "timeFrameSet");
     this.config = requireNonNull(config, "config");
 

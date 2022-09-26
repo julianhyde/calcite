@@ -120,7 +120,7 @@ public interface DataContext {
 
     /** Set of built-in and custom time frames for use in functions such as
      * {@code FLOOR} and {@code EXTRACT}. Required; defaults to
-     * {@link org.apache.calcite.rel.type.TimeFrames#map}. */
+     * {@link org.apache.calcite.rel.type.TimeFrames#CORE}. */
     TIME_FRAME_SET("timeFrameSet", TimeFrameSet.class),
 
     /** The query user.
