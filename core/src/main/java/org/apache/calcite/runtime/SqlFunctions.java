@@ -80,6 +80,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.regex.Pattern;
 
+import static java.lang.Math.floorDiv;
+import static java.lang.Math.floorMod;
+
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -2933,8 +2936,7 @@ public class SqlFunctions {
   /** Adds a given number of months to a timestamp, represented as the number
    * of milliseconds since the epoch. */
   public static long addMonths(long timestamp, int m) {
-    final long millis =
-        DateTimeUtils.floorMod(timestamp, DateTimeUtils.MILLIS_PER_DAY);
+    final long millis = floorMod(timestamp, DateTimeUtils.MILLIS_PER_DAY);
     timestamp -= millis;
     final long x =
         addMonths((int) (timestamp / DateTimeUtils.MILLIS_PER_DAY), m);
@@ -2948,9 +2950,9 @@ public class SqlFunctions {
     int m0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, date);
     int d0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.DAY, date);
     m0 += m;
-    int deltaYear = (int) DateTimeUtils.floorDiv(m0, 12);
+    int deltaYear = floorDiv(m0, 12);
     y0 += deltaYear;
-    m0 = (int) DateTimeUtils.floorMod(m0, 12);
+    m0 = floorMod(m0, 12);
     if (m0 == 0) {
       y0 -= 1;
       m0 += 12;
@@ -3003,14 +3005,10 @@ public class SqlFunctions {
   }
 
   public static int subtractMonths(long t0, long t1) {
-    final long millis0 =
-        DateTimeUtils.floorMod(t0, DateTimeUtils.MILLIS_PER_DAY);
-    final int d0 = (int) DateTimeUtils.floorDiv(t0 - millis0,
-        DateTimeUtils.MILLIS_PER_DAY);
-    final long millis1 =
-        DateTimeUtils.floorMod(t1, DateTimeUtils.MILLIS_PER_DAY);
-    final int d1 = (int) DateTimeUtils.floorDiv(t1 - millis1,
-        DateTimeUtils.MILLIS_PER_DAY);
+    final long millis0 = floorMod(t0, DateTimeUtils.MILLIS_PER_DAY);
+    final int d0 = (int) floorDiv(t0 - millis0, DateTimeUtils.MILLIS_PER_DAY);
+    final long millis1 = floorMod(t1, DateTimeUtils.MILLIS_PER_DAY);
+    final int d1 = (int) floorDiv(t1 - millis1, DateTimeUtils.MILLIS_PER_DAY);
     int x = subtractMonths(d0, d1);
     final long d2 = addMonths(d1, x);
     if (d2 == d0 && millis0 < millis1) {
