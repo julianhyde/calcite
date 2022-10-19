@@ -142,11 +142,11 @@ public final class SqlParserUtil {
       throws MalformedUnicodeEscape {
     // The implementation of this method is based on Crate's method
     // Literals.replaceEscapedChars.
-    int length = input.length();
+    final int length = input.length();
     if (length <= 1) {
       return input;
     }
-    StringBuilder builder = new StringBuilder(length);
+    final StringBuilder builder = new StringBuilder(length);
     int endIdx;
     for (int i = 0; i < length; i++) {
       char currentChar = input.charAt(i);
@@ -508,19 +508,16 @@ public final class SqlParserUtil {
    * Converts a quoted identifier, unquoted identifier, or quoted string to a
    * string of its contents.
    *
-   * <p>First, if {@code startQuote} is provided, {@code endQuote}
-   * must also be provided, and this method removes quotes.
-   *
-   * <p>Second, if {@code startQuote} and {@code escape} are both provided,
-   * this method removes escaped quotes.
+   * <p>First, if {@code startQuote} is provided, {@code endQuote} and
+   * {@code escape} must also be provided, and this method removes quotes.
    *
    * <p>Finally, converts the string to the provided casing.
    */
   public static String strip(String s, @Nullable String startQuote,
       @Nullable String endQuote, @Nullable String escape, Casing casing) {
     if (startQuote != null) {
-      return stripQuotes(s, requireNonNull(startQuote, "startQuote"),
-          requireNonNull(endQuote, "endQuote"), escape, casing);
+      return stripQuotes(s, startQuote, requireNonNull(endQuote, "endQuote"),
+          requireNonNull(escape, "escape"), casing);
     } else {
       return toCase(s, casing);
     }
@@ -530,14 +527,11 @@ public final class SqlParserUtil {
    * Unquotes a quoted string, using different quotes for beginning and end.
    */
   public static String stripQuotes(String s, String startQuote, String endQuote,
-      @Nullable String escape, Casing casing) {
+      String escape, Casing casing) {
     assert startQuote.length() == 1;
     assert endQuote.length() == 1;
     assert s.startsWith(startQuote) && s.endsWith(endQuote) : s;
-    s = s.substring(1, s.length() - 1);
-    if (escape != null) {
-      s = s.replace(escape, endQuote);
-    }
+    s = s.substring(1, s.length() - 1).replace(escape, endQuote);
     return toCase(s, casing);
   }
 
