@@ -4505,15 +4505,15 @@ SqlNode StringLiteral() :
         }
     }
 |
-    <CSTYLE_ESCAPED_STRING_LITERAL>
+    <C_STYLE_ESCAPED_STRING_LITERAL>
     {
-       p = SqlParserUtil.parseString(token.image);
-       try {
-          return SqlLiteral.createCharStringFromEscapeString(p, getPos());
-       } catch (java.nio.charset.UnsupportedCharsetException e) {
-          throw SqlUtil.newContextException(getPos(),
-              RESOURCE.unknownCharacterSet(charSet));
+        try {
+            p = SqlParserUtil.parseCString(getToken(0).image);
+        } catch (SqlParserUtil.MalformedUnicodeEscape e) {
+            throw SqlUtil.newContextException(getPos(),
+                RESOURCE.unicodeEscapeMalformed(e.i));
        }
+       return SqlLiteral.createCharString(p, "UTF16", getPos());
     }
 |
     <BIG_QUERY_DOUBLE_QUOTED_STRING>
@@ -8190,7 +8190,7 @@ void NonReservedKeyWord2of3() :
 |
     < UNICODE_STRING_LITERAL: "U" "&" <QUOTED_STRING> >
 |
-    < CSTYLE_ESCAPED_STRING_LITERAL: "E" <QUOTE> ( (~["'", "\\"]) | ("\\" ~[]) | "''")* <QUOTE> >
+    < C_STYLE_ESCAPED_STRING_LITERAL: "E" <QUOTE> ( (~["'", "\\"]) | ("\\" ~[]) | "''")* <QUOTE> >
 |
     < #CHARSETNAME: (["a"-"z","A"-"Z","0"-"9"])
     (["a"-"z","A"-"Z","0"-"9",":",".","-","_"])*
