@@ -20,6 +20,7 @@ import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.TimeFrame;
 import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
@@ -786,7 +787,17 @@ public interface SqlValidator {
   /** Returns the set of allowed time frames. */
   TimeFrameSet getTimeFrameSet();
 
-  void validateTimeFrame(SqlIntervalQualifier intervalQualifier);
+  /** Validates a time frame.
+   *
+   * <p>A time frame is either a built-in time frame based on a time unit such
+   * as {@link org.apache.calcite.avatica.util.TimeUnitRange#HOUR},
+   * or is a custom time frame represented by a name in
+   * {@link SqlIntervalQualifier#timeFrameName}. A custom time frame is
+   * validated against {@link #getTimeFrameSet()}.
+   *
+   * <p>Returns a time frame, or throws.
+   */
+  TimeFrame validateTimeFrame(SqlIntervalQualifier intervalQualifier);
 
   //~ Inner Class ------------------------------------------------------------
 

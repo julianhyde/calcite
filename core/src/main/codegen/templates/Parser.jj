@@ -4938,6 +4938,13 @@ SqlIntervalQualifier IntervalQualifierStart() :
 
 /**
  * Parses time unit for CEIL and FLOOR functions.
+ *
+ * <p>Includes NANOSECOND, MILLISECOND, which were previously only allowed in
+ * the EXTRACT function.
+ *
+ * <p>Does not include SQL_TSI_DAY, SQL_TSI_FRAC_SECOND etc. These will be
+ * parsed as identifiers and can be resolved in the validator if they are
+ * registered as abbreviations in your time frame set.
  */
 TimeUnit TimeUnit() :
 {
@@ -4981,34 +4988,6 @@ SqlIntervalQualifier TimeUnitOrName() : {
             unitName.getParserPosition());
     }
 }
-
-TimeUnit TimestampInterval() :
-{}
-{
-    <FRAC_SECOND> { return TimeUnit.MICROSECOND; }
-|   <MICROSECOND> { return TimeUnit.MICROSECOND; }
-|   <NANOSECOND> { return TimeUnit.NANOSECOND; }
-|   <SQL_TSI_FRAC_SECOND> { return TimeUnit.NANOSECOND; }
-|   <SQL_TSI_MICROSECOND> { return TimeUnit.MICROSECOND; }
-|   <SECOND> { return TimeUnit.SECOND; }
-|   <SQL_TSI_SECOND> { return TimeUnit.SECOND; }
-|   <MINUTE> { return TimeUnit.MINUTE; }
-|   <SQL_TSI_MINUTE> { return TimeUnit.MINUTE; }
-|   <HOUR> { return TimeUnit.HOUR; }
-|   <SQL_TSI_HOUR> { return TimeUnit.HOUR; }
-|   <DAY> { return TimeUnit.DAY; }
-|   <SQL_TSI_DAY> { return TimeUnit.DAY; }
-|   <WEEK> { return TimeUnit.WEEK; }
-|   <SQL_TSI_WEEK> { return TimeUnit.WEEK; }
-|   <MONTH> { return TimeUnit.MONTH; }
-|   <SQL_TSI_MONTH> { return TimeUnit.MONTH; }
-|   <QUARTER> { return TimeUnit.QUARTER; }
-|   <SQL_TSI_QUARTER> { return TimeUnit.QUARTER; }
-|   <YEAR> { return TimeUnit.YEAR; }
-|   <SQL_TSI_YEAR> { return TimeUnit.YEAR; }
-}
-
-
 
 /**
  * Parses a dynamic parameter marker.
@@ -6505,14 +6484,12 @@ SqlCall TimestampAddFunctionCall() :
 {
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
-    final TimeUnit interval;
+    final SqlIntervalQualifier unit;
 }
 {
     <TIMESTAMPADD> { s = span(); }
     <LPAREN>
-    interval = TimestampInterval() {
-        args.add(SqlLiteral.createSymbol(interval, getPos()));
-    }
+    unit = TimeUnitOrName() { args.add(unit); }
     <COMMA>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
@@ -6530,14 +6507,12 @@ SqlCall TimestampDiffFunctionCall() :
 {
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
-    final TimeUnit interval;
+    final SqlIntervalQualifier unit;
 }
 {
     <TIMESTAMPDIFF> { s = span(); }
     <LPAREN>
-    interval = TimestampInterval() {
-        args.add(SqlLiteral.createSymbol(interval, getPos()));
-    }
+    unit = TimeUnitOrName() { args.add(unit); }
     <COMMA>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>

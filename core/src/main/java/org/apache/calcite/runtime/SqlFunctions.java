@@ -2556,6 +2556,38 @@ public class SqlFunctions {
     return (Locale) DataContext.Variable.LOCALE.get(root);
   }
 
+  public static int customDateAdd(DataContext root,
+      String timeFrameName, int interval, int date) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.addDate(date, interval, timeFrame);
+  }
+
+  public static long customTimestampAdd(DataContext root,
+      String timeFrameName, long interval, long timestamp) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.addTimestamp(timestamp, interval, timeFrame);
+  }
+
+  public static int customDateDiff(DataContext root,
+      String timeFrameName, int date, int date2) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.diffDate(date, date2, timeFrame);
+  }
+
+  public static long customTimestampDiff(DataContext root,
+      String timeFrameName, long timestamp, long timestamp2) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
+    return timeFrameSet.diffTimestamp(timestamp, timestamp2, timeFrame);
+  }
+
   public static int customDateFloor(DataContext root,
       String timeFrameName, int date) {
     final TimeFrameSet timeFrameSet =

@@ -65,10 +65,12 @@ public class TimeFrameTest {
     final TimeFrame year = timeFrameSet.get(TimeUnit.YEAR);
     assertThat(year, notNullValue());
     assertThat(year.name(), is("YEAR"));
+    assertThat(timeFrameSet.getUnit(year), is(YEAR));
 
     final TimeFrame month = timeFrameSet.get(MONTH);
     assertThat(month, notNullValue());
     assertThat(month.name(), is("MONTH"));
+    assertThat(timeFrameSet.getUnit(month), is(MONTH));
 
     final Number monthPerYear = month.per(year);
     assertThat(monthPerYear, notNullValue());
@@ -99,6 +101,25 @@ public class TimeFrameTest {
     assertThat(nanoPerMinute,
         is(BigFraction.ONE.multiply(1_000).multiply(1_000).multiply(1_000)
             .multiply(60)));
+
+    // ISOWEEK is the only core time frame without a corresponding time unit.
+    // There is no TimeUnit.ISOWEEK.
+    final TimeFrame isoWeek = timeFrameSet.get("ISOWEEK");
+    assertThat(isoWeek, notNullValue());
+    assertThat(isoWeek.name(), is("ISOWEEK"));
+    assertThat(timeFrameSet.getUnit(isoWeek), nullValue());
+
+    // FRAC_SECOND is an alias.
+    final TimeFrame fracSecond = timeFrameSet.get("FRAC_SECOND");
+    assertThat(fracSecond, notNullValue());
+    assertThat(fracSecond.name(), is("MICROSECOND"));
+    assertThat(timeFrameSet.getUnit(fracSecond), is(MICROSECOND));
+
+    // SQL_TSI_QUARTER is an alias.
+    final TimeFrame sqlTsiQuarter = timeFrameSet.get("SQL_TSI_QUARTER");
+    assertThat(sqlTsiQuarter, notNullValue());
+    assertThat(sqlTsiQuarter.name(), is("QUARTER"));
+    assertThat(timeFrameSet.getUnit(sqlTsiQuarter), is(QUARTER));
   }
 
   @Test void testEvalFloor() {
