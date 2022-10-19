@@ -550,7 +550,7 @@ public class TimeFrameSet {
     }
 
     @Override public int dateEpoch() {
-      return (int) DateTimeUtils.floorDiv(epoch.getMillisSinceEpoch(),
+      return (int) floorDiv(epoch.getMillisSinceEpoch(),
           DateTimeUtils.MILLIS_PER_DAY);
     }
 
