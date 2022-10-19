@@ -19,8 +19,12 @@ package org.apache.calcite.rel.type;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.calcite.util.NameMap;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
+
+import org.apache.calcite.util.Util;
 
 import org.apache.commons.math3.fraction.BigFraction;
 
@@ -35,6 +39,8 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Objects;
 
 import static org.apache.calcite.avatica.util.DateTimeUtils.EPOCH_JULIAN;
 import static org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY;
@@ -47,12 +53,14 @@ import static java.util.Objects.requireNonNull;
 public class TimeFrameSet {
   private final ImmutableMap<String, TimeFrameImpl> map;
   private final ImmutableMultimap<TimeFrameImpl, TimeFrameImpl> rollupMap;
+  private final NameMap<TimeFrameImpl> nameMap;
 
   private TimeFrameSet(ImmutableMap<String, TimeFrameImpl> map,
       ImmutableMultimap<TimeFrameImpl, TimeFrameImpl> rollupMap) {
     this.map = requireNonNull(map, "map");
+    this.nameMap = NameMap.immutableCopyOf(map);
     this.rollupMap = requireNonNull(rollupMap, "rollupMap");
-    map.values().forEach(k -> k.set = this);
+    map.values().forEach(k -> k.frameSet = this);
   }
 
   /** Creates a Builder. */
@@ -60,9 +68,13 @@ public class TimeFrameSet {
     return new Builder();
   }
 
-  /** Returns the time frame with the given name, or returns null. */
+  /** Returns the time frame with the given name (case-insensitive),
+   * or returns null. */
   public @Nullable TimeFrame getOpt(String name) {
-    TimeFrame timeFrame = map.get(name);
+    final NavigableMap<String, TimeFrameImpl> range =
+        nameMap.range(name, false);
+    @Nullable TimeFrame timeFrame =
+        Iterables.getFirst(range.values(), null);
     while (timeFrame instanceof AliasFrame) {
       timeFrame = ((AliasFrame) timeFrame).frame;
     }
@@ -243,6 +255,66 @@ public class TimeFrameSet {
     return DateTimeUtils.ymdToUnixDate(year, month, day);
   }
 
+  /** Returns the time unit that this time frame is based upon, or null. */
+  public @Nullable TimeUnit getUnit(TimeFrame timeFrame) {
+    final TimeUnit timeUnit = Util.enumVal(TimeUnit.class, timeFrame.name());
+    if (timeUnit == null) {
+      return null;
+    }
+    TimeFrame timeFrame1 = getOpt(timeUnit.name());
+    return Objects.equals(timeFrame1, timeFrame) ? timeUnit : null;
+  }
+
+  public int addDate(int date, int interval, TimeFrame frame) {
+    final TimeFrame dayFrame = get(TimeUnit.DAY);
+    final BigFraction perDay = frame.per(dayFrame);
+    if (perDay != null
+        && perDay.getNumerator().equals(BigInteger.ONE)) {
+      final int m = perDay.getDenominator().intValueExact(); // 7 for WEEK
+      return date + interval * m;
+    }
+
+    final TimeFrame monthFrame = get(TimeUnit.MONTH);
+    final BigFraction perMonth = frame.per(monthFrame);
+    if (perMonth != null
+        && perMonth.getNumerator().equals(BigInteger.ONE)) {
+      final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
+      return SqlFunctions.addMonths(date, interval * m);
+    }
+
+    // TODO: do we need to handle ISO_YEAR?
+    return date;
+  }
+
+  public long addTimestamp(long timestamp, long interval, TimeFrame frame) {
+    final TimeFrame msFrame = get(TimeUnit.MILLISECOND);
+    final BigFraction perMilli = frame.per(msFrame);
+    if (perMilli != null
+        && perMilli.getNumerator().equals(BigInteger.ONE)) {
+      // 1,000 for SECOND, 86,400,000 for DAY
+      final long m = perMilli.getDenominator().longValueExact();
+      return timestamp + interval * m;
+    }
+    final TimeFrame monthFrame = get(TimeUnit.MONTH);
+    final BigFraction perMonth = frame.per(monthFrame);
+    if (perMonth != null
+        && perMonth.getNumerator().equals(BigInteger.ONE)) {
+      final long m = perMonth.getDenominator().longValueExact(); // e.g. 12 for YEAR
+      return SqlFunctions.addMonths(timestamp, (int) (interval * m));
+    }
+
+    // TODO: do we need to handle ISO_YEAR?
+    return timestamp;
+  }
+
+  public int diffDate(int date, int date2, TimeFrame timeFrame) {
+    return 0;
+  }
+
+  public long diffTimestamp(long timestamp, long timestamp2, TimeFrame timeFrame) {
+    return 0;
+  }
+
   /** Builds a collection of time frames. */
   public static class Builder {
     Builder() {
@@ -368,7 +440,7 @@ public class TimeFrameSet {
 
     /** Mutable, set on build, and then not re-assigned. Ideally this would be
      * final. */
-    private TimeFrameSet set;
+    private TimeFrameSet frameSet;
 
     TimeFrameImpl(String name) {
       this.name = requireNonNull(name, "name");
@@ -376,6 +448,10 @@ public class TimeFrameSet {
 
     @Override public String toString() {
       return name;
+    }
+
+    @Override public TimeFrameSet frameSet() {
+      return requireNonNull(frameSet, "frameSet");
     }
 
     @Override public String name() {
@@ -421,23 +497,23 @@ public class TimeFrameSet {
         if (canDirectlyRollUp(this, toFrame1)) {
           return true;
         }
-        if (set.rollupMap.entries().contains(Pair.of(this, toFrame1))) {
+        if (frameSet.rollupMap.entries().contains(Pair.of(this, toFrame1))) {
           return true;
         }
         // Hard-code roll-up via DAY-to-MONTH bridge, for now.
         final TimeFrameImpl day =
-            requireNonNull(set.map.get(TimeUnit.DAY.name()));
+            requireNonNull(frameSet.map.get(TimeUnit.DAY.name()));
         final TimeFrameImpl month =
-            requireNonNull(set.map.get(TimeUnit.MONTH.name()));
+            requireNonNull(frameSet.map.get(TimeUnit.MONTH.name()));
         if (canDirectlyRollUp(this, day)
             && canDirectlyRollUp(month, toFrame1)) {
           return true;
         }
         // Hard-code roll-up via ISOWEEK-to-ISOYEAR bridge, for now.
         final TimeFrameImpl isoYear =
-            requireNonNull(set.map.get(TimeUnit.ISOYEAR.name()));
+            requireNonNull(frameSet.map.get(TimeUnit.ISOYEAR.name()));
         final TimeFrameImpl isoWeek =
-            requireNonNull(set.map.get("ISOWEEK"));
+            requireNonNull(frameSet.map.get("ISOWEEK"));
         if (canDirectlyRollUp(this, isoWeek)
             && canDirectlyRollUp(isoYear, toFrame1)) {
           return true;

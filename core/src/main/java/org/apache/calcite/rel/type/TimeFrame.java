@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.rel.type;
 
+import org.apache.calcite.avatica.util.TimeUnit;
+
 import org.apache.commons.math3.fraction.BigFraction;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -26,6 +28,9 @@ import java.util.Collection;
  *
  */
 public interface TimeFrame {
+  /** Returns the time frame set that this frame belongs to. */
+  TimeFrameSet frameSet();
+
   /** Name of this time frame.
    *
    * <p>A time unit based on a built-in Avatica
@@ -93,4 +98,8 @@ public interface TimeFrame {
    * </ul>
    */
   boolean canRollUpTo(TimeFrame toFrame);
+
+  default @Nullable TimeUnit unit() {
+    return frameSet().getUnit(this);
+  }
 }

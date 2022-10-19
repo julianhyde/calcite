@@ -3351,15 +3351,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  @Override public void validateTimeFrame(SqlIntervalQualifier qualifier) {
+  @Override public @Nullable TimeFrame validateTimeFrame(
+      SqlIntervalQualifier qualifier) {
     if (qualifier.timeFrameName != null) {
       final @Nullable TimeFrame timeFrame =
           timeFrameSet.getOpt(qualifier.timeFrameName);
-      if (timeFrame == null) {
-        throw newValidationError(qualifier,
-            RESOURCE.invalidTimeFrame(qualifier.timeFrameName));
+      if (timeFrame != null) {
+        return timeFrame;
       }
+      throw newValidationError(qualifier,
+          RESOURCE.invalidTimeFrame(qualifier.timeFrameName));
     }
+    return timeFrameSet.get(qualifier.getUnit());
   }
 
   /**

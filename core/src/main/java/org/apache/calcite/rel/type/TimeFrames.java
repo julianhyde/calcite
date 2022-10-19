@@ -39,7 +39,8 @@ public class TimeFrames {
    *
    * <p>Does not include EPOCH.
    */
-  public static final TimeFrameSet CORE = addCore(new MyBuilder()).build();
+  public static final TimeFrameSet CORE =
+      addTsi(addCore(new MyBuilder())).build();
 
   private static MyBuilder addCore(MyBuilder b) {
     b.addCore(TimeUnit.SECOND);
@@ -51,6 +52,9 @@ public class TimeFrames {
     b.addSub(TimeUnit.MILLISECOND, true, 1_000, TimeUnit.SECOND);
     b.addSub(TimeUnit.MICROSECOND, true, 1_000, TimeUnit.MILLISECOND);
     b.addSub(TimeUnit.NANOSECOND, true, 1_000, TimeUnit.MICROSECOND);
+
+    b.addSub(TimeUnit.EPOCH, false, 1, TimeUnit.SECOND,
+        new TimestampString(1970, 1, 1, 0, 0, 0));
 
     b.addCore(TimeUnit.MONTH);
     b.addSub(TimeUnit.QUARTER, false, 3, TimeUnit.MONTH);
@@ -71,6 +75,23 @@ public class TimeFrames {
 
     b.addRollup(TimeUnit.DAY, TimeUnit.MONTH);
     b.addRollup("ISOWEEK", TimeUnit.ISOYEAR.name());
+    return b;
+  }
+
+  /** Adds abbreviations used by {@code TIMESTAMPADD}, {@code TIMESTAMPDIFF}
+   * functions. */
+  private static MyBuilder addTsi(MyBuilder b) {
+    b.addAlias("FRAC_SECOND", TimeUnit.MICROSECOND.name());
+    b.addAlias("SQL_TSI_FRAC_SECOND", TimeUnit.NANOSECOND.name());
+    b.addAlias("SQL_TSI_MICROSECOND", TimeUnit.MICROSECOND.name());
+    b.addAlias("SQL_TSI_SECOND", TimeUnit.SECOND.name());
+    b.addAlias("SQL_TSI_MINUTE", TimeUnit.MINUTE.name());
+    b.addAlias("SQL_TSI_HOUR", TimeUnit.HOUR.name());
+    b.addAlias("SQL_TSI_DAY", TimeUnit.DAY.name());
+    b.addAlias("SQL_TSI_WEEK", TimeUnit.WEEK.name());
+    b.addAlias("SQL_TSI_MONTH", TimeUnit.MONTH.name());
+    b.addAlias("SQL_TSI_QUARTER", TimeUnit.QUARTER.name());
+    b.addAlias("SQL_TSI_YEAR", TimeUnit.YEAR.name());
     return b;
   }
 

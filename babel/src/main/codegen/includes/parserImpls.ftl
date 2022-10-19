@@ -44,18 +44,18 @@ SqlNode DateFunctionCall() :
 
 SqlNode DateaddFunctionCall() :
 {
-    final SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
     final Span s;
-    final SqlIdentifier qualifiedName;
+    final SqlOperator op;
     final SqlIntervalQualifier unit;
     final List<SqlNode> args;
     SqlNode e;
 }
 {
-    ( <DATEADD> | <DATEDIFF> | <DATE_PART> ) {
-        s = span();
-        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
-    }
+    (   <DATEADD> { op = SqlLibraryOperators.DATEADD; }
+    |   <DATEDIFF> { op = SqlLibraryOperators.DATEDIFF; }
+    |   <DATE_PART>  { op = SqlLibraryOperators.DATE_PART; }
+    )
+    { s = span(); }
     <LPAREN> unit = TimeUnitOrName() {
         args = startList(unit);
     }
@@ -65,7 +65,7 @@ SqlNode DateaddFunctionCall() :
         }
     )*
     <RPAREN> {
-        return createCall(qualifiedName, s.end(this), funcType, null, args);
+        return op.createCall(s.end(this), args);
     }
 }
 

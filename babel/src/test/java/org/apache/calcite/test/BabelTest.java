@@ -19,6 +19,9 @@ package org.apache.calcite.test;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.TimeFrameSet;
+import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.fun.SqlLibrary;
+import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParserFixture;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
 
@@ -61,6 +64,11 @@ class BabelTest {
     return propBuilder ->
         propBuilder.set(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP,
             Boolean.toString(lenient));
+  }
+
+  static SqlOperatorTable operatorTableFor(SqlLibrary library) {
+    return SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
+        SqlLibrary.STANDARD, library);
   }
 
   static Connection connect() throws SQLException {
@@ -132,16 +140,11 @@ class BabelTest {
         .fails("(?s).*Encountered \":\" at .*");
   }
 
-  /** Tests that DATEADD allows custom time frames. */
+  /** Tests that DATEADD, DATEDIFF, DATE_PART allow custom time frames. */
   @Test void testTimeFrames() {
-    final SqlValidatorFixture f = Fixtures.forValidator();
-    f.withSql("SELECT DATEADD(^A^, 1, NOW())")
-        .fails("'A' is not a valid datetime format");
-    f.withSql("SELECT DATEADD(YEAR, 1, NOW())").ok();
-    f.withSql("SELECT DATEADD(HOUR^.^A, 1, NOW())")
-        .fails("(?s).*Encountered \".\" at .*");
-
-    final SqlValidatorFixture f2 = Fixtures.forValidator()
+    final SqlValidatorFixture f = Fixtures.forValidator()
+        .withParserConfig(p -> p.withParserFactory(SqlBabelParserImpl.FACTORY))
+        .withOperatorTable(operatorTableFor(SqlLibrary.MSSQL))
         .withFactory(tf ->
             tf.withTypeSystem(typeSystem ->
                 new DelegatingTypeSystem(typeSystem) {
@@ -153,13 +156,23 @@ class BabelTest {
                         .build();
                   }
                 }));
-    String ts = "timestamp '2020-06-27 12:34:56'";
-    String ts2 = "timestamp '2020-06-27 13:45:56'";
-    f2.withSql("SELECT DATEADD(minute15, 3, " + ts + ")")
+
+    final String ts = "timestamp '2020-06-27 12:34:56'";
+    final String ts2 = "timestamp '2020-06-27 13:45:56'";
+    f.withSql("SELECT DATEADD(YEAR, 3, " + ts + ")").ok();
+    f.withSql("SELECT DATEADD(HOUR^.^A, 3, " + ts + ")")
+        .fails("(?s).*Encountered \".\" at .*");
+    f.withSql("SELECT DATEADD(^A^, 3, " + ts + ")")
+        .fails("'A' is not a valid time frame");
+    f.withSql("SELECT DATEADD(minute15, 3, " + ts + ")")
         .ok();
-    f2.withSql("SELECT DATE_DIFF(minute15, 3, " + ts + ", " + ts2 + ")")
+    f.withSql("SELECT DATEDIFF(^A^, " + ts + ", " + ts2 + ")")
+        .fails("'A' is not a valid time frame");
+    f.withSql("SELECT DATEDIFF(minute15, " + ts + ", " + ts2 + ")")
         .ok();
-    f2.withSql("SELECT DATEPART(minute15, 3, " + ts + ", " + ts2 + ")")
+    f.withSql("SELECT DATE_PART(^A^, " + ts + ")")
+        .fails("'A' is not a valid time frame");
+    f.withSql("SELECT DATE_PART(minute15, " + ts + ")")
         .ok();
   }
 

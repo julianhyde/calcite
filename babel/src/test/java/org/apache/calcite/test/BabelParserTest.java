@@ -177,8 +177,8 @@ class BabelParserTest extends SqlParserTest {
     final String sql = "SELECT DATEADD(day, 1, t),\n"
         + " DATEDIFF(week, 2, t),\n"
         + " DATE_PART(year, t) FROM mytable";
-    final String expected = "SELECT `DATEADD`(DAY, 1, `T`),"
-        + " `DATEDIFF`(WEEK, 2, `T`), `DATE_PART`(YEAR, `T`)\n"
+    final String expected = "SELECT DATEADD(DAY, 1, `T`),"
+        + " DATEDIFF(WEEK, 2, `T`), DATE_PART(YEAR, `T`)\n"
         + "FROM `MYTABLE`";
 
     sql(sql).ok(expected);
@@ -190,18 +190,24 @@ class BabelParserTest extends SqlParserTest {
     super.testTimeUnitCodes();
 
     // As for FLOOR in the base class, so for DATEADD, DATEDIFF, DATE_PART.
+    // Extensions such as 'y' remain as identifiers; they are resolved in the
+    // validator.
     final String ts = "'2022-06-03 12:00:00.000'";
     final String ts2 = "'2022-06-03 15:30:00.000'";
     expr("DATEADD(year, 1, " + ts + ")")
-        .ok("`DATEADD`(YEAR, 1, " + ts + ")");
+        .ok("DATEADD(YEAR, 1, " + ts + ")");
     expr("DATEADD(y, 1, " + ts + ")")
-        .ok("`DATEADD`(YEAR, 1, " + ts + ")");
+        .ok("DATEADD(`Y`, 1, " + ts + ")");
     expr("DATEDIFF(year, 1, " + ts + ", " + ts2 + ")")
-        .ok("EXTRACT(YEAR FROM `D`)");
+        .ok("DATEDIFF(YEAR, 1, '2022-06-03 12:00:00.000', "
+            + "'2022-06-03 15:30:00.000')");
     expr("DATEDIFF(y, 1, " + ts + ", " + ts2 + ")")
-        .ok("EXTRACT(YEAR FROM `D`)");
-    expr("DATE_PART(year, " + ts + ")").ok("EXTRACT(YEAR FROM `D`)");
-    expr("DATE_PART(y, " + ts + ")").ok("EXTRACT(YEAR FROM `D`)");
+        .ok("DATEDIFF(`Y`, 1, '2022-06-03 12:00:00.000', "
+            + "'2022-06-03 15:30:00.000')");
+    expr("DATE_PART(year, " + ts + ")")
+        .ok("DATE_PART(YEAR, '2022-06-03 12:00:00.000')");
+    expr("DATE_PART(y, " + ts + ")")
+        .ok("DATE_PART(`Y`, '2022-06-03 12:00:00.000')");
   }
 
   /** PostgreSQL and Redshift allow TIMESTAMP literals that contain only a

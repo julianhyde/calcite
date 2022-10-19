@@ -315,6 +315,8 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUM;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUM0;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SYSTEM_USER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TAN;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TIMESTAMP_ADD;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TIMESTAMP_DIFF;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRIM;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRUNCATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TUMBLE;
@@ -492,6 +494,14 @@ public class RexImpTable {
             BuiltInMethod.UNIX_DATE_CEIL.method,
             BuiltInMethod.CUSTOM_TIMESTAMP_CEIL.method,
             BuiltInMethod.CUSTOM_DATE_CEIL.method));
+      map.put(TIMESTAMP_ADD,
+          new TimestampAddImplementor("timestampAdd",
+              BuiltInMethod.CUSTOM_TIMESTAMP_ADD.method,
+              BuiltInMethod.CUSTOM_DATE_ADD.method));
+      map.put(TIMESTAMP_DIFF,
+          new TimestampDiffImplementor("timestampDiff",
+              BuiltInMethod.CUSTOM_TIMESTAMP_DIFF.method,
+              BuiltInMethod.CUSTOM_DATE_DIFF.method));
 
       // TIMESTAMP_TRUNC and TIME_TRUNC methods are syntactic sugar for standard datetime FLOOR
       map.put(TIMESTAMP_TRUNC,
@@ -2151,6 +2161,71 @@ public class RexImpTable {
           EnumUtils.convert(operand, type),
           EnumUtils.convert(
               Expressions.constant(timeUnit.multiplier), type));
+    }
+  }
+
+  /** Implementor for the {@code TIMESTAMPADD} function. */
+  private static class TimestampAddImplementor extends MethodNameImplementor {
+    final Method customTimestampMethod;
+    final Method customDateMethod;
+
+    TimestampAddImplementor(String methodName, Method customTimestampMethod,
+        Method customDateMethod) {
+      super(methodName, NullPolicy.STRICT, false);
+      this.customTimestampMethod = customTimestampMethod;
+      this.customDateMethod = customDateMethod;
+    }
+
+    @Override String getVariableName() {
+      return "timestampAdd";
+    }
+
+    @Override Expression implementSafe(final RexToLixTranslator translator,
+        final RexCall call, final List<Expression> argValueList) {
+      final Expression operand0 = argValueList.get(0);
+      final Expression operand1 = argValueList.get(1);
+      final Expression operand2 = argValueList.get(2);
+      switch (call.getType().getSqlTypeName()) {
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+      case TIMESTAMP:
+        return Expressions.call(customTimestampMethod, translator.getRoot(),
+            operand0, operand1, operand2);
+      default:
+        return Expressions.call(customDateMethod, translator.getRoot(),
+            operand0, operand1, operand2);
+      }
+    }
+  }
+
+  /** Implementor for the {@code TIMESTAMPDIFF} function. */
+  private static class TimestampDiffImplementor extends MethodNameImplementor {
+    final Method customTimestampMethod;
+    final Method customDateMethod;
+
+    TimestampDiffImplementor(String methodName, Method customTimestampMethod,
+        Method customDateMethod) {
+      super(methodName, NullPolicy.STRICT, false);
+      this.customTimestampMethod = customTimestampMethod;
+      this.customDateMethod = customDateMethod;
+    }
+
+    @Override String getVariableName() {
+      return "timestampDiff";
+    }
+
+    @Override Expression implementSafe(final RexToLixTranslator translator,
+        final RexCall call, final List<Expression> argValueList) {
+      final Expression operand1 = argValueList.get(1);
+      Expression operand0 = argValueList.get(0);
+      switch (call.getType().getSqlTypeName()) {
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+      case TIMESTAMP:
+        return Expressions.call(customTimestampMethod, translator.getRoot(),
+            operand1, operand0);
+      default:
+        return Expressions.call(customDateMethod, translator.getRoot(),
+            operand1, operand0);
+      }
     }
   }
 
