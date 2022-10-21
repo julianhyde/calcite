@@ -29,6 +29,7 @@ import org.apache.calcite.sql.SqlUtil;
 import com.google.common.collect.ImmutableList;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -84,6 +85,15 @@ public abstract class OperandTypes {
   }
 
   /**
+   * Creates a checker that passes if the operand is an interval appropriate for
+   * a given date/time type. For example, the time frame HOUR is appropriate for
+   * type TIMESTAMP or DATE but not TIME.
+   */
+  public static SqlSingleOperandTypeChecker interval(SqlTypeName typeName) {
+    return new IntervalOperandTypeChecker(typeName);
+  }
+
+  /**
    * Creates a checker for user-defined functions (including user-defined
    * aggregate functions, table functions, and table macros).
    *
@@ -106,16 +116,21 @@ public abstract class OperandTypes {
   public static SqlOperandTypeChecker or(SqlOperandTypeChecker... rules) {
     return new CompositeOperandTypeChecker(
         CompositeOperandTypeChecker.Composition.OR,
-        ImmutableList.copyOf(rules), null, null);
+        ImmutableList.copyOf(rules), null, null, null);
   }
 
   /**
    * Creates a checker that passes if all of the rules pass.
    */
   public static SqlOperandTypeChecker and(SqlOperandTypeChecker... rules) {
+    return and_(ImmutableList.copyOf(rules));
+  }
+
+  private static CompositeOperandTypeChecker and_(
+      Iterable<SqlOperandTypeChecker> rules) {
     return new CompositeOperandTypeChecker(
         CompositeOperandTypeChecker.Composition.AND,
-        ImmutableList.copyOf(rules), null, null);
+        ImmutableList.copyOf(rules), null, null, null);
   }
 
   /**
@@ -147,7 +162,7 @@ public abstract class OperandTypes {
       SqlSingleOperandTypeChecker... rules) {
     return new CompositeOperandTypeChecker(
         CompositeOperandTypeChecker.Composition.SEQUENCE,
-        ImmutableList.copyOf(rules), allowedSignatures, null);
+        ImmutableList.copyOf(rules), allowedSignatures, null, null);
   }
 
   /**
@@ -158,7 +173,20 @@ public abstract class OperandTypes {
       SqlSingleOperandTypeChecker... rules) {
     return new CompositeOperandTypeChecker(
         CompositeOperandTypeChecker.Composition.REPEAT,
-        ImmutableList.copyOf(rules), null, range);
+        ImmutableList.copyOf(rules), null, null, range);
+  }
+
+  /**
+   * Creates an operand checker that applies a single-operand checker to
+   * the {@code ordinal}th operand.
+   */
+  public static SqlOperandTypeChecker nth(int ordinal, int operandCount,
+      SqlSingleOperandTypeChecker rule) {
+    SqlSingleOperandTypeChecker[] rules =
+        new SqlSingleOperandTypeChecker[operandCount];
+    Arrays.fill(rules, ANY);
+    rules[ordinal] = rule;
+    return sequence(null, rules);
   }
 
   // ----------------------------------------------------------------------
@@ -551,11 +579,18 @@ public abstract class OperandTypes {
   public static final SqlSingleOperandTypeChecker INTERVAL_NUMERIC =
       family(SqlTypeFamily.DATETIME_INTERVAL, SqlTypeFamily.NUMERIC);
 
-  public static final SqlSingleOperandTypeChecker TIME_INTERVAL =
-      family(SqlTypeFamily.TIME, SqlTypeFamily.DATETIME_INTERVAL);
+  public static final SqlOperandTypeChecker TIME_INTERVAL =
+      and_(
+          ImmutableList.of(family(SqlTypeFamily.TIME, SqlTypeFamily.ANY),
+              nth(1, 2, interval(SqlTypeName.TIME))))
+          .withGenerator((op, opName) -> opName + "(<TIME>, <INTERVAL>)");
 
-  public static final SqlSingleOperandTypeChecker TIMESTAMP_INTERVAL =
-      family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.DATETIME_INTERVAL);
+  public static final SqlOperandTypeChecker TIMESTAMP_INTERVAL =
+      and_(
+          ImmutableList.of(family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.ANY),
+              nth(1, 2, interval(SqlTypeName.TIMESTAMP))))
+          .withGenerator((op, opName) ->
+              "'" + opName + "(<TIMESTAMP>, <DATETIME_INTERVAL>)'");
 
   public static final SqlSingleOperandTypeChecker DATETIME_INTERVAL =
       family(SqlTypeFamily.DATETIME, SqlTypeFamily.DATETIME_INTERVAL);

@@ -18,6 +18,8 @@ package org.apache.calcite.sql.type;
 
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperandCountRange;
+import org.apache.calcite.sql.SqlOperator;
 
 /**
  * SqlSingleOperandTypeChecker is an extension of {@link SqlOperandTypeChecker}
@@ -68,4 +70,30 @@ public interface SqlSingleOperandTypeChecker extends SqlOperandTypeChecker {
       SqlNode operand,
       int iFormalOperand,
       boolean throwOnFailure);
+
+  @Override default boolean isOptional(int i) {
+    return false;
+  }
+
+  @Override default boolean checkOperandTypes(
+      SqlCallBinding callBinding,
+      boolean throwOnFailure) {
+    return checkSingleOperandType(
+        callBinding,
+        callBinding.operand(0),
+        0,
+        throwOnFailure);
+  }
+
+  @Override default SqlOperandCountRange getOperandCountRange() {
+    return SqlOperandCountRanges.of(1);
+  }
+
+  @Override default String getAllowedSignatures(SqlOperator op, String opName) {
+    return "<LITERAL>";
+  }
+
+  @Override default Consistency getConsistency() {
+    return Consistency.NONE;
+  }
 }
