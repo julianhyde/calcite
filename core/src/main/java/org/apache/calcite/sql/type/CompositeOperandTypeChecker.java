@@ -140,10 +140,6 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
     return allowedRules;
   }
 
-  @Override public Consistency getConsistency() {
-    return Consistency.NONE;
-  }
-
   @Override public String getAllowedSignatures(SqlOperator op, String opName) {
     if (allowedSignatures != null) {
       return allowedSignatures;
@@ -267,16 +263,17 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
       final TypeCoercion typeCoercion = callBinding.getValidator().getTypeCoercion();
       typeCoercion.binaryArithmeticCoercion(callBinding);
     }
-    if (check(callBinding)) {
+    if (check(callBinding, false)) {
       return true;
     }
     if (!throwOnFailure) {
       return false;
     }
-    if (composition == Composition.OR) {
-      for (SqlOperandTypeChecker allowedRule : allowedRules) {
-        allowedRule.checkOperandTypes(callBinding, true);
-      }
+    // Check again, to cause error to be thrown.
+    switch (composition) {
+    case OR:
+    case SEQUENCE:
+      check(callBinding, true);
     }
 
     // If no exception thrown, just throw a generic validation
@@ -284,7 +281,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
     throw callBinding.newValidationSignatureError();
   }
 
-  private boolean check(SqlCallBinding callBinding) {
+  private boolean check(SqlCallBinding callBinding, boolean throwOnFailure) {
     switch (composition) {
     case REPEAT:
       if (!requireNonNull(range, "range").isValidCount(callBinding.getOperandCount())) {
@@ -296,7 +293,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
               callBinding,
               callBinding.getCall().operand(operand),
               0,
-              false)) {
+              throwOnFailure)) {
             if (callBinding.isTypeCoercionEnabled()) {
               return coerceOperands(callBinding, true);
             }
@@ -317,7 +314,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
             callBinding,
             callBinding.getCall().operand(ord.i),
             rule.getClass() == FamilyOperandTypeChecker.class ? 0 : ord.i,
-            false)) {
+            throwOnFailure)) {
           if (callBinding.isTypeCoercionEnabled()) {
             return coerceOperands(callBinding, false);
           }
@@ -330,7 +327,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
       for (Ord<SqlOperandTypeChecker> ord
           : Ord.<SqlOperandTypeChecker>zip(allowedRules)) {
         SqlOperandTypeChecker rule = ord.e;
-        if (!rule.checkOperandTypes(callBinding, false)) {
+        if (!rule.checkOperandTypes(callBinding, throwOnFailure)) {
           // Avoid trying other rules in AND if the first one fails.
           return false;
         }
@@ -346,7 +343,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
       for (Ord<SqlOperandTypeChecker> ord
           : Ord.<SqlOperandTypeChecker>zip(allowedRules)) {
         SqlOperandTypeChecker rule = ord.e;
-        if (rule.checkOperandTypes(callBinding, false)) {
+        if (rule.checkOperandTypes(callBinding, throwOnFailure)) {
           return true;
         }
       }

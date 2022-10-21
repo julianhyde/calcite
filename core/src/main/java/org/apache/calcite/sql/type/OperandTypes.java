@@ -227,14 +227,6 @@ public abstract class OperandTypes {
       @Override public String getAllowedSignatures(SqlOperator op, String opName) {
         return opName + "(...)";
       }
-
-      @Override public boolean isOptional(int i) {
-        return false;
-      }
-
-      @Override public Consistency getConsistency() {
-        return Consistency.NONE;
-      }
     };
   }
 
@@ -469,8 +461,7 @@ public abstract class OperandTypes {
    */
   public static final SqlOperandTypeChecker AT_LEAST_ONE_SAME_VARIADIC =
       new SameOperandTypeChecker(-1) {
-        @Override public SqlOperandCountRange
-        getOperandCountRange() {
+        @Override public SqlOperandCountRange getOperandCountRange() {
           return SqlOperandCountRanges.from(1);
         }
       };
@@ -708,28 +699,6 @@ public abstract class OperandTypes {
       }
       return !validationError;
     }
-
-    @Override public boolean checkOperandTypes(
-        SqlCallBinding callBinding,
-        boolean throwOnFailure) {
-      return checkSingleOperandType(
-          callBinding,
-          callBinding.operand(0),
-          0,
-          throwOnFailure);
-    }
-
-    @Override public SqlOperandCountRange getOperandCountRange() {
-      return SqlOperandCountRanges.of(1);
-    }
-
-    @Override public boolean isOptional(int i) {
-      return false;
-    }
-
-    @Override public Consistency getConsistency() {
-      return Consistency.NONE;
-    }
   }
 
   /** Checker that returns whether a value is a collection (multiset or array)
@@ -782,31 +751,9 @@ public abstract class OperandTypes {
           return !validationError;
         }
 
-        @Override public boolean checkOperandTypes(
-            SqlCallBinding callBinding,
-            boolean throwOnFailure) {
-          return checkSingleOperandType(
-              callBinding,
-              callBinding.operand(0),
-              0,
-              throwOnFailure);
-        }
-
-        @Override public SqlOperandCountRange getOperandCountRange() {
-          return SqlOperandCountRanges.of(1);
-        }
-
         @Override public String getAllowedSignatures(SqlOperator op, String opName) {
           return SqlUtil.getAliasedSignature(op, opName,
               ImmutableList.of("RECORDTYPE(SINGLE FIELD)"));
-        }
-
-        @Override public boolean isOptional(int i) {
-          return false;
-        }
-
-        @Override public Consistency getConsistency() {
-          return Consistency.NONE;
         }
       };
 
@@ -846,28 +793,10 @@ public abstract class OperandTypes {
       return valid;
     }
 
-    @Override public boolean checkOperandTypes(SqlCallBinding callBinding,
-        boolean throwOnFailure) {
-      return checkSingleOperandType(callBinding, callBinding.operand(0), 0,
-          throwOnFailure);
-    }
-
-    @Override public SqlOperandCountRange getOperandCountRange() {
-      return SqlOperandCountRanges.of(1);
-    }
-
     @Override public String getAllowedSignatures(SqlOperator op, String opName) {
       return SqlUtil.getAliasedSignature(op, opName,
           ImmutableList.of("PERIOD (DATETIME, INTERVAL)",
               "PERIOD (DATETIME, DATETIME)"));
-    }
-
-    @Override public boolean isOptional(int i) {
-      return false;
-    }
-
-    @Override public Consistency getConsistency() {
-      return Consistency.NONE;
     }
   }
 }
