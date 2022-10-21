@@ -365,7 +365,6 @@ public class SqlOperatorTest {
                         .build();
                   }
                 }));
-    if (false)
     Arrays.asList("MONTH").forEach(s ->
         f.checkScalar("timestampadd(" + s + ", 1, date '2016-05-31')",
             "2016-06-30", "DATE NOT NULL"));
@@ -7498,7 +7497,6 @@ public class SqlOperatorTest {
   @Test void testTimestampAdd() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.TIMESTAMP_ADD, VmName.EXPAND);
-    if (false) // TODO
     MICROSECOND_VARIANTS.forEach(s ->
         f.checkScalar("timestampadd(" + s
                 + ", 2000000, timestamp '2016-02-24 12:42:25')",
@@ -7509,13 +7507,11 @@ public class SqlOperatorTest {
                 + ", 2, timestamp '2016-02-24 12:42:25')",
             "2016-02-24 12:42:27",
             "TIMESTAMP(0) NOT NULL"));
-    if (false) // TODO
     NANOSECOND_VARIANTS.forEach(s ->
         f.checkScalar("timestampadd(" + s
                 + ", 3000000000, timestamp '2016-02-24 12:42:25')",
             "2016-02-24 12:42:28",
             "TIMESTAMP(0) NOT NULL"));
-    if (false) // TODO
     NANOSECOND_VARIANTS.forEach(s ->
         f.checkScalar("timestampadd(" + s
                 + ", 2000000000, timestamp '2016-02-24 12:42:25')",
@@ -7774,13 +7770,7 @@ public class SqlOperatorTest {
         .withLibrary(SqlLibrary.BIG_QUERY)
         .setFor(SqlLibraryOperators.TIME_TRUNC);
     f.checkFails("time_trunc(time '12:34:56', ^year^)",
-        "Encountered \"year\" at line 1, column 37\\.\n"
-            + "Was expecting one of:\n"
-            + "    \"HOUR\" \\.\\.\\.\n"
-            + "    \"MILLISECOND\" \\.\\.\\.\n"
-            + "    \"MINUTE\" \\.\\.\\.\n"
-            + "    \"SECOND\" \\.\\.\\.\n"
-            + "    ", false);
+        "'YEAR' is not a valid time frame", false);
     f.checkFails("^time_trunc(123.45, minute)^",
         "Cannot apply 'TIME_TRUNC' to arguments of type "
             + "'TIME_TRUNC\\(<DECIMAL\\(5, 2\\)>, <INTERVAL MINUTE>\\)'\\. "
@@ -7810,10 +7800,18 @@ public class SqlOperatorTest {
             + "'TIMESTAMP_TRUNC\\(<INTEGER>, <INTERVAL HOUR>\\)'\\. "
             + "Supported form\\(s\\): 'TIMESTAMP_TRUNC\\(<TIMESTAMP>, <DATETIME_INTERVAL>\\)'",
         false);
+    f.checkFails("^timestamp_trunc(100, foo)^",
+        "Cannot apply 'TIMESTAMP_TRUNC' to arguments of type "
+            + "'TIMESTAMP_TRUNC\\(<INTEGER>, <INTERVAL `FOO`>\\)'\\. "
+            + "Supported form\\(s\\): 'TIMESTAMP_TRUNC\\(<TIMESTAMP>, <DATETIME_INTERVAL>\\)'",
+        false);
+
     f.checkFails("timestamp_trunc(timestamp '2015-02-19 12:34:56.78', ^microsecond^)",
-        "'MICROSECOND' is not a valid datetime format", false);
+        "'MICROSECOND' is not a valid time frame", false);
     f.checkFails("timestamp_trunc(timestamp '2015-02-19 12:34:56.78', ^nanosecond^)",
-        "'NANOSECOND' is not a valid datetime format", false);
+        "'NANOSECOND' is not a valid time frame", false);
+    f.checkFails("timestamp_trunc(timestamp '2015-02-19 12:34:56.78', ^millisecond^)",
+        "'MILLISECOND' is not a valid time frame", false);
     f.checkScalar("timestamp_trunc(timestamp '2015-02-19 12:34:56.78', second)",
         "2015-02-19 12:34:56", "TIMESTAMP(0) NOT NULL");
     f.checkScalar("timestamp_trunc(timestamp '2015-02-19 12:34:56', minute)",

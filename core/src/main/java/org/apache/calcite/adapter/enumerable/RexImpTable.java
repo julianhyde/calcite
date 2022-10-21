@@ -2145,7 +2145,6 @@ public class RexImpTable {
               preFloor ? call(operand0, type, TimeUnit.DAY) : operand0;
           return Expressions.call(floorMethod,
               translator.getLiteral(operand1), dayOperand0);
-        case NANOSECOND:
         default:
           return call(operand0, type, timeUnitRange.startUnit);
         }
