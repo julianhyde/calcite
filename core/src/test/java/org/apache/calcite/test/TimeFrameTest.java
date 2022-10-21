@@ -29,8 +29,6 @@ import com.google.common.collect.ImmutableMap;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
-import static java.util.Objects.requireNonNull;
-
 import static org.apache.calcite.avatica.util.DateTimeUtils.dateStringToUnixDate;
 import static org.apache.calcite.avatica.util.DateTimeUtils.timestampStringToUnixDate;
 import static org.apache.calcite.avatica.util.DateTimeUtils.unixDateToString;
@@ -56,6 +54,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+
+import static java.util.Objects.requireNonNull;
 
 /** Unit test for {@link org.apache.calcite.rel.type.TimeFrame}. */
 public class TimeFrameTest {

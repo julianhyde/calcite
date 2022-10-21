@@ -19,8 +19,6 @@ package org.apache.calcite.rel.type;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.util.TimestampString;
 
-import static java.util.Objects.requireNonNull;
-
 /** Utilities for {@link TimeFrame}. */
 public class TimeFrames {
   private TimeFrames() {

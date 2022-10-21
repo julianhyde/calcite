@@ -23,7 +23,6 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.util.NameMap;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
-
 import org.apache.calcite.util.Util;
 
 import org.apache.commons.math3.fraction.BigFraction;

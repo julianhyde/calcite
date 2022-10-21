@@ -95,10 +95,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.sql.type.NonNullableAccessors.getComponentTypeOrThrow;
+import static org.apache.calcite.util.Util.first;
 
 import static java.util.Objects.requireNonNull;
-
-import static org.apache.calcite.util.Util.first;
 
 /**
  * Standard implementation of {@link SqlRexConvertletTable}.
