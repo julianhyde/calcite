@@ -17,6 +17,7 @@
 package org.apache.calcite.sql2rel;
 
 import org.apache.calcite.avatica.util.Spaces;
+import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.TableExpressionFactory;
@@ -5428,8 +5429,20 @@ public class SqlToRelConverter {
         RelFieldCollation.Direction direction,
         RelFieldCollation.NullDirection nullDirection) {
       RexNode node = convertExpression(expr);
-      if (direction == RelFieldCollation.Direction.DESCENDING) {
+      final boolean desc = direction == RelFieldCollation.Direction.DESCENDING;
+      if (desc) {
         node = relBuilder.desc(node);
+      }
+      if (nullDirection == RelFieldCollation.NullDirection.UNSPECIFIED) {
+        final NullCollation nullCollation =
+            validator().config().defaultNullCollation();
+        final boolean nullsLast = nullCollation.last(desc);
+        final boolean nullsFirst = !nullsLast;
+        if (!NullCollation.HIGH.isDefaultOrder(nullsFirst, desc)) {
+          nullDirection = nullsLast
+              ? RelFieldCollation.NullDirection.LAST
+              : RelFieldCollation.NullDirection.FIRST;
+        }
       }
       if (nullDirection == RelFieldCollation.NullDirection.FIRST) {
         node = relBuilder.nullsFirst(node);
