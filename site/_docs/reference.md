@@ -2649,6 +2649,11 @@ semantics.
 
 Note:
 
+* Calcite has no Redshift library, so the Postgres library
+  is used instead. The functions `DATEADD`, `DATEDIFF` are
+  implemented in Redshift and not Postgres but nevertheless
+  appear in Calcite's Postgres library
+* Functions `DATEADD`, `DATEDIFF`, `DATE_PART` require the Babel parser
 * `JSON_TYPE` / `JSON_DEPTH` / `JSON_PRETTY` / `JSON_STORAGE_SIZE` return null if the argument is null
 * `JSON_LENGTH` / `JSON_KEYS` / `JSON_REMOVE` return null if the first argument is null
 * `JSON_TYPE` generally returns an upper-case string flag indicating the type of the JSON input. Currently supported supported type flags are:

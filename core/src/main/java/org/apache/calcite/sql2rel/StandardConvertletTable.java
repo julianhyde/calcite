@@ -1834,7 +1834,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       final RelDataType type = cx.getValidator().getValidatedNodeType(call);
       final RexNode op1 = cx.convertExpression(call.operand(1));
       final RexNode op2 = cx.convertExpression(call.operand(2));
-      if (qualifier.timeFrameName != null) {
+      if (unit == TimeUnit.EPOCH && qualifier.timeFrameName != null) {
         // Custom time frames have a different path. They are kept as names, and
         // then handled by Java functions.
         final RexLiteral timeFrameName =
@@ -1883,6 +1883,19 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       SqlIntervalQualifier qualifier = call.operand(0);
       final TimeFrame timeFrame = cx.getValidator().validateTimeFrame(qualifier);
       final TimeUnit unit = first(timeFrame.unit(), TimeUnit.EPOCH);
+
+      final RexNode op1 = cx.convertExpression(call.operand(1));
+      final RexNode op2 = cx.convertExpression(call.operand(2));
+      if (unit == TimeUnit.EPOCH && qualifier.timeFrameName != null) {
+        // Custom time frames have a different path. They are kept as names, and
+        // then handled by Java functions.
+        final RexLiteral timeFrameName =
+            rexBuilder.makeLiteral(qualifier.timeFrameName);
+        return rexBuilder.makeCall(cx.getValidator().getValidatedNodeType(call),
+            SqlStdOperatorTable.TIMESTAMP_DIFF,
+            ImmutableList.of(timeFrameName, op1, op2));
+      }
+
       BigDecimal multiplier = BigDecimal.ONE;
       BigDecimal divider = BigDecimal.ONE;
       SqlTypeName sqlTypeName = unit == TimeUnit.NANOSECOND
@@ -1913,8 +1926,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 qualifier.getParserPosition());
         break;
       }
-      final RexNode op2 = cx.convertExpression(call.operand(2));
-      final RexNode op1 = cx.convertExpression(call.operand(1));
       final RelDataType intervalType =
           cx.getTypeFactory().createTypeWithNullability(
               cx.getTypeFactory().createSqlIntervalType(qualifier),

@@ -365,12 +365,10 @@ public class SqlOperatorTest {
                         .build();
                   }
                 }));
-    Arrays.asList("MONTH").forEach(s ->
-        f.checkScalar("timestampadd(" + s + ", 1, date '2016-05-31')",
-            "2016-06-30", "DATE NOT NULL"));
-    Arrays.asList("SQL_TSI_MONTH").forEach(s ->
-        f.checkScalar("timestampadd(" + s + ", 1, date '2016-05-31')",
-            "2016-06-30", "DATE NOT NULL"));
+    f.checkScalar("timestampdiff(\"minute15\", "
+            + "timestamp '2016-02-24 12:42:25', "
+            + "timestamp '2016-02-24 15:42:25')",
+        "12", "INTEGER NOT NULL");
   }
 
   @Test void testSqlOperatorOverloading() {
@@ -7444,9 +7442,9 @@ public class SqlOperatorTest {
         "2016-02-24 14:27:25", "TIMESTAMP(0) NOT NULL");
     f.checkScalar(
         "timestampadd(\"month4\", 7, timestamp '2016-02-24 12:42:25')",
-        "2018-06-24 12:42:27", "TIMESTAMP(0) NOT NULL");
+        "2018-06-24 12:42:25", "TIMESTAMP(0) NOT NULL");
     f.checkScalar("timestampadd(\"month4\", 7, date '2016-02-24')",
-        "2018-04-24", "DATE NOT NULL");
+        "2018-06-24", "DATE NOT NULL");
 
     f.checkScalar("timestampdiff(\"minute15\", "
             + "timestamp '2016-02-24 12:42:25', "
@@ -7455,10 +7453,30 @@ public class SqlOperatorTest {
     f.checkScalar("timestampdiff(\"month4\", "
             + "timestamp '2016-02-24 12:42:25', "
             + "timestamp '2016-02-24 15:42:25')",
-        "12", "INTEGER NOT NULL");
+        "0", "INTEGER NOT NULL");
+    f.checkScalar("timestampdiff(\"month4\", "
+            + "timestamp '2016-02-24 12:42:25', "
+            + "timestamp '2018-02-24 15:42:25')",
+        "6", "INTEGER NOT NULL");
+    f.checkScalar("timestampdiff(\"month4\", "
+            + "timestamp '2016-02-24 12:42:25', "
+            + "timestamp '2018-02-23 15:42:25')",
+        "5", "INTEGER NOT NULL");
     f.checkScalar("timestampdiff(\"month4\", date '2016-02-24', "
             + "date '2020-03-24')",
         "12", "INTEGER NOT NULL");
+    f.checkScalar("timestampdiff(\"month4\", date '2016-02-24', "
+            + "date '2016-06-23')",
+        "0", "INTEGER NOT NULL");
+    f.checkScalar("timestampdiff(\"month4\", date '2016-02-24', "
+            + "date '2016-06-24')",
+        "1", "INTEGER NOT NULL");
+    f.checkScalar("timestampdiff(\"month4\", date '2016-02-24', "
+            + "date '2015-10-24')",
+        "-1", "INTEGER NOT NULL");
+    f.checkScalar("timestampdiff(\"month4\", date '2016-02-24', "
+            + "date '2016-02-23')",
+        "0", "INTEGER NOT NULL");
   }
 
   @Test void testFloorFuncInterval() {
@@ -7756,6 +7774,18 @@ public class SqlOperatorTest {
         f.checkScalar("timestampdiff(" + s + ", "
                 + "date '2016-06-15', cast(null as date))",
             isNullValue(), "INTEGER"));
+  }
+
+  @Test void testDateDiff() {
+    final SqlOperatorFixture f0 = fixture()
+        .setFor(SqlLibraryOperators.DATEDIFF);
+    f0.checkFails("datediff(^MONTH^, '2019-09-14',  '2019-09-15')",
+        "(?s)Incorrect syntax near the keyword 'MONTH' at .*",
+        false);
+
+    final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.MSSQL);
+    f.checkScalar("datediff(\"MONTH\", '2019-09-14',  '2019-09-15')",
+        "12:34:56", "TIME(0) NOT NULL");
   }
 
   @Test void testTimeTrunc() {

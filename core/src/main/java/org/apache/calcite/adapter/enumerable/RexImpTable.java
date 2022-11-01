@@ -123,6 +123,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.CONCAT2;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.CONCAT_FUNCTION;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.COSH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATE;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATEADD;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATE_FROM_UNIX_DATE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DAYNAME;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.DIFFERENCE;
@@ -498,24 +499,16 @@ public class RexImpTable {
           new TimestampAddImplementor("timestampAdd",
               BuiltInMethod.CUSTOM_TIMESTAMP_ADD.method,
               BuiltInMethod.CUSTOM_DATE_ADD.method));
+      map.put(DATEADD, map.get(TIMESTAMP_ADD));
       map.put(TIMESTAMP_DIFF,
           new TimestampDiffImplementor("timestampDiff",
               BuiltInMethod.CUSTOM_TIMESTAMP_DIFF.method,
               BuiltInMethod.CUSTOM_DATE_DIFF.method));
 
-      // TIMESTAMP_TRUNC and TIME_TRUNC methods are syntactic sugar for standard datetime FLOOR
-      map.put(TIMESTAMP_TRUNC,
-          new FloorImplementor(BuiltInMethod.FLOOR.method.getName(),
-              BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
-            BuiltInMethod.UNIX_DATE_FLOOR.method,
-            BuiltInMethod.CUSTOM_TIMESTAMP_FLOOR.method,
-            BuiltInMethod.CUSTOM_DATE_FLOOR.method));
-      map.put(TIME_TRUNC,
-          new FloorImplementor(BuiltInMethod.FLOOR.method.getName(),
-              BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
-            BuiltInMethod.UNIX_DATE_FLOOR.method,
-            BuiltInMethod.CUSTOM_TIMESTAMP_FLOOR.method,
-            BuiltInMethod.CUSTOM_DATE_FLOOR.method));
+      // TIMESTAMP_TRUNC and TIME_TRUNC methods are syntactic sugar for standard
+      // datetime FLOOR.
+      map.put(TIMESTAMP_TRUNC, map.get(FLOOR));
+      map.put(TIME_TRUNC, map.get(FLOOR));
 
 
       defineMethod(LAST_DAY, "lastDay", NullPolicy.STRICT);
@@ -2214,16 +2207,17 @@ public class RexImpTable {
 
     @Override Expression implementSafe(final RexToLixTranslator translator,
         final RexCall call, final List<Expression> argValueList) {
-      final Expression operand1 = argValueList.get(1);
-      Expression operand0 = argValueList.get(0);
-      switch (call.getType().getSqlTypeName()) {
+      return Expressions.call(getMethod(call), translator.getRoot(),
+          argValueList.get(0), argValueList.get(1), argValueList.get(2));
+    }
+
+    private Method getMethod(RexCall call) {
+      switch (call.operands.get(1).getType().getSqlTypeName()) {
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
       case TIMESTAMP:
-        return Expressions.call(customTimestampMethod, translator.getRoot(),
-            operand1, operand0);
+        return customTimestampMethod;
       default:
-        return Expressions.call(customDateMethod, translator.getRoot(),
-            operand1, operand0);
+        return customDateMethod;
       }
     }
   }

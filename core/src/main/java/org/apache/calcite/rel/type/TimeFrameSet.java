@@ -306,12 +306,50 @@ public class TimeFrameSet {
     return timestamp;
   }
 
-  public int diffDate(int date, int date2, TimeFrame timeFrame) {
-    return 0;
+  public int diffDate(int date, int date2, TimeFrame frame) {
+    final TimeFrame dayFrame = get(TimeUnit.DAY);
+    final BigFraction perDay = frame.per(dayFrame);
+    if (perDay != null
+        && perDay.getNumerator().equals(BigInteger.ONE)) {
+      final int m = perDay.getDenominator().intValueExact(); // 7 for WEEK
+      final int delta = date2 - date;
+      return floorDiv(delta, m);
+    }
+
+    final TimeFrame monthFrame = get(TimeUnit.MONTH);
+    final BigFraction perMonth = frame.per(monthFrame);
+    if (perMonth != null
+        && perMonth.getNumerator().equals(BigInteger.ONE)) {
+      final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
+      final int delta = DateTimeUtils.subtractMonths(date2, date);
+      return floorDiv(delta, m);
+    }
+
+    // TODO: do we need to handle ISO_YEAR?
+    return date;
   }
 
-  public long diffTimestamp(long timestamp, long timestamp2, TimeFrame timeFrame) {
-    return 0;
+  public long diffTimestamp(long timestamp, long timestamp2, TimeFrame frame) {
+    final TimeFrame msFrame = get(TimeUnit.MILLISECOND);
+    final BigFraction perMilli = frame.per(msFrame);
+    if (perMilli != null
+        && perMilli.getNumerator().equals(BigInteger.ONE)) {
+      // 1,000 for SECOND, 86,400,000 for DAY
+      final long m = perMilli.getDenominator().longValueExact();
+      final long delta = timestamp2 - timestamp;
+      return floorDiv(delta, m);
+    }
+    final TimeFrame monthFrame = get(TimeUnit.MONTH);
+    final BigFraction perMonth = frame.per(monthFrame);
+    if (perMonth != null
+        && perMonth.getNumerator().equals(BigInteger.ONE)) {
+      final long m = perMonth.getDenominator().longValueExact(); // e.g. 12 for YEAR
+      final long delta = DateTimeUtils.subtractMonths(timestamp2, timestamp);
+      return floorDiv(delta, m);
+    }
+
+    // TODO: do we need to handle ISO_YEAR?
+    return timestamp;
   }
 
   /** Builds a collection of time frames. */
