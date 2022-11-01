@@ -178,6 +178,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * null arguments or null results.</li>
  * </ul>
  */
+@SuppressWarnings("MethodCanBeStatic")
 public class SqlOperatorTest {
   //~ Static fields/initializers ---------------------------------------------
 
@@ -3141,7 +3142,7 @@ public class SqlOperatorTest {
     checkRlikeFails(f.withLibrary(SqlLibrary.ORACLE));
   }
 
-  void checkRlike(SqlOperatorFixture f) {
+  static void checkRlike(SqlOperatorFixture f) {
     f.checkBoolean("'Merrisa@gmail.com' rlike '.+@*\\.com'", true);
     f.checkBoolean("'Merrisa@gmail.com' rlike '.com$'", true);
     f.checkBoolean("'acbd' rlike '^ac+'", true);
@@ -3158,7 +3159,7 @@ public class SqlOperatorTest {
     f.checkBoolean("'Merrisa@gmail.com' not rlike 'Merrisa_'", true);
   }
 
-  void checkRlikeFails(SqlOperatorFixture f) {
+  static void checkRlikeFails(SqlOperatorFixture f) {
     final String noRlike = "(?s).*No match found for function signature RLIKE";
     f.checkFails("^'Merrisa@gmail.com' rlike '.+@*\\.com'^", noRlike, false);
     f.checkFails("^'acb' rlike 'acb|efg'^", noRlike, false);
@@ -5826,7 +5827,7 @@ public class SqlOperatorTest {
     checkSubstringFunction(f.withConformance(SqlConformanceEnum.BIG_QUERY));
   }
 
-  void checkSubstringFunction(SqlOperatorFixture f) {
+  private static void checkSubstringFunction(SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.SUBSTRING);
     f.checkString("substring('abc' from 1 for 2)",
         "ab", "VARCHAR(3) NOT NULL");
@@ -6221,7 +6222,7 @@ public class SqlOperatorTest {
     checkDecodeFunc(fixture().withLibrary(SqlLibrary.ORACLE));
   }
 
-  void checkDecodeFunc(SqlOperatorFixture f) {
+  private static void checkDecodeFunc(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.DECODE, VmName.EXPAND);
     f.checkScalar("decode(0, 0, 'a', 1, 'b', 2, 'c')", "a", "CHAR(1)");
     f.checkScalar("decode(1, 0, 'a', 1, 'b', 2, 'c')", "b", "CHAR(1)");
@@ -6461,7 +6462,7 @@ public class SqlOperatorTest {
     checkStringAggFuncFails(f.withLibrary(SqlLibrary.MYSQL));
   }
 
-  private void checkStringAggFunc(SqlOperatorFixture f) {
+  private static void checkStringAggFunc(SqlOperatorFixture f) {
     final String[] values = {"'x'", "null", "'yz'"};
     f.checkAgg("string_agg(x)", values, isSingle("x,yz"));
     f.checkAgg("string_agg(x,':')", values, isSingle("x:yz"));
@@ -6475,7 +6476,7 @@ public class SqlOperatorTest {
         false);
   }
 
-  private void checkStringAggFuncFails(SqlOperatorFixture f) {
+  private static void checkStringAggFuncFails(SqlOperatorFixture f) {
     final String[] values = {"'x'", "'y'"};
     f.checkAggFails("^string_agg(x)^", values,
         "No match found for function signature STRING_AGG\\(<CHARACTER>\\)",
@@ -6497,7 +6498,7 @@ public class SqlOperatorTest {
     checkGroupConcatFuncFails(f.withLibrary(SqlLibrary.POSTGRESQL));
   }
 
-  private void checkGroupConcatFunc(SqlOperatorFixture f) {
+  private static void checkGroupConcatFunc(SqlOperatorFixture f) {
     final String[] values = {"'x'", "null", "'yz'"};
     f.checkAgg("group_concat(x)", values, isSingle("x,yz"));
     f.checkAgg("group_concat(x,':')", values, isSingle("x:yz"));
@@ -6514,7 +6515,7 @@ public class SqlOperatorTest {
         false);
   }
 
-  private void checkGroupConcatFuncFails(SqlOperatorFixture t) {
+  private static void checkGroupConcatFuncFails(SqlOperatorFixture t) {
     final String[] values = {"'x'", "'y'"};
     t.checkAggFails("^group_concat(x)^", values,
         "No match found for function signature GROUP_CONCAT\\(<CHARACTER>\\)",
@@ -6536,7 +6537,7 @@ public class SqlOperatorTest {
     checkArrayAggFuncFails(f.withLibrary(SqlLibrary.MYSQL));
   }
 
-  private void checkArrayAggFunc(SqlOperatorFixture f) {
+  private static void checkArrayAggFunc(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.ARRAY_CONCAT_AGG, VM_FENNEL, VM_JAVA);
     final String[] values = {"'x'", "null", "'yz'"};
     f.checkAgg("array_agg(x)", values, isSingle("[x, yz]"));
@@ -6551,7 +6552,7 @@ public class SqlOperatorTest {
         isSingle("[yz, x]"));
   }
 
-  private void checkArrayAggFuncFails(SqlOperatorFixture t) {
+  private static void checkArrayAggFuncFails(SqlOperatorFixture t) {
     t.setFor(SqlLibraryOperators.ARRAY_CONCAT_AGG, VM_FENNEL, VM_JAVA);
     final String[] values = {"'x'", "'y'"};
     final String expectedError = "No match found for function signature "
@@ -6571,7 +6572,7 @@ public class SqlOperatorTest {
     checkArrayConcatAggFuncFails(f.withLibrary(SqlLibrary.MYSQL));
   }
 
-  void checkArrayConcatAggFunc(SqlOperatorFixture t) {
+  private static void checkArrayConcatAggFunc(SqlOperatorFixture t) {
     t.setFor(SqlLibraryOperators.ARRAY_CONCAT_AGG, VM_FENNEL, VM_JAVA);
     t.checkFails("array_concat_agg(^*^)",
         "(?s)Encountered \"\\*\" at .*", false);
@@ -6595,7 +6596,7 @@ public class SqlOperatorTest {
     t.checkAgg("array_concat_agg(x)", values2, isSingle("[0, 1, 1, 2]"));
   }
 
-  void checkArrayConcatAggFuncFails(SqlOperatorFixture t) {
+  private static void checkArrayConcatAggFuncFails(SqlOperatorFixture t) {
     t.setFor(SqlLibraryOperators.ARRAY_CONCAT_AGG, VM_FENNEL, VM_JAVA);
     final String[] values = {"'x'", "'y'"};
     final String expectedError = "No match found for function signature "
@@ -8491,7 +8492,7 @@ public class SqlOperatorTest {
     checkBoolAndFunc(f.withLibrary(SqlLibrary.POSTGRESQL));
   }
 
-  void checkBoolAndFunc(SqlOperatorFixture f) {
+  private static void checkBoolAndFunc(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.BOOL_AND, VM_EXPAND);
 
     f.checkFails("bool_and(^*^)", "Unknown identifier '\\*'", false);
@@ -8527,7 +8528,7 @@ public class SqlOperatorTest {
     checkBoolOrFunc(f.withLibrary(SqlLibrary.POSTGRESQL));
   }
 
-  void checkBoolOrFunc(SqlOperatorFixture f) {
+  private static void checkBoolOrFunc(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.BOOL_OR, VM_EXPAND);
 
     f.checkFails("bool_or(^*^)", "Unknown identifier '\\*'", false);
@@ -8563,7 +8564,7 @@ public class SqlOperatorTest {
     checkLogicalAndFunc(f.withLibrary(SqlLibrary.BIG_QUERY));
   }
 
-  void checkLogicalAndFunc(SqlOperatorFixture f) {
+  private static void checkLogicalAndFunc(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.LOGICAL_AND, VM_EXPAND);
 
     f.checkFails("logical_and(^*^)", "Unknown identifier '\\*'", false);
@@ -8599,7 +8600,7 @@ public class SqlOperatorTest {
     checkLogicalOrFunc(f.withLibrary(SqlLibrary.BIG_QUERY));
   }
 
-  void checkLogicalOrFunc(SqlOperatorFixture f) {
+  private static void checkLogicalOrFunc(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.LOGICAL_OR, VM_EXPAND);
 
     f.checkFails("logical_or(^*^)", "Unknown identifier '\\*'", false);

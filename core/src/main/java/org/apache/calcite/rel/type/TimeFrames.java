@@ -93,51 +93,6 @@ public class TimeFrames {
     return b;
   }
 
-  private void misc() {
-    // Avatica time units:
-
-    // ISOYEAR
-    // DOW
-    // ISODOW
-    // DOY
-    // EPOCH
-
-    // Other time units:
-    // HALF_DAY
-
-    // Looker time units:
-    // QUARTER
-    // RAW
-
-    // hourX, X in [2, 3, 4, 6, 8, 12], e.g. hour6 is a 6-hour segment.
-    // For example, a row with a time of '2014-09-01 08:03:17' would have an
-    // hour6 of '2014-09-01 06:00:00'.
-
-    // minuteX, X in [2, 3, 4, 5, 6, 10, 12, 15, 20, or 30]
-
-    // secondX,
-
-    // millisecondX, X in [2, 4, 5, 8, 10, 20, 25, 40, 50, 100, 125, 200, 250,
-    // 500].
-
-    // date, e.g. 2017-09-03
-
-    // week
-    // day_of_week, e.g. Monday
-    // day_of_week_index, e.g. 0 (Monday), 6 (Saturday)
-
-    // month, e.g. 2014-09
-    // month_num, e.g. 9
-    // fiscal_month_num, e.g. 9
-    // month_name, e.g. September
-    // day_of_month, e.g. 3
-
-    // year, e.g. 2017
-    // fiscal_year, e.g. FY2017
-    // day_of_year, e.g. 143
-    // week_of_year, e.g. 17
-  }
-
   /** Specialization of {@link org.apache.calcite.rel.type.TimeFrameSet.Builder}
    * for Avatica's built-in time frames. */
   private static class MyBuilder extends TimeFrameSet.Builder {
