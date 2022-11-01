@@ -6948,6 +6948,8 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.EXTRACT, VM_FENNEL, VM_JAVA);
 
+    f.checkFails("extract(^a^ from date '2008-2-23')",
+        "'A' is not a valid time frame", false);
     f.checkScalar("extract(epoch from date '2008-2-23')",
         "1203724800", // number of seconds elapsed since timestamp
         // '1970-01-01 00:00:00' for given date
@@ -7026,6 +7028,8 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.EXTRACT, VM_FENNEL, VM_JAVA);
 
+    f.checkFails("extract(^a^ from timestamp '2008-2-23 12:34:56')",
+        "'A' is not a valid time frame", false);
     f.checkScalar("extract(epoch from timestamp '2008-2-23 12:34:56')",
         "1203770096", // number of seconds elapsed since timestamp
         // '1970-01-01 00:00:00' for given date
@@ -7082,9 +7086,12 @@ public class SqlOperatorTest {
         "2", "BIGINT NOT NULL");
   }
 
-  @Test void testExtractFunc() {
+  @Test void testExtractInterval() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.EXTRACT, VM_FENNEL, VM_JAVA);
+
+    f.checkFails("extract(^a^ from interval '2 3:4:5.678' day to second)",
+        "'A' is not a valid time frame", false);
     f.checkScalar("extract(day from interval '2 3:4:5.678' day to second)",
         "2", "BIGINT NOT NULL");
     f.checkScalar("extract(day from interval '23456 3:4:5.678' day(5) to second)",
@@ -7776,16 +7783,14 @@ public class SqlOperatorTest {
             isNullValue(), "INTEGER"));
   }
 
+  /** The {@code DATEDIFF} function is implemented in the Babel parser but not
+   * the Core parser, and therefore gives validation errors. */
   @Test void testDateDiff() {
-    final SqlOperatorFixture f0 = fixture()
+    final SqlOperatorFixture f = fixture()
         .setFor(SqlLibraryOperators.DATEDIFF);
-    f0.checkFails("datediff(^MONTH^, '2019-09-14',  '2019-09-15')",
-        "(?s)Incorrect syntax near the keyword 'MONTH' at .*",
+    f.checkFails("datediff(^\"MONTH\"^, '2019-09-14',  '2019-09-15')",
+        "(?s)Column 'MONTH' not found in any table",
         false);
-
-    final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.MSSQL);
-    f.checkScalar("datediff(\"MONTH\", '2019-09-14',  '2019-09-15')",
-        "12:34:56", "TIME(0) NOT NULL");
   }
 
   @Test void testTimeTrunc() {

@@ -140,7 +140,8 @@ class BabelTest {
         .fails("(?s).*Encountered \":\" at .*");
   }
 
-  /** Tests that DATEADD, DATEDIFF, DATE_PART allow custom time frames. */
+  /** Tests that DATEADD, DATEDIFF, DATEPART, DATE_PART allow custom time
+   * frames. */
   @Test void testTimeFrames() {
     final SqlValidatorFixture f = Fixtures.forValidator()
         .withParserConfig(p -> p.withParserFactory(SqlBabelParserImpl.FACTORY))
@@ -170,9 +171,23 @@ class BabelTest {
         .fails("'A' is not a valid time frame");
     f.withSql("SELECT DATEDIFF(minute15, " + ts + ", " + ts2 + ")")
         .ok();
-    f.withSql("SELECT DATE_PART(^A^, " + ts + ")")
+    f.withSql("SELECT DATEPART(^A^, " + ts + ")")
         .fails("'A' is not a valid time frame");
-    f.withSql("SELECT DATE_PART(minute15, " + ts + ")")
+    f.withSql("SELECT DATEPART(minute15, " + ts + ")")
+        .ok();
+
+    // Where DATEPART is MSSQL, DATE_PART is Postgres
+    f.withSql("SELECT ^DATE_PART(A, " + ts + ")^")
+        .fails("No match found for function signature "
+            + "DATE_PART\\(<INTERVAL_DAY_TIME>, <TIMESTAMP>\\)");
+    final SqlValidatorFixture f2 =
+        f.withOperatorTable(operatorTableFor(SqlLibrary.POSTGRESQL));
+    f2.withSql("SELECT ^DATEPART(A, " + ts + ")^")
+        .fails("No match found for function signature "
+            + "DATEPART\\(<INTERVAL_DAY_TIME>, <TIMESTAMP>\\)");
+    f2.withSql("SELECT DATE_PART(^A^, " + ts + ")")
+        .fails("'A' is not a valid time frame");
+    f2.withSql("SELECT DATE_PART(minute15, " + ts + ")")
         .ok();
   }
 

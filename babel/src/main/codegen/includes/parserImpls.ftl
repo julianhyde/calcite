@@ -51,9 +51,10 @@ SqlNode DateaddFunctionCall() :
     SqlNode e;
 }
 {
-    (   <DATEADD> { op = SqlLibraryOperators.DATEADD; }
+    (   <DATE_PART>  { op = SqlLibraryOperators.DATE_PART; }
+    |   <DATEADD> { op = SqlLibraryOperators.DATEADD; }
     |   <DATEDIFF> { op = SqlLibraryOperators.DATEDIFF; }
-    |   <DATE_PART>  { op = SqlLibraryOperators.DATE_PART; }
+    |   <DATEPART>  { op = SqlLibraryOperators.DATEPART; }
     )
     { s = span(); }
     <LPAREN> unit = TimeUnitOrName() {
@@ -174,6 +175,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     < DATE_PART: "DATE_PART" >
 |   < DATEADD: "DATEADD" >
 |   < DATEDIFF: "DATEDIFF" >
+|   < DATEPART: "DATEPART" >
 |   < NEGATE: "!" >
 |   < TILDE: "~" >
 }
