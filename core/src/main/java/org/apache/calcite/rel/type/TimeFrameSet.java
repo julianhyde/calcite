@@ -281,7 +281,7 @@ public class TimeFrameSet {
       return SqlFunctions.addMonths(date, interval * m);
     }
 
-    // TODO: do we need to handle ISO_YEAR?
+    // Unknown time frame. Return the original value unchanged.
     return date;
   }
 
@@ -302,7 +302,7 @@ public class TimeFrameSet {
       return SqlFunctions.addMonths(timestamp, (int) (interval * m));
     }
 
-    // TODO: do we need to handle ISO_YEAR?
+    // Unknown time frame. Return the original value unchanged.
     return timestamp;
   }
 
@@ -325,7 +325,7 @@ public class TimeFrameSet {
       return floorDiv(delta, m);
     }
 
-    // TODO: do we need to handle ISO_YEAR?
+    // Unknown time frame. Return the original value unchanged.
     return date;
   }
 
@@ -348,7 +348,7 @@ public class TimeFrameSet {
       return floorDiv(delta, m);
     }
 
-    // TODO: do we need to handle ISO_YEAR?
+    // Unknown time frame. Return the original value unchanged.
     return timestamp;
   }
 
