@@ -4914,4 +4914,17 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + ")")
         .ok();
   }
+
+  @Test public void testQualifyInCorrelatedSubquery() {
+    // The QUALIFY clause is inside of a WHERE EXISTS and references columns from the enclosing query.
+    sql("SELECT * "
+        + "FROM emp "
+        + "WHERE EXISTS("
+        + " SELECT name"
+        + " FROM dept "
+        + " QUALIFY RANK() OVER (PARTITION BY name ORDER BY dept.deptno DESC) = emp.deptno"
+        + ")")
+        .withConformance(SqlConformanceEnum.LENIENT)
+        .ok();
+  }
 }
