@@ -189,7 +189,7 @@ public abstract class OperandTypes {
         new SqlSingleOperandTypeChecker[operandCount];
     Arrays.fill(rules, ANY);
     rules[ordinal] = rule;
-    return sequence(null, rules);
+    return sequence("", rules);
   }
 
   // ----------------------------------------------------------------------
