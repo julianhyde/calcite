@@ -20,6 +20,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.calcite.util.MonotonicSupplier;
 import org.apache.calcite.util.NameMap;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimestampString;
@@ -40,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static org.apache.calcite.avatica.util.DateTimeUtils.EPOCH_JULIAN;
 import static org.apache.calcite.avatica.util.DateTimeUtils.MILLIS_PER_DAY;
@@ -59,7 +61,6 @@ public class TimeFrameSet {
     this.map = requireNonNull(map, "map");
     this.nameMap = NameMap.immutableCopyOf(map);
     this.rollupMap = requireNonNull(rollupMap, "rollupMap");
-    map.values().forEach(k -> k.frameSet = this);
   }
 
   /** Creates a Builder. */
@@ -357,12 +358,17 @@ public class TimeFrameSet {
     Builder() {
     }
 
+    final MonotonicSupplier<TimeFrameSet> frameSetSupplier =
+        new MonotonicSupplier<>();
     final Map<String, TimeFrameImpl> map = new LinkedHashMap<>();
     final ImmutableMultimap.Builder<TimeFrameImpl, TimeFrameImpl> rollupList =
         ImmutableMultimap.builder();
 
     public TimeFrameSet build() {
-      return new TimeFrameSet(ImmutableMap.copyOf(map), rollupList.build());
+      final TimeFrameSet frameSet =
+          new TimeFrameSet(ImmutableMap.copyOf(map), rollupList.build());
+      frameSetSupplier.accept(frameSet);
+      return frameSet;
     }
 
     /** Converts a number to an exactly equivalent {@code BigInteger}.
@@ -373,7 +379,7 @@ public class TimeFrameSet {
     }
 
     public Builder addCore(String name) {
-      map.put(name, new CoreFrame(name));
+      map.put(name, new CoreFrame(frameSetSupplier, name));
       return this;
     }
 
@@ -447,7 +453,9 @@ public class TimeFrameSet {
 
     /** Replaces the epoch of the most recently added frame. */
     public Builder withEpoch(TimestampString epoch) {
-      final String name = Iterables.getLast(map.keySet());
+      final Map.Entry<String, TimeFrameImpl> entry =
+          Iterables.getLast(map.entrySet());
+      final String name = entry.getKey();
       final SubFrame value =
           requireNonNull((SubFrame) map.remove(name));
       value.replicateWithEpoch(this, epoch);
@@ -474,12 +482,11 @@ public class TimeFrameSet {
   /** Implementation of {@link TimeFrame}. */
   abstract static class TimeFrameImpl implements TimeFrame {
     final String name;
+    final Supplier<TimeFrameSet> frameSetSupplier;
 
-    /** Mutable, set on build, and then not re-assigned. Ideally this would be
-     * final. */
-    private TimeFrameSet frameSet;
-
-    TimeFrameImpl(String name) {
+    TimeFrameImpl(Supplier<TimeFrameSet> frameSetSupplier, String name) {
+      this.frameSetSupplier =
+          requireNonNull(frameSetSupplier, "frameSetSupplier");
       this.name = requireNonNull(name, "name");
     }
 
@@ -488,7 +495,7 @@ public class TimeFrameSet {
     }
 
     @Override public TimeFrameSet frameSet() {
-      return requireNonNull(frameSet, "frameSet");
+      return frameSetSupplier.get();
     }
 
     @Override public String name() {
@@ -534,6 +541,7 @@ public class TimeFrameSet {
         if (canDirectlyRollUp(this, toFrame1)) {
           return true;
         }
+        final TimeFrameSet frameSet = frameSet();
         if (frameSet.rollupMap.entries().contains(Pair.of(this, toFrame1))) {
           return true;
         }
@@ -589,8 +597,8 @@ public class TimeFrameSet {
 
   /** Core time frame (such as SECOND, MONTH, ISOYEAR). */
   static class CoreFrame extends TimeFrameImpl {
-    CoreFrame(String name) {
-      super(name);
+    CoreFrame(Supplier<TimeFrameSet> frameSetSupplier, String name) {
+      super(frameSetSupplier, name);
     }
 
     @Override void replicate(Builder b) {
@@ -649,7 +657,7 @@ public class TimeFrameSet {
     SubFrame(String name, TimeFrameImpl base, boolean divide,
         BigInteger multiplier, CoreFrame coreFrame,
         BigFraction coreMultiplier, TimestampString epoch) {
-      super(name);
+      super(base.frameSetSupplier, name);
       this.base = requireNonNull(base, "base");
       this.divide = divide;
       this.multiplier = requireNonNull(multiplier, "multiplier");
@@ -711,7 +719,7 @@ public class TimeFrameSet {
 
     QuotientFrame(String name, TimeFrameImpl minorFrame,
         TimeFrameImpl majorFrame) {
-      super(name);
+      super(minorFrame.frameSetSupplier, name);
       this.minorFrame = requireNonNull(minorFrame, "minorFrame");
       this.majorFrame = requireNonNull(majorFrame, "majorFrame");
     }
@@ -734,7 +742,7 @@ public class TimeFrameSet {
     private final TimeFrameImpl frame;
 
     AliasFrame(String name, TimeFrameImpl frame) {
-      super(name);
+      super(frame.frameSetSupplier, name);
       this.frame = requireNonNull(frame, "frame");
     }
 
@@ -750,4 +758,5 @@ public class TimeFrameSet {
       throw new UnsupportedOperationException();
     }
   }
+
 }

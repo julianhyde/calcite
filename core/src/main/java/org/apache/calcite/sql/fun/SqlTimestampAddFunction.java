@@ -76,13 +76,14 @@ public class SqlTimestampAddFunction extends SqlFunction {
       @Nullable TimeUnit timeUnit, RelDataType operandType1,
       RelDataType operandType2) {
     final RelDataType type;
-    switch (first(timeUnit, TimeUnit.EPOCH)) {
+    TimeUnit timeUnit2 = first(timeUnit, TimeUnit.EPOCH);
+    switch (timeUnit2) {
     case HOUR:
     case MINUTE:
     case SECOND:
     case MILLISECOND:
     case MICROSECOND:
-      switch (timeUnit) {
+      switch (timeUnit2) {
       case MILLISECOND:
         type = typeFactory.createSqlType(SqlTypeName.TIMESTAMP,
             MILLISECOND_PRECISION);
