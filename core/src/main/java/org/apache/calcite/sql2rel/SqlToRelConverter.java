@@ -5364,6 +5364,7 @@ public class SqlToRelConverter {
      * Converts an item in an ORDER BY clause inside a window (OVER) clause,
      * extracting DESC, NULLS LAST and NULLS FIRST flags first.
      */
+    @Deprecated // to be removed before 2.0
     public RexFieldCollation convertSortExpression(SqlNode expr,
         RelFieldCollation.Direction direction,
         RelFieldCollation.NullDirection nullDirection) {
@@ -5392,6 +5393,8 @@ public class SqlToRelConverter {
       }
     }
 
+    // Only used by deprecated method "convertSortExpression", and will be
+    // removed with that method.
     private RexFieldCollation sortToRexFieldCollation(SqlNode expr,
         RelFieldCollation.Direction direction,
         RelFieldCollation.NullDirection nullDirection) {
