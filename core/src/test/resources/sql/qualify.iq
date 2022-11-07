@@ -18,4 +18,82 @@
 !set outputformat oracle
 !use scott
 
+# Test QUALIFY without any references
+SELECT empno, ename, deptno
+FROM "scott".emp
+QUALIFY ROW_NUMBER() over (partition by ename order by deptno) = 1;
+EMPNO ENAME  DEPTNO
+----- ------ ------
+ 7369 SMITH      20
+ 7499 ALLEN      30
+ 7521 WARD       30
+ 7566 JONES      20
+ 7654 MARTIN     30
+ 7698 BLAKE      30
+ 7782 CLARK      10
+ 7788 SCOTT      20
+ 7839 KING       10
+ 7844 TURNER     30
+ 7876 ADAMS      20
+ 7900 JAMES      30
+ 7902 FORD       20
+ 7934 MILLER     10
+
+14 rows selected.
+
+!ok
+
+# Test QUALIFY without any references but with regular filter
+SELECT empno, ename, deptno
+FROM "scott".emp
+WHERE deptno > 20
+QUALIFY ROW_NUMBER() over (partition by ename order by deptno) = 1;
+EMPNO ENAME  DEPTNO
+----- ------ ------
+ 7499 ALLEN      30
+ 7521 WARD       30
+ 7654 MARTIN     30
+ 7698 BLAKE      30
+ 7844 TURNER     30
+ 7900 JAMES      30
+
+6 rows selected.
+
+!ok
+
+# Test QUALIFY with references
+SELECT empno, ename, deptno, ROW_NUMBER() over (partition by ename order by deptno) as row_num
+FROM "scott".emp
+QUALIFY row_num = 1;
+EMPNO ENAME  DEPTNO ROW_NUM
+----- ------ ------ -------
+ 7369 SMITH      20       1
+ 7499 ALLEN      30       1
+ 7521 WARD       30       1
+ 7566 JONES      20       1
+ 7654 MARTIN     30       1
+ 7698 BLAKE      30       1
+ 7782 CLARK      10       1
+ 7788 SCOTT      20       1
+ 7839 KING       10       1
+ 7844 TURNER     30       1
+ 7876 ADAMS      20       1
+ 7900 JAMES      30       1
+ 7902 FORD       20       1
+ 7934 MILLER     10       1
+
+14 rows selected.
+
+!ok
+
+# Test QUALIFY with WINDOW clause
+SELECT empno, ename, deptno, SUM(deptno) OVER myWindow as sumDeptNo
+FROM "scott".emp
+WINDOW myWindow AS (PARTITION BY ename ORDER BY empno)
+QUALIFY sumDeptNo = 1;
+
+no rows selected
+
+!ok
+
 # End qualify.iq
