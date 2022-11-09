@@ -1154,9 +1154,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   protected void validateNamespace(final SqlValidatorNamespace namespace,
       RelDataType targetRowType) {
     namespace.validate(targetRowType);
-    SqlNode node = namespace.getNode();
+    final SqlNode node = namespace.getNode();
     if (node != null) {
-      setValidatedNodeType(node, namespace.getType());
+      RelDataType type = namespace.getType();
+      if (node == top) {
+        type = SqlTypeUtil.fromMeasure(typeFactory, type);
+      }
+      setValidatedNodeType(node, type);
     }
   }
 
