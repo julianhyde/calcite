@@ -19,6 +19,7 @@ package org.apache.calcite.sql;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeTransforms;
 
 /**
  * The {@code MEASURE} wraps an expression in the {@code SELECT} clause and tags
@@ -34,7 +35,8 @@ public class SqlMeasureOperator extends SqlInternalOperator {
    * Creates a MEASURE operator.
    */
   public SqlMeasureOperator() {
-    super("MEASURE", SqlKind.MEASURE, 20, true, ReturnTypes.ARG0,
+    super("MEASURE", SqlKind.MEASURE, 20, true,
+        ReturnTypes.ARG0.andThen(SqlTypeTransforms.TO_MEASURE),
         InferTypes.RETURN_TYPE, OperandTypes.ANY);
   }
 
