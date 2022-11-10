@@ -1915,7 +1915,7 @@ SqlInsert WhenNotMatchedClause(SqlNode table) :
  */
 void AddSelectItem(List<SqlNode> list) :
 {
-    final SqlNode e;
+    SqlNode e;
     final SqlIdentifier id;
 }
 {
