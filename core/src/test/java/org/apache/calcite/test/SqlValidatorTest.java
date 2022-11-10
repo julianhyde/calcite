@@ -3839,7 +3839,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "from empm";
     f.withSql(sql2)
         .type("RecordType(INTEGER NOT NULL DEPTNO, "
-            + "MEASURE<INTEGER NOT NULL> NOT NULL COUNT_PLUS_100, "
+            + "INTEGER NOT NULL COUNT_PLUS_100, "
             + "VARCHAR(20) NOT NULL ENAME) NOT NULL")
         .isAggregate(is(false));
     f2.withSql(sql2).fails(measureIllegal2);
@@ -3876,18 +3876,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .isAggregate(is(false));
   }
 
-  @Test void testTodo() {
-    sql("select deptno, aggregate(count_plus_100), ename\n"
-        + "from (\n"
-        + "  select ename, deptno, sal,\n"
-        + "      count(ename) + 100 as measure count_plus_100\n"
-        + "  from emp)\n"
-        + "group by deptno, ename")
-        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
-        .type("RecordType(INTEGER NOT NULL DEPTNO, "
-            + "xBIGINT NOT NULL EXPR$1, "
-            + "VARCHAR(20) NOT NULL ENAME) NOT NULL");
-  }
   @Test void testAsMeasure() {
     // various kinds of measure expressions
     sql("select deptno, empno + 1 as measure e1 from emp").ok();
