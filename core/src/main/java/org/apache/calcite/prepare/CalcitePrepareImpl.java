@@ -99,6 +99,7 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.type.ExtraSqlTypes;
+import org.apache.calcite.sql.type.MeasureSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -786,7 +787,13 @@ public class CalcitePrepareImpl implements CalcitePrepare {
 
   private static ColumnMetaData.AvaticaType avaticaType(JavaTypeFactory typeFactory,
       RelDataType type, @Nullable RelDataType fieldType) {
-    final String typeName = getTypeName(type);
+    final String typeName;
+    if (type instanceof MeasureSqlType) {
+      type = requireNonNull(type.getComponentType(), "measure type");
+      typeName = "MEASURE<" + getTypeName(type) + ">";
+    } else {
+      typeName = getTypeName(type);
+    }
     if (type.getComponentType() != null) {
       final ColumnMetaData.AvaticaType componentType =
           avaticaType(typeFactory, type.getComponentType(), null);
@@ -855,6 +862,10 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     case MAP:
     case ROW:
       return type.toString(); // e.g. "INTEGER ARRAY"
+    case MEASURE:
+      final String subTypeName =
+          getTypeName(((MeasureSqlType) type).getComponentType());
+      return "MEASURE<" + subTypeName + ">";
     case INTERVAL_YEAR_MONTH:
       return "INTERVAL_YEAR_TO_MONTH";
     case INTERVAL_DAY_HOUR:
