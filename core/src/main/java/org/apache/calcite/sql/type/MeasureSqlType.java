@@ -19,6 +19,7 @@ package org.apache.calcite.sql.type;
 import org.apache.calcite.rel.type.RelDataType;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 /**
  * Measure SQL type.
@@ -34,7 +35,7 @@ public class MeasureSqlType extends ApplySqlType {
   }
 
   @Override public RelDataType getMeasureElementType() {
-    return types.get(0);
+    return Iterables.getOnlyElement(types);
   }
 
   /** Creates a MeasureSqlType. */
