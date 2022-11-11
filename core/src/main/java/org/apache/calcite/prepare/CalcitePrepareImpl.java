@@ -131,6 +131,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -176,21 +177,22 @@ public class CalcitePrepareImpl implements CalcitePrepare {
 
   @Override public ParseResult parse(
       Context context, String sql) {
-    return parse_(context, sql, false, false, false);
+    return parse_(context, sql, false, false, false, false);
   }
 
   @Override public ConvertResult convert(Context context, String sql) {
-    return (ConvertResult) parse_(context, sql, true, false, false);
+    return (ConvertResult) parse_(context, sql, true, false, false, false);
   }
 
-  @Override public AnalyzeViewResult analyzeView(Context context, String sql, boolean fail) {
-    return (AnalyzeViewResult) parse_(context, sql, true, true, fail);
+  @Override public AnalyzeViewResult analyzeView(Context context, String sql,
+      boolean fail) {
+    return (AnalyzeViewResult) parse_(context, sql, true, true, fail, true);
   }
 
   /** Shared implementation for {@link #parse}, {@link #convert} and
    * {@link #analyzeView}. */
   private ParseResult parse_(Context context, String sql, boolean convert,
-      boolean analyze, boolean fail) {
+      boolean analyze, boolean fail, boolean embedded) {
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     CalciteCatalogReader catalogReader =
         new CalciteCatalogReader(
@@ -205,7 +207,9 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     } catch (SqlParseException e) {
       throw new RuntimeException("parse failed", e);
     }
-    final SqlValidator validator = createSqlValidator(context, catalogReader);
+    final SqlValidator validator =
+        createSqlValidator(context, catalogReader,
+            c -> c.withEmbedded(embedded));
     SqlNode sqlNode1 = validator.validate(sqlNode);
     if (convert) {
       return convert_(
@@ -733,7 +737,8 @@ public class CalcitePrepareImpl implements CalcitePrepare {
   }
 
   private static SqlValidator createSqlValidator(Context context,
-      CalciteCatalogReader catalogReader) {
+      CalciteCatalogReader catalogReader,
+      UnaryOperator<SqlValidator.Config> configTransform) {
     final SqlOperatorTable opTab0 =
         context.config().fun(SqlOperatorTable.class,
             SqlStdOperatorTable.instance());
@@ -743,11 +748,13 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     final SqlOperatorTable opTab = SqlOperatorTables.chain(list);
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     final CalciteConnectionConfig connectionConfig = context.config();
-    final SqlValidator.Config config = SqlValidator.Config.DEFAULT
-        .withLenientOperatorLookup(connectionConfig.lenientOperatorLookup())
-        .withConformance(connectionConfig.conformance())
-        .withDefaultNullCollation(connectionConfig.defaultNullCollation())
-        .withIdentifierExpansion(true);
+    final SqlValidator.Config config =
+        configTransform.apply(
+            SqlValidator.Config.DEFAULT
+                .withLenientOperatorLookup(connectionConfig.lenientOperatorLookup())
+                .withConformance(connectionConfig.conformance())
+                .withDefaultNullCollation(connectionConfig.defaultNullCollation())
+                .withIdentifierExpansion(true));
     return new CalciteSqlValidator(opTab, catalogReader, typeFactory,
         config);
   }
@@ -1121,7 +1128,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
 
     protected SqlValidator createSqlValidator(CatalogReader catalogReader) {
       return CalcitePrepareImpl.createSqlValidator(context,
-          (CalciteCatalogReader) catalogReader);
+          (CalciteCatalogReader) catalogReader, UnaryOperator.identity());
     }
 
     @Override protected SqlValidator getSqlValidator() {
