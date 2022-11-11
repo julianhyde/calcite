@@ -1122,7 +1122,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     default:
       break;
     }
-    if (node == top) {
+    if (node == top && !config.embedded()) {
       validateModality(node);
     }
     validateAccess(
@@ -1146,7 +1146,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final SqlNode node = namespace.getNode();
     if (node != null) {
       RelDataType type = namespace.getType();
-      if (node == top) {
+      if (node == top && !config.embedded()) {
         type = SqlTypeUtil.fromMeasure(typeFactory, type);
       }
       setValidatedNodeType(node, type);
