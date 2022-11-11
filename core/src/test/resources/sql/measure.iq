@@ -18,6 +18,49 @@
 !set outputformat mysql
 !use scott
 
+# View with one measure
+create view empm as
+select *, 1 as measure avg_sal
+from emp;
+(0 rows modified)
+
+!update
+
+!if (viewExpand) {
+# Aggregate query with naked measure
+select job, avg_sal as a
+from empm
+group by job;
+!ok
+
+# Equivalent using AGGREGATE
+select job, aggregate(avg_sal) as a
+from empm
+group by job;
+!ok
+!}
+
+# AGGREGATE may not be applied to non-measure
+select aggregate(deptno)
+from empm
+group by job;
+Argument to function 'AGGREGATE' must be a measure
+!error
+
+# AGGREGATE makes a query into an aggregate query, and therefore non-grouped
+# columns are illegal.
+select aggregate(avg_sal) as a, deptno
+from empm;
+Expression 'DEPTNO' is not being grouped
+!error
+
+!if (viewExpand) {
+# As above, but without AGGREGATE, is valid.
+select avg_sal as a, deptno
+from empm;
+!ok
+!}
+
 # Measure that references another measure
 select *
 from (

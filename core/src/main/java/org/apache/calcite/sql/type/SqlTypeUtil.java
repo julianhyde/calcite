@@ -1854,7 +1854,7 @@ public abstract class SqlTypeUtil {
       // Avoid the effort of re-creating the same type
       return changeCount == 0 ? type : builder.build();
     }
-    if (type.getSqlTypeName() == SqlTypeName.MEASURE) {
+    if (type.isMeasure()) {
       return ((MeasureSqlType) type).types.get(0);
     }
     return type;
