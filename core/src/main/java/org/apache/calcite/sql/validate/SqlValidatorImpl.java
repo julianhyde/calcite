@@ -4624,31 +4624,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return typeFactory.createStructType(fieldList);
   }
 
-  /** Returns whether a select item is a measure.
-   *
-   * <p>TODO: Unify with {@link SqlValidatorScope#isMeasureRef(SqlNode)}? */
-  private boolean isMeasure(SqlNode selectItem) {
-    return getMeasure(selectItem) != null;
-  }
-
-  /** Returns the measure expression if a select item is a measure, null
-   * otherwise.
-   *
-   * <p>For a mesaure, {@code selectItem} will have the form
-   * {@code AS(MEASURE(exp), alias)} and this method returns {@code exp}. */
-  @SuppressWarnings({"SwitchStatementWithTooFewBranches", "MissingCasesInEnumSwitch"})
-  private @Nullable SqlNode getMeasure(SqlNode selectItem) {
-    switch (selectItem.getKind()) {
-    case AS:
-      final SqlBasicCall call = (SqlBasicCall) selectItem;
-      switch (call.operand(0).getKind()) {
-      case MEASURE:
-        return ((SqlBasicCall) call.operand(0)).operand(0);
-      }
-    }
-    return null;
-  }
-
   /**
    * Validates an expression.
    *
