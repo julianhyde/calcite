@@ -3946,27 +3946,35 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
     // non-measures don't even see measures - fall back to columns
     final String intVarcharType =
-        "RecordType(MEASURE<INTEGER NOT NULL> NOT NULL ENAME,"
+        "RecordType(INTEGER NOT NULL ENAME,"
             + " VARCHAR(20) NOT NULL N) NOT NULL";
     final String intVarcharmType =
-        "RecordType(MEASURE<INTEGER NOT NULL> NOT NULL ENAME,"
-            + " MEASURE<VARCHAR(20) NOT NULL> NOT NULL N) NOT NULL";
+        "RecordType(INTEGER NOT NULL ENAME,"
+            + " VARCHAR(20) NOT NULL N) NOT NULL";
     sql("select\n"
         + "  deptno + 1 as measure ename,\n"
         + "  ename as n\n"
         + "from emp")
-        .type(intVarcharType);
+        .type(intVarcharType)
+        .assertMeasure(0, is(true))
+        .assertMeasure(1, is(false));
     final String intIntType =
-        "RecordType(MEASURE<INTEGER NOT NULL> NOT NULL ENAME,"
-            + " MEASURE<INTEGER NOT NULL> NOT NULL N) NOT NULL";
+        "RecordType(INTEGER NOT NULL ENAME,"
+            + " INTEGER NOT NULL N) NOT NULL";
     sql("select\n"
         + "  deptno + 1 as measure ename,\n"
         + "  ename as measure n\n"
-        + "from emp").type(intIntType);
+        + "from emp")
+        .type(intIntType)
+        .assertMeasure(0, is(true))
+        .assertMeasure(1, is(true));
     sql("select\n"
         + "  deptno + 1 as measure ename,\n"
         + "  min(ename) as measure n\n"
-        + "from emp").type(intIntType);
+        + "from emp")
+        .type(intIntType)
+        .assertMeasure(0, is(true))
+        .assertMeasure(1, is(true));
     // measure can reference column by qualifying with table alias
     sql("select\n"
         + "  deptno + 1 as measure ename,\n"
@@ -3980,7 +3988,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     // without the 't.' qualifier, this would be an illegal cyclic reference
     sql("select t.uno as measure uno\n"
         + "from (select deptno, 1 as uno from emp) as t")
-        .type("RecordType(MEASURE<INTEGER NOT NULL> NOT NULL UNO) NOT NULL");
+        .type("RecordType(INTEGER NOT NULL UNO) NOT NULL")
+        .assertMeasure(0, is(true));
 
     // cyclic
     sql("select ^six^ - 5 as measure uno, 2 + uno as measure three,\n"
@@ -4022,9 +4031,12 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "      count(ename) + 100 as measure count_plus_100\n"
         + "  from emp)")
         .type("RecordType(INTEGER NOT NULL DEPTNO, "
-            + "MEASURE<BIGINT NOT NULL> NOT NULL COUNT_PLUS_100, "
+            + "BIGINT NOT NULL COUNT_PLUS_100, "
             + "VARCHAR(20) NOT NULL ENAME) NOT NULL")
-        .isAggregate(is(false));
+        .isAggregate(is(false))
+        .assertMeasure(0, is(false))
+        .assertMeasure(1, is(false))
+        .assertMeasure(2, is(false));
 
     // as above, wrapping the measure in AGGREGATE
     sql("select deptno, aggregate(count_plus_100), ename\n"
