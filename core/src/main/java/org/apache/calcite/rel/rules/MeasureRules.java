@@ -169,9 +169,12 @@ public abstract class MeasureRules {
     ProjectMeasureRuleConfig DEFAULT = ImmutableProjectMeasureRuleConfig.of()
         .withOperandSupplier(b ->
             b.operand(Aggregate.class)
+                .predicate(aggregate ->
+                    aggregate.getAggCallList().stream().allMatch(c ->
+                        c.getAggregation() == SqlStdOperatorTable.SINGLE_VALUE))
                 .oneInput(b2 ->
                     b2.operand(Project.class)
-//                        .predicate(RexUtil.find(SqlKind.V2M)::inProject)
+                        .predicate(RexUtil.find(SqlKind.V2M)::inProject)
                         .anyInputs()));
 
     @Override default ProjectMeasureRule toRule() {
@@ -210,14 +213,13 @@ public abstract class MeasureRules {
     @Override public void onMatch(RelOptRuleCall call) {
       final Aggregate aggregate = call.rel(0);
       final Project project = call.rel(1);
-      final List<RexNode> nodes =
-          Util.transform(aggregate.getAggCallList(),
-              aggregateCall -> toRex(aggregateCall, project));
       final RelBuilder b = call.builder();
-      b.push(aggregate.getInput())
+      b.push(project)
           .aggregateRex(
               b.groupKey(aggregate.getGroupSet(), aggregate.getGroupSets()),
-              false, nodes);
+              true,
+              Util.transform(aggregate.getAggCallList(),
+                  aggregateCall -> toRex(aggregateCall, project)));
       call.transformTo(b.build());
     }
 
