@@ -63,6 +63,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.sql.type.SqlTypeUtil.fromMeasure;
 
 /**
  * Converts expressions to aggregates.
@@ -245,8 +246,10 @@ class AggConverter implements SqlVisitor<Void> {
       final SqlCall call =
           SqlInternalOperators.AGG_M2V.createCall(SqlParserPos.ZERO, id);
       final SqlValidator validator = bb.getValidator();
-      validator.setValidatedNodeType(call,
-          validator.getValidatedNodeType(id));
+      final RelDataType measureType = validator.getValidatedNodeType(id);
+      final RelDataTypeFactory typeFactory = bb.getTypeFactory();
+      final RelDataType valueType = fromMeasure(typeFactory, measureType);
+      validator.setValidatedNodeType(call, valueType);
       translateAgg(call);
     }
     return null;
@@ -497,6 +500,9 @@ class AggConverter implements SqlVisitor<Void> {
 
     SqlAggFunction aggFunction =
         (SqlAggFunction) call.getOperator();
+    if (aggFunction == SqlLibraryOperators.AGGREGATE) {
+      aggFunction = SqlInternalOperators.AGG_M2V;
+    }
     final RelDataType type = bb.getValidator().deriveType(bb.scope, call);
     boolean distinct = false;
     SqlLiteral quantifier = call.getFunctionQuantifier();
