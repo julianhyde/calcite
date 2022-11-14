@@ -5987,10 +5987,11 @@ public class SqlToRelConverter {
 
     @Override public Void visit(SqlIdentifier id) {
       if (isMeasureExpr(id)) {
-        SqlCall call =
+        final SqlCall call =
             SqlInternalOperators.AGG_M2V.createCall(SqlParserPos.ZERO, id);
-        validator().setValidatedNodeType(call,
-            validator().getValidatedNodeType(id));
+        final RelDataType measureType = validator().getValidatedNodeType(id);
+        final RelDataType valueType = fromMeasure(typeFactory, measureType);
+        validator().setValidatedNodeType(call, valueType);
         translateAgg(call);
       }
       return null;
@@ -6083,7 +6084,6 @@ public class SqlToRelConverter {
         @Nullable SqlNodeList distinctList, @Nullable SqlNodeList orderList,
         boolean ignoreNulls, SqlCall outerCall) {
       assert bb.agg == this;
-      assert outerCall != null;
       final List<SqlNode> operands = call.getOperandList();
       final SqlParserPos pos = call.getParserPosition();
       final SqlCall call2;

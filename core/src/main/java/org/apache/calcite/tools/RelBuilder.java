@@ -2476,14 +2476,25 @@ public class RelBuilder {
 
   /** Creates an {@link Aggregate} with a set of hybrid expressions represented
    * as {@link RexNode}. */
-  public RelBuilder aggregateRex(GroupKey groupKey, Iterable<RexNode> nodes) {
+  public RelBuilder aggregateRex(GroupKey groupKey,
+      Iterable<? extends RexNode> nodes) {
+    return aggregateRex(groupKey, false, nodes);
+  }
+
+  /** Creates an {@link Aggregate} with a set of hybrid expressions represented
+   * as {@link RexNode}, optionally projecting the {@code groupKey} columns. */
+  public RelBuilder aggregateRex(GroupKey groupKey, boolean projectKey,
+      Iterable<? extends RexNode> nodes) {
     final GroupKeyImpl groupKeyImpl = (GroupKeyImpl) groupKey;
     final AggBuilder aggBuilder = new AggBuilder(groupKeyImpl.nodes);
     for (RexNode node : nodes) {
       aggBuilder.add(node);
     }
     return aggregate(groupKey, aggBuilder.aggCalls)
-        .project(aggBuilder.postProjects);
+        .project(
+            Iterables.concat(
+                fields(Util.range(projectKey ? groupKey.groupKeyCount() : 0)),
+                aggBuilder.postProjects));
   }
 
   /** Finishes the implementation of {@link #aggregate} by creating an
