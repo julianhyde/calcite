@@ -4218,10 +4218,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
     if (!qualifyNode.accept(WindowFunctionDetector.INSTANCE)) {
-      throw newValidationError(qualifyNode, RESOURCE.qualifyExpressionMustContainWindowFunction(qualifyNode.toString()));
+      throw newValidationError(qualifyNode,
+          RESOURCE.qualifyExpressionMustContainWindowFunction(qualifyNode.toString()));
     }
   }
 
+  /** Detects OVER. */
   private static final class WindowFunctionDetector implements SqlVisitor<Boolean> {
     public static final WindowFunctionDetector INSTANCE = new WindowFunctionDetector();
     private WindowFunctionDetector() {}
