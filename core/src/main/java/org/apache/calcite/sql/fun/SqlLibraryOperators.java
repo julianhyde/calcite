@@ -212,6 +212,14 @@ public abstract class SqlLibraryOperators {
           OperandTypes.STRING_INTEGER_OPTIONAL_INTEGER,
           SqlFunctionCategory.STRING);
 
+  /** BigQuery's "SUBSTR(value1, value2)" function. */
+  @LibraryOperator(libraries = {BIG_QUERY})
+  public static final SqlFunction STARTS_WITH =
+      new SqlFunction("STARTS_WITH", SqlKind.OTHER_FUNCTION,
+          ReturnTypes.BOOLEAN, null,
+          OperandTypes.STRING_STRING,
+          SqlFunctionCategory.STRING);
+
   /** BigQuery's "SUBSTR(string, position [, substringLength ])" function. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction SUBSTR_BIG_QUERY =
