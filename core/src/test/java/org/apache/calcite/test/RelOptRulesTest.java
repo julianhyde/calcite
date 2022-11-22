@@ -4323,6 +4323,13 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
+  /** Tests propagation of a filter derived from an "IS NOT DISTINCT FROM"
+   * predicate.
+   *
+   * <p>By the time the rule sees the predicate, it has been converted to
+   * "deptno = 10 OR (deptno IS NULL AND 10 IS NULL)", so
+   * {@link #testPullConstantIntoProjectWithIsNotDistinctFromDate()} is a purer
+   * test of the functionality. */
   @Test void testPullConstantIntoProjectWithIsNotDistinctFrom() {
     final String sql = "select deptno, deptno + 1, empno + deptno\n"
         + "from sales.emp\n"
@@ -4353,7 +4360,12 @@ class RelOptRulesTest extends RelOptTestBase {
     // Build a tree equivalent to the SQL
     //   SELECT hiredate
     //   FROM emp
-    //   WHERE hiredate IS NOT DISTINCT FROM '2020-12-11'
+    //   WHERE hiredate IS NOT DISTINCT FROM DATE '2020-12-11'
+    //
+    // We build a tree because if we used the SQL parser, it would expand
+    //   x IS NOT DISTINCT FROM y
+    // to
+    //   x = y OR (x IS NULL AND y IS NULL)
     final Function<RelBuilder, RelNode> relFn = b ->
         b.scan("EMP")
             .filter(
