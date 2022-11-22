@@ -66,8 +66,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_DISTINCT_FROM;
-import static org.apache.calcite.sql.type.SqlTypeName.DATE;
 import static org.apache.calcite.test.Matchers.isRangeSet;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -2782,6 +2780,30 @@ class RexProgramTest extends RexProgramTestBase {
     assertThat(getString(map7), is("{1=CAST(?0.a):BIGINT NOT NULL, ?0.a=1}"));
   }
 
+  /** Unit test for {@link RexUtil#predicateConstants(Class, RexBuilder, List)}
+   * applied to a predicate with {@code IS NOT DISTINCT FROM}. */
+  @Test void testConstantMapIsNotDistinctFrom() {
+    final RelDataType dateColumnType =
+        typeFactory.createTypeWithNullability(
+            typeFactory.createSqlType(SqlTypeName.DATE), true);
+
+    final RexNode dateLiteral =
+        rexBuilder.makeLiteral(new DateString(2020, 12, 11), dateColumnType,
+            false);
+    final RexNode dateColumn = rexBuilder.makeInputRef(dateColumnType, 0);
+
+    final RexNode call =
+        rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
+            dateColumn, dateLiteral);
+    final Map<RexNode, RexNode> map =
+        RexUtil.predicateConstants(RexNode.class, rexBuilder,
+            ImmutableList.of(call));
+
+    assertThat(map.isEmpty(), is(false));
+    assertThat(dateLiteral, is(map.get(dateColumn)));
+    assertThat(getString(map), is("{$0=2020-12-11}"));
+  }
+
   @Test void notDistinct() {
     checkSimplify(
         isFalse(isNotDistinctFrom(vBool(0), vBool(1))),
@@ -2853,7 +2875,7 @@ class RexProgramTest extends RexProgramTestBase {
 
   /** Converts a map to a string, sorting on the string representation of its
    * keys. */
-  private static String getString(ImmutableMap<RexNode, RexNode> map) {
+  private static String getString(Map<RexNode, RexNode> map) {
     final TreeMap<String, RexNode> map2 = new TreeMap<>();
     for (Map.Entry<RexNode, RexNode> entry : map.entrySet()) {
       map2.put(entry.getKey().toString(), entry.getValue());
@@ -3408,29 +3430,4 @@ class RexProgramTest extends RexProgramTestBase {
     checkSimplify(add(zero, sub(nullInt, nullInt)), "null:INTEGER");
   }
 
-  /**
-   * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-5336">[CALCITE-5336]
-   * Support inferring constants from predicates with IS NOT DISTINCT FROM operator</a>.
-   */
-  @Test void testPredicateConstants() {
-    RexImplicationCheckerFixtures.Fixture f = new RexImplicationCheckerFixtures.Fixture();
-
-    RexBuilder rexB = f.rexBuilder;
-
-    RelDataType dateColumnType = f.typeFactory.createTypeWithNullability(
-        f.typeFactory.createSqlType(DATE), true);
-
-    RexNode dateLiteral = rexB.makeLiteral(new DateString(2020, 12, 11),
-        dateColumnType, false);
-    RexNode dateColumn = rexB.makeInputRef(dateColumnType, 0);
-
-    ImmutableMap<RexNode, RexNode> constantMap = RexUtil.predicateConstants(RexNode.class,
-        rexB, Arrays.asList(
-            rexB.makeCall(
-            IS_NOT_DISTINCT_FROM, dateColumn, dateLiteral)));
-
-    assertFalse(constantMap.isEmpty());
-    assertThat(dateLiteral,
-        equalTo(constantMap.get(dateColumn)));
-  }
 }
