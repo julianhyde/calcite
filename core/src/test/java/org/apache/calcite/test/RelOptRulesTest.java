@@ -4343,6 +4343,32 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5336">[CALCITE-5336]
+   * Infer constants from predicates with IS NOT DISTINCT FROM operator</a>.
+   *
+   * <p>Reduce expression rules should identify constants with
+   * {@code IS NOT DISTINCT FROM} operator as they do for {@code =}. */
+  @Test void testPullConstantIntoProjectWithIsNotDistinctFromDate() {
+    // Build a tree equivalent to the SQL
+    //   SELECT hiredate
+    //   FROM emp
+    //   WHERE hiredate IS NOT DISTINCT FROM '2020-12-11'
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("EMP")
+            .filter(
+                b.getRexBuilder()
+                    .makeCall(SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
+                        b.field(4),
+                        b.literal(new DateString(2020, 12, 11))))
+            .project(b.field(4))
+            .build();
+
+    relFn(relFn)
+        .withRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS)
+        .check();
+  }
+
   @Test void testPullConstantIntoFilter() {
     final String sql = "select * from (select * from sales.emp where deptno = 10)\n"
         + "where deptno + 5 > empno";
@@ -7446,32 +7472,4 @@ class RelOptRulesTest extends RelOptTestBase {
         .check();
   }
 
-  /**
-   * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-5336">[CALCITE-5336]
-   * Support inferring constants from predicates with IS NOT DISTINCT FROM operator</a>.
-   * <p>
-   * Reduce expression rules should identify constants with IS_NOT_DISTINCT_FROM operator as well.
-   * </p>
-   */
-  @Test void testProjectReduceExpressionsWithIsNotDistinctFrom() {
-
-    // Build a rel equivalent to sql:
-    // SELECT hiredate from emp where hiredate is not distinct from '2020-12-11'
-
-    final Function<RelBuilder, RelNode> relFn = b -> {
-      b = b.scan("EMP");
-
-      final RexNode filterCond = b.getRexBuilder()
-          .makeCall(SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
-              b.field(4),
-              b.literal(new DateString(2020, 12, 11)));
-
-      return b.filter(filterCond)
-          .project(b.field(4))
-          .build();
-    };
-
-    relFn(relFn).withRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS).check();
-
-  }
 }

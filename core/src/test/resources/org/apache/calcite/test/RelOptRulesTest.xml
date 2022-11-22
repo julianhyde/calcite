@@ -6925,22 +6925,6 @@ LogicalProject(EXPR$0=[ROW_NUMBER() OVER (ORDER BY $0)], COL1=[$1])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testProjectReduceExpressionsWithIsNotDistinctFrom">
-    <Resource name="planBefore">
-      <![CDATA[
-LogicalProject(HIREDATE=[$4])
-  LogicalFilter(condition=[IS NOT DISTINCT FROM($4, 2020-12-11)])
-    LogicalTableScan(table=[[scott, EMP]])
-]]>
-    </Resource>
-    <Resource name="planAfter">
-      <![CDATA[
-LogicalProject(HIREDATE=[CAST(2020-12-11):DATE])
-  LogicalFilter(condition=[IS NOT DISTINCT FROM($4, 2020-12-11)])
-    LogicalTableScan(table=[[scott, EMP]])
-]]>
-    </Resource>
-  </TestCase>
   <TestCase name="testProjectSetOpTranspose">
     <Resource name="sql">
       <![CDATA[select job, sum(sal + 100) over (partition by deptno) from
@@ -7275,6 +7259,22 @@ LogicalProject(DEPTNO=[$7], EXPR$1=[+($7, 1)], EXPR$2=[+($0, $7)])
 LogicalProject(DEPTNO=[10], EXPR$1=[11], EXPR$2=[+($0, 10)])
   LogicalFilter(condition=[OR(AND(IS NULL($7), IS NULL(10)), IS TRUE(=($7, 10)))])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testPullConstantIntoProjectWithIsNotDistinctFromDate">
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(HIREDATE=[$4])
+  LogicalFilter(condition=[IS NOT DISTINCT FROM($4, 2020-12-11)])
+    LogicalTableScan(table=[[scott, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(HIREDATE=[CAST(2020-12-11):DATE])
+  LogicalFilter(condition=[IS NOT DISTINCT FROM($4, 2020-12-11)])
+    LogicalTableScan(table=[[scott, EMP]])
 ]]>
     </Resource>
   </TestCase>
