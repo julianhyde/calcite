@@ -3524,8 +3524,8 @@ public class SqlOperatorTest {
       f.checkNull("translate('aabbcc', 'ab', cast(null as varchar(2)))");
     };
     final List<SqlLibrary> libraries =
-        ImmutableList.of(SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL,
-            SqlLibrary.BIG_QUERY);
+        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE,
+            SqlLibrary.POSTGRESQL);
     f0.forEachLibrary(libraries, consumer);
   }
 
@@ -3726,7 +3726,7 @@ public class SqlOperatorTest {
       f.checkNull("from_base64('-1')");
       f.checkNull("from_base64('-100')");
     };
-    f0.forEachLibrary(list(SqlLibrary.MYSQL, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL), consumer);
   }
 
   @Test void testMd5() {
@@ -3735,8 +3735,8 @@ public class SqlOperatorTest {
         "No match found for function signature MD5\\(<BINARY>\\)",
         false);
     final List<SqlLibrary> libraries =
-        ImmutableList.of(SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL,
-                SqlLibrary.BIG_QUERY);
+        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL,
+                SqlLibrary.POSTGRESQL);
     final Consumer<SqlOperatorFixture> consumer = f -> {
       f.checkString("md5(x'')",
           "d41d8cd98f00b204e9800998ecf8427e",
@@ -3760,8 +3760,8 @@ public class SqlOperatorTest {
         "No match found for function signature SHA1\\(<BINARY>\\)",
         false);
     final List<SqlLibrary> libraries =
-        ImmutableList.of(SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL,
-                SqlLibrary.BIG_QUERY);
+        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL,
+                SqlLibrary.POSTGRESQL);
     final Consumer<SqlOperatorFixture> consumer = f -> {
       f.checkString("sha1(x'')",
           "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -3795,7 +3795,7 @@ public class SqlOperatorTest {
       f.checkNull("REPEAT('abc', cast(null as integer))");
       f.checkNull("REPEAT(cast(null as varchar(1)), cast(null as integer))");
     };
-    f0.forEachLibrary(list(SqlLibrary.MYSQL, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL), consumer);
   }
 
   @Test void testSpaceFunc() {
@@ -3827,8 +3827,8 @@ public class SqlOperatorTest {
         "No match found for function signature SOUNDEX\\(<CHARACTER>\\)",
         false);
     final List<SqlLibrary> libraries =
-        ImmutableList.of(SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL,
-                SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY);
+        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL,
+                SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL);
     final Consumer<SqlOperatorFixture> consumer = f -> {
       f.checkString("SOUNDEX('TECH ON THE NET')", "T253", "VARCHAR(4) NOT NULL");
       f.checkString("SOUNDEX('Miller')", "M460", "VARCHAR(4) NOT NULL");
@@ -3876,7 +3876,7 @@ public class SqlOperatorTest {
           "VARCHAR(2) NOT NULL");
       f.checkNull("reverse(cast(null as varchar(1)))");
     };
-    f0.forEachLibrary(list(SqlLibrary.MYSQL, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL), consumer);
   }
 
   @Test void testIfFunc() {
@@ -5208,7 +5208,7 @@ public class SqlOperatorTest {
       f.checkNull("cosh(cast(null as integer))");
       f.checkNull("cosh(cast(null as double))");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testCotFunc() {
@@ -5378,7 +5378,7 @@ public class SqlOperatorTest {
       f.checkNull("sinh(cast(null as integer))");
       f.checkNull("sinh(cast(null as double))");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testTanFunc() {
@@ -5419,7 +5419,7 @@ public class SqlOperatorTest {
       f.checkNull("tanh(cast(null as integer))");
       f.checkNull("tanh(cast(null as double))");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testTruncateFunc() {
@@ -6171,7 +6171,8 @@ public class SqlOperatorTest {
   }
 
   @Test void testRtrimFunc() {
-    final SqlOperatorFixture f0 = fixture().setFor(SqlLibraryOperators.RTRIM, VmName.EXPAND);
+    final SqlOperatorFixture f0 = fixture()
+        .setFor(SqlLibraryOperators.RTRIM, VmName.EXPAND);
     f0.checkFails("^rtrim(' aaa')^",
         "No match found for function signature RTRIM\\(<CHARACTER>\\)",
         false);
@@ -6179,11 +6180,12 @@ public class SqlOperatorTest {
       f.checkString("rtrim(' aAa  ')", " aAa", "VARCHAR(6) NOT NULL");
       f.checkNull("rtrim(CAST(NULL AS VARCHAR(6)))");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testLtrimFunc() {
-    final SqlOperatorFixture f0 = fixture().setFor(SqlLibraryOperators.LTRIM, VmName.EXPAND);
+    final SqlOperatorFixture f0 = fixture()
+        .setFor(SqlLibraryOperators.LTRIM, VmName.EXPAND);
     f0.checkFails("^ltrim('  aa')^",
         "No match found for function signature LTRIM\\(<CHARACTER>\\)",
         false);
@@ -6191,7 +6193,7 @@ public class SqlOperatorTest {
       f.checkString("ltrim(' aAa  ')", "aAa  ", "VARCHAR(6) NOT NULL");
       f.checkNull("ltrim(CAST(NULL AS VARCHAR(6)))");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testGreatestFunc() {
@@ -6213,12 +6215,12 @@ public class SqlOperatorTest {
       f12.checkString("greatest('show', 'on', 'earth')", "show",
           "VARCHAR(5) NOT NULL");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testLeastFunc() {
-    final SqlOperatorFixture f0 =
-        fixture().setFor(SqlLibraryOperators.LEAST, VmName.EXPAND);
+    final SqlOperatorFixture f0 = fixture()
+        .setFor(SqlLibraryOperators.LEAST, VmName.EXPAND);
     f0.checkFails("^least('on', 'earth')^",
         "No match found for function signature LEAST\\(<CHARACTER>, <CHARACTER>\\)",
         false);
@@ -6235,7 +6237,7 @@ public class SqlOperatorTest {
       f12.checkString("least('show', 'on', 'earth')", "earth",
           "VARCHAR(5) NOT NULL");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.BIG_QUERY), consumer);
+    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
   @Test void testNvlFunc() {
