@@ -5854,17 +5854,21 @@ public class SqlOperatorTest {
     f.checkBoolean("starts_with('12345', '1243')", false);
     f.checkBoolean("starts_with(x'11', x'11')", true);
     f.checkBoolean("starts_with(x'112211', x'33')", false);
-    f.checkFails(
-        "^starts_with('aabbcc', x'aa')^",
-        "Cannot apply 'STARTS_WITH' to arguments of type 'STARTS_WITH\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported form\\(s\\): 'STARTS_WITH\\(<STRING>, <STRING>\\)'",
-        false
-    );
-    f.checkBoolean("starts_with(null, null)", false);
-    f.checkBoolean("starts_with('12345', null)", false);
-    f.checkBoolean("starts_with(null, '123')", false);
+    f.checkFails("^starts_with('aabbcc', x'aa')^",
+        "Cannot apply 'STARTS_WITH' to arguments of type "
+            + "'STARTS_WITH\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported "
+            + "form\\(s\\): 'STARTS_WITH\\(<STRING>, <STRING>\\)'",
+        false);
+    f.checkNull("starts_with(null, null)");
+    f.checkNull("starts_with('12345', null)");
+    f.checkNull("starts_with(null, '123')");
     f.checkBoolean("starts_with('', '123')", false);
-    f.checkBoolean("starts_with('123', '')", true);
     f.checkBoolean("starts_with('', '')", true);
+    f.checkNull("starts_with(x'aa', null)");
+    f.checkNull("starts_with(null, x'aa')");
+    f.checkBoolean("starts_with(x'1234', x'')", true);
+    f.checkBoolean("starts_with(x'', x'123456')", false);
+    f.checkBoolean("starts_with(x'', x'')", true);
   }
 
   @Test void testEndsWithFunction() {
@@ -5874,17 +5878,21 @@ public class SqlOperatorTest {
     f.checkBoolean("ends_with('12345', '123')", false);
     f.checkBoolean("ends_with(x'11', x'11')", true);
     f.checkBoolean("ends_with(x'112211', x'33')", false);
-    f.checkFails(
-        "^ends_with('aabbcc', x'aa')^",
-        "Cannot apply 'ENDS_WITH' to arguments of type 'ENDS_WITH\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported form\\(s\\): 'ENDS_WITH\\(<STRING>, <STRING>\\)'",
-        false
-    );
-    f.checkBoolean("ends_with(null, null)", false);
-    f.checkBoolean("ends_with('12345', null)", false);
-    f.checkBoolean("ends_with(null, '123')", false);
+    f.checkFails("^ends_with('aabbcc', x'aa')^",
+        "Cannot apply 'ENDS_WITH' to arguments of type "
+            + "'ENDS_WITH\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported "
+            + "form\\(s\\): 'ENDS_WITH\\(<STRING>, <STRING>\\)'",
+        false);
+    f.checkNull("ends_with(null, null)");
+    f.checkNull("ends_with('12345', null)");
+    f.checkNull("ends_with(null, '123')");
     f.checkBoolean("ends_with('', '123')", false);
-    f.checkBoolean("ends_with('123', '')", true);
     f.checkBoolean("ends_with('', '')", true);
+    f.checkNull("ends_with(x'aa', null)");
+    f.checkNull("ends_with(null, x'aa')");
+    f.checkBoolean("ends_with(x'1234', x'')", true);
+    f.checkBoolean("ends_with(x'', x'123456')", false);
+    f.checkBoolean("ends_with(x'', x'')", true);
   }
 
   /** Tests the {@code SUBSTRING} operator. Many test cases that used to be

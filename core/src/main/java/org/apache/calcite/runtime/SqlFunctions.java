@@ -270,21 +270,26 @@ public class SqlFunctions {
     return flags;
   }
 
-  /** For {@link SqlLibraryOperators#STARTS_WITH} of the form {@code STARTS_WITH()}. */
-  public static boolean startsWith(String s0, String s1) {
-    return s0.startsWith(s1);
-  }
-  /** For {@link SqlLibraryOperators#STARTS_WITH} of the form {@code STARTS_WITH()}. */
-  public static boolean startsWith(ByteString s0, ByteString s1) {
-    return s0.length() >= s1.length() && s0.substring(0, s1.length()).equals(s1);
-  }
-  /** For {@link SqlLibraryOperators#ENDS_WITH} of the form {@code ENDS_WITH()}. */
+  /** SQL {@code ENDS_WITH(string, string)} function. */
   public static boolean endsWith(String s0, String s1) {
     return s0.endsWith(s1);
   }
-  /** For {@link SqlLibraryOperators#ENDS_WITH} of the form {@code ENDS_WITH()}. */
+
+  /** SQL {@code ENDS_WITH(binary, binary)} function. */
   public static boolean endsWith(ByteString s0, ByteString s1) {
-    return s0.length() >= s1.length() && s0.substring(s0.length() - s1.length()).equals(s1);
+    return s0.length() >= s1.length()
+        && s0.substring(s0.length() - s1.length()).equals(s1);
+  }
+
+  /** SQL {@code STARTS_WITH(string, string)} function. */
+  public static boolean startsWith(String s0, String s1) {
+    return s0.startsWith(s1);
+  }
+
+  /** SQL {@code STARTS_WITH(binary, binary)} function. */
+  public static boolean startsWith(ByteString s0, ByteString s1) {
+    return s0.length() >= s1.length()
+        && s0.substring(0, s1.length()).equals(s1);
   }
 
   /** SQL SUBSTRING(string FROM ...) function. */

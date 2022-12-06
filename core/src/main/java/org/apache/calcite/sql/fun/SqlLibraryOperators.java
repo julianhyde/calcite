@@ -212,21 +212,17 @@ public abstract class SqlLibraryOperators {
           OperandTypes.STRING_INTEGER_OPTIONAL_INTEGER,
           SqlFunctionCategory.STRING);
 
-  /** BigQuery's "STARTS_WITH(value1, value2)" function. */
-  @LibraryOperator(libraries = {BIG_QUERY})
-  public static final SqlFunction STARTS_WITH =
-      new SqlFunction("STARTS_WITH", SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN, null,
-          OperandTypes.STRING_SAME_SAME,
-          SqlFunctionCategory.STRING);
-
-  /** BigQuery's "ENDS_WITH(value1, value2)" function. */
+  /** The "ENDS_WITH(value1, value2)" function (BigQuery). */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction ENDS_WITH =
-      new SqlFunction("ENDS_WITH", SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN, null,
-          OperandTypes.STRING_SAME_SAME,
-          SqlFunctionCategory.STRING);
+      SqlBasicFunction.create("ENDS_WITH", ReturnTypes.BOOLEAN_NULLABLE,
+          OperandTypes.STRING_SAME_SAME, SqlFunctionCategory.STRING);
+
+  /** The "STARTS_WITH(value1, value2)" function (BigQuery). */
+  @LibraryOperator(libraries = {BIG_QUERY})
+  public static final SqlFunction STARTS_WITH =
+      SqlBasicFunction.create("STARTS_WITH", ReturnTypes.BOOLEAN_NULLABLE,
+          OperandTypes.STRING_SAME_SAME, SqlFunctionCategory.STRING);
 
   /** BigQuery's "SUBSTR(string, position [, substringLength ])" function. */
   @LibraryOperator(libraries = {BIG_QUERY})
