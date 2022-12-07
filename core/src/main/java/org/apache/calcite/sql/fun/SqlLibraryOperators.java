@@ -634,11 +634,16 @@ public abstract class SqlLibraryOperators {
       ImmutableSet.<TimeUnitRange>builder()
           .addAll(MONTH_UNITS).addAll(DATE_UNITS).addAll(TIME_UNITS).build();
 
-  /** The "TIMESTAMP_ADD(timestamp_expression, INTERVAL int64_expression date_part)"
-   * function (BigQuery); Adds int64_expression units of date_part to the timestamp,
-   * independent of any time zone.*/
+  /** The "TIMESTAMP_ADD(timestamp_expression, interval_expression)" function
+   * (BigQuery), the two-argument variant of the built-in
+   * {@link SqlStdOperatorTable#TIMESTAMP_ADD TIMESTAMPADD} function, which has
+   * three arguments.
+   *
+   * <p>In BigQuery, the syntax is "TIMESTAMP_ADD(timestamp_expression, INTERVAL
+   * int64_expression date_part)" but in Calcite the second argument can be any
+   * interval expression, not just an interval literal. */
   @LibraryOperator(libraries = {BIG_QUERY})
-  public static final SqlFunction TIMESTAMP_ADD_BIG_QUERY =
+  public static final SqlFunction TIMESTAMP_ADD2 =
       SqlBasicFunction.create(SqlKind.TIMESTAMP_ADD, ReturnTypes.ARG0_NULLABLE,
           OperandTypes.TIMESTAMP_INTERVAL)
           .withFunctionType(SqlFunctionCategory.TIMEDATE);

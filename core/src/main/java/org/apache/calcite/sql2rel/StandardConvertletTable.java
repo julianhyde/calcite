@@ -165,7 +165,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     registerOp(SqlLibraryOperators.SUBSTR_POSTGRESQL,
         new SubstrConvertlet(SqlLibrary.POSTGRESQL));
 
-    registerOp(SqlLibraryOperators.TIMESTAMP_ADD_BIG_QUERY,
+    registerOp(SqlLibraryOperators.TIMESTAMP_ADD2,
         new TimestampAddConvertlet());
 
     registerOp(SqlLibraryOperators.NVL, StandardConvertletTable::convertNvl);
