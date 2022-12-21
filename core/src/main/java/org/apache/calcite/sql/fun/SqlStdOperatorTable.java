@@ -1416,13 +1416,16 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlFunction JSON_STORAGE_SIZE = new SqlJsonStorageSizeFunction();
 
   @Deprecated // to be removed before 2.0
-  public static final SqlFunction JSON_INSERT = SqlLibraryOperators.JSON_INSERT;
+  public static final SqlFunction JSON_INSERT =
+      new SqlJsonModifyFunction("JSON_INSERT");
 
   @Deprecated // to be removed before 2.0
-  public static final SqlFunction JSON_REPLACE = SqlLibraryOperators.JSON_REPLACE;
+  public static final SqlFunction JSON_REPLACE =
+      new SqlJsonModifyFunction("JSON_REPLACE");
 
   @Deprecated // to be removed before 2.0
-  public static final SqlFunction JSON_SET = SqlLibraryOperators.JSON_SET;
+  public static final SqlFunction JSON_SET =
+      new SqlJsonModifyFunction("JSON_SET");
 
   public static final SqlJsonArrayAggAggFunction JSON_ARRAYAGG =
       new SqlJsonArrayAggAggFunction(SqlKind.JSON_ARRAYAGG,
