@@ -680,9 +680,8 @@ public abstract class SqlLibraryOperators {
           OperandTypes.TIMESTAMP_INTERVAL)
           .withFunctionType(SqlFunctionCategory.TIMEDATE);
 
-  /** The "TIMESTAMP_DIFF(timestamp, timestamp, date_time_part)" function
-   * (BigQuery); returns the number of date_time_part between the two timestamp
-   * expressions.
+  /** The "TIMESTAMP_DIFF(timestamp, timestamp, timeUnit)" function (BigQuery);
+   * returns the number of timeUnit between the two timestamp expressions.
    *
    * <p>{@code TIMESTAMP_DIFF(t1, t2, unit)} is equivalent to
    * {@code TIMESTAMPDIFF(unit, t2, t1)} and {@code (t1 - t2) unit}. */
@@ -700,8 +699,8 @@ public abstract class SqlLibraryOperators {
               OperandTypes.TIME_INTERVAL)
           .withFunctionType(SqlFunctionCategory.TIMEDATE);
 
-  /** The "TIME_DIFF(time, time, date_time_part)" function (BigQuery);
-   * returns the number of date_time_part between the two time expressions. */
+  /** The "TIME_DIFF(time, time, timeUnit)" function (BigQuery);
+   * returns the number of timeUnit between the two time expressions. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction TIME_DIFF =
       new SqlTimestampDiffFunction("TIME_DIFF",
@@ -728,10 +727,8 @@ public abstract class SqlLibraryOperators {
               OperandTypes.TIME, OperandTypes.interval(TIME_UNITS)),
           SqlFunctionCategory.TIMEDATE);
 
-  /** The "TIMESTAMP_TRUNC(timestamp, date_time_part[, time_zone])"
-   * function (BigQuery); truncates a TIMESTAMP value to the granularity of
-   * date_time_part. The TIMESTAMP value is always rounded to the beginning of
-   * date_time_part. */
+  /** The "TIMESTAMP_TRUNC(timestamp, timeUnit[, timeZone])" function (BigQuery);
+   * truncates a TIMESTAMP value to the beginning of a timeUnit. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction TIMESTAMP_TRUNC =
       SqlBasicFunction.create("TIMESTAMP_TRUNC",
