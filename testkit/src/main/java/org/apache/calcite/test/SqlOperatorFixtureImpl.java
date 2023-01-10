@@ -122,12 +122,16 @@ class SqlOperatorFixtureImpl implements SqlOperatorFixture {
   }
 
   @Override public void checkColumnType(String sql, String expected) {
-    tester.validateAndThen(factory, StringAndPos.of(sql),
+    tester.validateAndThen(factory, toStringAndPos(sql),
         checkColumnTypeAction(is(expected)));
   }
 
+  private StringAndPos toStringAndPos(String sql) {
+    return StringAndPos.of(sql);
+  }
+
   @Override public void checkType(String expression, String type) {
-    forEachQueryValidateAndThen(StringAndPos.of(expression),
+    forEachQueryValidateAndThen(getFactory().sap(expression),
         checkColumnTypeAction(is(type)));
   }
 
@@ -145,13 +149,13 @@ class SqlOperatorFixtureImpl implements SqlOperatorFixture {
   }
 
   @Override public void checkQuery(String sql) {
-    tester.assertExceptionIsThrown(factory, StringAndPos.of(sql), null);
+    tester.assertExceptionIsThrown(factory, toStringAndPos(sql), null);
   }
 
   void forEachQueryValidateAndThen(StringAndPos expression,
       SqlTester.ValidatedNodeConsumer consumer) {
     tester.forEachQuery(factory, expression.addCarets(), query ->
-        tester.validateAndThen(factory, StringAndPos.of(query), consumer));
+        tester.validateAndThen(factory, toStringAndPos(query), consumer));
   }
 
   @Override public void checkFails(StringAndPos sap, String expectedError,
@@ -164,7 +168,7 @@ class SqlOperatorFixtureImpl implements SqlOperatorFixture {
       SqlNode n = parseAndValidate(validator, sql);
       assertNotNull(n);
     } else {
-      checkQueryFails(StringAndPos.of(sql),
+      checkQueryFails(toStringAndPos(sql),
           expectedError);
     }
   }
@@ -186,7 +190,7 @@ class SqlOperatorFixtureImpl implements SqlOperatorFixture {
       SqlNode n = parseAndValidate(validator, sql);
       assertNotNull(n);
     } else {
-      checkQueryFails(StringAndPos.of(sql), expectedError);
+      checkQueryFails(toStringAndPos(sql), expectedError);
     }
   }
 

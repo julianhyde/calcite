@@ -20,6 +20,7 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -128,6 +129,31 @@ public interface SqlOperatorFixture extends AutoCloseable {
 
   /** Creates a copy of this fixture with a new tester. */
   SqlOperatorFixture withTester(UnaryOperator<SqlTester> transform);
+
+  /** Creates a copy of this fixture that filters the SQL expression before
+   * running the test. */
+  default SqlOperatorFixture withFilter(UnaryOperator<String> filter) {
+    return withTester(tester -> new AbstractSqlTester() {
+      @Override public void check(SqlTestFactory factory, String query,
+          TypeChecker typeChecker, ResultChecker resultChecker) {
+        final String query2 = filter.apply(query);
+        super.check(factory, query2, typeChecker, resultChecker);
+      }
+
+      @Override public void checkFails(SqlTestFactory factory,
+          String expression, String expectedError, boolean runtime) {
+        final String expression2 = filter.apply(expression);
+        super.checkFails(factory, expression2, expectedError, runtime);
+      }
+
+      @Override public RelRoot convertSqlToRel(SqlTestFactory factory,
+          String sql, boolean decorrelate, boolean trim) {
+        final String sql2 = filter.apply(sql);
+        return super.convertSqlToRel(factory, sql2, decorrelate, trim);
+      }
+    }).withFactory(f ->
+        f.withSap(sap -> StringAndPos.of(filter.apply(sap.addCarets()))));
+  }
 
   /** Creates a copy of this fixture with a new parser configuration. */
   default SqlOperatorFixture withParserConfig(
@@ -534,7 +560,7 @@ public interface SqlOperatorFixture extends AutoCloseable {
       String expression,
       String expectedError,
       boolean runtime) {
-    checkFails(StringAndPos.of(expression), expectedError, runtime);
+    checkFails(getFactory().sap(expression), expectedError, runtime);
   }
 
   /**

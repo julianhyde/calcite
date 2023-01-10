@@ -6292,34 +6292,42 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture()
         .setFor(SqlLibraryOperators.NVL, VmName.EXPAND)
         .withLibrary(SqlLibrary.ORACLE);
+    checkNvlFunc(f);
+    checkNvlFunc(f.forOracle(SqlConformanceEnum.ORACLE_12));
+  }
+
+  private static void checkNvlFunc(SqlOperatorFixture f) {
     f.checkScalar("nvl(1, 2)", "1", "INTEGER NOT NULL");
     f.checkFails("^nvl(1, true)^", "Parameters must be of the same type",
         false);
     f.checkScalar("nvl(true, false)", true, "BOOLEAN NOT NULL");
     f.checkScalar("nvl(false, true)", false, "BOOLEAN NOT NULL");
-    f.checkString("nvl('abc', 'de')", "abc", "CHAR(3) NOT NULL");
-    f.checkString("nvl('abc', 'defg')", "abc ", "CHAR(4) NOT NULL");
-    f.checkString("nvl('abc', CAST(NULL AS VARCHAR(20)))", "abc",
-        "VARCHAR(20) NOT NULL");
-    f.checkString("nvl(CAST(NULL AS VARCHAR(20)), 'abc')", "abc",
-        "VARCHAR(20) NOT NULL");
+    if (f.conformance().shouldConvertRaggedUnionTypesToVarying()) {
+      f.checkString("nvl('abc', 'de')", "abc", "VARCHAR(3) NOT NULL");
+      f.checkString("nvl('abc', 'defg')", "abc", "VARCHAR(4) NOT NULL");
+      f.checkString("nvl('abc', CAST(NULL AS VARCHAR(20)))", "abc",
+          "VARCHAR(20) NOT NULL");
+      f.checkString("nvl(CAST(NULL AS VARCHAR(20)), 'abc')", "abc",
+          "VARCHAR(20) NOT NULL");
+      f.checkNull("nvl(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
+    } else {
+      f.checkString("nvl('abc', 'de')", "abc", "CHAR(3) NOT NULL");
+      f.checkString("nvl('abc', 'defg')", "abc ", "CHAR(4) NOT NULL");
+      f.checkString("nvl('abc', CAST(NULL AS VARCHAR(20)))", "abc",
+          "VARCHAR(20) NOT NULL");
+      f.checkString("nvl(CAST(NULL AS VARCHAR(20)), 'abc')", "abc",
+          "VARCHAR(20) NOT NULL");
+    }
     f.checkNull("nvl(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
-
-    final SqlOperatorFixture f12 = f.forOracle(SqlConformanceEnum.ORACLE_12);
-    f12.checkString("nvl('abc', 'de')", "abc", "VARCHAR(3) NOT NULL");
-    f12.checkString("nvl('abc', 'defg')", "abc", "VARCHAR(4) NOT NULL");
-    f12.checkString("nvl('abc', CAST(NULL AS VARCHAR(20)))", "abc",
-        "VARCHAR(20) NOT NULL");
-    f12.checkString("nvl(CAST(NULL AS VARCHAR(20)), 'abc')", "abc",
-        "VARCHAR(20) NOT NULL");
-    f12.checkNull("nvl(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
   }
-
 
   @Test void testIfNullCoalesceFunc() {
     final SqlOperatorFixture f = fixture()
         .withLibrary(SqlLibrary.BIG_QUERY)
         .setFor(SqlLibraryOperators.IFNULL, VM_EXPAND);
+
+    // IFNULL is a synonym of NVL, and therefore it should pass the NVL tests
+    checkNvlFunc(f.withFilter(s -> s.replace("nvl", "ifnull")));
 
     f.checkString("ifnull('a','b')", "a", "CHAR(1) NOT NULL");
     f.checkString("ifnull(null,'b')", "b", "CHAR(1)");

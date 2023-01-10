@@ -35,6 +35,7 @@ import org.apache.calcite.sql.advise.SqlAdvisor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
@@ -55,6 +56,7 @@ import com.google.common.base.Suppliers;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -76,6 +78,7 @@ public class SqlTestFactory {
           SqlValidator.Config.DEFAULT,
           SqlToRelConverter.CONFIG,
           SqlStdOperatorTable.instance(),
+          UnaryOperator.identity(),
           UnaryOperator.identity())
       .withOperatorTable(o -> MockSqlOperatorTable.of(o).extend());
 
@@ -94,6 +97,7 @@ public class SqlTestFactory {
   public final SqlValidator.Config validatorConfig;
   public final SqlToRelConverter.Config sqlToRelConfig;
   public final UnaryOperator<RelDataTypeSystem> typeSystemTransform;
+  public final UnaryOperator<StringAndPos> sapTransform;
 
   protected SqlTestFactory(CatalogReaderFactory catalogReaderFactory,
       TypeFactoryFactory typeFactoryFactory, PlannerFactory plannerFactory,
@@ -102,7 +106,8 @@ public class SqlTestFactory {
       ConnectionFactory connectionFactory,
       SqlParser.Config parserConfig, SqlValidator.Config validatorConfig,
       SqlToRelConverter.Config sqlToRelConfig, SqlOperatorTable operatorTable,
-      UnaryOperator<RelDataTypeSystem> typeSystemTransform) {
+      UnaryOperator<RelDataTypeSystem> typeSystemTransform,
+      UnaryOperator<StringAndPos> sapTransform) {
     this.catalogReaderFactory =
         requireNonNull(catalogReaderFactory, "catalogReaderFactory");
     this.typeFactoryFactory =
@@ -115,6 +120,7 @@ public class SqlTestFactory {
         requireNonNull(validatorFactory, "validatorFactory");
     this.connectionFactory =
         requireNonNull(connectionFactory, "connectionFactory");
+    this.sapTransform = requireNonNull(sapTransform, "sapTransform");
     this.sqlToRelConfig = requireNonNull(sqlToRelConfig, "sqlToRelConfig");
     this.operatorTable = operatorTable;
     this.typeSystemTransform = typeSystemTransform;
@@ -157,7 +163,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withTypeSystem(
@@ -168,7 +174,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withPlannerFactory(PlannerFactory plannerFactory) {
@@ -178,7 +184,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withPlannerContext(
@@ -190,7 +196,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withCluster(UnaryOperator<RelOptCluster> transform) {
@@ -199,7 +205,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withCatalogReader(
@@ -210,7 +216,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withValidator(ValidatorFactory validatorFactory) {
@@ -220,7 +226,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withValidatorConfig(
@@ -233,7 +239,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withSqlToRelConfig(
@@ -246,7 +252,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   private static RelDataTypeFactory createTypeFactory(SqlConformance conformance,
@@ -270,7 +276,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withConnectionFactory(
@@ -283,7 +289,7 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
   }
 
   public SqlTestFactory withOperatorTable(
@@ -296,7 +302,19 @@ public class SqlTestFactory {
     return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
         plannerFactory, plannerContext, clusterTransform, validatorFactory,
         connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
-        operatorTable, typeSystemTransform);
+        operatorTable, typeSystemTransform, sapTransform);
+  }
+
+  public SqlTestFactory withSap(UnaryOperator<StringAndPos> sapTransform) {
+    Function<StringAndPos, StringAndPos> sapTransform2 =
+        this.sapTransform.andThen(sapTransform);
+    if (sapTransform2.equals(this.sapTransform)) {
+      return this;
+    }
+    return new SqlTestFactory(catalogReaderFactory, typeFactoryFactory,
+        plannerFactory, plannerContext, clusterTransform, validatorFactory,
+        connectionFactory, parserConfig, validatorConfig, sqlToRelConfig,
+        operatorTable, typeSystemTransform, sapTransform2::apply);
   }
 
   public SqlParser.Config parserConfig() {
@@ -321,6 +339,10 @@ public class SqlTestFactory {
             sqlToRelConfig);
     return new SqlToRelConverter(viewExpander, validator, catalogReader, cluster,
         StandardConvertletTable.INSTANCE, sqlToRelConfig);
+  }
+
+  public StringAndPos sap(String expression) {
+    return sapTransform.apply(StringAndPos.of(expression));
   }
 
   /** Creates a {@link RelDataTypeFactory} for tests. */
