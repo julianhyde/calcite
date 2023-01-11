@@ -2698,25 +2698,77 @@ public class SqlFunctions {
     return (int) LocalDate.of(year, month, day).toEpochDay();
   }
 
-  /** For {@link SqlLibraryOperators#DATE} of the form {@code DATE(<timestamp>)}. */
+  /** SQL {@code DATE(TIMESTAMP)} and
+   * {@code DATE(TIMESTAMP WITH LOCAL TIME ZONE)} functions. */
   public static int date(long timestampMillis) {
     // Calcite represents dates as Unix integers (days since epoch).
-    // Unix time ignores leap seconds; every day has the exact same number of milliseconds.
+    // Unix time ignores leap seconds; every day has the exact same number of
+    // milliseconds. BigQuery TIMESTAMP and DATETIME values (Calcite TIMESTAMP
+    // WITH LOCAL TIME ZONE and TIMESTAMP, respectively) are represented
+    // internally as milliseconds since epoch (or epoch UTC).
     return (int) (timestampMillis / DateTimeUtils.MILLIS_PER_DAY);
   }
 
-  /** For {@link SqlLibraryOperators#DATE} of the form {@code DATE(<timestamp>, <timezone>)}. */
+  /** SQL {@code DATE(TIMESTAMP WITH LOCAL TIME, timeZone)} function. */
   public static int date(long timestampMillis, String timezone) {
     // Calcite represents dates as Unix integers (days since epoch).
-    return (int)
-        OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis), ZoneId.of(timezone))
-            .toLocalDate()
-            .toEpochDay();
+    return (int) OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis),
+            ZoneId.of(timezone))
+        .toLocalDate()
+        .toEpochDay();
+  }
+
+  /** SQL {@code DATETIME(<year>, <month>, <day>, <hour>, <minute>, <second>)}
+   * function. */
+  public static long datetime(int year, int month, int day, int hour,
+      int minute, int second) {
+    // BigQuery's DATETIME function returns a Calcite TIMESTAMP,
+    // represented internally as milliseconds since epoch UTC.
+    return LocalDateTime.of(year, month, day, hour, minute, second)
+        .toEpochSecond(ZoneOffset.UTC)
+        * DateTimeUtils.MILLIS_PER_SECOND;
+  }
+
+  /** SQL {@code DATETIME(DATE)} function; returns a Calcite TIMESTAMP. */
+  public static long datetime(int daysSinceEpoch) {
+    // BigQuery's DATETIME function returns a Calcite TIMESTAMP,
+    // represented internally as milliseconds since epoch.
+    return daysSinceEpoch * DateTimeUtils.MILLIS_PER_DAY;
+  }
+
+  /** SQL {@code DATETIME(DATE, TIME)} function; returns a Calcite TIMESTAMP. */
+  public static long datetime(int daysSinceEpoch, int millisSinceMidnight) {
+    // BigQuery's DATETIME function returns a Calcite TIMESTAMP,
+    // represented internally as milliseconds since epoch UTC.
+    return daysSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millisSinceMidnight;
+  }
+
+  /** SQL {@code DATETIME(TIMESTAMP WITH LOCAL TIME ZONE)} function;
+   * returns a Calcite TIMESTAMP. */
+  public static long datetime(long millisSinceEpoch) {
+    // BigQuery TIMESTAMP and DATETIME values (Calcite TIMESTAMP WITH LOCAL TIME
+    // ZONE and TIMESTAMP, respectively) are represented internally as
+    // milliseconds since epoch (or epoch UTC).
+    return millisSinceEpoch;
+  }
+
+  /** SQL {@code DATETIME(TIMESTAMP, timeZone)} function;
+   * returns a Calcite TIMESTAMP. */
+  public static long datetime(long millisSinceEpoch, String timeZone) {
+    // BigQuery TIMESTAMP and DATETIME values (Calcite TIMESTAMP WITH LOCAL TIME
+    // ZONE and TIMESTAMP, respectively) are represented internally as
+    // milliseconds since epoch (or epoch UTC).
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(millisSinceEpoch),
+            ZoneId.of(timeZone))
+        .atZoneSimilarLocal(ZoneId.of("UTC"))
+        .toInstant()
+        .toEpochMilli();
   }
 
   /** For {@link SqlLibraryOperators#TIMESTAMP} of the form {@code TIMESTAMP(<string>)}. */
   public static long timestamp(String expression) {
-    // Calcite represents timestamps as Unix integers (milliseconds since epoch).
+    // Calcite represents TIMESTAMP WITH LOCAL TIME ZONE as Unix integers
+    // (milliseconds since epoch).
     return parseBigQueryTimestampLiteral(expression).toInstant().toEpochMilli();
   }
 
@@ -2725,7 +2777,8 @@ public class SqlFunctions {
    * of the form {@code TIMESTAMP(<string>, <timezone>)}.
    */
   public static long timestamp(String expression, String timezone) {
-    // Calcite represents timestamps as Unix integers (milliseconds since epoch).
+    // Calcite represents TIMESTAMP WITH LOCAL TIME ZONE as Unix integers
+    // (milliseconds since epoch).
     return parseBigQueryTimestampLiteral(expression)
         .atZoneSimilarLocal(ZoneId.of(timezone))
         .toInstant()
@@ -2744,7 +2797,8 @@ public class SqlFunctions {
             .atOffset(ZoneOffset.UTC);
       } catch (DateTimeParseException e2) {
         throw new IllegalArgumentException(
-            String.format(Locale.ROOT, "Could not parse BigQuery string literal: %s", expression),
+            String.format(
+                Locale.ROOT, "Could not parse BigQuery timestamp literal: %s", expression),
             e2);
       }
     }
@@ -2752,7 +2806,8 @@ public class SqlFunctions {
 
   /** For {@link SqlLibraryOperators#TIMESTAMP} of the form {@code TIMESTAMP(<date>)}. */
   public static long timestamp(int days) {
-    // Calcite represents timestamps as Unix integers (milliseconds since epoch).
+    // Calcite represents TIMESTAMP WITH LOCAL TIME ZONE as Unix integers
+    // (milliseconds since epoch).
     // Unix time ignores leap seconds; every day has the exact same number of milliseconds.
     return ((long) days) * DateTimeUtils.MILLIS_PER_DAY;
   }
@@ -2762,7 +2817,8 @@ public class SqlFunctions {
    * of the form {@code TIMESTAMP(<date>, <timezone>)}.
    */
   public static long timestamp(int days, String timezone) {
-    // Calcite represents timestamps as Unix integers (milliseconds since epoch).
+    // Calcite represents TIMESTAMP WITH LOCAL TIME ZONE as Unix integers
+    // (milliseconds since epoch).
     final LocalDateTime localDateTime =
         LocalDateTime.of(LocalDate.ofEpochDay(days), LocalTime.MIDNIGHT);
     return OffsetDateTime.of(
@@ -2772,6 +2828,27 @@ public class SqlFunctions {
         .toEpochMilli();
   }
 
+  /** For {@link SqlLibraryOperators#TIMESTAMP} of the form {@code TIMESTAMP(<datetime>)}. */
+  public static long timestamp(long millisSinceEpoch) {
+    // BigQuery timestamps and datetimes (Calcite TIMESTAMP WITH LOCAL TIME ZONE and TIMESTAMP,
+    // respectively) are both represented internally as milliseconds since epoch UTC.
+    return millisSinceEpoch;
+  }
+
+  /**
+   * For {@link SqlLibraryOperators#TIMESTAMP}
+   * of the form {@code TIMESTAMP(<datetime>, <timezone>)}.
+   */
+  public static long timestamp(long millisSinceEpoch, String timezone) {
+    // BigQuery timestamps and datetimes (Calcite TIMESTAMP WITH LOCAL TIME ZONE and TIMESTAMP,
+    // respectively) are both represented internally as milliseconds since epoch UTC.
+    return
+        OffsetDateTime.ofInstant(Instant.ofEpochMilli(millisSinceEpoch), ZoneId.of("UTC"))
+            .atZoneSimilarLocal(ZoneId.of(timezone))
+            .toInstant()
+            .toEpochMilli();
+  }
+
   /** For {@link SqlLibraryOperators#TIME} of the form {@code TIME(<hour>, <minute>, <second>)}. */
   public static int time(int hour, int minute, int second) {
     // Calcite represents time as Unix integers (milliseconds since midnight).
@@ -2779,10 +2856,15 @@ public class SqlFunctions {
         (LocalTime.of(hour, minute, second).toSecondOfDay() * DateTimeUtils.MILLIS_PER_SECOND);
   }
 
-  /** For {@link SqlLibraryOperators#TIME} of the form {@code TIME(<timestamp>)}. */
+  /**
+   * For {@link SqlLibraryOperators#TIME} either of the form {@code TIME(<timestamp>)}
+   * or of the form {@code TIME(<datetime>)}.
+   */
   public static int time(long timestampMillis) {
     // Calcite represents time as Unix integers (milliseconds since midnight).
     // Unix time ignores leap seconds; every day has the exact same number of milliseconds.
+    // BigQuery timestamps and datetimes (Calcite TIMESTAMP WITH LOCAL TIME ZONE and TIMESTAMP,
+    // respectively) are both represented internally as milliseconds since epoch UTC.
     return (int) (timestampMillis % DateTimeUtils.MILLIS_PER_DAY);
   }
 
