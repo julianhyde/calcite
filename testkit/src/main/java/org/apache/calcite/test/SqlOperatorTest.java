@@ -8099,7 +8099,8 @@ public class SqlOperatorTest {
         false);
   }
 
-  /** Tests BigQuery's {@code TIME_ADD}, which adds an interval to a time expression.*/
+  /** Tests BigQuery's {@code TIME_ADD}, which adds an interval to a time
+   * expression. */
   @Test void testTimeAdd() {
     final SqlOperatorFixture f0 = fixture()
         .setFor(SqlLibraryOperators.TIME_ADD);
