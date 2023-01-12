@@ -8298,7 +8298,7 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture()
         .withLibrary(SqlLibrary.BIG_QUERY)
         .setFor(SqlLibraryOperators.DATE_TRUNC);
-    f.checkFails("date_trunc(100, ^foo^)",
+    f.checkFails("date_trunc(date '2015-02-19', ^foo^)",
         "'FOO' is not a valid time frame", false);
     f.checkScalar("date_trunc(date '2015-02-19', day)",
         "2015-02-19", "DATE NOT NULL");

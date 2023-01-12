@@ -656,15 +656,20 @@ public abstract class SqlLibraryOperators {
           TimeUnitRange.CENTURY,
           TimeUnitRange.DECADE,
           TimeUnitRange.YEAR,
+          TimeUnitRange.QUARTER,
           TimeUnitRange.MONTH);
 
-  private static final Set<TimeUnitRange> DATE_UNITS =
+  private static final Set<TimeUnitRange> DAY_UNITS =
       ImmutableSet.of(TimeUnitRange.WEEK,
           TimeUnitRange.DAY);
 
+  private static final Set<TimeUnitRange> DATE_UNITS =
+      ImmutableSet.<TimeUnitRange>builder()
+          .addAll(MONTH_UNITS).addAll(DAY_UNITS).build();
+
   private static final Set<TimeUnitRange> TIMESTAMP_UNITS =
       ImmutableSet.<TimeUnitRange>builder()
-          .addAll(MONTH_UNITS).addAll(DATE_UNITS).addAll(TIME_UNITS).build();
+          .addAll(DATE_UNITS).addAll(TIME_UNITS).build();
 
   /** The "TIMESTAMP_ADD(timestamp, interval)" function (BigQuery), the
    * two-argument variant of the built-in
