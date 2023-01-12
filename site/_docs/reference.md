@@ -2351,7 +2351,8 @@ The following functions transform 2D geometries.
 | o | ST_Scale(geom, xFactor, yFactor) | Scales *geom* by multiplying the ordinates by the indicated scale factors
 | o | ST_Translate(geom, x, y) | Translates *geom* by the vector (x, y)
 
-Not implemented:CHARACTER_LENGTH
+Not implemented:
+
 
 * ST_Scale(geom, xFactor, yFactor [, zFactor ]) Scales *geom* by multiplying the ordinates by the indicated scale factors
 * ST_Translate(geom, x, y, [, z]) Translates *geom*
@@ -2637,7 +2638,7 @@ semantics.
 | m | JSON_STORAGE_SIZE(jsonValue)                   | Returns the number of bytes used to store the binary representation of *jsonValue*
 | b o | LEAST(expr [, expr ]* )                      | Returns the least of the expressions
 | b m p | LEFT(string, length)                       | Returns the leftmost *length* characters from the *string*
-| b | LENGTH(string)                                 | As CHAR_LENGTH(string).
+| b | LENGTH(string)                                 | Equivalent to `CHAR_LENGTH(string)`
 | m | TO_BASE64(string)                              | Converts the *string* to base-64 encoded form and returns a encoded string
 | b m | FROM_BASE64(string)                          | Returns the decoded result of a base-64 *string* as a string
 | b o | LTRIM(string)                                | Returns *string* with all blanks removed from the start
