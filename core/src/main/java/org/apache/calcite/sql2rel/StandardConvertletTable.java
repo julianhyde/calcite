@@ -169,6 +169,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         new TimestampAddConvertlet());
 
     registerOp(SqlLibraryOperators.NVL, StandardConvertletTable::convertNvl);
+    registerOp(SqlLibraryOperators.IFNULL, StandardConvertletTable::convertNvl);
     registerOp(SqlLibraryOperators.DECODE,
         StandardConvertletTable::convertDecode);
     registerOp(SqlLibraryOperators.IF, StandardConvertletTable::convertIf);
@@ -306,7 +307,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     }
   }
 
-  /** Converts a call to the NVL function. */
+  /** Converts a call to the {@code NVL} function (and also its synonym,
+   * {@code IFNULL}). */
   private static RexNode convertNvl(SqlRexContext cx, SqlCall call) {
     final RexBuilder rexBuilder = cx.getRexBuilder();
     final RexNode operand0 =

@@ -2071,20 +2071,20 @@ SELECT LAST_DAY(DATETIME '2008-11-10 15:30:00', WEEK(MONDAY)) AS last_day;
 # Returns value1 if not NULL, else value2
 #
 WITH items AS (
-  SELECT IFNULL(null, 5) AS item UNION ALL
-  SELECT IFNULL(2, 1) UNION ALL
-  SELECT IFNULL('b', null) UNION ALL
-  SELECT IFNULL(null, null)
-  )
-SELECT item AS example FROM items;
-+---------+
-| example |
-+---------+
-| 5       |
-| 2       |
-| b       |
-|         |
-+---------+
+  SELECT 'IFNULL(null, 5)' question, IFNULL(null, 5) AS answer UNION ALL
+  SELECT 'IFNULL(2, 1)', IFNULL(2, 1) UNION ALL
+  SELECT "IFNULL('b', null)", IFNULL('b', null) UNION ALL
+  SELECT 'IFNULL(null, null)', IFNULL(null, null)
+)
+SELECT * FROM items;
++--------------------+--------+
+| question           | answer |
++--------------------+--------+
+| IFNULL(null, 5)    | 5      |
+| IFNULL(2, 1)       | 2      |
+| IFNULL('b', null)  | b      |
+| IFNULL(null, null) |        |
++--------------------+--------+
 (4 rows)
 
 !ok
