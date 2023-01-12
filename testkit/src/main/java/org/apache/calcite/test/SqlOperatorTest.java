@@ -1872,8 +1872,7 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f0 = fixture()
         .setFor(SqlStdOperatorTable.PERCENT_REMAINDER);
     final List<SqlConformanceEnum> conformances =
-        ImmutableList.of(SqlConformanceEnum.BIG_QUERY,
-            SqlConformanceEnum.MYSQL_5);
+        list(SqlConformanceEnum.BIG_QUERY, SqlConformanceEnum.MYSQL_5);
     f0.forEachConformance(conformances, this::checkModOperator);
     f0.forEachConformance(conformances, this::checkModPrecedence);
     f0.forEachConformance(conformances, this::checkModOperatorNull);
@@ -2714,8 +2713,7 @@ public class SqlOperatorTest {
 
     // "!=" is allowed under BigQuery, ORACLE_10 SQL conformance levels
     final List<SqlConformanceEnum> conformances =
-        ImmutableList.of(SqlConformanceEnum.BIG_QUERY,
-            SqlConformanceEnum.ORACLE_10);
+        list(SqlConformanceEnum.BIG_QUERY, SqlConformanceEnum.ORACLE_10);
     f.forEachConformance(conformances, consumer);
   }
 
