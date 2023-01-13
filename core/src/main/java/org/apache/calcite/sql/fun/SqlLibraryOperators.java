@@ -699,9 +699,18 @@ public abstract class SqlLibraryOperators {
           OperandTypes.family(SqlTypeFamily.TIME, SqlTypeFamily.TIME,
               SqlTypeFamily.ANY));
 
-  /** The "TIME_TRUNC(time, time_part)" function (BigQuery);
-   * truncates a TIME value to the granularity of time_part. The TIME value is
-   * always rounded to the beginning of time_part. */
+  /** The "DATE_TRUNC(date, timeUnit)" function (BigQuery);
+   * truncates a DATE value to the beginning of a timeUnit. */
+  @LibraryOperator(libraries = {BIG_QUERY})
+  public static final SqlFunction DATE_TRUNC =
+      SqlBasicFunction.create("DATE_TRUNC",
+          ReturnTypes.DATE_NULLABLE,
+          OperandTypes.sequence("'DATE_TRUNC(<DATE>, <DATETIME_INTERVAL>)'",
+              OperandTypes.DATE, OperandTypes.interval(DATE_UNITS)),
+          SqlFunctionCategory.TIMEDATE);
+
+  /** The "TIME_TRUNC(time, timeUnit)" function (BigQuery);
+   * truncates a TIME value to the beginning of a timeUnit. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction TIME_TRUNC =
       SqlBasicFunction.create("TIME_TRUNC",
@@ -722,12 +731,6 @@ public abstract class SqlLibraryOperators {
               "'TIMESTAMP_TRUNC(<TIMESTAMP>, <DATETIME_INTERVAL>)'",
               OperandTypes.TIMESTAMP, OperandTypes.interval(TIMESTAMP_UNITS)),
           SqlFunctionCategory.TIMEDATE);
-
-  /** The "DATE_TRUNC(date_expression, date_part)" function (BigQuery);
-   *  Truncates a DATE value to the granularity of date_part part. The DATE value is always
-   *  rounded to the beginning of the date_part. */
-  @LibraryOperator(libraries = {BIG_QUERY})
-  public static final SqlFunction DATE_TRUNC = new SqlDateTruncFunction();
 
   /** The "TIMESTAMP_SECONDS(bigint)" function; returns a TIMESTAMP value
    * a given number of seconds after 1970-01-01 00:00:00. */

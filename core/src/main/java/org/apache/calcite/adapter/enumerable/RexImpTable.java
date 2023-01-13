@@ -512,10 +512,9 @@ public class RexImpTable {
 
       // TIMESTAMP_TRUNC and TIME_TRUNC methods are syntactic sugar for standard
       // datetime FLOOR.
+      map.put(DATE_TRUNC, map.get(FLOOR));
       map.put(TIMESTAMP_TRUNC, map.get(FLOOR));
       map.put(TIME_TRUNC, map.get(FLOOR));
-      map.put(DATE_TRUNC, map.get(FLOOR));
-
 
       defineMethod(LAST_DAY, "lastDay", NullPolicy.STRICT);
       map.put(DAYNAME,
