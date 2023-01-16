@@ -207,7 +207,7 @@ public abstract class SqlLibraryOperators {
   public static final SqlFunction LENGTH =
       SqlStdOperatorTable.CHAR_LENGTH.withName("LENGTH");
 
-  /**The "LPAD(original_value, return_length[, pattern])" function. */
+  /** The "LPAD(original_value, return_length[, pattern])" function. */
   @LibraryOperator(libraries = {BIG_QUERY, ORACLE})
   public static final SqlFunction LPAD =
       SqlBasicFunction.create(
@@ -216,7 +216,7 @@ public abstract class SqlLibraryOperators {
           OperandTypes.STRING_NUMERIC_OPTIONAL_STRING,
           SqlFunctionCategory.STRING);
 
-  /**The "RPAD(original_value, return_length[, pattern])" function. */
+  /** The "RPAD(original_value, return_length[, pattern])" function. */
   @LibraryOperator(libraries = {BIG_QUERY, ORACLE})
   public static final SqlFunction RPAD =
       SqlBasicFunction.create(

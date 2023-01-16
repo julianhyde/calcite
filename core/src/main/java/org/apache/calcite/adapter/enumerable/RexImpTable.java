@@ -1916,7 +1916,7 @@ public class RexImpTable {
 
     @Override protected Expression implementNotNullResult(
         WinAggContext info, WinAggResultContext result) {
-      // Window cannot be empty since ROWS/RANGE is not possible for ROW_NUMBER
+      // Window must not be empty since ROWS/RANGE is not possible for ROW_NUMBER
       return Expressions.add(
           Expressions.subtract(result.index(), result.startIndex()),
           Expressions.constant(1));

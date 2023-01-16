@@ -1787,9 +1787,14 @@ EXPR$0
 eeriness
 !ok
 
-select rpad('cat', 7);
+select rpad('cat', 7) || '!';
 EXPR$0
-cat    
+cat    !
+!ok
+
+select rpad('cat', 7, '!');
+EXPR$0
+cat!!!!
 !ok
 
 # LTRIM

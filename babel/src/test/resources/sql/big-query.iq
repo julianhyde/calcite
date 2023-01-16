@@ -1288,9 +1288,10 @@ SELECT
 !ok
 
 #####################################################################
-# LPAD(original_value, return_length, pattern) {
+# LPAD(original_value, return_length, pattern)
 #
-# Returns a STRING or BYTES value that consists of original_value prepended with pattern.
+# Returns a STRING or BYTES value that consists of original_value prepended
+# with pattern.
 #
 # This function supports specifying collation.
 WITH Examples AS (
@@ -1323,9 +1324,10 @@ FROM Examples;
 !ok
 
 #####################################################################
-# RPAD(original_value, return_length, pattern) {
+# RPAD(original_value, return_length, pattern)
 #
-# Returns a STRING or BYTES value that consists of original_value prepended with pattern.
+# Returns a STRING or BYTES value that consists of original_value prepended
+# with pattern.
 #
 # This function supports specifying collation.
 WITH Examples AS (
