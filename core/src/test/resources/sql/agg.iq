@@ -3253,6 +3253,13 @@ group by deptno;
 
 !ok
 
+# ARG_MIN, ARG_MAX applied to an integer.
+select arg_min(empno, deptno) as mi,
+  arg_max(empno, deptno) as ma,
+  arg_max(empno, deptno) filter (where job = 'MANAGER') as mamgr
+from emp;
+!ok
+
 # ------------------------------------------------------------------------------
 
 !use mysqlfunc
