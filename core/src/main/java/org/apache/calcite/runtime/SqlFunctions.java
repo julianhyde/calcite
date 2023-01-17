@@ -402,8 +402,7 @@ public class SqlFunctions {
 
   /** SQL {@code ENDS_WITH(binary, binary)} function. */
   public static boolean endsWith(ByteString s0, ByteString s1) {
-    return s0.length() >= s1.length()
-        && s0.substring(s0.length() - s1.length()).equals(s1);
+    return s0.endsWith(s1);
   }
 
   /** SQL {@code STARTS_WITH(string, string)} function. */
@@ -413,8 +412,7 @@ public class SqlFunctions {
 
   /** SQL {@code STARTS_WITH(binary, binary)} function. */
   public static boolean startsWith(ByteString s0, ByteString s1) {
-    return s0.length() >= s1.length()
-        && s0.substring(0, s1.length()).equals(s1);
+    return s0.startsWith(s1);
   }
 
   /** SQL SUBSTRING(string FROM ...) function. */
@@ -2540,33 +2538,6 @@ public class SqlFunctions {
   }
 
   /**
-   * SQL {@code LAST_DAY} function.
-   *
-   * @param date days since epoch
-   * @return days of the last day of the month since epoch
-   */
-  public static int lastDay(int date) {
-    int y0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, date);
-    int m0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, date);
-    int last = lastDay(y0, m0);
-    return DateTimeUtils.ymdToUnixDate(y0, m0, last);
-  }
-
-  /**
-   * SQL {@code LAST_DAY} function.
-   *
-   * @param timestamp milliseconds from epoch
-   * @return milliseconds of the last day of the month since epoch
-   */
-  public static int lastDay(long timestamp) {
-    int date = (int) (timestamp / DateTimeUtils.MILLIS_PER_DAY);
-    int y0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, date);
-    int m0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, date);
-    int last = lastDay(y0, m0);
-    return DateTimeUtils.ymdToUnixDate(y0, m0, last);
-  }
-
-  /**
    * SQL {@code DAYNAME} function, applied to a TIMESTAMP argument.
    *
    * @param timestamp Milliseconds from epoch
@@ -3147,90 +3118,6 @@ public class SqlFunctions {
             withOrdinality);
       }
     };
-  }
-
-  /** Adds a given number of months to a timestamp, represented as the number
-   * of milliseconds since the epoch. */
-  public static long addMonths(long timestamp, int m) {
-    final long millis = floorMod(timestamp, DateTimeUtils.MILLIS_PER_DAY);
-    timestamp -= millis;
-    final long x =
-        addMonths((int) (timestamp / DateTimeUtils.MILLIS_PER_DAY), m);
-    return x * DateTimeUtils.MILLIS_PER_DAY + millis;
-  }
-
-  /** Adds a given number of months to a date, represented as the number of
-   * days since the epoch. */
-  public static int addMonths(int date, int m) {
-    int y0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.YEAR, date);
-    int m0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.MONTH, date);
-    int d0 = (int) DateTimeUtils.unixDateExtract(TimeUnitRange.DAY, date);
-    m0 += m;
-    int deltaYear = floorDiv(m0, 12);
-    y0 += deltaYear;
-    m0 = floorMod(m0, 12);
-    if (m0 == 0) {
-      y0 -= 1;
-      m0 += 12;
-    }
-
-    int last = lastDay(y0, m0);
-    if (d0 > last) {
-      d0 = last;
-    }
-    return DateTimeUtils.ymdToUnixDate(y0, m0, d0);
-  }
-
-  private static int lastDay(int y, int m) {
-    switch (m) {
-    case 2:
-      return y % 4 == 0
-          && (y % 100 != 0
-          || y % 400 == 0)
-          ? 29 : 28;
-    case 4:
-    case 6:
-    case 9:
-    case 11:
-      return 30;
-    default:
-      return 31;
-    }
-  }
-
-  /** Finds the number of months between two dates, each represented as the
-   * number of days since the epoch. */
-  public static int subtractMonths(int date0, int date1) {
-    if (date0 < date1) {
-      return -subtractMonths(date1, date0);
-    }
-    // Start with an estimate.
-    // Since no month has more than 31 days, the estimate is <= the true value.
-    int m = (date0 - date1) / 31;
-    for (;;) {
-      int date2 = addMonths(date1, m);
-      if (date2 >= date0) {
-        return m;
-      }
-      int date3 = addMonths(date1, m + 1);
-      if (date3 > date0) {
-        return m;
-      }
-      ++m;
-    }
-  }
-
-  public static int subtractMonths(long t0, long t1) {
-    final long millis0 = floorMod(t0, DateTimeUtils.MILLIS_PER_DAY);
-    final int d0 = (int) floorDiv(t0 - millis0, DateTimeUtils.MILLIS_PER_DAY);
-    final long millis1 = floorMod(t1, DateTimeUtils.MILLIS_PER_DAY);
-    final int d1 = (int) floorDiv(t1 - millis1, DateTimeUtils.MILLIS_PER_DAY);
-    int x = subtractMonths(d0, d1);
-    final long d2 = addMonths(d1, x);
-    if (d2 == d0 && millis0 < millis1) {
-      --x;
-    }
-    return x;
   }
 
   /**

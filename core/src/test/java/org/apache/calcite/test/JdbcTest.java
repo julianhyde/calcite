@@ -2115,6 +2115,15 @@ public class JdbcTest {
         .returnsUnordered("A=[10, 20, 10, 10]");
   }
 
+  @Test void testNestedMultiset() {
+    CalciteAssert.that()
+        .query("select multiset[ARRAY[1, 2], ARRAY[3, 4]]")
+        .returns("EXPR$0=[[1, 2], [3, 4]]\n");
+
+    CalciteAssert.that()
+        .query("select multiset[multiset[1, 2], multiset[3, 4]]")
+        .returns("EXPR$0=[[1, 2], [3, 4]]\n");
+  }
   @Test void testUnnestArray() {
     CalciteAssert.that()
         .query("select*from unnest(array[1,2])")

@@ -214,7 +214,7 @@ public class TimeFrameSet {
     if (perMonth != null
         && perMonth.getNumerator().equals(BigInteger.ONE)) {
       final int m = perMonth.getDenominator().intValueExact(); // e.g. 12 for YEAR
-      return SqlFunctions.addMonths(date, interval * m);
+      return DateTimeUtils.addMonths(date, interval * m);
     }
 
     // Unknown time frame. Return the original value unchanged.
@@ -235,7 +235,7 @@ public class TimeFrameSet {
     if (perMonth != null
         && perMonth.getNumerator().equals(BigInteger.ONE)) {
       final long m = perMonth.getDenominator().longValueExact(); // e.g. 12 for YEAR
-      return SqlFunctions.addMonths(timestamp, (int) (interval * m));
+      return DateTimeUtils.addMonths(timestamp, (int) (interval * m));
     }
 
     // Unknown time frame. Return the original value unchanged.
