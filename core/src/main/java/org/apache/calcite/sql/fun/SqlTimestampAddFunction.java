@@ -28,6 +28,7 @@ import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 
@@ -70,47 +71,52 @@ public class SqlTimestampAddFunction extends SqlFunction {
       opBinding ->
           deduceType(opBinding.getTypeFactory(),
               opBinding.getOperandLiteralValue(0, TimeUnit.class),
-              opBinding.getOperandType(1), opBinding.getOperandType(2));
+              opBinding.getOperandType(2));
 
+  @Deprecated // to be removed before 2.0
   public static RelDataType deduceType(RelDataTypeFactory typeFactory,
       @Nullable TimeUnit timeUnit, RelDataType operandType1,
       RelDataType operandType2) {
-    final RelDataType type;
+    final RelDataType type = deduceType(typeFactory, timeUnit, operandType2);
+    return typeFactory.createTypeWithNullability(type,
+        operandType1.isNullable() || operandType2.isNullable());
+  }
+
+  static RelDataType deduceType(RelDataTypeFactory typeFactory,
+      @Nullable TimeUnit timeUnit, RelDataType datetimeType) {
     TimeUnit timeUnit2 = first(timeUnit, TimeUnit.EPOCH);
     switch (timeUnit2) {
     case MILLISECOND:
-      type = typeFactory.createSqlType(SqlTypeName.TIMESTAMP,
+      return typeFactory.createSqlType(SqlTypeName.TIMESTAMP,
           MILLISECOND_PRECISION);
-      break;
+
     case MICROSECOND:
-      type = typeFactory.createSqlType(SqlTypeName.TIMESTAMP,
+      return typeFactory.createSqlType(SqlTypeName.TIMESTAMP,
           MICROSECOND_PRECISION);
-      break;
+
     case HOUR:
     case MINUTE:
     case SECOND:
-      final SqlTypeName typeName = sanitize(operandType2.getSqlTypeName());
-      type = typeFactory.createSqlType(typeName);
-      break;
+      SqlTypeName typeName = datetimeType.getSqlTypeName();
+      switch (typeName) {
+      case TIME:
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        break;
+      default:
+        // If it is not a TIMESTAMP_WITH_LOCAL_TIME_ZONE, operations involving
+        // HOUR, MINUTE, SECOND with DATE or TIMESTAMP types will result in
+        // TIMESTAMP type.
+        typeName = SqlTypeName.TIMESTAMP;
+        break;
+      }
+      return typeFactory.createSqlType(typeName);
+
     default:
     case EPOCH:
-      type = operandType2;
-    }
-    return typeFactory.createTypeWithNullability(type,
-        operandType1.isNullable()
-            || operandType2.isNullable());
-  }
-  private static SqlTypeName sanitize(SqlTypeName typeName) {
-    switch (typeName) {
-    case TIME:
-    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      return typeName;
-    default:
-      // If it is not a TIMESTAMP_WITH_LOCAL_TIME_ZONE, operations involving
-      // HOUR, MINUTE, SECOND with DATE or TIMESTAMP types will result in TIMESTAMP type
-      return SqlTypeName.TIMESTAMP;
+      return datetimeType;
     }
   }
+
   @Override public void validateCall(SqlCall call, SqlValidator validator,
       SqlValidatorScope scope, SqlValidatorScope operandScope) {
     super.validateCall(call, validator, scope, operandScope);
@@ -130,7 +136,8 @@ public class SqlTimestampAddFunction extends SqlFunction {
 
   /** Creates a SqlTimestampAddFunction. */
   SqlTimestampAddFunction(String name) {
-    super(name, SqlKind.TIMESTAMP_ADD, RETURN_TYPE_INFERENCE, null,
+    super(name, SqlKind.TIMESTAMP_ADD,
+        RETURN_TYPE_INFERENCE.andThen(SqlTypeTransforms.TO_NULLABLE), null,
         OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.INTEGER,
             SqlTypeFamily.DATETIME),
         SqlFunctionCategory.TIMEDATE);

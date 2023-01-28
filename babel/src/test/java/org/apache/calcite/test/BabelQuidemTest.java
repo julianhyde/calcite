@@ -115,10 +115,11 @@ class BabelQuidemTest extends QuidemTest {
               .with(CalciteConnectionProperty.LENIENT_OPERATOR_LOOKUP, true)
               .with(
                   ConnectionFactories.addType("DATETIME", typeFactory ->
-                  typeFactory.createSqlType(SqlTypeName.TIMESTAMP)))
+                      typeFactory.createSqlType(SqlTypeName.TIMESTAMP)))
               .with(
                   ConnectionFactories.addType("TIMESTAMP", typeFactory ->
-                  typeFactory.createSqlType(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)))
+                      typeFactory.createSqlType(
+                          SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)))
               .connect();
         case "scott-postgresql":
           return CalciteAssert.that()
