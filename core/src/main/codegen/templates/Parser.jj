@@ -4631,10 +4631,9 @@ SqlLiteral DateTimeLiteral() :
     }
 }
 
-/**
- * Parses BigQuery's built-in DATE() function.
- */
-SqlNode DateFunctionCall() :
+/** Parses a Date/Time constructor function, for example "DATE(1969, 7, 21)"
+ * or "DATETIME(d, t)". Enabled in some libraries (e.g. BigQuery). */
+SqlNode DateTimeConstructorCall() :
 {
     final SqlFunctionCategory funcType = SqlFunctionCategory.TIMEDATE;
     final SqlIdentifier qualifiedName;
@@ -4643,76 +4642,7 @@ SqlNode DateFunctionCall() :
     final List<? extends SqlNode> args;
 }
 {
-    <DATE> {
-        s = span();
-        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
-    }
-    args = FunctionParameterList(ExprContext.ACCEPT_SUB_QUERY) {
-        quantifier = (SqlLiteral) args.get(0);
-        args.remove(0);
-        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
-    }
-}
-
-/**
- * Parses BigQuery's built-in DATETIME() function.
- */
-SqlNode DatetimeFunctionCall() :
-{
-    final SqlFunctionCategory funcType = SqlFunctionCategory.TIMEDATE;
-    final SqlIdentifier qualifiedName;
-    final Span s;
-    final SqlLiteral quantifier;
-    final List<? extends SqlNode> args;
-}
-{
-    <DATETIME> {
-        s = span();
-        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
-    }
-    args = FunctionParameterList(ExprContext.ACCEPT_SUB_QUERY) {
-        quantifier = (SqlLiteral) args.get(0);
-        args.remove(0);
-        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
-    }
-}
-
-/**
- * Parses BigQuery's built-in TIMESTAMP() function.
- */
-SqlNode TimestampFunctionCall() :
-{
-    final SqlFunctionCategory funcType = SqlFunctionCategory.TIMEDATE;
-    final SqlIdentifier qualifiedName;
-    final Span s;
-    final SqlLiteral quantifier;
-    final List<? extends SqlNode> args;
-}
-{
-    <TIMESTAMP> {
-        s = span();
-        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
-    }
-    args = FunctionParameterList(ExprContext.ACCEPT_SUB_QUERY) {
-        quantifier = (SqlLiteral) args.get(0);
-        args.remove(0);
-        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
-    }
-}
-
-/**
- * Parses BigQuery's built-in TIME() function.
- */
-SqlNode TimeFunctionCall() :
-{
-    final SqlFunctionCategory funcType = SqlFunctionCategory.TIMEDATE;
-    final SqlIdentifier qualifiedName;
-    final Span s;
-    final SqlLiteral quantifier;
-    final List<? extends SqlNode> args;
-}
-{
-    <TIME> {
+    (<DATE> | <TIME> | <DATETIME> | <TIMESTAMP>) {
         s = span();
         qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
     }
@@ -6180,13 +6110,9 @@ SqlNode BuiltinFunctionCall() :
             return SqlStdOperatorTable.TRIM.createCall(s.end(this), args);
         }
     |
-        node = DateFunctionCall() { return node; }
+        node = DateTimeConstructorCall() { return node; }
     |
         node = DateTruncFunctionCall() { return node; }
-    |
-        node = DatetimeFunctionCall() { return node; }
-    |
-        node = TimestampFunctionCall() { return node; }
     |
         node = TimestampAddFunctionCall() { return node; }
     |
@@ -6197,8 +6123,6 @@ SqlNode BuiltinFunctionCall() :
         node = TimestampTruncFunctionCall() { return node; }
     |
         node = TimeDiffFunctionCall() { return node; }
-    |
-        node = TimeFunctionCall() { return node; }
     |
         node = TimeTruncFunctionCall() { return node; }
     |

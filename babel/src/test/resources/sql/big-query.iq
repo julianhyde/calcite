@@ -659,6 +659,8 @@ SELECT LENGTH("hello") as length;
 #####################################################################
 # DATE
 #
+# 0. DATE(string)
+#   Shorthand for 'CAST(string AS DATE)'
 # 1. DATE(year, month, day)
 #   Constructs a DATE from INT64 values representing the year, month,
 #   and day.
@@ -1146,17 +1148,42 @@ select unix_date(datetime '2008-12-25') as d;
 #####################################################################
 # DATE
 #
+# 0. DATE(string)
 # 1. DATE(year, month, day)
 # 2. DATE(timestamp_expression[, time_zone])
 # 3. DATE(datetime_expression)
 #
+# 0.
 # 1. Constructs a DATE from INT64 values representing the year, month, and day.
-# 1. Extracts the DATE from a TIMESTAMP expression. It supports an optional
+# 2. Extracts the DATE from a TIMESTAMP expression. It supports an optional
 #    parameter to specify a time zone. If no time zone is specified, the default
 #    time zone, UTC, is used.
-# 1. Extracts the DATE from a DATETIME expression.
+# 3. Extracts the DATE from a DATETIME expression.
 #
 # Return Data Type: DATE
+
+# 'date(x) is shorthand for 'cast(x as date)'
+select date('1970-01-01') as d;
++------------+
+| d          |
++------------+
+| 1970-01-01 |
++------------+
+(1 row)
+
+!ok
+
+!if (false) {
+select date(cast(null as varchar(10))) as d;
++---+
+| D |
++---+
+|   |
++---+
+(1 row)
+
+!ok
+!}
 
 select date(2022, 11, 15) as d1,
        date(datetime "2008-01-01 01:03:05") as d2,

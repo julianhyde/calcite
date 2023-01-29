@@ -482,18 +482,28 @@ public abstract class SqlLibraryOperators {
   public static final SqlAggFunction MIN_BY =
       SqlStdOperatorTable.ARG_MIN.withName("MIN_BY");
 
-  /** The "DATE(string)" function, equivalent to "CAST(string AS DATE). */
+  /** The "DATE(string)" function, equivalent to "CAST(string AS DATE);
+   * also "DATE(year, month, date)",
+   * "DATE(timestampLtz [, timeZone])",
+   * "DATE(timestamp)". */
+  @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction DATE =
       SqlBasicFunction.create("DATE", ReturnTypes.DATE_NULLABLE,
-          OperandTypes.STRING, SqlFunctionCategory.TIMEDATE);
-
-
-  /**
-   * BigQuery's {@code DATE} function can take various operands.
-   * See {@link SqlDateFunction}.
-   */
-  @LibraryOperator(libraries = {BIG_QUERY})
-  public static final SqlFunction DATE2 = new SqlDateFunction();
+          OperandTypes.or(
+              // DATE(string)
+              OperandTypes.STRING,
+              // DATE(year, month, date)
+              OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER,
+                  SqlTypeFamily.INTEGER),
+              // DATE(timestamp)
+              OperandTypes.TIMESTAMP_NTZ,
+              // DATE(timestampLtz)
+              OperandTypes.TIMESTAMP_LTZ,
+              // DATE(timestampLtz, timeZone)
+              OperandTypes.sequence(null,
+                  OperandTypes.TIMESTAMP_LTZ,
+                  OperandTypes.CHARACTER)),
+          SqlFunctionCategory.TIMEDATE);
 
   /**
    * BigQuery's {@code DATETIME} function can take various operands.

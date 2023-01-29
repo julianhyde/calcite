@@ -154,6 +154,19 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
           }
         });
 
+    // DATE(string) is equivalent to CAST(string AS DATE),
+    // but other DATE variants are treated as regular functions.
+    registerOp(SqlLibraryOperators.DATE,
+        (cx, call) -> {
+          final RexCall e =
+              (RexCall) StandardConvertletTable.this.convertCall(cx, call);
+          if (e.getOperands().size() == 1
+              && SqlTypeUtil.isString(e.getOperands().get(0).getType())) {
+            return cx.getRexBuilder().makeCast(e.type, e.getOperands().get(0));
+          }
+          return e;
+        });
+
     registerOp(SqlLibraryOperators.LTRIM,
         new TrimConvertlet(SqlTrimFunction.Flag.LEADING));
     registerOp(SqlLibraryOperators.RTRIM,
@@ -345,8 +358,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             rexBuilder.makeCast(
                 cx.getTypeFactory()
                     .createTypeWithNullability(type, operand1.getType().isNullable()),
-                operand1)
-        ));
+                operand1)));
   }
 
   /** Converts a call to the DECODE function. */
