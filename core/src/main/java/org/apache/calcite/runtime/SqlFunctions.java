@@ -203,7 +203,7 @@ public class SqlFunctions {
   /** Regular expression that matches time zone offsets such as "+0" and "+2:30"
    * at the end of a string. */
   private static final Pattern TRAILING_OFFSET_PATTERN =
-      Pattern.compile("\\+[0-9:]+$");
+      Pattern.compile("\\(.*\\)\\+[0-9:]+$");
 
   private SqlFunctions() {
   }
@@ -2809,7 +2809,7 @@ public class SqlFunctions {
           // always be zero.
           final Matcher matcher = TRAILING_OFFSET_PATTERN.matcher(expression);
           if (matcher.matches()) {
-            expression = matcher.replaceAll("");
+            expression = matcher.group(1);
           }
         }
         return LocalDateTime
