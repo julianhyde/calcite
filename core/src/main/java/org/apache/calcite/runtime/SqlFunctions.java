@@ -2804,12 +2804,10 @@ public class SqlFunctions {
     } catch (DateTimeParseException e) {
       try {
         if (IS_JDK_8) {
-          // JDK 8 has a bug that prevents matching offsets like "+hh", "+hh:mm"
-          // or "+hh:mm:ss". Work around the bug by removing it. The offset will
-          // always be zero.
-          final Matcher matcher = TRAILING_OFFSET_PATTERN.matcher(expression);
-          if (matcher.matches()) {
-            expression = matcher.group(1);
+          // JDK 8 has a bug that prevents matching offsets like "+00" but can
+          // match "+00:00".
+          if (expression.endsWith("+00")) {
+            expression += ":00";
           }
         }
         return LocalDateTime
