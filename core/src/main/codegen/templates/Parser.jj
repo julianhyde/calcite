@@ -5079,17 +5079,17 @@ SqlIntervalQualifier TimeUnitOrName() : {
 {
     LOOKAHEAD(2)
     <NANOSECOND> { return new SqlIntervalQualifier(TimeUnit.NANOSECOND, null, getPos()); }
-|   <MICROSECOND> { return new SqlIntervalQualifier(TimeUnit.MICROSECOND, null, getPos()); }
-|   <MILLISECOND> { return new SqlIntervalQualifier(TimeUnit.MILLISECOND, null, getPos()); }
-|   <SECOND> { return new SqlIntervalQualifier(TimeUnit.SECOND, null, getPos()); }
-|   <MINUTE> { return new SqlIntervalQualifier(TimeUnit.MINUTE, null, getPos()); }
-|   <HOUR> { return new SqlIntervalQualifier(TimeUnit.HOUR, null, getPos()); }
-|   <DAY> { return new SqlIntervalQualifier(TimeUnit.DAY, null, getPos()); }
-|   <DOW> { return new SqlIntervalQualifier(TimeUnit.DOW, null, getPos()); }
-|   <DOY> { return new SqlIntervalQualifier(TimeUnit.DOY, null, getPos()); }
-|   <ISODOW> { return new SqlIntervalQualifier(TimeUnit.ISODOW, null, getPos()); }
-|   <ISOYEAR> { return new SqlIntervalQualifier(TimeUnit.ISOYEAR, null, getPos()); }
-|   <WEEK> { span = span(); }
+|   LOOKAHEAD(2) <MICROSECOND> { return new SqlIntervalQualifier(TimeUnit.MICROSECOND, null, getPos()); }
+|   LOOKAHEAD(2) <MILLISECOND> { return new SqlIntervalQualifier(TimeUnit.MILLISECOND, null, getPos()); }
+|   LOOKAHEAD(2) <SECOND> { return new SqlIntervalQualifier(TimeUnit.SECOND, null, getPos()); }
+|   LOOKAHEAD(2) <MINUTE> { return new SqlIntervalQualifier(TimeUnit.MINUTE, null, getPos()); }
+|   LOOKAHEAD(2) <HOUR> { return new SqlIntervalQualifier(TimeUnit.HOUR, null, getPos()); }
+|   LOOKAHEAD(2) <DAY> { return new SqlIntervalQualifier(TimeUnit.DAY, null, getPos()); }
+|   LOOKAHEAD(2) <DOW> { return new SqlIntervalQualifier(TimeUnit.DOW, null, getPos()); }
+|   LOOKAHEAD(2) <DOY> { return new SqlIntervalQualifier(TimeUnit.DOY, null, getPos()); }
+|   LOOKAHEAD(2) <ISODOW> { return new SqlIntervalQualifier(TimeUnit.ISODOW, null, getPos()); }
+|   LOOKAHEAD(2) <ISOYEAR> { return new SqlIntervalQualifier(TimeUnit.ISOYEAR, null, getPos()); }
+|   LOOKAHEAD(2) <WEEK> { span = span(); }
     (
         LOOKAHEAD(2)
         <LPAREN> w = weekdayName() <RPAREN> {
@@ -5098,13 +5098,13 @@ SqlIntervalQualifier TimeUnitOrName() : {
     |
         { return new SqlIntervalQualifier(TimeUnit.WEEK, null, getPos()); }
     )
-|   <MONTH> { return new SqlIntervalQualifier(TimeUnit.MONTH, null, getPos()); }
-|   <QUARTER> { return new SqlIntervalQualifier(TimeUnit.QUARTER, null, getPos()); }
-|   <YEAR> { return new SqlIntervalQualifier(TimeUnit.YEAR, null, getPos()); }
-|   <EPOCH> { return new SqlIntervalQualifier(TimeUnit.EPOCH, null, getPos()); }
-|   <DECADE> { return new SqlIntervalQualifier(TimeUnit.DECADE, null, getPos()); }
-|   <CENTURY> { return new SqlIntervalQualifier(TimeUnit.CENTURY, null, getPos()); }
-|   <MILLENNIUM> { return new SqlIntervalQualifier(TimeUnit.MILLENNIUM, null, getPos()); }
+|   LOOKAHEAD(2) <MONTH> { return new SqlIntervalQualifier(TimeUnit.MONTH, null, getPos()); }
+|   LOOKAHEAD(2) <QUARTER> { return new SqlIntervalQualifier(TimeUnit.QUARTER, null, getPos()); }
+|   LOOKAHEAD(2) <YEAR> { return new SqlIntervalQualifier(TimeUnit.YEAR, null, getPos()); }
+|   LOOKAHEAD(2) <EPOCH> { return new SqlIntervalQualifier(TimeUnit.EPOCH, null, getPos()); }
+|   LOOKAHEAD(2) <DECADE> { return new SqlIntervalQualifier(TimeUnit.DECADE, null, getPos()); }
+|   LOOKAHEAD(2) <CENTURY> { return new SqlIntervalQualifier(TimeUnit.CENTURY, null, getPos()); }
+|   LOOKAHEAD(2) <MILLENNIUM> { return new SqlIntervalQualifier(TimeUnit.MILLENNIUM, null, getPos()); }
 |   unitName = SimpleIdentifier() {
         return new SqlIntervalQualifier(unitName.getSimple(),
             unitName.getParserPosition());
@@ -6715,6 +6715,7 @@ SqlCall DateTruncFunctionCall() :
     // the BigQuery variant, e.g. "DATE_TRUNC(d, YEAR)",
     // and the Redshift variant, e.g. "DATE_TRUNC('year', DATE '2008-09-08')".
     (
+        LOOKAHEAD(2)
         unit = TimeUnitOrName() { args.add(unit); }
     |
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
