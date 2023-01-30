@@ -462,6 +462,9 @@ public abstract class OperandTypes {
   public static final SqlSingleOperandTypeChecker INTERVAL =
       family(SqlTypeFamily.DATETIME_INTERVAL);
 
+  public static final SqlSingleOperandTypeChecker CHARACTER_CHARACTER =
+      family(SqlTypeFamily.CHARACTER, SqlTypeFamily.CHARACTER);
+
   public static final SqlSingleOperandTypeChecker CHARACTER_CHARACTER_DATETIME =
       family(SqlTypeFamily.CHARACTER, SqlTypeFamily.CHARACTER, SqlTypeFamily.DATETIME);
 
@@ -822,6 +825,12 @@ public abstract class OperandTypes {
 
   public static final SqlSingleOperandTypeChecker DATE_INTERVAL =
       family(SqlTypeFamily.DATE, SqlTypeFamily.DATETIME_INTERVAL);
+
+  public static final SqlSingleOperandTypeChecker DATE_CHARACTER =
+      family(SqlTypeFamily.DATE, SqlTypeFamily.CHARACTER);
+
+  public static final SqlSingleOperandTypeChecker DATE_TIME =
+      family(SqlTypeFamily.DATE, SqlTypeFamily.TIME);
 
   public static final SqlSingleOperandTypeChecker DATETIME_INTERVAL =
       family(SqlTypeFamily.DATETIME, SqlTypeFamily.DATETIME_INTERVAL);
