@@ -195,8 +195,15 @@ public class SqlFunctions {
           .parseLenient()
           .appendOffsetId()
           .toFormatter(Locale.ROOT);
-  private static final boolean IS_JDK_8 = System.getProperty("java.version").startsWith("1.8");
-  private static final Pattern TRAILING_OFFSET_PATTERN = Pattern.compile("\\+[0-9:]$");
+
+  /** Whether the current Java version is 8 (1.8). */
+  private static final boolean IS_JDK_8 =
+      System.getProperty("java.version").startsWith("1.8");
+
+  /** Regular expression that matches time zone offsets such as "+0" and "+2:30"
+   * at the end of a string. */
+  private static final Pattern TRAILING_OFFSET_PATTERN =
+      Pattern.compile("\\+[0-9:]+$");
 
   private SqlFunctions() {
   }
