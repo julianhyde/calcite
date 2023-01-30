@@ -87,6 +87,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
@@ -194,6 +195,8 @@ public class SqlFunctions {
           .parseLenient()
           .appendOffsetId()
           .toFormatter(Locale.ROOT);
+  private static final boolean IS_JDK_8 = System.getProperty("java.version").startsWith("1.8");
+  private static final Pattern TRAILING_OFFSET_PATTERN = Pattern.compile("\\+[0-9:]$");
 
   private SqlFunctions() {
   }
@@ -2786,21 +2789,38 @@ public class SqlFunctions {
   }
 
   private static OffsetDateTime parseBigQueryTimestampLiteral(String expression) {
-    // First try to parse with an offset, otherwise parse as a local and assume UTC ("no offset").
+    // First try to parse with an offset, otherwise parse as a local and assume
+    // UTC ("no offset").
     try {
       return OffsetDateTime
           .parse(expression, BIG_QUERY_TIMESTAMP_LITERAL_FORMATTER);
     } catch (DateTimeParseException e) {
-      try {
-        return LocalDateTime
-            .parse(expression, BIG_QUERY_TIMESTAMP_LITERAL_FORMATTER)
-            .atOffset(ZoneOffset.UTC);
-      } catch (DateTimeParseException e2) {
-        throw new IllegalArgumentException(
-            String.format(
-                Locale.ROOT, "Could not parse BigQuery timestamp literal: %s", expression),
-            e2);
+      // ignore
+    }
+    if (IS_JDK_8) {
+      // JDK 8 has a bug that prevents matching offsets like "+hh", "+hh:mm"
+      // or "+hh:mm:ss". Work around the bug by removing it. The offset will
+      // always be zero.
+      final Matcher matcher = TRAILING_OFFSET_PATTERN.matcher(expression);
+      if (matcher.matches()) {
+        String expression2 = matcher.replaceAll("");
+        try {
+          return OffsetDateTime
+              .parse(expression2, BIG_QUERY_TIMESTAMP_LITERAL_FORMATTER);
+        } catch (DateTimeParseException e) {
+          // ignore
+        }
       }
+    }
+    try {
+      return LocalDateTime
+          .parse(expression, BIG_QUERY_TIMESTAMP_LITERAL_FORMATTER)
+          .atOffset(ZoneOffset.UTC);
+    } catch (DateTimeParseException e2) {
+      throw new IllegalArgumentException(
+          String.format(Locale.ROOT,
+              "Could not parse BigQuery timestamp literal: %s", expression),
+          e2);
     }
   }
 

@@ -500,9 +500,9 @@ public abstract class SqlLibraryOperators {
               // DATE(timestampLtz)
               OperandTypes.TIMESTAMP_LTZ,
               // DATE(timestampLtz, timeZone)
-              OperandTypes.sequence(null,
-                  OperandTypes.TIMESTAMP_LTZ,
-                  OperandTypes.CHARACTER)),
+              OperandTypes.sequence(
+                  "DATE(TIMESTAMP WITH LOCAL TIME ZONE, VARCHAR)",
+                  OperandTypes.TIMESTAMP_LTZ, OperandTypes.CHARACTER)),
           SqlFunctionCategory.TIMEDATE);
 
   /**
