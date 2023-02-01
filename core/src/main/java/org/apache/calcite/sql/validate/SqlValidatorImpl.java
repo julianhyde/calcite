@@ -2749,7 +2749,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           select,
           SqlSelect.WHERE_OPERAND);
 
-      // Register subqueries in the qualify clause
+      // Register subqueries in the QUALIFY clause
       registerOperandSubQueries(
           selectScope,
           select,
@@ -4202,7 +4202,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     SqlValidatorScope qualifyScope = getSelectScope(select);
 
-    qualifyNode = extendedExpand(qualifyNode, qualifyScope, select, ExpansionClause.QUALIFY);
+    qualifyNode = extendedExpand(qualifyNode, qualifyScope, select, Clause.QUALIFY);
     select.setQualify(qualifyNode);
 
     inferUnknownTypes(
@@ -4217,55 +4217,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       throw newValidationError(qualifyNode, RESOURCE.condMustBeBoolean("QUALIFY"));
     }
 
-    if (!qualifyNode.accept(WindowFunctionDetector.INSTANCE)) {
+    boolean qualifyContainsWindowFunction = overFinder.findAgg(qualifyNode) != null;
+    if (!qualifyContainsWindowFunction) {
       throw newValidationError(qualifyNode,
           RESOURCE.qualifyExpressionMustContainWindowFunction(qualifyNode.toString()));
-    }
-  }
-
-  /** Detects OVER. */
-  private static final class WindowFunctionDetector implements SqlVisitor<Boolean> {
-    public static final WindowFunctionDetector INSTANCE = new WindowFunctionDetector();
-    private WindowFunctionDetector() {}
-
-    @Override public Boolean visit(SqlLiteral literal) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlCall call) {
-      if (call.getKind() == SqlKind.OVER) {
-        return true;
-      }
-
-      return call
-          .getOperandList()
-          .stream()
-          .filter(operand -> operand != null)
-          .anyMatch(operand -> operand.accept(this));
-    }
-
-    @Override public Boolean visit(SqlNodeList nodeList) {
-      return nodeList
-          .getList()
-          .stream()
-          .filter(node -> node != null)
-          .anyMatch(node -> node.accept(this));
-    }
-
-    @Override public Boolean visit(SqlIdentifier id) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlDataTypeSpec type) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlDynamicParam param) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlIntervalQualifier intervalQualifier) {
-      return false;
     }
   }
 
@@ -4462,7 +4417,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     List<SqlNode> expandedList = new ArrayList<>();
     for (SqlNode groupItem : groupList) {
       SqlNode expandedItem =
-          extendedExpand(groupItem, groupScope, select, ExpansionClause.GROUP_BY);
+          extendedExpand(groupItem, groupScope, select, Clause.GROUP_BY);
       expandedList.add(expandedItem);
     }
     groupList = new SqlNodeList(expandedList, groupList.getParserPosition());
@@ -4592,7 +4547,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final AggregatingScope havingScope =
         (AggregatingScope) getSelectScope(select);
     if (config.conformance().isHavingAlias()) {
-      SqlNode newExpr = extendedExpand(having, havingScope, select, ExpansionClause.HAVING);
+      SqlNode newExpr = extendedExpand(having, havingScope, select, Clause.HAVING);
       if (having != newExpr) {
         having = newExpr;
         select.setHaving(newExpr);
@@ -6269,8 +6224,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   /** Expands an expression in a GROUP BY, HAVING or QUALIFY clause. */
-  public SqlNode extendedExpand(SqlNode expr,
-      SqlValidatorScope scope, SqlSelect select, ExpansionClause clause) {
+  private SqlNode extendedExpand(SqlNode expr,
+      SqlValidatorScope scope, SqlSelect select, Clause clause) {
     final Expander expander =
         new ExtendedExpander(this, scope, select, expr, clause);
     SqlNode newExpr = expander.go(expr);
@@ -6278,6 +6233,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       setOriginal(newExpr, expr);
     }
     return newExpr;
+  }
+
+  public SqlNode extendedExpandGroupBy(SqlNode expr,
+      SqlValidatorScope scope, SqlSelect select) {
+    return extendedExpand(expr, scope, select, Clause.GROUP_BY);
   }
 
   @Override public boolean isSystemField(RelDataTypeField field) {
@@ -6872,10 +6832,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   static class ExtendedExpander extends Expander {
     final SqlSelect select;
     final SqlNode root;
-    final ExpansionClause clause;
+    final Clause clause;
 
     ExtendedExpander(SqlValidatorImpl validator, SqlValidatorScope scope,
-        SqlSelect select, SqlNode root, ExpansionClause clause) {
+        SqlSelect select, SqlNode root, Clause clause) {
       super(validator, scope);
       this.select = select;
       this.root = root;
@@ -6887,24 +6847,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         return super.visit(id);
       }
 
-      boolean replaceAliases;
-      switch (clause) {
-      case GROUP_BY:
-        replaceAliases = validator.config().conformance().isGroupByAlias();
-        break;
-
-      case HAVING:
-        replaceAliases = validator.config().conformance().isHavingAlias();
-        break;
-
-      case QUALIFY:
-        replaceAliases = true;
-        break;
-
-      default:
-        throw Util.unexpected(clause);
-      }
-
+      final boolean replaceAliases = shouldReplaceAliases(validator.config, clause);
       if (!replaceAliases) {
         final SelectScope scope = validator.getRawSelectScope(select);
         SqlNode node = expandCommonColumn(select, id, scope, validator);
@@ -6927,6 +6870,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           n++;
         }
       }
+
       if (n == 0) {
         return super.visit(id);
       } else if (n > 1) {
@@ -6934,23 +6878,27 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         throw validator.newValidationError(id,
             RESOURCE.columnAmbiguous(name));
       }
-      if (clause == ExpansionClause.HAVING && validator.isAggregate(root)) {
+      if (clause == Clause.HAVING && validator.isAggregate(root)) {
         return super.visit(id);
       }
+
       expr = stripAs(expr);
       if (expr instanceof SqlIdentifier) {
         SqlIdentifier sid = (SqlIdentifier) expr;
         final SqlIdentifier fqId = getScope().fullyQualify(sid).identifier;
         expr = expandDynamicStar(sid, fqId);
       }
+
       return expr;
     }
 
     @Override public @Nullable SqlNode visit(SqlLiteral literal) {
-      if (clause == ExpansionClause.HAVING
-          || !validator.config().conformance().isGroupByOrdinal()) {
+      boolean expandGroupByOrdinal = (clause == Clause.GROUP_BY)
+          && validator.config().conformance().isGroupByOrdinal();
+      if (!expandGroupByOrdinal) {
         return super.visit(literal);
       }
+
       boolean isOrdinalLiteral = literal == root;
       switch (root.getKind()) {
       case GROUPING_SETS:
@@ -6991,6 +6939,44 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
 
       return super.visit(literal);
+    }
+
+    /**
+     * Determines if the extender should replace aliases with expanded values.
+     * For example:
+     *
+     * <blockquote><pre>{@code
+     *  SELECT a + a as twoA
+     *  GROUP BY twoA
+     * }</pre></blockquote>
+     *
+     * <p>turns into
+     *
+     * <blockquote><pre>{@code
+     *  SELECT a + a as twoA
+     *  GROUP BY a + a
+     * }</pre></blockquote>
+     *
+     * <p>This is determined both by the clause and the config.
+     *
+     * @param config The configuration
+     * @param clause The clause
+     * @return Whether we should replace the alias with its expanded value
+     */
+    private static boolean shouldReplaceAliases(Config config, Clause clause) {
+      switch (clause) {
+      case GROUP_BY:
+        return config.conformance().isGroupByAlias();
+
+      case HAVING:
+        return config.conformance().isHavingAlias();
+
+      case QUALIFY:
+        return true;
+
+      default:
+        throw Util.unexpected(clause);
+      }
     }
   }
 
@@ -7457,12 +7443,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     GROUP_BY,
     SELECT,
     ORDER,
-    CURSOR
-  }
-
-  /** Which clause is being expanded. */
-  public enum ExpansionClause {
-    GROUP_BY,
+    CURSOR,
     HAVING,
     QUALIFY,
   }
