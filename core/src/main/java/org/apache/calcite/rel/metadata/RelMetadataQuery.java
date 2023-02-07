@@ -826,6 +826,27 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
 
   /**
    * Returns the
+   * {@link BuiltInMetadata.Measure#expand(int, BuiltInMetadata.Measure.Context)}
+   * statistic.
+   *
+   * @param rel      The relational expression
+   * @param column   Output column of the relational expression
+   * @param context  Context of the use of the measure
+   * @return expression for measure in the context
+   */
+  public @Nullable RexNode expand(RelNode rel, int column,
+      BuiltInMetadata.Measure.Context context) {
+    for (;;) {
+      try {
+        return measureHandler.expand(rel, this, column, context);
+      } catch (MetadataHandlerProvider.NoHandler e) {
+        measureHandler = revise(BuiltInMetadata.Measure.Handler.class);
+      }
+    }
+  }
+
+  /**
+   * Returns the
    * {@link BuiltInMetadata.DistinctRowCount#getDistinctRowCount(ImmutableBitSet, RexNode)}
    * statistic.
    *

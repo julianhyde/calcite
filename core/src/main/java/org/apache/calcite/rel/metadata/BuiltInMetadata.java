@@ -23,10 +23,13 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexTableInputRef.RelTableRef;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -815,17 +818,37 @@ public abstract class BuiltInMetadata {
    * expression to evaluate that measure in the current context. */
   public interface Measure extends Metadata {
     MetadataDef<Measure> DEF = MetadataDef.of(Measure.class,
-        Measure.Handler.class, BuiltInMethod.IS_MEASURE.method);
+        Measure.Handler.class, BuiltInMethod.MEASURE_EXPAND.method,
+        BuiltInMethod.IS_MEASURE.method);
 
     /** Returns whether a given column is a measure. */
     Boolean isMeasure(int column);
+
+    /** Expands a measure to an expression. */
+    RexNode expand(int column, Context context);
 
     /** Handler API. */
     interface Handler extends MetadataHandler<Measure> {
       Boolean isMeasure(RelNode r, RelMetadataQuery mq, int column);
 
+      RexNode expand(RelNode r, RelMetadataQuery mq, int column,
+          Context context);
+
       @Override default MetadataDef<Measure> getDef() {
         return DEF;
+      }
+    }
+
+    /** Context for a use of a measure at a call site. */
+    interface Context {
+      RelBuilder getRelBuilder();
+
+      default RexBuilder getRexBuilder() {
+        return getRelBuilder().getRexBuilder();
+      }
+
+      default RelDataTypeFactory getTypeFactory() {
+        return getRelBuilder().getTypeFactory();
       }
     }
   }

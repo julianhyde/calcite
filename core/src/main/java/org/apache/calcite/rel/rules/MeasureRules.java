@@ -24,6 +24,8 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -36,6 +38,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Util;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -46,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Collection of planner rules that deal with measures.
@@ -59,6 +63,11 @@ import java.util.function.Function;
 public abstract class MeasureRules {
 
   private MeasureRules() { }
+
+  /** Returns all rules. */
+  public static Iterable<? extends RelOptRule> rules() {
+    return ImmutableList.of(AGGREGATE2, PROJECT, PROJECT_SORT);
+  }
 
   /** Rule that matches an {@link Aggregate}
    * that contains a {@code M2V} call
@@ -179,6 +188,126 @@ public abstract class MeasureRules {
 
     @Override default ProjectMeasureRule toRule() {
       return new ProjectMeasureRule(this);
+    }
+  }
+
+  /** Rule that matches an {@link Aggregate}
+   * that contains a {@code M2V} call
+   * and pushes down the {@code M2V} call into a {@link Project}. */
+  public static final RelOptRule AGGREGATE2 =
+      AggregateMeasure2RuleConfig.DEFAULT
+          .toRule();
+
+  /** Configuration for {@link AggregateMeasure2Rule}. */
+  @Value.Immutable
+  public interface AggregateMeasure2RuleConfig extends RelRule.Config {
+    AggregateMeasure2RuleConfig DEFAULT = ImmutableAggregateMeasure2RuleConfig.of()
+        .withOperandSupplier(b ->
+            b.operand(Aggregate.class)
+                .predicate(b2 ->
+                    b2.getAggCallList().stream().anyMatch(c ->
+                        c.getAggregation() == SqlInternalOperators.AGG_M2V))
+                .anyInputs());
+
+    @Override default AggregateMeasure2Rule toRule() {
+      return new AggregateMeasure2Rule(this);
+    }
+  }
+
+  /** Rule that matches an {@link Aggregate} with at least one call to
+   * {@link SqlInternalOperators#AGG_M2V} and expands these calls by
+   * asking the measure for its expression.
+   *
+   * @see org.apache.calcite.rel.metadata.RelMdMeasure
+   *
+   * <p>Converts
+   *
+   * <pre>{@code
+   * Aggregate(a, b, AGG_M2V(c), SUM(d), AGG_M2V(e))
+   *   R
+   * }</pre>
+   *
+   * <p>to
+   *
+   * <pre>{@code
+   * Project(a, b, RexSubQuery(...), sum_d, RexSubQuery(...))
+   *   Aggregate(a, b, SUM(d) AS sum_d)
+   *     R
+   * }</pre>
+   *
+   * <p>We will optimize those {@link org.apache.calcite.rex.RexSubQuery}
+   * later. For example,
+   *
+   * <pre>{@code
+   * SELECT deptno, (SELECT AVG(sal) FROM emp WHERE deptno = e.deptno)
+   * FROM Emp
+   * }</pre>
+   *
+   * <p>will become
+   *
+   * <pre>{@code
+   * SELECT deptno, AVG(sal) FROM emp WHERE deptno = e.deptno)
+   * FROM Emp
+   * }</pre>
+
+   * @see MeasureRules#AGGREGATE2
+   * @see AggregateMeasure2RuleConfig */
+  @SuppressWarnings("WeakerAccess")
+  public static class AggregateMeasure2Rule
+      extends RelRule<AggregateMeasure2RuleConfig>
+      implements TransformationRule {
+    /** Creates an AggregateMeasure2Rule. */
+    protected AggregateMeasure2Rule(AggregateMeasure2RuleConfig config) {
+      super(config);
+    }
+
+    @Override public void onMatch(RelOptRuleCall call) {
+      final RelMetadataQuery mq = call.getMetadataQuery();
+      final Aggregate aggregate = call.rel(0);
+      final RelBuilder b = call.builder();
+      b.push(aggregate.getInput());
+      final List<Function<RelBuilder, RelBuilder.AggCall>> aggCallList =
+          new ArrayList<>();
+      final List<RexNode> projects = new ArrayList<>();
+      aggregate.getGroupSet().forEach(i ->
+          projects.add(b.getRexBuilder().makeInputRef(aggregate, i)));
+      aggregate.getAggCallList().forEach(c -> {
+        if (c.getAggregation().kind == SqlKind.AGG_M2V) {
+          final int arg = Iterables.getOnlyElement(c.getArgList());
+          final RexNode e =
+              mq.expand(b.peek(), arg,
+                  new BuiltInMetadata.Measure.Context() {
+                    // Memoize the RelBuilder so we don't create more than one.
+                    private final Supplier<RelBuilder> builderSupplier =
+                        Suppliers.memoize(call::builder);
+
+                    @Override public RelBuilder getRelBuilder() {
+                      return builderSupplier.get();
+                    }
+                  });
+          projects.add(e);
+        } else {
+          aggCallList.add(b2 -> b2.aggregateCall(c));
+          projects.add(
+              b.getRexBuilder().makeInputRef(c.type,
+                  aggregate.getGroupSet().cardinality() + aggCallList.size()));
+        }
+      });
+      b.aggregate(
+          b.groupKey(aggregate.getGroupSet(), aggregate.groupSets),
+          bind(aggCallList).apply(b));
+      b.project(projects, aggregate.getRowType().getFieldNames());
+      call.transformTo(b.build());
+    }
+
+    /** Converts a list of functions into a function that returns a list.
+     * It is named after the Monad bind operator. */
+    private static <T, E> Function<T, List<E>> bind(List<Function<T, E>> list) {
+      return t -> {
+        final ImmutableList.Builder<E> builder = ImmutableList.builder();
+        list.forEach(f -> builder.add(f.apply(t)));
+        return builder.build();
+      };
     }
   }
 

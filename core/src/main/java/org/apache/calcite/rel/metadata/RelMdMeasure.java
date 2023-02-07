@@ -16,7 +16,15 @@
  */
 package org.apache.calcite.rel.metadata;
 
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSubQuery;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 
 /**
  * Default implementations of the
@@ -24,6 +32,7 @@ import org.apache.calcite.rel.RelNode;
  * metadata provider for the standard logical algebra.
  *
  * @see org.apache.calcite.rel.metadata.RelMetadataQuery#isMeasure
+ * @see org.apache.calcite.rel.metadata.RelMetadataQuery#expand
  */
 public class RelMdMeasure
     implements MetadataHandler<BuiltInMetadata.Measure> {
@@ -41,4 +50,51 @@ public class RelMdMeasure
   public Boolean isMeasure(RelNode rel, RelMetadataQuery mq, int column) {
     return false;
   }
+
+  /** Catch-all implementation for
+   * {@link BuiltInMetadata.Measure#expand(int, BuiltInMetadata.Measure.Context)},
+   * invoked using reflection.
+   */
+  public RexNode expand(RelNode rel, RelMetadataQuery mq, int column,
+      BuiltInMetadata.Measure.Context context) {
+    throw new UnsupportedOperationException("expand(" + rel + ", " + column
+        + ", " + context);
+  }
+
+  /** Refines {@code expand} for {@link RelSubset}; called via reflection. */
+  public RexNode expand(RelSubset subset, RelMetadataQuery mq, int column,
+      BuiltInMetadata.Measure.Context context) {
+    for (RelNode rel : subset.getRels()) {
+      RexNode e = mq.expand(rel, column, context);
+      if (e != null) {
+        return e;
+      }
+    }
+    return expand((RelNode) subset, mq, column, context);
+  }
+
+  /** Refines {@code expand} for {@link Project}; called via reflection. */
+  public RexNode expand(Project project, RelMetadataQuery mq, int column,
+      BuiltInMetadata.Measure.Context context) {
+    final RexNode e = project.getProjects().get(column);
+    if (e.getKind() != SqlKind.V2M) {
+      throw new AssertionError(e);
+    }
+    final RexCall call = (RexCall) e;
+    final RexSubQuery scalarQuery =
+        context.getRelBuilder().scalarQuery(b ->
+            b.push(project.getInput())
+                .project(call.operands.get(0))
+                .build());
+    final RelDataType measureType =
+        SqlTypeUtil.fromMeasure(context.getTypeFactory(), call.type);
+    if (!measureType.isNullable()) {
+      // If the measure is 'MEASURE<INTEGER NOT NULL>' the scalar query
+      // '(SELECT SUM(x) FROM t WHERE a = context.a)' that implements it looks
+      // nullable but isn't really.
+      return context.getRexBuilder().makeNotNull(scalarQuery);
+    }
+    return scalarQuery;
+  }
+
 }
