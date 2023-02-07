@@ -4356,11 +4356,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   @Override public Config config() {
-    return this.config;
+    return requireNonNull(this.config, "config");
   }
 
   @Override public SqlValidator transform(UnaryOperator<Config> transform) {
-    this.config = transform.apply(this.config);
+    this.config = requireNonNull(transform.apply(this.config), "config");
     return this;
   }
 

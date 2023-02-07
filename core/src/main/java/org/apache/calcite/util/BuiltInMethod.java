@@ -647,6 +647,7 @@ public enum BuiltInMethod {
   CUMULATIVE_MEMORY_WITHIN_PHASE_SPLIT(Memory.class,
       "cumulativeMemoryWithinPhaseSplit"),
   IS_MEASURE(Measure.class, "isMeasure", int.class),
+  MEASURE_EXPAND(Measure.class, "expand", int.class, Measure.Context.class),
   COLUMN_UNIQUENESS(ColumnUniqueness.class, "areColumnsUnique",
       ImmutableBitSet.class, boolean.class),
   COLLATIONS(Collation.class, "collations"),

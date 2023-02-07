@@ -119,13 +119,13 @@ public abstract class SqlInternalOperators {
    * {@code Aggregate} relational operator.
    *
    * @see SqlLibraryOperators#AGGREGATE */
-  public static final SqlOperator AGG_M2M =
+  public static final SqlAggFunction AGG_M2M =
       SqlBasicAggFunction.create(SqlKind.AGG_M2M, ReturnTypes.ARG0,
           OperandTypes.ANY);
 
   /** {@code AGG_M2V} aggregate function takes a measure as its argument and
    * returns value. */
-  public static final SqlOperator AGG_M2V =
+  public static final SqlAggFunction AGG_M2V =
       SqlBasicAggFunction.create(SqlKind.AGG_M2V,
           ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE),
           OperandTypes.ANY);
