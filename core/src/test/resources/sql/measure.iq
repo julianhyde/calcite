@@ -33,6 +33,25 @@ from empm
 group by job;
 !ok
 
+# Same query using subquery
+select job, avg_sal as a
+from (
+ select *, 1 as measure avg_sal
+ from "scott".emp
+) as empm
+group by job;
+!ok
+
+# Same query using CTE
+with empm as (
+  select *, 1 as measure avg_sal
+  from emp
+)
+select job, avg_sal as a
+from empm
+group by job;
+!ok
+
 # Equivalent using AGGREGATE
 select job, aggregate(avg_sal) as a
 from empm
