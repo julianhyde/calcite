@@ -664,7 +664,9 @@ public class CalcitePrepareImpl implements CalcitePrepare {
             Meta.StatementType.OTHER_DDL);
       }
 
-      final SqlValidator validator = preparingStmt.createSqlValidator(catalogReader);
+      final SqlValidator validator =
+          preparingStmt.createSqlValidator(catalogReader,
+              UnaryOperator.identity());
 
       preparedResult =
           preparingStmt.prepareSql(sqlNode, Object.class, validator, true);
@@ -1120,7 +1122,8 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       // View may have different schema path than current connection.
       final CatalogReader catalogReader =
           this.catalogReader.withSchemaPath(schemaPath);
-      SqlValidator validator = createSqlValidator(catalogReader);
+      SqlValidator validator =
+          createSqlValidator(catalogReader, c -> c.withEmbedded(true));
       final SqlToRelConverter.Config config =
           SqlToRelConverter.config().withTrimUnusedFields(true);
       SqlToRelConverter sqlToRelConverter =
@@ -1132,14 +1135,16 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       return root;
     }
 
-    protected SqlValidator createSqlValidator(CatalogReader catalogReader) {
+    protected SqlValidator createSqlValidator(CatalogReader catalogReader,
+        UnaryOperator<SqlValidator.Config> configTransform) {
       return CalcitePrepareImpl.createSqlValidator(context,
-          (CalciteCatalogReader) catalogReader, UnaryOperator.identity());
+          (CalciteCatalogReader) catalogReader, configTransform);
     }
 
     @Override protected SqlValidator getSqlValidator() {
       if (sqlValidator == null) {
-        sqlValidator = createSqlValidator(catalogReader);
+        sqlValidator =
+            createSqlValidator(catalogReader, UnaryOperator.identity());
       }
       return sqlValidator;
     }

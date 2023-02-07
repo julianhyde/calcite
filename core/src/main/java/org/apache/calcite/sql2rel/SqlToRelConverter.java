@@ -145,6 +145,7 @@ import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlInOperator;
 import org.apache.calcite.sql.fun.SqlInternalOperators;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -474,7 +475,8 @@ public class SqlToRelConverter {
     this.explainParamCount = explainParamCount;
   }
 
-  private void checkConvertedType(SqlNode query, RelNode result) {
+  private void checkConvertedType(SqlNode query, RelNode result,
+      boolean unwrapMeasures) {
     if (query.isA(SqlKind.DML)) {
       return;
     }
@@ -487,8 +489,10 @@ public class SqlToRelConverter {
         validator().getValidatedNodeType(query).getFieldList();
     final RelDataType validatedRowType =
         validator().getTypeFactory().createStructType(
-            transform(validatedFields, f ->
-                fromMeasure(typeFactory, f.getType())),
+            transform(validatedFields,
+                unwrapMeasures
+                    ? f -> fromMeasure(typeFactory, f.getType())
+                    : RelDataTypeField::getType),
             SqlValidatorUtil.uniquify(Pair.left(validatedFields),
                 catalogReader.nameMatcher().isCaseSensitive()));
 
@@ -533,7 +537,7 @@ public class SqlToRelConverter {
     }
     final RelNode result = decorrelateQuery(rootRel);
     if (result != rootRel) {
-      checkConvertedType(query, result);
+      checkConvertedType(query, result, false);
     }
     return result;
   }
@@ -605,13 +609,16 @@ public class SqlToRelConverter {
       SqlNode query,
       final boolean needsValidation,
       final boolean top) {
+    final boolean unwrapMeasures = !validator.config().embedded();
     if (needsValidation) {
       query = validator().validate(query);
     }
 
     RelNode result = convertQueryRecursive(query, top, null).rel;
     if (top) {
-      result = unwrapMeasures(result);
+      if (unwrapMeasures) {
+        result = unwrapMeasures(result);
+      }
       if (isStream(query)) {
         result = new LogicalDelta(cluster, result.getTraitSet(), result);
       }
@@ -622,7 +629,7 @@ public class SqlToRelConverter {
         collation = requiredCollation(result);
       }
     }
-    checkConvertedType(query, result);
+    checkConvertedType(query, result, top && unwrapMeasures);
 
     if (SQL2REL_LOGGER.isDebugEnabled()) {
       SQL2REL_LOGGER.debug(
@@ -1895,8 +1902,8 @@ public class SqlToRelConverter {
     final RelDataType listType = validator().getValidatedNodeType(rowList);
     final RelDataType rowType;
     if (targetRowType != null) {
-      rowType = keepSourceTypeAndTargetNullability(targetRowType, listType,
-          typeFactory);
+      rowType =
+          keepSourceTypeAndTargetNullability(targetRowType, listType, typeFactory);
     } else {
       rowType = promoteToRowType(typeFactory, listType, null);
     }

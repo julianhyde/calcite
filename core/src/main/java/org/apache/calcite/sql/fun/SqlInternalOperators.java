@@ -119,7 +119,7 @@ public abstract class SqlInternalOperators {
    * {@code Aggregate} relational operator.
    *
    * @see SqlLibraryOperators#AGGREGATE */
-  public static final SqlOperator AGG_M2M =
+  public static final SqlAggFunction AGG_M2M =
       SqlBasicAggFunction.create(SqlKind.AGG_M2M, ReturnTypes.ARG0,
           OperandTypes.ANY);
 
