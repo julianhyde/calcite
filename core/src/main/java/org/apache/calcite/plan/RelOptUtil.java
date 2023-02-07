@@ -53,6 +53,7 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.MeasureRules;
 import org.apache.calcite.rel.rules.MultiJoin;
 import org.apache.calcite.rel.stream.StreamRules;
 import org.apache.calcite.rel.type.RelDataType;
@@ -2036,6 +2037,11 @@ public abstract class RelOptUtil {
     }
     if (enableBindable) {
       for (RelOptRule rule : Bindables.RULES) {
+        planner.addRule(rule);
+      }
+    }
+    if (true) {
+      for (RelOptRule rule : MeasureRules.rules()) {
         planner.addRule(rule);
       }
     }
