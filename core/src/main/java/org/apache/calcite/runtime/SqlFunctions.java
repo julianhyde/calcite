@@ -2197,8 +2197,7 @@ public class SqlFunctions {
   private static String internalFormatDatetime(String fmtString, java.util.Date date) {
     List<FormatElement> elements =
         SqlBigQueryFormatDatetimeFunction.BQ_FORMAT_MODEL.parse(fmtString);
-    return elements
-        .stream()
+    return elements.stream()
         .map(ele -> ele.format(date))
         .collect(Collectors.joining());
   }
