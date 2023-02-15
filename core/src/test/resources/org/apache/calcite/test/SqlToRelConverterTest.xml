@@ -5863,7 +5863,14 @@ LogicalProject(EMPNO=[$0], DEPTNO=[$1], DEPTNO0=[$3], NAME=[$4])
   </TestCase>
   <TestCase name="testQualifyInCorrelatedSubquery">
     <Resource name="sql">
-      <![CDATA[SELECT * FROM emp WHERE EXISTS( SELECT name FROM dept  QUALIFY RANK() OVER (PARTITION BY name ORDER BY dept.deptno DESC) = emp.deptno)]]>
+      <![CDATA[SELECT *
+FROM emp
+WHERE EXISTS(
+ SELECT name
+ FROM dept
+ QUALIFY RANK() OVER (PARTITION BY name
+                      ORDER BY dept.deptno DESC) = emp.deptno
+)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5885,9 +5892,14 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testQualifyInDDL">
+  <TestCase name="testQualifyInDdl">
     <Resource name="sql">
-      <![CDATA[INSERT INTO dept(deptno, name) SELECT DISTINCT empno, ename FROM emp WHERE deptno > 5 QUALIFY RANK() OVER (PARTITION BY ename ORDER BY slacker DESC) = 1 ]]>
+      <![CDATA[INSERT INTO dept(deptno, name)
+SELECT DISTINCT empno, ename
+FROM emp
+WHERE deptno > 5
+QUALIFY RANK() OVER (PARTITION BY ename
+                     ORDER BY slacker DESC) = 1]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5903,7 +5915,12 @@ LogicalTableModify(table=[[CATALOG, SALES, DEPT]], operation=[INSERT], flattened
   </TestCase>
   <TestCase name="testQualifyInSubquery">
     <Resource name="sql">
-      <![CDATA[SELECT * FROM ( SELECT DISTINCT empno, ename, deptno  FROM emp  QUALIFY RANK() OVER (PARTITION BY ename ORDER BY deptno DESC) = 1 )]]>
+      <![CDATA[SELECT *
+FROM (
+ SELECT DISTINCT empno, ename, deptno
+ FROM emp
+ QUALIFY RANK() OVER (PARTITION BY ename
+                      ORDER BY deptno DESC) = 1)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5918,7 +5935,8 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$2])
   </TestCase>
   <TestCase name="testQualifyWithDerivedColumn">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, deptno, SUBSTRING(ename,1,1) as DERIVED_COLUMN FROM emp QUALIFY ROW_NUMBER() OVER (PARTITION BY deptno ORDER BY DERIVED_COLUMN) = 1]]>
+      <![CDATA[SELECT empno, ename, deptno, SUBSTRING(ename,1,1) as DERIVED_COLUMN FROM emp QUALIFY ROW_NUMBER() OVER (PARTITION BY deptno
+                           ORDER BY DERIVED_COLUMN) = 1]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5931,7 +5949,14 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$2], DERIVED_COLUMN=[$3])
   </TestCase>
   <TestCase name="testQualifyWithEverything">
     <Resource name="sql">
-      <![CDATA[SELECT DISTINCT empno, ename, deptno,     RANK() OVER (PARTITION BY ename ORDER BY deptno DESC) as rank_val FROM emp WHERE sal > 1000 QUALIFY rank_val = (SELECT COUNT(*) FROM emp) ORDER BY deptno LIMIT 5]]>
+      <![CDATA[SELECT DISTINCT empno, ename, deptno,
+    RANK() OVER (PARTITION BY ename
+                 ORDER BY deptno DESC) as rank_val
+FROM emp
+WHERE sal > 1000
+QUALIFY rank_val = (SELECT COUNT(*) FROM emp)
+ORDER BY deptno
+LIMIT 5]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5952,7 +5977,10 @@ LogicalSort(sort0=[$2], dir0=[ASC], fetch=[5])
   </TestCase>
   <TestCase name="testQualifyWithMultipleReferences">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, deptno + 1 as derived_deptno,    ROW_NUMBER() over (partition by ename order by deptno) as row_num FROM emp QUALIFY row_num = derived_deptno]]>
+      <![CDATA[SELECT empno, ename, deptno + 1 as derived_deptno,
+   ROW_NUMBER() over (partition by ename order by deptno) as row_num
+FROM emp
+QUALIFY row_num = derived_deptno]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5965,7 +5993,10 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DERIVED_DEPTNO=[$2], ROW_NUM=[$3])
   </TestCase>
   <TestCase name="testQualifyWithReferences">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, deptno,    ROW_NUMBER() over (partition by ename order by deptno) as row_num FROM emp QUALIFY row_num = 1]]>
+      <![CDATA[SELECT empno, ename, deptno,
+   ROW_NUMBER() over (partition by ename order by deptno) as row_num
+FROM emp
+QUALIFY row_num = 1]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5978,7 +6009,11 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$2], ROW_NUM=[$3])
   </TestCase>
   <TestCase name="testQualifyWithSubqueryFilter">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, deptno,     RANK() OVER (PARTITION BY ename ORDER BY deptno DESC) as rank_val FROM emp QUALIFY rank_val = (SELECT COUNT(*) FROM emp)]]>
+      <![CDATA[SELECT empno, ename, deptno,
+    RANK() OVER (PARTITION BY ename
+                 ORDER BY deptno DESC) as rank_val
+FROM emp
+QUALIFY rank_val = (SELECT COUNT(*) FROM emp)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -5996,7 +6031,10 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$2], RANK_VAL=[$3])
   </TestCase>
   <TestCase name="testQualifyWithWindowClause">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, SUM(deptno) OVER myWindow as sumDeptNo FROM emp WINDOW myWindow AS (PARTITION BY ename ORDER BY empno) QUALIFY sumDeptNo = 1]]>
+      <![CDATA[SELECT empno, ename, SUM(deptno) OVER myWindow as sumDeptNo
+FROM emp
+WINDOW myWindow AS (PARTITION BY ename ORDER BY empno)
+QUALIFY sumDeptNo = 1]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -6009,7 +6047,9 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], SUMDEPTNO=[$2])
   </TestCase>
   <TestCase name="testQualifyWithoutReferences">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, deptno FROM emp QUALIFY ROW_NUMBER() over (partition by ename order by deptno) = 1]]>
+      <![CDATA[SELECT empno, ename, deptno
+FROM emp
+QUALIFY ROW_NUMBER() over (partition by ename order by deptno) = 1]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
@@ -6022,7 +6062,10 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$2])
   </TestCase>
   <TestCase name="testQualifyWithoutReferencesAndFilter">
     <Resource name="sql">
-      <![CDATA[SELECT empno, ename, deptno FROM emp WHERE deptno > 5 QUALIFY ROW_NUMBER() over (partition by ename order by deptno) = 1]]>
+      <![CDATA[SELECT empno, ename, deptno
+FROM emp
+WHERE deptno > 5
+QUALIFY ROW_NUMBER() over (partition by ename order by deptno) = 1]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
