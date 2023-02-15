@@ -314,10 +314,6 @@ public class SqlSelect extends SqlCall {
     return where != null;
   }
 
-  public boolean hasQualify() {
-    return qualify != null;
-  }
-
   public boolean isKeywordPresent(SqlSelectKeyword targetKeyWord) {
     return getModifierNode(targetKeyWord) != null;
   }

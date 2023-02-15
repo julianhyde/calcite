@@ -762,9 +762,7 @@ public class SqlToRelConverter {
           orderExprList);
     }
 
-    if (select.hasQualify()) {
-      convertQualify(bb, select.getQualify());
-    }
+    convertQualify(bb, select.getQualify());
 
     if (select.isDistinct()) {
       distinctify(bb, true);
@@ -4626,18 +4624,23 @@ public class SqlToRelConverter {
     return alias;
   }
 
-  private void convertQualify(Blackboard bb, SqlNode qualify) {
-    LogicalProject projectionFromSelect = (LogicalProject) bb.root;
+  private void convertQualify(Blackboard bb, @Nullable SqlNode qualify) {
+    if (qualify == null) {
+      return;
+    }
+
+    final LogicalProject projectionFromSelect =
+        requireNonNull((LogicalProject) bb.root, "root");
 
     // Convert qualify SqlNode to a RexNode
     replaceSubQueries(bb, qualify, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
-    RelNode originalRoot = bb.root;
+    final RelNode originalRoot = requireNonNull(bb.root, "root");
     RexNode qualifyRexNode;
     try {
       // Set the root to the input of the project,
       // Since QUALIFY might have an expression in the over clause
       // that references a column not in the select
-      bb.setRoot(projectionFromSelect.getInput(0), false);
+      bb.setRoot(projectionFromSelect.getInput(), false);
       qualifyRexNode = bb.convertExpression(qualify);
     } finally {
       bb.setRoot(originalRoot, false);
@@ -4651,9 +4654,9 @@ public class SqlToRelConverter {
     RexNode qualifyWithReferencesRexNode = qualifyRexNode.accept(visitor);
 
     // Create a Project Rel with the QUALIFY expression
-    RelNode qualifyProjectInput;
-    List<RexNode> projects;
-    List<String> fieldNames;
+    final RelNode qualifyProjectInput;
+    final List<RexNode> projects;
+    final List<String> fieldNames;
     if (qualifyWithReferencesRexNode.equals(qualifyRexNode)) {
       // The QUALIFY expression does not depend on any references like so:
       //
@@ -4664,7 +4667,7 @@ public class SqlToRelConverter {
       // Meaning we should generate a plan like:
       //  Project(A, B, WINDOW(C) = 1 as QualifyExpression)
       //    TableScan(tbl)
-      qualifyProjectInput = projectionFromSelect.getInput(0);
+      qualifyProjectInput = projectionFromSelect.getInput();
       projects = new ArrayList<>(projectionFromSelect.getProjects());
       fieldNames = new ArrayList<>(projectionFromSelect.getRowType().getFieldNames());
     } else {
@@ -4683,12 +4686,12 @@ public class SqlToRelConverter {
       //
       // This is a very specific application of Common Subexpression Elimination (CSE),
       // since the window value pops up twice.
-      qualifyProjectInput = bb.root;
+      qualifyProjectInput = requireNonNull(bb.root, "root");
       projects = IntStream
-          .range(0, bb.root.getRowType().getFieldCount())
-          .mapToObj(i -> rexBuilder.makeInputRef(bb.root, i))
+          .range(0, qualifyProjectInput.getRowType().getFieldCount())
+          .mapToObj(i -> rexBuilder.makeInputRef(qualifyProjectInput, i))
           .collect(Collectors.toList());
-      fieldNames = new ArrayList<>(bb.root.getRowType().getFieldNames());
+      fieldNames = new ArrayList<>(qualifyProjectInput.getRowType().getFieldNames());
     }
 
     // Append qualify condition to the projection
