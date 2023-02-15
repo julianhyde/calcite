@@ -212,11 +212,11 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.runtime.FlatLists.append;
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 
 import static java.util.Objects.requireNonNull;
@@ -4638,25 +4638,21 @@ public class SqlToRelConverter {
     RexNode qualifyRexNode;
     try {
       // Set the root to the input of the project,
-      // Since QUALIFY might have an expression in the over clause
-      // that references a column not in the select
+      // since QUALIFY might have an expression in the OVER clause
+      // that references a column not in the SELECT.
       bb.setRoot(projectionFromSelect.getInput(), false);
       qualifyRexNode = bb.convertExpression(qualify);
     } finally {
       bb.setRoot(originalRoot, false);
     }
 
-    // Check to see if the qualify expression was has a referenced expression and
+    // Check to see if the qualify expression has a referenced expression and
     // do some referencing accordingly
-    ProjectCSERexVisitor visitor = new ProjectCSERexVisitor(
-        rexBuilder,
-        projectionFromSelect);
-    RexNode qualifyWithReferencesRexNode = qualifyRexNode.accept(visitor);
+    final RexNode qualifyWithReferencesRexNode =
+        qualifyRexNode.accept(
+            new DuplicateEliminator(projectionFromSelect.getProjects()));
 
-    // Create a Project Rel with the QUALIFY expression
-    final RelNode qualifyProjectInput;
-    final List<RexNode> projects;
-    final List<String> fieldNames;
+    // Create a Project with the QUALIFY expression
     if (qualifyWithReferencesRexNode.equals(qualifyRexNode)) {
       // The QUALIFY expression does not depend on any references like so:
       //
@@ -4667,9 +4663,12 @@ public class SqlToRelConverter {
       // Meaning we should generate a plan like:
       //  Project(A, B, WINDOW(C) = 1 as QualifyExpression)
       //    TableScan(tbl)
-      qualifyProjectInput = projectionFromSelect.getInput();
-      projects = new ArrayList<>(projectionFromSelect.getProjects());
-      fieldNames = new ArrayList<>(projectionFromSelect.getRowType().getFieldNames());
+      //
+      relBuilder.push(projectionFromSelect.getInput())
+          .project(
+              append(projectionFromSelect.getProjects(), qualifyRexNode),
+              append(projectionFromSelect.getRowType().getFieldNames(),
+                  "QualifyExpression"));
     } else {
       // The QUALIFY expression depended on a reference meaning
       // we need to introduce an extra project like so:
@@ -4684,88 +4683,50 @@ public class SqlToRelConverter {
       //    Project(A, B, WINDOW(C) as window_val)
       //      TableScan(tbl)
       //
-      // This is a very specific application of Common Subexpression Elimination (CSE),
-      // since the window value pops up twice.
-      qualifyProjectInput = requireNonNull(bb.root, "root");
-      projects = IntStream
-          .range(0, qualifyProjectInput.getRowType().getFieldCount())
-          .mapToObj(i -> rexBuilder.makeInputRef(qualifyProjectInput, i))
-          .collect(Collectors.toList());
-      fieldNames = new ArrayList<>(qualifyProjectInput.getRowType().getFieldNames());
+      // This is a very specific application of Common Subexpression Elimination
+      // (CSE), since the window value pops up twice.
+      relBuilder.push(requireNonNull(bb.root, "root"))
+          .project(
+              append(relBuilder.fields(), qualifyWithReferencesRexNode),
+              append(relBuilder.peek().getRowType().getFieldNames(),
+                  "QualifyExpression"));
     }
 
-    // Append qualify condition to the projection
-    projects.add(qualifyWithReferencesRexNode);
-    fieldNames.add("QualifyExpression");
-
-    RelNode projectionWithQualify = relBuilder
-        .push(qualifyProjectInput)
-        .project(projects, fieldNames)
-        .build();
-
     // Filter on that extra column
-    RexNode qualifyExpressionIndex = rexBuilder.makeInputRef(
-        projectionWithQualify,
-        projects.size() - 1);
-    RelNode filter = relBuilder
-        .push(projectionWithQualify)
-        .filter(qualifyExpressionIndex)
-        .build();
+    relBuilder.filter(Util.last(relBuilder.fields()));
 
     // Remove that extra column from the projection
-    List<RexNode> inputRefs = IntStream
-        .range(0, projectionFromSelect.getProjects().size())
-        .mapToObj(i -> rexBuilder.makeInputRef(filter, i))
-        .collect(Collectors.toList());
-    RelNode projectionWithoutQualify = relBuilder
-        .push(filter)
-        .project(inputRefs, projectionFromSelect.getRowType().getFieldNames())
-        .build();
+    relBuilder.project(
+        Util.first(relBuilder.fields(),
+            projectionFromSelect.getProjects().size()));
 
     // Update the root
-    bb.setRoot(projectionWithoutQualify, false);
+    bb.setRoot(relBuilder.build(), false);
   }
 
-  /**
-   * Tries to implement CSE by seeing if a rex node is already defined in
-   * the project Rel and returning a refIndex instead of the raw node.
-   */
-  private static final class ProjectCSERexVisitor extends RexShuttle {
-    private final RexBuilder rexBuilder;
-    private final LogicalProject inputRelNode;
+  /** Eliminates a common sub-expression by looking for a {@link RexNode}
+   * in the expressions of a {@link Project}; if found, returns a refIndex
+   * instead of the raw node. */
+  private static final class DuplicateEliminator extends RexShuttle {
+    private final List<RexNode> projects;
 
-    ProjectCSERexVisitor(RexBuilder rexBuilder, LogicalProject inputRelNode) {
-      this.rexBuilder = rexBuilder;
-      this.inputRelNode = inputRelNode;
+    DuplicateEliminator(List<RexNode> projects) {
+      this.projects = projects;
     }
 
     @Override public RexNode visitCall(RexCall call) {
-      List<RexNode> projections = inputRelNode.getProjects();
-      for (int i = 0; i < projections.size(); i++) {
-        RexNode project = projections.get(i);
-        if (call.equals(project)) {
-          return rexBuilder.makeInputRef(inputRelNode, i);
-        }
+      final int i = projects.indexOf(call);
+      if (i >= 0) {
+        return new RexInputRef(i, projects.get(i).getType());
       }
-
-      return rexBuilder.makeCall(
-          call.getType(),
-          call.getOperator(),
-          call.operands
-              .stream()
-              .map(operand -> operand.accept(this))
-              .collect(Collectors.toList()));
+      return super.visitCall(call);
     }
 
     @Override public RexNode visitOver(RexOver over) {
-      List<RexNode> projections = inputRelNode.getProjects();
-      for (int i = 0; i < projections.size(); i++) {
-        RexNode project = projections.get(i);
-        if (over.equals(project)) {
-          return rexBuilder.makeInputRef(inputRelNode, i);
-        }
+      final int i = projects.indexOf(over);
+      if (i >= 0) {
+        return new RexInputRef(i, projects.get(i).getType());
       }
-
       return over;
     }
   }

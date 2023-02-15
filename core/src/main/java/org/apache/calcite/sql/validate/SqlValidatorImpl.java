@@ -6847,7 +6847,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         return super.visit(id);
       }
 
-      final boolean replaceAliases = shouldReplaceAliases(validator.config, clause);
+      final boolean replaceAliases = clause.shouldReplaceAliases(validator.config);
       if (!replaceAliases) {
         final SelectScope scope = validator.getRawSelectScope(select);
         SqlNode node = expandCommonColumn(select, id, scope, validator);
@@ -6940,45 +6940,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
       return super.visit(literal);
     }
-
-    /**
-     * Determines if the extender should replace aliases with expanded values.
-     * For example:
-     *
-     * <blockquote><pre>{@code
-     *  SELECT a + a as twoA
-     *  GROUP BY twoA
-     * }</pre></blockquote>
-     *
-     * <p>turns into
-     *
-     * <blockquote><pre>{@code
-     *  SELECT a + a as twoA
-     *  GROUP BY a + a
-     * }</pre></blockquote>
-     *
-     * <p>This is determined both by the clause and the config.
-     *
-     * @param config The configuration
-     * @param clause The clause
-     * @return Whether we should replace the alias with its expanded value
-     */
-    private static boolean shouldReplaceAliases(Config config, Clause clause) {
-      switch (clause) {
-      case GROUP_BY:
-        return config.conformance().isGroupByAlias();
-
-      case HAVING:
-        return config.conformance().isHavingAlias();
-
-      case QUALIFY:
-        return true;
-
-      default:
-        throw Util.unexpected(clause);
-      }
-    }
   }
+
 
   /** Information about an identifier in a particular scope. */
   protected static class IdInfo {
@@ -7445,6 +7408,43 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     ORDER,
     CURSOR,
     HAVING,
-    QUALIFY,
+    QUALIFY;
+
+    /**
+     * Determines if the extender should replace aliases with expanded values.
+     * For example:
+     *
+     * <blockquote><pre>{@code
+     *  SELECT a + a as twoA
+     *  GROUP BY twoA
+     * }</pre></blockquote>
+     *
+     * <p>turns into
+     *
+     * <blockquote><pre>{@code
+     *  SELECT a + a as twoA
+     *  GROUP BY a + a
+     * }</pre></blockquote>
+     *
+     * <p>This is determined both by the clause and the config.
+     *
+     * @param config The configuration
+     * @return Whether we should replace the alias with its expanded value
+     */
+    boolean shouldReplaceAliases(Config config) {
+      switch (this) {
+      case GROUP_BY:
+        return config.conformance().isGroupByAlias();
+
+      case HAVING:
+        return config.conformance().isHavingAlias();
+
+      case QUALIFY:
+        return true;
+
+      default:
+        throw Util.unexpected(this);
+      }
+    }
   }
 }
