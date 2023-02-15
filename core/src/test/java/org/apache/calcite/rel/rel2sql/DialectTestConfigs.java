@@ -149,5 +149,5 @@ class DialectTestConfigs {
                   .withDatabaseVersion("1.0")
                   .withIdentifierQuoteString("\"")
                   .withNullCollation(NullCollation.HIGH)
-                  .withJethroInfo(JethroDataSqlDialect.JethroInfo.EMPTY)));
+                  .withJethroInfo(JethroDataSqlDialect.JethroInfo.EMPTY)))::get;
 }
