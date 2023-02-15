@@ -5861,7 +5861,7 @@ LogicalProject(EMPNO=[$0], DEPTNO=[$1], DEPTNO0=[$3], NAME=[$4])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testQualifyInCorrelatedSubquery">
+  <TestCase name="testQualifyInCorrelatedSubQuery">
     <Resource name="sql">
       <![CDATA[SELECT *
 FROM emp
@@ -5913,7 +5913,7 @@ LogicalTableModify(table=[[CATALOG, SALES, DEPT]], operation=[INSERT], flattened
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testQualifyInSubquery">
+  <TestCase name="testQualifyInSubQuery">
     <Resource name="sql">
       <![CDATA[SELECT *
 FROM (
@@ -6007,7 +6007,7 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$2], ROW_NUM=[$3])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testQualifyWithSubqueryFilter">
+  <TestCase name="testQualifyWithSubQueryFilter">
     <Resource name="sql">
       <![CDATA[SELECT empno, ename, deptno,
     RANK() OVER (PARTITION BY ename
@@ -6160,7 +6160,7 @@ LogicalProject(EXPR$0=[1])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testRowValueConstructorWithSubquery">
+  <TestCase name="testRowValueConstructorWithSubQuery">
     <Resource name="sql">
       <![CDATA[select ROW((select deptno
 from dept
