@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql.util;
 
+import org.apache.calcite.rel.type.TimeFrame;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -92,6 +93,11 @@ public class SqlBasicVisitor<@Nullable R> implements SqlVisitor<R> {
         SqlNode expr,
         int i,
         @Nullable SqlNode operand);
+
+    /** Looks up a time frame. */
+    default @Nullable TimeFrame lookupTimeFrame(String name) {
+      return null;
+    }
   }
 
   //~ Inner Classes ----------------------------------------------------------
