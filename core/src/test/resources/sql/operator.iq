@@ -66,7 +66,7 @@ select * from "scott".emp where not sal > 1300 and not sal < 1200;
 
 !ok
 
-# [CALCITE-xxxx] COALESCE
+# [CALCITE-5531] COALESCE
 SELECT COALESCE(DATE '2021-07-08', DATE '2020-01-01') as d;
 +------------+
 | D          |
