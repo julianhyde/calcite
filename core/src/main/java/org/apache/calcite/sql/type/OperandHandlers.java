@@ -86,35 +86,6 @@ public abstract class OperandHandlers {
       return operand;
     }
 
-//    @Override public <R> void acceptCall(SqlVisitor<R> visitor,
-//        SqlCall call, boolean onlyExpressions,
-//        SqlBasicVisitor.ArgHandler<R> argHandler) {
-//      final List<SqlNode> operands = call.getOperandList();
-//      for (int i = 0; i < operands.size(); i++) {
-//        SqlNode operand =
-//            getOperand(i, operands.get(i), argHandler::lookupTimeFrame);
-//        argHandler.visitChild(visitor, call, i, operand);
-//      }
-//    }
-
-//    @Override public void validateCall(SqlCall call, SqlValidator validator,
-//        SqlValidatorScope scope, SqlValidatorScope operandScope) {
-//      final List<SqlNode> operands = call.getOperandList();
-//      for (int i = 0; i < operands.size(); i++) {
-//        SqlNode operand =
-//            getOperand(i, operands.get(i), name ->
-//                validator.getTimeFrameSet().getOpt(name));
-//        operand.validateExpr(validator, operandScope);
-//      }
-//    }
-
-//    @Override public RelDataType deriveOperandType(SqlValidator validator,
-//        SqlValidatorScope scope, int i, SqlNode operand) {
-//      return SqlOperandHandler.super.deriveOperandType(validator, scope, i,
-//          getOperand(i, operand, name ->
-//              validator.getTimeFrameSet().getOpt(name)));
-//    }
-
     @Override public SqlNode rewriteCall(SqlValidator validator, SqlCall call) {
       final List<SqlNode> newOperandList = new ArrayList<>();
       Ord.forEach(call.getOperandList(), (operand, i) ->

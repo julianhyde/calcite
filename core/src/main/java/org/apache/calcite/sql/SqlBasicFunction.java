@@ -16,17 +16,13 @@
  */
 package org.apache.calcite.sql;
 
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.OperandHandlers;
 import org.apache.calcite.sql.type.SqlOperandHandler;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
-import org.apache.calcite.sql.util.SqlBasicVisitor;
-import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql.validate.SqlValidatorScope;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -139,23 +135,6 @@ public class SqlBasicFunction extends SqlFunction {
 
   @Override public SqlMonotonicity getMonotonicity(SqlOperatorBinding call) {
     return monotonicityInference.apply(call);
-  }
-
-  @Override public <R> void acceptCall(SqlVisitor<R> visitor,
-      SqlCall call, boolean onlyExpressions,
-      SqlBasicVisitor.ArgHandler<R> argHandler) {
-    operandHandler.acceptCall(visitor, call, onlyExpressions, argHandler);
-  }
-
-  @Override public void validateCall(SqlCall call, SqlValidator validator,
-      SqlValidatorScope scope, SqlValidatorScope operandScope) {
-    operandHandler.validateCall(call, validator, scope, operandScope);
-    validateQuantifier(validator, call);
-  }
-
-  @Override protected RelDataType deriveOperandType(SqlValidator validator,
-      SqlValidatorScope scope, int i, SqlNode operand) {
-    return operandHandler.deriveOperandType(validator, scope, i, operand);
   }
 
   @Override public SqlNode rewriteCall(SqlValidator validator, SqlCall call) {
