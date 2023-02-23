@@ -956,6 +956,9 @@ public class HepPlanner extends AbstractRelOptPlanner {
     RelMdUtil.clearCache(rel);
     rel.recomputeDigest();
 
+    if (rel instanceof HepRelVertex) {
+      throw new AssertionError("post-condition failed: " + rel);
+    }
     return rel;
   }
 
