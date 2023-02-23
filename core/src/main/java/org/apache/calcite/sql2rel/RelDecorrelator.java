@@ -1607,11 +1607,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
   }
 
   private static RelNode stripHep(RelNode rel) {
-    if (rel instanceof HepRelVertex) {
-      HepRelVertex hepRelVertex = (HepRelVertex) rel;
-      rel = hepRelVertex.getCurrentRel();
-    }
-    return rel;
+    return rel instanceof HepRelVertex ? rel.stripped() : rel;
   }
 
   //~ Inner Classes ----------------------------------------------------------
@@ -2026,7 +2022,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         right = filter.getInput();
 
         assert right instanceof HepRelVertex;
-        right = ((HepRelVertex) right).getCurrentRel();
+        right = right.stripped();
 
         // check filter input contains no correlation
         if (RelOptUtil.getVariablesUsed(right).size() > 0) {
@@ -2258,7 +2254,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         right = filter.getInput();
 
         assert right instanceof HepRelVertex;
-        right = ((HepRelVertex) right).getCurrentRel();
+        right = right.stripped();
 
         // check filter input contains no correlation
         if (RelOptUtil.getVariablesUsed(right).size() > 0) {
