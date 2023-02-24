@@ -38,8 +38,8 @@ import org.apache.calcite.sql.type.AbstractSqlType;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
-import org.apache.calcite.util.format.FormatElement;
-import org.apache.calcite.util.format.FormatElementEnum;
+import org.apache.calcite.util.format.FormatModel;
+import org.apache.calcite.util.format.FormatModels;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
@@ -56,7 +56,6 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -1006,16 +1005,15 @@ public class SqlDialect {
   }
 
   /**
-   * Returns a map of strings to {@link FormatElementEnum} entries.
+   * Returns a description of the format string used by functions in this
+   * dialect.
    *
    * <p>Dialects may need to override this element mapping if they differ from
-   * <a
-   * href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Format-Models.html">
-   * Oracle's format elements.</a> By default this returns the value of
-   * {@link FormatElementEnum.ParseMap}
+   * <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Format-Models.html">
+   * Oracle's format elements</a>. By default, this returns {@link FormatModels#DEFAULT}.
    */
-  public Map<String, FormatElement> getFormatElementMap() {
-    return FormatElementEnum.ParseMap.getMap();
+  public FormatModel getFormatModel() {
+    return FormatModels.DEFAULT;
   }
 
   /**

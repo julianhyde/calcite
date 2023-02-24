@@ -16,36 +16,116 @@
  */
 package org.apache.calcite.util.format;
 
-import org.apache.calcite.util.format.FormatElementEnum.ParseMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.calcite.util.format.FormatElementEnum.D;
+import static org.apache.calcite.util.format.FormatElementEnum.DAY;
+import static org.apache.calcite.util.format.FormatElementEnum.DD;
+import static org.apache.calcite.util.format.FormatElementEnum.DDD;
+import static org.apache.calcite.util.format.FormatElementEnum.DY;
+import static org.apache.calcite.util.format.FormatElementEnum.FF1;
+import static org.apache.calcite.util.format.FormatElementEnum.FF2;
+import static org.apache.calcite.util.format.FormatElementEnum.FF3;
+import static org.apache.calcite.util.format.FormatElementEnum.FF4;
+import static org.apache.calcite.util.format.FormatElementEnum.FF5;
+import static org.apache.calcite.util.format.FormatElementEnum.FF6;
+import static org.apache.calcite.util.format.FormatElementEnum.HH24;
+import static org.apache.calcite.util.format.FormatElementEnum.IW;
+import static org.apache.calcite.util.format.FormatElementEnum.MI;
+import static org.apache.calcite.util.format.FormatElementEnum.MM;
+import static org.apache.calcite.util.format.FormatElementEnum.MON;
+import static org.apache.calcite.util.format.FormatElementEnum.MONTH;
+import static org.apache.calcite.util.format.FormatElementEnum.Q;
+import static org.apache.calcite.util.format.FormatElementEnum.SS;
+import static org.apache.calcite.util.format.FormatElementEnum.TZR;
+import static org.apache.calcite.util.format.FormatElementEnum.WW;
+import static org.apache.calcite.util.format.FormatElementEnum.YY;
+import static org.apache.calcite.util.format.FormatElementEnum.YYYY;
+
+import static java.util.Objects.requireNonNull;
+
 /**
- * Utility class used to convert format strings into {@link FormatElement}s.
+ * Utilities for {@link FormatModel}.
  */
 public class FormatModels {
-  private final Pattern fmtRegex;
-  private final Map<String, FormatElement> elementMap;
-  private final Map<String, List<FormatElement>> memoizedElements = new ConcurrentHashMap<>();
+  private FormatModels() {
+  }
 
-  private static final FormatModels DEFAULT = FormatModels.create(ParseMap.getMap());
+  /** The format model consisting of built-in format elements.
+   *
+   * <p>Due to the design of {@link FormatElementEnum}, it is similar to
+   * Oracle's format model.
+   */
+  public static final FormatModel DEFAULT;
 
-  private FormatModels(Pattern parseMapRegex, Map<String, FormatElement> elementMap) {
-    this.fmtRegex = parseMapRegex;
-    this.elementMap = elementMap;
+  /** Format model for BigQuery.
+   *
+   * <p>BigQuery format element reference:
+   * <a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements">
+   * BigQuery Standard SQL Format Elements</a>.
+   */
+  public static final FormatModel BIG_QUERY;
+
+  static {
+    final Map<String, FormatElement> map = new HashMap<>();
+    for (FormatElementEnum fe : FormatElementEnum.values()) {
+      map.put(fe.toString(), fe);
+    }
+    DEFAULT = create(map);
+
+    map.clear();
+    map.put("%A", DAY);
+    map.put("%a", DY);
+    map.put("%B", MONTH);
+    map.put("%b", MON);
+    map.put("%c",
+        compositeElement("The date and time representation (English);",
+            DY, literalElement(" "), MON, literalElement(" "),
+            DD, literalElement(" "), HH24, literalElement(":"),
+            MI, literalElement(":"), SS, literalElement(" "),
+            YYYY));
+    map.put("%d", DD);
+    map.put("%E1S", FF1);
+    map.put("%E2S", FF2);
+    map.put("%E3S", FF3);
+    map.put("%E4S", FF4);
+    map.put("%E5S", FF5);
+    map.put("%E*S", FF6);
+    map.put("%H", HH24);
+    map.put("%j", DDD);
+    map.put("%M", MI);
+    map.put("%m", MM);
+    map.put("%Q", Q);
+    map.put("%R",
+        compositeElement("The time in the format %H:%M",
+            HH24, literalElement(":"), MI));
+    map.put("%S", SS);
+    map.put("%u", D);
+    map.put("%V", IW);
+    map.put("%W", WW);
+    map.put("%x",
+        compositeElement("The date representation in MM/DD/YY format",
+            MM, literalElement("/"), DD, literalElement("/"), YY));
+    map.put("%Y", YYYY);
+    map.put("%y", YY);
+    map.put("%Z", TZR);
+    BIG_QUERY = create(map);
   }
 
   /**
-   * Generates a {@link Pattern} using the keys of a {@link FormatModels} element map. This pattern
-   * is used in {@link #parse(String)} to help locate known format elements in a string.
+   * Generates a {@link Pattern} using the keys of a {@link FormatModel} element
+   * map. This pattern is used in {@link FormatModel#parse(String)} to help
+   * locate known format elements in a string.
    */
   private static Pattern regexFromMap(Map<String, FormatElement> elementMap) {
     StringBuilder regex = new StringBuilder();
@@ -57,98 +137,98 @@ public class FormatModels {
     return Pattern.compile(regex.toString());
   }
 
-  private FormatElement internalLiteralElement(String literal) {
+  /**
+   * Creates a {@link FormatModel} that uses the provided map to identify
+   * {@link FormatElement}s while parsing a format string.
+   */
+  public static FormatModel create(Map<String, FormatElement> elementMap) {
+    final Pattern pattern = regexFromMap(elementMap);
+    return new FormatModelImpl(pattern, elementMap);
+  }
+
+  /**
+   * Creates a literal format element.
+   */
+  public static FormatElement literalElement(String literal) {
     return new FormatModelElementLiteral(literal);
   }
 
-  private FormatElement internalCompositeElement(List<FormatElement> fmtElements,
-      String description) {
-    return new CompositeFormatElement(fmtElements, description);
-  }
-
   /**
-   * Creates a {@link FormatModels} that uses the provided map to identify {@link FormatElement}s
-   * while parsing a format string.
+   * Creates a composite format element from the provided list of elements
+   * and description.
    */
-  public static FormatModels create(Map<String, FormatElement> elementMap) {
-    final Pattern regex = regexFromMap(elementMap);
-    return new FormatModels(regex, elementMap);
+  public static FormatElement compositeElement(String description,
+      FormatElement... fmtElements) {
+    return new CompositeFormatElement(ImmutableList.copyOf(fmtElements),
+        description);
   }
 
-  /**
-   * Creates a {@link  FormatModelElementLiteral} from the provided string.
-   */
-  public static FormatElement literalElement(String literal) {
-    return DEFAULT.internalLiteralElement(literal);
-  }
 
-  /**
-   * Creates a {@link  CompositeFormatElement} from the provided list of {@link FormatElement}s and
-   * description.
-   */
-  public static FormatElement compositeElement(List<FormatElement> fmtElements,
-      String description) {
-    return DEFAULT.internalCompositeElement(fmtElements, description);
-  }
+  /** Implementation of {@link FormatModel} based on a list of format
+   * elements. */
+  private static class FormatModelImpl implements FormatModel {
+    final Pattern pattern;
+    final Map<String, FormatElement> elementMap;
 
-  /**
-   * Returns the keys of a {@link FormatModels} parse map as a {@link Pattern}.
-   */
-  public Pattern getElementRegex() {
-    return this.fmtRegex;
-  }
+    /** Cache of parsed format strings.
+     *
+     * <p>NOTE: The current implementation could grow without bounds.
+     * A per-thread cache would be better, or a cache tied to a statement
+     * execution (e.g. in DataContext). Also limit to a say 100 entries. */
+    final Map<String, List<FormatElement>> memoizedElements =
+        new ConcurrentHashMap<>();
 
-  /**
-   * Returns the map used to create the {@link FormatModels} instance.
-   */
-  public Map<String, FormatElement> getElementMap() {
-    return this.elementMap;
-  }
+    FormatModelImpl(Pattern pattern, Map<String, FormatElement> elementMap) {
+      this.pattern = requireNonNull(pattern, "pattern");
+      this.elementMap = ImmutableMap.copyOf(elementMap);
+    }
 
-  private List<FormatElement> internalParse(String format) {
-    List<FormatElement> elements = new ArrayList<>();
-    Matcher matcher = getElementRegex().matcher(format);
-    int i = 0;
-    String literal;
-    while (matcher.find()) {
-      // Add any leading literal text before next element match
-      literal = format.substring(i, matcher.start());
+    @Override public Map<String, FormatElement> getElementMap() {
+      return elementMap;
+    }
+
+    private List<FormatElement> internalParse(String format) {
+      final ImmutableList.Builder<FormatElement> elements =
+          ImmutableList.builder();
+      final Matcher matcher = pattern.matcher(format);
+      int i = 0;
+      String literal;
+      while (matcher.find()) {
+        // Add any leading literal text before next element match
+        literal = format.substring(i, matcher.start());
+        if (!literal.isEmpty()) {
+          elements.add(literalElement(literal));
+        }
+        // add the element match - use literal as default to be safe.
+        String key = matcher.group();
+        elements.add(getElementMap().getOrDefault(key, literalElement(key)));
+        i = matcher.end();
+      }
+      // add any remaining literal text after last element match
+      literal = format.substring(i);
       if (!literal.isEmpty()) {
         elements.add(literalElement(literal));
       }
-      // add the element match - use literal as default to be safe.
-      String key = matcher.group();
-      elements.add(getElementMap().getOrDefault(key, literalElement(key)));
-      i = matcher.end();
+      return elements.build();
     }
-    // add any remaining literal text after last element match
-    literal = format.substring(i);
-    if (!literal.isEmpty()) {
-      elements.add(literalElement(literal));
+
+    @Override public List<FormatElement> parse(String format) {
+      return memoizedElements.computeIfAbsent(format, this::internalParse);
     }
-    return elements;
   }
 
   /**
-   * Parses the {@code fmtString} using element identifiers supplied by {@code fmtModel}.
-   */
-  public List<FormatElement> parse(String format) {
-    return memoizedElements.computeIfAbsent(format, f -> internalParse(f));
-  }
-
-  /**
-   * Represents literal text in a format string.
+   * A format element that is literal text.
    */
   private static class FormatModelElementLiteral implements FormatElement {
-
     private final String literal;
 
-    private FormatModelElementLiteral(String literal) {
-      this.literal = Objects.requireNonNull(literal, "null literal");
+    FormatModelElementLiteral(String literal) {
+      this.literal = requireNonNull(literal, "literal");
     }
 
     @Override public String format(Date date) {
-      return toString();
+      return literal;
     }
 
     @Override public String getDescription() {
@@ -161,16 +241,16 @@ public class FormatModels {
   }
 
   /**
-   * Represents a format element comprised of one or more {@link FormatElementEnum} entries.
+   * A format element comprised of one or more {@link FormatElement} entries.
    */
   private static class CompositeFormatElement implements FormatElement {
-
     private final String description;
     private final List<FormatElement> formatElements;
 
-    private CompositeFormatElement(List<FormatElement> formatElements, String description) {
-      this.formatElements = Objects.requireNonNull(formatElements, "format elements");
-      this.description = Objects.requireNonNull(description, "no description provided");
+    CompositeFormatElement(List<FormatElement> formatElements,
+        String description) {
+      this.formatElements = ImmutableList.copyOf(formatElements);
+      this.description = requireNonNull(description, "description");
     }
 
     @Override public String format(Date date) {
@@ -180,11 +260,12 @@ public class FormatModels {
     }
 
     /**
-     * Applies a consumer to each format element that make up the composite element.
+     * Applies a consumer to each format element that make up the composite
+     * element.
      *
-     * <p>For example, {@code %R} in Google SQL represents the hour in 24-hour format (e.g.,
-     * 00..23) followed by the minute as a decimal number.
-     * {@code flatten(i -> println(i.toString())); } would print "HH24:MI"
+     * <p>For example, {@code %R} in Google SQL represents the hour in 24-hour
+     * format (e.g., 00..23) followed by the minute as a decimal number.
+     * {@code flatten(i -> println(i.toString())); } would print "HH24:MI".
      */
     @Override public void flatten(Consumer<FormatElement> consumer) {
       formatElements.forEach(consumer);

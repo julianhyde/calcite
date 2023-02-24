@@ -18,14 +18,11 @@ package org.apache.calcite.util.format;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Implementation of {@link FormatElement} containing the standard format
@@ -34,6 +31,8 @@ import java.util.Map;
  * <p>See
  * <a href="https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlqr/Format-Models.html">
  * Oracle format model reference.</a>
+ *
+ * @see FormatModels#DEFAULT
  */
 public enum FormatElementEnum implements FormatElement {
   D("The weekday (Monday as the first day of the week) as a decimal number (1-7)") {
@@ -227,25 +226,5 @@ public enum FormatElementEnum implements FormatElement {
     final DateFormat sssssFormat = new SimpleDateFormat("SSSSS", Locale.ROOT);
     final DateFormat ssssssFormat = new SimpleDateFormat("SSSSSS", Locale.ROOT);
     final DateFormat yyFormat = new SimpleDateFormat("yy", Locale.ROOT);
-  }
-
-  /**
-   * Helper class that statically generates the parse map for {@link FormatElementEnum}.
-   */
-  public static class ParseMap {
-
-    private static final Map<String, FormatElement> PARSE_MAP = makeMap();
-
-    private static Map<String, FormatElement> makeMap() {
-      final ImmutableMap.Builder<String, FormatElement> builder = ImmutableMap.builder();
-      for (FormatElementEnum ele : FormatElementEnum.values()) {
-        builder.put(ele.toString(), ele);
-      }
-      return builder.build();
-    }
-
-    public static Map<String, FormatElement> getMap() {
-      return PARSE_MAP;
-    }
   }
 }

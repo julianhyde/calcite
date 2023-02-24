@@ -35,7 +35,6 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.rel.type.TimeFrame;
 import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.runtime.FlatLists.ComparableList;
-import org.apache.calcite.sql.fun.SqlBigQueryFormatDatetimeFunction;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.util.NumberUtil;
 import org.apache.calcite.util.TimeWithTimeZoneString;
@@ -43,6 +42,7 @@ import org.apache.calcite.util.TimestampWithTimeZoneString;
 import org.apache.calcite.util.Unsafe;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.format.FormatElement;
+import org.apache.calcite.util.format.FormatModels;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.codec.language.Soundex;
@@ -2196,7 +2196,7 @@ public class SqlFunctions {
 
   private static String internalFormatDatetime(String fmtString, java.util.Date date) {
     List<FormatElement> elements =
-        SqlBigQueryFormatDatetimeFunction.BQ_FORMAT_MODEL.parse(fmtString);
+        FormatModels.BIG_QUERY.parse(fmtString);
     return elements.stream()
         .map(ele -> ele.format(date))
         .collect(Collectors.joining());

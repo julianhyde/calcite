@@ -22,13 +22,11 @@ import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperandCountRange;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.dialect.BigQuerySqlDialect;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlOperandCountRanges;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.format.FormatModels;
 
 import java.util.Locale;
 
@@ -56,9 +54,6 @@ public class SqlBigQueryFormatDatetimeFunction extends SqlFunction {
 
   private final SqlTypeName typeName;
   private final String name;
-
-  public static final FormatModels BQ_FORMAT_MODEL =
-      FormatModels.create(BigQuerySqlDialect.DEFAULT.getFormatElementMap());
 
   private SqlBigQueryFormatDatetimeFunction(String name, SqlTypeName typeName) {
     super(name, SqlKind.OTHER_FUNCTION, ReturnTypes.VARCHAR_2000_NULLABLE, null,
@@ -120,8 +115,7 @@ public class SqlBigQueryFormatDatetimeFunction extends SqlFunction {
    * Operand type checker for {@code SqlBigQueryFormatDatetimeFunctions}.
    */
   private static class FormatDatetimeOperandTypeChecker implements SqlOperandTypeChecker {
-
-    private SqlTypeName typeName;
+    private final SqlTypeName typeName;
 
     FormatDatetimeOperandTypeChecker(SqlTypeName typeName) {
       this.typeName = typeName;

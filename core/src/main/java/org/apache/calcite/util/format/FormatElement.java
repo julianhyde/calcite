@@ -16,24 +16,36 @@
  */
 package org.apache.calcite.util.format;
 
+import org.apache.calcite.linq4j.function.Experimental;
+
 import java.util.function.Consumer;
 
 /**
  * A format element in a format string. Knows how to parse and unparse itself.
  */
+@Experimental
 public interface FormatElement {
 
   /**
    * Formats a date to its appropriate string representation for the element.
+   *
+   * <p>This API is subject to change. It might be more efficient if the
+   * signature was one of the following:
+   *
+   * <pre>
+   *   void format(StringBuilder, java.util.Date)
+   *   void format(StringBuilder, long)
+   * </pre>
    */
   String format(java.util.Date date);
 
   /**
    * Returns the description of an element.
    *
-   * <p>For example, {@code %H} in MySQL represents the hour in 24-hour format (e.g., 00..23). This
-   * method returns the string "The hour (24-hour clock) as a decimal number (00-23)" which is the
-   * description of the FormatElementEnum {@code HH24}
+   * <p>For example, {@code %H} in MySQL represents the hour in 24-hour format
+   * (e.g., 00..23). This method returns the string "The hour (24-hour clock) as
+   * a decimal number (00-23)", which is the description of
+   * {@link FormatElementEnum#HH24}.
    */
   String getDescription();
 
