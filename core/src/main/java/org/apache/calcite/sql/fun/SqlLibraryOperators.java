@@ -660,27 +660,49 @@ public abstract class SqlLibraryOperators {
    * Formats a time object according to the specified string. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction FORMAT_TIME =
-      SqlBigQueryFormatDatetimeFunction.get(SqlTypeName.TIME);
+      SqlBasicFunction.create("FORMAT_TIME", ReturnTypes.VARCHAR_2000_NULLABLE,
+          OperandTypes.CHARACTER_TIME, SqlFunctionCategory.STRING);
 
   /** The "FORMAT_DATE(string, date)" function (BigQuery);
    * Formats a date object according to the specified string. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction FORMAT_DATE =
-      SqlBigQueryFormatDatetimeFunction.get(SqlTypeName.DATE);
+      SqlBasicFunction.create("FORMAT_DATE", ReturnTypes.VARCHAR_2000_NULLABLE,
+          OperandTypes.CHARACTER_DATE, SqlFunctionCategory.STRING);
 
   /** The "FORMAT_TIMESTAMP(string, timestamp)" function (BigQuery);
    * Formats a timestamp object according to the specified string.
    *
-   * <p>In BigQuery, the "TIMESTAMP" datatype maps to Calcite's TIMESTAMP_WITH_LOCAL_TIME_ZONE */
+   * <p>In BigQuery, the "TIMESTAMP" datatype maps to Calcite's
+   * TIMESTAMP_WITH_LOCAL_TIME_ZONE */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction FORMAT_TIMESTAMP =
-      SqlBigQueryFormatDatetimeFunction.get(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE);
+      SqlBasicFunction.create("FORMAT_TIMESTAMP",
+          ReturnTypes.VARCHAR_2000_NULLABLE,
+          OperandTypes.sequence("FORMAT_TIMESTAMP(<CHARACTER>, "
+                  + "<TIMESTAMP WITH LOCAL TIME ZONE>)",
+              OperandTypes.CHARACTER, OperandTypes.TIMESTAMP_LTZ)
+              .or(
+                  OperandTypes.sequence("FORMAT_TIMESTAMP(<CHARACTER>, "
+                          + "<TIMESTAMP WITH LOCAL TIME ZONE>, <CHARACTER>)",
+                      OperandTypes.CHARACTER, OperandTypes.TIMESTAMP_LTZ,
+                      OperandTypes.CHARACTER)),
+          SqlFunctionCategory.STRING);
 
   /** The "FORMAT_DATETIME(string, timestamp)" function (BigQuery);
    * Formats a timestamp object according to the specified string. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction FORMAT_DATETIME =
-      SqlBigQueryFormatDatetimeFunction.get(SqlTypeName.TIMESTAMP);
+      SqlBasicFunction.create("FORMAT_DATETIME",
+          ReturnTypes.VARCHAR_2000_NULLABLE,
+          OperandTypes.sequence("FORMAT_DATETIME(<CHARACTER>, <TIMESTAMP>)",
+                  OperandTypes.CHARACTER, OperandTypes.TIMESTAMP_NTZ)
+              .or(
+                  OperandTypes.sequence("FORMAT_DATETIME(<CHARACTER>, "
+                          + "<TIMESTAMP>, <CHARACTER>)",
+                      OperandTypes.CHARACTER, OperandTypes.TIMESTAMP_NTZ,
+                      OperandTypes.CHARACTER)),
+          SqlFunctionCategory.STRING);
 
   /** The "TIMESTAMP_ADD(timestamp_expression, interval_expression)" function
    * (BigQuery), the two-argument variant of the built-in

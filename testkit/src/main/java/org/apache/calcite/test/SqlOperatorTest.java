@@ -8186,7 +8186,7 @@ public class SqlOperatorTest {
         "Cannot apply 'FORMAT_TIME' to arguments of type "
             + "'FORMAT_TIME\\(<CHAR\\(2\\)>, <TIMESTAMP\\(0\\)>\\)'\\. "
             + "Supported form\\(s\\): "
-            + "FORMAT_TIME\\(STRING, TIME\\)",
+            + "'FORMAT_TIME\\(<CHARACTER>, <TIME>\\)'",
         false);
     f.checkScalar("FORMAT_TIME('%H', TIME '12:34:33')",
         "12",
@@ -8203,12 +8203,16 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture()
         .withLibrary(SqlLibrary.BIG_QUERY)
         .setFor(SqlLibraryOperators.FORMAT_DATE);
-    f.checkFails("^FORMAT_DATE('%x', timestamp '2008-12-25 15:30:00')^",
+    f.checkFails("^FORMAT_DATE('%x', 123)^",
         "Cannot apply 'FORMAT_DATE' to arguments of type "
-            + "'FORMAT_DATE\\(<CHAR\\(2\\)>, <TIMESTAMP\\(0\\)>\\)'\\. "
+            + "'FORMAT_DATE\\(<CHAR\\(2\\)>, <INTEGER>\\)'\\. "
             + "Supported form\\(s\\): "
-            + "FORMAT_DATE\\(STRING, DATE\\)",
+            + "'FORMAT_DATE\\(<CHARACTER>, <DATE>\\)'",
         false);
+    // Can implicitly cast TIMESTAMP to DATE
+    f.checkScalar("FORMAT_DATE('%x', timestamp '2008-12-25 15:30:00')",
+        "12/25/08",
+        "VARCHAR(2000) NOT NULL");
     f.checkScalar("FORMAT_DATE('%b-%d-%Y', DATE '2008-12-25')",
         "Dec-25-2008",
         "VARCHAR(2000) NOT NULL");
@@ -8227,12 +8231,14 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture()
         .withLibrary(SqlLibrary.BIG_QUERY)
         .setFor(SqlLibraryOperators.FORMAT_TIMESTAMP);
-    f.checkFails("^FORMAT_TIMESTAMP('%x', date '2015-02-19')^",
+    f.checkFails("^FORMAT_TIMESTAMP('%x', 123)^",
         "Cannot apply 'FORMAT_TIMESTAMP' to arguments of type "
-            + "'FORMAT_TIMESTAMP\\(<CHAR\\(2\\)>, <DATE>\\)'\\. "
+            + "'FORMAT_TIMESTAMP\\(<CHAR\\(2\\)>, <INTEGER>\\)'\\. "
             + "Supported form\\(s\\): "
-            + "FORMAT_TIMESTAMP\\(STRING, "
-            + "TIMESTAMP_WITH_LOCAL_TIME_ZONE \\[, STRING\\]\\)",
+            + "FORMAT_TIMESTAMP\\(<CHARACTER>, "
+            + "<TIMESTAMP WITH LOCAL TIME ZONE>\\)\n"
+            + "FORMAT_TIMESTAMP\\(<CHARACTER>, "
+            + "<TIMESTAMP WITH LOCAL TIME ZONE>, <CHARACTER>\\)",
         false);
     f.checkScalar("FORMAT_TIMESTAMP('%c',"
             + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00')",
