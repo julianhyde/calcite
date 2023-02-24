@@ -8231,25 +8231,31 @@ public class SqlOperatorTest {
         "Cannot apply 'FORMAT_TIMESTAMP' to arguments of type "
             + "'FORMAT_TIMESTAMP\\(<CHAR\\(2\\)>, <DATE>\\)'\\. "
             + "Supported form\\(s\\): "
-            + "FORMAT_TIMESTAMP\\(STRING, TIMESTAMP \\[, STRING\\]\\)",
+            + "FORMAT_TIMESTAMP\\(STRING, "
+            + "TIMESTAMP_WITH_LOCAL_TIME_ZONE \\[, STRING\\]\\)",
         false);
-    f.checkScalar("FORMAT_TIMESTAMP('%c', TIMESTAMP '2008-12-25 15:30:00')",
+    f.checkScalar("FORMAT_TIMESTAMP('%c',"
+            + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00')",
         "Thu Dec 25 15:30:00 2008",
         "VARCHAR(2000) NOT NULL");
-    f.checkScalar("FORMAT_TIMESTAMP('%b-%d-%Y', TIMESTAMP '2008-12-25 15:30:00')",
+    f.checkScalar("FORMAT_TIMESTAMP('%b-%d-%Y',"
+            + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00')",
         "Dec-25-2008",
         "VARCHAR(2000) NOT NULL");
-    f.checkScalar("FORMAT_TIMESTAMP('%b %Y', TIMESTAMP '2008-12-25 15:30:00')",
+    f.checkScalar("FORMAT_TIMESTAMP('%b %Y',"
+            + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00')",
         "Dec 2008",
         "VARCHAR(2000) NOT NULL");
-    f.checkScalar("FORMAT_TIMESTAMP('%x', TIMESTAMP '2008-12-25 15:30:00')",
+    f.checkScalar("FORMAT_TIMESTAMP('%x',"
+            + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00')",
         "12/25/08",
         "VARCHAR(2000) NOT NULL");
-    f.checkScalar("FORMAT_TIMESTAMP('The time is: %R', TIMESTAMP '2008-12-25 15:30:00')",
+    f.checkScalar("FORMAT_TIMESTAMP('The time is: %R',"
+            + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00')",
         "The time is: 15:30",
         "VARCHAR(2000) NOT NULL");
-    f.checkScalar(
-        "FORMAT_TIMESTAMP('The time is: %R.%E2S', TIMESTAMP '2008-12-25 15:30:00.1235456')",
+    f.checkScalar("FORMAT_TIMESTAMP('The time is: %R.%E2S',"
+            + " TIMESTAMP WITH LOCAL TIME ZONE '2008-12-25 15:30:00.1235456')",
         "The time is: 15:30.123",
         "VARCHAR(2000) NOT NULL");
   }

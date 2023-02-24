@@ -1864,10 +1864,11 @@ class RelToSqlConverterTest {
         + "from \"foodmart\".\"product\"\n";
     final String formatDate = "select format_date('%b-%d-%Y', date '2012-02-03')\n"
         + "from \"foodmart\".\"product\"\n";
-    final String formatTimestamp =
-        "select format_timestamp('%b-%d-%Y', timestamp '2012-02-03 12:30:40')\n"
-            + "from \"foodmart\".\"product\"\n";
-    final String formatDatetime = "select format_datetime('%R', timestamp '2012-02-03 12:34:34')\n"
+    final String formatTimestamp = "select format_timestamp('%b-%d-%Y',\n"
+        + "    timestamp with local time zone '2012-02-03 12:30:40')\n"
+        + "from \"foodmart\".\"product\"\n";
+    final String formatDatetime = "select format_datetime('%R',\n"
+        + "    timestamp '2012-02-03 12:34:34')\n"
         + "from \"foodmart\".\"product\"\n";
 
     final String expectedBqFormatTime =
@@ -1877,16 +1878,19 @@ class RelToSqlConverterTest {
         "SELECT FORMAT_DATE('%b-%d-%Y', DATE '2012-02-03')\n"
             + "FROM foodmart.product";
     final String expectedBqFormatTimestamp =
-        "SELECT FORMAT_TIMESTAMP('%b-%d-%Y', TIMESTAMP '2012-02-03 12:30:40')\n"
+        "SELECT FORMAT_TIMESTAMP('%b-%d-%Y', TIMESTAMP_WITH_LOCAL_TIME_ZONE '2012-02-03 12:30:40')\n"
             + "FROM foodmart.product";
     final String expectedBqFormatDatetime =
         "SELECT FORMAT_DATETIME('%R', TIMESTAMP '2012-02-03 12:34:34')\n"
             + "FROM foodmart.product";
-    sql(formatTime).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedBqFormatTime);
-    sql(formatDate).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedBqFormatDate);
-    sql(formatTimestamp).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY)
+    final Sql sql = fixture().withBigQuery().withLibrary(SqlLibrary.BIG_QUERY);
+    sql.withSql(formatTime)
+        .ok(expectedBqFormatTime);
+    sql.withSql(formatDate)
+        .ok(expectedBqFormatDate);
+    sql.withSql(formatTimestamp)
         .ok(expectedBqFormatTimestamp);
-    sql(formatDatetime).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY)
+    sql.withSql(formatDatetime)
         .ok(expectedBqFormatDatetime);
   }
 
