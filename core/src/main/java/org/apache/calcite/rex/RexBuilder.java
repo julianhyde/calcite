@@ -403,8 +403,8 @@ public class RexBuilder {
     if (nullWhenCountZero) {
       final RelDataType bigintType =
           typeFactory.createSqlType(SqlTypeName.BIGINT);
-      result = makeCall(
-          SqlStdOperatorTable.CASE,
+      result = /*X*/
+          makeCall(SqlStdOperatorTable.CASE,
           makeCall(
               SqlStdOperatorTable.GREATER_THAN,
               new RexOver(
@@ -983,8 +983,8 @@ public class RexBuilder {
         Charset charset = type.getCharset();
         assert charset != null : "type.getCharset() must not be null";
         assert type.getCollation() != null : "type.getCollation() must not be null";
-        o = new NlsString(
-            nlsString.getValue(),
+        o = /*X*/
+            new NlsString(nlsString.getValue(),
             charset.name(),
             type.getCollation());
       }

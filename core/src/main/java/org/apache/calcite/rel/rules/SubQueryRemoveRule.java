@@ -658,8 +658,8 @@ public class SubQueryRemoveRule
             builder.or(
                 builder.and(conditions),
                 builder.or(isNullOperands)));
-        RexNode project = builder.and(
-            fields.stream()
+        RexNode project = /*X*/
+            builder.and(fields.stream()
                 .map(builder::isNotNull)
                 .collect(Collectors.toList()));
         builder.project(builder.alias(project, "cs"));

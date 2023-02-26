@@ -195,8 +195,8 @@ class CassandraAdapterDataTypesTest {
 
   @Test void testCollectionsInnerValues() {
     // timestamp retrieval depends on the user timezone, we must compute the expected result
-    long v = Objects.requireNonNull(
-        TypeCodecs.TIMESTAMP.parse("'2015-05-03 13:30:54.234'")).toEpochMilli();
+    long v = /*X*/
+        Objects.requireNonNull(TypeCodecs.TIMESTAMP.parse("'2015-05-03 13:30:54.234'")).toEpochMilli();
     String expectedTimestamp = DateTimeUtils.unixTimestampToString(v);
 
     CalciteAssert.that()

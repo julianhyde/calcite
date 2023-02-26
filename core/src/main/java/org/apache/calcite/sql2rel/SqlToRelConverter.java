@@ -1022,8 +1022,8 @@ public class SqlToRelConverter {
                   thenOperand);
           thenOperands.add(pushDownNotForIn(scope, reg(scope, not)));
         }
-        SqlNode elseOperand = requireNonNull(
-            caseNode.getElseOperand(),
+        SqlNode elseOperand = /*X*/
+            requireNonNull(caseNode.getElseOperand(),
             "getElseOperand for " + caseNode);
         if (!SqlUtil.isNull(elseOperand)) {
           // "not(unknown)" is "unknown", so no need to simplify
@@ -1412,16 +1412,16 @@ public class SqlToRelConverter {
         (query instanceof SqlSelect)
             ? validator().getSelectScope((SqlSelect) query)
             : null;
-    final Blackboard setSemanticsTableBb = createBlackboard(
-        innerTableScope, null, false);
-    final RelNode inputOfSetSemanticsTable = convertQueryRecursive(
-        query, false, null).project();
+    final Blackboard setSemanticsTableBb = /*X*/
+        createBlackboard(innerTableScope, null, false);
+    final RelNode inputOfSetSemanticsTable = /*X*/
+        convertQueryRecursive(query, false, null).project();
     requireNonNull(
         inputOfSetSemanticsTable,
         () -> "input RelNode is null for query " + query);
     SqlNodeList partitionList = call.operand(1);
-    final ImmutableBitSet partitionKeys = buildPartitionKeys(
-        setSemanticsTableBb,
+    final ImmutableBitSet partitionKeys = /*X*/
+        buildPartitionKeys(setSemanticsTableBb,
         partitionList);
     // For set semantics table, distribution is singleton if does not specify
     // partition keys
@@ -1430,8 +1430,8 @@ public class SqlToRelConverter {
         : RelDistributions.hash(partitionKeys.asList());
     // ORDER BY
     final SqlNodeList orderList = call.operand(2);
-    final RelCollation orders = buildCollation(
-        setSemanticsTableBb,
+    final RelCollation orders = /*X*/
+        buildCollation(setSemanticsTableBb,
         orderList);
     relBuilder.push(inputOfSetSemanticsTable);
     if (orderList.isEmpty()) {
@@ -2239,10 +2239,10 @@ public class SqlToRelConverter {
       validator().deriveType(bb.scope(), partition);
       partitionKeys.add(bb.convertExpression(partition));
     }
-    final RexNode lowerBound = bb.convertExpression(
-        requireNonNull(sqlLowerBound, "sqlLowerBound"));
-    final RexNode upperBound = bb.convertExpression(
-        requireNonNull(sqlUpperBound, "sqlUpperBound"));
+    final RexNode lowerBound = /*X*/
+        bb.convertExpression(requireNonNull(sqlLowerBound, "sqlLowerBound"));
+    final RexNode upperBound = /*X*/
+        bb.convertExpression(requireNonNull(sqlUpperBound, "sqlUpperBound"));
     if (orderList.size() == 0 && !rows) {
       // A logical range requires an ORDER BY clause. Use the implicit
       // ordering of this relation. There must be one, otherwise it would
@@ -2358,8 +2358,8 @@ public class SqlToRelConverter {
 
     case TABLESAMPLE:
       final List<SqlNode> operands = ((SqlCall) from).getOperandList();
-      SqlSampleSpec sampleSpec = SqlLiteral.sampleValue(
-          requireNonNull(operands.get(1), () -> "operand[1] of " + from));
+      SqlSampleSpec sampleSpec = /*X*/
+          SqlLiteral.sampleValue(requireNonNull(operands.get(1), () -> "operand[1] of " + from));
       if (sampleSpec instanceof SqlSampleSpec.SqlSubstitutionSampleSpec) {
         String sampleName =
             ((SqlSampleSpec.SqlSubstitutionSampleSpec) sampleSpec)
@@ -2740,8 +2740,9 @@ public class SqlToRelConverter {
         ImmutableList.builder();
     unpivot.forEachNameValues((nodeList, valueList) -> {
       if (valueList == null) {
-        valueList = new SqlNodeList(
-            Collections.nCopies(axisNames.size(),
+        valueList = /*X*/
+            new SqlNodeList(
+                Collections.nCopies(axisNames.size(),
                 SqlLiteral.createCharString(SqlUnpivot.aliasValue(nodeList),
                     SqlParserPos.ZERO)),
             SqlParserPos.ZERO);
@@ -2787,8 +2788,8 @@ public class SqlToRelConverter {
     }
     // Review Danny 2020-01-13: hacky to construct a new table scan
     // in order to apply the hint strategies.
-    final List<RelHint> hints = hintStrategies.apply(
-        SqlUtil.getRelHint(hintStrategies, tableHints),
+    final List<RelHint> hints = /*X*/
+        hintStrategies.apply(SqlUtil.getRelHint(hintStrategies, tableHints),
         LogicalTableScan.create(cluster, table, ImmutableList.of()));
     final RelNode tableRel = toRel(table, hints);
     bb.setRoot(tableRel, true);
@@ -2829,8 +2830,8 @@ public class SqlToRelConverter {
           (SqlUserDefinedTableMacro) operator;
       final TranslatableTable table = udf.getTable(callBinding);
       final RelDataType rowType = table.getRowType(typeFactory);
-      CalciteSchema schema = Schemas.subSchema(
-          catalogReader.getRootSchema(), udf.getNameAsId().skipLast(1).names);
+      CalciteSchema schema = /*X*/
+          Schemas.subSchema(catalogReader.getRootSchema(), udf.getNameAsId().skipLast(1).names);
       TableExpressionFactory expressionFunction =
           clazz -> Schemas.getTableExpression(Objects.requireNonNull(schema, "schema").plus(),
               Util.last(udf.getNameAsId().names), table, clazz);
@@ -2994,8 +2995,8 @@ public class SqlToRelConverter {
     SqlValidatorNamespace prevNs = null;
 
     for (CorrelationId correlName : correlatedVariables) {
-      DeferredLookup lookup = requireNonNull(
-          mapCorrelToDeferred.get(correlName),
+      DeferredLookup lookup = /*X*/
+          requireNonNull(mapCorrelToDeferred.get(correlName),
           () -> "correlation variable is not found: " + correlName);
       RexFieldAccess fieldAccess = lookup.getFieldAccess(correlName);
       String originalRelName = lookup.getOriginalRelName();
@@ -3108,8 +3109,8 @@ public class SqlToRelConverter {
   private boolean isSubQueryNonCorrelated(RelNode subq, Blackboard bb) {
     Set<CorrelationId> correlatedVariables = RelOptUtil.getVariablesUsed(subq);
     for (CorrelationId correlName : correlatedVariables) {
-      DeferredLookup lookup = requireNonNull(
-          mapCorrelToDeferred.get(correlName),
+      DeferredLookup lookup = /*X*/
+          requireNonNull(mapCorrelToDeferred.get(correlName),
           () -> "correlation variable is not found: " + correlName);
       String originalRelName = lookup.getOriginalRelName();
 
@@ -3200,8 +3201,8 @@ public class SqlToRelConverter {
         throw Util.unexpected(conditionType);
       }
     }
-    final RelNode joinRel = createJoin(
-        fromBlackboard,
+    final RelNode joinRel = /*X*/
+        createJoin(fromBlackboard,
         leftRel,
         rightRel,
         condition,
@@ -3407,8 +3408,8 @@ public class SqlToRelConverter {
     // Calcite allows expressions, not just column references in
     // group by list. This is not SQL 2003 compliant, but hey.
 
-    final AggregatingSelectScope scope = requireNonNull(
-        aggConverter.aggregatingSelectScope,
+    final AggregatingSelectScope scope = /*X*/
+        requireNonNull(aggConverter.aggregatingSelectScope,
         "aggregatingSelectScope");
     final AggregatingSelectScope.Resolved r = scope.resolved.get();
     for (SqlNode groupExpr : r.groupExprList) {
@@ -3683,8 +3684,8 @@ public class SqlToRelConverter {
     }
 
     // Scan the select list and order exprs for an identical expression.
-    final SelectScope selectScope = requireNonNull(
-        validator().getRawSelectScope(select),
+    final SelectScope selectScope = /*X*/
+        requireNonNull(validator().getRawSelectScope(select),
         () -> "getRawSelectScope is not found for " + select);
     int ordinal = -1;
     List<SqlNode> expandedSelectList = selectScope.getExpandedSelectList();
@@ -4164,16 +4165,16 @@ public class SqlToRelConverter {
 
   private RelNode convertDelete(SqlDelete call) {
     RelOptTable targetTable = getTargetTable(call);
-    RelNode sourceRel = convertSelect(
-        requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call),
+    RelNode sourceRel = /*X*/
+        convertSelect(requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call),
         false);
     return LogicalTableModify.create(targetTable, catalogReader, sourceRel,
         LogicalTableModify.Operation.DELETE, null, null, false);
   }
 
   private RelNode convertUpdate(SqlUpdate call) {
-    final SqlValidatorScope scope = validator().getWhereScope(
-        requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call));
+    final SqlValidatorScope scope = /*X*/
+        validator().getWhereScope(requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call));
     Blackboard bb = createBlackboard(scope, null, false);
 
     replaceSubQueries(bb, call, RelOptUtil.Logic.TRUE_FALSE_UNKNOWN);
@@ -4192,8 +4193,8 @@ public class SqlToRelConverter {
       targetColumnNameList.add(field.getName());
     }
 
-    RelNode sourceRel = convertSelect(
-        requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call), false);
+    RelNode sourceRel = /*X*/
+        convertSelect(requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call), false);
 
     bb.setRoot(sourceRel, false);
     ImmutableList.Builder<RexNode> rexNodeSourceExpressionListBuilder = ImmutableList.builder();
@@ -4234,8 +4235,8 @@ public class SqlToRelConverter {
 
     // first, convert the merge's source select to construct the columns
     // from the target table and the set expressions in the update call
-    RelNode mergeSourceRel = convertSelect(
-        requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call), false);
+    RelNode mergeSourceRel = /*X*/
+        convertSelect(requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call), false);
 
     // then, convert the insert statement so we can get the insert
     // values expressions
@@ -6167,8 +6168,8 @@ public class SqlToRelConverter {
         try {
           // switch out of agg mode
           bb.agg = null;
-          collation = RelCollations.of(
-              orderList.stream()
+          collation = /*X*/
+              RelCollations.of(orderList.stream()
                   .map(order ->
                       bb.convertSortExpression(order,
                           RelFieldCollation.Direction.ASCENDING,

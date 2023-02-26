@@ -338,8 +338,8 @@ class CachingCalciteSchema extends CalciteSchema {
     private SubSchemaCache(final CalciteSchema calciteSchema,
         Set<String> names) {
       this.names = NameSet.immutableCopyOf(names);
-      this.cache = CacheBuilder.newBuilder().build(
-          new CacheLoader<String, CalciteSchema>() {
+      this.cache = /*X*/
+          CacheBuilder.newBuilder().build(new CacheLoader<String, CalciteSchema>() {
             @SuppressWarnings("NullableProblems")
             @Override public CalciteSchema load(String schemaName) {
               final Schema subSchema =

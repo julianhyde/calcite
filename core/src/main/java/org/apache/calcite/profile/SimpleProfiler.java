@@ -207,8 +207,8 @@ public class SimpleProfiler implements Profiler {
         final SortedSet<Comparable> valueSet;
         if (space.columns.size() == 1) {
           nullCount = space.nullCount;
-          valueSet = ImmutableSortedSet.copyOf(
-              Util.transform(space.values, Iterables::getOnlyElement));
+          valueSet = /*X*/
+              ImmutableSortedSet.copyOf(Util.transform(space.values, Iterables::getOnlyElement));
         } else {
           nullCount = -1;
           valueSet = null;

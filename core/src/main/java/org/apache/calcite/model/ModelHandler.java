@@ -330,8 +330,8 @@ public class ModelHandler {
           JdbcSchema.create(parentSchema, jsonSchema.name, dataSource,
               jsonSchema.jdbcCatalog, jsonSchema.jdbcSchema);
     } else {
-      SqlDialectFactory factory = AvaticaUtils.instantiatePlugin(
-          SqlDialectFactory.class, jsonSchema.sqlDialectFactory);
+      SqlDialectFactory factory = /*X*/
+          AvaticaUtils.instantiatePlugin(SqlDialectFactory.class, jsonSchema.sqlDialectFactory);
       schema =
           JdbcSchema.create(parentSchema, jsonSchema.name, dataSource,
               factory, jsonSchema.jdbcCatalog, jsonSchema.jdbcSchema);
@@ -478,8 +478,8 @@ public class ModelHandler {
         } else {
           final RelDataTypeFactory.Builder builder = typeFactory.builder();
           for (JsonTypeAttribute jsonTypeAttribute : jsonType.attributes) {
-            final SqlTypeName typeName = requireNonNull(
-                SqlTypeName.get(jsonTypeAttribute.type),
+            final SqlTypeName typeName = /*X*/
+                requireNonNull(SqlTypeName.get(jsonTypeAttribute.type),
                 () -> "SqlTypeName.get for " + jsonTypeAttribute.type);
             RelDataType type = typeFactory.createSqlType(typeName);
             if (type == null) {

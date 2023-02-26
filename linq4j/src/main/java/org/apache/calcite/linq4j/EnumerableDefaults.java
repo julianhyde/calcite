@@ -1915,8 +1915,8 @@ public abstract class EnumerableDefaults {
         // moment when we are sure
         // that it will be really needed, i.e. when the first outer
         // enumerator item is processed
-        final Supplier<Lookup<TKey, TInner>> innerLookup = Suppliers.memoize(
-            () ->
+        final Supplier<Lookup<TKey, TInner>> innerLookup = /*X*/
+            Suppliers.memoize(() ->
                 comparer == null
                     ? inner.toLookup(innerKeySelector)
                     : inner.toLookup(innerKeySelector, comparer));
@@ -3533,8 +3533,8 @@ public abstract class EnumerableDefaults {
       EqualityComparer<TKey> comparer) {
     // Use LinkedHashMap because groupJoin requires order of keys to be
     // preserved.
-    final Map<TKey, TElement> map = new WrapMap<>(
-        // Java 8 cannot infer return type with LinkedHashMap::new is used
+    final Map<TKey, TElement> map = /*X*/
+        new WrapMap<>(// Java 8 cannot infer return type with LinkedHashMap::new is used
         () -> new LinkedHashMap<Wrapped<TKey>, TElement>(), comparer);
     try (Enumerator<TSource> os = source.enumerator()) {
       while (os.moveNext()) {

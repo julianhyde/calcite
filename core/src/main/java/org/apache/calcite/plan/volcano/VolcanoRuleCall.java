@@ -302,8 +302,8 @@ public class VolcanoRuleCall extends RelOptRuleCall {
         final RelSubset subset = volcanoPlanner.getSubsetNonNull(previous);
         successors = subset.getParentRels();
       } else {
-        parentOperand = requireNonNull(
-            operand.getParent(),
+        parentOperand = /*X*/
+            requireNonNull(operand.getParent(),
             () -> "operand.getParent() for " + operand);
         final RelNode parentRel = rels[parentOperand.ordinalInRule];
         final List<RelNode> inputs = parentRel.getInputs();

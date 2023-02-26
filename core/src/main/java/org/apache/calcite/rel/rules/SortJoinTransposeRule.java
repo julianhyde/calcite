@@ -77,8 +77,8 @@ public class SortJoinTransposeRule
     final Sort sort = call.rel(0);
     final Join join = call.rel(1);
     final RelMetadataQuery mq = call.getMetadataQuery();
-    final JoinInfo joinInfo = JoinInfo.of(
-        join.getLeft(), join.getRight(), join.getCondition());
+    final JoinInfo joinInfo = /*X*/
+        JoinInfo.of(join.getLeft(), join.getRight(), join.getCondition());
 
     // 1) If join is not a left or right outer, we bail out
     // 2) If sort is not a trivial order-by, and if there is

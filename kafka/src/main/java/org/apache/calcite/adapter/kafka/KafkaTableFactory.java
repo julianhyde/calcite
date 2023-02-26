@@ -82,8 +82,8 @@ public class KafkaTableFactory implements TableFactory<KafkaStreamTable> {
                 .newInstance(OffsetResetStrategy.NONE));
       } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException
           | InstantiationException | InvocationTargetException e) {
-        final String details = String.format(
-            Locale.ROOT,
+        final String details = /*X*/
+            String.format(Locale.ROOT,
             "Fail to create table '%s' with configuration:\n"
                 + "'%s'\n"
                 + "KafkaCustConsumer '%s' is invalid",

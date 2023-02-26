@@ -278,8 +278,8 @@ public class TableScanNode implements Node {
       });
     }
     if (rejectedProjects != null) {
-      enumerable = enumerable.select(
-          new Function1<Row, Row>() {
+      enumerable = /*X*/
+          enumerable.select(new Function1<Row, Row>() {
             final @Nullable Object[] values = new Object[rejectedProjects.size()];
             @Override public Row apply(Row row) {
               final @Nullable Object[] inValues = row.getValues();

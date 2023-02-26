@@ -2017,8 +2017,8 @@ public class RexSimplify {
                     rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, notEqualsComparison.ref);
                 final RexNode constantNull =
                     rexBuilder.makeNullLiteral(trueLiteral.getType());
-                final RexNode newCondition = simplify(
-                    rexBuilder.makeCall(SqlStdOperatorTable.OR, isNotNull, constantNull),
+                final RexNode newCondition = /*X*/
+                    simplify(rexBuilder.makeCall(SqlStdOperatorTable.OR, isNotNull, constantNull),
                     unknownAs);
                 if (newCondition.isAlwaysTrue()) {
                   return trueLiteral;

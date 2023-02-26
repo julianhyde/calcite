@@ -73,8 +73,8 @@ public class SparkHandlerImpl implements CalcitePrepare.SparkHandler {
     // previous classes. A better solution would be to clear the class directory
     // on startup.
     final Calendar calendar = Util.calendar();
-    classId = new AtomicInteger(
-        calendar.get(Calendar.HOUR_OF_DAY) * 10000
+    classId = /*X*/
+        new AtomicInteger(calendar.get(Calendar.HOUR_OF_DAY) * 10000
         + calendar.get(Calendar.MINUTE) * 100
         + calendar.get(Calendar.SECOND));
   }

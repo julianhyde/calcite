@@ -142,8 +142,8 @@ public class InnodbToEnumerableConverter extends ConverterImpl
                 IndexCondition.class,
                 "create", indexName, queryType, pointQueryKey,
                 rangeQueryLowerOp, rangeQueryUpperOp, rangeQueryLowerKey, rangeQueryUpperKey));
-    final Expression ascOrder = Expressions.constant(
-        innodbImplementor.ascOrder);
+    final Expression ascOrder = /*X*/
+        Expressions.constant(innodbImplementor.ascOrder);
     Expression enumerable =
         list.append("enumerable",
             Expressions.call(table,

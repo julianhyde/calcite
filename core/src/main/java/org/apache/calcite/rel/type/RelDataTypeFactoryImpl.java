@@ -251,8 +251,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       // first type?
       final int k = j;
 
-      RelDataType type = leastRestrictive(
-          Util.transform(types, t -> t.getFieldList().get(k).getType()));
+      RelDataType type = /*X*/
+          leastRestrictive(Util.transform(types, t -> t.getFieldList().get(k).getType()));
       if (type == null) {
         return null;
       }
@@ -273,8 +273,9 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       }
       isNullable |= type.isNullable();
     }
-    final RelDataType type = leastRestrictive(
-        Util.transform(types,
+    final RelDataType type = /*X*/
+        leastRestrictive(
+            Util.transform(types,
             t -> t instanceof ArraySqlType
                 ? ((ArraySqlType) t).getComponentType()
                 : ((MultisetSqlType) t).getComponentType()));
@@ -296,13 +297,13 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       }
       isNullable |= type.isNullable();
     }
-    final RelDataType keyType = leastRestrictive(
-        Util.transform(types, t -> ((MapSqlType) t).getKeyType()));
+    final RelDataType keyType = /*X*/
+        leastRestrictive(Util.transform(types, t -> ((MapSqlType) t).getKeyType()));
     if (keyType == null) {
       return null;
     }
-    final RelDataType valueType = leastRestrictive(
-        Util.transform(types, t -> ((MapSqlType) t).getValueType()));
+    final RelDataType valueType = /*X*/
+        leastRestrictive(Util.transform(types, t -> ((MapSqlType) t).getValueType()));
     if (valueType == null) {
       return null;
     }
@@ -417,8 +418,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       final List<String> names,
       final List<RelDataType> types,
       final boolean nullable) {
-    final RelDataType type = KEY2TYPE_CACHE.getIfPresent(
-        new Key(kind, names, types, nullable));
+    final RelDataType type = /*X*/
+        KEY2TYPE_CACHE.getIfPresent(new Key(kind, names, types, nullable));
     if (type != null) {
       return type;
     }

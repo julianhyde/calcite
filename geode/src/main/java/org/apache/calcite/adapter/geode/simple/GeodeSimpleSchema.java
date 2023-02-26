@@ -55,8 +55,8 @@ public class GeodeSimpleSchema extends AbstractSchema {
     this.regionNames = regionNames;
     this.pdxAutoSerializerPackageExp = pdxAutoSerializerPackageExp;
 
-    this.clientCache = GeodeUtils.createClientCache(
-        locatorHost,
+    this.clientCache = /*X*/
+        GeodeUtils.createClientCache(locatorHost,
         locatorPort,
         pdxAutoSerializerPackageExp,
         true);

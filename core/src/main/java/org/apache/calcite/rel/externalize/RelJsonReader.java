@@ -129,8 +129,8 @@ public class RelJsonReader {
       }
 
       @Override public RelOptTable getTable(String table) {
-        final List<String> list = requireNonNull(
-            getStringList(table),
+        final List<String> list = /*X*/
+            requireNonNull(getStringList(table),
             () -> "getStringList for " + table);
         return requireNonNull(
             relOptSchema.getTableForMember(list),
@@ -309,17 +309,17 @@ public class RelJsonReader {
 
   private AggregateCall toAggCall(Map<String, Object> jsonAggCall) {
     @SuppressWarnings("unchecked")
-    final Map<String, Object> aggMap = (Map) requireNonNull(
-        jsonAggCall.get("agg"),
+    final Map<String, Object> aggMap = /*X*/
+        (Map) requireNonNull(jsonAggCall.get("agg"),
         "agg key is not found");
-    final SqlAggFunction aggregation = requireNonNull(
-        relJson.toAggregation(aggMap),
+    final SqlAggFunction aggregation = /*X*/
+        requireNonNull(relJson.toAggregation(aggMap),
         () -> "relJson.toAggregation output for " + aggMap);
     final Boolean distinct = (Boolean) requireNonNull(jsonAggCall.get("distinct"),
         "jsonAggCall.distinct");
     @SuppressWarnings("unchecked")
-    final List<Integer> operands = (List<Integer>) requireNonNull(
-        jsonAggCall.get("operands"),
+    final List<Integer> operands = /*X*/
+        (List<Integer>) requireNonNull(jsonAggCall.get("operands"),
         "jsonAggCall.operands");
     final Integer filterOperand = (Integer) jsonAggCall.get("filter");
     final Object jsonAggType = requireNonNull(jsonAggCall.get("type"), "jsonAggCall.type");

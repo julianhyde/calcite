@@ -371,8 +371,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
       final BlockBuilder builder5 = new BlockBuilder(true, builder4);
 
-      BinaryExpression rowCountWhenNonEmpty = Expressions.add(
-          startX == minX ? endX : Expressions.subtract(endX, startX),
+      BinaryExpression rowCountWhenNonEmpty = /*X*/
+          Expressions.add(startX == minX ? endX : Expressions.subtract(endX, startX),
           Expressions.constant(1));
 
       final Expression frameRowCount;
@@ -387,8 +387,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                     Expressions.constant(0)));
       }
 
-      ParameterExpression actualStart = Expressions.parameter(
-          0, int.class, builder5.newName("actualStart"));
+      ParameterExpression actualStart = /*X*/
+          Expressions.parameter(0, int.class, builder5.newName("actualStart"));
 
       final BlockBuilder builder6 = new BlockBuilder(true, builder5);
       builder6.add(
@@ -405,8 +405,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
           group.lowerBound.isUnbounded() && group.lowerBound.isPreceding()
           ? Expressions.constant(false)
           : Expressions.notEqual(startX, prevStart);
-      Expression needRecomputeWindow = Expressions.orElse(
-          lowerBoundCanChange,
+      Expression needRecomputeWindow = /*X*/
+          Expressions.orElse(lowerBoundCanChange,
           Expressions.lessThan(endX, prevEnd));
 
       BlockStatement resetWindowState = builder6.toBlock();
@@ -466,8 +466,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       BlockStatement forBlock = builder7.toBlock();
       if (!forBlock.statements.isEmpty()) {
         // For instance, row_number does not use for loop to compute the value
-        Statement forAggLoop = Expressions.for_(
-            Arrays.asList(jDecl),
+        Statement forAggLoop = /*X*/
+            Expressions.for_(Arrays.asList(jDecl),
             Expressions.lessThanOrEqual(jDecl.parameter, endX),
             Expressions.preIncrementAssign(jDecl.parameter),
             forBlock);
@@ -674,8 +674,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       //       SortedMultiMap.singletonArrayIterator(comparator, tempList);
       //   final List<Xxx> list = new ArrayList<Xxx>(tempList.size());
 
-      final Expression tempList_ = builder.append(
-          "tempList",
+      final Expression tempList_ = /*X*/
+          builder.append("tempList",
           Expressions.convert_(
               Expressions.call(
                   source_,
@@ -976,8 +976,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
     if (bound.getOffset() == null) {
       desiredKeyType = Primitive.box(desiredKeyType);
     }
-    Expression val = translator.translate(
-        new RexInputRef(orderKey, keyType), desiredKeyType);
+    Expression val = /*X*/
+        translator.translate(new RexInputRef(orderKey, keyType), desiredKeyType);
     if (!bound.isCurrentRow()) {
       RexNode node = bound.getOffset();
       Expression offs = translator.translate(node);

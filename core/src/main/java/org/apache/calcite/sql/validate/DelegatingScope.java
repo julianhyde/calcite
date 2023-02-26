@@ -141,8 +141,8 @@ public abstract class DelegatingScope implements SqlValidatorScope {
       final String name = names.get(0);
       final RelDataTypeField field0 = nameMatcher.field(rowType, name);
       if (field0 != null) {
-        final SqlValidatorNamespace ns2 = requireNonNull(
-            ns.lookupChild(field0.getName()),
+        final SqlValidatorNamespace ns2 = /*X*/
+            requireNonNull(ns.lookupChild(field0.getName()),
             () -> "field " + field0.getName() + " is not found in " + ns);
         final Step path2 = path.plus(rowType, field0.getIndex(),
             field0.getName(), StructKind.FULLY_QUALIFIED);
@@ -156,8 +156,8 @@ public abstract class DelegatingScope implements SqlValidatorScope {
           case PEEK_FIELDS_NO_EXPAND:
             final Step path2 = path.plus(rowType, field.getIndex(),
                 field.getName(), field.getType().getStructKind());
-            final SqlValidatorNamespace ns2 = requireNonNull(
-                ns.lookupChild(field.getName()),
+            final SqlValidatorNamespace ns2 = /*X*/
+                requireNonNull(ns.lookupChild(field.getName()),
                 () -> "field " + field.getName() + " is not found in " + ns);
             resolveInNamespace(ns2, nullable, names, nameMatcher, path2,
                 resolved);

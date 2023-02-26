@@ -48,8 +48,8 @@ import static org.apache.calcite.util.DateTimeStringUtils.ISO_DATETIME_FRACTIONA
  */
 public class TimeExtractionFunction implements ExtractionFunction {
 
-  private static final ImmutableSet<TimeUnitRange> VALID_TIME_EXTRACT = Sets.immutableEnumSet(
-      TimeUnitRange.YEAR,
+  private static final ImmutableSet<TimeUnitRange> VALID_TIME_EXTRACT = /*X*/
+      Sets.immutableEnumSet(TimeUnitRange.YEAR,
       TimeUnitRange.MONTH,
       TimeUnitRange.DAY,
       TimeUnitRange.WEEK,
@@ -57,8 +57,8 @@ public class TimeExtractionFunction implements ExtractionFunction {
       TimeUnitRange.MINUTE,
       TimeUnitRange.SECOND);
 
-  private static final ImmutableSet<TimeUnitRange> VALID_TIME_FLOOR = Sets.immutableEnumSet(
-      TimeUnitRange.YEAR,
+  private static final ImmutableSet<TimeUnitRange> VALID_TIME_FLOOR = /*X*/
+      Sets.immutableEnumSet(TimeUnitRange.YEAR,
       TimeUnitRange.QUARTER,
       TimeUnitRange.MONTH,
       TimeUnitRange.DAY,

@@ -230,8 +230,8 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
       }
       RelDataType groupDataType =
           PigTypes.TYPE_FACTORY.createStructType(fieldTypes, fieldNames);
-      groupRex = builder.getRexBuilder().makeCall(
-          groupDataType, SqlStdOperatorTable.ROW, fieldRexes);
+      groupRex = /*X*/
+          builder.getRexBuilder().makeCall(groupDataType, SqlStdOperatorTable.ROW, fieldRexes);
     }
     List<RexNode> outputFields = new ArrayList<>();
     List<String> outputNames = new ArrayList<>();

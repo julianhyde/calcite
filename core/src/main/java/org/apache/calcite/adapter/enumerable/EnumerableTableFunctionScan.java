@@ -122,8 +122,8 @@ public class EnumerableTableFunctionScan extends TableFunctionScan
     final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), getRowType(), format,
             false);
-    RexToLixTranslator t = RexToLixTranslator.forAggregation(
-        (JavaTypeFactory) getCluster().getTypeFactory(), bb, null,
+    RexToLixTranslator t = /*X*/
+        RexToLixTranslator.forAggregation((JavaTypeFactory) getCluster().getTypeFactory(), bb, null,
         implementor.getConformance());
     t = t.setCorrelates(implementor.allCorrelateVariables);
     bb.add(Expressions.return_(null, t.translate(getCall())));
@@ -137,10 +137,10 @@ public class EnumerableTableFunctionScan extends TableFunctionScan
     final EnumerableRel child = (EnumerableRel) getInputs().get(0);
     final Result result =
         implementor.visitChild(this, 0, child, pref);
-    final PhysType physType = PhysTypeImpl.of(
-        typeFactory, getRowType(), pref.prefer(result.format));
-    final Expression inputEnumerable = builder.append(
-        "_input", result.block, false);
+    final PhysType physType = /*X*/
+        PhysTypeImpl.of(typeFactory, getRowType(), pref.prefer(result.format));
+    final Expression inputEnumerable = /*X*/
+        builder.append("_input", result.block, false);
     final SqlConformance conformance =
         (SqlConformance) implementor.map.getOrDefault("_conformance",
             SqlConformanceEnum.DEFAULT);

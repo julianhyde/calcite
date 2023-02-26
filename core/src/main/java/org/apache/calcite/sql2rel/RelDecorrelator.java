@@ -1024,8 +1024,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
     // can directly add positions into corDefOutputs since join
     // does not change the output ordering from the inputs.
-    RelNode valueGen = requireNonNull(
-        createValueGenerator(corVarList, leftInputOutputCount, corDefOutputs),
+    RelNode valueGen = /*X*/
+        requireNonNull(createValueGenerator(corVarList, leftInputOutputCount, corDefOutputs),
         "createValueGenerator(...) is null");
 
     RelNode join = relBuilder.push(frame.r).push(valueGen)

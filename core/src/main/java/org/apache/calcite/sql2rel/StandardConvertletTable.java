@@ -485,10 +485,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     RexBuilder rexBuilder = cx.getRexBuilder();
     final List<RexNode> exprList = new ArrayList<>();
     final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-    final RexLiteral unknownLiteral = rexBuilder.makeNullLiteral(
-        typeFactory.createSqlType(SqlTypeName.BOOLEAN));
-    final RexLiteral nullLiteral = rexBuilder.makeNullLiteral(
-        typeFactory.createSqlType(SqlTypeName.NULL));
+    final RexLiteral unknownLiteral = /*X*/
+        rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.BOOLEAN));
+    final RexLiteral nullLiteral = /*X*/
+        rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));
     for (int i = 0; i < whenList.size(); i++) {
       if (SqlUtil.isNullLiteral(whenList.get(i), false)) {
         exprList.add(unknownLiteral);
@@ -652,8 +652,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       requireNonNull(argComponentType, () -> "componentType of " + arg);
 
       RelDataType typeFinal = type;
-      final RelDataType componentType = requireNonNull(
-          type.getComponentType(),
+      final RelDataType componentType = /*X*/
+          requireNonNull(type.getComponentType(),
           () -> "componentType of " + typeFinal);
       if (argComponentType.isStruct()
           && !componentType.isStruct()) {
@@ -663,8 +663,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     argComponentType.getFieldList().get(0).getName(),
                     componentType)
                 .build();
-        tt = typeFactory.createTypeWithNullability(
-            tt,
+        tt = /*X*/
+            typeFactory.createTypeWithNullability(tt,
             componentType.isNullable());
         boolean isn = type.isNullable();
         type = typeFactory.createMultisetType(tt, -1);
@@ -692,8 +692,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
       RexNode pad =
           rexBuilder.makeExactLiteral(val.subtract(BigDecimal.ONE));
-      RexNode cast = rexBuilder.makeReinterpretCast(
-          rexInterval.getType(), pad, rexBuilder.makeLiteral(false));
+      RexNode cast = /*X*/
+          rexBuilder.makeReinterpretCast(rexInterval.getType(), pad, rexBuilder.makeLiteral(false));
       RexNode sum = floor
           ? minus(rexBuilder, rexInterval, cast)
           : plus(rexBuilder, rexInterval, cast);
@@ -812,8 +812,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     // use the specified type as the return type.
     List<SqlNode> operands = call.getOperandList();
     @SuppressWarnings("all")
-    boolean hasExplicitReturningType = SqlJsonValueFunction.hasExplicitTypeSpec(
-        operands.toArray(SqlNode.EMPTY_ARRAY));
+    boolean hasExplicitReturningType = /*X*/
+        SqlJsonValueFunction.hasExplicitTypeSpec(operands.toArray(SqlNode.EMPTY_ARRAY));
     if (hasExplicitReturningType) {
       operands = SqlJsonValueFunction.removeTypeSpecOperands(call);
     }
@@ -923,8 +923,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     final boolean isNumericIndex = SqlTypeUtil.isIntType(exprs.get(1).getType());
 
     if (isRowTypeField && isNumericIndex) {
-      final SqlOperatorBinding opBinding = new RexCallBinding(
-          cx.getTypeFactory(), op, exprs, ImmutableList.of());
+      final SqlOperatorBinding opBinding = /*X*/
+          new RexCallBinding(cx.getTypeFactory(), op, exprs, ImmutableList.of());
       final RelDataType operandType = opBinding.getOperandType(0);
 
       final Integer index = opBinding.getOperandLiteralValue(1, Integer.class);
@@ -1452,12 +1452,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         count = SqlStdOperatorTable.REGR_COUNT.createCall(pos, arg0, arg1);
       } else {
         sumArgSquared = SqlStdOperatorTable.SUM.createCall(pos, argSquared, dependent);
-        sum0 = SqlStdOperatorTable.SUM.createCall(
-            pos, arg0, Objects.equals(dependent, arg0Input) ? arg1 : dependent);
-        sum1 = SqlStdOperatorTable.SUM.createCall(
-            pos, arg1, Objects.equals(dependent, arg1Input) ? arg0 : dependent);
-        count = SqlStdOperatorTable.REGR_COUNT.createCall(
-            pos, arg0, Objects.equals(dependent, arg0Input) ? arg1 : dependent);
+        sum0 = /*X*/
+            SqlStdOperatorTable.SUM.createCall(pos, arg0, Objects.equals(dependent, arg0Input) ? arg1 : dependent);
+        sum1 = /*X*/
+            SqlStdOperatorTable.SUM.createCall(pos, arg1, Objects.equals(dependent, arg1Input) ? arg0 : dependent);
+        count = /*X*/
+            SqlStdOperatorTable.REGR_COUNT.createCall(pos, arg0, Objects.equals(dependent, arg0Input) ? arg1 : dependent);
       }
 
       final SqlNode sumSquared = SqlStdOperatorTable.MULTIPLY.createCall(pos, sum0, sum1);
@@ -1485,8 +1485,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         SqlParserPos pos, @Nullable RexNode argRex) {
       SqlNode arg;
       if (argRex != null && !argRex.getType().equals(varType)) {
-        arg = SqlStdOperatorTable.CAST.createCall(
-            pos, argInput, SqlTypeUtil.convertTypeToSpec(varType));
+        arg = /*X*/
+            SqlStdOperatorTable.CAST.createCall(pos, argInput, SqlTypeUtil.convertTypeToSpec(varType));
       } else {
         arg = argInput;
       }
@@ -1626,8 +1626,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             SqlParserPos pos, @Nullable RexNode argRex) {
       SqlNode arg;
       if (argRex != null && !argRex.getType().equals(varType)) {
-        arg = SqlStdOperatorTable.CAST.createCall(
-            pos, argInput, SqlTypeUtil.convertTypeToSpec(varType));
+        arg = /*X*/
+            SqlStdOperatorTable.CAST.createCall(pos, argInput, SqlTypeUtil.convertTypeToSpec(varType));
       } else {
         arg = argInput;
       }

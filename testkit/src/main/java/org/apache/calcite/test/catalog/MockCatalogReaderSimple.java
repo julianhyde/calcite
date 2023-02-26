@@ -307,8 +307,9 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 tableRowType.getFieldList().get(7);
             final RelDataTypeField salField =
                 tableRowType.getFieldList().get(5);
-            final List<RexNode> nodes = Arrays.asList(
-                rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+            final List<RexNode> nodes = /*X*/
+                Arrays.asList(
+                    rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
                     rexBuilder.makeInputRef(deptnoField.getType(),
                         deptnoField.getIndex()),
                     rexBuilder.makeExactLiteral(BigDecimal.valueOf(20L),
@@ -342,8 +343,9 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 tableRowType.getFieldList().get(7);
             final RelDataTypeField salField =
                 tableRowType.getFieldList().get(5);
-            final List<RexNode> nodes = Arrays.asList(
-                rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+            final List<RexNode> nodes = /*X*/
+                Arrays.asList(
+                    rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
                     rexBuilder.makeInputRef(deptnoField.getType(),
                         deptnoField.getIndex()),
                     rexBuilder.makeExactLiteral(BigDecimal.valueOf(20L),
@@ -369,8 +371,8 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     MockSchema structTypeSchema = new MockSchema("STRUCT");
     registerSchema(structTypeSchema);
-    final List<CompoundNameColumn> columns = Arrays.asList(
-        new CompoundNameColumn("", "K0", fixture.varchar20Type),
+    final List<CompoundNameColumn> columns = /*X*/
+        Arrays.asList(new CompoundNameColumn("", "K0", fixture.varchar20Type),
         new CompoundNameColumn("", "C1", fixture.varchar20Type),
         new CompoundNameColumn("F1", "A0", fixture.intType),
         new CompoundNameColumn("F2", "A0", fixture.booleanType),
@@ -389,8 +391,8 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     }
     registerTable(structTypeTable);
 
-    final List<CompoundNameColumn> columnsNullable = Arrays.asList(
-        new CompoundNameColumn("", "K0", fixture.varchar20TypeNull),
+    final List<CompoundNameColumn> columnsNullable = /*X*/
+        Arrays.asList(new CompoundNameColumn("", "K0", fixture.varchar20TypeNull),
         new CompoundNameColumn("", "C1", fixture.varchar20TypeNull),
         new CompoundNameColumn("F1", "A0", fixture.intTypeNull),
         new CompoundNameColumn("F2", "A0", fixture.booleanTypeNull),

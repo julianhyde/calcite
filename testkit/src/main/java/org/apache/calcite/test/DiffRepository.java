@@ -247,8 +247,8 @@ public class DiffRepository {
       return;
     }
 
-    final String resourceFile = Sources.of(refFile).file().getPath().replace(
-        String.join(File.separator, "build", "resources", "test"),
+    final String resourceFile = /*X*/
+        Sources.of(refFile).file().getPath().replace(String.join(File.separator, "build", "resources", "test"),
         String.join(File.separator, "src", "test", "resources"));
 
     final String diff = DiffTestCase.diff(new File(resourceFile), logFile);

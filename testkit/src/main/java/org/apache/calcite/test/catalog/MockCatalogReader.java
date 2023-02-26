@@ -442,8 +442,9 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
       @Override public Table extend(final List<RelDataTypeField> fields) {
         return new ModifiableTable(Util.last(names)) {
           @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-            ImmutableList<RelDataTypeField> allFields = ImmutableList.copyOf(
-                Iterables.concat(
+            ImmutableList<RelDataTypeField> allFields = /*X*/
+                ImmutableList.copyOf(
+                    Iterables.concat(
                     ModifiableTable.this.getRowType(typeFactory).getFieldList(),
                     fields));
             return typeFactory.createStructType(allFields);
@@ -938,8 +939,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
       RelNode rel = LogicalTableScan.create(context.getCluster(), fromTable,
           context.getTableHints());
       final RexBuilder rexBuilder = context.getCluster().getRexBuilder();
-      rel = LogicalFilter.create(
-          rel, getConstraint(rexBuilder, rel.getRowType()));
+      rel = /*X*/
+          LogicalFilter.create(rel, getConstraint(rexBuilder, rel.getRowType()));
       final List<RelDataTypeField> fieldList =
           rel.getRowType().getFieldList();
       final List<Pair<RexNode, String>> projects =

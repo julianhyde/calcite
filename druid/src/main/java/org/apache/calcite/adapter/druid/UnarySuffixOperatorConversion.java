@@ -46,8 +46,8 @@ public class UnarySuffixOperatorConversion implements DruidSqlOperatorConverter 
       DruidQuery druidQuery) {
     final RexCall call = (RexCall) rexNode;
 
-    final List<String> druidExpressions = DruidExpressions.toDruidExpressions(
-        druidQuery, rowType,
+    final List<String> druidExpressions = /*X*/
+        DruidExpressions.toDruidExpressions(druidQuery, rowType,
         call.getOperands());
 
     if (druidExpressions == null) {

@@ -593,8 +593,8 @@ public class TypeCoercionImpl extends AbstractTypeCoercion {
    */
   @Override public boolean userDefinedFunctionCoercion(SqlValidatorScope scope,
       SqlCall call, SqlFunction function) {
-    final SqlOperandMetadata operandMetadata = requireNonNull(
-        (SqlOperandMetadata) function.getOperandTypeChecker(),
+    final SqlOperandMetadata operandMetadata = /*X*/
+        requireNonNull((SqlOperandMetadata) function.getOperandTypeChecker(),
         () -> "getOperandTypeChecker is not defined for " + function);
     final List<RelDataType> paramTypes =
         operandMetadata.paramTypes(scope.getValidator().getTypeFactory());

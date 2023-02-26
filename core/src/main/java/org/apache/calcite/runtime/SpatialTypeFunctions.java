@@ -675,8 +675,9 @@ public class SpatialTypeFunctions {
    */
   @Hints({"SqlKind:ST_POINT3"})
   public static Geometry ST_Point(BigDecimal x, BigDecimal y, BigDecimal z) {
-    final Geometry g = GEOMETRY_FACTORY.createPoint(
-        new Coordinate(x.doubleValue(), y.doubleValue(),
+    final Geometry g = /*X*/
+        GEOMETRY_FACTORY.createPoint(
+            new Coordinate(x.doubleValue(), y.doubleValue(),
             z.doubleValue()));
     return g;
   }

@@ -743,8 +743,9 @@ public abstract class ReturnTypes {
                     argType1.getFullTypeString()));
           }
 
-          pickedCollation = requireNonNull(
-              SqlCollation.getCoercibilityDyadicOperator(
+          pickedCollation = /*X*/
+              requireNonNull(
+                  SqlCollation.getCoercibilityDyadicOperator(
                   getCollation(argType0), getCollation(argType1)),
               () -> "getCoercibilityDyadicOperator is null for " + argType0 + " and " + argType1);
         }
@@ -786,8 +787,8 @@ public abstract class ReturnTypes {
                   getCharset(pickedType), getCollation(pickedType));
         }
         if (ret.getSqlTypeName() == SqlTypeName.NULL) {
-          ret = typeFactory.createTypeWithNullability(
-              typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
+          ret = /*X*/
+              typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
         }
         return ret;
       };

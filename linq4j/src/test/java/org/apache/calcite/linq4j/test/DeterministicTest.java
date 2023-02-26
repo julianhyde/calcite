@@ -114,8 +114,8 @@ class DeterministicTest {
     assertThat(isAtomic(e), is(false));
     assertThat(isConstant(e), is(true));
 
-    e = Expressions.call(
-        Integer.class, "valueOf", Expressions.constant(0));
+    e = /*X*/
+        Expressions.call(Integer.class, "valueOf", Expressions.constant(0));
     assertThat(isAtomic(e), is(false));
     assertThat(isConstant(e), is(true));
 

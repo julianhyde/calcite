@@ -2617,8 +2617,8 @@ public class SqlFunctions {
    * @see #toLong(Timestamp) converse method
    */
   public static java.sql.Timestamp internalToTimestamp(long v) {
-    final LocalDateTime dateTime = LocalDateTime.ofEpochSecond(
-        Math.floorDiv(v, DateTimeUtils.MILLIS_PER_SECOND),
+    final LocalDateTime dateTime = /*X*/
+        LocalDateTime.ofEpochSecond(Math.floorDiv(v, DateTimeUtils.MILLIS_PER_SECOND),
         (int) (Math.floorMod(v, DateTimeUtils.MILLIS_PER_SECOND) * DateTimeUtils.NANOS_PER_MILLI),
         ZoneOffset.UTC);
     return java.sql.Timestamp.valueOf(dateTime);

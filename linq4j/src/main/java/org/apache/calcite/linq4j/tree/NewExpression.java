@@ -46,8 +46,8 @@ public class NewExpression extends Expression {
 
   @Override public Expression accept(Shuttle shuttle) {
     shuttle = shuttle.preVisit(this);
-    final List<Expression> arguments = Expressions.acceptExpressions(
-        this.arguments, shuttle);
+    final List<Expression> arguments = /*X*/
+        Expressions.acceptExpressions(this.arguments, shuttle);
     final List<MemberDeclaration> memberDeclarations =
         this.memberDeclarations == null
             ? null

@@ -189,8 +189,8 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       rexProgramBuilder.addProject(entry.getValue(), entry.getKey());
     }
 
-    final RexToLixTranslator translator = RexToLixTranslator.forAggregation(
-        (JavaTypeFactory) getCluster().getTypeFactory(),
+    final RexToLixTranslator translator = /*X*/
+        RexToLixTranslator.forAggregation((JavaTypeFactory) getCluster().getTypeFactory(),
         builder2,
         new PassedRowsInputGetter(row_, rows_, inputPhysType),
         implementor.getConformance());
@@ -332,8 +332,9 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   private static Expression implementPredicate(PhysType physType,
       ParameterExpression rows_, BlockStatement body) {
     final List<MemberDeclaration> memberDeclarations = new ArrayList<>();
-    ParameterExpression row_ = Expressions.parameter(
-        Types.of(MemoryFactory.Memory.class,
+    ParameterExpression row_ = /*X*/
+        Expressions.parameter(
+            Types.of(MemoryFactory.Memory.class,
             physType.getJavaRowType()), "row_");
     Expressions.assign(row_,
         Expressions.call(rows_, BuiltInMethod.MEMORY_GET0.method));

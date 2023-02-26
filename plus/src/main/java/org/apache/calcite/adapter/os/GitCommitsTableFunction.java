@@ -96,14 +96,16 @@ public class GitCommitsTableFunction {
                   } else if (line.startsWith("author ")) {
                     objects[4] = line.substring("author ".length(),
                         line.length() - TS_OFF.length() - 1);
-                    objects[5] = Long.valueOf(
-                        line.substring(line.length() - TS_OFF.length(),
+                    objects[5] = /*X*/
+                        Long.valueOf(
+                            line.substring(line.length() - TS_OFF.length(),
                             line.length() - OFF.length() - 1)) * 1000;
                   } else if (line.startsWith("committer ")) {
                     objects[6] = line.substring("committer ".length(),
                         line.length() - TS_OFF.length() - 1);
-                    objects[7] = Long.valueOf(
-                        line.substring(line.length() - TS_OFF.length(),
+                    objects[7] = /*X*/
+                        Long.valueOf(
+                            line.substring(line.length() - TS_OFF.length(),
                             line.length() - OFF.length() - 1)) * 1000;
                   }
                   if (!e.moveNext()) {

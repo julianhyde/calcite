@@ -108,8 +108,8 @@ final class ElasticsearchTransport {
   private ElasticsearchVersion version() {
     final HttpRequest request = new HttpGet("/");
     // version extract function
-    final Function<ObjectNode, ElasticsearchVersion> fn = node -> ElasticsearchVersion.fromString(
-        node.get("version").get("number").asText());
+    final Function<ObjectNode, ElasticsearchVersion> fn = /*X*/
+        node -> ElasticsearchVersion.fromString(node.get("version").get("number").asText());
     return rawHttp(ObjectNode.class)
         .andThen(fn)
         .apply(request);
@@ -275,8 +275,8 @@ final class ElasticsearchTransport {
       final HttpEntity entity = request instanceof HttpEntityEnclosingRequest
           ? ((HttpEntityEnclosingRequest) request).getEntity() : null;
 
-      final Request r = new Request(
-          request.getRequestLine().getMethod(),
+      final Request r = /*X*/
+          new Request(request.getRequestLine().getMethod(),
           request.getRequestLine().getUri());
       r.setEntity(entity);
       final Response response = restClient.performRequest(r);

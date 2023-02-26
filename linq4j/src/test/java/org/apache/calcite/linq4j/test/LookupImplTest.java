@@ -37,8 +37,8 @@ class LookupImplTest {
 
   @BeforeEach
   public void setUp() {
-    impl = Linq4j.asEnumerable(Linq4jTest.emps).toLookup(
-      Linq4jTest.EMP_DEPTNO_SELECTOR,
+    impl = /*X*/
+      Linq4j.asEnumerable(Linq4jTest.emps).toLookup(Linq4jTest.EMP_DEPTNO_SELECTOR,
       Linq4jTest.EMP_NAME_SELECTOR);
   }
 

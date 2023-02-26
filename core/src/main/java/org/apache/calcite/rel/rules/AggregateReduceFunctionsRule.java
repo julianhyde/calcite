@@ -436,8 +436,8 @@ public class AggregateReduceFunctionsRule
             oldAggRel.getInput()::fieldIsNullable);
 
     final RelDataTypeFactory typeFactory = oldAggRel.getCluster().getTypeFactory();
-    final RelDataType avgType = typeFactory.createTypeWithNullability(
-        oldCall.getType(), numeratorRef.getType().isNullable());
+    final RelDataType avgType = /*X*/
+        typeFactory.createTypeWithNullability(oldCall.getType(), numeratorRef.getType().isNullable());
     numeratorRef = rexBuilder.ensureType(avgType, numeratorRef, true);
     final RexNode divideRef =
         rexBuilder.makeCall(SqlStdOperatorTable.DIVIDE, numeratorRef, denominatorRef);
@@ -743,8 +743,8 @@ public class AggregateReduceFunctionsRule
             rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, argY)),
         rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, argNullFilter));
     final int argXAndYNotNullFilterOrdinal = lookupOrAdd(inputExprs, argXAndYNotNullFilter);
-    final RexNode sumXY = getSumAggregatedRexNodeWithBinding(
-        oldAggRel, oldCall, newCalls, aggCallMapping, argXArgY.getType(),
+    final RexNode sumXY = /*X*/
+        getSumAggregatedRexNodeWithBinding(oldAggRel, oldCall, newCalls, aggCallMapping, argXArgY.getType(),
         argSquaredOrdinal, argXAndYNotNullFilterOrdinal);
     final RexNode sumXYCast = rexBuilder.ensureType(oldCallType, sumXY, true);
 

@@ -63,8 +63,8 @@ class Scrolling {
     final ElasticsearchJson.Result first = transport
         .search(Collections.singletonMap("scroll", "1m")).apply(query);
 
-    AutoClosingIterator iterator = new AutoClosingIterator(
-        new SequentialIterator(first, transport, limit),
+    AutoClosingIterator iterator = /*X*/
+        new AutoClosingIterator(new SequentialIterator(first, transport, limit),
         scrollId -> transport.closeScroll(Collections.singleton(scrollId)));
 
     Iterator<ElasticsearchJson.SearchHit> result = flatten(iterator);

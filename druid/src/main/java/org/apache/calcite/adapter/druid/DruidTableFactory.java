@@ -148,8 +148,8 @@ public class DruidTableFactory implements TableFactory {
     final Object interval = operand.get("interval");
     final List<Interval> intervals;
     if (interval instanceof String) {
-      intervals = ImmutableList.of(
-          new Interval((String) interval, ISOChronology.getInstanceUTC()));
+      intervals = /*X*/
+          ImmutableList.of(new Interval((String) interval, ISOChronology.getInstanceUTC()));
     } else {
       intervals = null;
     }

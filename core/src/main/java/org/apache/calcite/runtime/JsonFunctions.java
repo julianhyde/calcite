@@ -266,8 +266,8 @@ public class JsonFunctions {
         }
       } else if (context.mode == PathMode.STRICT
           && !isScalarObject(value)) {
-        exc = RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc(
-            value.toString()).ex();
+        exc = /*X*/
+            RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc(value.toString()).ex();
       } else {
         return value;
       }
@@ -352,8 +352,8 @@ public class JsonFunctions {
               emptyBehavior.toString()).ex();
         }
       } else if (context.mode == PathMode.STRICT && isScalarObject(value)) {
-        exc = RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc(
-            value.toString()).ex();
+        exc = /*X*/
+            RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc(value.toString()).ex();
       } else {
         try {
           return jsonize(value);

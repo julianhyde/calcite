@@ -275,8 +275,8 @@ public class EnumerableTableScan
         // We need to convert to a List<List>.
         final JavaTypeFactory typeFactory =
                 (JavaTypeFactory) getCluster().getTypeFactory();
-        final PhysType elementPhysType = PhysTypeImpl.of(
-                typeFactory, fieldType, JavaRowFormat.CUSTOM);
+        final PhysType elementPhysType = /*X*/
+                PhysTypeImpl.of(typeFactory, fieldType, JavaRowFormat.CUSTOM);
         final MethodCallExpression e2 =
                 Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);
         final Expression e3 = elementPhysType.convertTo(e2, JavaRowFormat.LIST);

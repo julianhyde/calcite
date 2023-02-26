@@ -246,8 +246,8 @@ public class RexProgram {
    */
   public static RexProgram create(RelInput input) {
     final List<RexNode> exprs = requireNonNull(input.getExpressionList("exprs"), "exprs");
-    final List<RexNode> projectRexNodes = requireNonNull(
-        input.getExpressionList("projects"),
+    final List<RexNode> projectRexNodes = /*X*/
+        requireNonNull(input.getExpressionList("projects"),
         "projects");
     final List<RexLocalRef> projects = new ArrayList<>(projectRexNodes.size());
     for (RexNode rexNode: projectRexNodes) {

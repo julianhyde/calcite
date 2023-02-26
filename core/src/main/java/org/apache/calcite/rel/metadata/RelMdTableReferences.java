@@ -141,8 +141,8 @@ public class RelMdTableReferences
       if (lRefs != null) {
         shift = lRefs.size();
       }
-      RelTableRef shiftTableRef = RelTableRef.of(
-          rightRef.getTable(), shift + rightRef.getEntityNumber());
+      RelTableRef shiftTableRef = /*X*/
+          RelTableRef.of(rightRef.getTable(), shift + rightRef.getEntityNumber());
       assert !result.contains(shiftTableRef);
       result.add(shiftTableRef);
     }
@@ -171,13 +171,13 @@ public class RelMdTableReferences
       }
       for (RelTableRef tableRef : inputTableRefs) {
         int shift = 0;
-        Collection<RelTableRef> lRefs = qualifiedNamesToRefs.get(
-            tableRef.getQualifiedName());
+        Collection<RelTableRef> lRefs = /*X*/
+            qualifiedNamesToRefs.get(tableRef.getQualifiedName());
         if (lRefs != null) {
           shift = lRefs.size();
         }
-        RelTableRef shiftTableRef = RelTableRef.of(
-            tableRef.getTable(), shift + tableRef.getEntityNumber());
+        RelTableRef shiftTableRef = /*X*/
+            RelTableRef.of(tableRef.getTable(), shift + tableRef.getEntityNumber());
         assert !result.contains(shiftTableRef);
         result.add(shiftTableRef);
         currentTablesMapping.put(tableRef, shiftTableRef);

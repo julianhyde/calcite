@@ -156,8 +156,8 @@ public class RexExecutorImpl implements RexExecutor {
     }
 
     @Override public Expression field(BlockBuilder list, int index, @Nullable Type storageType) {
-      MethodCallExpression recFromCtx = Expressions.call(
-          DataContext.ROOT,
+      MethodCallExpression recFromCtx = /*X*/
+          Expressions.call(DataContext.ROOT,
           BuiltInMethod.DATA_CONTEXT_GET.method,
           Expressions.constant("inputRecord"));
       Expression recFromCtxCasted =

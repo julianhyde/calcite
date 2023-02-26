@@ -262,8 +262,8 @@ public class PigRelBuilder extends RelBuilder {
    * @return This builder
    */
   private RelBuilder scan(RelOptTable tableSchema) {
-    final RelNode scan = getScanFactory().createScan(
-        ViewExpanders.simpleContext(cluster), tableSchema);
+    final RelNode scan = /*X*/
+        getScanFactory().createScan(ViewExpanders.simpleContext(cluster), tableSchema);
     push(scan);
     return this;
   }
@@ -505,8 +505,8 @@ public class PigRelBuilder extends RelBuilder {
   public RelBuilder multiSetFlatten() {
     // [CALCITE-3193] Add RelBuilder.uncollect method, and interface
     // UncollectFactory, to instantiate Uncollect
-    Uncollect uncollect = Uncollect.create(
-        cluster.traitSetOf(Convention.NONE),
+    Uncollect uncollect = /*X*/
+        Uncollect.create(cluster.traitSetOf(Convention.NONE),
         build(),
         false,
         Collections.emptyList());

@@ -2055,8 +2055,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         inferUnknownTypes(returnType, scope, sqlNode);
       }
 
-      SqlNode elseOperand = requireNonNull(
-          caseCall.getElseOperand(),
+      SqlNode elseOperand = /*X*/
+          requireNonNull(caseCall.getElseOperand(),
           () -> "elseOperand for " + caseCall);
       if (!SqlUtil.isNullLiteral(elseOperand, false)) {
         inferUnknownTypes(
@@ -2622,8 +2622,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     case SNAPSHOT:
       call = (SqlCall) node;
       operand = call.operand(0);
-      newOperand = registerFrom(
-          parentScope,
+      newOperand = /*X*/
+          registerFrom(parentScope,
           usingScope,
           register,
           operand,
@@ -3652,8 +3652,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     String name = id.names.get(0);
     SqlNameMatcher nameMatcher = getCatalogReader().nameMatcher();
     RelDataType rowType = getNamespaceOrThrow(node).getRowType();
-    RelDataType colType = requireNonNull(
-        nameMatcher.field(rowType, name),
+    RelDataType colType = /*X*/
+        requireNonNull(nameMatcher.field(rowType, name),
         () -> "unable to find left field " + name + " in " + rowType).getType();
     return colType;
   }
@@ -4325,8 +4325,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       expandList.add(expandedOrderItem);
     }
 
-    SqlNodeList expandedOrderList = new SqlNodeList(
-        expandList,
+    SqlNodeList expandedOrderList = /*X*/
+        new SqlNodeList(expandList,
         orderList.getParserPosition());
     select.setOrderBy(expandedOrderList);
 
@@ -4765,8 +4765,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   @Override public void validateInsert(SqlInsert insert) {
     final SqlValidatorNamespace targetNamespace = getNamespaceOrThrow(insert);
     validateNamespace(targetNamespace, unknownType);
-    final RelOptTable relOptTable = SqlValidatorUtil.getRelOptTable(
-        targetNamespace, catalogReader.unwrap(Prepare.CatalogReader.class), null, null);
+    final RelOptTable relOptTable = /*X*/
+        SqlValidatorUtil.getRelOptTable(targetNamespace, catalogReader.unwrap(Prepare.CatalogReader.class), null, null);
     final SqlValidatorTable table = relOptTable == null
         ? getTable(targetNamespace)
         : relOptTable.unwrapOrThrow(SqlValidatorTable.class);
@@ -4804,8 +4804,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final List<ColumnStrategy> strategies =
         table.unwrapOrThrow(RelOptTable.class).getColumnStrategies();
 
-    final RelDataType realTargetRowType = typeFactory.createStructType(
-        logicalTargetRowType.getFieldList()
+    final RelDataType realTargetRowType = /*X*/
+        typeFactory.createStructType(logicalTargetRowType.getFieldList()
             .stream().filter(f -> strategies.get(f.getIndex()).canInsertInto())
             .collect(Collectors.toList()));
 
@@ -5189,8 +5189,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   @Override public void validateUpdate(SqlUpdate call) {
     final SqlValidatorNamespace targetNamespace = getNamespaceOrThrow(call);
     validateNamespace(targetNamespace, unknownType);
-    final RelOptTable relOptTable = SqlValidatorUtil.getRelOptTable(
-        targetNamespace, castNonNull(catalogReader.unwrap(Prepare.CatalogReader.class)),
+    final RelOptTable relOptTable = /*X*/
+        SqlValidatorUtil.getRelOptTable(targetNamespace, castNonNull(catalogReader.unwrap(Prepare.CatalogReader.class)),
         null, null);
     final SqlValidatorTable table = relOptTable == null
         ? getTable(targetNamespace)
@@ -5243,16 +5243,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     SqlUpdate updateCall = call.getUpdateCall();
     if (updateCall != null) {
       requireNonNull(table, () -> "ns.getTable() for " + targetNamespace);
-      targetRowType = createTargetRowType(
-          table,
+      targetRowType = /*X*/
+          createTargetRowType(table,
           updateCall.getTargetColumnList(),
           true);
     }
     SqlInsert insertCall = call.getInsertCall();
     if (insertCall != null) {
       requireNonNull(table, () -> "ns.getTable() for " + targetNamespace);
-      targetRowType = createTargetRowType(
-          table,
+      targetRowType = /*X*/
+          createTargetRowType(table,
           insertCall.getTargetColumnList(),
           false);
     }
@@ -7389,8 +7389,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           // output is nullable only if both inputs are
           final boolean nullable = type.isNullable() && type1.isNullable();
           RelDataType currentType = type;
-          final RelDataType type2 = requireNonNull(
-              SqlTypeUtil.leastRestrictiveForComparison(typeFactory, type, type1),
+          final RelDataType type2 = /*X*/
+              requireNonNull(SqlTypeUtil.leastRestrictiveForComparison(typeFactory, type, type1),
               () -> "leastRestrictiveForComparison for types " + currentType + " and " + type1);
           selectItem =
               SqlStdOperatorTable.AS.createCall(SqlParserPos.ZERO,

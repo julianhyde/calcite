@@ -253,8 +253,8 @@ public class RelMdColumnUniqueness
         RelDataType castType =
             typeFactory.createTypeWithNullability(
                 projExpr.getType(), true);
-        RelDataType origType = typeFactory.createTypeWithNullability(
-            castOperand.getType(),
+        RelDataType origType = /*X*/
+            typeFactory.createTypeWithNullability(castOperand.getType(),
             true);
         if (castType.equals(origType)) {
           childColumns.set(((RexInputRef) castOperand).getIndex());

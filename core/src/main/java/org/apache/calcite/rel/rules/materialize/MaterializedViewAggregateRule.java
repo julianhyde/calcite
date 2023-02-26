@@ -184,8 +184,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
         ImmutableBitSet.range(
             aggregateViewNode.getInput().getRowType().getFieldCount(),
             aggregateViewNode.getInput().getRowType().getFieldCount() + offset));
-    final Aggregate newViewNode = aggregateViewNode.copy(
-        aggregateViewNode.getTraitSet(), relBuilder.build(),
+    final Aggregate newViewNode = /*X*/
+        aggregateViewNode.copy(aggregateViewNode.getTraitSet(), relBuilder.build(),
         groupSet.build(), null, aggregateViewNode.getAggCallList());
 
     relBuilder.push(newViewNode);
@@ -194,8 +194,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     if (topViewProject != null) {
       // Insert existing expressions (and shift aggregation arguments),
       // then append rest of columns
-      Mappings.TargetMapping shiftMapping = Mappings.createShiftMapping(
-          newViewNode.getRowType().getFieldCount(),
+      Mappings.TargetMapping shiftMapping = /*X*/
+          Mappings.createShiftMapping(newViewNode.getRowType().getFieldCount(),
           0, 0, aggregateViewNode.getGroupCount(),
           newViewNode.getGroupCount(), aggregateViewNode.getGroupCount(),
           aggregateViewNode.getAggCallList().size());
@@ -286,8 +286,9 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       }
       otherCompensationPred = newOtherCompensationPred;
     }
-    final RexNode queryCompensationPred = RexUtil.not(
-        RexUtil.composeConjunction(rexBuilder,
+    final RexNode queryCompensationPred = /*X*/
+        RexUtil.not(
+            RexUtil.composeConjunction(rexBuilder,
             ImmutableList.of(compensationColumnsEquiPred,
                 otherCompensationPred)));
 
@@ -553,8 +554,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
           additionalViewExprs.add(
               new RexInputRef(targetIdx, targetNode.getType()));
           // We need to create the rollup expression
-          RexNode rollupExpression = requireNonNull(
-              shuttleReferences(rexBuilder, targetNode, exprsLineage),
+          RexNode rollupExpression = /*X*/
+              requireNonNull(shuttleReferences(rexBuilder, targetNode, exprsLineage),
               () -> "shuttleReferences produced null for targetNode="
                   + targetNode + ", exprsLineage=" + exprsLineage);
           inputViewExprs.add(rollupExpression);

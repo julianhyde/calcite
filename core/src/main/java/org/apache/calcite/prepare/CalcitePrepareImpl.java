@@ -648,8 +648,8 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       final SqlValidator validator =
           createSqlValidator(context, catalogReader);
 
-      preparedResult = preparingStmt.prepareSql(
-          sqlNode, Object.class, validator, true);
+      preparedResult = /*X*/
+          preparingStmt.prepareSql(sqlNode, Object.class, validator, true);
       switch (sqlNode.getKind()) {
       case INSERT:
       case DELETE:

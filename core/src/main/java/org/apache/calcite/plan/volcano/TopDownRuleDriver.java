@@ -596,8 +596,9 @@ class TopDownRuleDriver implements RuleDriver {
             rel, group.upperBound);
       }
     }
-    VolcanoRuleMatch match = ruleQueue.popMatch(
-        Pair.of(rel,
+    VolcanoRuleMatch match = /*X*/
+        ruleQueue.popMatch(
+            Pair.of(rel,
             m -> m.getRule() instanceof ConverterRule
                 && ((ConverterRule) m.getRule()).getOutTrait().satisfies(
                     requireNonNull(group.getTraitSet().getConvention(),

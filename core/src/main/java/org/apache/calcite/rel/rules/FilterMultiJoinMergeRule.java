@@ -70,8 +70,8 @@ public class FilterMultiJoinMergeRule
 
     // Create a new post-join filter condition
     // Conditions are nullable, so ImmutableList can't be used here
-    List<@Nullable RexNode> filters = Arrays.asList(
-        filter.getCondition(),
+    List<@Nullable RexNode> filters = /*X*/
+        Arrays.asList(filter.getCondition(),
         multiJoin.getPostJoinFilter());
 
     final RexBuilder rexBuilder = multiJoin.getCluster().getRexBuilder();

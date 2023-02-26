@@ -205,11 +205,11 @@ public class JethroDataSqlDialect extends SqlDialect {
         final Multimap<String, JethroSupportedFunction> supportedFunctions =
             LinkedHashMultimap.create();
         while (functionsTupleSet.next()) {
-          String functionName = Objects.requireNonNull(
-              functionsTupleSet.getString(1),
+          String functionName = /*X*/
+              Objects.requireNonNull(functionsTupleSet.getString(1),
               "functionName");
-          String operandsType = Objects.requireNonNull(
-              functionsTupleSet.getString(3),
+          String operandsType = /*X*/
+              Objects.requireNonNull(functionsTupleSet.getString(3),
               () -> "operands for " + functionName);
           supportedFunctions.put(functionName,
               new JethroSupportedFunction(functionName, operandsType));
@@ -227,8 +227,8 @@ public class JethroDataSqlDialect extends SqlDialect {
 
   /** Information about the capabilities of a Jethro database. */
   public static class JethroInfo {
-    public static final JethroInfo EMPTY = new JethroInfo(
-        ImmutableSetMultimap.of());
+    public static final JethroInfo EMPTY = /*X*/
+        new JethroInfo(ImmutableSetMultimap.of());
 
     private final ImmutableSetMultimap<String, JethroSupportedFunction> supportedFunctions;
 

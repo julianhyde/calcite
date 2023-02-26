@@ -125,8 +125,8 @@ public class TableFunctionImpl extends ReflectiveFunctionBase
                 translatedOperands);
             final Class<?> returnType = method.getReturnType();
             if (QueryableTable.class.isAssignableFrom(returnType)) {
-              Expression queryable = Expressions.call(
-                  Expressions.convert_(expr, QueryableTable.class),
+              Expression queryable = /*X*/
+                  Expressions.call(Expressions.convert_(expr, QueryableTable.class),
                   BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
                   Expressions.call(translator.getRoot(),
                       BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method),

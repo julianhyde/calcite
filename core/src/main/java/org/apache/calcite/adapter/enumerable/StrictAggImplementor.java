@@ -170,8 +170,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
 
     List<Expression> acc = result.accumulator();
     final BlockBuilder thenBlock = result.nestBlock();
-    Expression nonNull = EnumUtils.convert(
-        implementNotNullResult(info, result), info.returnType());
+    Expression nonNull = /*X*/
+        EnumUtils.convert(implementNotNullResult(info, result), info.returnType());
     result.exitBlock();
     thenBlock.add(Expressions.statement(Expressions.assign(res, nonNull)));
     BlockStatement thenBranch = thenBlock.toBlock();

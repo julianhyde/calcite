@@ -175,8 +175,8 @@ public class EnumerableBatchNestedLoopJoin extends Join implements EnumerableRel
         corrArg =
             Expressions.parameter(Modifier.FINAL,
                 corrVarType, corrVar.get(c));
-        final DeclarationStatement decl = Expressions.declare(
-            Modifier.FINAL,
+        final DeclarationStatement decl = /*X*/
+            Expressions.declare(Modifier.FINAL,
             corrArg,
             Expressions.convert_(
                 Expressions.call(
@@ -193,8 +193,8 @@ public class EnumerableBatchNestedLoopJoin extends Join implements EnumerableRel
         corrArg =
             Expressions.parameter(Modifier.FINAL,
                 Primitive.box(corrVarType), "$box" + corrVar.get(c));
-        final DeclarationStatement decl = Expressions.declare(
-            Modifier.FINAL,
+        final DeclarationStatement decl = /*X*/
+            Expressions.declare(Modifier.FINAL,
             corrArg,
             Expressions.call(
                 corrArgList,

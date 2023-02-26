@@ -52,8 +52,8 @@ public class EnumerableLimitRule
     RelNode input = sort.getInput();
     if (!sort.getCollation().getFieldCollations().isEmpty()) {
       // Create a sort with the same sort key, but no offset or fetch.
-      input = sort.copy(
-          sort.getTraitSet(),
+      input = /*X*/
+          sort.copy(sort.getTraitSet(),
           input,
           sort.getCollation(),
           null,

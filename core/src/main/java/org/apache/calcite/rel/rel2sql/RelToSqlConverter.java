@@ -194,8 +194,8 @@ public class RelToSqlConverter extends SqlImplementor
         return id;
       }
       if (tableAlias.equals(id.names.get(0))) {
-        int index = requireNonNull(
-            tableType.getField(id.names.get(1), false, false),
+        int index = /*X*/
+            requireNonNull(tableType.getField(id.names.get(1), false, false),
             () -> "field " + id.names.get(1) + " is not found in " + tableType)
             .getIndex();
         SqlNode selectItem = source.get(index);

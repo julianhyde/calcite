@@ -308,8 +308,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
   protected TrimResult result(RelNode r, final Mapping mapping) {
     final RexBuilder rexBuilder = relBuilder.getRexBuilder();
     for (final CorrelationId correlation : r.getVariablesSet()) {
-      r = r.accept(
-          new CorrelationReferenceFinder() {
+      r = /*X*/
+          r.accept(new CorrelationReferenceFinder() {
             @Override protected RexNode handle(RexFieldAccess fieldAccess) {
               final RexCorrelVariable v =
                   (RexCorrelVariable) fieldAccess.getReferenceExpr();
@@ -390,8 +390,9 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     RexNode conditionExpr = null;
     if (rexProgram.getCondition() != null) {
-      final List<RexNode> filter = Util.transform(
-          ImmutableList.of(
+      final List<RexNode> filter = /*X*/
+          Util.transform(
+              ImmutableList.of(
               rexProgram.getCondition()), rexProgram::expandLocalRef);
       assert filter.size() == 1;
       conditionExpr = filter.get(0);
@@ -1094,8 +1095,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     if (newAggCallList.isEmpty() && newGroupSet.isEmpty()) {
       // Add a dummy call if all the column fields have been trimmed
-      mapping = Mappings.create(
-          MappingType.INVERSE_SURJECTION,
+      mapping = /*X*/
+          Mappings.create(MappingType.INVERSE_SURJECTION,
           mapping.getSourceCount(),
           1);
       newAggCallList.add(relBuilder.count(false, "DUMMY"));

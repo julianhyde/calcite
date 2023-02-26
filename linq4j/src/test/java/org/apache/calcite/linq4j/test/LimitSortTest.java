@@ -83,8 +83,8 @@ class LimitSortTest {
     int offset = Math.max(0, (int) (tmp - .1 * tmp));
 
     Comparator<String> cmp = Comparator.<String>naturalOrder()::compare;
-    Enumerable<Row> ordered = EnumerableDefaults.orderBy(
-        this.enumerable(seed),
+    Enumerable<Row> ordered = /*X*/
+        EnumerableDefaults.orderBy(this.enumerable(seed),
         s -> s.key,
         cmp,
         offset, fetch);

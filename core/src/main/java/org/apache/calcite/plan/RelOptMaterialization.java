@@ -89,8 +89,8 @@ public class RelOptMaterialization {
   public static @Nullable RelNode tryUseStar(RelNode rel,
       final RelOptTable starRelOptTable) {
     final StarTable starTable = starRelOptTable.unwrapOrThrow(StarTable.class);
-    RelNode rel2 = rel.accept(
-        new RelShuttleImpl() {
+    RelNode rel2 = /*X*/
+        rel.accept(new RelShuttleImpl() {
           @Override public RelNode visit(TableScan scan) {
             RelOptTable relOptTable = scan.getTable();
             final Table table = relOptTable.unwrap(Table.class);
@@ -154,8 +154,8 @@ public class RelOptMaterialization {
                       Mappings.offsetTarget(
                           Mappings.offsetSource(rightMapping, offset),
                           leftMapping.getTargetCount()));
-              final RelNode project = RelOptUtil.createProject(
-                  leftRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
+              final RelNode project = /*X*/
+                  RelOptUtil.createProject(leftRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
                   Mappings.asListNonNull(mapping.inverse()));
               final List<RexNode> conditions = new ArrayList<>();
               if (left.condition != null) {
@@ -179,8 +179,8 @@ public class RelOptMaterialization {
                   Mappings.merge(
                       Mappings.offsetSource(leftMapping, offset),
                       Mappings.offsetTarget(rightMapping, leftCount));
-              final RelNode project = RelOptUtil.createProject(
-                  rightRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
+              final RelNode project = /*X*/
+                  RelOptUtil.createProject(rightRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
                   Mappings.asListNonNull(mapping.inverse()));
               final List<RexNode> conditions = new ArrayList<>();
               if (left.condition != null) {
@@ -201,8 +201,9 @@ public class RelOptMaterialization {
       // No rewrite happened.
       return null;
     }
-    final Program program = Programs.hep(
-        ImmutableList.of(
+    final Program program = /*X*/
+        Programs.hep(
+            ImmutableList.of(
             CoreRules.PROJECT_FILTER_TRANSPOSE, CoreRules.AGGREGATE_PROJECT_MERGE,
             CoreRules.AGGREGATE_FILTER_TRANSPOSE),
         false,
@@ -270,8 +271,9 @@ public class RelOptMaterialization {
    * as close to leaves as possible.
    */
   public static RelNode toLeafJoinForm(RelNode rel) {
-    final Program program = Programs.hep(
-        ImmutableList.of(CoreRules.JOIN_PROJECT_RIGHT_TRANSPOSE,
+    final Program program = /*X*/
+        Programs.hep(
+            ImmutableList.of(CoreRules.JOIN_PROJECT_RIGHT_TRANSPOSE,
             CoreRules.JOIN_PROJECT_LEFT_TRANSPOSE,
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.PROJECT_REMOVE,

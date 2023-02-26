@@ -410,10 +410,10 @@ public class SubstitutionVisitor {
     //  e: x = 1 AND y = 2 AND z = 3 AND NOT (x = 1 AND y = 2)
     //  disjunctions: {x = 1, y = 2, z = 3}
     //  notDisjunctions: {x = 1 AND y = 2}
-    final Set<String> conditionDisjunctions = new HashSet<>(
-        RexUtil.strings(RelOptUtil.conjunctions(condition)));
-    final Set<String> targetDisjunctions = new HashSet<>(
-        RexUtil.strings(RelOptUtil.conjunctions(target)));
+    final Set<String> conditionDisjunctions = /*X*/
+        new HashSet<>(RexUtil.strings(RelOptUtil.conjunctions(condition)));
+    final Set<String> targetDisjunctions = /*X*/
+        new HashSet<>(RexUtil.strings(RelOptUtil.conjunctions(target)));
     if (conditionDisjunctions.equals(targetDisjunctions)) {
       return true;
     }
@@ -605,8 +605,8 @@ public class SubstitutionVisitor {
                   // Meanwhile we stop matching the descendants and jump
                   // to the next subtree in pre-order traversal.
                   if (!target.equals(replacement)) {
-                    Replacement r = replace(
-                        query.getInput(), target, replacement.clone());
+                    Replacement r = /*X*/
+                        replace(query.getInput(), target, replacement.clone());
                     assert r != null
                         : rule + "should have returned a result containing the target.";
                     attempted.add(r);
@@ -1098,16 +1098,16 @@ public class SubstitutionVisitor {
       final RexShuttle shuttle = getRexShuttle(targetProjs);
       final List<RexNode> compenProjs;
       try {
-        compenProjs = shuttle.apply(
-            rexBuilder.identityProjects(query.rowType));
+        compenProjs = /*X*/
+            shuttle.apply(rexBuilder.identityProjects(query.rowType));
       } catch (MatchFailed e) {
         return null;
       }
       if (RexUtil.isIdentity(compenProjs, target.rowType)) {
         return call.result(target);
       } else {
-        RexProgram compenRexProgram = RexProgram.create(
-            target.rowType, compenProjs, null, query.rowType, rexBuilder);
+        RexProgram compenRexProgram = /*X*/
+            RexProgram.create(target.rowType, compenProjs, null, query.rowType, rexBuilder);
         MutableCalc compenCalc = MutableCalc.of(target, compenRexProgram);
         return tryMergeParentCalcAndGenResult(call, compenCalc);
       }
@@ -1172,8 +1172,8 @@ public class SubstitutionVisitor {
             && RexUtil.isIdentity(compenProjs, target.rowType)) {
           return call.result(target);
         } else {
-          final RexProgram compenRexProgram = RexProgram.create(
-              target.rowType, compenProjs, compenCond,
+          final RexProgram compenRexProgram = /*X*/
+              RexProgram.create(target.rowType, compenProjs, compenCond,
               query.rowType, rexBuilder);
           final MutableCalc compenCalc = MutableCalc.of(target, compenRexProgram);
           return tryMergeParentCalcAndGenResult(call, compenCalc);
@@ -1257,8 +1257,8 @@ public class SubstitutionVisitor {
                 new RexInputRef(newIdx, query.rowType.getFieldList().get(i).getType()));
           }
         }
-        final RexProgram compenRexProgram = RexProgram.create(
-            target.rowType, compenProjs, compenCond,
+        final RexProgram compenRexProgram = /*X*/
+            RexProgram.create(target.rowType, compenProjs, compenCond,
             query.rowType, rexBuilder);
         final MutableCalc compenCalc = MutableCalc.of(target, compenRexProgram);
         return tryMergeParentCalcAndGenResult(call, compenCalc);
@@ -1343,8 +1343,8 @@ public class SubstitutionVisitor {
             compenProjs.add(shifted);
           }
         }
-        final RexProgram compensatingRexProgram = RexProgram.create(
-            target.rowType, compenProjs, compenCond,
+        final RexProgram compensatingRexProgram = /*X*/
+            RexProgram.create(target.rowType, compenProjs, compenCond,
             query.rowType, rexBuilder);
         final MutableCalc compenCalc = MutableCalc.of(target, compensatingRexProgram);
         return tryMergeParentCalcAndGenResult(call, compenCalc);
@@ -1431,8 +1431,8 @@ public class SubstitutionVisitor {
             compenProjs.add(shifted);
           }
         }
-        final RexProgram compensatingRexProgram = RexProgram.create(
-            target.rowType, compenProjs, compenCond,
+        final RexProgram compensatingRexProgram = /*X*/
+            RexProgram.create(target.rowType, compenProjs, compenCond,
             query.rowType, rexBuilder);
         final MutableCalc compensatingCalc =
             MutableCalc.of(target, compensatingRexProgram);
@@ -1497,8 +1497,8 @@ public class SubstitutionVisitor {
       final MutableAggregate aggregate2 =
           permute(query, qInput.getInput(), inverseMapping);
 
-      final Mappings.TargetMapping mappingForQueryCond = Mappings.target(
-          target.groupSet::indexOf,
+      final Mappings.TargetMapping mappingForQueryCond = /*X*/
+          Mappings.target(target.groupSet::indexOf,
           target.getInput().rowType.getFieldCount(),
           target.groupSet.cardinality());
       final RexNode targetCond = RexUtil.apply(mappingForQueryCond, qInputCond);
@@ -1524,8 +1524,8 @@ public class SubstitutionVisitor {
         }
         final List<RexNode> compenProjs =
             MutableRels.createProjectExprs(unifiedAggregate, posList);
-        final RexProgram compensatingRexProgram = RexProgram.create(
-            unifiedAggregate.rowType, compenProjs, null,
+        final RexProgram compensatingRexProgram = /*X*/
+            RexProgram.create(unifiedAggregate.rowType, compenProjs, null,
             query.rowType, rexBuilder);
         final MutableCalc compenCalc =
             MutableCalc.of(unifiedAggregate, compensatingRexProgram);
@@ -1723,8 +1723,8 @@ public class SubstitutionVisitor {
 
       List<RexNode> projectExprs = MutableRels.createProjects(target,
           queryInputExplained0.right);
-      final RexProgram compenRexProgram = RexProgram.create(
-          target.rowType, projectExprs, queryInputExplained0.left,
+      final RexProgram compenRexProgram = /*X*/
+          RexProgram.create(target.rowType, projectExprs, queryInputExplained0.left,
           query.rowType, rexBuilder);
       final MutableCalc compenCalc = MutableCalc.of(target, compenRexProgram);
       return tryMergeParentCalcAndGenResult(call, compenCalc);
@@ -1911,8 +1911,8 @@ public class SubstitutionVisitor {
       for (AggregateCall aggregateCall : query.aggCalls) {
         int i = target.aggCalls.indexOf(aggregateCall);
         if (i < 0) {
-          final AggregateCall newAggCall = genAggCallWithTargetGrouping(
-              aggregateCall, targetGroupByIndexList);
+          final AggregateCall newAggCall = /*X*/
+              genAggCallWithTargetGrouping(aggregateCall, targetGroupByIndexList);
           if (newAggCall == null) {
             return null;
           } else {
@@ -1933,8 +1933,8 @@ public class SubstitutionVisitor {
 
       if (targetGroupGenAggCalls.isEmpty()) {
         List<RexNode> compenProjs = MutableRels.createProjectExprs(target, projects);
-        RexProgram compenRexProgram = RexProgram.create(
-            target.rowType, compenProjs, targetCond, query.rowType, rexBuilder);
+        RexProgram compenRexProgram = /*X*/
+            RexProgram.create(target.rowType, compenProjs, targetCond, query.rowType, rexBuilder);
         result = MutableCalc.of(target, compenRexProgram);
       } else {
         result = MutableAggregate.of(target,
@@ -1952,8 +1952,8 @@ public class SubstitutionVisitor {
       final ImmutableBitSet groupSet = query.groupSet.permute(map);
       ImmutableList<ImmutableBitSet> groupSets = null;
       if (query.getGroupType() != Aggregate.Group.SIMPLE) {
-        groupSets = ImmutableBitSet.ORDERING.immutableSortedCopy(
-            ImmutableBitSet.permute(query.groupSets, map));
+        groupSets = /*X*/
+            ImmutableBitSet.ORDERING.immutableSortedCopy(ImmutableBitSet.permute(query.groupSets, map));
       }
       final List<AggregateCall> aggregateCalls = new ArrayList<>();
       for (AggregateCall aggregateCall : query.aggCalls) {
@@ -1987,16 +1987,16 @@ public class SubstitutionVisitor {
         aggregateCalls.add(newAggCall);
       }
       if (targetCond != null && !targetCond.isAlwaysTrue()) {
-        RexProgram compenRexProgram = RexProgram.create(
-            target.rowType, rexBuilder.identityProjects(target.rowType),
+        RexProgram compenRexProgram = /*X*/
+            RexProgram.create(target.rowType, rexBuilder.identityProjects(target.rowType),
             targetCond, target.rowType, rexBuilder);
 
-        result = MutableAggregate.of(
-            MutableCalc.of(target, compenRexProgram),
+        result = /*X*/
+            MutableAggregate.of(MutableCalc.of(target, compenRexProgram),
             groupSet, groupSets, aggregateCalls);
       } else {
-        result = MutableAggregate.of(
-            target, groupSet, groupSets, aggregateCalls);
+        result = /*X*/
+            MutableAggregate.of(target, groupSet, groupSets, aggregateCalls);
       }
     } else {
       return null;

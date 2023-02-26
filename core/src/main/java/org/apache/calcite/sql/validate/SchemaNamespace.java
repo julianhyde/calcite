@@ -50,8 +50,8 @@ class SchemaNamespace extends AbstractNamespace {
     for (SqlMoniker moniker
         : validator.catalogReader.getAllSchemaObjectNames(names)) {
       final List<String> names1 = moniker.getFullyQualifiedNames();
-      final SqlValidatorTable table = requireNonNull(
-          validator.catalogReader.getTable(names1),
+      final SqlValidatorTable table = /*X*/
+          requireNonNull(validator.catalogReader.getTable(names1),
           () -> "table " + names1 + " is not found in scope " + names);
       builder.add(Util.last(names1), table.getRowType());
     }

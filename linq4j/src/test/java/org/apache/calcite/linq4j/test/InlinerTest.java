@@ -203,8 +203,9 @@ class InlinerTest {
     builder.add(Expressions.declare(Modifier.FINAL, t, ONE));
     final ParameterExpression u = Expressions.parameter(int.class, "u");
     builder.add(Expressions.declare(Modifier.FINAL, u, null));
-    Statement st = Expressions.statement(
-        Expressions.assign(u,
+    Statement st = /*X*/
+        Expressions.statement(
+            Expressions.assign(u,
             Expressions.makeBinary(ExpressionType.Add, t, TWO)));
     ParameterExpression e = Expressions.parameter(0, Exception.class, "e");
     CatchBlock cb = Expressions.catch_(e, Expressions.throw_(e));

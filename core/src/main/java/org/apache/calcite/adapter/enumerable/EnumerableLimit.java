@@ -104,16 +104,16 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
 
     Expression v = builder.append("child", result.block);
     if (offset != null) {
-      v = builder.append(
-          "offset",
+      v = /*X*/
+          builder.append("offset",
           Expressions.call(
               v,
               BuiltInMethod.SKIP.method,
               getExpression(offset)));
     }
     if (fetch != null) {
-      v = builder.append(
-          "fetch",
+      v = /*X*/
+          builder.append("fetch",
           Expressions.call(
               v,
               BuiltInMethod.TAKE.method,

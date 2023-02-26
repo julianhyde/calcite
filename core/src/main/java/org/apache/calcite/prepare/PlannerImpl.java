@@ -256,8 +256,8 @@ public class PlannerImpl implements Planner, ViewExpander {
     SqlNode validatedSqlNode = requireNonNull(this.validatedSqlNode,
         "validatedSqlNode is null. Need to call #validate() first");
     final RexBuilder rexBuilder = createRexBuilder();
-    final RelOptCluster cluster = RelOptCluster.create(
-        requireNonNull(planner, "planner"),
+    final RelOptCluster cluster = /*X*/
+        RelOptCluster.create(requireNonNull(planner, "planner"),
         rexBuilder);
     final SqlToRelConverter.Config config =
         sqlToRelConverterConfig.withTrimUnusedFields(false);
@@ -269,8 +269,8 @@ public class PlannerImpl implements Planner, ViewExpander {
     root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
     final RelBuilder relBuilder =
         config.getRelBuilderFactory().create(cluster, null);
-    root = root.withRel(
-        RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
+    root = /*X*/
+        root.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
     state = State.STATE_5_CONVERTED;
     return root;
   }

@@ -395,8 +395,8 @@ public final class SqlParserUtil {
    * @throws SqlParseException if there is a parse error
    */
   public static SqlNode parseArrayLiteral(String s) throws SqlParseException {
-    SqlAbstractParserImpl parser = SqlParserImpl.FACTORY.getParser(
-        new StringReader(s));
+    SqlAbstractParserImpl parser = /*X*/
+        SqlParserImpl.FACTORY.getParser(new StringReader(s));
     return parser.parseArray();
   }
 

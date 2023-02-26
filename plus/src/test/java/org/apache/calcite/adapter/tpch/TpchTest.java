@@ -63,8 +63,8 @@ class TpchTest {
       + "   ]\n"
       + "}";
 
-  static final List<String> QUERIES = ImmutableList.of(
-      // 01
+  static final List<String> QUERIES = /*X*/
+      ImmutableList.of(// 01
       "select\n"
           + "  l_returnflag,\n"
           + "  l_linestatus,\n"

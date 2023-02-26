@@ -143,10 +143,10 @@ public class BlockBuilder {
           if (declaration.initializer != null && isSafeForReuse(declaration)) {
             x = append(newName, declaration.initializer);
           } else {
-            ParameterExpression pe = Expressions.parameter(
-                declaration.parameter.type, newName);
-            DeclarationStatement newDeclaration = Expressions.declare(
-                declaration.modifiers, pe, declaration.initializer);
+            ParameterExpression pe = /*X*/
+                Expressions.parameter(declaration.parameter.type, newName);
+            DeclarationStatement newDeclaration = /*X*/
+                Expressions.declare(declaration.modifiers, pe, declaration.initializer);
             x = pe;
             add(newDeclaration);
           }
@@ -367,8 +367,8 @@ public class BlockBuilder {
     }
     final IdentityHashMap<ParameterExpression, Expression> subMap =
         new IdentityHashMap<>(useCounter.map.size());
-    final Shuttle visitor = new InlineVariableVisitor(
-        subMap);
+    final Shuttle visitor = /*X*/
+        new InlineVariableVisitor(subMap);
     final ArrayList<Statement> oldStatements = new ArrayList<>(statements);
     statements.clear();
 

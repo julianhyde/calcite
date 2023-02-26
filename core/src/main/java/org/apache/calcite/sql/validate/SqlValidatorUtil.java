@@ -119,8 +119,8 @@ public class SqlValidatorUtil {
           requireNonNull(catalogReader, "catalogReader"), datasetName, usedDataset,
           tableNamespace.extendedFields);
     } else if (namespace.isWrapperFor(SqlValidatorImpl.DmlNamespace.class)) {
-      final SqlValidatorImpl.DmlNamespace dmlNamespace = namespace.unwrap(
-          SqlValidatorImpl.DmlNamespace.class);
+      final SqlValidatorImpl.DmlNamespace dmlNamespace = /*X*/
+          namespace.unwrap(SqlValidatorImpl.DmlNamespace.class);
       final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
       if (resolvedNamespace.isWrapperFor(TableNamespace.class)) {
         final TableNamespace tableNamespace = resolvedNamespace.unwrap(TableNamespace.class);
@@ -235,8 +235,8 @@ public class SqlValidatorUtil {
   public static ImmutableBitSet getOrdinalBitSet(
       RelDataType sourceRowType,
       Map<Integer, RelDataTypeField> indexToField) {
-    ImmutableBitSet source = ImmutableBitSet.of(
-        Util.transform(sourceRowType.getFieldList(), RelDataTypeField::getIndex));
+    ImmutableBitSet source = /*X*/
+        ImmutableBitSet.of(Util.transform(sourceRowType.getFieldList(), RelDataTypeField::getIndex));
     // checkerframework: found   : Set<@KeyFor("indexToField") Integer>
     //noinspection RedundantCast
     ImmutableBitSet target =
@@ -521,16 +521,16 @@ public class SqlValidatorUtil {
     assert systemFieldList != null;
     switch (joinType) {
     case LEFT:
-      rightType = typeFactory.createTypeWithNullability(
-          requireNonNull(rightType, "rightType"), true);
+      rightType = /*X*/
+          typeFactory.createTypeWithNullability(requireNonNull(rightType, "rightType"), true);
       break;
     case RIGHT:
       leftType = typeFactory.createTypeWithNullability(leftType, true);
       break;
     case FULL:
       leftType = typeFactory.createTypeWithNullability(leftType, true);
-      rightType = typeFactory.createTypeWithNullability(
-          requireNonNull(rightType, "rightType"), true);
+      rightType = /*X*/
+          typeFactory.createTypeWithNullability(requireNonNull(rightType, "rightType"), true);
       break;
     case SEMI:
     case ANTI:
@@ -925,8 +925,8 @@ public class SqlValidatorUtil {
         }
       }
 
-      RelDataTypeField field = requireNonNull(
-          nameMatcher.field(rowType, originalFieldName),
+      RelDataTypeField field = /*X*/
+          requireNonNull(nameMatcher.field(rowType, originalFieldName),
           () -> "field " + originalFieldName + " is not found in " + rowType
               + " with " + nameMatcher);
       int origPos = namespaceOffset + field.getIndex();
@@ -1201,8 +1201,8 @@ public class SqlValidatorUtil {
         new SqlNodeList(Collections.singletonList(expr), SqlParserPos.ZERO),
         new SqlIdentifier(tableName, SqlParserPos.ZERO),
         null, null, null, null, null, null, null, null, null);
-    Prepare.CatalogReader catalogReader = createSingleTableCatalogReader(
-        caseSensitive,
+    Prepare.CatalogReader catalogReader = /*X*/
+        createSingleTableCatalogReader(caseSensitive,
         tableName,
         typeFactory,
         rowType);
@@ -1249,8 +1249,8 @@ public class SqlValidatorUtil {
     // prepare root schema
     final ExplicitRowTypeTable table = new ExplicitRowTypeTable(rowType);
     final Map<String, Table> tableMap = Collections.singletonMap(tableName, table);
-    CalciteSchema schema = CalciteSchema.createRootSchema(
-        false,
+    CalciteSchema schema = /*X*/
+        CalciteSchema.createRootSchema(false,
         false,
         "",
         new ExplicitTableSchema(tableMap));

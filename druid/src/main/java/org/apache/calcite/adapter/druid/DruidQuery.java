@@ -267,8 +267,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     case INPUT_REF:
       columnName = extractColumnName(rexNode, rowType, druidQuery);
       if (needUtcTimeExtract(rexNode)) {
-        extractionFunction = TimeExtractionFunction.createDefault(
-            DateTimeUtils.UTC_ZONE.getID());
+        extractionFunction = /*X*/
+            TimeExtractionFunction.createDefault(DateTimeUtils.UTC_ZONE.getID());
       } else {
         extractionFunction = null;
       }
@@ -993,8 +993,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       final List<VirtualColumn> virtualColumnList = new ArrayList<>();
       if (project != null) {
         // project some fields only
-        Pair<List<String>, List<VirtualColumn>> projectResult = computeProjectAsScan(
-            project, project.getInput().getRowType(), this);
+        Pair<List<String>, List<VirtualColumn>> projectResult = /*X*/
+            computeProjectAsScan(project, project.getInput().getRowType(), this);
         scanColumnNames = projectResult.left;
         virtualColumnList.addAll(projectResult.right);
       } else {
@@ -1019,8 +1019,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     final RelDataType aggInputRowType = table.getRowType();
     final List<String> aggregateStageFieldNames = new ArrayList<>();
 
-    Pair<List<DimensionSpec>, List<VirtualColumn>> projectGroupSet = computeProjectGroupSet(
-        project, groupSet, aggInputRowType, this);
+    Pair<List<DimensionSpec>, List<VirtualColumn>> projectGroupSet = /*X*/
+        computeProjectGroupSet(project, groupSet, aggInputRowType, this);
 
     final List<DimensionSpec> groupByKeyDims = projectGroupSet.left;
     final List<VirtualColumn> virtualColumnList = projectGroupSet.right;

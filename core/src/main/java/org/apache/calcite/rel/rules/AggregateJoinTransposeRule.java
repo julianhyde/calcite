@@ -315,8 +315,8 @@ public class AggregateJoinTransposeRule
     }
 
     // Update condition
-    final Mapping mapping = (Mapping) Mappings.target(
-        map::get,
+    final Mapping mapping = /*X*/
+        (Mapping) Mappings.target(map::get,
         join.getRowType().getFieldCount(),
         belowOffset);
     final RexNode newCondition =

@@ -224,8 +224,8 @@ public class RelMdAllPredicates
         final Map<RelTableRef, RelTableRef> currentTablesMapping = new HashMap<>();
         for (RelTableRef rightRef : tableRefs) {
           int shift = 0;
-          Collection<RelTableRef> lRefs = qualifiedNamesToRefs.get(
-              rightRef.getQualifiedName());
+          Collection<RelTableRef> lRefs = /*X*/
+              qualifiedNamesToRefs.get(rightRef.getQualifiedName());
           if (lRefs != null) {
             shift = lRefs.size();
           }
@@ -249,8 +249,8 @@ public class RelMdAllPredicates
 
     // Infer column origin expressions for given references
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
-    final RelDataType fullRowType = SqlValidatorUtil.createJoinType(
-        rexBuilder.getTypeFactory(),
+    final RelDataType fullRowType = /*X*/
+        SqlValidatorUtil.createJoinType(rexBuilder.getTypeFactory(),
         join.getLeft().getRowType(),
         join.getRight().getRowType(),
         null,
@@ -322,8 +322,8 @@ public class RelMdAllPredicates
         final Map<RelTableRef, RelTableRef> currentTablesMapping = new HashMap<>();
         for (RelTableRef rightRef : tableRefs) {
           int shift = 0;
-          Collection<RelTableRef> lRefs = qualifiedNamesToRefs.get(
-              rightRef.getQualifiedName());
+          Collection<RelTableRef> lRefs = /*X*/
+              qualifiedNamesToRefs.get(rightRef.getQualifiedName());
           if (lRefs != null) {
             shift = lRefs.size();
           }

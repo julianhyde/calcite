@@ -38,8 +38,8 @@ public class SqlLateralOperator extends SqlSpecialOperator {
 
   @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
       int rightPrec) {
-    final Set<SqlKind> specialOperandKinds = ImmutableSet.of(
-        SqlKind.COLLECTION_TABLE,
+    final Set<SqlKind> specialOperandKinds = /*X*/
+        ImmutableSet.of(SqlKind.COLLECTION_TABLE,
         SqlKind.SELECT,
         SqlKind.AS);
     if (call.operandCount() == 1

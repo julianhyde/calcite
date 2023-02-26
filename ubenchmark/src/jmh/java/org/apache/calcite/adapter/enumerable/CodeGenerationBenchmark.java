@@ -191,8 +191,8 @@ public class CodeGenerationBenchmark {
       }
 
       try {
-        compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory(
-            CodeGenerationBenchmark.class.getClassLoader());
+        compilerFactory = /*X*/
+            CompilerFactoryFactory.getDefaultCompilerFactory(CodeGenerationBenchmark.class.getClassLoader());
       } catch (Exception e) {
         throw new IllegalStateException(
             "Unable to instantiate java compiler", e);

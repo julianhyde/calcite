@@ -147,8 +147,8 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
     final List<Expression> initExpressions = new ArrayList<>();
     final BlockBuilder initBlock = new BlockBuilder();
 
-    final List<Type> aggStateTypes = createAggStateTypes(
-        initExpressions, initBlock, aggs, typeFactory);
+    final List<Type> aggStateTypes = /*X*/
+        createAggStateTypes(initExpressions, initBlock, aggs, typeFactory);
 
     final PhysType accPhysType =
         PhysTypeImpl.of(typeFactory,
@@ -214,8 +214,9 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
     // Generate the appropriate key Comparator. In the case of NULL values
     // in group keys, the comparator must be able to support NULL values by giving a
     // consistent sort ordering.
-    final Expression comparator = keyPhysType.generateComparator(
-        requireNonNull(getTraitSet().getCollation(),
+    final Expression comparator = /*X*/
+        keyPhysType.generateComparator(
+            requireNonNull(getTraitSet().getCollation(),
             () -> "getTraitSet().getCollation() is null, current traits are " + getTraitSet()));
 
     final Expression resultSelector_ =

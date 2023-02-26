@@ -1079,8 +1079,9 @@ public class InnodbAdapterTest {
         .failsAtValidation("Object 'NOT_EXIST' not found");
   }
 
-  static List<Pair<Integer, String>> rows = Lists.newArrayList(
-      Pair.of(7369, "EMPNO=7369; ENAME=SMITH; JOB=CLERK; AGE=30; MGR=7902; "
+  static List<Pair<Integer, String>> rows = /*X*/
+      Lists.newArrayList(
+          Pair.of(7369, "EMPNO=7369; ENAME=SMITH; JOB=CLERK; AGE=30; MGR=7902; "
           + "HIREDATE=1980-12-17; SAL=800.00; COMM=null; DEPTNO=20; EMAIL=smith@calcite; "
           + "CREATE_DATETIME=2020-01-01 18:35:40; CREATE_TIME=18:35:40; UPSERT_TIME="
           + expectedLocalTime("2020-01-01 18:35:40")),

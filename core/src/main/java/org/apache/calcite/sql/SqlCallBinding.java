@@ -180,8 +180,8 @@ public class SqlCallBinding extends SqlOperatorBinding {
   /** Returns the operands to a call permuted into the same order as the
    * formal parameters of the function. */
   private List<SqlNode> permutedOperands(final SqlCall call) {
-    final SqlOperandMetadata operandMetadata = requireNonNull(
-        (SqlOperandMetadata) call.getOperator().getOperandTypeChecker(),
+    final SqlOperandMetadata operandMetadata = /*X*/
+        requireNonNull((SqlOperandMetadata) call.getOperator().getOperandTypeChecker(),
         () -> "operandTypeChecker is null for " + call + ", operator " + call.getOperator());
     final List<String> paramNames = operandMetadata.paramNames();
     final List<SqlNode> permuted = new ArrayList<>();

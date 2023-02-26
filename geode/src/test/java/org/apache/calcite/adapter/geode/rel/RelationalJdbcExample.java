@@ -42,8 +42,8 @@ import java.util.Properties;
  */
 public class RelationalJdbcExample {
 
-  protected static final Logger LOGGER = LoggerFactory.getLogger(
-      RelationalJdbcExample.class.getName());
+  protected static final Logger LOGGER = /*X*/
+      LoggerFactory.getLogger(RelationalJdbcExample.class.getName());
 
   private RelationalJdbcExample() {
   }
@@ -77,8 +77,8 @@ public class RelationalJdbcExample {
     Connection connection = DriverManager.getConnection("jdbc:calcite:", info);
 
     Statement statement = connection.createStatement();
-    ResultSet resultSet = statement.executeQuery(
-        "SELECT \"b\".\"author\", \"b\".\"retailCost\", \"i\".\"quantityInStock\"\n"
+    ResultSet resultSet = /*X*/
+        statement.executeQuery("SELECT \"b\".\"author\", \"b\".\"retailCost\", \"i\".\"quantityInStock\"\n"
             + "FROM \"TEST\".\"BookMaster\" AS \"b\" "
             + " INNER JOIN \"TEST\".\"BookInventory\" AS \"i\""
             + "  ON \"b\".\"itemNumber\" = \"i\".\"itemNumber\"\n "

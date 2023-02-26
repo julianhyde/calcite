@@ -584,10 +584,10 @@ public class RelMdPredicates
       if (leftPredicates == null) {
         leftChildPredicates = null;
       } else {
-        Mappings.TargetMapping leftMapping = Mappings.createShiftMapping(
-            nSysFields + nFieldsLeft, nSysFields, 0, nFieldsLeft);
-        leftChildPredicates = leftPredicates.accept(
-            new RexPermuteInputsShuttle(leftMapping, joinRel.getInput(0)));
+        Mappings.TargetMapping leftMapping = /*X*/
+            Mappings.createShiftMapping(nSysFields + nFieldsLeft, nSysFields, 0, nFieldsLeft);
+        leftChildPredicates = /*X*/
+            leftPredicates.accept(new RexPermuteInputsShuttle(leftMapping, joinRel.getInput(0)));
 
         allExprs.add(leftChildPredicates);
         for (RexNode r : RelOptUtil.conjunctions(leftChildPredicates)) {
@@ -598,11 +598,11 @@ public class RelMdPredicates
       if (rightPredicates == null) {
         rightChildPredicates = null;
       } else {
-        Mappings.TargetMapping rightMapping = Mappings.createShiftMapping(
-            nSysFields + nFieldsLeft + nFieldsRight,
+        Mappings.TargetMapping rightMapping = /*X*/
+            Mappings.createShiftMapping(nSysFields + nFieldsLeft + nFieldsRight,
             nSysFields + nFieldsLeft, 0, nFieldsRight);
-        rightChildPredicates = rightPredicates.accept(
-            new RexPermuteInputsShuttle(rightMapping, joinRel.getInput(1)));
+        rightChildPredicates = /*X*/
+            rightPredicates.accept(new RexPermuteInputsShuttle(rightMapping, joinRel.getInput(1)));
 
         allExprs.add(rightChildPredicates);
         for (RexNode r : RelOptUtil.conjunctions(rightChildPredicates)) {
@@ -671,13 +671,13 @@ public class RelMdPredicates
         break;
       }
 
-      Mappings.TargetMapping rightMapping = Mappings.createShiftMapping(
-          nSysFields + nFieldsLeft + nFieldsRight,
+      Mappings.TargetMapping rightMapping = /*X*/
+          Mappings.createShiftMapping(nSysFields + nFieldsLeft + nFieldsRight,
           0, nSysFields + nFieldsLeft, nFieldsRight);
       final RexPermuteInputsShuttle rightPermute =
           new RexPermuteInputsShuttle(rightMapping, joinRel);
-      Mappings.TargetMapping leftMapping = Mappings.createShiftMapping(
-          nSysFields + nFieldsLeft, 0, nSysFields, nFieldsLeft);
+      Mappings.TargetMapping leftMapping = /*X*/
+          Mappings.createShiftMapping(nSysFields + nFieldsLeft, 0, nSysFields, nFieldsLeft);
       final RexPermuteInputsShuttle leftPermute =
           new RexPermuteInputsShuttle(leftMapping, joinRel);
       final List<RexNode> leftInferredPredicates = new ArrayList<>();
@@ -696,14 +696,14 @@ public class RelMdPredicates
       switch (joinType) {
       case SEMI:
         Iterable<RexNode> pulledUpPredicates;
-        pulledUpPredicates = Iterables.concat(
-            RelOptUtil.conjunctions(leftChildPredicates),
+        pulledUpPredicates = /*X*/
+            Iterables.concat(RelOptUtil.conjunctions(leftChildPredicates),
             leftInferredPredicates);
         return RelOptPredicateList.of(rexBuilder, pulledUpPredicates,
             leftInferredPredicates, rightInferredPredicates);
       case INNER:
-        pulledUpPredicates = Iterables.concat(
-            RelOptUtil.conjunctions(leftChildPredicates),
+        pulledUpPredicates = /*X*/
+            Iterables.concat(RelOptUtil.conjunctions(leftChildPredicates),
             RelOptUtil.conjunctions(rightChildPredicates),
             RexUtil.retainDeterministic(
                 RelOptUtil.conjunctions(joinRel.getCondition())),
@@ -741,8 +741,9 @@ public class RelMdPredicates
           continue;
         }
         for (Mapping m : mappings(r)) {
-          RexNode tr = r.accept(
-              new RexPermuteInputsShuttle(m, joinRel.getInput(0),
+          RexNode tr = /*X*/
+              r.accept(
+                  new RexPermuteInputsShuttle(m, joinRel.getInput(0),
                   joinRel.getInput(1)));
           // Filter predicates can be already simplified, so we should work with
           // simplified RexNode versions as well. It also allows prevent of having

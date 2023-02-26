@@ -160,8 +160,9 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
                         Expressions.constant(input.name)),
                     input.type)));
 
-    final BlockStatement block = Expressions.block(
-        Iterables.concat(
+    final BlockStatement block = /*X*/
+        Expressions.block(
+            Iterables.concat(
             stashed,
             result.block.statements));
     memberDeclarations.add(

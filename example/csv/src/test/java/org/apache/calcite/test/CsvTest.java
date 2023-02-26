@@ -632,8 +632,8 @@ class CsvTest {
       assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIMESTAMP);
 
       Statement statement = connection.createStatement();
-      ResultSet resultSet = statement.executeQuery(
-          "select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100");
+      ResultSet resultSet = /*X*/
+          statement.executeQuery("select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100");
       resultSet.next();
 
       // date
@@ -762,8 +762,8 @@ class CsvTest {
     properties.setProperty("caseSensitive", "true");
     try (Connection connection =
         DriverManager.getConnection("jdbc:calcite:", properties)) {
-      final CalciteConnection calciteConnection = connection.unwrap(
-          CalciteConnection.class);
+      final CalciteConnection calciteConnection = /*X*/
+          connection.unwrap(CalciteConnection.class);
 
       final Schema schema =
           CsvSchemaFactory.INSTANCE

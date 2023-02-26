@@ -147,8 +147,8 @@ public class AggregatingSelectScope
       // Remove the AS operator so the expressions are consistent with
       // OrderExpressionExpander.
       final SelectScope selectScope = (SelectScope) parent;
-      List<SqlNode> expandedSelectList = Objects.requireNonNull(
-          selectScope.getExpandedSelectList(),
+      List<SqlNode> expandedSelectList = /*X*/
+          Objects.requireNonNull(selectScope.getExpandedSelectList(),
           () -> "expandedSelectList for " + selectScope);
       for (SqlNode selectItem : expandedSelectList) {
         groupExprs.add(stripAs(selectItem));

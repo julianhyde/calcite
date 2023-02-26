@@ -159,8 +159,9 @@ public abstract class DateRangeRules {
     }
     final Map<RexNode, RangeSet<Calendar>> operandRanges = new HashMap<>();
     for (TimeUnitRange timeUnit : timeUnits) {
-      e = e.accept(
-          new ExtractShuttle(rexBuilder, timeUnit, operandRanges, timeUnits,
+      e = /*X*/
+          e.accept(
+              new ExtractShuttle(rexBuilder, timeUnit, operandRanges, timeUnits,
               timeZone));
     }
     return e;
@@ -414,8 +415,9 @@ public abstract class DateRangeRules {
         for (RexNode operand : exprs) {
           RexNode clonedOperand = operand;
           for (TimeUnitRange timeUnit : timeUnitRanges) {
-            clonedOperand = clonedOperand.accept(
-                new ExtractShuttle(rexBuilder, timeUnit, operandRanges,
+            clonedOperand = /*X*/
+                clonedOperand.accept(
+                    new ExtractShuttle(rexBuilder, timeUnit, operandRanges,
                     timeUnitRanges, timeZone));
           }
           if ((clonedOperand != operand) && (update != null)) {

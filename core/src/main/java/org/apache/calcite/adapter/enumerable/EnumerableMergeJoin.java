@@ -284,8 +284,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
 
     ImmutableIntList sourceKeys = childId == 0 ? joinInfo.leftKeys : joinInfo.rightKeys;
     ImmutableBitSet keySet = ImmutableBitSet.of(sourceKeys);
-    ImmutableBitSet childCollationKeys = ImmutableBitSet.of(
-        RelCollations.ordinals(collation));
+    ImmutableBitSet childCollationKeys = /*X*/
+        ImmutableBitSet.of(RelCollations.ordinals(collation));
     if (!childCollationKeys.equals(keySet)) {
       return null;
     }
@@ -427,8 +427,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     for (Pair<Integer, Integer> pair : Pair.zip(joinInfo.leftKeys, joinInfo.rightKeys)) {
       RelDataType leftType = left.getRowType().getFieldList().get(pair.left).getType();
       RelDataType rightType = right.getRowType().getFieldList().get(pair.right).getType();
-      final RelDataType keyType = requireNonNull(
-          typeFactory.leastRestrictive(ImmutableList.of(leftType, rightType)),
+      final RelDataType keyType = /*X*/
+          requireNonNull(typeFactory.leastRestrictive(ImmutableList.of(leftType, rightType)),
           () -> "leastRestrictive returns null for " + leftType + " and " + rightType);
       final Type keyClass = typeFactory.getJavaClass(keyType);
       leftExpressions.add(
@@ -440,8 +440,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     }
     Expression predicate = Expressions.constant(null);
     if (!joinInfo.nonEquiConditions.isEmpty()) {
-      final RexNode nonEquiCondition = RexUtil.composeConjunction(
-          getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+      final RexNode nonEquiCondition = /*X*/
+          RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
         predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
             left, right, leftResult.physType, rightResult.physType, nonEquiCondition);

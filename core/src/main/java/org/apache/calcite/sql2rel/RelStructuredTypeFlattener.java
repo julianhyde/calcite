@@ -266,8 +266,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
   private RexNode restructure(RelDataType structuredType) {
     // Use ROW(f1,f2,...,fn) to put flattened data back together into a structure.
     List<RexNode> structFields = restructureFields(structuredType);
-    RexNode rowConstructor = rexBuilder.makeCall(
-        structuredType,
+    RexNode rowConstructor = /*X*/
+        rexBuilder.makeCall(structuredType,
         SqlStdOperatorTable.ROW,
         structFields);
     return rowConstructor;

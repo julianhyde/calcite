@@ -248,8 +248,8 @@ public abstract class RelOptMaterializations {
     if (relOptTables.size() != 0) {
       relOptSchema = relOptTables.get(0).getRelOptSchema();
     }
-    final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create(
-        relNode.getCluster(), relOptSchema);
+    final RelBuilder relBuilder = /*X*/
+        RelFactories.LOGICAL_BUILDER.create(relNode.getCluster(), relOptSchema);
     final RelFieldTrimmer relFieldTrimmer = new RelFieldTrimmer(null, relBuilder);
     final RelNode rel = relFieldTrimmer.trim(relNode);
     return rel;

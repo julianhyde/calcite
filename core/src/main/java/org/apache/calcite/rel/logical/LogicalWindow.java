@@ -363,8 +363,9 @@ public final class LogicalWindow extends Window {
     final RexWindow aggWindow = over.getWindow();
 
     // Look up or create a window.
-    RelCollation orderKeys = getCollation(
-        Lists.newArrayList(
+    RelCollation orderKeys = /*X*/
+        getCollation(
+            Lists.newArrayList(
             Util.filter(aggWindow.orderKeys,
                 rexFieldCollation ->
                     // If ORDER BY references constant (i.e. RexInputRef),

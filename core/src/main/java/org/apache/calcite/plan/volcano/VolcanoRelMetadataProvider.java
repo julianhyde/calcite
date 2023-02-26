@@ -60,8 +60,8 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
 
     return (rel, mq) -> {
       final RelSubset subset = (RelSubset) rel;
-      final RelMetadataProvider provider = Objects.requireNonNull(
-          rel.getCluster().getMetadataProvider(),
+      final RelMetadataProvider provider = /*X*/
+          Objects.requireNonNull(rel.getCluster().getMetadataProvider(),
           "metadataProvider");
 
       // REVIEW jvs 29-Mar-2006: I'm not sure what the correct precedence

@@ -427,8 +427,8 @@ public abstract class RelOptUtil {
         || ((Hintable) originalRel).getHints().size() == 0) {
       return equiv;
     }
-    final RelShuttle shuttle = new SubTreeHintPropagateShuttle(
-        originalRel.getCluster().getHintStrategies(),
+    final RelShuttle shuttle = /*X*/
+        new SubTreeHintPropagateShuttle(originalRel.getCluster().getHintStrategies(),
         ((Hintable) originalRel).getHints());
     return equiv.accept(shuttle);
   }
@@ -896,16 +896,16 @@ public abstract class RelOptUtil {
       // No need to create another project node if the rel
       // is already a project.
       final Project project = (Project) rel;
-      castExps = RexUtil.generateCastExpressions(
-          rexBuilder,
+      castExps = /*X*/
+          RexUtil.generateCastExpressions(rexBuilder,
           castRowType,
           ((Project) rel).getProjects());
       input = rel.getInput(0);
       hints = project.getHints();
       correlationVariables = project.getVariablesSet();
     } else {
-      castExps = RexUtil.generateCastExpressions(
-          rexBuilder,
+      castExps = /*X*/
+          RexUtil.generateCastExpressions(rexBuilder,
           castRowType,
           rowType);
       input = rel;
@@ -3896,8 +3896,8 @@ public abstract class RelOptUtil {
       for (int i = 0; i < operands.size(); i++) {
         RexNode operand = operands.get(i);
         if (operand instanceof RexCall) {
-          operand = collapseExpandedIsNotDistinctFromExpr(
-              (RexCall) operand, builder);
+          operand = /*X*/
+              collapseExpandedIsNotDistinctFromExpr((RexCall) operand, builder);
         }
         if (node.getKind() == SqlKind.AND
             && operand.getKind() != SqlKind.EQUALS

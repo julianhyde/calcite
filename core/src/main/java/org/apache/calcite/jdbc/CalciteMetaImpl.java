@@ -381,8 +381,8 @@ public class CalciteMetaImpl extends MetaImpl {
     final CalciteMetaSchema schema = (CalciteMetaSchema) schema_;
     return Linq4j.asEnumerable(schema.calciteSchema.getTableNames())
         .select((Function1<String, MetaTable>) name -> {
-          final Table table = requireNonNull(
-              schema.calciteSchema.getTable(name, true),
+          final Table table = /*X*/
+              requireNonNull(schema.calciteSchema.getTable(name, true),
               () -> "table " + name + " is not found (case sensitive)").getTable();
           return new CalciteMetaTable(table,
               schema.tableCatalog,

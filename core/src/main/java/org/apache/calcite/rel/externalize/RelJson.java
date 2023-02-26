@@ -341,8 +341,8 @@ public class RelJson {
       final boolean nullable = get(map, "nullable");
       return typeFactory.createTypeWithNullability(type, nullable);
     } else {
-      final SqlTypeName sqlTypeName = requireNonNull(
-          Util.enumVal(SqlTypeName.class, (String) o),
+      final SqlTypeName sqlTypeName = /*X*/
+          requireNonNull(Util.enumVal(SqlTypeName.class, (String) o),
           () -> "unable to find enum value " + o + " in class " + SqlTypeName.class);
       return typeFactory.createSqlType(sqlTypeName);
     }

@@ -684,8 +684,8 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
    * @return common type of implicit cast, null if we do not find any
    */
   public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
-    List<SqlTypeFamily> numericFamilies = ImmutableList.of(
-        SqlTypeFamily.NUMERIC,
+    List<SqlTypeFamily> numericFamilies = /*X*/
+        ImmutableList.of(SqlTypeFamily.NUMERIC,
         SqlTypeFamily.DECIMAL,
         SqlTypeFamily.APPROXIMATE_NUMERIC,
         SqlTypeFamily.EXACT_NUMERIC,
@@ -758,8 +758,8 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
         && SqlTypeUtil.isArray(targetType)
         && operand instanceof SqlCharStringLiteral) {
       try {
-        SqlNode arrayValue = SqlParserUtil.parseArrayLiteral(
-            ((SqlCharStringLiteral) operand).getValueAs(String.class));
+        SqlNode arrayValue = /*X*/
+            SqlParserUtil.parseArrayLiteral(((SqlCharStringLiteral) operand).getValueAs(String.class));
         call.setOperand(index, arrayValue);
         updateInferredType(arrayValue, targetType);
       } catch (SqlParseException e) {

@@ -2696,8 +2696,8 @@ public class RelBuilder {
   public RelBuilder transientScan(String tableName, RelDataType rowType) {
     TransientTable transientTable = new ListTransientTable(tableName, rowType);
     requireNonNull(relOptSchema, "relOptSchema");
-    RelOptTable relOptTable = RelOptTableImpl.create(
-        relOptSchema,
+    RelOptTable relOptTable = /*X*/
+        RelOptTableImpl.create(relOptSchema,
         rowType,
         transientTable,
         ImmutableList.of(tableName));
@@ -3063,8 +3063,8 @@ public class RelBuilder {
     final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
     final RelDataTypeFactory.Builder builder = typeFactory.builder();
     Ord.forEach(fieldNames, (fieldName, i) -> {
-      final RelDataType type = typeFactory.leastRestrictive(
-          new AbstractList<RelDataType>() {
+      final RelDataType type = /*X*/
+          typeFactory.leastRestrictive(new AbstractList<RelDataType>() {
             @Override public RelDataType get(int index) {
               return tupleList.get(index).get(i).getType();
             }

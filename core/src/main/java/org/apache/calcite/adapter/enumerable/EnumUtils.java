@@ -540,8 +540,8 @@ public class EnumUtils {
           // Try to call "toString()" method
           // E.g. from "Integer" to "String"
           // Generate "x == null ? null : x.toString()"
-          result = Expressions.condition(
-              Expressions.equal(operand, RexImpTable.NULL_EXPR),
+          result = /*X*/
+              Expressions.condition(Expressions.equal(operand, RexImpTable.NULL_EXPR),
               RexImpTable.NULL_EXPR,
               Expressions.call(operand, "toString"));
         } catch (RuntimeException e) {
@@ -820,8 +820,8 @@ public class EnumUtils {
     // Find the fixed window for a timestamp given a window size and an offset, and return the
     // window start.
     // wmColExprToLong - (wmColExprToLong + windowSizeMillis - offsetMillis) % windowSizeMillis
-    Expression windowStartExpr = Expressions.subtract(
-        wmColExprToLong,
+    Expression windowStartExpr = /*X*/
+        Expressions.subtract(wmColExprToLong,
         Expressions.modulo(
             Expressions.add(
                 wmColExprToLong,
@@ -835,8 +835,8 @@ public class EnumUtils {
 
     // The window end equals to the window start plus window size.
     // windowStartMillis + sizeMillis
-    Expression windowEndExpr = Expressions.add(
-        windowStartExpr,
+    Expression windowEndExpr = /*X*/
+        Expressions.add(windowStartExpr,
         windowSizeExpr);
 
     expressions.add(windowEndExpr);
@@ -932,8 +932,8 @@ public class EnumUtils {
             sessionKeyMap.computeIfAbsent(element[indexOfKeyColumn], k -> new SortedMultiMap<>());
         Object watermark = requireNonNull(element[indexOfWatermarkedColumn],
             "element[indexOfWatermarkedColumn]");
-        Pair<Long, Long> initWindow = computeInitWindow(
-            SqlFunctions.toLong(watermark), gap);
+        Pair<Long, Long> initWindow = /*X*/
+            computeInitWindow(SqlFunctions.toLong(watermark), gap);
         session.putMulti(initWindow, element);
       }
 

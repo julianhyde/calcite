@@ -359,8 +359,9 @@ public class Interpreter extends AbstractEnumerable<@Nullable Object[]>
       if (!found) {
         if (p instanceof InterpretableRel) {
           InterpretableRel interpretableRel = (InterpretableRel) p;
-          node = interpretableRel.implement(
-              new InterpretableRel.InterpreterImplementor(this, null,
+          node = /*X*/
+              interpretableRel.implement(
+                  new InterpretableRel.InterpreterImplementor(this, null,
                   DataContexts.EMPTY));
         } else {
           // Probably need to add a visit(XxxRel) method to CoreCompiler.

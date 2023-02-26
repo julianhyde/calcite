@@ -84,8 +84,8 @@ public class ProxyingMetadataHandlerProvider implements MetadataHandlerProvider 
 
       // using deprecated RelMetadataProvider method here as the non-deprecated methods completely
       // sidestep the purpose of RelMetadataProvider reflection-based functionality.
-      UnboundMetadata metadata = provider.apply(
-          (Class<? extends RelNode>) rel.getClass(),
+      UnboundMetadata metadata = /*X*/
+          provider.apply((Class<? extends RelNode>) rel.getClass(),
           (Class<? extends Metadata>) metadataType);
 
       if (metadata == null) {

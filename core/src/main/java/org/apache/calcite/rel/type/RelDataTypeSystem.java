@@ -244,8 +244,8 @@ public interface RelDataTypeSystem {
                         getMaxNumericPrecision());
 
         RelDataType ret;
-        ret = typeFactory.createSqlType(
-                        SqlTypeName.DECIMAL,
+        ret = /*X*/
+                        typeFactory.createSqlType(SqlTypeName.DECIMAL,
                         precision,
                         scale);
 

@@ -240,8 +240,8 @@ class OsAdapterTest {
   }
 
   @Test void testStdin() throws SQLException {
-    try (Hook.Closeable ignore = Hook.STANDARD_STREAMS.addThread(
-        (Consumer<Holder<Object[]>>) o -> {
+    try (Hook.Closeable ignore = /*X*/
+        Hook.STANDARD_STREAMS.addThread((Consumer<Holder<Object[]>>) o -> {
           final Object[] values = o.get();
           final InputStream in = (InputStream) values[0];
           final String s = "First line\n"

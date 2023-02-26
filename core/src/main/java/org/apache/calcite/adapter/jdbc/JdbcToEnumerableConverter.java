@@ -264,8 +264,8 @@ public class JdbcToEnumerableConverter
     case DATE:
     case TIME:
     case TIMESTAMP:
-      source = Expressions.call(
-          getMethod(sqlTypeName, fieldType.isNullable(), offset),
+      source = /*X*/
+          Expressions.call(getMethod(sqlTypeName, fieldType.isNullable(), offset),
           Expressions.<Expression>list()
               .append(
                   Expressions.call(resultSet_,
@@ -273,8 +273,9 @@ public class JdbcToEnumerableConverter
           .appendIf(offset, getTimeZoneExpression(implementor)));
       break;
     case ARRAY:
-      final Expression x = Expressions.convert_(
-          Expressions.call(resultSet_, jdbcGetMethod(primitive),
+      final Expression x = /*X*/
+          Expressions.convert_(
+              Expressions.call(resultSet_, jdbcGetMethod(primitive),
               Expressions.constant(i + 1)),
           java.sql.Array.class);
       source = Expressions.call(BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x);
@@ -283,8 +284,8 @@ public class JdbcToEnumerableConverter
       source = RexImpTable.NULL_EXPR;
       break;
     default:
-      source = Expressions.call(
-          resultSet_, jdbcGetMethod(primitive), Expressions.constant(i + 1));
+      source = /*X*/
+          Expressions.call(resultSet_, jdbcGetMethod(primitive), Expressions.constant(i + 1));
     }
     builder.add(
         Expressions.statement(

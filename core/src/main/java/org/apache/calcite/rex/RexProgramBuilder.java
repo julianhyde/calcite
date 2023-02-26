@@ -141,8 +141,9 @@ public class RexProgramBuilder {
     // Register the condition, if there is one.
     if (condition != null) {
       if (simplify != null) {
-        condition = simplify.simplify(
-            rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE,
+        condition = /*X*/
+            simplify.simplify(
+                rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE,
                 condition.accept(expander)));
         if (condition.isAlwaysTrue()) {
           condition = null;

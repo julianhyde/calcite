@@ -176,8 +176,8 @@ class MatchTest {
             new NlsString("city", typeFactory.getDefaultCharset().name(),
                 SqlCollation.COERCIBLE)));
 
-    RelDataType mapType = typeFactory.createMapType(
-        typeFactory.createSqlType(SqlTypeName.VARCHAR),
+    RelDataType mapType = /*X*/
+        typeFactory.createMapType(typeFactory.createSqlType(SqlTypeName.VARCHAR),
         typeFactory.createTypeWithNullability(
             typeFactory.createSqlType(SqlTypeName.ANY), true));
 

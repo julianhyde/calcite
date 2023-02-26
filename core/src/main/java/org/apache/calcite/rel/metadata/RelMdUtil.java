@@ -755,8 +755,8 @@ public class RelMdUtil {
     }
 
     if (useMaxNdv) {
-      distRowCount = NumberUtil.max(
-          mq.getDistinctRowCount(left, leftMask.build(), leftPred),
+      distRowCount = /*X*/
+          NumberUtil.max(mq.getDistinctRowCount(left, leftMask.build(), leftPred),
           mq.getDistinctRowCount(right, rightMask.build(), rightPred));
     } else {
       distRowCount =

@@ -180,8 +180,8 @@ public class SqlDotOperator extends SqlSpecialOperator {
     switch (recordType.getSqlTypeName()) {
     case ROW:
       final String fieldName = getOperandLiteralValueOrThrow(opBinding, 1, String.class);
-      final RelDataType type = requireNonNull(
-          recordType.getField(fieldName, false, false),
+      final RelDataType type = /*X*/
+          requireNonNull(recordType.getField(fieldName, false, false),
           () -> "field " + fieldName + " is not found in " + recordType)
           .getType();
       if (recordType.isNullable()) {

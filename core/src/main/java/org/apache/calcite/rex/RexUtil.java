@@ -2282,8 +2282,9 @@ public class RexUtil {
           @Override public RexNode visitTableInputRef(RexTableInputRef inputRef) {
             if (tableMapping != null) {
               RexTableInputRef inputRefFinal = inputRef;
-              inputRef = RexTableInputRef.of(
-                  requireNonNull(tableMapping.get(inputRef.getTableRef()),
+              inputRef = /*X*/
+                  RexTableInputRef.of(
+                      requireNonNull(tableMapping.get(inputRef.getTableRef()),
                       () -> "tableMapping.get(...) for " + inputRefFinal.getTableRef()),
                   inputRef.getIndex(),
                   inputRef.getType());
@@ -2320,8 +2321,9 @@ public class RexUtil {
             }
             if (tableMapping != null) {
               RexTableInputRef inputRefFinal = inputRef;
-              inputRef = RexTableInputRef.of(
-                  requireNonNull(tableMapping.get(inputRef.getTableRef()),
+              inputRef = /*X*/
+                  RexTableInputRef.of(
+                      requireNonNull(tableMapping.get(inputRef.getTableRef()),
                       () -> "tableMapping.get(...) for " + inputRefFinal.getTableRef()),
                   inputRef.getIndex(),
                   inputRef.getType());

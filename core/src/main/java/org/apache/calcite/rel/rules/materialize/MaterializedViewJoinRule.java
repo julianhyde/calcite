@@ -200,8 +200,9 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
       }
       otherCompensationPred = newOtherCompensationPred;
     }
-    final RexNode queryCompensationPred = RexUtil.not(
-        RexUtil.composeConjunction(rexBuilder,
+    final RexNode queryCompensationPred = /*X*/
+        RexUtil.not(
+            RexUtil.composeConjunction(rexBuilder,
             ImmutableList.of(compensationColumnsEquiPred,
                 otherCompensationPred)));
 
@@ -211,8 +212,8 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
         .filter(simplify.simplifyUnknownAsFalse(queryCompensationPred))
         .build();
     if (unionRewritingPullProgram != null) {
-      rewrittenPlan = newNode.copy(
-          newNode.getTraitSet(), ImmutableList.of(rewrittenPlan));
+      rewrittenPlan = /*X*/
+          newNode.copy(newNode.getTraitSet(), ImmutableList.of(rewrittenPlan));
     }
     if (topProject != null) {
       return topProject.copy(topProject.getTraitSet(), ImmutableList.of(rewrittenPlan));
