@@ -236,8 +236,9 @@ public class SqlValidatorUtil {
       RelDataType sourceRowType,
       Map<Integer, RelDataTypeField> indexToField) {
     ImmutableBitSet source = /*X*/
-        ImmutableBitSet.of(Util.transform(sourceRowType.getFieldList(),
-            RelDataTypeField::getIndex));
+        ImmutableBitSet.of(
+            Util.transform(sourceRowType.getFieldList(),
+                RelDataTypeField::getIndex));
     // checkerframework: found   : Set<@KeyFor("indexToField") Integer>
     //noinspection RedundantCast
     ImmutableBitSet target =

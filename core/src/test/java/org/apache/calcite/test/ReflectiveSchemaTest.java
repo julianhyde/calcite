@@ -237,12 +237,19 @@ public class ReflectiveSchemaTest {
             ImmutableList.of("s", "null_emps"), null));
     rootSchema.add("hr", new ReflectiveSchema(new HrSchema()));
     final Statement statement = connection.createStatement();
+
+    // "hr_emps" -> "hr"."emps", 4 rows
     ResultSet resultSet =
         statement.executeQuery("select * from \"s\".\"hr_emps\"");
-    assertEquals(4, count(resultSet)); // "hr_emps" -> "hr"."emps", 4 rows
-    resultSet = statement.executeQuery("select * from \"s\".\"s_emps\""); // "s_emps" -> "s"."emps", 3 rows
+    assertEquals(4, count(resultSet));
+
+    // "s_emps" -> "s"."emps", 3 rows
+    resultSet =
+        statement.executeQuery("select * from \"s\".\"s_emps\"");
     assertEquals(3, count(resultSet));
-    resultSet = statement.executeQuery("select * from \"s\".\"null_emps\""); // "null_emps" -> "s"."emps", 3
+
+    // "null_emps" -> "s"."emps", 3
+    resultSet = statement.executeQuery("select * from \"s\".\"null_emps\"");
     assertEquals(3, count(resultSet));
     statement.close();
   }

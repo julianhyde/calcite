@@ -59,11 +59,13 @@ class SqlTypeFixture {
   final RelDataType arrayOfArrayFloat =
       notNullable(typeFactory.createArrayType(arrayFloat, -1));
   final RelDataType structOfInt =
-      notNullable(typeFactory.createStructType(
-          ImmutableList.of(sqlInt, sqlInt), ImmutableList.of("i", "j")));
+      notNullable(
+          typeFactory.createStructType(
+              ImmutableList.of(sqlInt, sqlInt), ImmutableList.of("i", "j")));
   final RelDataType structOfIntNullable =
-      nullable(typeFactory.createStructType(
-          ImmutableList.of(sqlInt, sqlInt), ImmutableList.of("i", "j")));
+      nullable(
+          typeFactory.createStructType(
+              ImmutableList.of(sqlInt, sqlInt), ImmutableList.of("i", "j")));
   final RelDataType mapOfInt =
       notNullable(typeFactory.createMapType(sqlInt, sqlInt));
   final RelDataType mapOfIntNullable =

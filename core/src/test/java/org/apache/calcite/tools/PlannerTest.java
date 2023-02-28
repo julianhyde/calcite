@@ -1474,7 +1474,8 @@ class PlannerTest {
             ImmutableList.of());
     final String plan = toString(output);
     assertThat(plan,
-        equalTo("EnumerableCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{7}])\n"
+        equalTo("EnumerableCorrelate(correlation=[$cor0], joinType=[inner], "
+            + "requiredColumns=[{7}])\n"
             + "  EnumerableUnion(all=[true])\n"
             + "    EnumerableTableScan(table=[[scott, EMP]])\n"
             + "    EnumerableTableScan(table=[[scott, EMP]])\n"

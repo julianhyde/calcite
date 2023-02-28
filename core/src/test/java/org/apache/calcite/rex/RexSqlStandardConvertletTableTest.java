@@ -32,12 +32,10 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Closer;
 import org.apache.calcite.util.TestUtil;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
-import static org.hamcrest.core.Is.is;
 
 /**
  * Unit test for {@link org.apache.calcite.rex.RexSqlStandardConvertletTable}.

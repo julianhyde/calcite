@@ -668,9 +668,11 @@ public class RelToSqlConverter extends SqlImplementor
     if (!hints.isEmpty()) {
       SqlParserPos pos = identifier.getParserPosition();
       node = /*Y*/
-          new SqlTableRef(
-              pos, identifier, SqlNodeList.of(pos, hints.stream().map(h -> RelToSqlConverter.toSqlHint(h, pos))
-              .collect(Collectors.toList())));
+          new SqlTableRef(pos, identifier,
+              SqlNodeList.of(pos,
+                  hints.stream()
+                      .map(h -> RelToSqlConverter.toSqlHint(h, pos))
+                      .collect(Collectors.toList())));
     } else {
       node = identifier;
     }

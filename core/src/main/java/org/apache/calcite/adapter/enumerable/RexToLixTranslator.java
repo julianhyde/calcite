@@ -323,7 +323,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         convert = /*X*/
             RexImpTable.optimize2(operand,
                 Expressions.call(
-                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
+                    BuiltInMethod
+                        .TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE
+                        .method,
                     operand));
         break;
       default:
@@ -415,7 +417,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         convert = /*X*/
             RexImpTable.optimize2(operand,
                 Expressions.call(
-                    BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                    BuiltInMethod
+                        .TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE
+                        .method,
                     Expressions.call(BuiltInMethod.UNIX_DATE_TO_STRING.method,
                         Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
                     operand));

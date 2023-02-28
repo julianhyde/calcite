@@ -36,11 +36,10 @@ import com.google.common.collect.ImmutableSortedMultiset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 import static org.apache.calcite.sql.SqlUtil.stripAs;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Scope for resolving identifiers within a SELECT statement that has a

@@ -310,7 +310,8 @@ class RelOptRulesTest extends RelOptTestBase {
    * FilterProjectTransposeRule generates wrong traitSet when copyFilter/Project is true</a>. */
   @Test void testFilterProjectTransposeRule() {
     List<RelOptRule> rules = /*X*/
-        Arrays.asList(CoreRules.FILTER_PROJECT_TRANSPOSE, // default: copyFilter=true, copyProject=true
+        Arrays.asList(
+            CoreRules.FILTER_PROJECT_TRANSPOSE, // default: copyFilter=true, copyProject=true
             CoreRules.FILTER_PROJECT_TRANSPOSE.config
                 .withOperandFor(Filter.class,
                     filter -> !RexUtil.containsCorrelation(filter.getCondition()),

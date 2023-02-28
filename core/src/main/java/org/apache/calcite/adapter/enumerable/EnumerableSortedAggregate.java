@@ -218,8 +218,8 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
     final Expression comparator = /*X*/
         keyPhysType.generateComparator(
             requireNonNull(getTraitSet().getCollation(),
-            () -> "getTraitSet().getCollation() is null, current traits are "
-                + getTraitSet()));
+                () -> "getTraitSet().getCollation() is null, current traits are "
+                    + getTraitSet()));
 
     final Expression resultSelector_ =
         builder.append("resultSelector",

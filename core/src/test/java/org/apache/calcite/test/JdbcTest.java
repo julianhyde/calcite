@@ -5851,7 +5851,8 @@ public class JdbcTest {
 
         // views only
         try (ResultSet r = /*Y*/
-                 metaData.getTables(null, "adhoc", null, new String[]{Schema.TableType.VIEW.jdbcName})) {
+                 metaData.getTables(null, "adhoc", null,
+                     new String[]{Schema.TableType.VIEW.jdbcName})) {
           assertEquals(
               "TABLE_CAT=null; TABLE_SCHEM=adhoc; TABLE_NAME=V; TABLE_TYPE=VIEW; REMARKS=null; TYPE_CAT=null; TYPE_SCHEM=null; TYPE_NAME=null; SELF_REFERENCING_COL_NAME=null; REF_GENERATION=null\n",
               CalciteAssert.toString(r));

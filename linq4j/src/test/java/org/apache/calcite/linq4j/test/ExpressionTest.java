@@ -61,6 +61,7 @@ import static org.apache.calcite.linq4j.test.BlockBuilderBase.ONE;
 import static org.apache.calcite.linq4j.test.BlockBuilderBase.TWO;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -980,25 +981,24 @@ public class ExpressionTest {
   }
 
   @Test void testWriteWhile() {
-    DeclarationStatement xDecl;
-    DeclarationStatement yDecl;
+    DeclarationStatement xDecl =
+        Expressions.declare(0, "x", Expressions.constant(10));
+    DeclarationStatement yDecl =
+        Expressions.declare(0, "y", Expressions.constant(0));
     Node node =
-        Expressions.block(
-            xDecl = Expressions.declare(0, "x", Expressions.constant(10)),
-            yDecl = Expressions.declare(0, "y", Expressions.constant(0)),
+        Expressions.block(xDecl, yDecl,
             Expressions.while_(
                 Expressions.lessThan(xDecl.parameter, Expressions.constant(5)),
                 Expressions.statement(
                     Expressions.preIncrementAssign(yDecl.parameter))));
-    assertEquals(
-        "{\n"
-            + "  int x = 10;\n"
-            + "  int y = 0;\n"
-            + "  while (x < 5) {\n"
-            + "    ++y;\n"
-            + "  }\n"
-            + "}\n",
-        Expressions.toString(node));
+    assertThat(node,
+        hasToString("{\n"
+                + "  int x = 10;\n"
+                + "  int y = 0;\n"
+                + "  while (x < 5) {\n"
+                + "    ++y;\n"
+                + "  }\n"
+                + "}\n"));
   }
 
   @Test void testWriteTryCatchFinally() {

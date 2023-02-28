@@ -26,7 +26,6 @@ import org.apache.calcite.runtime.Resources.StringProp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Properties;
 
 import static java.util.Objects.requireNonNull;

@@ -431,7 +431,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
       final RelDataType keyType = /*X*/
           requireNonNull(
               typeFactory.leastRestrictive(ImmutableList.of(leftType, rightType)),
-          () -> "leastRestrictive returns null for " + leftType + " and " + rightType);
+              () -> "leastRestrictive returns null for " + leftType
+                  + " and " + rightType);
       final Type keyClass = typeFactory.getJavaClass(keyType);
       leftExpressions.add(
           EnumUtils.convert(
