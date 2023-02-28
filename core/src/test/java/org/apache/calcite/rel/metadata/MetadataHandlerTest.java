@@ -36,8 +36,8 @@ class MetadataHandlerTest {
   }
 
   @Test void getDefMethodInHandlerIsIgnored() {
-    Method[] methods = MetadataHandler.handlerMethods(
-        MetadataHandlerWithGetDefMethodOnly.class);
+    Method[] methods = /*X*/
+        MetadataHandler.handlerMethods(MetadataHandlerWithGetDefMethodOnly.class);
 
     assertThat(methods, is(emptyArray()));
   }
@@ -49,8 +49,8 @@ class MetadataHandlerTest {
   }
 
   @Test void synthenticMethodInHandlerIsIgnored() {
-    Method[] methods = MetadataHandler.handlerMethods(
-        TestMetadataHandlers.handlerClassWithSyntheticMethod());
+    Method[] methods = /*X*/
+        MetadataHandler.handlerMethods(TestMetadataHandlers.handlerClassWithSyntheticMethod());
 
     assertThat(methods, is(emptyArray()));
   }

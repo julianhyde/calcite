@@ -410,8 +410,8 @@ public class TypeCoercionImpl extends AbstractTypeCoercion {
           validator.deriveType(
               scope, node));
     }
-    SqlNode elseOp = requireNonNull(caseCall.getElseOperand(),
-        () -> "getElseOperand() is null for " + caseCall);
+    SqlNode elseOp = /*Y*/
+        requireNonNull(caseCall.getElseOperand(), () -> "getElseOperand() is null for " + caseCall);
     RelDataType elseOpType = validator.deriveType(scope, elseOp);
     argTypes.add(elseOpType);
     // Entering this method means we have already got a wider type, recompute it here
@@ -505,8 +505,8 @@ public class TypeCoercionImpl extends AbstractTypeCoercion {
           }
         };
 
-        RelDataType widenType = commonTypeForBinaryComparison(columnIthTypes.get(0),
-            columnIthTypes.get(1));
+        RelDataType widenType = /*Y*/
+            commonTypeForBinaryComparison(columnIthTypes.get(0), columnIthTypes.get(1));
         if (widenType == null) {
           widenType = getTightestCommonType(columnIthTypes.get(0), columnIthTypes.get(1));
         }
@@ -610,8 +610,8 @@ public class TypeCoercionImpl extends AbstractTypeCoercion {
           return false;
         }
         // Column list operand type is not supported now.
-        coerced = coerceOperandType(scope, (SqlCall) operand, 0,
-            paramTypes.get(formalIndex)) || coerced;
+        coerced = /*Y*/
+            coerceOperandType(scope, (SqlCall) operand, 0, paramTypes.get(formalIndex)) || coerced;
       } else {
         coerced = coerceOperandType(scope, call, i, paramTypes.get(i)) || coerced;
       }

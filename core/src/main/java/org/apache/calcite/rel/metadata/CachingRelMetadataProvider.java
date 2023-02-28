@@ -73,8 +73,8 @@ public class CachingRelMetadataProvider implements RelMetadataProvider {
     // TODO jvs 30-Mar-2006: Use meta-metadata to decide which metadata
     // query results can stay fresh until the next Ice Age.
     return (rel, mq) -> {
-      final Metadata metadata = requireNonNull(function.bind(rel, mq),
-          () -> "metadata must not be null, relClass=" + relClass
+      final Metadata metadata = /*Y*/
+          requireNonNull(function.bind(rel, mq), () -> "metadata must not be null, relClass=" + relClass
               + ", metadataClass=" + metadataClass);
       return metadataClass.cast(
           Proxy.newProxyInstance(metadataClass.getClassLoader(),

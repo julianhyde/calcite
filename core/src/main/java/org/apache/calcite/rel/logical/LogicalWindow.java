@@ -144,8 +144,8 @@ public final class LogicalWindow extends Window {
           return ref;
         }
         constants.add(literal);
-        ref = new RexInputRef(constantPool.size() + inputFieldCount,
-            literal.getType());
+        ref = /*Y*/
+            new RexInputRef(constantPool.size() + inputFieldCount, literal.getType());
         constantPool.put(literal, ref);
         return ref;
       }

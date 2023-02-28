@@ -187,8 +187,8 @@ public class RelMdPredicates
     final List<RexNode> projectPullUpPredicates = new ArrayList<>();
 
     ImmutableBitSet.Builder columnsMappedBuilder = ImmutableBitSet.builder();
-    Mapping m = Mappings.create(MappingType.PARTIAL_FUNCTION,
-        input.getRowType().getFieldCount(),
+    Mapping m = /*Y*/
+        Mappings.create(MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(),
         project.getRowType().getFieldCount());
 
     for (Ord<RexNode> expr : Ord.zip(project.getProjects())) {
@@ -355,8 +355,8 @@ public class RelMdPredicates
       // no rows!) but not on the output (there is one row).
       return RelOptPredicateList.EMPTY;
     }
-    Mapping m = Mappings.create(MappingType.PARTIAL_FUNCTION,
-        input.getRowType().getFieldCount(), agg.getRowType().getFieldCount());
+    Mapping m = /*Y*/
+        Mappings.create(MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(), agg.getRowType().getFieldCount());
 
     int i = 0;
     for (int j : groupKeys) {
@@ -571,12 +571,12 @@ public class RelMdPredicates
       nFieldsLeft = joinRel.getLeft().getRowType().getFieldList().size();
       nFieldsRight = joinRel.getRight().getRowType().getFieldList().size();
       nSysFields = joinRel.getSystemFieldList().size();
-      leftFieldsBitSet = ImmutableBitSet.range(nSysFields,
-          nSysFields + nFieldsLeft);
-      rightFieldsBitSet = ImmutableBitSet.range(nSysFields + nFieldsLeft,
-          nSysFields + nFieldsLeft + nFieldsRight);
-      allFieldsBitSet = ImmutableBitSet.range(0,
-          nSysFields + nFieldsLeft + nFieldsRight);
+      leftFieldsBitSet = /*Y*/
+          ImmutableBitSet.range(nSysFields, nSysFields + nFieldsLeft);
+      rightFieldsBitSet = /*Y*/
+          ImmutableBitSet.range(nSysFields + nFieldsLeft, nSysFields + nFieldsLeft + nFieldsRight);
+      allFieldsBitSet = /*Y*/
+          ImmutableBitSet.range(0, nSysFields + nFieldsLeft + nFieldsRight);
 
       exprFields = new HashMap<>();
       allExprs = new HashSet<>();
@@ -763,8 +763,8 @@ public class RelMdPredicates
     }
 
     Iterable<Mapping> mappings(final RexNode predicate) {
-      final ImmutableBitSet fields = requireNonNull(exprFields.get(predicate),
-          () -> "exprFields.get(predicate) is null for " + predicate);
+      final ImmutableBitSet fields = /*Y*/
+          requireNonNull(exprFields.get(predicate), () -> "exprFields.get(predicate) is null for " + predicate);
       if (fields.cardinality() == 0) {
         return Collections.emptyList();
       }
@@ -780,12 +780,12 @@ public class RelMdPredicates
 
     @SuppressWarnings("JdkObsolete")
     private void markAsEquivalent(int p1, int p2) {
-      BitSet b = requireNonNull(equivalence.get(p1),
-          () -> "equivalence.get(p1) for " + p1);
+      BitSet b = /*Y*/
+          requireNonNull(equivalence.get(p1), () -> "equivalence.get(p1) for " + p1);
       b.set(p2);
 
-      b = requireNonNull(equivalence.get(p2),
-          () -> "equivalence.get(p2) for " + p2);
+      b = /*Y*/
+          requireNonNull(equivalence.get(p2), () -> "equivalence.get(p2) for " + p2);
       b.set(p1);
     }
 
@@ -861,8 +861,8 @@ public class RelMdPredicates
             .nextSetBit(i + 1), j++) {
           columns[j] = i;
           int fieldIndex = i;
-          columnSets[j] = requireNonNull(equivalence.get(i),
-              () -> "equivalence.get(i) is null for " + fieldIndex + ", " + equivalence);
+          columnSets[j] = /*Y*/
+              requireNonNull(equivalence.get(i), () -> "equivalence.get(i) is null for " + fieldIndex + ", " + equivalence);
           iterationIdx[j] = 0;
         }
         firstCall = true;
@@ -907,8 +907,8 @@ public class RelMdPredicates
       }
 
       private void initializeMapping() {
-        nextMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
-            nSysFields + nFieldsLeft + nFieldsRight,
+        nextMapping = /*Y*/
+            Mappings.create(MappingType.PARTIAL_FUNCTION, nSysFields + nFieldsLeft + nFieldsRight,
             nSysFields + nFieldsLeft + nFieldsRight);
         for (int i = 0; i < columnSets.length; i++) {
           BitSet c = columnSets[i];

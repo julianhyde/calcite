@@ -57,8 +57,8 @@ public class KafkaTableFactory implements TableFactory<KafkaStreamTable> {
       } catch (InstantiationException | InvocationTargetException
           | IllegalAccessException | ClassNotFoundException
           | NoSuchMethodException e) {
-        final String details = String.format(Locale.ROOT,
-            "Failed to create table '%s' with configuration:\n"
+        final String details = /*Y*/
+            String.format(Locale.ROOT, "Failed to create table '%s' with configuration:\n"
                 + "'%s'\n"
                 + "KafkaRowConverter '%s' is invalid",
             name, operand, rowConverterClass);

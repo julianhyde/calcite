@@ -242,8 +242,8 @@ final class ElasticsearchTransport {
       try (InputStream is = response.getEntity().getContent()) {
         return mapper.readValue(is, klass);
       } catch (IOException e) {
-        final String message = String.format(Locale.ROOT,
-            "Couldn't parse HTTP response %s into %s", response, klass);
+        final String message = /*Y*/
+            String.format(Locale.ROOT, "Couldn't parse HTTP response %s into %s", response, klass);
         throw new UncheckedIOException(message, e);
       }
     }
@@ -287,8 +287,8 @@ final class ElasticsearchTransport {
       if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
         final String error = EntityUtils.toString(response.getEntity());
 
-        final String message = String.format(Locale.ROOT,
-            "Error while querying Elastic (on %s/%s) status: %s\nPayload:\n%s\nError:\n%s\n",
+        final String message = /*Y*/
+            String.format(Locale.ROOT, "Error while querying Elastic (on %s/%s) status: %s\nPayload:\n%s\nError:\n%s\n",
             response.getHost(), response.getRequestLine(),
             response.getStatusLine(), payload, error);
         throw new RuntimeException(message);

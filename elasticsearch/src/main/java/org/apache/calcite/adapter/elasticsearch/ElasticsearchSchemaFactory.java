@@ -106,16 +106,16 @@ public class ElasticsearchSchemaFactory implements SchemaFactory {
       List<HttpHost> hosts;
 
       if (map.containsKey("hosts")) {
-        final List<String> configHosts = mapper.readValue((String) map.get("hosts"),
-                new TypeReference<List<String>>() { });
+        final List<String> configHosts = /*Y*/
+                mapper.readValue((String) map.get("hosts"), new TypeReference<List<String>>() { });
 
         hosts = configHosts
                 .stream()
                 .map(host -> HttpHost.create(host))
                 .collect(Collectors.toList());
       } else if (map.containsKey("coordinates")) {
-        final Map<String, Integer> coordinates = mapper.readValue((String) map.get("coordinates"),
-                new TypeReference<Map<String, Integer>>() { });
+        final Map<String, Integer> coordinates = /*Y*/
+                mapper.readValue((String) map.get("coordinates"), new TypeReference<Map<String, Integer>>() { });
 
         hosts =  coordinates
                 .entrySet()

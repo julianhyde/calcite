@@ -488,8 +488,8 @@ public class RexUtil {
     final SqlTypeName name1 = type1.getSqlTypeName();
     final SqlTypeName name2 = type2.getSqlTypeName();
     final RelDataType type1Final = type1;
-    SqlTypeFamily family = requireNonNull(name1.getFamily(),
-        () -> "SqlTypeFamily is null for type " + type1Final + ", SqlTypeName " + name1);
+    SqlTypeFamily family = /*Y*/
+        requireNonNull(name1.getFamily(), () -> "SqlTypeFamily is null for type " + type1Final + ", SqlTypeName " + name1);
     if (family == name2.getFamily()) {
       switch (family) {
       case NUMERIC:
@@ -1155,8 +1155,8 @@ public class RexUtil {
       @Nullable List<? extends @Nullable String> names,
       SqlValidatorUtil.@Nullable Suggester suggester) {
     if (names != null && suggester != null) {
-      names = SqlValidatorUtil.uniquify(names, suggester,
-          typeFactory.getTypeSystem().isSchemaCaseSensitive());
+      names = /*Y*/
+          SqlValidatorUtil.uniquify(names, suggester, typeFactory.getTypeSystem().isSchemaCaseSensitive());
     }
     final RelDataTypeFactory.Builder builder = typeFactory.builder();
     for (int i = 0; i < exprs.size(); i++) {
@@ -2155,8 +2155,8 @@ public class RexUtil {
     case EQUALS:
       final RexCall call = (RexCall) e;
       if (call.getOperands().get(1) instanceof RexLiteral) {
-        notTerms = Util.filter(notTerms,
-            e2 -> {
+        notTerms = /*Y*/
+            Util.filter(notTerms, e2 -> {
               switch (e2.getKind()) {
               case EQUALS:
                 RexCall call2 = (RexCall) e2;

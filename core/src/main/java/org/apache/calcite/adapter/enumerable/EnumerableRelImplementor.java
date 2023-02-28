@@ -126,8 +126,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
         Expression e = null;
         for (Statement statement : result.block.statements) {
           if (statement instanceof GotoStatement) {
-            e = bb.append("v",
-                requireNonNull(((GotoStatement) statement).expression, "expression"));
+            e = /*Y*/
+                bb.append("v", requireNonNull(((GotoStatement) statement).expression, "expression"));
           } else {
             bb.add(statement);
           }
@@ -137,8 +137,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
               Expressions.return_(null,
                   Expressions.call(null, BuiltInMethod.SLICE0.method, e)));
         }
-        result = new EnumerableRel.Result(bb.toBlock(), result.physType,
-            JavaRowFormat.SCALAR);
+        result = /*Y*/
+            new EnumerableRel.Result(bb.toBlock(), result.physType, JavaRowFormat.SCALAR);
       }
       break;
     default:
@@ -334,8 +334,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
         final Method method = (field.nullable()
             ? BuiltInMethod.COMPARE_NULLS_LAST
             : BuiltInMethod.COMPARE).method;
-        compareCall = Expressions.call(method.getDeclaringClass(),
-            method.getName(),
+        compareCall = /*Y*/
+            Expressions.call(method.getDeclaringClass(), method.getName(),
             Expressions.field(thisParameter, field),
             Expressions.field(thatParameter, field));
       } catch (RuntimeException e) {

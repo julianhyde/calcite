@@ -394,8 +394,8 @@ public class RexBuilder {
             lowerBound,
             upperBound,
             rows);
-    final RexOver over = new RexOver(type, operator, exprs, window,
-        distinct, ignoreNulls);
+    final RexOver over = /*Y*/
+        new RexOver(type, operator, exprs, window, distinct, ignoreNulls);
     RexNode result = over;
 
     // This should be correct but need time to go over test results.
@@ -713,8 +713,8 @@ public class RexBuilder {
   }
 
   private RexNode makeCastBooleanToExact(RelDataType toType, RexNode exp) {
-    final RexNode casted = makeCall(SqlStdOperatorTable.CASE,
-        exp,
+    final RexNode casted = /*Y*/
+        makeCall(SqlStdOperatorTable.CASE, exp,
         makeExactLiteral(BigDecimal.ONE, toType),
         makeZeroLiteral(toType));
     if (!exp.getType().isNullable()) {
@@ -731,8 +731,8 @@ public class RexBuilder {
     final TimeUnit baseUnit = baseUnit(exp.getType().getSqlTypeName());
     final BigDecimal multiplier = baseUnit.multiplier;
     final BigDecimal divider = endUnit.multiplier;
-    RexNode value = multiplyDivide(decodeIntervalOrDecimal(exp),
-        multiplier, divider);
+    RexNode value = /*Y*/
+        multiplyDivide(decodeIntervalOrDecimal(exp), multiplier, divider);
     return ensureType(toType, value, false);
   }
 
@@ -1363,8 +1363,8 @@ public class RexBuilder {
         final List<RelDataType> types = ranges.stream()
             .map(RexNode::getType)
             .collect(Collectors.toList());
-        RelDataType sargType = Objects.requireNonNull(typeFactory.leastRestrictive(types),
-            () -> "Can't find leastRestrictive type for SARG among " + types);
+        RelDataType sargType = /*Y*/
+            Objects.requireNonNull(typeFactory.leastRestrictive(types), () -> "Can't find leastRestrictive type for SARG among " + types);
         return makeCall(SqlStdOperatorTable.SEARCH,
             arg,
             makeSearchArgumentLiteral(sarg, sargType));
@@ -1405,8 +1405,8 @@ public class RexBuilder {
               ImmutableRangeSet.<Comparable>of(
                   Range.closed(lowerValue, upperValue)));
       List<RelDataType> types = ImmutableList.of(lower.getType(), upper.getType());
-      RelDataType sargType = Objects.requireNonNull(typeFactory.leastRestrictive(types),
-          () -> "Can't find leastRestrictive type for SARG among " + types);
+      RelDataType sargType = /*Y*/
+          Objects.requireNonNull(typeFactory.leastRestrictive(types), () -> "Can't find leastRestrictive type for SARG among " + types);
       return makeCall(SqlStdOperatorTable.SEARCH, arg,
           makeSearchArgumentLiteral(sarg, sargType));
     }

@@ -156,8 +156,8 @@ public class Programs {
   public static Program of(final HepProgram hepProgram, final boolean noDag,
       final RelMetadataProvider metadataProvider) {
     return (planner, rel, requiredOutputTraits, materializations, lattices) -> {
-      final HepPlanner hepPlanner = new HepPlanner(hepProgram,
-          null, noDag, null, RelOptCostImpl.FACTORY);
+      final HepPlanner hepPlanner = /*Y*/
+          new HepPlanner(hepProgram, null, noDag, null, RelOptCostImpl.FACTORY);
 
       List<RelMetadataProvider> list = new ArrayList<>();
       if (metadataProvider != null) {

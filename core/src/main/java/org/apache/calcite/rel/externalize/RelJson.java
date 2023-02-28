@@ -630,8 +630,8 @@ public class RelJson {
       map.put("type", windowBound.isPreceding() ? "UNBOUNDED_PRECEDING" : "UNBOUNDED_FOLLOWING");
     } else {
       map.put("type", windowBound.isPreceding() ? "PRECEDING" : "FOLLOWING");
-      RexNode offset = requireNonNull(windowBound.getOffset(),
-          () -> "getOffset for window bound " + windowBound);
+      RexNode offset = /*Y*/
+          requireNonNull(windowBound.getOffset(), () -> "getOffset for window bound " + windowBound);
       map.put("offset", toJson(offset));
     }
     return map;

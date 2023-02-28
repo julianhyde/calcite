@@ -107,8 +107,8 @@ public class Interpreter extends AbstractEnumerable<@Nullable Object[]>
 
   @Override public Enumerator<@Nullable Object[]> enumerator() {
     start();
-    final NodeInfo nodeInfo = requireNonNull(nodes.get(rootRel),
-        () -> "nodeInfo for " + rootRel);
+    final NodeInfo nodeInfo = /*Y*/
+        requireNonNull(nodes.get(rootRel), () -> "nodeInfo for " + rootRel);
     final Enumerator<Row> rows;
     if (nodeInfo.rowEnumerable != null) {
       rows = nodeInfo.rowEnumerable.enumerator();

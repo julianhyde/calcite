@@ -1571,8 +1571,8 @@ public class SpatialTypeFunctions {
           if (point) {
             final double xCurrent = minX + (x + 0.5D) * deltaX;
             final double yCurrent = minY + (y + 0.5D) * deltaY;
-            geom = ST_MakePoint(BigDecimal.valueOf(xCurrent),
-                BigDecimal.valueOf(yCurrent));
+            geom = /*Y*/
+                ST_MakePoint(BigDecimal.valueOf(xCurrent), BigDecimal.valueOf(yCurrent));
           } else {
             final double left = minX + x * deltaX;
             final double right = left + deltaX;

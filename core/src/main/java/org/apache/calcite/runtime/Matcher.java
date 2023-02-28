@@ -122,8 +122,8 @@ public class Matcher<E> {
 
           for (DeterministicAutomaton.Transition transition : transitions) {
             // System.out.println("Append new transition to ");
-            final PartialMatch<E> newMatch = pm.append(transition.symbol,
-                rows.get(), transition.toState);
+            final PartialMatch<E> newMatch = /*Y*/
+                pm.append(transition.symbol, rows.get(), transition.toState);
             newMatches.add(newMatch);
           }
         }
@@ -137,8 +137,8 @@ public class Matcher<E> {
                 .collect(Collectors.toList());
 
         for (DeterministicAutomaton.Transition transition : transitions) {
-          final PartialMatch<E> newMatch = new PartialMatch<>(-1L,
-              ImmutableList.of(transition.symbol), ImmutableList.of(rows.get()),
+          final PartialMatch<E> newMatch = /*Y*/
+              new PartialMatch<>(-1L, ImmutableList.of(transition.symbol), ImmutableList.of(rows.get()),
               transition.toState);
           newMatches.add(newMatch);
         }

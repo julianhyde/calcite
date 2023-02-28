@@ -361,8 +361,8 @@ class SqlHintsConverterTest {
     final SqlInsert insert = (SqlInsert) sql(sql).parseQuery();
     assert insert.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) insert.getTargetTable();
-    List<RelHint> hints = SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
-        (SqlNodeList) tableRef.getOperandList().get(1));
+    List<RelHint> hints = /*Y*/
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
         Arrays.asList(
           HintTools.PROPS_HINT,
@@ -377,8 +377,8 @@ class SqlHintsConverterTest {
     final SqlUpdate sqlUpdate = (SqlUpdate) sql(sql).parseQuery();
     assert sqlUpdate.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) sqlUpdate.getTargetTable();
-    List<RelHint> hints = SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
-        (SqlNodeList) tableRef.getOperandList().get(1));
+    List<RelHint> hints = /*Y*/
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
         Arrays.asList(
           HintTools.PROPS_HINT,
@@ -392,8 +392,8 @@ class SqlHintsConverterTest {
     final SqlDelete sqlDelete = (SqlDelete) sql(sql).parseQuery();
     assert sqlDelete.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) sqlDelete.getTargetTable();
-    List<RelHint> hints = SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
-        (SqlNodeList) tableRef.getOperandList().get(1));
+    List<RelHint> hints = /*Y*/
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
         Arrays.asList(
           HintTools.PROPS_HINT,
@@ -416,8 +416,8 @@ class SqlHintsConverterTest {
     final SqlMerge sqlMerge = (SqlMerge) sql(sql1).parseQuery();
     assert sqlMerge.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) sqlMerge.getTargetTable();
-    List<RelHint> hints = SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
-        (SqlNodeList) tableRef.getOperandList().get(1));
+    List<RelHint> hints = /*Y*/
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
         Arrays.asList(
             HintTools.PROPS_HINT,
@@ -496,8 +496,8 @@ class SqlHintsConverterTest {
         .hintOption("DEPT")
         .build();
     // Validate Volcano planner.
-    RuleSet ruleSet = RuleSets.ofList(
-        MockEnumerableJoinRule.create(hint), // Rule to validate the hint.
+    RuleSet ruleSet = /*X*/
+        RuleSets.ofList(MockEnumerableJoinRule.create(hint), // Rule to validate the hint.
         CoreRules.FILTER_PROJECT_TRANSPOSE,
         CoreRules.FILTER_MERGE,
         CoreRules.PROJECT_MERGE,
@@ -524,8 +524,8 @@ class SqlHintsConverterTest {
         .inheritPath(0, 0)
         .build();
     // Validate Volcano planner.
-    RuleSet ruleSet = RuleSets.ofList(
-        MockEnumerableJoinRule.create(hint)); // Rule to validate the hint.
+    RuleSet ruleSet = /*X*/
+        RuleSets.ofList(MockEnumerableJoinRule.create(hint)); // Rule to validate the hint.
     ruleFixture()
         .sql(sql)
         .withTrim(true)
@@ -545,8 +545,8 @@ class SqlHintsConverterTest {
         .inheritPath(0, 0, 0)
         .build();
     // Validate Volcano planner.
-    RuleSet ruleSet = RuleSets.ofList(
-        MockEnumerableJoinRule.create(hint)); // Rule to validate the hint.
+    RuleSet ruleSet = /*X*/
+        RuleSets.ofList(MockEnumerableJoinRule.create(hint)); // Rule to validate the hint.
     ruleFixture()
         .sql(sql)
         .withTrim(true)
@@ -583,8 +583,8 @@ class SqlHintsConverterTest {
     final String sql = "select /*+ use_merge_join(emp, dept) */\n"
         + "ename, job, sal, dept.name\n"
         + "from emp join dept on emp.deptno = dept.deptno";
-    RuleSet ruleSet = RuleSets.ofList(
-        EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
+    RuleSet ruleSet = /*X*/
+        RuleSets.ofList(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
         EnumerableRules.ENUMERABLE_JOIN_RULE,
         EnumerableRules.ENUMERABLE_PROJECT_RULE,
         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,

@@ -84,8 +84,8 @@ class JdbcFrontJdbcBackTest {
     that()
         .with(CalciteAssert.Config.REGULAR_PLUS_METADATA)
         .doWithConnection(connection -> {
-          try (ResultSet rset = connection.getMetaData().getTables(null, null,
-              null, new String[] {tableType})) {
+          try (ResultSet rset = /*Y*/
+              connection.getMetaData().getTables(null, null, null, new String[] {tableType})) {
             StringBuilder buf = new StringBuilder();
             while (rset.next()) {
               buf.append(rset.getString(3)).append(';');

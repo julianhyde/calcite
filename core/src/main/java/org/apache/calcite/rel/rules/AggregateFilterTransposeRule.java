@@ -104,8 +104,8 @@ public class AggregateFilterTransposeRule
         newGroupSet.cardinality());
     final RexNode newCondition =
         RexUtil.apply(mapping, filter.getCondition());
-    final Filter newFilter = filter.copy(filter.getTraitSet(),
-        newAggregate, newCondition);
+    final Filter newFilter = /*Y*/
+        filter.copy(filter.getTraitSet(), newAggregate, newCondition);
     if (allColumnsInAggregate && aggregate.getGroupType() == Group.SIMPLE) {
       // Everything needed by the filter is returned by the aggregate.
       assert newGroupSet.equals(aggregate.getGroupSet());

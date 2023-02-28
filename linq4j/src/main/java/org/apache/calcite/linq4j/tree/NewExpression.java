@@ -99,8 +99,8 @@ public class NewExpression extends Expression {
   @Override public int hashCode() {
     int result = hash;
     if (result == 0) {
-      result = Objects.hash(nodeType, super.type, type, arguments,
-          memberDeclarations);
+      result = /*Y*/
+          Objects.hash(nodeType, super.type, type, arguments, memberDeclarations);
       if (result == 0) {
         result = 1;
       }

@@ -169,8 +169,8 @@ public class RelMdExpressionLineage
     // Infer column origin expressions for given references
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
     for (int idx : inputFieldsUsed) {
-      final RexInputRef inputRef = RexInputRef.of(rel.getGroupSet().nth(idx),
-          input.getRowType().getFieldList());
+      final RexInputRef inputRef = /*Y*/
+          RexInputRef.of(rel.getGroupSet().nth(idx), input.getRowType().getFieldList());
       final Set<RexNode> originalExprs = mq.getExpressionLineage(input, inputRef);
       if (originalExprs == null) {
         // Bail out
@@ -262,8 +262,8 @@ public class RelMdExpressionLineage
         mapping.put(RexInputRef.of(idx, rel.getRowType().getFieldList()), originalExprs);
       } else {
         // Right input.
-        final RexInputRef inputRef = RexInputRef.of(idx - nLeftColumns,
-                rightInput.getRowType().getFieldList());
+        final RexInputRef inputRef = /*Y*/
+                RexInputRef.of(idx - nLeftColumns, rightInput.getRowType().getFieldList());
         final Set<RexNode> originalExprs = mq.getExpressionLineage(rightInput, inputRef);
         if (originalExprs == null) {
           // Bail out
@@ -491,8 +491,8 @@ public class RelMdExpressionLineage
       RexNode expr, ImmutableBitSet predFieldsUsed, Map<RexInputRef, Set<RexNode>> mapping,
       Map<RexInputRef, RexNode> singleMapping) {
     final @KeyFor("mapping") RexInputRef inputRef = mapping.keySet().iterator().next();
-    final Set<RexNode> replacements = requireNonNull(mapping.remove(inputRef),
-        () -> "mapping.remove(inputRef) is null for " + inputRef);
+    final Set<RexNode> replacements = /*Y*/
+        requireNonNull(mapping.remove(inputRef), () -> "mapping.remove(inputRef) is null for " + inputRef);
     Set<RexNode> result = new HashSet<>();
     assert !replacements.isEmpty();
     if (predFieldsUsed.indexOf(inputRef.getIndex()) != -1) {

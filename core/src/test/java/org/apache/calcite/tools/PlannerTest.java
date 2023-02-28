@@ -143,8 +143,8 @@ class PlannerTest {
   }
 
   @Test void testParseIdentifierMaxLengthWithIncreased() throws Exception {
-    Planner planner = getPlanner(null,
-        SqlParser.config().withIdentifierMaxLength(512));
+    Planner planner = /*Y*/
+        getPlanner(null, SqlParser.config().withIdentifierMaxLength(512));
     planner.parse("select name as "
         + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"");
   }
@@ -471,8 +471,8 @@ class PlannerTest {
 
   private void checkUnionPruning(String sql, String plan, RelOptRule... extraRules)
       throws SqlParseException, ValidationException, RelConversionException {
-    ImmutableList.Builder<RelOptRule> rules = ImmutableList.<RelOptRule>builder().add(
-        PruneEmptyRules.UNION_INSTANCE,
+    ImmutableList.Builder<RelOptRule> rules = /*X*/
+        ImmutableList.<RelOptRule>builder().add(PruneEmptyRules.UNION_INSTANCE,
         CoreRules.PROJECT_FILTER_VALUES_MERGE,
         EnumerableRules.ENUMERABLE_PROJECT_RULE,
         EnumerableRules.ENUMERABLE_FILTER_RULE,
@@ -526,8 +526,8 @@ class PlannerTest {
     RelTraitSet toTraits = relNode.getTraitSet()
         .replace(EnumerableConvention.INSTANCE);
 
-    RelNode output = program.run(planner, relNode, toTraits,
-        ImmutableList.of(), ImmutableList.of());
+    RelNode output = /*Y*/
+        program.run(planner, relNode, toTraits, ImmutableList.of(), ImmutableList.of());
 
     // Expected outcomes are:
     // 1) relation is optimized to simple VALUES
@@ -550,8 +550,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE);
     Planner planner = getPlanner(null, Programs.of(ruleSet));
-    SqlNode parse = planner.parse(
-        "select * from \"emps\" "
+    SqlNode parse = /*X*/
+        planner.parse("select * from \"emps\" "
             + "order by \"emps\".\"deptno\"");
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).project();
@@ -583,8 +583,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE);
     Planner planner = getPlanner(null, Programs.of(ruleSet));
-    SqlNode parse = planner.parse(
-        "select e.\"deptno\" from \"emps\" e "
+    SqlNode parse = /*X*/
+        planner.parse("select e.\"deptno\" from \"emps\" e "
             + "left outer join \"depts\" d "
             + " on e.\"deptno\" = d.\"deptno\" "
             + "order by e.\"deptno\" "
@@ -687,8 +687,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_WINDOW_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE,
             CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW);
-    Planner planner = getPlanner(null, SqlParser.config().withLex(Lex.JAVA),
-        Programs.of(ruleSet));
+    Planner planner = /*Y*/
+        getPlanner(null, SqlParser.config().withLex(Lex.JAVA), Programs.of(ruleSet));
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
@@ -711,8 +711,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE);
     Planner planner = getPlanner(null, Programs.of(ruleSet));
-    SqlNode parse = planner.parse(
-        "select \"empid\" from ( "
+    SqlNode parse = /*X*/
+        planner.parse("select \"empid\" from ( "
             + "select * "
             + "from \"emps\" "
             + "order by \"emps\".\"deptno\") "
@@ -734,8 +734,8 @@ class PlannerTest {
    * SQL-oriented</a>. */
   @Test void testInsertSourceRelTypeWithNullValues() throws Exception {
     Planner planner = getPlanner(null, Programs.standard());
-    SqlNode parse = planner.parse(
-        "insert into \"emps\" values(1, 1, null, 1, 1)");
+    SqlNode parse = /*X*/
+        planner.parse("insert into \"emps\" values(1, 1, null, 1, 1)");
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
     RelDataType insertSourceType = convert.getInput(0).getRowType();
@@ -812,8 +812,8 @@ class PlannerTest {
         RuleSets.ofList(
             rule2);
 
-    Planner planner = getPlanner(null, Programs.of(ruleSet1),
-        Programs.of(ruleSet2));
+    Planner planner = /*Y*/
+        getPlanner(null, Programs.of(ruleSet1), Programs.of(ruleSet2));
     SqlNode parse = planner.parse("select * from \"emps\"");
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
@@ -830,8 +830,8 @@ class PlannerTest {
   /** Tests that Hive dialect does not generate "AS". */
   @Test void testHiveDialect() throws SqlParseException {
     Planner planner = getPlanner(null);
-    SqlNode parse = planner.parse(
-        "select * from (select * from \"emps\") as t\n"
+    SqlNode parse = /*X*/
+        planner.parse("select * from (select * from \"emps\") as t\n"
             + "where \"name\" like '%e%'");
     final SqlDialect hiveDialect =
         SqlDialect.DatabaseProduct.HIVE.getDialect();
@@ -859,8 +859,8 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_PROJECT_RULE);
 
     JdbcConvention out = new JdbcConvention(null, null, "myjdbc");
-    Program program1 = Programs.ofRules(
-        MockJdbcProjectRule.create(out), MockJdbcTableRule.create(out));
+    Program program1 = /*X*/
+        Programs.ofRules(MockJdbcProjectRule.create(out), MockJdbcTableRule.create(out));
 
     Planner planner = getPlanner(null, program0, program1);
     SqlNode parse = planner.parse("select T1.\"name\" from \"emps\" as T1 ");
@@ -924,8 +924,8 @@ class PlannerTest {
       buf.append("\njoin \"depts\" as d").append(i);
       buf.append("\non d").append(i).append(".\"deptno\" = d").append(i - 1).append(".\"deptno\"");
     }
-    Planner planner = getPlanner(null,
-        Programs.heuristicJoinOrder(Programs.RULE_SET, false, 6));
+    Planner planner = /*Y*/
+        getPlanner(null, Programs.heuristicJoinOrder(Programs.RULE_SET, false, 6));
     SqlNode parse = planner.parse(buf.toString());
 
     SqlNode validate = planner.validate(parse);
@@ -1004,8 +1004,8 @@ class PlannerTest {
   }
 
   private void checkHeuristic(String sql, String expected) throws Exception {
-    Planner planner = getPlanner(null,
-        Programs.heuristicJoinOrder(Programs.RULE_SET, false, 0));
+    Planner planner = /*Y*/
+        getPlanner(null, Programs.heuristicJoinOrder(Programs.RULE_SET, false, 0));
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
@@ -1477,8 +1477,8 @@ class PlannerTest {
     final Program program = Programs.of(ruleSet);
     final RelTraitSet toTraits = relNode.getTraitSet()
         .replace(EnumerableConvention.INSTANCE);
-    final RelNode output = program.run(planner, relNode, toTraits,
-        ImmutableList.of(), ImmutableList.of());
+    final RelNode output = /*Y*/
+        program.run(planner, relNode, toTraits, ImmutableList.of(), ImmutableList.of());
     final String plan = toString(output);
     assertThat(plan,
         equalTo(

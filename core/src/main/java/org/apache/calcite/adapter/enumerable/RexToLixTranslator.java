@@ -814,14 +814,14 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
               literal.getValueAs(byte[].class),
               byte[].class));
     case GEOMETRY:
-      final Geometry geom = requireNonNull(literal.getValueAs(Geometry.class),
-          () -> "getValueAs(Geometries.Geom) for " + literal);
+      final Geometry geom = /*Y*/
+          requireNonNull(literal.getValueAs(Geometry.class), () -> "getValueAs(Geometries.Geom) for " + literal);
       final String wkt = SpatialTypeFunctions.ST_AsWKT(geom);
       return Expressions.call(null, BuiltInMethod.ST_GEOM_FROM_EWKT.method,
           Expressions.constant(wkt));
     case SYMBOL:
-      value2 = requireNonNull(literal.getValueAs(Enum.class),
-          () -> "getValueAs(Enum.class) for " + literal);
+      value2 = /*Y*/
+          requireNonNull(literal.getValueAs(Enum.class), () -> "getValueAs(Enum.class) for " + literal);
       javaClass = value2.getClass();
       break;
     default:
@@ -1210,8 +1210,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   private Result implementPrev(RexCall call) {
     final RexNode node = call.getOperands().get(0);
     final RexNode offset = call.getOperands().get(1);
-    final Expression offs = Expressions.multiply(translate(offset),
-            Expressions.constant(-1));
+    final Expression offs = /*Y*/
+            Expressions.multiply(translate(offset), Expressions.constant(-1));
     requireNonNull((EnumerableMatch.PrevInputGetter) inputGetter, "inputGetter")
         .setOffset(offs);
     return node.accept(this);
@@ -1278,8 +1278,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     final List<@Nullable Type> storageTypes = EnumUtils.internalTypes(operandList);
     // [ELSE] clause
     if (pos == operandList.size() - 1) {
-      Expression res = implementCallOperand2(operandList.get(pos),
-          storageTypes.get(pos), currentTranslator);
+      Expression res = /*Y*/
+          implementCallOperand2(operandList.get(pos), storageTypes.get(pos), currentTranslator);
       currentBlockBuilder.add(
           Expressions.statement(
               Expressions.assign(valueVariable,
@@ -1288,8 +1288,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
     // Condition code: !a_isNull && a_value
     final RexNode testerNode = operandList.get(pos);
-    final Result testerResult = implementCallOperand(testerNode,
-        storageTypes.get(pos), currentTranslator);
+    final Result testerResult = /*Y*/
+        implementCallOperand(testerNode, storageTypes.get(pos), currentTranslator);
     final Expression tester = /*X*/
         Expressions.andAlso(Expressions.not(testerResult.isNullVariable),
         testerResult.valueVariable);
@@ -1299,8 +1299,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         new BlockBuilder(true, currentBlockBuilder);
     final RexToLixTranslator ifTrueTranslator =
         currentTranslator.setBlock(ifTrueBlockBuilder);
-    final Expression ifTrueRes = implementCallOperand2(ifTrueNode,
-        storageTypes.get(pos + 1), ifTrueTranslator);
+    final Expression ifTrueRes = /*Y*/
+        implementCallOperand2(ifTrueNode, storageTypes.get(pos + 1), ifTrueTranslator);
     // Assign the value: case_when_value = ifTrueRes
     ifTrueBlockBuilder.add(
         Expressions.statement(

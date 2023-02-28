@@ -67,8 +67,8 @@ public class ChinookAvaticaServer {
     private static JdbcMeta getInstance() {
       if (instance == null) {
         try {
-          instance = new JdbcMeta(CalciteConnectionProvider.DRIVER_URL,
-              CONNECTION_PROVIDER.provideConnectionInfo());
+          instance = /*Y*/
+              new JdbcMeta(CalciteConnectionProvider.DRIVER_URL, CONNECTION_PROVIDER.provideConnectionInfo());
         } catch (SQLException | IOException e) {
           throw new RuntimeException(e);
         }
@@ -90,8 +90,8 @@ public class ChinookAvaticaServer {
     private static JdbcMeta getInstance() {
       if (instance == null) {
         try {
-          instance = new JdbcMeta(ChinookHsqldb.URI,
-              ChinookHsqldb.USER, ChinookHsqldb.PASSWORD);
+          instance = /*Y*/
+              new JdbcMeta(ChinookHsqldb.URI, ChinookHsqldb.USER, ChinookHsqldb.PASSWORD);
         } catch (SQLException e) {
           throw new RuntimeException(e);
         }

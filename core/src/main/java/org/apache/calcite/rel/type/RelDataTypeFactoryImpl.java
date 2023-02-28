@@ -477,8 +477,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       List<RelDataTypeField> fields = type.getFieldList();
       for (RelDataTypeField field : fields) {
         if (field.getIndex() != fieldList.size()) {
-          field = new RelDataTypeFieldImpl(field.getName(), fieldList.size(),
-              field.getType());
+          field = /*Y*/
+              new RelDataTypeFieldImpl(field.getName(), fieldList.size(), field.getType());
         }
         fieldList.add(field);
       }

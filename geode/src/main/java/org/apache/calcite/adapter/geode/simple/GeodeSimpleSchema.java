@@ -71,8 +71,8 @@ public class GeodeSimpleSchema extends AbstractSchema {
 
         Region region = GeodeUtils.createRegion(clientCache, regionName);
 
-        Table table = new GeodeSimpleScannableTable(regionName, autodetectRelTypeFromRegion(region),
-            clientCache);
+        Table table = /*Y*/
+            new GeodeSimpleScannableTable(regionName, autodetectRelTypeFromRegion(region), clientCache);
 
         builder.put(regionName, table);
       }

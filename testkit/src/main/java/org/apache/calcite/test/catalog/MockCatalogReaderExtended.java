@@ -74,8 +74,8 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     // constrained columns with default values on INSERT and has a single constraint on DEPTNO.
     List<String> empModifiableViewNames = /*X*/
         ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(), "EMP_MODIFIABLEVIEW");
-    TableMacro empModifiableViewMacro = MockModifiableViewRelOptTable.viewMacro(rootSchema,
-        "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER from EMPDEFAULTS"
+    TableMacro empModifiableViewMacro = /*Y*/
+        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER from EMPDEFAULTS"
             + " where DEPTNO = 20", empModifiableViewNames.subList(0, 2),
         ImmutableList.of(empModifiableViewNames.get(2)), true);
     TranslatableTable empModifiableView = empModifiableViewMacro.apply(ImmutableList.of());
@@ -89,8 +89,8 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     // and there is an `extra` extended column.
     List<String> empModifiableViewNames2 = /*X*/
         ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(), "EMP_MODIFIABLEVIEW2");
-    TableMacro empModifiableViewMacro2 = MockModifiableViewRelOptTable.viewMacro(rootSchema,
-        "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE, MGR, COMM"
+    TableMacro empModifiableViewMacro2 = /*Y*/
+        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE, MGR, COMM"
             + " from EMPDEFAULTS extend (EXTRA boolean)"
             + " where DEPTNO = 20", empModifiableViewNames2.subList(0, 2),
         ImmutableList.of(empModifiableViewNames.get(2)), true);
@@ -104,8 +104,8 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     // Same as "EMP_MODIFIABLEVIEW" except that comm is not in the view.
     List<String> empModifiableViewNames3 = /*X*/
         ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(), "EMP_MODIFIABLEVIEW3");
-    TableMacro empModifiableViewMacro3 = MockModifiableViewRelOptTable.viewMacro(rootSchema,
-        "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER from EMPDEFAULTS"
+    TableMacro empModifiableViewMacro3 = /*Y*/
+        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER from EMPDEFAULTS"
             + " where DEPTNO = 20", empModifiableViewNames3.subList(0, 2),
         ImmutableList.of(empModifiableViewNames3.get(2)), true);
     TranslatableTable empModifiableView3 = empModifiableViewMacro3.apply(ImmutableList.of());

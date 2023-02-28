@@ -172,8 +172,8 @@ public class AggregateUnionTransposeRule
     //   Union[...]
     //     Aggregate[groupSet=$1, ...]
     ImmutableBitSet groupSet = aggRel.getGroupSet();
-    Mapping topGroupMapping = Mappings.create(MappingType.INVERSE_SURJECTION,
-        union.getRowType().getFieldCount(),
+    Mapping topGroupMapping = /*Y*/
+        Mappings.create(MappingType.INVERSE_SURJECTION, union.getRowType().getFieldCount(),
         aggRel.getGroupCount());
     for (int i = 0; i < groupSet.cardinality(); i++) {
       topGroupMapping.set(groupSet.nth(i), i);

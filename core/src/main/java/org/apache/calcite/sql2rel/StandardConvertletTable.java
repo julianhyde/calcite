@@ -1472,8 +1472,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         denominator = countCasted;
       } else {
         final SqlNumericLiteral one = SqlLiteral.createExactNumeric("1", pos);
-        denominator = new SqlCase(SqlParserPos.ZERO, countCasted,
-            SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, countCasted, one)),
+        denominator = /*Y*/
+            new SqlCase(SqlParserPos.ZERO, countCasted, SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, countCasted, one)),
             SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
             SqlStdOperatorTable.MINUS.createCall(pos, countCasted, one));
       }
@@ -1604,8 +1604,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       } else {
         final SqlNumericLiteral one = SqlLiteral.createExactNumeric("1", pos);
         final SqlLiteral nullLiteral = SqlLiteral.createNull(SqlParserPos.ZERO);
-        denominator = new SqlCase(SqlParserPos.ZERO,
-            count,
+        denominator = /*Y*/
+            new SqlCase(SqlParserPos.ZERO, count,
             SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, count, one)),
             SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
             SqlStdOperatorTable.MINUS.createCall(pos, count, one));
@@ -1797,8 +1797,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       switch (library) {
       case POSTGRESQL:
         if (call.operandCount() == 2) {
-          newStart = rexBuilder.makeCall(SqlStdOperatorTable.CASE,
-              rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
+          newStart = /*Y*/
+              rexBuilder.makeCall(
+                  SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
                   oneLiteral),
               oneLiteral, start);
         } else {
@@ -1806,8 +1807,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
         break;
       case BIG_QUERY:
-        newStart = rexBuilder.makeCall(SqlStdOperatorTable.CASE,
-            rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
+        newStart = /*Y*/
+            rexBuilder.makeCall(
+                SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
                 zeroLiteral),
             oneLiteral,
             rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
@@ -1817,8 +1819,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             start);
         break;
       default:
-        newStart = rexBuilder.makeCall(SqlStdOperatorTable.CASE,
-            rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
+        newStart = /*Y*/
+            rexBuilder.makeCall(
+                SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
                 zeroLiteral),
             library == SqlLibrary.MYSQL ? valueLengthPlusOne : oneLiteral,
             rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN,
@@ -1932,8 +1935,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     RoundingMode.UNNECESSARY));
         break;
       default:
-        interval2Add = multiply(rexBuilder,
-            rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
+        interval2Add = /*Y*/
+            multiply(rexBuilder, rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
       }
 
       return rexBuilder.makeCall(SqlStdOperatorTable.DATETIME_PLUS,
@@ -1966,8 +1969,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     RoundingMode.UNNECESSARY));
         break;
       default:
-        interval2Sub = multiply(rexBuilder,
-            rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
+        interval2Sub = /*Y*/
+            multiply(rexBuilder, rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
       }
 
       return rexBuilder.makeCall(SqlInternalOperators.MINUS_DATE2,

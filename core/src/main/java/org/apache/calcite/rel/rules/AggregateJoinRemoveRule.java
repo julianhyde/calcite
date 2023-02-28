@@ -103,8 +103,8 @@ public class AggregateJoinRemoveRule
 
     RelNode node;
     if (isLeftJoin) {
-      node = aggregate.copy(aggregate.getTraitSet(), join.getLeft(),
-          aggregate.getGroupSet(), aggregate.getGroupSets(),
+      node = /*Y*/
+          aggregate.copy(aggregate.getTraitSet(), join.getLeft(), aggregate.getGroupSet(), aggregate.getGroupSets(),
           aggregate.getAggCallList());
     } else {
       final Map<Integer, Integer> map = new HashMap<>();

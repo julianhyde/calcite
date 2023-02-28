@@ -515,16 +515,16 @@ public class RexSimplify {
       case GREATER_THAN_OR_EQUAL:
       case LESS_THAN_OR_EQUAL:
         // "x = x" simplifies to "null or x is not null" (similarly <= and >=)
-        newExpr = rexBuilder.makeCall(SqlStdOperatorTable.OR,
-            rexBuilder.makeNullLiteral(e.getType()),
+        newExpr = /*Y*/
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, rexBuilder.makeNullLiteral(e.getType()),
             rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, o0));
         return simplify(newExpr, unknownAs);
       case NOT_EQUALS:
       case LESS_THAN:
       case GREATER_THAN:
         // "x != x" simplifies to "null and x is null" (similarly < and >)
-        newExpr = rexBuilder.makeCall(SqlStdOperatorTable.AND,
-            rexBuilder.makeNullLiteral(e.getType()),
+        newExpr = /*Y*/
+            rexBuilder.makeCall(SqlStdOperatorTable.AND, rexBuilder.makeNullLiteral(e.getType()),
             rexBuilder.makeCall(SqlStdOperatorTable.IS_NULL, o0));
         return simplify(newExpr, unknownAs);
       default:
@@ -671,8 +671,8 @@ public class RexSimplify {
         continue;
       }
       terms.set(i, simplify.simplify(t, unknownAs));
-      RelOptPredicateList newPredicates = simplify.predicates.union(rexBuilder,
-          RelOptPredicateList.of(rexBuilder, terms.subList(i, i + 1)));
+      RelOptPredicateList newPredicates = /*Y*/
+          simplify.predicates.union(rexBuilder, RelOptPredicateList.of(rexBuilder, terms.subList(i, i + 1)));
       simplify = simplify.withPredicates(newPredicates);
     }
     for (int i = 0; i < terms.size(); i++) {
@@ -707,8 +707,8 @@ public class RexSimplify {
       terms.set(i, t2);
       final RexNode inverse =
           simplify.simplify(isNotTrue(t2), RexUnknownAs.UNKNOWN);
-      final RelOptPredicateList newPredicates = simplify.predicates.union(rexBuilder,
-          RelOptPredicateList.of(rexBuilder, ImmutableList.of(inverse)));
+      final RelOptPredicateList newPredicates = /*Y*/
+          simplify.predicates.union(rexBuilder, RelOptPredicateList.of(rexBuilder, ImmutableList.of(inverse)));
       simplify = simplify.withPredicates(newPredicates);
     }
     for (int i = 0; i < terms.size(); i++) {
@@ -1603,8 +1603,8 @@ public class RexSimplify {
           && comparison.kind != SqlKind.NOT_EQUALS) { // not supported yet
         final C v0 = comparison.literal.getValueAs(clazz);
         if (v0 != null) {
-          final RexNode result = processRange(rexBuilder, terms, rangeTerms,
-              predicate, comparison.ref, v0, comparison.kind);
+          final RexNode result = /*Y*/
+              processRange(rexBuilder, terms, rangeTerms, predicate, comparison.ref, v0, comparison.kind);
           if (result != null) {
             // Not satisfiable
             return result;
@@ -1704,8 +1704,8 @@ public class RexSimplify {
           if (constant == null) {
             break;
           }
-          final RexNode result = processRange(rexBuilder, terms, rangeTerms,
-              term, comparison.ref, constant, comparison.kind);
+          final RexNode result = /*Y*/
+              processRange(rexBuilder, terms, rangeTerms, term, comparison.ref, constant, comparison.kind);
           if (result != null) {
             // Not satisfiable
             return result;
@@ -2371,8 +2371,8 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a <= x < b OR a < x < b
-            r = Range.range(r.lowerEndpoint(), r.lowerBoundType(),
-                    v0, BoundType.OPEN);
+            r = /*Y*/
+                    Range.range(r.lowerEndpoint(), r.lowerBoundType(), v0, BoundType.OPEN);
           } else {
             // x < b
             r = Range.lessThan(v0);
@@ -2405,8 +2405,8 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a <= x <= b OR a < x <= b
-            r = Range.range(r.lowerEndpoint(), r.lowerBoundType(),
-                    v0, BoundType.CLOSED);
+            r = /*Y*/
+                    Range.range(r.lowerEndpoint(), r.lowerBoundType(), v0, BoundType.CLOSED);
           } else {
             // x <= b
             r = Range.atMost(v0);
@@ -2440,8 +2440,8 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a < x <= b OR a < x < b
-            r = Range.range(v0, BoundType.OPEN,
-                    r.upperEndpoint(), r.upperBoundType());
+            r = /*Y*/
+                    Range.range(v0, BoundType.OPEN, r.upperEndpoint(), r.upperBoundType());
           } else {
             // x > a
             r = Range.greaterThan(v0);
@@ -2474,8 +2474,8 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a <= x <= b OR a <= x < b
-            r = Range.range(v0, BoundType.CLOSED,
-                    r.upperEndpoint(), r.upperBoundType());
+            r = /*Y*/
+                    Range.range(v0, BoundType.CLOSED, r.upperEndpoint(), r.upperBoundType());
           } else {
             // x >= a
             r = Range.atLeast(v0);

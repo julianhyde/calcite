@@ -385,8 +385,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       ImmutableBitSet fieldsUsed,
       Set<RelDataTypeField> extraFields) {
     final RexProgram rexProgram = calc.getProgram();
-    final List<RexNode> projs = Util.transform(rexProgram.getProjectList(),
-        rexProgram::expandLocalRef);
+    final List<RexNode> projs = /*Y*/
+        Util.transform(rexProgram.getProjectList(), rexProgram::expandLocalRef);
 
     RexNode conditionExpr = null;
     if (rexProgram.getCondition() != null) {
@@ -462,8 +462,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
     if (conditionExpr != null) {
       newConditionExpr = conditionExpr.accept(shuttle);
     }
-    final RexProgram newRexProgram = RexProgram.create(newInputRelNode.getRowType(),
-        newProjects, newConditionExpr, newRowType.getFieldNames(),
+    final RexProgram newRexProgram = /*Y*/
+        RexProgram.create(newInputRelNode.getRowType(), newProjects, newConditionExpr, newRowType.getFieldNames(),
         newInputRelNode.getCluster().getRexBuilder());
     final Calc newCalc = calc.copy(calc.getTraitSet(), newInputRelNode, newRexProgram);
     return result(newCalc, mapping, calc);
@@ -885,8 +885,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         relBuilder.antiJoin(newConditionExpr);
       }
       Mapping inputMapping = inputMappings.get(0);
-      mapping = Mappings.create(MappingType.INVERSE_SURJECTION,
-          join.getRowType().getFieldCount(),
+      mapping = /*Y*/
+          Mappings.create(MappingType.INVERSE_SURJECTION, join.getRowType().getFieldCount(),
           newSystemFieldCount + inputMapping.getTargetCount());
       for (int i = 0; i < newSystemFieldCount; ++i) {
         mapping.set(i, i);
@@ -1184,8 +1184,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     LogicalTableFunctionScan newTabFun = tabFun;
     if (!tabFun.getInputs().equals(newInputs)) {
-      newTabFun = tabFun.copy(tabFun.getTraitSet(), newInputs,
-          tabFun.getCall(), tabFun.getElementType(), tabFun.getRowType(),
+      newTabFun = /*Y*/
+          tabFun.copy(tabFun.getTraitSet(), newInputs, tabFun.getCall(), tabFun.getElementType(), tabFun.getRowType(),
           tabFun.getColumnMappings());
     }
     assert newTabFun.getClass() == tabFun.getClass();

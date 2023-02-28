@@ -111,8 +111,8 @@ class EnumerableMergeJoinRule extends ConverterRule {
       final RexNode nonEqui = RexUtil.composeConjunction(rexBuilder, info.nonEquiConditions);
       condition = RexUtil.composeConjunction(rexBuilder, Arrays.asList(equi, nonEqui));
     }
-    newRel = new EnumerableMergeJoin(cluster,
-        traitSet,
+    newRel = /*Y*/
+        new EnumerableMergeJoin(cluster, traitSet,
         left,
         right,
         condition,

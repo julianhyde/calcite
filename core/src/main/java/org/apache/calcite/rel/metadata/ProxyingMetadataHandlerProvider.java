@@ -66,8 +66,8 @@ public class ProxyingMetadataHandlerProvider implements MetadataHandlerProvider 
     final MetadataDef<?> def;
     try {
       field = metadataType.getField("DEF");
-      def = Objects.requireNonNull((MetadataDef<?>) field.get(null),
-          () -> "Unexpected failure. " + handlerClass);
+      def = /*Y*/
+          Objects.requireNonNull((MetadataDef<?>) field.get(null), () -> "Unexpected failure. " + handlerClass);
     } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
@@ -76,11 +76,11 @@ public class ProxyingMetadataHandlerProvider implements MetadataHandlerProvider 
     Map<String, Method> methodMap = methods.stream()
         .collect(Collectors.toMap(Method::getName, f -> f));
     InvocationHandler handler = (proxy, method, args) -> {
-      Method metadataMethod = Objects.requireNonNull(methodMap.get(method.getName()),
-          () -> "Not supported: " + method);
+      Method metadataMethod = /*Y*/
+          Objects.requireNonNull(methodMap.get(method.getName()), () -> "Not supported: " + method);
       RelNode rel = Objects.requireNonNull((RelNode) args[0], "rel must be non null");
-      RelMetadataQuery mq = Objects.requireNonNull((RelMetadataQuery) args[1],
-          "mq must be non null");
+      RelMetadataQuery mq = /*Y*/
+          Objects.requireNonNull((RelMetadataQuery) args[1], "mq must be non null");
 
       // using deprecated RelMetadataProvider method here as the non-deprecated methods completely
       // sidestep the purpose of RelMetadataProvider reflection-based functionality.

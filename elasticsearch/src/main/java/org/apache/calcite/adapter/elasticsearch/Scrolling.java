@@ -82,8 +82,8 @@ class Scrolling {
    */
   private static Iterator<ElasticsearchJson.SearchHit> flatten(
       Iterator<ElasticsearchJson.Result> results) {
-    final Iterator<Iterator<ElasticsearchJson.SearchHit>> inputs = Iterators.transform(results,
-        input -> input.searchHits().hits().iterator());
+    final Iterator<Iterator<ElasticsearchJson.SearchHit>> inputs = /*Y*/
+        Iterators.transform(results, input -> input.searchHits().hits().iterator());
     return Iterators.concat(inputs);
   }
 

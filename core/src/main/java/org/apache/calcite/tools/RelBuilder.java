@@ -2137,8 +2137,8 @@ public class RelBuilder {
         // Rename columns of child projection if desired field names are given.
         final Frame frame = stack.pop();
         final Project childProject = (Project) frame.rel;
-        final Project newInput = childProject.copy(childProject.getTraitSet(),
-            childProject.getInput(), childProject.getProjects(), rowType);
+        final Project newInput = /*Y*/
+            childProject.copy(childProject.getTraitSet(), childProject.getInput(), childProject.getProjects(), rowType);
         stack.push(new Frame(newInput.attachHints(childProject.getHints()), frame.fields));
       }
       if (input instanceof Values && fieldNameList != null) {
@@ -2835,8 +2835,8 @@ public class RelBuilder {
       // Normalize expanded versions IS NOT DISTINCT FROM so that simplifier does not
       // transform the expression to something unrecognizable
       if (condition instanceof RexCall) {
-        condition = RelOptUtil.collapseExpandedIsNotDistinctFromExpr((RexCall) condition,
-            getRexBuilder());
+        condition = /*Y*/
+            RelOptUtil.collapseExpandedIsNotDistinctFromExpr((RexCall) condition, getRexBuilder());
       }
       condition = simplifier.simplifyUnknownAsFalse(condition);
     }

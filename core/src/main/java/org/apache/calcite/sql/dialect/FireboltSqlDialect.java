@@ -194,8 +194,8 @@ public class FireboltSqlDialect extends SqlDialect {
         final SqlLiteral timeUnitNode = call.operand(1);
         final TimeUnitRange timeUnit = timeUnitNode.getValueAs(TimeUnitRange.class);
 
-        SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand(call, timeUnit.name(),
-            timeUnitNode.getParserPosition());
+        SqlCall call2 = /*Y*/
+            SqlFloorFunction.replaceTimeUnitOperand(call, timeUnit.name(), timeUnitNode.getParserPosition());
         SqlFloorFunction.unparseDatetimeFunction(writer, call2, "DATE_TRUNC", false);
         break;
 

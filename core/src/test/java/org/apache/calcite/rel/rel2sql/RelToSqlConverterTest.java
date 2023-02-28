@@ -3860,8 +3860,8 @@ class RelToSqlConverterTest {
     builder.addRuleClass(AggregateProjectMergeRule.class);
     builder.addRuleClass(AggregateJoinTransposeRule.class);
     HepPlanner hepPlanner = new HepPlanner(builder.build());
-    RuleSet rules = RuleSets.ofList(
-        CoreRules.FILTER_INTO_JOIN,
+    RuleSet rules = /*X*/
+        RuleSets.ofList(CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_CONDITION_PUSH,
         CoreRules.AGGREGATE_PROJECT_MERGE, CoreRules.AGGREGATE_JOIN_TRANSPOSE_EXTENDED);
     sql(query).withPostgresql().optimize(rules, hepPlanner).ok(expect);

@@ -86,8 +86,9 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
               tableNameExp,
               tableExp));
       // root.getRootSchema().removeTable(tableName);
-      cleanUpFunctionExp = Expressions.lambda(Function0.class,
-          Expressions.call(
+      cleanUpFunctionExp = /*Y*/
+          Expressions.lambda(
+              Function0.class, Expressions.call(
               Expressions.call(
                   implementor.getRootExpression(),
                   BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method),

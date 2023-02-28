@@ -85,8 +85,8 @@ final class Fixture extends AbstractFixture {
       .kind(StructKind.PEEK_FIELDS)
       .build();
   final RelDataType empListType = array(empRecordType);
-  final ObjectSqlType addressType = new ObjectSqlType(SqlTypeName.STRUCTURED,
-      new SqlIdentifier("ADDRESS", SqlParserPos.ZERO),
+  final ObjectSqlType addressType = /*Y*/
+      new ObjectSqlType(SqlTypeName.STRUCTURED, new SqlIdentifier("ADDRESS", SqlParserPos.ZERO),
       false,
       Arrays.asList(
           new RelDataTypeFieldImpl("STREET", 0, varchar20Type),

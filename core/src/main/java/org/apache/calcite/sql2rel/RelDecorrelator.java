@@ -856,8 +856,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
       assert newInput != null;
 
       if (!joinedInputs.contains(newInput)) {
-        final List<Integer> positions = requireNonNull(mapNewInputToOutputs.get(newInput),
-            () -> "mapNewInputToOutputs.get(" + newInput + ")");
+        final List<Integer> positions = /*Y*/
+            requireNonNull(mapNewInputToOutputs.get(newInput), () -> "mapNewInputToOutputs.get(" + newInput + ")");
 
         RelNode distinct = relBuilder.push(newInput)
             .project(relBuilder.fields(positions))
@@ -891,8 +891,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final RelNode newInput = frame.r;
       assert newInput != null;
 
-      final List<Integer> newLocalOutputs = requireNonNull(mapNewInputToOutputs.get(newInput),
-          () -> "mapNewInputToOutputs.get(" + newInput + ")");
+      final List<Integer> newLocalOutputs = /*Y*/
+          requireNonNull(mapNewInputToOutputs.get(newInput), () -> "mapNewInputToOutputs.get(" + newInput + ")");
 
       final int newLocalOutput = requireNonNull(frame.oldToNewOutputs.get(corRef.field));
 
@@ -925,8 +925,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
   }
 
   private RelNode getCorRel(CorRef corVar) {
-    final RelNode r = requireNonNull(cm.mapCorToCorRel.get(corVar.corr),
-        () -> "cm.mapCorToCorRel.get(" + corVar.corr + ")");
+    final RelNode r = /*Y*/
+        requireNonNull(cm.mapCorToCorRel.get(corVar.corr), () -> "cm.mapCorToCorRel.get(" + corVar.corr + ")");
     return requireNonNull(r.getInput(0),
         () -> "r.getInput(0) is null for " + r);
   }
@@ -1354,8 +1354,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
         oldInput = oldInput0;
         break;
       }
-      RelNode newInput = requireNonNull(map.get(oldInput0),
-          () -> "map.get(oldInput0) for " + oldInput0).r;
+      RelNode newInput = /*Y*/
+          requireNonNull(map.get(oldInput0), () -> "map.get(oldInput0) for " + oldInput0).r;
       newOrdinal += newInput.getRowType().getFieldCount();
       oldOrdinal -= n;
     }
@@ -2433,8 +2433,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
       int joinOutputProjExprCount =
           leftInputFieldCount + aggInputProjects.size() + 1;
 
-      right = d.createProjectWithAdditionalExprs(right,
-          ImmutableList.of(
+      right = /*Y*/
+          d.createProjectWithAdditionalExprs(
+              right, ImmutableList.of(
               Pair.of(rexBuilder.makeLiteral(true), "nullIndicator")));
 
       Join join = (Join) d.relBuilder.push(left).push(right)

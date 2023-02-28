@@ -78,13 +78,13 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
     }
 
     RelTraitSet inputTraits = getInput().getTraitSet();
-    RelCollation collation = requireNonNull(required.getCollation(),
-        () -> "collation trait is null, required traits are " + required);
+    RelCollation collation = /*Y*/
+        requireNonNull(required.getCollation(), () -> "collation trait is null, required traits are " + required);
     ImmutableBitSet requiredKeys = ImmutableBitSet.of(RelCollations.ordinals(collation));
     ImmutableBitSet groupKeys = ImmutableBitSet.range(groupSet.cardinality());
 
-    Mappings.TargetMapping mapping = Mappings.source(groupSet.toList(),
-        input.getRowType().getFieldCount());
+    Mappings.TargetMapping mapping = /*Y*/
+        Mappings.source(groupSet.toList(), input.getRowType().getFieldCount());
 
     if (requiredKeys.equals(groupKeys)) {
       RelCollation inputCollation = RexUtil.apply(mapping, collation);

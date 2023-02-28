@@ -207,8 +207,8 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerSchema(customerSchema);
 
     // Register "CONTACT" table.
-    MockTable contactTable = MockTable.create(this, customerSchema, "CONTACT",
-        false, 1000);
+    MockTable contactTable = /*Y*/
+        MockTable.create(this, customerSchema, "CONTACT", false, 1000);
     contactTable.addColumn("CONTACTNO", fixture.intType);
     contactTable.addColumn("FNAME", fixture.varchar10Type);
     contactTable.addColumn("LNAME", fixture.varchar10Type);
@@ -228,16 +228,16 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(contactPeekTable);
 
     // Register "ACCOUNT" table.
-    MockTable accountTable = MockTable.create(this, customerSchema, "ACCOUNT",
-        false, 457);
+    MockTable accountTable = /*Y*/
+        MockTable.create(this, customerSchema, "ACCOUNT", false, 457);
     accountTable.addColumn("ACCTNO", fixture.intType);
     accountTable.addColumn("TYPE", fixture.varchar20Type);
     accountTable.addColumn("BALANCE", fixture.intType);
     registerTable(accountTable);
 
     // Register "ORDERS" stream.
-    MockTable ordersStream = MockTable.create(this, salesSchema, "ORDERS",
-        true, Double.POSITIVE_INFINITY);
+    MockTable ordersStream = /*Y*/
+        MockTable.create(this, salesSchema, "ORDERS", true, Double.POSITIVE_INFINITY);
     ordersStream.addColumn("ROWTIME", fixture.timestampType);
     ordersStream.addMonotonic("ROWTIME");
     ordersStream.addColumn("PRODUCTID", fixture.intType);
@@ -246,24 +246,24 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     // Register "SHIPMENTS" stream.
     // "ROWTIME" is not column 0, just to mix things up.
-    MockTable shipmentsStream = MockTable.create(this, salesSchema, "SHIPMENTS",
-        true, Double.POSITIVE_INFINITY);
+    MockTable shipmentsStream = /*Y*/
+        MockTable.create(this, salesSchema, "SHIPMENTS", true, Double.POSITIVE_INFINITY);
     shipmentsStream.addColumn("ORDERID", fixture.intType);
     shipmentsStream.addColumn("ROWTIME", fixture.timestampType);
     shipmentsStream.addMonotonic("ROWTIME");
     registerTable(shipmentsStream);
 
     // Register "PRODUCTS" table.
-    MockTable productsTable = MockTable.create(this, salesSchema, "PRODUCTS",
-        false, 200D);
+    MockTable productsTable = /*Y*/
+        MockTable.create(this, salesSchema, "PRODUCTS", false, 200D);
     productsTable.addColumn("PRODUCTID", fixture.intType);
     productsTable.addColumn("NAME", fixture.varchar20Type);
     productsTable.addColumn("SUPPLIERID", fixture.intType);
     registerTable(productsTable);
 
     // Register "EMPTY_PRODUCTS" table.
-    MockTable emptyProductsTable = MockTable.create(this, salesSchema, "EMPTY_PRODUCTS",
-        false, 0D, 0D);
+    MockTable emptyProductsTable = /*Y*/
+        MockTable.create(this, salesSchema, "EMPTY_PRODUCTS", false, 0D, 0D);
     emptyProductsTable.addColumn("PRODUCTID", fixture.intType);
     emptyProductsTable.addColumn("NAME", fixture.varchar20Type);
     emptyProductsTable.addColumn("SUPPLIERID", fixture.intType);
@@ -281,8 +281,8 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(productsTemporalTable);
 
     // Register "SUPPLIERS" table.
-    MockTable suppliersTable = MockTable.create(this, salesSchema, "SUPPLIERS",
-        false, 10D);
+    MockTable suppliersTable = /*Y*/
+        MockTable.create(this, salesSchema, "SUPPLIERS", false, 10D);
     suppliersTable.addColumn("SUPPLIERID", fixture.intType);
     suppliersTable.addColumn("NAME", fixture.varchar20Type);
     suppliersTable.addColumn("CITY", fixture.intType);

@@ -403,8 +403,8 @@ public class AggregateExpandWithinDistinctRule
       }
       RelBuilder.AggCall aggCall;
       if (c.distinctKeys == null) {
-        aggCall = b.aggregateCall(SqlStdOperatorTable.MIN,
-            b.field(registrar.getAgg(i)));
+        aggCall = /*Y*/
+            b.aggregateCall(SqlStdOperatorTable.MIN, b.field(registrar.getAgg(i)));
       } else {
         // The inputs to this aggregate are outputs from MIN() calls from the
         // inner agg, and MIN() returns null iff it has no non-null inputs,

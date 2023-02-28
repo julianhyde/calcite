@@ -244,10 +244,10 @@ class SqlTypeFactoryTest {
     SqlTypeFixture f = new SqlTypeFixture();
     RelDataTypeFactory typeFactory = f.typeFactory;
     List<RelDataTypeField> fields = new ArrayList<>();
-    RelDataTypeField field0 = new RelDataTypeFieldImpl(
-            "i", 0, typeFactory.createSqlType(SqlTypeName.INTEGER));
-    RelDataTypeField field1 = new RelDataTypeFieldImpl(
-            "s", 1, typeFactory.createSqlType(SqlTypeName.VARCHAR));
+    RelDataTypeField field0 = /*X*/
+            new RelDataTypeFieldImpl("i", 0, typeFactory.createSqlType(SqlTypeName.INTEGER));
+    RelDataTypeField field1 = /*X*/
+            new RelDataTypeFieldImpl("s", 1, typeFactory.createSqlType(SqlTypeName.VARCHAR));
     fields.add(field0);
     fields.add(field1);
     final RelDataType recordType = new RelRecordType(fields); // nullable false by default

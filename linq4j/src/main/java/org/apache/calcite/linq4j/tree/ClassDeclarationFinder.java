@@ -161,8 +161,8 @@ public class ClassDeclarationFinder extends Shuttle {
     } else if (memberDeclarations != null) {
       // Arguments to new Test(1+2) { ... } should be optimized via parent
       // optimizer.
-      arguments = Expressions.acceptExpressions(newExpression.arguments,
-          parent);
+      arguments = /*Y*/
+          Expressions.acceptExpressions(newExpression.arguments, parent);
     }
 
     Expression result =

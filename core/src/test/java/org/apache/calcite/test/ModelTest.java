@@ -57,8 +57,8 @@ class ModelTest {
   /** Reads a simple schema from a string into objects. */
   @Test void testRead() throws IOException {
     final ObjectMapper mapper = mapper();
-    JsonRoot root = mapper.readValue(
-        "{\n"
+    JsonRoot root = /*X*/
+        mapper.readValue("{\n"
         + "  version: '1.0',\n"
         + "   schemas: [\n"
         + "     {\n"
@@ -119,8 +119,8 @@ class ModelTest {
   /** Reads a simple schema containing JdbcSchema, a sub-type of Schema. */
   @Test void testSubtype() throws IOException {
     final ObjectMapper mapper = mapper();
-    JsonRoot root = mapper.readValue(
-        "{\n"
+    JsonRoot root = /*X*/
+        mapper.readValue("{\n"
         + "  version: '1.0',\n"
         + "   schemas: [\n"
         + "     {\n"

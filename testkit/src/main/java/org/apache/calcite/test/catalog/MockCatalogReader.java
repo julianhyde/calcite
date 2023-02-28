@@ -184,8 +184,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
   protected void registerType(final List<String> names, final RelProtoDataType relProtoDataType) {
     assert names.get(0).equals(DEFAULT_CATALOG);
     final List<String> schemaPath = Util.skipLast(names);
-    final CalciteSchema schema = SqlValidatorUtil.getSchema(rootSchema,
-        schemaPath, SqlNameMatchers.withCaseSensitive(true));
+    final CalciteSchema schema = /*Y*/
+        SqlValidatorUtil.getSchema(rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.add(Util.last(names), relProtoDataType);
   }
 
@@ -213,8 +213,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     assert names.get(0).equals(DEFAULT_CATALOG);
     List<String> schemaPath = Util.skipLast(names);
     String tableName = Util.last(names);
-    CalciteSchema schema = SqlValidatorUtil.getSchema(rootSchema,
-        schemaPath, SqlNameMatchers.withCaseSensitive(true));
+    CalciteSchema schema = /*Y*/
+        SqlValidatorUtil.getSchema(rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.removeTable(tableName);
     schema.add(tableName, table);
   }
@@ -223,8 +223,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     assert names.get(0).equals(DEFAULT_CATALOG);
     final List<String> schemaPath = Util.skipLast(names);
     final String tableName = Util.last(names);
-    final CalciteSchema schema = SqlValidatorUtil.getSchema(rootSchema,
-        schemaPath, SqlNameMatchers.withCaseSensitive(true));
+    final CalciteSchema schema = /*Y*/
+        SqlValidatorUtil.getSchema(rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.add(tableName, table);
   }
 
@@ -603,8 +603,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     }
 
     public void onRegister(RelDataTypeFactory typeFactory) {
-      rowType = typeFactory.createStructType(kind, Pair.right(columnList),
-          Pair.left(columnList));
+      rowType = /*Y*/
+          typeFactory.createStructType(kind, Pair.right(columnList), Pair.left(columnList));
       collationList = deduceMonotonicity(this);
     }
 
@@ -936,8 +936,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     }
 
     @Override public RelNode toRel(ToRelContext context) {
-      RelNode rel = LogicalTableScan.create(context.getCluster(), fromTable,
-          context.getTableHints());
+      RelNode rel = /*Y*/
+          LogicalTableScan.create(context.getCluster(), fromTable, context.getTableHints());
       final RexBuilder rexBuilder = context.getCluster().getRexBuilder();
       rel = /*X*/
           LogicalFilter.create(rel, getConstraint(rexBuilder, rel.getRowType()));

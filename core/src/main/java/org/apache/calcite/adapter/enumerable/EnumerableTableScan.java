@@ -266,8 +266,8 @@ public class EnumerableTableScan
     switch (relFieldType.getSqlTypeName()) {
     case ARRAY:
     case MULTISET:
-      final RelDataType fieldType = requireNonNull(relFieldType.getComponentType(),
-          () -> "relFieldType.getComponentType() for " + relFieldType);
+      final RelDataType fieldType = /*Y*/
+          requireNonNull(relFieldType.getComponentType(), () -> "relFieldType.getComponentType() for " + relFieldType);
       if (fieldType.isStruct()) {
         // We can't represent a multiset or array as a List<Employee>, because
         // the consumer does not know the element type.

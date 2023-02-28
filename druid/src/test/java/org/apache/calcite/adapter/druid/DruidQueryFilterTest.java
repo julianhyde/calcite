@@ -95,8 +95,8 @@ class DruidQueryFilterTest {
             f.rexBuilder.makeLiteral("lower-bound"),
             f.rexBuilder.makeLiteral("upper-bound"));
     RelDataType relDataType = f.typeFactory.createSqlType(SqlTypeName.BOOLEAN);
-    RexNode betweenRexNode = f.rexBuilder.makeCall(relDataType,
-        SqlInternalOperators.DRUID_BETWEEN, listRexNodes);
+    RexNode betweenRexNode = /*Y*/
+        f.rexBuilder.makeCall(relDataType, SqlInternalOperators.DRUID_BETWEEN, listRexNodes);
 
     DruidJsonFilter returnValue = DruidJsonFilter
         .toDruidFilters(betweenRexNode, f.varcharRowType, druidQuery, f.rexBuilder);

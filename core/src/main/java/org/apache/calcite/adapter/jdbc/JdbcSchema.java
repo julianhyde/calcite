@@ -422,8 +422,8 @@ public class JdbcSchema implements Schema {
       if (typeString != null && typeString.endsWith(" ARRAY")) {
         // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type
         // "INTEGER".
-        final String remaining = typeString.substring(0,
-            typeString.length() - " ARRAY".length());
+        final String remaining = /*Y*/
+            typeString.substring(0, typeString.length() - " ARRAY".length());
         component = parseTypeString(typeFactory, remaining);
       }
       if (component == null) {

@@ -323,8 +323,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
       keyMap.put(sourceKeys.get(i), targetKeys.get(i));
     }
 
-    Mappings.TargetMapping mapping = Mappings.target(keyMap,
-        (left2Right ? left : right).getRowType().getFieldCount(),
+    Mappings.TargetMapping mapping = /*Y*/
+        Mappings.target(keyMap, (left2Right ? left : right).getRowType().getFieldCount(),
         (left2Right ? right : left).getRowType().getFieldCount());
     return mapping;
   }
@@ -443,8 +443,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
       final RexNode nonEquiCondition = /*X*/
           RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
-        predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
-            left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+        predicate = /*Y*/
+            EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
       }
     }
     final PhysType leftKeyPhysType =

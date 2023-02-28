@@ -157,8 +157,8 @@ public class DruidTableFactory implements TableFactory {
     final String dataSourceName = Util.first(dataSource, name);
 
     if (dimensionsRaw == null || metricsRaw == null) {
-      DruidConnectionImpl connection = new DruidConnectionImpl(druidSchema.url,
-              druidSchema.url.replace(":8082", ":8081"));
+      DruidConnectionImpl connection = /*Y*/
+              new DruidConnectionImpl(druidSchema.url, druidSchema.url.replace(":8082", ":8081"));
       return DruidTable.create(druidSchema, dataSourceName, intervals, fieldBuilder,
               metricNameBuilder, timestampColumnName, connection, complexMetrics);
     } else {

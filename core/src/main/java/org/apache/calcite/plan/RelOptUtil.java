@@ -3198,8 +3198,8 @@ public abstract class RelOptUtil {
   }
 
   private static RexShuttle pushShuttle(final Calc calc) {
-    final List<RexNode> projects = Util.transform(calc.getProgram().getProjectList(),
-        calc.getProgram()::expandLocalRef);
+    final List<RexNode> projects = /*Y*/
+        Util.transform(calc.getProgram().getProjectList(), calc.getProgram()::expandLocalRef);
     return new RexShuttle() {
       @Override public RexNode visitInputRef(RexInputRef ref) {
         return projects.get(ref.getIndex());
@@ -3741,8 +3741,8 @@ public abstract class RelOptUtil {
     // yet.
     if (!containsGet(joinCond)
         && RexUtil.SubQueryFinder.find(joinCond) == null) {
-      joinCond = pushDownEqualJoinConditions(joinCond, leftCount, rightCount, extraLeftExprs,
-          extraRightExprs, relBuilder.getRexBuilder());
+      joinCond = /*Y*/
+          pushDownEqualJoinConditions(joinCond, leftCount, rightCount, extraLeftExprs, extraRightExprs, relBuilder.getRexBuilder());
     }
 
     relBuilder.push(originalJoin.getLeft());

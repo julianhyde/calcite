@@ -197,8 +197,8 @@ public class DruidExpressions {
     builder.append("(");
     for (int i = 0; i < args.size(); i++) {
       int finalI = i;
-      final String arg = Objects.requireNonNull(args.get(i),
-          () -> "arg #" + finalI);
+      final String arg = /*Y*/
+          Objects.requireNonNull(args.get(i), () -> "arg #" + finalI);
       builder.append(arg);
       if (i < args.size() - 1) {
         builder.append(",");
@@ -215,8 +215,8 @@ public class DruidExpressions {
     builder.append("(");
     for (int i = 0; i < args.size(); i++) {
       int finalI = i;
-      final String arg = Objects.requireNonNull(args.get(i),
-          () -> "arg #" + finalI);
+      final String arg = /*Y*/
+          Objects.requireNonNull(args.get(i), () -> "arg #" + finalI);
       builder.append(arg);
       if (i < args.size() - 1) {
         builder.append(druidOperator);

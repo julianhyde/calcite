@@ -57,8 +57,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class InnodbAdapterTest {
 
-  private static final ImmutableMap<String, String> INNODB_MODEL = ImmutableMap.of("model",
-      Sources.of(InnodbAdapterTest.class.getResource("/model.json"))
+  private static final ImmutableMap<String, String> INNODB_MODEL = /*Y*/
+      ImmutableMap.of("model", Sources.of(InnodbAdapterTest.class.getResource("/model.json"))
           .file().getAbsolutePath());
 
   @Test void testSelectCount() {

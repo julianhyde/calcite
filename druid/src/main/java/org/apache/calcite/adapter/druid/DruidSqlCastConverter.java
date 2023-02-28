@@ -44,8 +44,8 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
       DruidQuery druidQuery) {
 
     final RexNode operand = ((RexCall) rexNode).getOperands().get(0);
-    final String operandExpression = DruidExpressions.toDruidExpression(operand,
-        topRel, druidQuery);
+    final String operandExpression = /*Y*/
+        DruidExpressions.toDruidExpression(operand, topRel, druidQuery);
 
     if (operandExpression == null) {
       return null;
@@ -110,8 +110,8 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
       }
       final String typeCastExpression;
       if (fromExprType != toExprType) {
-        typeCastExpression = DruidQuery.format("CAST(%s, '%s')", operandExpression,
-            toExprType
+        typeCastExpression = /*Y*/
+            DruidQuery.format("CAST(%s, '%s')", operandExpression, toExprType
             .toString());
       } else {
         // case it is the same type it is ok to skip CAST

@@ -42,8 +42,8 @@ public class JavaCompilerArgs {
   //~ Constructors -----------------------------------------------------------
 
   public JavaCompilerArgs() {
-    classLoader = requireNonNull(getClass().getClassLoader(),
-        () -> "getClassLoader is null for " + getClass());
+    classLoader = /*Y*/
+        requireNonNull(getClass().getClassLoader(), () -> "getClassLoader is null for " + getClass());
   }
 
   //~ Methods ----------------------------------------------------------------

@@ -160,8 +160,8 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
       // If Pig schema is provided in the load command, convert it into
       // relational row type
       final RelDataType rowType = PigTypes.convertSchema(pigSchema);
-      pigRelOptTable = PigTable.createRelOptTable(builder.getRelOptSchema(),
-          rowType, Arrays.asList(tableNames));
+      pigRelOptTable = /*Y*/
+          PigTable.createRelOptTable(builder.getRelOptSchema(), rowType, Arrays.asList(tableNames));
     }
     builder.scan(pigRelOptTable, tableNames);
     builder.register(load);
@@ -354,8 +354,8 @@ class PigRelOpVisitor extends PigRelOpWalker.PlanPreVisitor {
       for (LogicalExpressionPlan pigKey : pigGroupKeys) {
         fieldRels.add(PigRelExVisitor.translatePigEx(builder, pigKey));
       }
-      final RexNode row = builder.getRexBuilder().makeCall(getGroupRowType(fieldRels, isCubeRollup),
-          SqlStdOperatorTable.ROW, getGroupRowOperands(fieldRels, isCubeRollup));
+      final RexNode row = /*Y*/
+          builder.getRexBuilder().makeCall(getGroupRowType(fieldRels, isCubeRollup), SqlStdOperatorTable.ROW, getGroupRowOperands(fieldRels, isCubeRollup));
       fieldRels.add(row);
       builder.project(fieldRels);
       builder.updateAlias(builder.getPig(originalRel), builder.getAlias(originalRel), false);

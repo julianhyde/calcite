@@ -180,8 +180,8 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
 
 
     if (!compensationColumnsEquiPred.isAlwaysTrue()) {
-      RexNode newCompensationColumnsEquiPred = rewriteExpression(rexBuilder, mq,
-          target, target, queryExprs, viewToQueryTableMapping.inverse(), queryEC, false,
+      RexNode newCompensationColumnsEquiPred = /*Y*/
+          rewriteExpression(rexBuilder, mq, target, target, queryExprs, viewToQueryTableMapping.inverse(), queryEC, false,
           compensationColumnsEquiPred);
       if (newCompensationColumnsEquiPred == null) {
         // Skip it
@@ -191,8 +191,8 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
     }
     // For the rest, we use the query equivalence classes
     if (!otherCompensationPred.isAlwaysTrue()) {
-      RexNode newOtherCompensationPred = rewriteExpression(rexBuilder, mq,
-          target, target, queryExprs, viewToQueryTableMapping.inverse(), viewEC, true,
+      RexNode newOtherCompensationPred = /*Y*/
+          rewriteExpression(rexBuilder, mq, target, target, queryExprs, viewToQueryTableMapping.inverse(), viewEC, true,
           otherCompensationPred);
       if (newOtherCompensationPred == null) {
         // Skip it
@@ -280,8 +280,8 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
     List<RexNode> viewExprs = topViewProject == null
         ? extractReferences(rexBuilder, viewNode)
         : topViewProject.getProjects();
-    List<RexNode> rewrittenExprs = rewriteExpressions(rexBuilder, mq, input, viewNode, viewExprs,
-        queryToViewTableMapping.inverse(), queryEC, true, exprsLineage);
+    List<RexNode> rewrittenExprs = /*Y*/
+        rewriteExpressions(rexBuilder, mq, input, viewNode, viewExprs, queryToViewTableMapping.inverse(), queryEC, true, exprsLineage);
     if (rewrittenExprs == null) {
       return null;
     }

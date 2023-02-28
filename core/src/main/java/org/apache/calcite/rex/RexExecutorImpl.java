@@ -129,8 +129,8 @@ public class RexExecutorImpl implements RexExecutor {
    */
   @Override public void reduce(RexBuilder rexBuilder, List<RexNode> constExps,
       List<RexNode> reducedValues) {
-    final String code = compile(rexBuilder, constExps,
-        (list, index, storageType) -> {
+    final String code = /*Y*/
+        compile(rexBuilder, constExps, (list, index, storageType) -> {
           throw new UnsupportedOperationException();
         });
 
@@ -162,8 +162,8 @@ public class RexExecutorImpl implements RexExecutor {
           Expressions.constant("inputRecord"));
       Expression recFromCtxCasted =
           EnumUtils.convert(recFromCtx, Object[].class);
-      IndexExpression recordAccess = Expressions.arrayIndex(recFromCtxCasted,
-          Expressions.constant(index));
+      IndexExpression recordAccess = /*Y*/
+          Expressions.arrayIndex(recFromCtxCasted, Expressions.constant(index));
       if (storageType == null) {
         final RelDataType fieldType =
             rowType.getFieldList().get(index).getType();

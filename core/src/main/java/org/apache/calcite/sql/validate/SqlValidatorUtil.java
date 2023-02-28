@@ -283,8 +283,8 @@ public class SqlValidatorUtil {
    */
   static void checkIdentifierListForDuplicates(List<? extends @Nullable SqlNode> columnList,
       SqlValidatorImpl.ValidationErrorFunction validationErrorFunction) {
-    final List<List<String>> names = Util.transform(columnList,
-        sqlNode -> ((SqlIdentifier) requireNonNull(sqlNode, "sqlNode")).names);
+    final List<List<String>> names = /*Y*/
+        Util.transform(columnList, sqlNode -> ((SqlIdentifier) requireNonNull(sqlNode, "sqlNode")).names);
     final int i = Util.firstDuplicate(names);
     if (i >= 0) {
       throw validationErrorFunction.apply(
@@ -1096,8 +1096,8 @@ public class SqlValidatorUtil {
           && nameMatcher.matches(schemaName, schema.getName())) {
         continue;
       }
-      schema = schema.getSubSchema(schemaName,
-          nameMatcher.isCaseSensitive());
+      schema = /*Y*/
+          schema.getSubSchema(schemaName, nameMatcher.isCaseSensitive());
       if (schema == null) {
         return null;
       }
@@ -1110,8 +1110,8 @@ public class SqlValidatorUtil {
     CalciteSchema.TableEntry entry =
         schema.getTable(name, caseSensitive);
     if (entry == null) {
-      entry = schema.getTableBasedOnNullaryFunction(name,
-          caseSensitive);
+      entry = /*Y*/
+          schema.getTableBasedOnNullaryFunction(name, caseSensitive);
     }
     return entry;
   }
@@ -1197,8 +1197,8 @@ public class SqlValidatorUtil {
       RelDataType rowType,
       SqlNode expr) {
     final String tableName = "_table_";
-    final SqlSelect select0 = new SqlSelect(SqlParserPos.ZERO, null,
-        new SqlNodeList(Collections.singletonList(expr), SqlParserPos.ZERO),
+    final SqlSelect select0 = /*Y*/
+        new SqlSelect(SqlParserPos.ZERO, null, new SqlNodeList(Collections.singletonList(expr), SqlParserPos.ZERO),
         new SqlIdentifier(tableName, SqlParserPos.ZERO),
         null, null, null, null, null, null, null, null, null);
     Prepare.CatalogReader catalogReader = /*X*/
@@ -1206,8 +1206,8 @@ public class SqlValidatorUtil {
         tableName,
         typeFactory,
         rowType);
-    SqlValidator validator = newValidator(operatorTable,
-        catalogReader,
+    SqlValidator validator = /*Y*/
+        newValidator(operatorTable, catalogReader,
         typeFactory,
         SqlValidator.Config.DEFAULT);
     final SqlSelect select = (SqlSelect) validator.validate(select0);

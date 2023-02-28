@@ -858,8 +858,8 @@ public class RelMdUtil {
   public static double estimateFilteredRows(RelNode child, @Nullable RexNode condition,
       RelMetadataQuery mq) {
     @SuppressWarnings("unboxing.of.nullable")
-    double result = multiply(mq.getRowCount(child),
-        mq.getSelectivity(child, condition));
+    double result = /*Y*/
+        multiply(mq.getRowCount(child), mq.getSelectivity(child, condition));
     return result;
   }
 

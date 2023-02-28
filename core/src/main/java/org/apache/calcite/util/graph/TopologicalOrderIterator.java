@@ -61,8 +61,8 @@ public class TopologicalOrderIterator<V, E extends DefaultEdge>
         : graph.vertexMap.values()) {
       for (E edge : info.outEdges) {
         //noinspection SuspiciousMethodCalls
-        final int[] ints = requireNonNull(
-            countMap.get(edge.target),
+        final int[] ints = /*X*/
+            requireNonNull(countMap.get(edge.target),
             () -> "no value for " + edge.target);
         ++ints[0];
       }
@@ -81,14 +81,14 @@ public class TopologicalOrderIterator<V, E extends DefaultEdge>
 
   @Override public V next() {
     V v = empties.remove(0);
-    DefaultDirectedGraph.VertexInfo<V, E> vertexInfo = requireNonNull(
-        graph.vertexMap.get(v),
+    DefaultDirectedGraph.VertexInfo<V, E> vertexInfo = /*X*/
+        requireNonNull(graph.vertexMap.get(v),
         () -> "no vertex " + v);
     for (E o : vertexInfo.outEdges) {
       //noinspection unchecked
       final V target = (V) o.target;
-      int[] ints = requireNonNull(
-          countMap.get(target),
+      int[] ints = /*X*/
+          requireNonNull(countMap.get(target),
           () -> "no counts found for target " + target);
       if (--ints[0] == 0) {
         countMap.remove(target);

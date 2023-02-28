@@ -663,8 +663,8 @@ public class CalciteMetaImpl extends MetaImpl {
       int fetchMaxRowCount) throws NoSuchStatementException {
     final CalciteConnectionImpl calciteConnection = getConnection();
     CalciteServerStatement stmt = calciteConnection.server.getStatement(h);
-    final Signature signature = requireNonNull(stmt.getSignature(),
-        () -> "stmt.getSignature() is null for " + stmt);
+    final Signature signature = /*Y*/
+        requireNonNull(stmt.getSignature(), () -> "stmt.getSignature() is null for " + stmt);
     final Iterator<Object> iterator;
     Iterator<Object> stmtResultSet = stmt.getResultSet();
     if (stmtResultSet == null) {
@@ -696,8 +696,8 @@ public class CalciteMetaImpl extends MetaImpl {
       throws NoSuchStatementException {
     final CalciteConnectionImpl calciteConnection = getConnection();
     CalciteServerStatement stmt = calciteConnection.server.getStatement(h);
-    final Signature signature = requireNonNull(stmt.getSignature(),
-        () -> "stmt.getSignature() is null for " + stmt);
+    final Signature signature = /*Y*/
+        requireNonNull(stmt.getSignature(), () -> "stmt.getSignature() is null for " + stmt);
 
     MetaResultSet metaResultSet;
     if (signature.statementType.canUpdate()) {
@@ -705,8 +705,8 @@ public class CalciteMetaImpl extends MetaImpl {
           _createIterable(h, signature, parameterValues, null);
       final Iterator<Object> iterator = iterable.iterator();
       stmt.setResultSet(iterator);
-      metaResultSet = MetaResultSet.count(h.connectionId, h.id,
-          ((Number) iterator.next()).intValue());
+      metaResultSet = /*Y*/
+          MetaResultSet.count(h.connectionId, h.id, ((Number) iterator.next()).intValue());
     } else {
       // Don't populate the first frame.
       // It's not worth saving a round-trip, since we're local.

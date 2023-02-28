@@ -207,8 +207,8 @@ public class PigToSqlAggregateRule
     }
     // If grouping aggregate is needed, project the whole ROW
     if (needGroupingCol) {
-      final RexNode row = relBuilder.getRexBuilder().makeCall(relBuilder.peek().getRowType(),
-          SqlStdOperatorTable.ROW, relBuilder.fields());
+      final RexNode row = /*Y*/
+          relBuilder.getRexBuilder().makeCall(relBuilder.peek().getRowType(), SqlStdOperatorTable.ROW, relBuilder.fields());
       newBottomProjects.add(row);
     }
     final int groupCount = oldAgg.getGroupCount() + (needGroupingCol ? 1 : 0);

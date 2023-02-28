@@ -190,14 +190,14 @@ public class InnodbTable extends AbstractQueryableTable
                 selectedColumnNames, ascOrder);
             break;
           case SK_POINT_QUERY:
-            resultIterator = tableReader.getRecordIteratorBySk(indexName,
-                pointQueryKey, ComparisonOperator.GTE, pointQueryKey, ComparisonOperator.LTE,
+            resultIterator = /*Y*/
+                tableReader.getRecordIteratorBySk(indexName, pointQueryKey, ComparisonOperator.GTE, pointQueryKey, ComparisonOperator.LTE,
                 selectedColumnNames, ascOrder);
             break;
           case SK_RANGE_QUERY:
           case SK_FULL_SCAN:
-            resultIterator = tableReader.getRecordIteratorBySk(indexName,
-                rangeQueryLowerKey, rangeQueryLowerOp, rangeQueryUpperKey, rangeQueryUpperOp,
+            resultIterator = /*Y*/
+                tableReader.getRecordIteratorBySk(indexName, rangeQueryLowerKey, rangeQueryLowerOp, rangeQueryUpperKey, rangeQueryUpperOp,
                 selectedColumnNames, ascOrder);
             break;
           case PK_FULL_SCAN:

@@ -165,8 +165,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
     String tmpName = result.accumulator().isEmpty()
         ? "ar"
         : (result.accumulator().get(0) + "$Res");
-    ParameterExpression res = Expressions.parameter(0, info.returnType(),
-        result.currentBlock().newName(tmpName));
+    ParameterExpression res = /*Y*/
+        Expressions.parameter(0, info.returnType(), result.currentBlock().newName(tmpName));
 
     List<Expression> acc = result.accumulator();
     final BlockBuilder thenBlock = result.nestBlock();

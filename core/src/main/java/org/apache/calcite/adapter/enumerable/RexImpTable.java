@@ -1189,8 +1189,8 @@ public class RexImpTable {
       if (info.returnType() == BigDecimal.class) {
         next = Expressions.call(acc, "add", add.arguments().get(0));
       } else {
-        next = Expressions.add(acc,
-            EnumUtils.convert(add.arguments().get(0), acc.type));
+        next = /*Y*/
+            Expressions.add(acc, EnumUtils.convert(add.arguments().get(0), acc.type));
       }
       accAdvance(add, acc, next);
     }
@@ -1835,8 +1835,8 @@ public class RexImpTable {
 
       List<RexNode> rexArgs = winResult.rexArguments();
 
-      ParameterExpression res = Expressions.parameter(0, info.returnType(),
-          result.currentBlock().newName("nth"));
+      ParameterExpression res = /*Y*/
+          Expressions.parameter(0, info.returnType(), result.currentBlock().newName("nth"));
 
       RexToLixTranslator currentRowTranslator =
           winResult.rowTranslator(
@@ -1898,8 +1898,8 @@ public class RexImpTable {
 
       List<RexNode> rexArgs = winResult.rexArguments();
 
-      ParameterExpression res = Expressions.parameter(0, info.returnType(),
-          result.currentBlock().newName(isLead ? "lead" : "lag"));
+      ParameterExpression res = /*Y*/
+          Expressions.parameter(0, info.returnType(), result.currentBlock().newName(isLead ? "lead" : "lag"));
 
       Expression offset;
       RexToLixTranslator currentRowTranslator =
@@ -2767,8 +2767,8 @@ public class RexImpTable {
               Expressions.call(BuiltInMethod.TIME_ZONE.method, translator.getRoot()));
           // fall through
         case TIMESTAMP:
-          operand = Expressions.call(BuiltInMethod.FLOOR_DIV.method,
-              operand, Expressions.constant(TimeUnit.DAY.multiplier.longValue()));
+          operand = /*Y*/
+              Expressions.call(BuiltInMethod.FLOOR_DIV.method, operand, Expressions.constant(TimeUnit.DAY.multiplier.longValue()));
           // fall through
         case DATE:
           return Expressions.call(BuiltInMethod.UNIX_DATE_EXTRACT.method,
@@ -2790,8 +2790,8 @@ public class RexImpTable {
         switch (sqlTypeName) {
         case DATE:
           // convert to milliseconds
-          operand = Expressions.multiply(operand,
-              Expressions.constant(TimeUnit.DAY.multiplier.longValue()));
+          operand = /*Y*/
+              Expressions.multiply(operand, Expressions.constant(TimeUnit.DAY.multiplier.longValue()));
           // fall through
         case TIMESTAMP:
           // convert to seconds
@@ -2839,8 +2839,8 @@ public class RexImpTable {
       if (unit == TimeUnit.QUARTER) {
         operand = Expressions.subtract(operand, Expressions.constant(1L));
       }
-      operand = Expressions.divide(operand,
-          Expressions.constant(unit.multiplier.longValue()));
+      operand = /*Y*/
+          Expressions.divide(operand, Expressions.constant(unit.multiplier.longValue()));
       if (unit == TimeUnit.QUARTER) {
         operand = Expressions.add(operand, Expressions.constant(1L));
       }

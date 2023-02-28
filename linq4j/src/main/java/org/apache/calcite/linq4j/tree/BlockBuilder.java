@@ -166,15 +166,15 @@ public class BlockBuilder {
           result = ((DeclarationStatement) statement).parameter;
         } else if (statement instanceof GotoStatement) {
           statements.remove(statements.size() - 1);
-          result = append_(name,
-              requireNonNull(((GotoStatement) statement).expression, "expression"),
+          result = /*Y*/
+              append_(name, requireNonNull(((GotoStatement) statement).expression, "expression"),
               optimize);
           if (isSimpleExpression(result)) {
             // already simple; no need to declare a variable or
             // even to evaluate the expression
           } else {
-            DeclarationStatement declare = Expressions.declare(Modifier.FINAL,
-                newName(name, optimize), result);
+            DeclarationStatement declare = /*Y*/
+                Expressions.declare(Modifier.FINAL, newName(name, optimize), result);
             add(declare);
             result = declare.parameter;
           }
@@ -236,8 +236,8 @@ public class BlockBuilder {
         return decl.parameter;
       }
     }
-    DeclarationStatement declare = Expressions.declare(Modifier.FINAL,
-        newName(name, optimize), expression);
+    DeclarationStatement declare = /*Y*/
+        Expressions.declare(Modifier.FINAL, newName(name, optimize), expression);
     add(declare);
     return declare.parameter;
   }

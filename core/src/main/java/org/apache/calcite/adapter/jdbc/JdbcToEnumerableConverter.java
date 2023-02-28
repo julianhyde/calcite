@@ -181,16 +181,18 @@ public class JdbcToEnumerableConverter
                       toIndexesTableExpression(sqlString)),
                   DataContext.ROOT));
 
-      enumerable = builder0.append("enumerable",
-          Expressions.call(
+      enumerable = /*Y*/
+          builder0.append(
+              "enumerable", Expressions.call(
               BuiltInMethod.RESULT_SET_ENUMERABLE_OF_PREPARED.method,
               Schemas.unwrap(jdbcConvention.expression, DataSource.class),
               sql_,
               rowBuilderFactory_,
               preparedStatementConsumer_));
     } else {
-      enumerable = builder0.append("enumerable",
-          Expressions.call(
+      enumerable = /*Y*/
+          builder0.append(
+              "enumerable", Expressions.call(
               BuiltInMethod.RESULT_SET_ENUMERABLE_OF.method,
               Schemas.unwrap(jdbcConvention.expression, DataSource.class),
               sql_,

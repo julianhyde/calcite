@@ -200,8 +200,8 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
           SelectResults results = (SelectResults) queryService.newQuery(oqlQuery).execute();
           return new GeodeEnumerator(results, resultRowType);
         } catch (Exception e) {
-          String message = String.format(Locale.ROOT, "Failed to execute query [%s] on %s",
-              oqlQuery, clientCache.getName());
+          String message = /*Y*/
+              String.format(Locale.ROOT, "Failed to execute query [%s] on %s", oqlQuery, clientCache.getName());
           throw new RuntimeException(message, e);
         }
       }

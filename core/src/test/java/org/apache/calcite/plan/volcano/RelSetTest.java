@@ -44,8 +44,8 @@ public class RelSetTest {
         .project(builder.field("a")).build();
     RelNode relNodeE = builder.scan("myTable")
         .project(builder.field("e")).build();
-    RelSet relSet = new RelSet(
-        1,
+    RelSet relSet = /*X*/
+        new RelSet(1,
         Util.minus(
             RelOptUtil.getVariablesSet(relNodeA),
             relNodeA.getVariablesSet()),
@@ -63,8 +63,8 @@ public class RelSetTest {
         .project(builder.field("a")).build();
     RelNode relNodeN = builder.scan("myTable")
         .project(builder.field("n1")).build();
-    RelSet relSet = new RelSet(
-        1,
+    RelSet relSet = /*X*/
+        new RelSet(1,
         Util.minus(
             RelOptUtil.getVariablesSet(relNodeA),
             relNodeA.getVariablesSet()),

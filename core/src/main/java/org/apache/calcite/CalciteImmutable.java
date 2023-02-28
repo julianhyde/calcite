@@ -28,8 +28,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.PACKAGE, ElementType.TYPE})
 @Value.Style(
     visibility = Value.Style.ImplementationVisibility.PACKAGE,
-    defaults = @Value.Immutable(builder = true, singleton = true),
-    get = {"is*", "get*"},
+    defaults = /*Y*/
+    @Value.Immutable(builder = true, singleton = true), get = {"is*", "get*"},
     init = "with*",
     passAnnotations = SuppressWarnings.class
 )

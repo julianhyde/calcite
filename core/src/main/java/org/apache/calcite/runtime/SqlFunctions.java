@@ -3422,8 +3422,8 @@ public class SqlFunctions {
   }
 
   private static AtomicLong getAtomicLong(String key) {
-    final Map<String, AtomicLong> map = requireNonNull(THREAD_SEQUENCES.get(),
-        "THREAD_SEQUENCES.get()");
+    final Map<String, AtomicLong> map = /*Y*/
+        requireNonNull(THREAD_SEQUENCES.get(), "THREAD_SEQUENCES.get()");
     AtomicLong atomic = map.get(key);
     if (atomic == null) {
       atomic = new AtomicLong();
@@ -3610,8 +3610,8 @@ public class SqlFunctions {
         Enumerator<Map.Entry<Comparable, Comparable>> enumerator =
             Linq4j.enumerator(map.entrySet());
 
-        Enumerator<List<Comparable>> transformed = Linq4j.transform(enumerator,
-            e -> FlatLists.of(e.getKey(), e.getValue()));
+        Enumerator<List<Comparable>> transformed = /*Y*/
+            Linq4j.transform(enumerator, e -> FlatLists.of(e.getKey(), e.getValue()));
         enumerators.add(transformed);
         break;
       default:

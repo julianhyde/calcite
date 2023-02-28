@@ -1570,8 +1570,8 @@ public class Util {
   }
 
   private static int groupAsInt(Matcher matcher, int index) {
-    String value = requireNonNull(
-        matcher.group(index),
+    String value = /*X*/
+        requireNonNull(matcher.group(index),
         () -> "no group for index " + index + ", matcher " + matcher);
     return Integer.parseInt(value);
   }

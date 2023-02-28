@@ -236,8 +236,8 @@ public class RelMdAllPredicates
             Util.transform(inputPreds.pulledUpPredicates,
                 e -> RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping));
-        newPreds = newPreds.union(rexBuilder,
-            RelOptPredicateList.of(rexBuilder, updatedPreds));
+        newPreds = /*Y*/
+            newPreds.union(rexBuilder, RelOptPredicateList.of(rexBuilder, updatedPreds));
       }
     }
 
@@ -339,8 +339,8 @@ public class RelMdAllPredicates
             Util.transform(inputPreds.pulledUpPredicates,
                 e -> RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping));
-        newPreds = newPreds.union(rexBuilder,
-            RelOptPredicateList.of(rexBuilder, updatedPreds));
+        newPreds = /*Y*/
+            newPreds.union(rexBuilder, RelOptPredicateList.of(rexBuilder, updatedPreds));
       }
     }
     return newPreds;

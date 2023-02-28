@@ -46,15 +46,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * Unit tests for {@link org.apache.calcite.runtime.Enumerables}.
  */
 class EnumerablesTest {
-  private static final Enumerable<Emp> EMPS = Linq4j.asEnumerable(
-      Arrays.asList(
+  private static final Enumerable<Emp> EMPS = /*X*/
+      Linq4j.asEnumerable(
+          Arrays.asList(
           new Emp(10, "Fred"),
           new Emp(20, "Theodore"),
           new Emp(20, "Sebastian"),
           new Emp(30, "Joe")));
 
-  private static final Enumerable<Dept> DEPTS = Linq4j.asEnumerable(
-      Arrays.asList(
+  private static final Enumerable<Dept> DEPTS = /*X*/
+      Linq4j.asEnumerable(
+          Arrays.asList(
           new Dept(20, "Sales"),
           new Dept(15, "Marketing")));
 
@@ -397,14 +399,14 @@ class EnumerablesTest {
   }
 
   @Test void testMergeJoinWithPredicate() {
-    final List<Emp> listEmp1 = Arrays.asList(
-        new Emp(1, "Fred"),
+    final List<Emp> listEmp1 = /*X*/
+        Arrays.asList(new Emp(1, "Fred"),
         new Emp(2, "Fred"),
         new Emp(3, "Joe"),
         new Emp(4, "Joe"),
         new Emp(5, "Peter"));
-    final List<Emp> listEmp2 = Arrays.asList(
-        new Emp(2, "Fred"),
+    final List<Emp> listEmp2 = /*X*/
+        Arrays.asList(new Emp(2, "Fred"),
         new Emp(3, "Fred"),
         new Emp(3, "Joe"),
         new Emp(5, "Joe"),
@@ -816,8 +818,9 @@ class EnumerablesTest {
 
   @Test @Disabled // TODO fix this
   public void testMatch() {
-    final Enumerable<Emp> emps = Linq4j.asEnumerable(
-        Arrays.asList(
+    final Enumerable<Emp> emps = /*X*/
+        Linq4j.asEnumerable(
+            Arrays.asList(
             new Emp(20, "Theodore"),
             new Emp(10, "Fred"),
             new Emp(20, "Sebastian"),

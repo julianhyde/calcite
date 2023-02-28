@@ -87,8 +87,8 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
 
     List<String> custModifiableViewNames = /*X*/
         Arrays.asList(schema.getCatalogName(), schema.getName(), "CUSTOMER_MODIFIABLEVIEW");
-    TableMacro custModifiableViewMacro = MockModifiableViewRelOptTable.viewMacro(rootSchema,
-        "select n_name from SALES.CUSTOMER", custModifiableViewNames.subList(0, 2),
+    TableMacro custModifiableViewMacro = /*Y*/
+        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select n_name from SALES.CUSTOMER", custModifiableViewNames.subList(0, 2),
         Collections.singletonList(custModifiableViewNames.get(2)), true);
     TranslatableTable empModifiableView = custModifiableViewMacro.apply(Collections.emptyList());
     MockTable mockCustViewTable = /*X*/

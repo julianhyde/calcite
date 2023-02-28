@@ -56,8 +56,8 @@ public class RelNodes {
     @Override public int compare(RelNode o1, RelNode o2) {
       // Compare on field count first. It is more stable than id (when rules
       // are added to the set of active rules).
-      final int c = Utilities.compare(o1.getRowType().getFieldCount(),
-          o2.getRowType().getFieldCount());
+      final int c = /*Y*/
+          Utilities.compare(o1.getRowType().getFieldCount(), o2.getRowType().getFieldCount());
       if (c != 0) {
         return -c;
       }

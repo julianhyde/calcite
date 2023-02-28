@@ -930,8 +930,8 @@ public class EnumUtils {
       for (@Nullable Object[] element : elements) {
         SortedMultiMap<Pair<Long, Long>, @Nullable Object[]> session =
             sessionKeyMap.computeIfAbsent(element[indexOfKeyColumn], k -> new SortedMultiMap<>());
-        Object watermark = requireNonNull(element[indexOfWatermarkedColumn],
-            "element[indexOfWatermarkedColumn]");
+        Object watermark = /*Y*/
+            requireNonNull(element[indexOfWatermarkedColumn], "element[indexOfWatermarkedColumn]");
         Pair<Long, Long> initWindow = /*X*/
             computeInitWindow(SqlFunctions.toLong(watermark), gap);
         session.putMulti(initWindow, element);
@@ -1043,10 +1043,10 @@ public class EnumUtils {
         return takeOne();
       } else {
         @Nullable Object[] current = inputEnumerator.current();
-        Object watermark = requireNonNull(current[indexOfWatermarkedColumn],
-            "element[indexOfWatermarkedColumn]");
-        List<Pair<Long, Long>> windows = hopWindows(SqlFunctions.toLong(watermark),
-            emitFrequency, windowSize, offset);
+        Object watermark = /*Y*/
+            requireNonNull(current[indexOfWatermarkedColumn], "element[indexOfWatermarkedColumn]");
+        List<Pair<Long, Long>> windows = /*Y*/
+            hopWindows(SqlFunctions.toLong(watermark), emitFrequency, windowSize, offset);
         for (Pair<Long, Long> window : windows) {
           @Nullable Object[] curWithWindow = new Object[current.length + 2];
           System.arraycopy(current, 0, curWithWindow, 0, current.length);

@@ -42,8 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
 
   @Test void testCoalesce() {
-    final Project project = (Project) convertSqlToRel(
-            "SELECT COALESCE(NULL, 'a')", false);
+    final Project project = /*X*/
+            (Project) convertSqlToRel("SELECT COALESCE(NULL, 'a')", false);
     final RexNode rex = project.getProjects().get(0);
     final RexToSqlNodeConverter rexToSqlNodeConverter = rexToSqlNodeConverter();
     final SqlNode convertedSql = rexToSqlNodeConverter.convertNode(rex);
@@ -65,8 +65,8 @@ class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
   }
 
   @Test void testCaseNoValue() {
-    final Project project = (Project) convertSqlToRel(
-            "SELECT CASE WHEN NULL IS NULL THEN NULL ELSE 'a' END", false);
+    final Project project = /*X*/
+            (Project) convertSqlToRel("SELECT CASE WHEN NULL IS NULL THEN NULL ELSE 'a' END", false);
     final RexNode rex = project.getProjects().get(0);
     final RexToSqlNodeConverter rexToSqlNodeConverter = rexToSqlNodeConverter();
     final SqlNode convertedSql = rexToSqlNodeConverter.convertNode(rex);

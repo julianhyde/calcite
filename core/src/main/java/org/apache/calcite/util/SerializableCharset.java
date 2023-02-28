@@ -71,8 +71,8 @@ public class SerializableCharset implements Serializable {
   private void readObject(ObjectInputStream in)
       throws IOException, ClassNotFoundException {
     charsetName = (String) in.readObject();
-    charset = requireNonNull(Charset.availableCharsets().get(this.charsetName),
-        () -> "charset is not found: " + charsetName);
+    charset = /*Y*/
+        requireNonNull(Charset.availableCharsets().get(this.charsetName), () -> "charset is not found: " + charsetName);
   }
 
   /**

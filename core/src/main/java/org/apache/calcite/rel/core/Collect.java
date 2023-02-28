@@ -149,13 +149,13 @@ public class Collect extends SingleRel {
     switch (sqlKind) {
     case ARRAY_QUERY_CONSTRUCTOR:
     case MULTISET_QUERY_CONSTRUCTOR:
-      rowType = deriveRowType(input.getCluster().getTypeFactory(),
-          collectionType, fieldName,
+      rowType = /*Y*/
+          deriveRowType(input.getCluster().getTypeFactory(), collectionType, fieldName,
           SqlTypeUtil.deriveCollectionQueryComponentType(collectionType, input.getRowType()));
       break;
     default:
-      rowType = deriveRowType(input.getCluster().getTypeFactory(), collectionType,
-          fieldName, input.getRowType());
+      rowType = /*Y*/
+          deriveRowType(input.getCluster().getTypeFactory(), collectionType, fieldName, input.getRowType());
     }
     return create(input, rowType);
   }

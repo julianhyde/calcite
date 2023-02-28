@@ -203,8 +203,8 @@ public class EnumerableHashJoin extends Join implements EnumerableRel {
       RexNode nonEquiCondition = /*X*/
           RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
-        predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
-            left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+        predicate = /*Y*/
+            EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
       }
     }
     return implementor.result(
@@ -246,8 +246,8 @@ public class EnumerableHashJoin extends Join implements EnumerableRel {
       RexNode nonEquiCondition = /*X*/
           RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
-        predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
-            left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+        predicate = /*Y*/
+            EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
       }
     }
     return implementor.result(

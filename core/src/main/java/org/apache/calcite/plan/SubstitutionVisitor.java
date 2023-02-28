@@ -307,10 +307,10 @@ public class SubstitutionVisitor {
 
     RexNode x = andNot(rexBuilder, target2, condition2);
     if (mayBeSatisfiable(x)) {
-      RexNode x2 = RexUtil.composeConjunction(rexBuilder,
-          ImmutableList.of(condition2, target2));
-      RexNode r = canonizeNode(rexBuilder,
-          simplify.simplifyUnknownAsFalse(x2));
+      RexNode x2 = /*Y*/
+          RexUtil.composeConjunction(rexBuilder, ImmutableList.of(condition2, target2));
+      RexNode r = /*Y*/
+          canonizeNode(rexBuilder, simplify.simplifyUnknownAsFalse(x2));
       if (!r.isAlwaysFalse() && isEquivalent(condition2, r)) {
         List<RexNode> conjs = RelOptUtil.conjunctions(r);
         for (RexNode e : RelOptUtil.conjunctions(target2)) {
@@ -1338,8 +1338,8 @@ public class SubstitutionVisitor {
             compenProjs.add(
                 new RexInputRef(i, query.rowType.getFieldList().get(i).getType()));
           } else {
-            final RexNode shifted = RexUtil.shift(qInput1Projs.get(i - fieldCnt(qInput0)),
-                qInput0.rowType.getFieldCount());
+            final RexNode shifted = /*Y*/
+                RexUtil.shift(qInput1Projs.get(i - fieldCnt(qInput0)), qInput0.rowType.getFieldCount());
             compenProjs.add(shifted);
           }
         }
@@ -1418,16 +1418,16 @@ public class SubstitutionVisitor {
       if (splitted != null && splitted.isAlwaysTrue()) {
         final RexNode qInput1CondShifted =
             RexUtil.shift(qInput1Cond, fieldCnt(qInput0.getInput()));
-        final RexNode compenCond = RexUtil.composeConjunction(rexBuilder,
-            ImmutableList.of(qInput0Cond, qInput1CondShifted));
+        final RexNode compenCond = /*Y*/
+            RexUtil.composeConjunction(rexBuilder, ImmutableList.of(qInput0Cond, qInput1CondShifted));
 
         final List<RexNode> compenProjs = new ArrayList<>();
         for (int i = 0; i < query.rowType.getFieldCount(); i++) {
           if (i < fieldCnt(qInput0)) {
             compenProjs.add(qInput0Projs.get(i));
           } else {
-            RexNode shifted = RexUtil.shift(qInput1Projs.get(i - fieldCnt(qInput0)),
-                fieldCnt(qInput0.getInput()));
+            RexNode shifted = /*Y*/
+                RexUtil.shift(qInput1Projs.get(i - fieldCnt(qInput0)), fieldCnt(qInput0.getInput()));
             compenProjs.add(shifted);
           }
         }
@@ -1708,8 +1708,8 @@ public class SubstitutionVisitor {
         final Pair<RexNode, List<RexNode>> queryInputExplained =
             explainCalc(queryInputs.get(i));
         // Matching fails when filtering conditions are not equal or projects are not equal.
-        RexNode residue = splitFilter(call.getSimplify(), queryInputExplained0.left,
-            queryInputExplained.left);
+        RexNode residue = /*Y*/
+            splitFilter(call.getSimplify(), queryInputExplained0.left, queryInputExplained.left);
         if (residue == null || !residue.isAlwaysTrue()) {
           return null;
         }
@@ -1721,8 +1721,8 @@ public class SubstitutionVisitor {
         }
       }
 
-      List<RexNode> projectExprs = MutableRels.createProjects(target,
-          queryInputExplained0.right);
+      List<RexNode> projectExprs = /*Y*/
+          MutableRels.createProjects(target, queryInputExplained0.right);
       final RexProgram compenRexProgram = /*X*/
           RexProgram.create(target.rowType, projectExprs, queryInputExplained0.left,
           query.rowType, rexBuilder);
@@ -1777,8 +1777,8 @@ public class SubstitutionVisitor {
       UnifyRuleCall call, MutableRel child) {
     final MutableRel parent = call.query.getParent();
     if (child instanceof MutableCalc && parent instanceof MutableCalc) {
-      final MutableCalc mergedCalc = mergeCalc(call.getCluster().getRexBuilder(),
-          (MutableCalc) parent, (MutableCalc) child);
+      final MutableCalc mergedCalc = /*Y*/
+          mergeCalc(call.getCluster().getRexBuilder(), (MutableCalc) parent, (MutableCalc) child);
       if (mergedCalc != null) {
         // Note that property of stopTrying in the result is false
         // and this query node deserves further matching iterations.
@@ -1937,8 +1937,8 @@ public class SubstitutionVisitor {
             RexProgram.create(target.rowType, compenProjs, targetCond, query.rowType, rexBuilder);
         result = MutableCalc.of(target, compenRexProgram);
       } else {
-        result = MutableAggregate.of(target,
-            target.groupSet, target.groupSets, targetGroupGenAggCalls);
+        result = /*Y*/
+            MutableAggregate.of(target, target.groupSet, target.groupSets, targetGroupGenAggCalls);
       }
     } else if (target.getGroupType() == Aggregate.Group.SIMPLE) {
       // Query is coarser level of aggregation. Generate an aggregate.
@@ -1967,8 +1967,8 @@ public class SubstitutionVisitor {
             // and the materialization recognition will fail.
             final SqlAggFunction aggFunction = aggregateCall.getAggregation().getRollup();
             if (aggFunction != null) {
-              newAggCall = AggregateCall.create(aggFunction,
-                  aggregateCall.isDistinct(), aggregateCall.isApproximate(),
+              newAggCall = /*Y*/
+                  AggregateCall.create(aggFunction, aggregateCall.isDistinct(), aggregateCall.isApproximate(),
                   aggregateCall.ignoreNulls(),
                   ImmutableList.of(target.groupSet.cardinality() + i), -1,
                   aggregateCall.distinctKeys, aggregateCall.collation,

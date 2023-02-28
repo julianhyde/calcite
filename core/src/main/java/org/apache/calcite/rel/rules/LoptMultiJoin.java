@@ -807,8 +807,8 @@ public class LoptMultiJoin {
    * such a column mapping exists; otherwise, null is returned
    */
   public @Nullable Integer getRightColumnMapping(int rightFactor, int rightOffset) {
-    RemovableSelfJoin selfJoin = requireNonNull(removableSelfJoinPairs.get(rightFactor),
-        () -> "removableSelfJoinPairs.get(rightFactor) is null for " + rightFactor
+    RemovableSelfJoin selfJoin = /*Y*/
+        requireNonNull(removableSelfJoinPairs.get(rightFactor), () -> "removableSelfJoinPairs.get(rightFactor) is null for " + rightFactor
             + ", map=" + removableSelfJoinPairs);
     assert selfJoin.rightFactor == rightFactor;
     return selfJoin.columnMapping.get(rightOffset);

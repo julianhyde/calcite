@@ -616,18 +616,18 @@ class CsvTest {
 
     try (Connection connection =
         DriverManager.getConnection("jdbc:calcite:", info)) {
-      ResultSet res = connection.getMetaData().getColumns(null, null,
-          "DATE", "JOINEDAT");
+      ResultSet res = /*Y*/
+          connection.getMetaData().getColumns(null, null, "DATE", "JOINEDAT");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.DATE);
 
-      res = connection.getMetaData().getColumns(null, null,
-          "DATE", "JOINTIME");
+      res = /*Y*/
+          connection.getMetaData().getColumns(null, null, "DATE", "JOINTIME");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIME);
 
-      res = connection.getMetaData().getColumns(null, null,
-          "DATE", "JOINTIMES");
+      res = /*Y*/
+          connection.getMetaData().getColumns(null, null, "DATE", "JOINTIMES");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIMESTAMP);
 

@@ -128,8 +128,8 @@ public class RelToSqlConverter extends SqlImplementor
   @SuppressWarnings("argument.type.incompatible")
   public RelToSqlConverter(SqlDialect dialect) {
     super(dialect);
-    dispatcher = ReflectUtil.createMethodDispatcher(Result.class, this, "visit",
-        RelNode.class);
+    dispatcher = /*Y*/
+        ReflectUtil.createMethodDispatcher(Result.class, this, "visit", RelNode.class);
   }
 
   /** Dispatches a call to the {@code visit(Xxx e)} method where {@code Xxx}
@@ -260,8 +260,8 @@ public class RelToSqlConverter extends SqlImplementor
     SqlNode sqlCondition =
         convertConditionToSqlNode(e.getCondition(), leftContext, rightContext);
     if (leftResult.neededAlias != null) {
-      SqlShuttle visitor = new AliasReplacementShuttle(leftResult.neededAlias,
-          e.getLeft().getRowType(), sqlSelect.getSelectList());
+      SqlShuttle visitor = /*Y*/
+          new AliasReplacementShuttle(leftResult.neededAlias, e.getLeft().getRowType(), sqlSelect.getSelectList());
       sqlCondition = sqlCondition.accept(visitor);
     }
     SqlNode fromPart = rightResult.asFrom();
@@ -271,8 +271,8 @@ public class RelToSqlConverter extends SqlImplementor
       existsSqlSelect.setSelectList(
           new SqlNodeList(ImmutableList.of(ONE), POS));
       if (existsSqlSelect.getWhere() != null) {
-        sqlCondition = SqlStdOperatorTable.AND.createCall(POS,
-            existsSqlSelect.getWhere(),
+        sqlCondition = /*Y*/
+            SqlStdOperatorTable.AND.createCall(POS, existsSqlSelect.getWhere(),
             sqlCondition);
       }
       existsSqlSelect.setWhere(sqlCondition);
@@ -289,8 +289,8 @@ public class RelToSqlConverter extends SqlImplementor
       sqlCondition = SqlStdOperatorTable.NOT.createCall(POS, sqlCondition);
     }
     if (sqlSelect.getWhere() != null) {
-      sqlCondition = SqlStdOperatorTable.AND.createCall(POS,
-          sqlSelect.getWhere(),
+      sqlCondition = /*Y*/
+          SqlStdOperatorTable.AND.createCall(POS, sqlSelect.getWhere(),
           sqlCondition);
     }
     sqlSelect.setWhere(sqlCondition);
@@ -416,8 +416,8 @@ public class RelToSqlConverter extends SqlImplementor
     if (input instanceof Aggregate) {
       final Aggregate aggregate = (Aggregate) input;
       final boolean ignoreClauses = aggregate.getInput() instanceof Project;
-      final Result x = visitInput(e, 0, isAnon(), ignoreClauses,
-          ImmutableSet.of(Clause.HAVING));
+      final Result x = /*Y*/
+          visitInput(e, 0, isAnon(), ignoreClauses, ImmutableSet.of(Clause.HAVING));
       parseCorrelTable(e, x);
       final Builder builder = x.builder(e);
       x.asSelect().setHaving(
@@ -663,8 +663,9 @@ public class RelToSqlConverter extends SqlImplementor
     final ImmutableList<RelHint> hints = e.getHints();
     if (!hints.isEmpty()) {
       SqlParserPos pos = identifier.getParserPosition();
-      node = new SqlTableRef(pos, identifier,
-          SqlNodeList.of(pos, hints.stream().map(h -> RelToSqlConverter.toSqlHint(h, pos))
+      node = /*Y*/
+          new SqlTableRef(
+              pos, identifier, SqlNodeList.of(pos, hints.stream().map(h -> RelToSqlConverter.toSqlHint(h, pos))
               .collect(Collectors.toList())));
     } else {
       node = identifier;
@@ -785,18 +786,18 @@ public class RelToSqlConverter extends SqlImplementor
         }
         final SqlIdentifier dual = getDual();
         if (dual == null) {
-          query = new SqlSelect(POS, null,
-              new SqlNodeList(nullColumnNames, POS), null, null, null, null,
+          query = /*Y*/
+              new SqlSelect(POS, null, new SqlNodeList(nullColumnNames, POS), null, null, null, null,
               null, null, null, null, null, null);
 
           // Wrap "SELECT 1 AS x"
           // as "SELECT * FROM (SELECT 1 AS x) AS t WHERE false"
-          query = new SqlSelect(POS, null, SqlNodeList.SINGLETON_STAR,
-              as(query, "t"), createAlwaysFalseCondition(), null, null,
+          query = /*Y*/
+              new SqlSelect(POS, null, SqlNodeList.SINGLETON_STAR, as(query, "t"), createAlwaysFalseCondition(), null, null,
               null, null, null, null, null, null);
         } else {
-          query = new SqlSelect(POS, null,
-              new SqlNodeList(nullColumnNames, POS),
+          query = /*Y*/
+              new SqlSelect(POS, null, new SqlNodeList(nullColumnNames, POS),
               dual, createAlwaysFalseCondition(), null,
               null, null, null, null, null, null, null);
         }
@@ -931,8 +932,8 @@ public class RelToSqlConverter extends SqlImplementor
         }
       }
     }
-    final Result x = visitInput(e, 0, Clause.ORDER_BY, Clause.OFFSET,
-        Clause.FETCH);
+    final Result x = /*Y*/
+        visitInput(e, 0, Clause.ORDER_BY, Clause.OFFSET, Clause.FETCH);
     final Builder builder = x.builder(e);
     if (stack.size() != 1
         && builder.select.getSelectList().equals(SqlNodeList.SINGLETON_STAR)) {
@@ -1080,8 +1081,8 @@ public class RelToSqlConverter extends SqlImplementor
                   first, fc.direction.isDescending());
           if (nullDirectionNode != null) {
             orderBySqlList.add(nullDirectionNode);
-            fc = new RelFieldCollation(fc.getFieldIndex(), fc.getDirection(),
-                RelFieldCollation.NullDirection.UNSPECIFIED);
+            fc = /*Y*/
+                new RelFieldCollation(fc.getFieldIndex(), fc.getDirection(), RelFieldCollation.NullDirection.UNSPECIFIED);
           }
         }
         orderBySqlList.add(context.toSql(fc));
@@ -1100,8 +1101,8 @@ public class RelToSqlConverter extends SqlImplementor
       after = SqlLiteral.createSymbol(value, POS);
     } else {
       RexCall call = (RexCall) e.getAfter();
-      String operand = requireNonNull(stringValue(call.getOperands().get(0)),
-          () -> "non-null string value expected for 0th operand of AFTER call " + call);
+      String operand = /*Y*/
+          requireNonNull(stringValue(call.getOperands().get(0)), () -> "non-null string value expected for 0th operand of AFTER call " + call);
       after = call.getOperator().createCall(POS, new SqlIdentifier(operand, POS));
     }
 
@@ -1142,8 +1143,8 @@ public class RelToSqlConverter extends SqlImplementor
       patternDefList.add(as(sqlNode, alias));
     }
 
-    final SqlNode matchRecognize = new SqlMatchRecognize(POS, tableRef,
-        pattern, strictStart, strictEnd, patternDefList, measureList, after,
+    final SqlNode matchRecognize = /*Y*/
+        new SqlMatchRecognize(POS, tableRef, pattern, strictStart, strictEnd, patternDefList, measureList, after,
         subsetList, rowsPerMatch, partitionList, orderByList, interval);
     return result(matchRecognize, Expressions.list(Clause.FROM), e, null);
   }
@@ -1156,8 +1157,8 @@ public class RelToSqlConverter extends SqlImplementor
   public Result visit(Uncollect e) {
     final Result x = visitInput(e, 0);
     final SqlNode unnestNode = SqlStdOperatorTable.UNNEST.createCall(POS, x.asStatement());
-    final List<SqlNode> operands = createAsFullOperands(e.getRowType(), unnestNode,
-        requireNonNull(x.neededAlias, () -> "x.neededAlias is null, node is " + x.node));
+    final List<SqlNode> operands = /*Y*/
+        createAsFullOperands(e.getRowType(), unnestNode, requireNonNull(x.neededAlias, () -> "x.neededAlias is null, node is " + x.node));
     final SqlNode asNode = SqlStdOperatorTable.AS.createCall(POS, operands);
     return result(asNode, ImmutableList.of(Clause.FROM), e, null);
   }

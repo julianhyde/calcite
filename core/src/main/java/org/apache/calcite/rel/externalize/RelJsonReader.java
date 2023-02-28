@@ -315,8 +315,8 @@ public class RelJsonReader {
     final SqlAggFunction aggregation = /*X*/
         requireNonNull(relJson.toAggregation(aggMap),
         () -> "relJson.toAggregation output for " + aggMap);
-    final Boolean distinct = (Boolean) requireNonNull(jsonAggCall.get("distinct"),
-        "jsonAggCall.distinct");
+    final Boolean distinct = /*Y*/
+        (Boolean) requireNonNull(jsonAggCall.get("distinct"), "jsonAggCall.distinct");
     @SuppressWarnings("unchecked")
     final List<Integer> operands = /*X*/
         (List<Integer>) requireNonNull(jsonAggCall.get("operands"),

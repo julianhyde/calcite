@@ -266,8 +266,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     // are contained in the query.
     List<RexNode> queryExprs = extractReferences(rexBuilder, target);
     if (!compensationColumnsEquiPred.isAlwaysTrue()) {
-      RexNode newCompensationColumnsEquiPred = rewriteExpression(rexBuilder, mq,
-          target, target, queryExprs, queryToViewTableMapping, queryEC, false,
+      RexNode newCompensationColumnsEquiPred = /*Y*/
+          rewriteExpression(rexBuilder, mq, target, target, queryExprs, queryToViewTableMapping, queryEC, false,
           compensationColumnsEquiPred);
       if (newCompensationColumnsEquiPred == null) {
         // Skip it
@@ -277,8 +277,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     }
     // For the rest, we use the query equivalence classes
     if (!otherCompensationPred.isAlwaysTrue()) {
-      RexNode newOtherCompensationPred = rewriteExpression(rexBuilder, mq,
-          target, target, queryExprs, queryToViewTableMapping, viewEC, true,
+      RexNode newOtherCompensationPred = /*Y*/
+          rewriteExpression(rexBuilder, mq, target, target, queryExprs, queryToViewTableMapping, viewEC, true,
           otherCompensationPred);
       if (newOtherCompensationPred == null) {
         // Skip it
@@ -418,8 +418,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
 
     // Create mapping from query columns to view columns
     final List<RexNode> rollupNodes = new ArrayList<>();
-    final Multimap<Integer, Integer> m = generateMapping(rexBuilder, simplify, mq,
-        queryAggregate.getInput(), viewAggregate.getInput(), indexes.build(),
+    final Multimap<Integer, Integer> m = /*Y*/
+        generateMapping(rexBuilder, simplify, mq, queryAggregate.getInput(), viewAggregate.getInput(), indexes.build(),
         queryToViewTableMapping, queryEC, rollupNodes);
     if (m == null) {
       // Bail out
@@ -435,8 +435,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     int viewAggregateTotalFieldCount =
         viewAggregate.getRowType().getFieldCount() + rollupNodes.size();
     boolean forceRollup = false;
-    Mapping aggregateMapping = Mappings.create(MappingType.FUNCTION,
-        queryAggregate.getRowType().getFieldCount(), viewAggregateTotalFieldCount);
+    Mapping aggregateMapping = /*Y*/
+        Mappings.create(MappingType.FUNCTION, queryAggregate.getRowType().getFieldCount(), viewAggregateTotalFieldCount);
     for (int i = 0; i < queryAggregate.getGroupCount(); i++) {
       Collection<Integer> c = m.get(queryAggregate.getGroupSet().nth(i));
       for (int j : c) {
@@ -762,8 +762,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       final RexNode e = Iterables.getOnlyElement(s);
       // Rewrite expr to be expressed on query tables
       final RexNode simplified = simplify.simplifyUnknownAsFalse(e);
-      final RexNode expr = RexUtil.swapTableColumnReferences(rexBuilder,
-          simplified,
+      final RexNode expr = /*Y*/
+          RexUtil.swapTableColumnReferences(rexBuilder, simplified,
           tableMapping.inverse(),
           equivalenceClassesMap);
       exprsLineage.put(expr, i);
@@ -780,8 +780,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
     // FLOOR(ts to DAY) via FLOOR(FLOOR(ts to HOUR) to DAY)
     for (RexNode timestampExpr : timestampExprs) {
       for (TimeUnitRange value : SUPPORTED_DATE_TIME_ROLLUP_UNITS) {
-        final SqlFunction[] functions = {getCeilSqlFunction(value),
-            getFloorSqlFunction(value)};
+        final SqlFunction[] functions = /*Y*/
+            {getCeilSqlFunction(value), getFloorSqlFunction(value)};
         for (SqlFunction function : functions) {
           final RexNode call =
               rexBuilder.makeCall(function,
@@ -817,8 +817,8 @@ public abstract class MaterializedViewAggregateRule<C extends MaterializedViewAg
       final RexNode e = Iterables.getOnlyElement(s);
       // Rewrite expr to be expressed on query tables
       final RexNode simplified = simplify.simplifyUnknownAsFalse(e);
-      RexNode targetExpr = RexUtil.swapColumnReferences(rexBuilder,
-          simplified, equivalenceClassesMap);
+      RexNode targetExpr = /*Y*/
+          RexUtil.swapColumnReferences(rexBuilder, simplified, equivalenceClassesMap);
       final Collection<Integer> c = exprsLineage.get(targetExpr);
       if (!c.isEmpty()) {
         for (Integer j : c) {

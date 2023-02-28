@@ -176,8 +176,8 @@ public class ReflectiveSchemaTest {
     schema.add("StringUnion",
         TableMacroImpl.create(Smalls.STRING_UNION_METHOD));
     rootSchema.add("hr", new ReflectiveSchema(new HrSchema()));
-    ResultSet resultSet = connection.createStatement().executeQuery(
-        "select *\n"
+    ResultSet resultSet = /*X*/
+        connection.createStatement().executeQuery("select *\n"
         + "from table(s.StringUnion(\n"
         + "  GenerateStrings(5),\n"
         + "  cursor (select name from emps)))\n"
@@ -200,8 +200,8 @@ public class ReflectiveSchemaTest {
             "select * from \"hr\".\"emps\" where \"deptno\" = 10",
             null, Arrays.asList("s", "emps_view"), null));
     rootSchema.add("hr", new ReflectiveSchema(new HrSchema()));
-    ResultSet resultSet = connection.createStatement().executeQuery(
-        "select *\n"
+    ResultSet resultSet = /*X*/
+        connection.createStatement().executeQuery("select *\n"
         + "from \"s\".\"emps_view\"\n"
         + "where \"empid\" < 120");
     assertEquals(
@@ -239,14 +239,14 @@ public class ReflectiveSchemaTest {
     rootSchema.add("hr", new ReflectiveSchema(new HrSchema()));
     final Statement statement = connection.createStatement();
     ResultSet resultSet;
-    resultSet = statement.executeQuery(
-        "select * from \"s\".\"hr_emps\"");
+    resultSet = /*X*/
+        statement.executeQuery("select * from \"s\".\"hr_emps\"");
     assertEquals(4, count(resultSet)); // "hr_emps" -> "hr"."emps", 4 rows
-    resultSet = statement.executeQuery(
-        "select * from \"s\".\"s_emps\""); // "s_emps" -> "s"."emps", 3 rows
+    resultSet = /*X*/
+        statement.executeQuery("select * from \"s\".\"s_emps\""); // "s_emps" -> "s"."emps", 3 rows
     assertEquals(3, count(resultSet));
-    resultSet = statement.executeQuery(
-        "select * from \"s\".\"null_emps\""); // "null_emps" -> "s"."emps", 3
+    resultSet = /*X*/
+        statement.executeQuery("select * from \"s\".\"null_emps\""); // "null_emps" -> "s"."emps", 3
     assertEquals(3, count(resultSet));
     statement.close();
   }

@@ -706,8 +706,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
 
     // Simplify predicates in place
     final RexUnknownAs unknownAs = RexUnknownAs.falseIf(unknownAsFalse);
-    final boolean reduced = reduceExpressionsInternal(rel, simplify, unknownAs,
-        expList, predicates, treatDynamicCallsAsConstant);
+    final boolean reduced = /*Y*/
+        reduceExpressionsInternal(rel, simplify, unknownAs, expList, predicates, treatDynamicCallsAsConstant);
 
     boolean simplified = false;
     for (int i = 0; i < expList.size(); i++) {

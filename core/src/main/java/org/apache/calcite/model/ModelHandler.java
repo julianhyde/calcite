@@ -483,8 +483,8 @@ public class ModelHandler {
                 () -> "SqlTypeName.get for " + jsonTypeAttribute.type);
             RelDataType type = typeFactory.createSqlType(typeName);
             if (type == null) {
-              type = requireNonNull(currentSchema().getType(jsonTypeAttribute.type),
-                  () -> "type " + jsonTypeAttribute.type + " is not found in schema "
+              type = /*Y*/
+                  requireNonNull(currentSchema().getType(jsonTypeAttribute.type), () -> "type " + jsonTypeAttribute.type + " is not found in schema "
                       + currentSchemaName())
                   .apply(typeFactory);
             }

@@ -1489,8 +1489,8 @@ class RelWriterTest {
       final FrameworkConfig config = RelBuilderTest.config().build();
       final RelBuilder b = RelBuilder.create(config);
       RelNode rel = relFn.apply(b);
-      final String relJson = RelOptUtil.dumpPlan("", rel,
-          SqlExplainFormat.JSON, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
+      final String relJson = /*Y*/
+          RelOptUtil.dumpPlan("", rel, SqlExplainFormat.JSON, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
       assertThat(relJson, matcher);
       return this;
     }
@@ -1499,8 +1499,8 @@ class RelWriterTest {
       final FrameworkConfig config = RelBuilderTest.config().build();
       final RelBuilder b = RelBuilder.create(config);
       RelNode rel = relFn.apply(b);
-      final String relJson = RelOptUtil.dumpPlan("", rel,
-          SqlExplainFormat.JSON, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
+      final String relJson = /*Y*/
+          RelOptUtil.dumpPlan("", rel, SqlExplainFormat.JSON, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
       final String plan;
       if (distribution) {
         VolcanoPlanner planner = new VolcanoPlanner();

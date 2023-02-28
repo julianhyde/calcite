@@ -107,13 +107,15 @@ public class ImmutableNullableSet<E> extends AbstractSet<E> {
         E element = Iterables.getOnlyElement(collection);
         return element == null ? SINGLETON_NULL : ImmutableSet.of(element);
       default:
-        set = ImmutableSet.copyOf(
-            Collections2.transform(collection, e ->
+        set = /*X*/
+            ImmutableSet.copyOf(
+                Collections2.transform(collection, e ->
                 e == null ? NullSentinel.INSTANCE : e));
       }
     } else {
-      set = ImmutableSet.copyOf(
-          Util.transform(elements, e ->
+      set = /*X*/
+          ImmutableSet.copyOf(
+              Util.transform(elements, e ->
               e == null ? NullSentinel.INSTANCE : e));
     }
     if (set.contains(NullSentinel.INSTANCE)) {

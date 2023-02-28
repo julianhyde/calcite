@@ -142,8 +142,8 @@ public interface SaffronProperties {
       Properties source = System.getProperties();
       for (Object objectKey : Collections.list(source.keys())) {
         String key = (String) objectKey;
-        String value = Objects.requireNonNull(
-            source.getProperty(key),
+        String value = /*X*/
+            Objects.requireNonNull(source.getProperty(key),
             () -> "value for " + key);
         if (key.startsWith("saffron.") || key.startsWith("net.sf.saffron.")) {
           properties.setProperty(key, value);

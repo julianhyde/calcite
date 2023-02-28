@@ -50,8 +50,8 @@ class InlinerTest {
   }
 
   @Test void testInlineSingleUsage() {
-    DeclarationStatement decl = Expressions.declare(16, "x",
-        Expressions.add(ONE, TWO));
+    DeclarationStatement decl = /*Y*/
+        Expressions.declare(16, "x", Expressions.add(ONE, TWO));
     b.add(decl);
     b.add(Expressions.return_(null, decl.parameter));
     assertEquals("{\n  return 1 + 2;\n}\n", b.toBlock().toString());
@@ -79,8 +79,8 @@ class InlinerTest {
   @Test void testNoInlineMultipleUsage() {
     ParameterExpression p1 = Expressions.parameter(int.class, "p1");
     ParameterExpression p2 = Expressions.parameter(int.class, "p2");
-    DeclarationStatement decl = Expressions.declare(16, "x",
-        Expressions.subtract(p1, p2));
+    DeclarationStatement decl = /*Y*/
+        Expressions.declare(16, "x", Expressions.subtract(p1, p2));
     b.add(decl);
     b.add(
         Expressions.return_(null,
@@ -101,8 +101,9 @@ class InlinerTest {
 
     builder.add(Expressions.declare(0, t, null));
 
-    Expression v = builder.append("v",
-        Expressions.makeTernary(ExpressionType.Conditional,
+    Expression v = /*Y*/
+        builder.append(
+            "v", Expressions.makeTernary(ExpressionType.Conditional,
             Expressions.makeBinary(ExpressionType.NotEqual,
                 Expressions.assign(t, Expressions.constant(1)),
                 Expressions.parameter(int.class, "a")),
@@ -141,8 +142,9 @@ class InlinerTest {
 
     builder.add(Expressions.declare(modifiers, t, null));
 
-    Expression v = builder.append("v",
-        Expressions.makeTernary(ExpressionType.Conditional,
+    Expression v = /*Y*/
+        builder.append(
+            "v", Expressions.makeTernary(ExpressionType.Conditional,
             Expressions.makeBinary(ExpressionType.NotEqual,
                 Expressions.assign(t, Expressions.constant(1)),
                 Expressions.parameter(int.class, "a")),
@@ -161,8 +163,9 @@ class InlinerTest {
 
     builder.add(Expressions.declare(0, t, TWO));
 
-    Expression v = builder.append("v",
-        Expressions.makeTernary(ExpressionType.Conditional,
+    Expression v = /*Y*/
+        builder.append(
+            "v", Expressions.makeTernary(ExpressionType.Conditional,
             Expressions.makeBinary(ExpressionType.NotEqual,
                 Expressions.assign(t, Expressions.constant(1)),
                 Expressions.parameter(int.class, "a")),
@@ -186,8 +189,8 @@ class InlinerTest {
     final ParameterExpression v = Expressions.parameter(int.class, "v");
 
     Expression t = builder.append("t", Expressions.add(u, v));
-    Expression b = builder.append("b",
-        Expressions.condition(Expressions.greaterThan(t, ONE), TRUE, TRUE));
+    Expression b = /*Y*/
+        builder.append("b", Expressions.condition(Expressions.greaterThan(t, ONE), TRUE, TRUE));
 
     builder.add(Expressions.return_(null, Expressions.condition(b, t, TWO)));
     assertEquals(
