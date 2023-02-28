@@ -155,8 +155,9 @@ public class RelOptMaterialization {
                           Mappings.offsetSource(rightMapping, offset),
                           leftMapping.getTargetCount()));
               final RelNode project = /*X*/
-                  RelOptUtil.createProject(leftRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
-                  Mappings.asListNonNull(mapping.inverse()));
+                  RelOptUtil.createProject(
+                      leftRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
+                      Mappings.asListNonNull(mapping.inverse()));
               final List<RexNode> conditions = new ArrayList<>();
               if (left.condition != null) {
                 conditions.add(left.condition);
@@ -180,8 +181,9 @@ public class RelOptMaterialization {
                       Mappings.offsetSource(leftMapping, offset),
                       Mappings.offsetTarget(rightMapping, leftCount));
               final RelNode project = /*X*/
-                  RelOptUtil.createProject(rightRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
-                  Mappings.asListNonNull(mapping.inverse()));
+                  RelOptUtil.createProject(
+                      rightRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
+                      Mappings.asListNonNull(mapping.inverse()));
               final List<RexNode> conditions = new ArrayList<>();
               if (left.condition != null) {
                 conditions.add(
@@ -203,9 +205,9 @@ public class RelOptMaterialization {
     }
     final Program program = /*X*/
         Programs.hep(
-            ImmutableList.of(
-            CoreRules.PROJECT_FILTER_TRANSPOSE, CoreRules.AGGREGATE_PROJECT_MERGE,
-            CoreRules.AGGREGATE_FILTER_TRANSPOSE),
+            ImmutableList.of(CoreRules.PROJECT_FILTER_TRANSPOSE,
+                CoreRules.AGGREGATE_PROJECT_MERGE,
+                CoreRules.AGGREGATE_FILTER_TRANSPOSE),
         false,
         DefaultRelMetadataProvider.INSTANCE);
     return program.run(castNonNull(null), rel2, castNonNull(null),
@@ -274,10 +276,10 @@ public class RelOptMaterialization {
     final Program program = /*X*/
         Programs.hep(
             ImmutableList.of(CoreRules.JOIN_PROJECT_RIGHT_TRANSPOSE,
-            CoreRules.JOIN_PROJECT_LEFT_TRANSPOSE,
-            CoreRules.FILTER_INTO_JOIN,
-            CoreRules.PROJECT_REMOVE,
-            CoreRules.PROJECT_MERGE),
+                CoreRules.JOIN_PROJECT_LEFT_TRANSPOSE,
+                CoreRules.FILTER_INTO_JOIN,
+                CoreRules.PROJECT_REMOVE,
+                CoreRules.PROJECT_MERGE),
         false,
         DefaultRelMetadataProvider.INSTANCE);
     if (CalciteSystemProperty.DEBUG.value()) {
@@ -286,8 +288,8 @@ public class RelOptMaterialization {
               SqlExplainLevel.DIGEST_ATTRIBUTES));
     }
     final RelNode rel2 = /*Y*/
-        program.run(castNonNull(null), rel, castNonNull(null), ImmutableList.of(),
-        ImmutableList.of());
+        program.run(castNonNull(null), rel, castNonNull(null),
+            ImmutableList.of(), ImmutableList.of());
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println(
           RelOptUtil.dumpPlan("after", rel2, SqlExplainFormat.TEXT,

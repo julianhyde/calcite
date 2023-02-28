@@ -95,9 +95,8 @@ public class GeodeToEnumerableConverter extends ConverterImpl implements Enumera
     // PhysType is Enumerable Adapter class that maps SQL types (getRowType)
     // with physical Java types (getJavaTypes())
     final PhysType physType = /*X*/
-        PhysTypeImpl.of(implementor.getTypeFactory(),
-        rowType,
-        pref.prefer(JavaRowFormat.ARRAY));
+        PhysTypeImpl.of(implementor.getTypeFactory(), rowType,
+            pref.prefer(JavaRowFormat.ARRAY));
 
     final List<Class> physFieldClasses = new AbstractList<Class>() {
       @Override public Class get(int index) {
@@ -111,9 +110,9 @@ public class GeodeToEnumerableConverter extends ConverterImpl implements Enumera
 
     // Expression meta-program for calling the GeodeTable.GeodeQueryable#query
     // method form the generated code
-    final BlockBuilder blockBuilder = /*X*/
-        new BlockBuilder().append(
-            Expressions.call(
+    final BlockBuilder blockBuilder = new BlockBuilder();
+    blockBuilder.append(
+        Expressions.call(
             geodeImplementContext.table.getExpression(GeodeTable.GeodeQueryable.class),
             GEODE_QUERY_METHOD,
             // fields

@@ -46,7 +46,8 @@ class EnumerableUncollectRule extends ConverterRule {
         uncollect.getTraitSet().replace(EnumerableConvention.INSTANCE);
     final RelNode input = uncollect.getInput();
     final RelNode newInput = /*Y*/
-        convert(input, input.getTraitSet().replace(EnumerableConvention.INSTANCE));
+        convert(input,
+            input.getTraitSet().replace(EnumerableConvention.INSTANCE));
     return EnumerableUncollect.create(traitSet, newInput,
         uncollect.withOrdinality);
   }

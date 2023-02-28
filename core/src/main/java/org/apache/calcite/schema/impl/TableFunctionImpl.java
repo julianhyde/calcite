@@ -126,18 +126,21 @@ public class TableFunctionImpl extends ReflectiveFunctionBase
             final Class<?> returnType = method.getReturnType();
             if (QueryableTable.class.isAssignableFrom(returnType)) {
               Expression queryable = /*X*/
-                  Expressions.call(Expressions.convert_(expr, QueryableTable.class),
-                  BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
-                  Expressions.call(translator.getRoot(),
-                      BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method),
-                  Expressions.constant(null, SchemaPlus.class),
-                  Expressions.constant(call.getOperator().getName(), String.class));
+                  Expressions.call(
+                      Expressions.convert_(expr, QueryableTable.class),
+                      BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
+                      Expressions.call(translator.getRoot(),
+                          BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method),
+                      Expressions.constant(null, SchemaPlus.class),
+                      Expressions.constant(call.getOperator().getName(), String.class));
               expr = /*Y*/
-                  Expressions.call(queryable, BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);
+                  Expressions.call(queryable,
+                      BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);
             } else {
               expr = /*Y*/
-                  Expressions.call(expr, BuiltInMethod.SCANNABLE_TABLE_SCAN.method,
-                  translator.getRoot());
+                  Expressions.call(expr,
+                      BuiltInMethod.SCANNABLE_TABLE_SCAN.method,
+                      translator.getRoot());
             }
             return expr;
           }

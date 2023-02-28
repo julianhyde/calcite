@@ -81,28 +81,25 @@ public class EnumerableTableSpool extends TableSpool implements EnumerableRel {
     Expression tableExp = /*X*/
         Expressions.convert_(
             Expressions.call(
-            Expressions.call(
-                implementor.getRootExpression(),
-                BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method),
-            BuiltInMethod.SCHEMA_GET_TABLE.method,
-            Expressions.constant(tableName, String.class)),
-        ModifiableTable.class);
+                Expressions.call(implementor.getRootExpression(),
+                    BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method),
+                BuiltInMethod.SCHEMA_GET_TABLE.method,
+                Expressions.constant(tableName, String.class)),
+            ModifiableTable.class);
     Expression collectionExp = /*X*/
         Expressions.call(tableExp,
-        BuiltInMethod.MODIFIABLE_TABLE_GET_MODIFIABLE_COLLECTION.method);
+            BuiltInMethod.MODIFIABLE_TABLE_GET_MODIFIABLE_COLLECTION.method);
 
     Expression inputExp = builder.append("input", inputResult.block);
 
     Expression spoolExp = /*X*/
         Expressions.call(BuiltInMethod.LAZY_COLLECTION_SPOOL.method,
-        collectionExp,
-        inputExp);
+            collectionExp, inputExp);
     builder.add(spoolExp);
 
     PhysType physType = /*X*/
         PhysTypeImpl.of(implementor.getTypeFactory(),
-        getRowType(),
-        pref.prefer(inputResult.format));
+            getRowType(), pref.prefer(inputResult.format));
     return implementor.result(physType, builder.toBlock());
   }
 

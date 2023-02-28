@@ -1118,11 +1118,13 @@ public class Lattice {
           node.alias = Util.last(node.table.t.getQualifiedName());
         }
         node.alias = /*Y*/
-            SqlValidatorUtil.uniquify(node.alias, aliases, SqlValidatorUtil.ATTEMPT_SUGGESTER);
+            SqlValidatorUtil.uniquify(node.alias, aliases,
+                SqlValidatorUtil.ATTEMPT_SUGGESTER);
         node.startCol = c;
         for (String name : node.table.t.getRowType().getFieldNames()) {
           final String alias = /*Y*/
-              SqlValidatorUtil.uniquify(name, columnAliases, SqlValidatorUtil.ATTEMPT_SUGGESTER);
+              SqlValidatorUtil.uniquify(name, columnAliases,
+                  SqlValidatorUtil.ATTEMPT_SUGGESTER);
           final BaseColumn column =
               new BaseColumn(c++, castNonNull(node.alias), name, alias);
           columnList.add(column);

@@ -324,8 +324,9 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     }
 
     Mappings.TargetMapping mapping = /*Y*/
-        Mappings.target(keyMap, (left2Right ? left : right).getRowType().getFieldCount(),
-        (left2Right ? right : left).getRowType().getFieldCount());
+        Mappings.target(keyMap,
+            (left2Right ? left : right).getRowType().getFieldCount(),
+            (left2Right ? right : left).getRowType().getFieldCount());
     return mapping;
   }
 
@@ -428,7 +429,8 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
       RelDataType leftType = left.getRowType().getFieldList().get(pair.left).getType();
       RelDataType rightType = right.getRowType().getFieldList().get(pair.right).getType();
       final RelDataType keyType = /*X*/
-          requireNonNull(typeFactory.leastRestrictive(ImmutableList.of(leftType, rightType)),
+          requireNonNull(
+              typeFactory.leastRestrictive(ImmutableList.of(leftType, rightType)),
           () -> "leastRestrictive returns null for " + leftType + " and " + rightType);
       final Type keyClass = typeFactory.getJavaClass(keyType);
       leftExpressions.add(
@@ -441,10 +443,13 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     Expression predicate = Expressions.constant(null);
     if (!joinInfo.nonEquiConditions.isEmpty()) {
       final RexNode nonEquiCondition = /*X*/
-          RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+          RexUtil.composeConjunction(getCluster().getRexBuilder(),
+              joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
         predicate = /*Y*/
-            EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+            EnumUtils.generatePredicate(implementor,
+                getCluster().getRexBuilder(), left, right, leftResult.physType,
+                rightResult.physType, nonEquiCondition);
       }
     }
     final PhysType leftKeyPhysType =

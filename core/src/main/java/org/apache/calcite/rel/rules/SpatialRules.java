@@ -209,7 +209,7 @@ public abstract class SpatialRules {
         if (RexUtil.isLiteral(within.operands.get(2), true)) {
           final Number distance = /*X*/
               requireNonNull((Number) value(within.operands.get(2)),
-              () -> "distance for " + within);
+                  () -> "distance for " + within);
           switch (Double.compare(distance.doubleValue(), 0D)) {
           case -1: // negative distance
             return ImmutableList.of(builder.getRexBuilder().makeLiteral(false));

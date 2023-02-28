@@ -53,11 +53,7 @@ public class EnumerableLimitRule
     if (!sort.getCollation().getFieldCollations().isEmpty()) {
       // Create a sort with the same sort key, but no offset or fetch.
       input = /*X*/
-          sort.copy(sort.getTraitSet(),
-          input,
-          sort.getCollation(),
-          null,
-          null);
+          sort.copy(sort.getTraitSet(), input, sort.getCollation(), null, null);
     }
     call.transformTo(
         EnumerableLimit.create(

@@ -311,13 +311,13 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testFilterProjectTransposeRule() {
     List<RelOptRule> rules = /*X*/
         Arrays.asList(CoreRules.FILTER_PROJECT_TRANSPOSE, // default: copyFilter=true, copyProject=true
-        CoreRules.FILTER_PROJECT_TRANSPOSE.config
-            .withOperandFor(Filter.class,
-                filter -> !RexUtil.containsCorrelation(filter.getCondition()),
-                Project.class, project -> true)
-            .withCopyFilter(false)
-            .withCopyProject(false)
-            .toRule());
+            CoreRules.FILTER_PROJECT_TRANSPOSE.config
+                .withOperandFor(Filter.class,
+                    filter -> !RexUtil.containsCorrelation(filter.getCondition()),
+                    Project.class, project -> true)
+                .withCopyFilter(false)
+                .withCopyProject(false)
+                .toRule());
 
     for (RelOptRule rule : rules) {
       RelBuilder b = RelBuilder.create(RelBuilderTest.config().build());
@@ -647,12 +647,12 @@ class RelOptRulesTest extends RelOptTestBase {
       // ref1 IS NOT DISTINCT FROM ref2
       RexCall cond1 = /*Y*/
           (RexCall) b.call(SqlStdOperatorTable.OR, b.equals(ref1, ref2),
-          b.call(SqlStdOperatorTable.AND, b.isNull(ref1), b.isNull(ref2)));
+              b.call(SqlStdOperatorTable.AND, b.isNull(ref1), b.isNull(ref2)));
 
       // ref3 IS NOT DISTINCT FROM ref4
       RexCall cond2 = /*Y*/
           (RexCall) b.call(SqlStdOperatorTable.OR, b.equals(ref3, ref4),
-          b.call(SqlStdOperatorTable.AND, b.isNull(ref3), b.isNull(ref4)));
+              b.call(SqlStdOperatorTable.AND, b.isNull(ref3), b.isNull(ref4)));
 
       RexNode cond = b.and(cond1, cond2);
       return b.semiJoin(cond)
@@ -1114,8 +1114,7 @@ class RelOptRulesTest extends RelOptTestBase {
     diffRepos.assertEquals("planBefore", "${planBefore}", planBefore);
 
     RuleSet ruleSet =
-        RuleSets.ofList(
-            EnumerableRules.ENUMERABLE_SORT_RULE,
+        RuleSets.ofList(EnumerableRules.ENUMERABLE_SORT_RULE,
             EnumerableRules.ENUMERABLE_LIMIT_RULE,
             EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -1129,7 +1128,8 @@ class RelOptRulesTest extends RelOptTestBase {
             .replace(0, EnumerableConvention.INSTANCE);
 
     RelNode relAfter = /*Y*/
-        program.run(fixture.planner, rel, toTraits, Collections.emptyList(), Collections.emptyList());
+        program.run(fixture.planner, rel, toTraits,
+            Collections.emptyList(), Collections.emptyList());
 
     String planAfter = NL + RelOptUtil.toString(relAfter);
     diffRepos.assertEquals("planAfter", "${planAfter}", planAfter);
@@ -1938,8 +1938,9 @@ class RelOptRulesTest extends RelOptTestBase {
           .project(b.field(0),
               b.getRexBuilder().makeFieldAccess(rexCorrel, 0)).build();
       LogicalCorrelate correlate = /*Y*/
-          new LogicalCorrelate(left.getCluster(), left.getTraitSet(), ImmutableList.of(), left, right, correlationId,
-          ImmutableBitSet.of(0), type);
+          new LogicalCorrelate(left.getCluster(), left.getTraitSet(),
+              ImmutableList.of(), left, right, correlationId,
+              ImmutableBitSet.of(0), type);
 
       b.push(correlate);
       return b.project(b.field(0))
@@ -3506,11 +3507,13 @@ class RelOptRulesTest extends RelOptTestBase {
         + " on products.PRODUCTID = dt.PRODUCTID";
     Collection<RelOptRule> rules = /*X*/
         Arrays.asList(PruneEmptyRules.EMPTY_TABLE_INSTANCE,
-        PruneEmptyRules.JOIN_RIGHT_INSTANCE,
-        PruneEmptyRules.FILTER_INSTANCE,
-        PruneEmptyRules.PROJECT_INSTANCE,
-        CoreRules.PROJECT_MERGE);
-    sql(sql).withProgram(HepProgram.builder().addRuleCollection(rules).build()).check();
+            PruneEmptyRules.JOIN_RIGHT_INSTANCE,
+            PruneEmptyRules.FILTER_INSTANCE,
+            PruneEmptyRules.PROJECT_INSTANCE,
+            CoreRules.PROJECT_MERGE);
+    sql(sql)
+        .withProgram(HepProgram.builder().addRuleCollection(rules).build())
+        .check();
   }
 
   @Test void testLeftEmptyInnerJoin() {
@@ -3818,16 +3821,22 @@ class RelOptRulesTest extends RelOptTestBase {
       //      ELSE x < 3
       final RexNode caseRexNode = /*Y*/
           rexBuilder.makeCall(
-              SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
-              rexBuilder.makeCall(SqlStdOperatorTable.MOD, ref, literal2), literal1),
-          rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, ref, literal2),
-          rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
-              rexBuilder.makeCall(SqlStdOperatorTable.MOD, ref, literal3), literal2),
-          rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, ref, literal1),
-          rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, ref, literal3));
+              SqlStdOperatorTable.CASE,
+              rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+                  rexBuilder.makeCall(SqlStdOperatorTable.MOD, ref, literal2),
+                  literal1),
+              rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, ref, literal2),
+              rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+                  rexBuilder.makeCall(SqlStdOperatorTable.MOD, ref, literal3),
+                  literal2),
+              rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, ref, literal1),
+              rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, ref, literal3));
 
-      final RexNode castNode = rexBuilder.makeCast(rexBuilder.getTypeFactory().
-          createTypeWithNullability(caseRexNode.getType(), true), caseRexNode);
+      final RexNode castNode =
+          rexBuilder.makeCast(
+              rexBuilder.getTypeFactory()
+                  .createTypeWithNullability(caseRexNode.getType(), true),
+              caseRexNode);
       return b
           .push(left)
           .project(castNode)
@@ -4527,19 +4536,18 @@ class RelOptRulesTest extends RelOptTestBase {
         (LogicalCorrelate) rel.getInput(0).getInput(0);
     CustomCorrelate customCorrelate = /*X*/
         new CustomCorrelate(logicalCorrelate.getCluster(),
-        logicalCorrelate.getTraitSet(),
-        logicalCorrelate.getHints(),
-        logicalCorrelate.getLeft(),
-        logicalCorrelate.getRight(),
-        logicalCorrelate.getCorrelationId(),
-        logicalCorrelate.getRequiredColumns(),
-        logicalCorrelate.getJoinType());
+            logicalCorrelate.getTraitSet(),
+            logicalCorrelate.getHints(),
+            logicalCorrelate.getLeft(),
+            logicalCorrelate.getRight(),
+            logicalCorrelate.getCorrelationId(),
+            logicalCorrelate.getRequiredColumns(),
+            logicalCorrelate.getJoinType());
     RelNode newRoot = /*X*/
         rel.copy(rel.getTraitSet(),
-        ImmutableList.of(
-            rel.getInput(0).copy(
-                rel.getInput(0).getTraitSet(),
-                ImmutableList.of(customCorrelate))));
+            ImmutableList.of(
+                rel.getInput(0).copy(rel.getInput(0).getTraitSet(),
+                    ImmutableList.of(customCorrelate))));
 
     // Decorrelate both trees using the same relBuilder
     final RelBuilder relBuilder = RelBuilder.create(RelBuilderTest.config().build());
@@ -5269,8 +5277,9 @@ class RelOptRulesTest extends RelOptTestBase {
             registerSchema(schema);
             final boolean nullable = true;
             final RelDataType timestampType = /*X*/
-                typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.TIMESTAMP),
-                nullable);
+                typeFactory.createTypeWithNullability(
+                    typeFactory.createSqlType(SqlTypeName.TIMESTAMP),
+                    nullable);
             String tableName = "NULLABLE";
             MockTable table = MockTable
                 .create(this, schema, tableName, false, 100);
@@ -6355,8 +6364,7 @@ class RelOptRulesTest extends RelOptTestBase {
       return false;
     };
     RuleSet ruleSet =
-        RuleSets.ofList(
-            CoreRules.FILTER_PROJECT_TRANSPOSE,
+        RuleSets.ofList(CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_MERGE,
             CoreRules.PROJECT_MERGE,
             ProjectFilterTransposeRule.Config.DEFAULT
@@ -6909,8 +6917,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + "union all\n"
         + "(select n_name from CUSTOMER_MODIFIABLEVIEW)";
     RuleSet ruleSet =
-        RuleSets.ofList(
-            EnumerableRules.ENUMERABLE_PROJECT_RULE,
+        RuleSets.ofList(EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_UNION_RULE);
     sql(sql)
@@ -7050,7 +7057,8 @@ class RelOptRulesTest extends RelOptTestBase {
       final LogicalFilter logicalFilter = call.rel(0);
       final RelNode input = logicalFilter.getInput();
       final MyFilter myFilter = /*Y*/
-          new MyFilter(input.getCluster(), input.getTraitSet(), input, logicalFilter.getCondition());
+          new MyFilter(input.getCluster(), input.getTraitSet(), input,
+              logicalFilter.getCondition());
       call.transformTo(myFilter);
     }
 
@@ -7105,7 +7113,8 @@ class RelOptRulesTest extends RelOptTestBase {
       final LogicalProject logicalProject = call.rel(0);
       final RelNode input = logicalProject.getInput();
       final MyProject myProject = /*Y*/
-          new MyProject(input.getCluster(), input.getTraitSet(), input, logicalProject.getProjects(), logicalProject.getRowType());
+          new MyProject(input.getCluster(), input.getTraitSet(), input,
+              logicalProject.getProjects(), logicalProject.getRowType());
       call.transformTo(myProject);
     }
 

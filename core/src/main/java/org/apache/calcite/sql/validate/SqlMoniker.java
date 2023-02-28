@@ -36,7 +36,8 @@ public interface SqlMoniker {
           int c = o1.getType().compareTo(o2.getType());
           if (c == 0) {
             c = /*Y*/
-                listOrdering.compare(o1.getFullyQualifiedNames(), o2.getFullyQualifiedNames());
+                listOrdering.compare(o1.getFullyQualifiedNames(),
+                    o2.getFullyQualifiedNames());
           }
           return c;
         }

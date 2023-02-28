@@ -139,23 +139,23 @@ public class JsonFunctions {
           return JsonPathContext.withStrictException(pathSpec, input.exc);
         }
         ctx = /*Y*/
-            JsonPath.parse(input.obj(), Configuration
-                .builder()
-                .jsonProvider(JSON_PATH_JSON_PROVIDER)
-                .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
-                .build());
+            JsonPath.parse(input.obj(),
+                Configuration.builder()
+                    .jsonProvider(JSON_PATH_JSON_PROVIDER)
+                    .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
+                    .build());
         break;
       case LAX:
         if (input.hasException()) {
           return JsonPathContext.withJavaObj(PathMode.LAX, null);
         }
         ctx = /*Y*/
-            JsonPath.parse(input.obj(), Configuration
-                .builder()
-                .options(Option.SUPPRESS_EXCEPTIONS)
-                .jsonProvider(JSON_PATH_JSON_PROVIDER)
-                .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
-                .build());
+            JsonPath.parse(input.obj(),
+                Configuration.builder()
+                    .options(Option.SUPPRESS_EXCEPTIONS)
+                    .jsonProvider(JSON_PATH_JSON_PROVIDER)
+                    .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
+                    .build());
         break;
       default:
         throw RESOURCE.illegalJsonPathModeInPathSpec(mode.toString(), pathSpec).ex();
@@ -266,8 +266,7 @@ public class JsonFunctions {
         }
       } else if (context.mode == PathMode.STRICT
           && !isScalarObject(value)) {
-        exc = /*X*/
-            RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc(value.toString()).ex();
+        exc = RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc(value.toString()).ex();
       } else {
         return value;
       }
@@ -353,7 +352,8 @@ public class JsonFunctions {
         }
       } else if (context.mode == PathMode.STRICT && isScalarObject(value)) {
         exc = /*X*/
-            RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc(value.toString()).ex();
+            RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc(
+                value.toString()).ex();
       } else {
         try {
           return jsonize(value);
@@ -629,12 +629,12 @@ public class JsonFunctions {
   public static String jsonRemove(JsonValueContext input, String... pathSpecs) {
     try {
       DocumentContext ctx = /*Y*/
-          JsonPath.parse(input.obj(), Configuration
-              .builder()
-              .options(Option.SUPPRESS_EXCEPTIONS)
-              .jsonProvider(JSON_PATH_JSON_PROVIDER)
-              .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
-              .build());
+          JsonPath.parse(input.obj(),
+              Configuration.builder()
+                  .options(Option.SUPPRESS_EXCEPTIONS)
+                  .jsonProvider(JSON_PATH_JSON_PROVIDER)
+                  .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
+                  .build());
       for (String pathSpec : pathSpecs) {
         if ((pathSpec != null) && (ctx.read(pathSpec) != null)) {
           ctx.delete(pathSpec);
@@ -665,12 +665,12 @@ public class JsonFunctions {
     assert kvs.length % step == 0;
     String result = null;
     DocumentContext ctx = /*Y*/
-        JsonPath.parse(jsonDoc.obj(), Configuration
-            .builder()
-            .options(Option.SUPPRESS_EXCEPTIONS)
-            .jsonProvider(JSON_PATH_JSON_PROVIDER)
-            .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
-            .build());
+        JsonPath.parse(jsonDoc.obj(),
+            Configuration.builder()
+                .options(Option.SUPPRESS_EXCEPTIONS)
+                .jsonProvider(JSON_PATH_JSON_PROVIDER)
+                .mappingProvider(JSON_PATH_MAPPING_PROVIDER)
+                .build());
 
     for (int i = 0; i < kvs.length; i += step) {
       String k = (String) kvs[i];

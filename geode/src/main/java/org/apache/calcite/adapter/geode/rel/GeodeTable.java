@@ -101,12 +101,12 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
       RelDataType type;
       if (typeName == SqlTypeName.ARRAY) {
         type = /*X*/
-            typeFactory.createArrayType(typeFactory.createSqlType(SqlTypeName.ANY),
-            -1);
+            typeFactory.createArrayType(
+                typeFactory.createSqlType(SqlTypeName.ANY), -1);
       } else if (typeName == SqlTypeName.MULTISET) {
         type = /*X*/
-            typeFactory.createMultisetType(typeFactory.createSqlType(SqlTypeName.ANY),
-            -1);
+            typeFactory.createMultisetType(
+                typeFactory.createSqlType(SqlTypeName.ANY), -1);
       } else if (typeName == SqlTypeName.MAP) {
         RelDataType anyType = typeFactory.createSqlType(SqlTypeName.ANY);
         type = typeFactory.createMapType(anyType, anyType);
@@ -201,7 +201,8 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
           return new GeodeEnumerator(results, resultRowType);
         } catch (Exception e) {
           String message = /*Y*/
-              String.format(Locale.ROOT, "Failed to execute query [%s] on %s", oqlQuery, clientCache.getName());
+              String.format(Locale.ROOT, "Failed to execute query [%s] on %s",
+                  oqlQuery, clientCache.getName());
           throw new RuntimeException(message, e);
         }
       }

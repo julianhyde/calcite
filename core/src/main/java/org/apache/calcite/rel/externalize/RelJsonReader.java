@@ -131,10 +131,9 @@ public class RelJsonReader {
       @Override public RelOptTable getTable(String table) {
         final List<String> list = /*X*/
             requireNonNull(getStringList(table),
-            () -> "getStringList for " + table);
-        return requireNonNull(
-            relOptSchema.getTableForMember(list),
-            () -> "table " + table + " is not found in schema " + relOptSchema.toString());
+                () -> "getStringList for " + table);
+        return requireNonNull(relOptSchema.getTableForMember(list),
+            () -> "table " + table + " is not found in schema " + relOptSchema);
       }
 
       @Override public RelNode getInput() {
@@ -311,18 +310,20 @@ public class RelJsonReader {
     @SuppressWarnings("unchecked")
     final Map<String, Object> aggMap = /*X*/
         (Map) requireNonNull(jsonAggCall.get("agg"),
-        "agg key is not found");
+            "agg key is not found");
     final SqlAggFunction aggregation = /*X*/
         requireNonNull(relJson.toAggregation(aggMap),
-        () -> "relJson.toAggregation output for " + aggMap);
-    final Boolean distinct = /*Y*/
-        (Boolean) requireNonNull(jsonAggCall.get("distinct"), "jsonAggCall.distinct");
+            () -> "relJson.toAggregation output for " + aggMap);
+    final boolean distinct = /*Y*/
+        requireNonNull((Boolean) jsonAggCall.get("distinct"),
+            "jsonAggCall.distinct");
     @SuppressWarnings("unchecked")
     final List<Integer> operands = /*X*/
-        (List<Integer>) requireNonNull(jsonAggCall.get("operands"),
-        "jsonAggCall.operands");
+        requireNonNull((List<Integer>) jsonAggCall.get("operands"),
+            "jsonAggCall.operands");
     final Integer filterOperand = (Integer) jsonAggCall.get("filter");
-    final Object jsonAggType = requireNonNull(jsonAggCall.get("type"), "jsonAggCall.type");
+    final Object jsonAggType =
+        requireNonNull(jsonAggCall.get("type"), "jsonAggCall.type");
     final RelDataType type =
         relJson.toType(cluster.getTypeFactory(), jsonAggType);
     final String name = (String) jsonAggCall.get("name");

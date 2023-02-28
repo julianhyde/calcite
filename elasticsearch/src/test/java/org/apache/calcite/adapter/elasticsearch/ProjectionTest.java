@@ -49,9 +49,9 @@ class ProjectionTest {
 
   @BeforeAll
   public static void setupInstance() throws Exception {
-
     final Map<String, String> mappings = /*Y*/
-        ImmutableMap.of("A", "keyword", "b", "keyword", "cCC", "keyword", "DDd", "keyword");
+        ImmutableMap.of("A", "keyword",
+            "b", "keyword", "cCC", "keyword", "DDd", "keyword");
 
     NODE.createIndex(NAME, mappings);
 

@@ -126,8 +126,10 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
         Expression e = null;
         for (Statement statement : result.block.statements) {
           if (statement instanceof GotoStatement) {
+            final GotoStatement gotoStatement = (GotoStatement) statement;
             e = /*Y*/
-                bb.append("v", requireNonNull(((GotoStatement) statement).expression, "expression"));
+                bb.append("v",
+                    requireNonNull(gotoStatement.expression, "expression"));
           } else {
             bb.add(statement);
           }
@@ -138,7 +140,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
                   Expressions.call(null, BuiltInMethod.SLICE0.method, e)));
         }
         result = /*Y*/
-            new EnumerableRel.Result(bb.toBlock(), result.physType, JavaRowFormat.SCALAR);
+            new EnumerableRel.Result(bb.toBlock(), result.physType,
+                JavaRowFormat.SCALAR);
       }
       break;
     default:
@@ -162,13 +165,9 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
 
     final BlockStatement block = /*X*/
         Expressions.block(
-            Iterables.concat(
-            stashed,
-            result.block.statements));
+            Iterables.concat(stashed, result.block.statements));
     memberDeclarations.add(
-        Expressions.methodDecl(
-            Modifier.PUBLIC,
-            Enumerable.class,
+        Expressions.methodDecl(Modifier.PUBLIC, Enumerable.class,
             BuiltInMethod.BINDABLE_BIND.method.getName(),
             Expressions.list(DataContext.ROOT),
             block));
@@ -336,8 +335,8 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
             : BuiltInMethod.COMPARE).method;
         compareCall = /*Y*/
             Expressions.call(method.getDeclaringClass(), method.getName(),
-            Expressions.field(thisParameter, field),
-            Expressions.field(thatParameter, field));
+                Expressions.field(thisParameter, field),
+                Expressions.field(thatParameter, field));
       } catch (RuntimeException e) {
         if (e.getCause() instanceof NoSuchMethodException) {
           // Just ignore the field in compareTo

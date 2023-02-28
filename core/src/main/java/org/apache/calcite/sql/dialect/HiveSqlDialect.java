@@ -144,7 +144,8 @@ public class HiveSqlDialect extends SqlDialect {
       switch (type.getSqlTypeName()) {
       case INTEGER:
         SqlAlienSystemTypeNameSpec typeNameSpec = /*X*/
-            new SqlAlienSystemTypeNameSpec("INT", type.getSqlTypeName(), SqlParserPos.ZERO);
+            new SqlAlienSystemTypeNameSpec("INT", type.getSqlTypeName(),
+                SqlParserPos.ZERO);
         return new SqlDataTypeSpec(typeNameSpec, SqlParserPos.ZERO);
       default:
         break;

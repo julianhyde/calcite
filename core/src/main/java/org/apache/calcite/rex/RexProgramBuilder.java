@@ -144,7 +144,7 @@ public class RexProgramBuilder {
         condition = /*X*/
             simplify.simplify(
                 rexBuilder.makeCall(SqlStdOperatorTable.IS_TRUE,
-                condition.accept(expander)));
+                    condition.accept(expander)));
         if (condition.isAlwaysTrue()) {
           condition = null;
         }

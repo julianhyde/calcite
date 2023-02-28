@@ -149,7 +149,8 @@ public class DruidTableFactory implements TableFactory {
     final List<Interval> intervals;
     if (interval instanceof String) {
       intervals = /*X*/
-          ImmutableList.of(new Interval((String) interval, ISOChronology.getInstanceUTC()));
+          ImmutableList.of(
+              new Interval(interval, ISOChronology.getInstanceUTC()));
     } else {
       intervals = null;
     }
@@ -158,12 +159,14 @@ public class DruidTableFactory implements TableFactory {
 
     if (dimensionsRaw == null || metricsRaw == null) {
       DruidConnectionImpl connection = /*Y*/
-              new DruidConnectionImpl(druidSchema.url, druidSchema.url.replace(":8082", ":8081"));
-      return DruidTable.create(druidSchema, dataSourceName, intervals, fieldBuilder,
-              metricNameBuilder, timestampColumnName, connection, complexMetrics);
+          new DruidConnectionImpl(druidSchema.url,
+              druidSchema.url.replace(":8082", ":8081"));
+      return DruidTable.create(druidSchema, dataSourceName, intervals,
+          fieldBuilder, metricNameBuilder, timestampColumnName, connection,
+          complexMetrics);
     } else {
-      return DruidTable.create(druidSchema, dataSourceName, intervals, fieldBuilder,
-              metricNameBuilder, timestampColumnName, complexMetrics);
+      return DruidTable.create(druidSchema, dataSourceName, intervals,
+          fieldBuilder, metricNameBuilder, timestampColumnName, complexMetrics);
     }
   }
 }

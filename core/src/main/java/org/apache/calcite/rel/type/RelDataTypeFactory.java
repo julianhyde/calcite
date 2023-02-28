@@ -569,7 +569,8 @@ public interface RelDataTypeFactory {
      */
     public Builder uniquify() {
       final List<String> uniqueNames = /*Y*/
-          SqlValidatorUtil.uniquify(names, typeFactory.getTypeSystem().isSchemaCaseSensitive());
+          SqlValidatorUtil.uniquify(names,
+              typeFactory.getTypeSystem().isSchemaCaseSensitive());
       if (uniqueNames != names) {
         names.clear();
         names.addAll(uniqueNames);

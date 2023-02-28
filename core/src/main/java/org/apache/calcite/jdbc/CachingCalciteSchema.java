@@ -257,8 +257,9 @@ class CachingCalciteSchema extends CalciteSchema {
   @Override protected CalciteSchema snapshot(@Nullable CalciteSchema parent,
       SchemaVersion version) {
     CalciteSchema snapshot = /*Y*/
-        new CachingCalciteSchema(parent, schema.snapshot(version), name, null, tableMap, latticeMap, typeMap,
-        functionMap, functionNames, nullaryFunctionMap, getPath());
+        new CachingCalciteSchema(parent, schema.snapshot(version), name, null,
+            tableMap, latticeMap, typeMap,
+            functionMap, functionNames, nullaryFunctionMap, getPath());
     for (CalciteSchema subSchema : subSchemaMap.map().values()) {
       CalciteSchema subSchemaSnapshot = subSchema.snapshot(snapshot, version);
       snapshot.subSchemaMap.put(subSchema.name, subSchemaSnapshot);

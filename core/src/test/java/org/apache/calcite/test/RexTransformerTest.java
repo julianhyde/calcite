@@ -78,13 +78,13 @@ class RexTransformerTest {
 
     x = /*X*/
         new RexInputRef(0,
-        typeFactory.createTypeWithNullability(boolRelDataType, true));
+            typeFactory.createTypeWithNullability(boolRelDataType, true));
     y = /*X*/
         new RexInputRef(1,
-        typeFactory.createTypeWithNullability(boolRelDataType, true));
+            typeFactory.createTypeWithNullability(boolRelDataType, true));
     z = /*X*/
         new RexInputRef(2,
-        typeFactory.createTypeWithNullability(boolRelDataType, true));
+            typeFactory.createTypeWithNullability(boolRelDataType, true));
     trueRex = rexBuilder.makeLiteral(true);
     falseRex = rexBuilder.makeLiteral(false);
   }
@@ -365,12 +365,8 @@ class RexTransformerTest {
     final ArrayList<RelDataTypeField> sysFieldList = new ArrayList<>();
     final RexNode remaining = /*Y*/
         RelOptUtil.splitJoinCondition(sysFieldList, join.getInputs().get(0),
-        join.getInputs().get(1),
-        join.getCondition(),
-        leftJoinKeys,
-        rightJoinKeys,
-        null,
-        null);
+            join.getInputs().get(1), join.getCondition(),
+            leftJoinKeys, rightJoinKeys, null, null);
 
     assertThat(remaining.toString(), is("<>($0, $9)"));
     assertThat(leftJoinKeys.isEmpty(), is(true));

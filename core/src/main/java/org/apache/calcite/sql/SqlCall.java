@@ -193,7 +193,7 @@ public abstract class SqlCall extends SqlNode {
     for (final SqlNode operand : getOperandList()) {
       final RelDataType argType = /*X*/
           validator.deriveType(Objects.requireNonNull(scope, "scope"),
-          operand);
+              operand);
       if (null == argType) {
         continue;
       }

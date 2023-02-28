@@ -98,7 +98,7 @@ class RexExecutorTest {
           .add("someStr", varchar)
           .build();
 
-      final RexExecutable exec = /*Y*/
+      final RexExecutable exec =
           executor.getExecutable(rexBuilder, constExps, rowType);
       exec.setDataContext(testContext);
       values[0] = "Hello World";

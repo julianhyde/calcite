@@ -47,7 +47,8 @@ public class JoinNode implements Node {
     this.rightSource = compiler.source(rel, 1);
     this.sink = compiler.sink(rel);
     this.condition = /*Y*/
-        compiler.compile(ImmutableList.of(rel.getCondition()), compiler.combinedRowType(rel.getInputs()));
+        compiler.compile(ImmutableList.of(rel.getCondition()),
+            compiler.combinedRowType(rel.getInputs()));
     this.rel = rel;
     this.context = compiler.createContext();
 

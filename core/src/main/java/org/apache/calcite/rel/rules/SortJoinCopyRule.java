@@ -109,13 +109,9 @@ public class SortJoinCopyRule
       } else {
         newLeftInput = /*X*/
             sort.copy(
-                sort.getTraitSet().replaceIf(
-                RelCollationTraitDef.INSTANCE,
-                () -> leftCollation),
-            join.getLeft(),
-            leftCollation,
-            null,
-            null);
+                sort.getTraitSet().replaceIf(RelCollationTraitDef.INSTANCE,
+                    () -> leftCollation),
+                join.getLeft(), leftCollation, null, null);
       }
     }
     // Add sort to new right node only if sort collations
@@ -125,9 +121,8 @@ public class SortJoinCopyRule
     } else {
       final RelCollation rightCollation = /*X*/
           RelCollationTraitDef.INSTANCE.canonize(
-              RelCollations.shift(
-              RelCollations.of(rightFieldCollation),
-              -join.getLeft().getRowType().getFieldCount()));
+              RelCollations.shift(RelCollations.of(rightFieldCollation),
+                  -join.getLeft().getRowType().getFieldCount()));
       // If right table already sorted don't add a sort
       if (RelMdUtil.checkInputForCollationAndLimit(
           metadataQuery,
@@ -139,13 +134,9 @@ public class SortJoinCopyRule
       } else {
         newRightInput = /*X*/
             sort.copy(
-                sort.getTraitSet().replaceIf(
-                RelCollationTraitDef.INSTANCE,
-                () -> rightCollation),
-            join.getRight(),
-            rightCollation,
-            null,
-            null);
+                sort.getTraitSet().replaceIf(RelCollationTraitDef.INSTANCE,
+                    () -> rightCollation),
+                join.getRight(), rightCollation, null, null);
       }
     }
     // If no change was made no need to apply the rule
@@ -154,18 +145,11 @@ public class SortJoinCopyRule
     }
 
     final RelNode joinCopy = /*X*/
-        join.copy(join.getTraitSet(),
-        join.getCondition(),
-        newLeftInput,
-        newRightInput,
-        join.getJoinType(),
-        join.isSemiJoinDone());
+        join.copy(join.getTraitSet(), join.getCondition(), newLeftInput,
+            newRightInput, join.getJoinType(), join.isSemiJoinDone());
     final RelNode sortCopy = /*X*/
-        sort.copy(sort.getTraitSet(),
-        joinCopy,
-        sort.getCollation(),
-        sort.offset,
-        sort.fetch);
+        sort.copy(sort.getTraitSet(), joinCopy, sort.getCollation(),
+            sort.offset, sort.fetch);
 
     call.transformTo(sortCopy);
   }

@@ -368,7 +368,8 @@ class HepPlannerTest {
     RelNode tableRel = sql("select * from dept").toRel();
     RelNode queryRel = tableRel;
     RelOptMaterialization mat1 = /*X*/
-        new RelOptMaterialization(tableRel, queryRel, null, ImmutableList.of("default", "mv"));
+        new RelOptMaterialization(tableRel, queryRel, null,
+            ImmutableList.of("default", "mv"));
     planner.addMaterialization(mat1);
     assertEquals(planner.getMaterializations().size(), 1);
     assertEquals(planner.getMaterializations().get(0), mat1);

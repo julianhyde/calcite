@@ -41,13 +41,15 @@ public final class PhysTypeTest {
    * Struct types with one field are not mapped correctly to Java Classes</a>. */
   @Test void testFieldClassOnColumnOfOneFieldStructType() {
     RelDataType columnType = /*X*/
-        TYPE_FACTORY.createStructType(ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
-        ImmutableList.of("intField"));
+        TYPE_FACTORY.createStructType(
+            ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
+            ImmutableList.of("intField"));
     RelDataType rowType = /*X*/
         TYPE_FACTORY.createStructType(ImmutableList.of(columnType),
-        ImmutableList.of("structField"));
+            ImmutableList.of("structField"));
 
-    PhysType rowPhysType = PhysTypeImpl.of(TYPE_FACTORY, rowType, JavaRowFormat.ARRAY);
+    PhysType rowPhysType =
+        PhysTypeImpl.of(TYPE_FACTORY, rowType, JavaRowFormat.ARRAY);
     assertEquals(Object[].class, rowPhysType.fieldClass(0));
   }
 
@@ -57,17 +59,15 @@ public final class PhysTypeTest {
   @Test void testFieldClassOnColumnOfTwoFieldStructType() {
     RelDataType columnType = /*X*/
         TYPE_FACTORY.createStructType(
-            ImmutableList.of(
-            TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER),
-            TYPE_FACTORY.createSqlType(SqlTypeName.VARCHAR)),
-        ImmutableList.of(
-            "intField",
-            "strField"));
+            ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER),
+                TYPE_FACTORY.createSqlType(SqlTypeName.VARCHAR)),
+            ImmutableList.of("intField", "strField"));
     RelDataType rowType = /*X*/
         TYPE_FACTORY.createStructType(ImmutableList.of(columnType),
-        ImmutableList.of("structField"));
+            ImmutableList.of("structField"));
 
-    PhysType rowPhysType = PhysTypeImpl.of(TYPE_FACTORY, rowType, JavaRowFormat.ARRAY);
+    PhysType rowPhysType =
+        PhysTypeImpl.of(TYPE_FACTORY, rowType, JavaRowFormat.ARRAY);
     assertEquals(Object[].class, rowPhysType.fieldClass(0));
   }
 
@@ -77,13 +77,14 @@ public final class PhysTypeTest {
    * returns a row with a single value</a>. */
   @Test void testOneColumnJavaRowFormatConversion() {
     RelDataType rowType = /*X*/
-        TYPE_FACTORY.createStructType(ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
-        ImmutableList.of("intField"));
+        TYPE_FACTORY.createStructType(
+            ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
+            ImmutableList.of("intField"));
     final PhysType rowPhysType = /*Y*/
         PhysTypeImpl.of(TYPE_FACTORY, rowType, JavaRowFormat.ARRAY, false);
     final Expression e = /*X*/
         rowPhysType.convertTo(Expressions.parameter(Enumerable.class, "input"),
-        JavaRowFormat.SCALAR);
+            JavaRowFormat.SCALAR);
     final String expected = "input.select(new org.apache.calcite.linq4j.function.Function1() {\n"
         + "  public int apply(Object[] o) {\n"
         + "    return org.apache.calcite.runtime.SqlFunctions.toInt(o[0]);\n"

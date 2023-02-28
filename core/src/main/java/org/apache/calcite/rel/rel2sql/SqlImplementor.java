@@ -800,7 +800,8 @@ public abstract class SqlImplementor {
       }
       if (not) {
         op = /*Y*/
-            requireNonNull(getInverseOperator(call), () -> "unable to negate " + call.getKind());
+            requireNonNull(getInverseOperator(call),
+                () -> "unable to negate " + call.getKind());
       }
       final List<SqlNode> nodeList = toSql(program, call.getOperands());
       switch (call.getKind()) {
@@ -952,8 +953,10 @@ public abstract class SqlImplementor {
       for (Window.RexWinAggCall winAggCall: group.aggCalls) {
         SqlAggFunction aggFunction = (SqlAggFunction) winAggCall.getOperator();
         final SqlWindow sqlWindow = /*Y*/
-                SqlWindow.create(null, null, new SqlNodeList(partitionKeys, POS), new SqlNodeList(orderByKeys, POS),
-                isRows, lowerBound, upperBound, allowPartial, POS);
+                SqlWindow.create(null, null,
+                    new SqlNodeList(partitionKeys, POS),
+                    new SqlNodeList(orderByKeys, POS),
+                    isRows, lowerBound, upperBound, allowPartial, POS);
         if (aggFunction.allowsFraming()) {
           lowerBound = createSqlWindowBound(group.lowerBound);
           upperBound = createSqlWindowBound(group.upperBound);
@@ -1019,7 +1022,8 @@ public abstract class SqlImplementor {
       }
 
       final SqlWindow sqlWindow = /*Y*/
-          SqlWindow.create(null, null, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial, POS);
+          SqlWindow.create(null, null, partitionList,
+              orderList, isRows, lowerBound, upperBound, allowPartial, POS);
 
       final List<SqlNode> nodeList = toSql(program, rexOver.getOperands());
       return createOverCall(sqlAggregateFunction, nodeList, sqlWindow, rexOver.isDistinct());
@@ -1036,9 +1040,7 @@ public abstract class SqlImplementor {
       SqlCall aggFunctionCall;
       if (isDistinct) {
         aggFunctionCall = /*X*/
-            op.createCall(SqlSelectKeyword.DISTINCT.symbol(POS),
-            POS,
-            operands);
+            op.createCall(SqlSelectKeyword.DISTINCT.symbol(POS), POS, operands);
       } else {
         aggFunctionCall = op.createCall(POS, operands);
       }
@@ -1128,7 +1130,7 @@ public abstract class SqlImplementor {
           orderByList.add(nullDirectionNode);
           field = /*Y*/
               new RelFieldCollation(field.getFieldIndex(), field.getDirection(),
-              RelFieldCollation.NullDirection.UNSPECIFIED);
+                  RelFieldCollation.NullDirection.UNSPECIFIED);
         }
       }
       orderByList.add(toSql(field));
@@ -1141,9 +1143,10 @@ public abstract class SqlImplementor {
       SqlNode nullDirectionNode = null;
       if (field.getNullDirection() != RelFieldCollation.NullDirection.UNSPECIFIED) {
         final boolean first =
-                  field.getNullDirection() == RelFieldCollation.NullDirection.FIRST;
+            field.getNullDirection() == RelFieldCollation.NullDirection.FIRST;
         nullDirectionNode = /*X*/
-                dialect.emulateNullDirection(node, first, field.getDirection().isDescending());
+            dialect.emulateNullDirection(node, first,
+                field.getDirection().isDescending());
       }
       if (nullDirectionNode != null) {
         orderByList.add(nullDirectionNode);
@@ -1171,12 +1174,14 @@ public abstract class SqlImplementor {
     /** Converts a call to an aggregate function, with a given list of operands,
      * to an expression. */
     private SqlCall toSql(SqlOperator op, boolean distinct,
-        List<SqlNode> operandList, int filterArg, RelCollation collation, boolean approximate) {
+        List<SqlNode> operandList, int filterArg, RelCollation collation,
+        boolean approximate) {
       final SqlLiteral qualifier =
           distinct ? SqlSelectKeyword.DISTINCT.symbol(POS) : null;
       if (op instanceof SqlSumEmptyIsZeroAggFunction) {
         final SqlNode node = /*Y*/
-            toSql(SqlStdOperatorTable.SUM, distinct, operandList, filterArg, collation, approximate);
+            toSql(SqlStdOperatorTable.SUM, distinct, operandList, filterArg,
+                collation, approximate);
         return SqlStdOperatorTable.COALESCE.createCall(POS, node, ZERO);
       }
 
@@ -1389,7 +1394,9 @@ public abstract class SqlImplementor {
       break;
     }
     SqlTypeFamily family = /*Y*/
-        requireNonNull(typeName.getFamily(), () -> "literal " + literal + " has null SqlTypeFamily, and is SqlTypeName is " + typeName);
+        requireNonNull(typeName.getFamily(),
+            () -> "literal " + literal
+                + " has null SqlTypeFamily, and is SqlTypeName is " + typeName);
     switch (family) {
     case CHARACTER:
       return SqlLiteral.createCharString((String) castNonNull(literal.getValue2()), POS);

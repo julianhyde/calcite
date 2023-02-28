@@ -95,10 +95,9 @@ public class EnumerableInterpreter extends SingleRel
     final PhysType physType =
         PhysTypeImpl.of(typeFactory, getRowType(), JavaRowFormat.ARRAY);
     final Expression interpreter_ = /*Y*/
-        builder.append(
-            "interpreter", Expressions.new_(Interpreter.class,
-            implementor.getRootExpression(),
-            implementor.stash(getInput(), RelNode.class)));
+        builder.append("interpreter",
+            Expressions.new_(Interpreter.class, implementor.getRootExpression(),
+                implementor.stash(getInput(), RelNode.class)));
     final Expression sliced_ =
         getRowType().getFieldCount() == 1
             ? Expressions.call(BuiltInMethod.SLICE0.method, interpreter_)

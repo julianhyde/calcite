@@ -362,12 +362,11 @@ class SqlHintsConverterTest {
     assert insert.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) insert.getTargetTable();
     List<RelHint> hints = /*Y*/
-        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
+            (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
-        Arrays.asList(
-          HintTools.PROPS_HINT,
-          HintTools.IDX_HINT,
-          HintTools.JOIN_HINT),
+        Arrays.asList(HintTools.PROPS_HINT, HintTools.IDX_HINT,
+            HintTools.JOIN_HINT),
         hints);
   }
 
@@ -378,12 +377,11 @@ class SqlHintsConverterTest {
     assert sqlUpdate.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) sqlUpdate.getTargetTable();
     List<RelHint> hints = /*Y*/
-        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
+            (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
-        Arrays.asList(
-          HintTools.PROPS_HINT,
-          HintTools.IDX_HINT,
-          HintTools.JOIN_HINT),
+        Arrays.asList(HintTools.PROPS_HINT, HintTools.IDX_HINT,
+            HintTools.JOIN_HINT),
         hints);
   }
 
@@ -393,12 +391,11 @@ class SqlHintsConverterTest {
     assert sqlDelete.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) sqlDelete.getTargetTable();
     List<RelHint> hints = /*Y*/
-        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
+            (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
-        Arrays.asList(
-          HintTools.PROPS_HINT,
-          HintTools.IDX_HINT,
-          HintTools.JOIN_HINT),
+        Arrays.asList(HintTools.PROPS_HINT, HintTools.IDX_HINT,
+            HintTools.JOIN_HINT),
         hints);
   }
 
@@ -417,11 +414,10 @@ class SqlHintsConverterTest {
     assert sqlMerge.getTargetTable() instanceof SqlTableRef;
     final SqlTableRef tableRef = (SqlTableRef) sqlMerge.getTargetTable();
     List<RelHint> hints = /*Y*/
-        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE, (SqlNodeList) tableRef.getOperandList().get(1));
+        SqlUtil.getRelHint(HintTools.HINT_STRATEGY_TABLE,
+            (SqlNodeList) tableRef.getOperandList().get(1));
     assertHintsEquals(
-        Arrays.asList(
-            HintTools.PROPS_HINT,
-            HintTools.IDX_HINT,
+        Arrays.asList(HintTools.PROPS_HINT, HintTools.IDX_HINT,
             HintTools.JOIN_HINT),
         hints);
   }
@@ -498,15 +494,15 @@ class SqlHintsConverterTest {
     // Validate Volcano planner.
     RuleSet ruleSet = /*X*/
         RuleSets.ofList(MockEnumerableJoinRule.create(hint), // Rule to validate the hint.
-        CoreRules.FILTER_PROJECT_TRANSPOSE,
-        CoreRules.FILTER_MERGE,
-        CoreRules.PROJECT_MERGE,
-        EnumerableRules.ENUMERABLE_JOIN_RULE,
-        EnumerableRules.ENUMERABLE_PROJECT_RULE,
-        EnumerableRules.ENUMERABLE_FILTER_RULE,
-        EnumerableRules.ENUMERABLE_SORT_RULE,
-        EnumerableRules.ENUMERABLE_LIMIT_RULE,
-        EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
+            CoreRules.FILTER_PROJECT_TRANSPOSE,
+            CoreRules.FILTER_MERGE,
+            CoreRules.PROJECT_MERGE,
+            EnumerableRules.ENUMERABLE_JOIN_RULE,
+            EnumerableRules.ENUMERABLE_PROJECT_RULE,
+            EnumerableRules.ENUMERABLE_FILTER_RULE,
+            EnumerableRules.ENUMERABLE_SORT_RULE,
+            EnumerableRules.ENUMERABLE_LIMIT_RULE,
+            EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
     ruleFixture()
         .sql(sql)
         .withVolcanoPlanner(false, p -> {
@@ -633,7 +629,8 @@ class SqlHintsConverterTest {
   }
 
   private static void assertHintsEquals(List<RelHint> expected, List<RelHint> actual) {
-    assertArrayEquals(expected.toArray(new RelHint[0]), actual.toArray(new RelHint[0]));
+    assertArrayEquals(expected.toArray(new RelHint[0]),
+        actual.toArray(new RelHint[0]));
   }
 
   //~ Inner Class ------------------------------------------------------------

@@ -181,8 +181,9 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
 
     if (!compensationColumnsEquiPred.isAlwaysTrue()) {
       RexNode newCompensationColumnsEquiPred = /*Y*/
-          rewriteExpression(rexBuilder, mq, target, target, queryExprs, viewToQueryTableMapping.inverse(), queryEC, false,
-          compensationColumnsEquiPred);
+          rewriteExpression(rexBuilder, mq, target, target, queryExprs,
+              viewToQueryTableMapping.inverse(), queryEC, false,
+              compensationColumnsEquiPred);
       if (newCompensationColumnsEquiPred == null) {
         // Skip it
         return null;
@@ -192,8 +193,9 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
     // For the rest, we use the query equivalence classes
     if (!otherCompensationPred.isAlwaysTrue()) {
       RexNode newOtherCompensationPred = /*Y*/
-          rewriteExpression(rexBuilder, mq, target, target, queryExprs, viewToQueryTableMapping.inverse(), viewEC, true,
-          otherCompensationPred);
+          rewriteExpression(rexBuilder, mq, target, target, queryExprs,
+              viewToQueryTableMapping.inverse(), viewEC, true,
+              otherCompensationPred);
       if (newOtherCompensationPred == null) {
         // Skip it
         return null;
@@ -203,8 +205,8 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
     final RexNode queryCompensationPred = /*X*/
         RexUtil.not(
             RexUtil.composeConjunction(rexBuilder,
-            ImmutableList.of(compensationColumnsEquiPred,
-                otherCompensationPred)));
+                ImmutableList.of(compensationColumnsEquiPred,
+                    otherCompensationPred)));
 
     // Generate query rewriting.
     RelNode rewrittenPlan = relBuilder
@@ -281,7 +283,8 @@ public abstract class MaterializedViewJoinRule<C extends MaterializedViewRule.Co
         ? extractReferences(rexBuilder, viewNode)
         : topViewProject.getProjects();
     List<RexNode> rewrittenExprs = /*Y*/
-        rewriteExpressions(rexBuilder, mq, input, viewNode, viewExprs, queryToViewTableMapping.inverse(), queryEC, true, exprsLineage);
+        rewriteExpressions(rexBuilder, mq, input, viewNode, viewExprs,
+            queryToViewTableMapping.inverse(), queryEC, true, exprsLineage);
     if (rewrittenExprs == null) {
       return null;
     }

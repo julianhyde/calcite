@@ -445,7 +445,7 @@ public final class CalciteSystemProperty<T> {
     Properties saffronProperties = new Properties();
     ClassLoader classLoader = /*X*/
         firstNonEmpty(Thread.currentThread().getContextClassLoader(),
-        CalciteSystemProperty.class.getClassLoader());
+            CalciteSystemProperty.class.getClassLoader());
     // Read properties from the file "saffron.properties", if it exists in classpath
     try (InputStream stream = requireNonNull(classLoader, "classLoader")
         .getResourceAsStream("saffron.properties")) {

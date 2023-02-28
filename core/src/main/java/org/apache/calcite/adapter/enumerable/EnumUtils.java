@@ -541,9 +541,10 @@ public class EnumUtils {
           // E.g. from "Integer" to "String"
           // Generate "x == null ? null : x.toString()"
           result = /*X*/
-              Expressions.condition(Expressions.equal(operand, RexImpTable.NULL_EXPR),
-              RexImpTable.NULL_EXPR,
-              Expressions.call(operand, "toString"));
+              Expressions.condition(
+                  Expressions.equal(operand, RexImpTable.NULL_EXPR),
+                  RexImpTable.NULL_EXPR,
+                  Expressions.call(operand, "toString"));
         } catch (RuntimeException e) {
           // For some special cases, e.g., "BuiltInMethod.LESSER",
           // its return type is generic ("Comparable"), which contains
@@ -822,13 +823,9 @@ public class EnumUtils {
     // wmColExprToLong - (wmColExprToLong + windowSizeMillis - offsetMillis) % windowSizeMillis
     Expression windowStartExpr = /*X*/
         Expressions.subtract(wmColExprToLong,
-        Expressions.modulo(
-            Expressions.add(
-                wmColExprToLong,
-            Expressions.subtract(
-                windowSizeExpr,
-                offsetExpr
-            )),
+            Expressions.modulo(
+                Expressions.add(wmColExprToLong,
+                    Expressions.subtract(windowSizeExpr, offsetExpr)),
             windowSizeExpr));
 
     expressions.add(windowStartExpr);
@@ -836,15 +833,12 @@ public class EnumUtils {
     // The window end equals to the window start plus window size.
     // windowStartMillis + sizeMillis
     Expression windowEndExpr = /*X*/
-        Expressions.add(windowStartExpr,
-        windowSizeExpr);
+        Expressions.add(windowStartExpr, windowSizeExpr);
 
     expressions.add(windowEndExpr);
 
-    return Expressions.lambda(
-        Function1.class,
-        outputPhysType.record(expressions),
-        parameter);
+    return Expressions.lambda(Function1.class,
+        outputPhysType.record(expressions), parameter);
   }
 
   /**
@@ -931,7 +925,8 @@ public class EnumUtils {
         SortedMultiMap<Pair<Long, Long>, @Nullable Object[]> session =
             sessionKeyMap.computeIfAbsent(element[indexOfKeyColumn], k -> new SortedMultiMap<>());
         Object watermark = /*Y*/
-            requireNonNull(element[indexOfWatermarkedColumn], "element[indexOfWatermarkedColumn]");
+            requireNonNull(element[indexOfWatermarkedColumn],
+                "element[indexOfWatermarkedColumn]");
         Pair<Long, Long> initWindow = /*X*/
             computeInitWindow(SqlFunctions.toLong(watermark), gap);
         session.putMulti(initWindow, element);
@@ -1044,9 +1039,11 @@ public class EnumUtils {
       } else {
         @Nullable Object[] current = inputEnumerator.current();
         Object watermark = /*Y*/
-            requireNonNull(current[indexOfWatermarkedColumn], "element[indexOfWatermarkedColumn]");
+            requireNonNull(current[indexOfWatermarkedColumn],
+                "element[indexOfWatermarkedColumn]");
         List<Pair<Long, Long>> windows = /*Y*/
-            hopWindows(SqlFunctions.toLong(watermark), emitFrequency, windowSize, offset);
+            hopWindows(SqlFunctions.toLong(watermark), emitFrequency,
+                windowSize, offset);
         for (Pair<Long, Long> window : windows) {
           @Nullable Object[] curWithWindow = new Object[current.length + 2];
           System.arraycopy(current, 0, curWithWindow, 0, current.length);

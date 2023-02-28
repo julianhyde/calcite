@@ -86,42 +86,45 @@ final class Fixture extends AbstractFixture {
       .build();
   final RelDataType empListType = array(empRecordType);
   final ObjectSqlType addressType = /*Y*/
-      new ObjectSqlType(SqlTypeName.STRUCTURED, new SqlIdentifier("ADDRESS", SqlParserPos.ZERO),
-      false,
-      Arrays.asList(
-          new RelDataTypeFieldImpl("STREET", 0, varchar20Type),
-          new RelDataTypeFieldImpl("CITY", 1, varchar20Type),
-          new RelDataTypeFieldImpl("ZIP", 2, intType),
-          new RelDataTypeFieldImpl("STATE", 3, varchar20Type)),
-      RelDataTypeComparability.NONE);
+      new ObjectSqlType(SqlTypeName.STRUCTURED,
+          new SqlIdentifier("ADDRESS", SqlParserPos.ZERO),
+          false,
+          Arrays.asList(new RelDataTypeFieldImpl("STREET", 0, varchar20Type),
+              new RelDataTypeFieldImpl("CITY", 1, varchar20Type),
+              new RelDataTypeFieldImpl("ZIP", 2, intType),
+              new RelDataTypeFieldImpl("STATE", 3, varchar20Type)),
+          RelDataTypeComparability.NONE);
   // Row(f0 int, f1 varchar)
   final RelDataType recordType1 = /*X*/
       typeFactory.createStructType(Arrays.asList(intType, varcharType),
-      Arrays.asList("f0", "f1"));
+          Arrays.asList("f0", "f1"));
   // Row(f0 int not null, f1 varchar null)
   final RelDataType recordType2 = /*X*/
       typeFactory.createStructType(Arrays.asList(intType, nullable(varcharType)),
-      Arrays.asList("f0", "f1"));
+          Arrays.asList("f0", "f1"));
   // Row(f0 Row(ff0 int not null, ff1 varchar null) null, f1 timestamp not null)
   final RelDataType recordType3 = /*X*/
       typeFactory.createStructType(
           Arrays.asList(
-          nullable(
-              typeFactory.createStructType(Arrays.asList(intType, varcharTypeNull),
-          Arrays.asList("ff0", "ff1"))), timestampType), Arrays.asList("f0", "f1"));
+              nullable(
+                  typeFactory.createStructType(
+                      Arrays.asList(intType, varcharTypeNull),
+                      Arrays.asList("ff0", "ff1"))),
+              timestampType),
+          Arrays.asList("f0", "f1"));
   // Row(f0 bigint not null, f1 decimal null) array
   final RelDataType recordType4 = /*X*/
       array(
           typeFactory.createStructType(
-      Arrays.asList(bigintType, nullable(decimalType)),
-      Arrays.asList("f0", "f1")));
+              Arrays.asList(bigintType, nullable(decimalType)),
+              Arrays.asList("f0", "f1")));
   // Row(f0 varchar not null, f1 timestamp null) multiset
   final RelDataType recordType5 = /*X*/
       typeFactory.createMultisetType(
           typeFactory.createStructType(
-          Arrays.asList(varcharType, timestampTypeNull),
-          Arrays.asList("f0", "f1")),
-      -1);
+              Arrays.asList(varcharType, timestampTypeNull),
+              Arrays.asList("f0", "f1")),
+          -1);
   final RelDataType intArrayType = array(intType);
   final RelDataType varchar5ArrayType = array(varchar5Type);
   final RelDataType intArrayArrayType = array(intArrayType);
@@ -135,10 +138,10 @@ final class Fixture extends AbstractFixture {
   final RelDataType rowArrayMultisetType = /*X*/
       typeFactory.createMultisetType(
           array(
-          typeFactory.createStructType(
-          Arrays.asList(intArrayMultisetType, varchar5ArrayType),
-          Arrays.asList("f0", "f1"))),
-      -1);
+              typeFactory.createStructType(
+                  Arrays.asList(intArrayMultisetType, varchar5ArrayType),
+                  Arrays.asList("f0", "f1"))),
+          -1);
 
   Fixture(RelDataTypeFactory typeFactory) {
     super(typeFactory);

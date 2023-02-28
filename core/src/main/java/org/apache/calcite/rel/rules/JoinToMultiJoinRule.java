@@ -519,7 +519,8 @@ public class JoinToMultiJoinRule
       }
       final int key = currInput;
       int[] refCounts = /*Y*/
-          requireNonNull(refCountsMap.get(key), () -> "refCountsMap.get(currInput) for " + key);
+          requireNonNull(refCountsMap.get(key),
+              () -> "refCountsMap.get(currInput) for " + key);
       refCounts[i - startField] += joinCondRefCounts[i];
     }
 

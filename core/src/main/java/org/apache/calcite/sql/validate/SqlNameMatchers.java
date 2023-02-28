@@ -163,9 +163,10 @@ public class SqlNameMatchers {
     @Override protected void matched(List<String> prefixNames,
         List<String> names) {
       matchedNames = /*X*/
-          ImmutableList.copyOf(Util.startsWith(names, prefixNames)
-              ? Util.skip(names, prefixNames.size())
-              : names);
+          ImmutableList.copyOf(
+              Util.startsWith(names, prefixNames)
+                  ? Util.skip(names, prefixNames.size())
+                  : names);
     }
 
     @Override public List<String> bestMatch() {

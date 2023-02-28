@@ -92,8 +92,8 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
         @SuppressWarnings("argument.type.incompatible")
         RexNode result = /*Y*/
             (RexNode) method.invoke(ReflectiveConvertletTable.this, cx, call);
-        return requireNonNull(result, () -> "null result from " + method
-            + " for call " + call);
+        return requireNonNull(result,
+            () -> "null result from " + method + " for call " + call);
       } catch (IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException("while converting " + call, e);
       }
@@ -138,9 +138,10 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
       try {
         @SuppressWarnings("argument.type.incompatible")
         RexNode result = /*Y*/
-            (RexNode) method.invoke(ReflectiveConvertletTable.this, cx, call.getOperator(), call);
-        return requireNonNull(result, () -> "null result from " + method
-            + " for call " + call);
+            (RexNode) method.invoke(ReflectiveConvertletTable.this, cx,
+                call.getOperator(), call);
+        return requireNonNull(result,
+            () -> "null result from " + method + " for call " + call);
       } catch (IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException("while converting " + call, e);
       }

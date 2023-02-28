@@ -98,7 +98,8 @@ public class JoinPushTransitivePredicatesRule
     }
 
     RelNode newRel = /*Y*/
-        join.copy(join.getTraitSet(), join.getCondition(), left, right, join.getJoinType(), join.isSemiJoinDone());
+        join.copy(join.getTraitSet(), join.getCondition(), left, right,
+            join.getJoinType(), join.isSemiJoinDone());
     call.getPlanner().onCopy(join, newRel);
 
     call.transformTo(newRel);

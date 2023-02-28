@@ -33,7 +33,10 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Objects;
+
+import static org.apache.calcite.util.Util.last;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Implementation of {@link RepeatUnion} in
@@ -72,10 +75,10 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
     if (transientTable != null) {
       // root.getRootSchema().add(tableName, table);
       Expression tableExp = /*X*/
-          implementor.stash(Objects.requireNonNull(transientTable.unwrap(TransientTable.class)),
-          TransientTable.class);
-      String tableName =
-          transientTable.getQualifiedName().get(transientTable.getQualifiedName().size() - 1);
+          implementor.stash(
+              requireNonNull(transientTable.unwrap(TransientTable.class)),
+              TransientTable.class);
+      String tableName = last(transientTable.getQualifiedName());
       Expression tableNameExp = Expressions.constant(tableName, String.class);
       builder.append(
           Expressions.call(
@@ -87,12 +90,11 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
               tableExp));
       // root.getRootSchema().removeTable(tableName);
       cleanUpFunctionExp = /*Y*/
-          Expressions.lambda(
-              Function0.class, Expressions.call(
+          Expressions.lambda(Function0.class,
               Expressions.call(
-                  implementor.getRootExpression(),
-                  BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method),
-              BuiltInMethod.SCHEMA_PLUS_REMOVE_TABLE.method, tableNameExp));
+                  Expressions.call(implementor.getRootExpression(),
+                      BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method),
+                  BuiltInMethod.SCHEMA_PLUS_REMOVE_TABLE.method, tableNameExp));
     }
 
     Result seedResult = implementor.visitChild(this, 0, (EnumerableRel) seed, pref);
@@ -102,18 +104,18 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
     Expression iterativeExp = builder.append("iteration", iterationResult.block);
 
     PhysType physType = /*X*/
-        PhysTypeImpl.of(implementor.getTypeFactory(),
-        getRowType(),
-        pref.prefer(seedResult.format));
+        PhysTypeImpl.of(implementor.getTypeFactory(), getRowType(),
+            pref.prefer(seedResult.format));
 
     Expression unionExp = /*X*/
         Expressions.call(BuiltInMethod.REPEAT_UNION.method,
-        seedExp,
-        iterativeExp,
-        Expressions.constant(iterationLimit, int.class),
-        Expressions.constant(all, boolean.class),
-        Util.first(physType.comparer(), Expressions.call(BuiltInMethod.IDENTITY_COMPARER.method)),
-        cleanUpFunctionExp);
+            seedExp,
+            iterativeExp,
+            Expressions.constant(iterationLimit, int.class),
+            Expressions.constant(all, boolean.class),
+            Util.first(physType.comparer(),
+                Expressions.call(BuiltInMethod.IDENTITY_COMPARER.method)),
+            cleanUpFunctionExp);
     builder.add(unionExp);
 
     return implementor.result(physType, builder.toBlock());

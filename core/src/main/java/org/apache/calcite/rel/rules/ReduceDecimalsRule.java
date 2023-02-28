@@ -844,11 +844,11 @@ public class ReduceDecimalsRule
         if (SqlTypeUtil.isApproximateNumeric(typeA)) {
           newOperands = /*X*/
               ImmutableList.of(operands.get(0),
-              ensureType(real8, operands.get(1)));
+                  ensureType(real8, operands.get(1)));
         } else {
           newOperands = /*X*/
               ImmutableList.of(ensureType(real8, operands.get(0)),
-              operands.get(1));
+                  operands.get(1));
         }
         return builder.makeCall(
             call.getOperator(),

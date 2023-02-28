@@ -575,8 +575,9 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
           final List<RexNode> expList = new ArrayList<>(aggCall.getOperands());
           if (reduceExpressions(window, expList, predicates)) {
             aggCall = /*X*/
-                new Window.RexWinAggCall((SqlAggFunction) aggCall.getOperator(), aggCall.type, expList,
-                aggCall.ordinal, aggCall.distinct, aggCall.ignoreNulls);
+                new Window.RexWinAggCall((SqlAggFunction) aggCall.getOperator(),
+                    aggCall.type, expList,
+                    aggCall.ordinal, aggCall.distinct, aggCall.ignoreNulls);
             reduced = true;
           }
           aggCalls.add(aggCall);
@@ -707,7 +708,8 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
     // Simplify predicates in place
     final RexUnknownAs unknownAs = RexUnknownAs.falseIf(unknownAsFalse);
     final boolean reduced = /*Y*/
-        reduceExpressionsInternal(rel, simplify, unknownAs, expList, predicates, treatDynamicCallsAsConstant);
+        reduceExpressionsInternal(rel, simplify, unknownAs,
+            expList, predicates, treatDynamicCallsAsConstant);
 
     boolean simplified = false;
     for (int i = 0; i < expList.size(); i++) {

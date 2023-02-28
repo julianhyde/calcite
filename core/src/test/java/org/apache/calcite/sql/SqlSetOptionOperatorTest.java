@@ -58,8 +58,8 @@ class SqlSetOptionOperatorTest {
     SqlSetOption opt = (SqlSetOption) node;
     SqlCall returned = /*X*/
         opt.getOperator().createCall(opt.getFunctionQuantifier(),
-        opt.getParserPosition(),
-        opt.getOperandList());
+            opt.getParserPosition(),
+            opt.getOperandList());
     assertThat(opt.getClass(), equalTo(returned.getClass()));
     SqlSetOption optRet = (SqlSetOption) returned;
     assertThat(optRet.getScope(), is(opt.getScope()));

@@ -202,7 +202,7 @@ public class ModifiableViewTable extends ViewTable
         int iColumn) {
       final ModifiableViewTable viewTable = /*X*/
           requireNonNull(table.unwrap(ModifiableViewTable.class),
-          () -> "unable to unwrap ModifiableViewTable from " + table);
+              () -> "unable to unwrap ModifiableViewTable from " + table);
       assert iColumn < viewTable.columnMapping.size();
 
       // Use the view constraint to generate the default value if the column is
@@ -230,7 +230,7 @@ public class ModifiableViewTable extends ViewTable
         int iColumn, InitializerContext context) {
       final ModifiableViewTable viewTable = /*X*/
           requireNonNull(table.unwrap(ModifiableViewTable.class),
-          () -> "unable to unwrap ModifiableViewTable from " + table);
+              () -> "unable to unwrap ModifiableViewTable from " + table);
       assert iColumn < viewTable.columnMapping.size();
       final RexBuilder rexBuilder = context.getRexBuilder();
       final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();

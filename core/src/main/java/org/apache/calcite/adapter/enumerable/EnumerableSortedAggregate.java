@@ -79,7 +79,8 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
 
     RelTraitSet inputTraits = getInput().getTraitSet();
     RelCollation collation = /*Y*/
-        requireNonNull(required.getCollation(), () -> "collation trait is null, required traits are " + required);
+        requireNonNull(required.getCollation(),
+            () -> "collation trait is null, required traits are " + required);
     ImmutableBitSet requiredKeys = ImmutableBitSet.of(RelCollations.ordinals(collation));
     ImmutableBitSet groupKeys = ImmutableBitSet.range(groupSet.cardinality());
 
@@ -217,7 +218,8 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
     final Expression comparator = /*X*/
         keyPhysType.generateComparator(
             requireNonNull(getTraitSet().getCollation(),
-            () -> "getTraitSet().getCollation() is null, current traits are " + getTraitSet()));
+            () -> "getTraitSet().getCollation() is null, current traits are "
+                + getTraitSet()));
 
     final Expression resultSelector_ =
         builder.append("resultSelector",

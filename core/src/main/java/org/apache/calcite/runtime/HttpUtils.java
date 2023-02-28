@@ -116,7 +116,7 @@ public class HttpUtils {
     }
     conn.setDoOutput(true);
     try (Writer w = /*Y*/
-        new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8)) {
+             new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8)) {
       w.write(data.toString());
       w.flush(); // Get the response
       return conn.getInputStream();

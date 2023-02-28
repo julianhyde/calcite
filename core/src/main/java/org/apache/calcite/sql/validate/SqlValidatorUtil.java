@@ -236,7 +236,8 @@ public class SqlValidatorUtil {
       RelDataType sourceRowType,
       Map<Integer, RelDataTypeField> indexToField) {
     ImmutableBitSet source = /*X*/
-        ImmutableBitSet.of(Util.transform(sourceRowType.getFieldList(), RelDataTypeField::getIndex));
+        ImmutableBitSet.of(Util.transform(sourceRowType.getFieldList(),
+            RelDataTypeField::getIndex));
     // checkerframework: found   : Set<@KeyFor("indexToField") Integer>
     //noinspection RedundantCast
     ImmutableBitSet target =
@@ -284,7 +285,8 @@ public class SqlValidatorUtil {
   static void checkIdentifierListForDuplicates(List<? extends @Nullable SqlNode> columnList,
       SqlValidatorImpl.ValidationErrorFunction validationErrorFunction) {
     final List<List<String>> names = /*Y*/
-        Util.transform(columnList, sqlNode -> ((SqlIdentifier) requireNonNull(sqlNode, "sqlNode")).names);
+        Util.transform(columnList,
+            node -> ((SqlIdentifier) requireNonNull(node, "node")).names);
     final int i = Util.firstDuplicate(names);
     if (i >= 0) {
       throw validationErrorFunction.apply(
@@ -522,7 +524,8 @@ public class SqlValidatorUtil {
     switch (joinType) {
     case LEFT:
       rightType = /*X*/
-          typeFactory.createTypeWithNullability(requireNonNull(rightType, "rightType"), true);
+          typeFactory.createTypeWithNullability(
+              requireNonNull(rightType, "rightType"), true);
       break;
     case RIGHT:
       leftType = typeFactory.createTypeWithNullability(leftType, true);
@@ -530,7 +533,8 @@ public class SqlValidatorUtil {
     case FULL:
       leftType = typeFactory.createTypeWithNullability(leftType, true);
       rightType = /*X*/
-          typeFactory.createTypeWithNullability(requireNonNull(rightType, "rightType"), true);
+          typeFactory.createTypeWithNullability(
+              requireNonNull(rightType, "rightType"), true);
       break;
     case SEMI:
     case ANTI:
@@ -927,8 +931,8 @@ public class SqlValidatorUtil {
 
       RelDataTypeField field = /*X*/
           requireNonNull(nameMatcher.field(rowType, originalFieldName),
-          () -> "field " + originalFieldName + " is not found in " + rowType
-              + " with " + nameMatcher);
+              () -> "field " + originalFieldName + " is not found in " + rowType
+                  + " with " + nameMatcher);
       int origPos = namespaceOffset + field.getIndex();
 
       groupAnalyzer.groupExprProjection.put(origPos, ref);
@@ -1096,8 +1100,7 @@ public class SqlValidatorUtil {
           && nameMatcher.matches(schemaName, schema.getName())) {
         continue;
       }
-      schema = /*Y*/
-          schema.getSubSchema(schemaName, nameMatcher.isCaseSensitive());
+      schema = schema.getSubSchema(schemaName, nameMatcher.isCaseSensitive());
       if (schema == null) {
         return null;
       }
@@ -1110,8 +1113,7 @@ public class SqlValidatorUtil {
     CalciteSchema.TableEntry entry =
         schema.getTable(name, caseSensitive);
     if (entry == null) {
-      entry = /*Y*/
-          schema.getTableBasedOnNullaryFunction(name, caseSensitive);
+      entry = schema.getTableBasedOnNullaryFunction(name, caseSensitive);
     }
     return entry;
   }
@@ -1198,18 +1200,16 @@ public class SqlValidatorUtil {
       SqlNode expr) {
     final String tableName = "_table_";
     final SqlSelect select0 = /*Y*/
-        new SqlSelect(SqlParserPos.ZERO, null, new SqlNodeList(Collections.singletonList(expr), SqlParserPos.ZERO),
-        new SqlIdentifier(tableName, SqlParserPos.ZERO),
-        null, null, null, null, null, null, null, null, null);
+        new SqlSelect(SqlParserPos.ZERO, null,
+            new SqlNodeList(Collections.singletonList(expr), SqlParserPos.ZERO),
+            new SqlIdentifier(tableName, SqlParserPos.ZERO),
+            null, null, null, null, null, null, null, null, null);
     Prepare.CatalogReader catalogReader = /*X*/
-        createSingleTableCatalogReader(caseSensitive,
-        tableName,
-        typeFactory,
-        rowType);
+        createSingleTableCatalogReader(caseSensitive, tableName, typeFactory,
+            rowType);
     SqlValidator validator = /*Y*/
-        newValidator(operatorTable, catalogReader,
-        typeFactory,
-        SqlValidator.Config.DEFAULT);
+        newValidator(operatorTable, catalogReader, typeFactory,
+            SqlValidator.Config.DEFAULT);
     final SqlSelect select = (SqlSelect) validator.validate(select0);
     SqlNodeList selectList = select.getSelectList();
     assert selectList.size() == 1
@@ -1250,16 +1250,11 @@ public class SqlValidatorUtil {
     final ExplicitRowTypeTable table = new ExplicitRowTypeTable(rowType);
     final Map<String, Table> tableMap = Collections.singletonMap(tableName, table);
     CalciteSchema schema = /*X*/
-        CalciteSchema.createRootSchema(false,
-        false,
-        "",
-        new ExplicitTableSchema(tableMap));
+        CalciteSchema.createRootSchema(false, false, "",
+            new ExplicitTableSchema(tableMap));
 
-    return new CalciteCatalogReader(
-        schema,
-        new ArrayList<>(new ArrayList<>()),
-        typeFactory,
-        connectionConfig);
+    return new CalciteCatalogReader(schema, new ArrayList<>(new ArrayList<>()),
+        typeFactory, connectionConfig);
   }
 
   /**

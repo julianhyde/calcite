@@ -48,14 +48,13 @@ public class UnarySuffixOperatorConversion implements DruidSqlOperatorConverter 
 
     final List<String> druidExpressions = /*X*/
         DruidExpressions.toDruidExpressions(druidQuery, rowType,
-        call.getOperands());
+            call.getOperands());
 
     if (druidExpressions == null) {
       return null;
     }
 
-    return DruidQuery.format(
-            "(%s %s)",
-            Iterables.getOnlyElement(druidExpressions), druidOperator);
+    return DruidQuery.format("(%s %s)",
+        Iterables.getOnlyElement(druidExpressions), druidOperator);
   }
 }

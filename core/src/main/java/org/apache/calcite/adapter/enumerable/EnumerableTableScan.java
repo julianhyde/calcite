@@ -267,7 +267,8 @@ public class EnumerableTableScan
     case ARRAY:
     case MULTISET:
       final RelDataType fieldType = /*Y*/
-          requireNonNull(relFieldType.getComponentType(), () -> "relFieldType.getComponentType() for " + relFieldType);
+          requireNonNull(relFieldType.getComponentType(),
+              () -> "relFieldType.getComponentType() for " + relFieldType);
       if (fieldType.isStruct()) {
         // We can't represent a multiset or array as a List<Employee>, because
         // the consumer does not know the element type.
@@ -276,9 +277,9 @@ public class EnumerableTableScan
         final JavaTypeFactory typeFactory =
                 (JavaTypeFactory) getCluster().getTypeFactory();
         final PhysType elementPhysType = /*X*/
-                PhysTypeImpl.of(typeFactory, fieldType, JavaRowFormat.CUSTOM);
+            PhysTypeImpl.of(typeFactory, fieldType, JavaRowFormat.CUSTOM);
         final MethodCallExpression e2 =
-                Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);
+            Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);
         final Expression e3 = elementPhysType.convertTo(e2, JavaRowFormat.LIST);
         return Expressions.call(e3, BuiltInMethod.ENUMERABLE_TO_LIST.method);
       } else {

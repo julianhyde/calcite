@@ -168,7 +168,9 @@ public class AggregateCaseToFilterRule
     final RexNode filter;
     if (aggregateCall.filterArg >= 0) {
       filter = /*Y*/
-          rexBuilder.makeCall(SqlStdOperatorTable.AND, project.getProjects().get(aggregateCall.filterArg), filterFromCase);
+          rexBuilder.makeCall(SqlStdOperatorTable.AND,
+              project.getProjects().get(aggregateCall.filterArg),
+              filterFromCase);
     } else {
       filter = filterFromCase;
     }

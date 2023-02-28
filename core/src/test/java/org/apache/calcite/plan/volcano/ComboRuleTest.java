@@ -165,7 +165,8 @@ class ComboRuleTest {
       IntermediateNode oldInter = call.rel(1);
       RelNode physRel = call.rel(0).copy(call.rel(0).getTraitSet(), newInputs);
       RelNode converted = /*Y*/
-          new IntermediateNode(physRel.getCluster(), physRel, oldInter.nodesBelowCount + 1);
+          new IntermediateNode(physRel.getCluster(), physRel,
+              oldInter.nodesBelowCount + 1);
       call.transformTo(converted);
     }
 

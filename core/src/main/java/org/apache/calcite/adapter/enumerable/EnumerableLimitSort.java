@@ -88,9 +88,8 @@ public class EnumerableLimitSort extends Sort implements EnumerableRel {
     final EnumerableRel child = (EnumerableRel) this.getInput();
     final Result result = implementor.visitChild(this, 0, child, pref);
     final PhysType physType = /*X*/
-        PhysTypeImpl.of(implementor.getTypeFactory(),
-        this.getRowType(),
-        result.format);
+        PhysTypeImpl.of(implementor.getTypeFactory(), this.getRowType(),
+            result.format);
     final Expression childExp = builder.append("child", result.block);
 
     final PhysType inputPhysType = result.physType;

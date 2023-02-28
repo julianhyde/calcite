@@ -179,7 +179,8 @@ class Dumpers {
     pw.println("digraph G {");
     pw.println("\troot [style=filled,label=\"Root\"];");
     PartiallyOrderedSet<RelSubset> subsetPoset = /*X*/
-        new PartiallyOrderedSet<>((e1, e2) -> e1.getTraitSet().satisfies(e2.getTraitSet()));
+        new PartiallyOrderedSet<>(
+            (e1, e2) -> e1.getTraitSet().satisfies(e2.getTraitSet()));
     Set<RelSubset> nonEmptySubsets = new HashSet<>();
     for (RelSet set : ordering.immutableSortedCopy(planner.allSets)) {
       pw.print("\tsubgraph cluster");

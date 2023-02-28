@@ -536,7 +536,8 @@ public class LoptOptimizeJoinRule
           fieldPos < multiJoin.getNumFieldsInJoinFactor(currFactor);
           fieldPos++) {
         int newOffset = /*Y*/
-            requireNonNull(factorToOffsetMap.get(currFactor), () -> "factorToOffsetMap.get(currFactor)") + fieldPos;
+            requireNonNull(factorToOffsetMap.get(currFactor),
+                "factorToOffsetMap.get(currFactor)") + fieldPos;
         if (leftFactor != null) {
           Integer leftOffset =
               multiJoin.getRightColumnMapping(currFactor, fieldPos);
@@ -1071,7 +1072,8 @@ public class LoptOptimizeJoinRule
     if (selfJoin) {
       BitSet selfJoinFactor = new BitSet(multiJoin.getNumJoinFactors());
       Integer factor = /*Y*/
-          requireNonNull(multiJoin.getOtherSelfJoinFactor(factorToAdd), () -> "multiJoin.getOtherSelfJoinFactor(" + factorToAdd + ") is null");
+          requireNonNull(multiJoin.getOtherSelfJoinFactor(factorToAdd),
+              () -> "multiJoin.getOtherSelfJoinFactor(" + factorToAdd + ") is null");
       selfJoinFactor.set(factor);
       if (multiJoin.hasAllFactors(left, selfJoinFactor)) {
         childNo = 0;
@@ -1234,7 +1236,8 @@ public class LoptOptimizeJoinRule
     RexNode condition;
     if ((joinType == JoinRelType.LEFT) || (joinType == JoinRelType.RIGHT)) {
       condition = /*Y*/
-          requireNonNull(multiJoin.getOuterJoinCond(factorToAdd), "multiJoin.getOuterJoinCond(factorToAdd)");
+          requireNonNull(multiJoin.getOuterJoinCond(factorToAdd),
+              "multiJoin.getOuterJoinCond(factorToAdd)");
     } else {
       condition =
           addFilters(
@@ -1571,7 +1574,9 @@ public class LoptOptimizeJoinRule
     }
 
     int factIdx = /*Y*/
-        requireNonNull(multiJoin.getJoinRemovalFactor(dimIdx), () -> "multiJoin.getJoinRemovalFactor(dimIdx) for " + dimIdx + ", " + multiJoin);
+        requireNonNull(multiJoin.getJoinRemovalFactor(dimIdx),
+            () -> "multiJoin.getJoinRemovalFactor(dimIdx) for " + dimIdx
+                + ", " + multiJoin);
     final List<Integer> joinOrder = factTree.getTreeOrder();
     assert joinOrder.contains(factIdx);
 

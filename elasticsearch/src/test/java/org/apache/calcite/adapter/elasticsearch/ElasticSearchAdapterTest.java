@@ -252,10 +252,9 @@ class ElasticSearchAdapterTest {
           final int cmp = current.compareTo(next);
           if (direction == RelFieldCollation.Direction.ASCENDING ? cmp > 0 : cmp < 0) {
             final String message = /*Y*/
-                String.format(Locale.ROOT, "Column %s NOT sorted (%s): %s (index:%d) > %s (index:%d) count: %d",
-                column,
-                direction,
-                current, i, next, i + 1, states.size());
+                String.format(Locale.ROOT,
+                    "Column %s NOT sorted (%s): %s (index:%d) > %s (index:%d) count: %d",
+                    column, direction, current, i, next, i + 1, states.size());
             throw new AssertionError(message);
           }
         }

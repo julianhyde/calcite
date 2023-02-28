@@ -172,7 +172,8 @@ public class AggregateJoinTransposeRule
     final ImmutableBitSet aggregateColumns = aggregate.getGroupSet();
     final RelMetadataQuery mq = call.getMetadataQuery();
     final ImmutableBitSet keyColumns = /*Y*/
-        keyColumns(aggregateColumns, mq.getPulledUpPredicates(join).pulledUpPredicates);
+        keyColumns(aggregateColumns,
+            mq.getPulledUpPredicates(join).pulledUpPredicates);
     final ImmutableBitSet joinColumns =
         RelOptUtil.InputFinder.bits(join.getCondition());
     final boolean allColumnsInAggregate =
@@ -255,7 +256,8 @@ public class AggregateJoinTransposeRule
           if (!aggCall.e.getArgList().isEmpty()
               && fieldSet.contains(ImmutableBitSet.of(aggCall.e.getArgList()))) {
             final RexNode singleton = /*Y*/
-                splitter.singleton(rexBuilder, joinInput.getRowType(), aggCall.e.transform(mapping));
+                splitter.singleton(rexBuilder, joinInput.getRowType(),
+                    aggCall.e.transform(mapping));
 
             if (singleton instanceof RexInputRef) {
               final int index = ((RexInputRef) singleton).getIndex();
@@ -288,7 +290,8 @@ public class AggregateJoinTransposeRule
           if (fieldSet.contains(ImmutableBitSet.of(aggCall.e.getArgList()))) {
             final AggregateCall splitCall = splitter.split(aggCall.e, mapping);
             call1 = /*Y*/
-                splitCall.adaptTo(joinInput, splitCall.getArgList(), splitCall.filterArg, oldGroupKeyCount, newGroupKeyCount);
+                splitCall.adaptTo(joinInput, splitCall.getArgList(),
+                    splitCall.filterArg, oldGroupKeyCount, newGroupKeyCount);
           } else {
             call1 = splitter.other(rexBuilder.getTypeFactory(), aggCall.e);
           }
@@ -317,8 +320,8 @@ public class AggregateJoinTransposeRule
     // Update condition
     final Mapping mapping = /*X*/
         (Mapping) Mappings.target(map::get,
-        join.getRowType().getFieldCount(),
-        belowOffset);
+            join.getRowType().getFieldCount(),
+            belowOffset);
     final RexNode newCondition =
         RexUtil.apply(mapping, join.getCondition());
 

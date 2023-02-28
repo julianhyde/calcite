@@ -51,6 +51,9 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
@@ -155,14 +158,12 @@ public class Programs {
   @SuppressWarnings("deprecation")
   public static Program of(final HepProgram hepProgram, final boolean noDag,
       final RelMetadataProvider metadataProvider) {
+    requireNonNull(metadataProvider, "metadataProvider");
     return (planner, rel, requiredOutputTraits, materializations, lattices) -> {
       final HepPlanner hepPlanner = /*Y*/
           new HepPlanner(hepProgram, null, noDag, null, RelOptCostImpl.FACTORY);
 
-      List<RelMetadataProvider> list = new ArrayList<>();
-      if (metadataProvider != null) {
-        list.add(metadataProvider);
-      }
+      List<RelMetadataProvider> list = Lists.newArrayList(metadataProvider);
       hepPlanner.registerMetadataProviders(list);
       for (RelOptMaterialization materialization : materializations) {
         hepPlanner.addMaterialization(materialization);
@@ -335,7 +336,8 @@ public class Programs {
         List<RelOptLattice> lattices) {
       for (Program program : programs) {
         rel = /*X*/
-            program.run(planner, rel, requiredOutputTraits, materializations, lattices);
+            program.run(planner, rel, requiredOutputTraits, materializations,
+                lattices);
       }
       return rel;
     }

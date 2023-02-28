@@ -200,10 +200,10 @@ public class RelMetadataFixture {
           "Calc does not allow variables");
       RexProgram program = /*X*/
           RexProgram.create(project.getInput().getRowType(),
-          project.getProjects(),
-          null,
-          project.getRowType(),
-          project.getCluster().getRexBuilder());
+              project.getProjects(),
+              null,
+              project.getRowType(),
+              project.getCluster().getRexBuilder());
       return LogicalCalc.create(project.getInput(), program);
     }
     return relTransform.apply(rel);

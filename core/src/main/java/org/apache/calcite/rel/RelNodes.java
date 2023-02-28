@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.rel;
 
-import org.apache.calcite.runtime.Utilities;
-
 import com.google.common.collect.Ordering;
 
 import java.util.Comparator;
@@ -38,7 +36,7 @@ public class RelNodes {
 
   /** Compares arrays of {@link RelNode}. */
   public static int compareRels(RelNode[] rels0, RelNode[] rels1) {
-    int c = Utilities.compare(rels0.length, rels1.length);
+    int c = Integer.compare(rels0.length, rels1.length);
     if (c != 0) {
       return c;
     }
@@ -57,11 +55,12 @@ public class RelNodes {
       // Compare on field count first. It is more stable than id (when rules
       // are added to the set of active rules).
       final int c = /*Y*/
-          Utilities.compare(o1.getRowType().getFieldCount(), o2.getRowType().getFieldCount());
+          Integer.compare(o1.getRowType().getFieldCount(),
+              o2.getRowType().getFieldCount());
       if (c != 0) {
         return -c;
       }
-      return Utilities.compare(o1.getId(), o2.getId());
+      return Integer.compare(o1.getId(), o2.getId());
     }
   }
 }

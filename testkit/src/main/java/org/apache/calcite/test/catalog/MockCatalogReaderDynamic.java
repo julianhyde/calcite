@@ -86,15 +86,20 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
     registerTable(regionTable);
 
     List<String> custModifiableViewNames = /*X*/
-        Arrays.asList(schema.getCatalogName(), schema.getName(), "CUSTOMER_MODIFIABLEVIEW");
+        Arrays.asList(schema.getCatalogName(), schema.getName(),
+            "CUSTOMER_MODIFIABLEVIEW");
     TableMacro custModifiableViewMacro = /*Y*/
-        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select n_name from SALES.CUSTOMER", custModifiableViewNames.subList(0, 2),
-        Collections.singletonList(custModifiableViewNames.get(2)), true);
-    TranslatableTable empModifiableView = custModifiableViewMacro.apply(Collections.emptyList());
+        MockModifiableViewRelOptTable.viewMacro(rootSchema,
+            "select n_name from SALES.CUSTOMER",
+            custModifiableViewNames.subList(0, 2),
+            Collections.singletonList(custModifiableViewNames.get(2)),
+            true);
+    TranslatableTable empModifiableView =
+        custModifiableViewMacro.apply(Collections.emptyList());
     MockTable mockCustViewTable = /*X*/
         MockRelViewTable.create((ViewTable) empModifiableView, this,
-        custModifiableViewNames.get(0), custModifiableViewNames.get(1),
-        custModifiableViewNames.get(2), false, 20, null);
+            custModifiableViewNames.get(0), custModifiableViewNames.get(1),
+            custModifiableViewNames.get(2), false, 20, null);
     registerTable(mockCustViewTable);
 
     // re-registers customer table to clear its row type after view registration

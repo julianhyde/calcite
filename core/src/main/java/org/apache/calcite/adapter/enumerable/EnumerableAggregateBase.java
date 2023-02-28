@@ -283,12 +283,13 @@ public abstract class EnumerableAggregateBase extends Aggregate {
             }
           };
 
-      agg.implementor.implementAdd(requireNonNull(agg.context, "agg.context"), addContext);
+      agg.implementor.implementAdd(requireNonNull(agg.context, "agg.context"),
+          addContext);
       builder2.add(accExpr);
       agg.accumulatorAdder = /*Y*/
-          builder.append(
-              "accumulatorAdder", Expressions.lambda(Function2.class, builder2.toBlock(), accExpr,
-              inParameter));
+          builder.append("accumulatorAdder",
+              Expressions.lambda(Function2.class, builder2.toBlock(), accExpr,
+                  inParameter));
     }
   }
 

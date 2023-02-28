@@ -160,7 +160,8 @@ class VolcanoPlannerTest {
 
     // Binary RelNode with identical input on either side
     PhysBiRel parent = /*X*/
-        new PhysBiRel(cluster, cluster.traitSetOf(PHYS_CALLING_CONVENTION), singlePhy, singlePhy);
+        new PhysBiRel(cluster, cluster.traitSetOf(PHYS_CALLING_CONVENTION),
+            singlePhy, singlePhy);
     planner.setRoot(parent);
 
     RelNode result = planner.chooseDelegate().findBestExp();

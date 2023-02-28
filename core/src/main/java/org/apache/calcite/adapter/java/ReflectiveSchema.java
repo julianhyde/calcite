@@ -144,9 +144,8 @@ public class ReflectiveSchema
         table.statistic = /*X*/
             Statistics.of(
                 ImmutableList.copyOf(
-                Iterables.concat(
-                    referentialConstraints,
-                    Collections.singleton(rc))));
+                    Iterables.concat(referentialConstraints,
+                        Collections.singleton(rc))));
       }
     }
     return tableMap;
@@ -363,8 +362,8 @@ public class ReflectiveSchema
 
     @Override public TranslatableTable apply(final List<? extends @Nullable Object> arguments) {
       try {
-        final Object o = /*X*/
-            requireNonNull(method.invoke(schema.getTarget(), arguments.toArray()),
+        final Object o = method.invoke(schema.getTarget(), arguments.toArray());
+        requireNonNull(o,
             () -> "method " + method + " returned null for arguments " + arguments);
         return (TranslatableTable) o;
       } catch (IllegalAccessException | InvocationTargetException e) {
@@ -403,7 +402,7 @@ public class ReflectiveSchema
         String tableName, Class clazz) {
       ReflectiveSchema reflectiveSchema = /*X*/
           requireNonNull(schema.unwrap(ReflectiveSchema.class),
-          () -> "schema.unwrap(ReflectiveSchema.class) for " + schema);
+              () -> "schema.unwrap(ReflectiveSchema.class) for " + schema);
       return Expressions.field(
           reflectiveSchema.getTargetExpression(
               schema.getParentSchema(), schema.getName()), field);

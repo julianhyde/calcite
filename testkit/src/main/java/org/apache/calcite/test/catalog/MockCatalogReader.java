@@ -185,7 +185,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     assert names.get(0).equals(DEFAULT_CATALOG);
     final List<String> schemaPath = Util.skipLast(names);
     final CalciteSchema schema = /*Y*/
-        SqlValidatorUtil.getSchema(rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive(true));
+        SqlValidatorUtil.getSchema(rootSchema,
+            schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.add(Util.last(names), relProtoDataType);
   }
 
@@ -214,7 +215,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     List<String> schemaPath = Util.skipLast(names);
     String tableName = Util.last(names);
     CalciteSchema schema = /*Y*/
-        SqlValidatorUtil.getSchema(rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive(true));
+        SqlValidatorUtil.getSchema(rootSchema,
+            schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.removeTable(tableName);
     schema.add(tableName, table);
   }
@@ -224,7 +226,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     final List<String> schemaPath = Util.skipLast(names);
     final String tableName = Util.last(names);
     final CalciteSchema schema = /*Y*/
-        SqlValidatorUtil.getSchema(rootSchema, schemaPath, SqlNameMatchers.withCaseSensitive(true));
+        SqlValidatorUtil.getSchema(rootSchema,
+            schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.add(tableName, table);
   }
 
@@ -445,8 +448,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
             ImmutableList<RelDataTypeField> allFields = /*X*/
                 ImmutableList.copyOf(
                     Iterables.concat(
-                    ModifiableTable.this.getRowType(typeFactory).getFieldList(),
-                    fields));
+                        ModifiableTable.this.getRowType(typeFactory).getFieldList(),
+                        fields));
             return typeFactory.createStructType(allFields);
           }
         };
@@ -604,7 +607,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
 
     public void onRegister(RelDataTypeFactory typeFactory) {
       rowType = /*Y*/
-          typeFactory.createStructType(kind, Pair.right(columnList), Pair.left(columnList));
+          typeFactory.createStructType(kind, Pair.right(columnList),
+              Pair.left(columnList));
       collationList = deduceMonotonicity(this);
     }
 
@@ -937,7 +941,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
 
     @Override public RelNode toRel(ToRelContext context) {
       RelNode rel = /*Y*/
-          LogicalTableScan.create(context.getCluster(), fromTable, context.getTableHints());
+          LogicalTableScan.create(context.getCluster(), fromTable,
+              context.getTableHints());
       final RexBuilder rexBuilder = context.getCluster().getRexBuilder();
       rel = /*X*/
           LogicalFilter.create(rel, getConstraint(rexBuilder, rel.getRowType()));

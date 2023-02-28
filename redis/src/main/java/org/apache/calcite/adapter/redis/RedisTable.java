@@ -98,7 +98,8 @@ public class RedisTable extends AbstractTable
       Map operand,
       RelProtoDataType protoRowType) {
     RedisConfig redisConfig = /*Y*/
-        new RedisConfig(schema.host, schema.port, schema.database, schema.password);
+        new RedisConfig(schema.host, schema.port,
+            schema.database, schema.password);
     return create(schema, tableName, redisConfig, protoRowType);
   }
 

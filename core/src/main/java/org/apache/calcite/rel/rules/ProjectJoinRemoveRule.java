@@ -121,7 +121,8 @@ public class ProjectJoinRemoveRule
           .map(expr -> RexUtil.shift(expr, -offset))
           .collect(Collectors.toList());
       node = /*Y*/
-          project.copy(project.getTraitSet(), join.getRight(), newExprs, project.getRowType());
+          project.copy(project.getTraitSet(), join.getRight(), newExprs,
+              project.getRowType());
     }
     call.transformTo(node);
   }

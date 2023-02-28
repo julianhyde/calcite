@@ -372,26 +372,26 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
   /** List of all numeric function names defined by JDBC. */
   private static final String NUMERIC_FUNCTIONS = /*X*/
-      constructFuncList("ABS", "ACOS", "ASIN", "ATAN", "ATAN2", "CBRT", "CEILING", "COS", "COT",
-      "DEGREES", "EXP", "FLOOR", "LOG", "LOG10", "MOD", "PI",
-      "POWER", "RADIANS", "RAND", "ROUND", "SIGN", "SIN", "SQRT",
-      "TAN", "TRUNCATE");
+      constructFuncList("ABS", "ACOS", "ASIN", "ATAN", "ATAN2",
+          "CBRT", "CEILING", "COS", "COT",
+          "DEGREES", "EXP", "FLOOR", "LOG", "LOG10", "MOD", "PI",
+          "POWER", "RADIANS", "RAND", "ROUND", "SIGN", "SIN", "SQRT",
+          "TAN", "TRUNCATE");
 
   /** List of all string function names defined by JDBC. */
   private static final String STRING_FUNCTIONS = /*X*/
-      constructFuncList("ASCII", "CHAR", "CONCAT", "DIFFERENCE", "INSERT", "LCASE",
-      "LEFT", "LENGTH", "LOCATE", "LTRIM", "REPEAT", "REPLACE",
-      "RIGHT", "RTRIM", "SOUNDEX", "SPACE", "SUBSTRING", "UCASE");
-      // "ASCII", "CHAR", "DIFFERENCE", "LOWER",
-      // "LEFT", "TRIM", "REPEAT", "REPLACE",
-      // "RIGHT", "SPACE", "SUBSTRING", "UPPER", "INITCAP", "OVERLAY"
+      constructFuncList("ASCII", "CHAR", "CONCAT",
+          "DIFFERENCE", "INSERT", "LCASE",
+          "LEFT", "LENGTH", "LOCATE", "LTRIM", "REPEAT", "REPLACE",
+          "RIGHT", "RTRIM", "SOUNDEX", "SPACE", "SUBSTRING", "UCASE");
 
   /** List of all time/date function names defined by JDBC. */
   private static final String TIME_DATE_FUNCTIONS = /*X*/
-      constructFuncList("CONVERT_TIMEZONE", "CURDATE", "CURTIME", "DAYNAME", "DAYOFMONTH", "DAYOFWEEK",
-      "DAYOFYEAR", "HOUR", "MINUTE", "MONTH", "MONTHNAME", "NOW",
-      "QUARTER", "SECOND", "TIMESTAMPADD", "TIMESTAMPDIFF", "TO_DATE", "TO_TIMESTAMP",
-      "WEEK", "YEAR");
+      constructFuncList("CONVERT_TIMEZONE", "CURDATE", "CURTIME",
+          "DAYNAME", "DAYOFMONTH", "DAYOFWEEK",
+          "DAYOFYEAR", "HOUR", "MINUTE", "MONTH", "MONTHNAME", "NOW",
+          "QUARTER", "SECOND", "TIMESTAMPADD", "TIMESTAMPDIFF",
+          "TO_DATE", "TO_TIMESTAMP", "WEEK", "YEAR");
 
   /** List of all system function names defined by JDBC. */
   private static final String SYSTEM_FUNCTIONS = /*X*/

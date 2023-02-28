@@ -2121,7 +2121,8 @@ public class RelBuilder {
   public RelBuilder projectNamed(Iterable<? extends RexNode> nodes,
       @Nullable Iterable<? extends @Nullable String> fieldNames, boolean force,
       Iterable<CorrelationId> variablesSet) {
-    @SuppressWarnings("unchecked") final List<? extends RexNode> nodeList =
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final List<? extends RexNode> nodeList =
         nodes instanceof List ? (List) nodes : ImmutableList.copyOf(nodes);
     final List<@Nullable String> fieldNameList =
         fieldNames == null ? null
@@ -2138,7 +2139,8 @@ public class RelBuilder {
         final Frame frame = stack.pop();
         final Project childProject = (Project) frame.rel;
         final Project newInput = /*Y*/
-            childProject.copy(childProject.getTraitSet(), childProject.getInput(), childProject.getProjects(), rowType);
+            childProject.copy(childProject.getTraitSet(),
+                childProject.getInput(), childProject.getProjects(), rowType);
         stack.push(new Frame(newInput.attachHints(childProject.getHints()), frame.fields));
       }
       if (input instanceof Values && fieldNameList != null) {
@@ -2697,10 +2699,8 @@ public class RelBuilder {
     TransientTable transientTable = new ListTransientTable(tableName, rowType);
     requireNonNull(relOptSchema, "relOptSchema");
     RelOptTable relOptTable = /*X*/
-        RelOptTableImpl.create(relOptSchema,
-        rowType,
-        transientTable,
-        ImmutableList.of(tableName));
+        RelOptTableImpl.create(relOptSchema, rowType, transientTable,
+            ImmutableList.of(tableName));
     RelNode scan =
         struct.scanFactory.createScan(
             ViewExpanders.toRelContext(viewExpander, cluster),
@@ -2836,7 +2836,8 @@ public class RelBuilder {
       // transform the expression to something unrecognizable
       if (condition instanceof RexCall) {
         condition = /*Y*/
-            RelOptUtil.collapseExpandedIsNotDistinctFromExpr((RexCall) condition, getRexBuilder());
+            RelOptUtil.collapseExpandedIsNotDistinctFromExpr((RexCall) condition,
+                getRexBuilder());
       }
       condition = simplifier.simplifyUnknownAsFalse(condition);
     }

@@ -189,9 +189,8 @@ public final class SqlParserUtil {
             throw new MalformedUnicodeEscape(i);
           }
           endIdx = /*Y*/
-              calculateMaxCharsInSequence(input, i + 2,
-              charsToConsume,
-              SqlParserUtil::isHexDigit);
+              calculateMaxCharsInSequence(input, i + 2, charsToConsume,
+                  SqlParserUtil::isHexDigit);
           if (endIdx != i + 2 + charsToConsume) {
             throw new MalformedUnicodeEscape(i);
           }
@@ -201,9 +200,8 @@ public final class SqlParserUtil {
         case 'x':
           // handle hex byte case - up to 2 chars for hex value
           endIdx = /*Y*/
-              calculateMaxCharsInSequence(input, i + 2,
-              2,
-              SqlParserUtil::isHexDigit);
+              calculateMaxCharsInSequence(input, i + 2, 2,
+                  SqlParserUtil::isHexDigit);
           if (endIdx > i + 2) {
             builder.appendCodePoint(parseInt(input.substring(i + 2, endIdx), 16));
             i = endIdx - 1; // skip already consumed chars
@@ -220,8 +218,8 @@ public final class SqlParserUtil {
           // handle octal case - up to 3 chars
           endIdx = /*Y*/
               calculateMaxCharsInSequence(input, i + 2,
-              2,      // first char is already "consumed"
-              SqlParserUtil::isOctalDigit);
+                  2, // first char is already "consumed"
+                  SqlParserUtil::isOctalDigit);
           builder.appendCodePoint(parseInt(input.substring(i + 1, endIdx), 8));
           i = endIdx - 1; // skip already consumed chars
           break;
@@ -357,7 +355,8 @@ public final class SqlParserUtil {
     final DateFormat[] dateFormats = {format.timestamp, format.date};
     for (DateFormat dateFormat : dateFormats) {
       pt = /*Y*/
-          DateTimeUtils.parsePrecisionDateTimeLiteral(s, dateFormat, DateTimeUtils.UTC_ZONE, -1);
+          DateTimeUtils.parsePrecisionDateTimeLiteral(s,
+              dateFormat, DateTimeUtils.UTC_ZONE, -1);
       if (pt != null) {
         break;
       }
@@ -432,8 +431,8 @@ public final class SqlParserUtil {
     int[] ret;
     try {
       ret = /*Y*/
-          intervalQualifier.evaluateIntervalLiteral(literal, intervalQualifier.getParserPosition(), RelDataTypeSystem.DEFAULT);
-      assert ret != null;
+          intervalQualifier.evaluateIntervalLiteral(literal,
+              intervalQualifier.getParserPosition(), RelDataTypeSystem.DEFAULT);
     } catch (CalciteContextException e) {
       throw new RuntimeException("while parsing day-to-second interval "
           + literal, e);
@@ -473,8 +472,8 @@ public final class SqlParserUtil {
     int[] ret;
     try {
       ret = /*Y*/
-          intervalQualifier.evaluateIntervalLiteral(literal, intervalQualifier.getParserPosition(), RelDataTypeSystem.DEFAULT);
-      assert ret != null;
+          intervalQualifier.evaluateIntervalLiteral(literal,
+              intervalQualifier.getParserPosition(), RelDataTypeSystem.DEFAULT);
     } catch (CalciteContextException e) {
       throw new RuntimeException("Error while parsing year-to-month interval "
           + literal, e);
@@ -1030,7 +1029,8 @@ public final class SqlParserUtil {
 
     @Override public SqlOperator op(int i) {
       ToTreeListItem o = /*Y*/
-          (ToTreeListItem) requireNonNull(list.get(i).o, () -> "list.get(" + i + ").o is null in " + list);
+          (ToTreeListItem) requireNonNull(list.get(i).o,
+              () -> "list.get(" + i + ").o is null in " + list);
       return o.getOperator();
     }
 
@@ -1124,7 +1124,8 @@ public final class SqlParserUtil {
 
     @Override public SqlOperator op(int i) {
       ToTreeListItem item = /*Y*/
-          (ToTreeListItem) requireNonNull(list.get(i), () -> "list.get(" + i + ")");
+          (ToTreeListItem) requireNonNull(list.get(i),
+              () -> "list.get(" + i + ")");
       return item.op;
     }
 

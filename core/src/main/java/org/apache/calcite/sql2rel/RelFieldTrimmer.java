@@ -388,15 +388,9 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
     final List<RexNode> projs = /*Y*/
         Util.transform(rexProgram.getProjectList(), rexProgram::expandLocalRef);
 
-    RexNode conditionExpr = null;
-    if (rexProgram.getCondition() != null) {
-      final List<RexNode> filter = /*X*/
-          Util.transform(
-              ImmutableList.of(
-              rexProgram.getCondition()), rexProgram::expandLocalRef);
-      assert filter.size() == 1;
-      conditionExpr = filter.get(0);
-    }
+    final RexNode conditionExpr =
+        rexProgram.getCondition() == null ? null
+            : rexProgram.expandLocalRef(rexProgram.getCondition());
 
     final RelDataType rowType = calc.getRowType();
     final int fieldCount = rowType.getFieldCount();
@@ -463,9 +457,11 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       newConditionExpr = conditionExpr.accept(shuttle);
     }
     final RexProgram newRexProgram = /*Y*/
-        RexProgram.create(newInputRelNode.getRowType(), newProjects, newConditionExpr, newRowType.getFieldNames(),
-        newInputRelNode.getCluster().getRexBuilder());
-    final Calc newCalc = calc.copy(calc.getTraitSet(), newInputRelNode, newRexProgram);
+        RexProgram.create(newInputRelNode.getRowType(), newProjects,
+            newConditionExpr, newRowType.getFieldNames(),
+            newInputRelNode.getCluster().getRexBuilder());
+    final Calc newCalc =
+        calc.copy(calc.getTraitSet(), newInputRelNode, newRexProgram);
     return result(newCalc, mapping, calc);
   }
 
@@ -886,8 +882,9 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       }
       Mapping inputMapping = inputMappings.get(0);
       mapping = /*Y*/
-          Mappings.create(MappingType.INVERSE_SURJECTION, join.getRowType().getFieldCount(),
-          newSystemFieldCount + inputMapping.getTargetCount());
+          Mappings.create(MappingType.INVERSE_SURJECTION,
+              join.getRowType().getFieldCount(),
+              newSystemFieldCount + inputMapping.getTargetCount());
       for (int i = 0; i < newSystemFieldCount; ++i) {
         mapping.set(i, i);
       }
@@ -1097,8 +1094,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       // Add a dummy call if all the column fields have been trimmed
       mapping = /*X*/
           Mappings.create(MappingType.INVERSE_SURJECTION,
-          mapping.getSourceCount(),
-          1);
+              mapping.getSourceCount(), 1);
       newAggCallList.add(relBuilder.count(false, "DUMMY"));
     }
 
@@ -1185,8 +1181,9 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
     LogicalTableFunctionScan newTabFun = tabFun;
     if (!tabFun.getInputs().equals(newInputs)) {
       newTabFun = /*Y*/
-          tabFun.copy(tabFun.getTraitSet(), newInputs, tabFun.getCall(), tabFun.getElementType(), tabFun.getRowType(),
-          tabFun.getColumnMappings());
+          tabFun.copy(tabFun.getTraitSet(), newInputs, tabFun.getCall(),
+              tabFun.getElementType(), tabFun.getRowType(),
+              tabFun.getColumnMappings());
     }
     assert newTabFun.getClass() == tabFun.getClass();
 

@@ -694,23 +694,27 @@ class FileAdapterTest {
     try (Connection connection =
              DriverManager.getConnection("jdbc:calcite:", info)) {
       ResultSet res = /*Y*/
-          connection.getMetaData().getColumns(null, null, "DATE", "JOINEDAT");
+          connection.getMetaData().getColumns(null, null,
+              "DATE", "JOINEDAT");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), Types.DATE);
 
       res = /*Y*/
-          connection.getMetaData().getColumns(null, null, "DATE", "JOINTIME");
+          connection.getMetaData().getColumns(null, null,
+              "DATE", "JOINTIME");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), Types.TIME);
 
       res = /*Y*/
-          connection.getMetaData().getColumns(null, null, "DATE", "JOINTIMES");
+          connection.getMetaData().getColumns(null, null,
+              "DATE", "JOINTIMES");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), Types.TIMESTAMP);
 
       Statement statement = connection.createStatement();
-      ResultSet resultSet = /*X*/
-          statement.executeQuery("select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100");
+      final String sql = "select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" "
+          + "from \"DATE\" where EMPNO = 100";
+      ResultSet resultSet = statement.executeQuery(sql);
       resultSet.next();
 
       // date

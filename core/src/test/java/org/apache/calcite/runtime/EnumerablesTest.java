@@ -48,17 +48,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class EnumerablesTest {
   private static final Enumerable<Emp> EMPS = /*X*/
       Linq4j.asEnumerable(
-          Arrays.asList(
-          new Emp(10, "Fred"),
-          new Emp(20, "Theodore"),
-          new Emp(20, "Sebastian"),
-          new Emp(30, "Joe")));
+          Arrays.asList(new Emp(10, "Fred"),
+              new Emp(20, "Theodore"),
+              new Emp(20, "Sebastian"),
+              new Emp(30, "Joe")));
 
   private static final Enumerable<Dept> DEPTS = /*X*/
       Linq4j.asEnumerable(
-          Arrays.asList(
-          new Dept(20, "Sales"),
-          new Dept(15, "Marketing")));
+          Arrays.asList(new Dept(20, "Sales"),
+              new Dept(15, "Marketing")));
 
   private static final Function2<Emp, Dept, String> EMP_DEPT_TO_STRING =
       (v0, v1) -> "{" + (v0 == null ? null : v0.name)
@@ -401,16 +399,16 @@ class EnumerablesTest {
   @Test void testMergeJoinWithPredicate() {
     final List<Emp> listEmp1 = /*X*/
         Arrays.asList(new Emp(1, "Fred"),
-        new Emp(2, "Fred"),
-        new Emp(3, "Joe"),
-        new Emp(4, "Joe"),
-        new Emp(5, "Peter"));
+            new Emp(2, "Fred"),
+            new Emp(3, "Joe"),
+            new Emp(4, "Joe"),
+            new Emp(5, "Peter"));
     final List<Emp> listEmp2 = /*X*/
         Arrays.asList(new Emp(2, "Fred"),
-        new Emp(3, "Fred"),
-        new Emp(3, "Joe"),
-        new Emp(5, "Joe"),
-        new Emp(6, "Peter"));
+            new Emp(3, "Fred"),
+            new Emp(3, "Joe"),
+            new Emp(5, "Joe"),
+            new Emp(6, "Peter"));
 
     assertThat(
         EnumerableDefaults.mergeJoin(
@@ -820,11 +818,10 @@ class EnumerablesTest {
   public void testMatch() {
     final Enumerable<Emp> emps = /*X*/
         Linq4j.asEnumerable(
-            Arrays.asList(
-            new Emp(20, "Theodore"),
-            new Emp(10, "Fred"),
-            new Emp(20, "Sebastian"),
-            new Emp(30, "Joe")));
+            Arrays.asList(new Emp(20, "Theodore"),
+                new Emp(10, "Fred"),
+                new Emp(20, "Sebastian"),
+                new Emp(30, "Joe")));
 
     final Pattern p =
         Pattern.builder()

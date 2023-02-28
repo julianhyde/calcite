@@ -188,7 +188,8 @@ public class PigRelBuilder extends RelBuilder {
       final String[] args = pigFunc.getCtorArgs();
       assert args != null && args.length == 2;
       final String fileName = /*Y*/
-          args[0].substring(args[0].lastIndexOf("/") + 1, args[0].lastIndexOf(".py"));
+          args[0].substring(args[0].lastIndexOf("/") + 1,
+              args[0].lastIndexOf(".py"));
       // key = [clas name]_[file name]_[function name]
       key = udfClass.getName() + "_" + fileName + "_" + args[1];
     }
@@ -263,7 +264,8 @@ public class PigRelBuilder extends RelBuilder {
    */
   private RelBuilder scan(RelOptTable tableSchema) {
     final RelNode scan = /*X*/
-        getScanFactory().createScan(ViewExpanders.simpleContext(cluster), tableSchema);
+        getScanFactory()
+            .createScan(ViewExpanders.simpleContext(cluster), tableSchema);
     push(scan);
     return this;
   }
@@ -507,9 +509,9 @@ public class PigRelBuilder extends RelBuilder {
     // UncollectFactory, to instantiate Uncollect
     Uncollect uncollect = /*X*/
         Uncollect.create(cluster.traitSetOf(Convention.NONE),
-        build(),
-        false,
-        Collections.emptyList());
+            build(),
+            false,
+            Collections.emptyList());
     push(uncollect);
     return this;
   }
@@ -542,7 +544,8 @@ public class PigRelBuilder extends RelBuilder {
 
     // First project out a combined column which is a of all other columns
     final RexNode row = /*Y*/
-        getRexBuilder().makeCall(inputRel.getRowType(), SqlStdOperatorTable.ROW, fields());
+        getRexBuilder()
+            .makeCall(inputRel.getRowType(), SqlStdOperatorTable.ROW, fields());
     project(ImmutableList.of(literal("all"), row));
 
     // Update the alias map for the new projected rel.

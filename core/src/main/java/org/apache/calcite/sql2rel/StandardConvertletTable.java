@@ -654,18 +654,15 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       RelDataType typeFinal = type;
       final RelDataType componentType = /*X*/
           requireNonNull(type.getComponentType(),
-          () -> "componentType of " + typeFinal);
+              () -> "componentType of " + typeFinal);
       if (argComponentType.isStruct()
           && !componentType.isStruct()) {
         RelDataType tt =
             typeFactory.builder()
-                .add(
-                    argComponentType.getFieldList().get(0).getName(),
+                .add(argComponentType.getFieldList().get(0).getName(),
                     componentType)
                 .build();
-        tt = /*X*/
-            typeFactory.createTypeWithNullability(tt,
-            componentType.isNullable());
+        tt = typeFactory.createTypeWithNullability(tt, componentType.isNullable());
         boolean isn = type.isNullable();
         type = typeFactory.createMultisetType(tt, -1);
         type = typeFactory.createTypeWithNullability(type, isn);
@@ -693,10 +690,11 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       RexNode pad =
           rexBuilder.makeExactLiteral(val.subtract(BigDecimal.ONE));
       RexNode cast = /*X*/
-          rexBuilder.makeReinterpretCast(rexInterval.getType(), pad, rexBuilder.makeLiteral(false));
-      RexNode sum = floor
-          ? minus(rexBuilder, rexInterval, cast)
-          : plus(rexBuilder, rexInterval, cast);
+          rexBuilder.makeReinterpretCast(rexInterval.getType(), pad,
+              rexBuilder.makeLiteral(false));
+      RexNode sum =
+          floor ? minus(rexBuilder, rexInterval, cast)
+              : plus(rexBuilder, rexInterval, cast);
 
       RexNode kase = floor
           ? case_(rexBuilder, rexInterval, cond, sum)
@@ -1453,11 +1451,14 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       } else {
         sumArgSquared = SqlStdOperatorTable.SUM.createCall(pos, argSquared, dependent);
         sum0 = /*X*/
-            SqlStdOperatorTable.SUM.createCall(pos, arg0, Objects.equals(dependent, arg0Input) ? arg1 : dependent);
+            SqlStdOperatorTable.SUM.createCall(pos, arg0,
+                Objects.equals(dependent, arg0Input) ? arg1 : dependent);
         sum1 = /*X*/
-            SqlStdOperatorTable.SUM.createCall(pos, arg1, Objects.equals(dependent, arg1Input) ? arg0 : dependent);
+            SqlStdOperatorTable.SUM.createCall(pos, arg1,
+                Objects.equals(dependent, arg1Input) ? arg0 : dependent);
         count = /*X*/
-            SqlStdOperatorTable.REGR_COUNT.createCall(pos, arg0, Objects.equals(dependent, arg0Input) ? arg1 : dependent);
+            SqlStdOperatorTable.REGR_COUNT.createCall(pos, arg0,
+                Objects.equals(dependent, arg0Input) ? arg1 : dependent);
       }
 
       final SqlNode sumSquared = SqlStdOperatorTable.MULTIPLY.createCall(pos, sum0, sum1);
@@ -1473,24 +1474,22 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       } else {
         final SqlNumericLiteral one = SqlLiteral.createExactNumeric("1", pos);
         denominator = /*Y*/
-            new SqlCase(SqlParserPos.ZERO, countCasted, SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, countCasted, one)),
-            SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
-            SqlStdOperatorTable.MINUS.createCall(pos, countCasted, one));
+            new SqlCase(SqlParserPos.ZERO, countCasted,
+                SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, countCasted, one)),
+                SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
+                SqlStdOperatorTable.MINUS.createCall(pos, countCasted, one));
       }
 
       return SqlStdOperatorTable.DIVIDE.createCall(pos, diff, denominator);
     }
 
-    private static SqlNode getCastedSqlNode(SqlNode argInput, RelDataType varType,
-        SqlParserPos pos, @Nullable RexNode argRex) {
-      SqlNode arg;
-      if (argRex != null && !argRex.getType().equals(varType)) {
-        arg = /*X*/
-            SqlStdOperatorTable.CAST.createCall(pos, argInput, SqlTypeUtil.convertTypeToSpec(varType));
-      } else {
-        arg = argInput;
+    private static SqlNode getCastedSqlNode(SqlNode argInput,
+        RelDataType varType, SqlParserPos pos, @Nullable RexNode argRex) {
+      if (argRex == null || argRex.getType().equals(varType)) {
+        return argInput;
       }
-      return arg;
+      return SqlStdOperatorTable.CAST.createCall(pos, argInput,
+          SqlTypeUtil.convertTypeToSpec(varType));
     }
   }
 
@@ -1606,13 +1605,14 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         final SqlLiteral nullLiteral = SqlLiteral.createNull(SqlParserPos.ZERO);
         denominator = /*Y*/
             new SqlCase(SqlParserPos.ZERO, count,
-            SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, count, one)),
-            SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
-            SqlStdOperatorTable.MINUS.createCall(pos, count, one));
+                SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, count, one)),
+                SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
+                SqlStdOperatorTable.MINUS.createCall(pos, count, one));
       }
       final SqlNode div =
           SqlStdOperatorTable.DIVIDE.createCall(pos, diffCasted, denominator);
-      final SqlNode divCasted = getCastedSqlNode(div, varType, pos, cx.convertExpression(div));
+      final SqlNode divCasted =
+          getCastedSqlNode(div, varType, pos, cx.convertExpression(div));
 
       SqlNode result = div;
       if (sqrt) {
@@ -1622,16 +1622,13 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       return result;
     }
 
-    private static SqlNode getCastedSqlNode(SqlNode argInput, RelDataType varType,
-            SqlParserPos pos, @Nullable RexNode argRex) {
-      SqlNode arg;
-      if (argRex != null && !argRex.getType().equals(varType)) {
-        arg = /*X*/
-            SqlStdOperatorTable.CAST.createCall(pos, argInput, SqlTypeUtil.convertTypeToSpec(varType));
-      } else {
-        arg = argInput;
+    private static SqlNode getCastedSqlNode(SqlNode argInput,
+        RelDataType varType, SqlParserPos pos, @Nullable RexNode argRex) {
+      if (argRex == null || argRex.getType().equals(varType)) {
+        return argInput;
       }
-      return arg;
+      return SqlStdOperatorTable.CAST.createCall(pos, argInput,
+          SqlTypeUtil.convertTypeToSpec(varType));
     }
   }
 
@@ -1798,42 +1795,42 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       case POSTGRESQL:
         if (call.operandCount() == 2) {
           newStart = /*Y*/
-              rexBuilder.makeCall(
-                  SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
-                  oneLiteral),
-              oneLiteral, start);
+              rexBuilder.makeCall(SqlStdOperatorTable.CASE,
+                  rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
+                      oneLiteral),
+                  oneLiteral, start);
         } else {
           newStart = start;
         }
         break;
       case BIG_QUERY:
         newStart = /*Y*/
-            rexBuilder.makeCall(
-                SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
-                zeroLiteral),
-            oneLiteral,
-            rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
-                zeroLiteral),
-            rexBuilder.makeCall(SqlStdOperatorTable.PLUS, start,
-                valueLengthPlusOne),
-            start);
+            rexBuilder.makeCall(SqlStdOperatorTable.CASE,
+                rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
+                    zeroLiteral),
+                oneLiteral,
+                rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
+                    zeroLiteral),
+                rexBuilder.makeCall(SqlStdOperatorTable.PLUS, start,
+                    valueLengthPlusOne),
+                start);
         break;
       default:
         newStart = /*Y*/
-            rexBuilder.makeCall(
-                SqlStdOperatorTable.CASE, rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
-                zeroLiteral),
-            library == SqlLibrary.MYSQL ? valueLengthPlusOne : oneLiteral,
-            rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN,
+            rexBuilder.makeCall(SqlStdOperatorTable.CASE,
+                rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
+                    zeroLiteral),
+                library == SqlLibrary.MYSQL ? valueLengthPlusOne : oneLiteral,
+                rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN,
+                    rexBuilder.makeCall(SqlStdOperatorTable.PLUS, start,
+                        valueLengthPlusOne),
+                    oneLiteral),
+                valueLengthPlusOne,
+                rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
+                    zeroLiteral),
                 rexBuilder.makeCall(SqlStdOperatorTable.PLUS, start,
                     valueLengthPlusOne),
-                oneLiteral),
-            valueLengthPlusOne,
-            rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
-                zeroLiteral),
-            rexBuilder.makeCall(SqlStdOperatorTable.PLUS, start,
-                valueLengthPlusOne),
-            start);
+                start);
         break;
       }
 
@@ -1936,7 +1933,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         break;
       default:
         interval2Add = /*Y*/
-            multiply(rexBuilder, rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
+            multiply(rexBuilder,
+                rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
       }
 
       return rexBuilder.makeCall(SqlStdOperatorTable.DATETIME_PLUS,
@@ -1970,7 +1968,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         break;
       default:
         interval2Sub = /*Y*/
-            multiply(rexBuilder, rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
+            multiply(rexBuilder,
+                rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
       }
 
       return rexBuilder.makeCall(SqlInternalOperators.MINUS_DATE2,

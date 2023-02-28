@@ -31,7 +31,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * VolcanoRelMetadataProvider implements the {@link RelMetadataProvider}
@@ -61,8 +62,8 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
     return (rel, mq) -> {
       final RelSubset subset = (RelSubset) rel;
       final RelMetadataProvider provider = /*X*/
-          Objects.requireNonNull(rel.getCluster().getMetadataProvider(),
-          "metadataProvider");
+          requireNonNull(rel.getCluster().getMetadataProvider(),
+              "metadataProvider");
 
       // REVIEW jvs 29-Mar-2006: I'm not sure what the correct precedence
       // should be here.  Letting the current best plan take the first shot is

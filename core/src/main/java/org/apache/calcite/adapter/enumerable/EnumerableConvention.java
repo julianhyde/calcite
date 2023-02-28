@@ -62,7 +62,7 @@ public enum EnumerableConvention implements Convention {
     if (input.getConvention() != INSTANCE) {
       rel = /*X*/
           ConventionTraitDef.INSTANCE.convert(input.getCluster().getPlanner(),
-          input, INSTANCE, true);
+              input, INSTANCE, true);
       requireNonNull(rel,
           () -> "Unable to convert input to " + INSTANCE + ", input = " + input);
     }

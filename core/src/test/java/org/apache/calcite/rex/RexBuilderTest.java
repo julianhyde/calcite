@@ -101,9 +101,11 @@ class RexBuilderTest {
     RexBuilder builder = new RexBuilder(typeFactory);
 
     RexNode node = /*X*/
-             new RexLiteral(Boolean.TRUE, typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
+        new RexLiteral(Boolean.TRUE,
+            typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
     RexNode ensuredNode = /*X*/
-            builder.ensureType(typeFactory.createSqlType(SqlTypeName.ANY), node, true);
+        builder.ensureType(typeFactory.createSqlType(SqlTypeName.ANY), node,
+            true);
 
     assertEquals(node, ensuredNode);
   }
@@ -116,9 +118,11 @@ class RexBuilderTest {
     RexBuilder builder = new RexBuilder(typeFactory);
 
     RexNode node = /*X*/
-             new RexLiteral(Boolean.TRUE, typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
+        new RexLiteral(Boolean.TRUE,
+            typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
     RexNode ensuredNode = /*X*/
-            builder.ensureType(typeFactory.createSqlType(SqlTypeName.BOOLEAN), node, true);
+        builder.ensureType(typeFactory.createSqlType(SqlTypeName.BOOLEAN), node,
+            true);
 
     assertEquals(node, ensuredNode);
   }
@@ -131,9 +135,11 @@ class RexBuilderTest {
     RexBuilder builder = new RexBuilder(typeFactory);
 
     RexNode node = /*X*/
-             new RexLiteral(Boolean.TRUE, typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
+        new RexLiteral(Boolean.TRUE,
+            typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
     RexNode ensuredNode = /*X*/
-            builder.ensureType(typeFactory.createSqlType(SqlTypeName.INTEGER), node, true);
+        builder.ensureType(typeFactory.createSqlType(SqlTypeName.INTEGER), node,
+            true);
 
     assertNotEquals(node, ensuredNode);
     assertEquals(ensuredNode.getType(), typeFactory.createSqlType(SqlTypeName.INTEGER));
@@ -241,7 +247,8 @@ class RexBuilderTest {
 
     // The new way
     final TimestampWithTimeZoneString ts = /*X*/
-        new TimestampWithTimeZoneString(1969, 7, 21, 2, 56, 15, TimeZone.getTimeZone("PST").getID());
+        new TimestampWithTimeZoneString(1969, 7, 21, 2, 56, 15,
+            TimeZone.getTimeZone("PST").getID());
     checkTimestampWithLocalTimeZone(
         builder.makeLiteral(ts.getLocalTimestampString(), timestampType));
 
@@ -564,28 +571,28 @@ class RexBuilderTest {
     RexLiteral literal = builder.makePreciseStringLiteral("foobar");
     assertEquals("'foobar'", literal.toString());
     literal = /*X*/
-        builder.makePreciseStringLiteral(new ByteString(new byte[] { 'f', 'o', 'o', 'b', 'a', 'r'}),
-        "UTF8",
-        SqlCollation.IMPLICIT);
+        builder.makePreciseStringLiteral(
+            new ByteString(new byte[] { 'f', 'o', 'o', 'b', 'a', 'r'}),
+            "UTF8", SqlCollation.IMPLICIT);
     assertEquals("_UTF8'foobar'", literal.toString());
     assertEquals("_UTF8'foobar':CHAR(6) CHARACTER SET \"UTF-8\"",
         literal.computeDigest(RexDigestIncludeType.ALWAYS));
     literal = /*X*/
-        builder.makePreciseStringLiteral(new ByteString("\u82f1\u56fd".getBytes(StandardCharsets.UTF_8)),
-        "UTF8",
-        SqlCollation.IMPLICIT);
+        builder.makePreciseStringLiteral(
+            new ByteString("\u82f1\u56fd".getBytes(StandardCharsets.UTF_8)),
+            "UTF8", SqlCollation.IMPLICIT);
     assertEquals("_UTF8'\u82f1\u56fd'", literal.toString());
     // Test again to check decode cache.
     literal = /*X*/
-        builder.makePreciseStringLiteral(new ByteString("\u82f1".getBytes(StandardCharsets.UTF_8)),
-        "UTF8",
-        SqlCollation.IMPLICIT);
+        builder.makePreciseStringLiteral(
+            new ByteString("\u82f1".getBytes(StandardCharsets.UTF_8)),
+            "UTF8", SqlCollation.IMPLICIT);
     assertEquals("_UTF8'\u82f1'", literal.toString());
     try {
       literal = /*X*/
-          builder.makePreciseStringLiteral(new ByteString("\u82f1\u56fd".getBytes(StandardCharsets.UTF_8)),
-          "GB2312",
-          SqlCollation.IMPLICIT);
+          builder.makePreciseStringLiteral(
+              new ByteString("\u82f1\u56fd".getBytes(StandardCharsets.UTF_8)),
+              "GB2312", SqlCollation.IMPLICIT);
       fail("expected exception, got " + literal);
     } catch (RuntimeException e) {
       assertThat(e.getMessage(), containsString("Failed to encode"));
@@ -677,14 +684,14 @@ class RexBuilderTest {
 
     final RexOver node = /*Y*/
         (RexOver) builder.makeOver(type, SqlStdOperatorTable.COUNT,
-        ImmutableList.of(builder.makeInputRef(type, 0)),
-        ImmutableList.of(builder.makeInputRef(type, 1)),
-        ImmutableList.of(
-            new RexFieldCollation(
-                builder.makeInputRef(type, 2), ImmutableSet.of())),
-        RexWindowBounds.UNBOUNDED_PRECEDING,
-        RexWindowBounds.CURRENT_ROW,
-        true, true, false, false, false);
+            ImmutableList.of(builder.makeInputRef(type, 0)),
+            ImmutableList.of(builder.makeInputRef(type, 1)),
+            ImmutableList.of(
+                new RexFieldCollation(builder.makeInputRef(type, 2),
+                    ImmutableSet.of())),
+            RexWindowBounds.UNBOUNDED_PRECEDING,
+            RexWindowBounds.CURRENT_ROW,
+            true, true, false, false, false);
     final RexNode copy = builder.copy(node);
     assertTrue(copy instanceof RexOver);
 
@@ -801,7 +808,8 @@ class RexBuilderTest {
     RelDataType longType = typeFactory.createSqlType(SqlTypeName.BIGINT);
 
     RelDataType structType = /*X*/
-        typeFactory.createStructType(Arrays.asList(intType, longType), Arrays.asList("x", "y"));
+        typeFactory.createStructType(Arrays.asList(intType, longType),
+            Arrays.asList("x", "y"));
     RexInputRef inputRef = builder.makeInputRef(structType, 0);
 
     // construct RexFieldAccess fails because of negative index

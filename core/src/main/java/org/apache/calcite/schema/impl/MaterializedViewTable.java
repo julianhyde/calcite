@@ -36,7 +36,8 @@ import java.lang.reflect.Type;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Table that is a materialized view.
@@ -110,10 +111,10 @@ public class MaterializedViewTable extends ViewTable {
           viewSchemaPath != null ? viewSchemaPath : schema.path(null), viewPath,
           Boolean.TRUE);
       this.key = /*X*/
-          Objects.requireNonNull(
-              MaterializationService.instance().defineMaterialization(
-              schema, null, viewSql, schemaPath, suggestedTableName, true,
-              existing));
+          requireNonNull(
+              MaterializationService.instance()
+                  .defineMaterialization(schema, null, viewSql, schemaPath,
+                      suggestedTableName, true, existing));
     }
 
     @Override public TranslatableTable apply(List<? extends @Nullable Object> arguments) {

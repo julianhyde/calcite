@@ -1174,7 +1174,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     // root.
     if (set2 == getSet(root)) {
       root = /*X*/
-          set1.getOrCreateSubset(root.getCluster(), root.getTraitSet(), root.isRequired());
+          set1.getOrCreateSubset(root.getCluster(), root.getTraitSet(),
+              root.isRequired());
       ensureRootConverters();
     }
 
@@ -1348,10 +1349,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     if (set == null) {
       set = /*X*/
           new RelSet(nextSetId++,
-          Util.minus(
-              RelOptUtil.getVariablesSet(rel),
-              rel.getVariablesSet()),
-          RelOptUtil.getVariablesUsed(rel));
+              Util.minus(RelOptUtil.getVariablesSet(rel),
+                  rel.getVariablesSet()),
+              RelOptUtil.getVariablesUsed(rel));
       this.allSets.add(set);
     }
 

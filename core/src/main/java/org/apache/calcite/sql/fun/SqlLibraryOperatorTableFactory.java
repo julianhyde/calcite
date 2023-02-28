@@ -102,7 +102,8 @@ public class SqlLibraryOperatorTableFactory {
           try {
             if (SqlOperator.class.isAssignableFrom(field.getType())) {
               final SqlOperator op = /*Y*/
-                  (SqlOperator) requireNonNull(field.get(this), () -> "null value of " + field + " for " + this);
+                  (SqlOperator) requireNonNull(field.get(this),
+                      () -> "null value of " + field + " for " + this);
               if (operatorIsInLibrary(op.getName(), field, librarySet)) {
                 list.add(op);
               }

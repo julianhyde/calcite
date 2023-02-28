@@ -3533,9 +3533,11 @@ public abstract class EnumerableDefaults {
       EqualityComparer<TKey> comparer) {
     // Use LinkedHashMap because groupJoin requires order of keys to be
     // preserved.
+    // Java 8 cannot infer return type with LinkedHashMap::new is used
+    @SuppressWarnings("Convert2MethodRef")
     final Map<TKey, TElement> map = /*X*/
-        new WrapMap<>(// Java 8 cannot infer return type with LinkedHashMap::new is used
-        () -> new LinkedHashMap<Wrapped<TKey>, TElement>(), comparer);
+        new WrapMap<>(() -> new LinkedHashMap<Wrapped<TKey>, TElement>(),
+            comparer);
     try (Enumerator<TSource> os = source.enumerator()) {
       while (os.moveNext()) {
         TSource o = os.current();
@@ -4294,7 +4296,9 @@ public abstract class EnumerableDefaults {
                 done = true;
               }
               results = /*Y*/
-                  new CartesianProductJoinEnumerator<>(resultSelector, Linq4j.enumerator(lefts), Linq4j.enumerator(Collections.singletonList(null)));
+                  new CartesianProductJoinEnumerator<>(resultSelector,
+                      Linq4j.enumerator(lefts),
+                      Linq4j.enumerator(Collections.singletonList(null)));
               return true;
             }
             if (!getLeftEnumerator().moveNext()) {
@@ -4351,7 +4355,9 @@ public abstract class EnumerableDefaults {
         } else {
           // we must verify the non equi-join predicate, use nested loop join for that
           results = /*Y*/
-              nestedLoopJoin(Linq4j.asEnumerable(lefts), Linq4j.asEnumerable(rights), extraPredicate, resultSelector, joinType).enumerator();
+              nestedLoopJoin(Linq4j.asEnumerable(lefts),
+                  Linq4j.asEnumerable(rights), extraPredicate, resultSelector,
+                  joinType).enumerator();
         }
         return true;
       }

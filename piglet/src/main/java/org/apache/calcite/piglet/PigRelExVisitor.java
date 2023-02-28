@@ -399,9 +399,10 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
 
         final RelDataType newRelType = /*X*/
             RexUtil.createStructType(PigTypes.TYPE_FACTORY,
-            relFields);
+                relFields);
         stack.push(
-            builder.getRexBuilder().makeCall(newRelType, SqlStdOperatorTable.ROW, relFields));
+            builder.getRexBuilder()
+                .makeCall(newRelType, SqlStdOperatorTable.ROW, relFields));
       }
     }
   }
@@ -440,7 +441,9 @@ class PigRelExVisitor extends LogicalExpressionVisitor {
     final int index = ((BigDecimal) ((RexLiteral) operand2).getValue()).intValue();
 
     RelNode referencedRel = /*X*/
-        builder.getRel(((LogicalRelationalOperator) op.getImplicitReferencedOperator()).getAlias());
+        builder.getRel(
+            ((LogicalRelationalOperator) op.getImplicitReferencedOperator())
+                .getAlias());
     builder.push(referencedRel);
     List<RexNode> projectCol = Lists.newArrayList(builder.field(index));
     builder.project(projectCol);

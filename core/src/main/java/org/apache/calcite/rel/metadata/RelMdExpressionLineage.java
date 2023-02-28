@@ -136,7 +136,7 @@ public class RelMdExpressionLineage
     for (int idx : inputFieldsUsed) {
       final RexNode inputRef = /*X*/
           RexTableInputRef.of(RelTableRef.of(rel.getTable(), 0),
-          RexInputRef.of(idx, rel.getRowType().getFieldList()));
+              RexInputRef.of(idx, rel.getRowType().getFieldList()));
       final RexInputRef ref = RexInputRef.of(idx, rel.getRowType().getFieldList());
       mapping.put(ref, ImmutableSet.of(inputRef));
     }
@@ -170,7 +170,8 @@ public class RelMdExpressionLineage
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
     for (int idx : inputFieldsUsed) {
       final RexInputRef inputRef = /*Y*/
-          RexInputRef.of(rel.getGroupSet().nth(idx), input.getRowType().getFieldList());
+          RexInputRef.of(rel.getGroupSet().nth(idx),
+              input.getRowType().getFieldList());
       final Set<RexNode> originalExprs = mq.getExpressionLineage(input, inputRef);
       if (originalExprs == null) {
         // Bail out
@@ -209,8 +210,7 @@ public class RelMdExpressionLineage
           return null;
         }
       } else if (rel.getJoinType() == JoinRelType.RIGHT) {
-        ImmutableBitSet leftFields = /*X*/
-            ImmutableBitSet.range(0, nLeftColumns);
+        ImmutableBitSet leftFields = ImmutableBitSet.range(0, nLeftColumns);
         if (inputFieldsUsed.intersects(leftFields)) {
           // We cannot map origin of this expression.
           return null;
@@ -239,7 +239,7 @@ public class RelMdExpressionLineage
     }
     for (RelTableRef rightRef : rightTableRefs) {
       int shift = 0;
-      Collection<RelTableRef> lRefs = /*X*/
+      Collection<RelTableRef> lRefs =
           qualifiedNamesToRefs.get(rightRef.getQualifiedName());
       if (lRefs != null) {
         shift = lRefs.size();
@@ -263,7 +263,8 @@ public class RelMdExpressionLineage
       } else {
         // Right input.
         final RexInputRef inputRef = /*Y*/
-                RexInputRef.of(idx - nLeftColumns, rightInput.getRowType().getFieldList());
+            RexInputRef.of(idx - nLeftColumns,
+                rightInput.getRowType().getFieldList());
         final Set<RexNode> originalExprs = mq.getExpressionLineage(rightInput, inputRef);
         if (originalExprs == null) {
           // Bail out
@@ -273,15 +274,15 @@ public class RelMdExpressionLineage
         // table names clashes with left input
         final RelDataType fullRowType = /*X*/
             SqlValidatorUtil.createJoinType(rexBuilder.getTypeFactory(),
-            rel.getLeft().getRowType(),
-            rel.getRight().getRowType(),
-            null,
-            ImmutableList.of());
+                rel.getLeft().getRowType(),
+                rel.getRight().getRowType(),
+                null,
+                ImmutableList.of());
         final Set<RexNode> updatedExprs = /*X*/
             ImmutableSet.copyOf(
                 Util.transform(originalExprs, e ->
-                RexUtil.swapTableReferences(rexBuilder, e,
-                    currentTablesMapping)));
+                    RexUtil.swapTableReferences(rexBuilder, e,
+                        currentTablesMapping)));
         mapping.put(RexInputRef.of(idx, fullRowType), updatedExprs);
       }
     }
@@ -492,7 +493,8 @@ public class RelMdExpressionLineage
       Map<RexInputRef, RexNode> singleMapping) {
     final @KeyFor("mapping") RexInputRef inputRef = mapping.keySet().iterator().next();
     final Set<RexNode> replacements = /*Y*/
-        requireNonNull(mapping.remove(inputRef), () -> "mapping.remove(inputRef) is null for " + inputRef);
+        requireNonNull(mapping.remove(inputRef),
+            () -> "mapping.remove(inputRef) is null for " + inputRef);
     Set<RexNode> result = new HashSet<>();
     assert !replacements.isEmpty();
     if (predFieldsUsed.indexOf(inputRef.getIndex()) != -1) {

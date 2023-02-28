@@ -103,7 +103,8 @@ public class RedisAdapterCaseBase extends RedisDataCaseBase {
       if (file.exists()) {
         JsonNode rootNode = objMapper.readTree(file);
         strResult = /*Y*/
-            rootNode.toString().replace(Integer.toString(Protocol.DEFAULT_PORT), Integer.toString(getRedisServerPort()));
+            rootNode.toString().replace(Integer.toString(Protocol.DEFAULT_PORT),
+                Integer.toString(getRedisServerPort()));
       }
     } catch (Exception ignored) {
     }

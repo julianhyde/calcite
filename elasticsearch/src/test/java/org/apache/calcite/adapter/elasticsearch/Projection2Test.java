@@ -58,9 +58,9 @@ class Projection2Test {
 
   @BeforeAll
   public static void setupInstance() throws Exception {
-
     final Map<String, String> mappings = /*Y*/
-        ImmutableMap.of("a", "long", "b.a", "long", "b.b", "long", "b.c.a", "keyword");
+        ImmutableMap.of("a", "long",
+            "b.a", "long", "b.b", "long", "b.c.a", "keyword");
 
     NODE.createIndex(NAME, mappings);
 
@@ -86,7 +86,8 @@ class Projection2Test {
             + " from \"elastic\".\"%s\"", NAME);
 
     ViewTableMacro macro = /*Y*/
-        ViewTable.viewMacro(root, viewSql, Collections.singletonList("elastic"), Arrays.asList("elastic", "view"), false);
+        ViewTable.viewMacro(root, viewSql, Collections.singletonList("elastic"),
+            Arrays.asList("elastic", "view"), false);
     root.add("VIEW", macro);
     return connection;
   }

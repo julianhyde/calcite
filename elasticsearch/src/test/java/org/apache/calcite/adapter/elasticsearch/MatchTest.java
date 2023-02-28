@@ -171,15 +171,16 @@ class MatchTest {
     final RexBuilder rexBuilder = new RexBuilder(typeFactory);
 
     RexNode nameRexNode = /*Y*/
-        rexBuilder.makeCall(SqlStdOperatorTable.ITEM, rexBuilder.makeInputRef(typeFactory.createSqlType(SqlTypeName.ANY), 0),
-        rexBuilder.makeCharLiteral(
-            new NlsString("city", typeFactory.getDefaultCharset().name(),
-                SqlCollation.COERCIBLE)));
+        rexBuilder.makeCall(SqlStdOperatorTable.ITEM,
+            rexBuilder.makeInputRef(typeFactory.createSqlType(SqlTypeName.ANY), 0),
+            rexBuilder.makeCharLiteral(
+                new NlsString("city", typeFactory.getDefaultCharset().name(),
+                    SqlCollation.COERCIBLE)));
 
     RelDataType mapType = /*X*/
         typeFactory.createMapType(typeFactory.createSqlType(SqlTypeName.VARCHAR),
-        typeFactory.createTypeWithNullability(
-            typeFactory.createSqlType(SqlTypeName.ANY), true));
+            typeFactory.createTypeWithNullability(
+                typeFactory.createSqlType(SqlTypeName.ANY), true));
 
     List<RexNode> namedList =
         ImmutableList.of(rexBuilder.makeInputRef(mapType, 0),

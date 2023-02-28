@@ -136,7 +136,8 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
     final ConversionData conversionData = getConversionData(planner);
 
     final Convention fromConvention = /*Y*/
-        requireNonNull(rel.getConvention(), () -> "convention is null for rel " + rel);
+        requireNonNull(rel.getConvention(),
+            () -> "convention is null for rel " + rel);
 
     List<List<Convention>> conversionPaths =
         conversionData.getPaths(fromConvention, toConvention);

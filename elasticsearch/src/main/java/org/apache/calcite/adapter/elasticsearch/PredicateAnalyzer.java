@@ -267,13 +267,15 @@ class PredicateAnalyzer {
         if (call.getOperator().getName().equalsIgnoreCase("CONTAINS")) {
           List<Expression> operands = visitList(call.getOperands());
           String query = /*Y*/
-              convertQueryString(operands.subList(0, operands.size() - 1), operands.get(operands.size() - 1));
+              convertQueryString(operands.subList(0, operands.size() - 1),
+                  operands.get(operands.size() - 1));
           return QueryExpression.create(new NamedFieldExpression()).queryString(query);
         }
         // fall through
       default:
         String message = /*Y*/
-            format(Locale.ROOT, "Unsupported syntax [%s] for call: [%s]", syntax, call);
+            format(Locale.ROOT,
+                "Unsupported syntax [%s] for call: [%s]", syntax, call);
         throw new PredicateAnalyzerException(message);
       }
     }
@@ -502,7 +504,9 @@ class PredicateAnalyzer {
 
       if (literal == null || terminal == null) {
         String message = /*Y*/
-            String.format(Locale.ROOT, "Unexpected combination of expressions [left: %s] [right: %s]", left, right);
+            String.format(Locale.ROOT,
+                "Unexpected combination of expressions [left: %s] [right: %s]",
+                left, right);
         throw new PredicateAnalyzerException(message);
       }
 

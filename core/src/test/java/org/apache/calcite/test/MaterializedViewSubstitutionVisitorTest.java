@@ -1478,8 +1478,9 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:   true
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
-        rexBuilder.makeCall(SqlStdOperatorTable.OR, y_eq_2, x_eq_1_b));
+        SubstitutionVisitor.splitFilter(simplify,
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, y_eq_2, x_eq_1_b));
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
@@ -1490,7 +1491,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     //   residue:   x = 1
     newFilter = /*Y*/
         SubstitutionVisitor.splitFilter(simplify, x_eq_1,
-        rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, z_eq_3));
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, z_eq_3));
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(), equalTo("=($0, 1)"));
 
@@ -1500,8 +1501,9 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:   x = 1 or y = 2
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
-        rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2, z_eq_3));
+        SubstitutionVisitor.splitFilter(simplify,
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2, z_eq_3));
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(), equalTo("OR(=($0, 1), =($1, 2))"));
 
@@ -1512,7 +1514,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     //   residue:   x = 1
     newFilter = /*Y*/
         SubstitutionVisitor.splitFilter(simplify, x_eq_1,
-        rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2, z_eq_3));
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2, z_eq_3));
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(),
         equalTo("=($0, 1)"));
@@ -1523,8 +1525,9 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:   true
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
-        rexBuilder.makeCall(SqlStdOperatorTable.OR, y_eq_2, x_eq_1));
+        SubstitutionVisitor.splitFilter(simplify,
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, y_eq_2, x_eq_1));
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
@@ -1543,8 +1546,9 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:   null
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
-        x_eq_1);
+        SubstitutionVisitor.splitFilter(simplify,
+            rexBuilder.makeCall(SqlStdOperatorTable.OR, x_eq_1, y_eq_2),
+            x_eq_1);
     assertNull(newFilter);
 
     // Example 3.
@@ -1552,8 +1556,9 @@ public class MaterializedViewSubstitutionVisitorTest {
     // target [y = 2 and x = 1] yields
     // residue [true].
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2),
-        rexBuilder.makeCall(SqlStdOperatorTable.AND, y_eq_2, x_eq_1));
+        SubstitutionVisitor.splitFilter(simplify,
+            rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2),
+            rexBuilder.makeCall(SqlStdOperatorTable.AND, y_eq_2, x_eq_1));
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
@@ -1563,8 +1568,9 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:   x = 1
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2),
-        y_eq_2);
+        SubstitutionVisitor.splitFilter(simplify,
+            rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2),
+            y_eq_2);
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.toString(), equalTo("=($0, 1)"));
 
@@ -1575,7 +1581,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     //   residue:   null
     newFilter = /*Y*/
         SubstitutionVisitor.splitFilter(simplify, x_eq_1,
-        rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2));
+            rexBuilder.makeCall(SqlStdOperatorTable.AND, x_eq_1, y_eq_2));
     assertNull(newFilter);
 
     // Example 6.
@@ -1583,9 +1589,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     //   target:    y = 2
     // yields
     //   residue:   null
-    newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, x_eq_1,
-        y_eq_2);
+    newFilter = SubstitutionVisitor.splitFilter(simplify, x_eq_1, y_eq_2);
     assertNull(newFilter);
 
     // Example 7.
@@ -1593,9 +1597,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     //   target:    x = 2
     // yields
     //   residue:   null
-    newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, x_eq_1,
-        x_eq_2);
+    newFilter = SubstitutionVisitor.splitFilter(simplify, x_eq_1, x_eq_2);
     assertNull(newFilter);
 
     // Example 8.
@@ -1604,8 +1606,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:  true
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, x_plus_y_gt,
-        y_plus_x_gt);
+        SubstitutionVisitor.splitFilter(simplify, x_plus_y_gt, y_plus_x_gt);
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
@@ -1615,8 +1616,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:  true
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, x_plus_x_gt,
-        x_plus_x_gt);
+        SubstitutionVisitor.splitFilter(simplify, x_plus_x_gt, x_plus_x_gt);
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
 
@@ -1626,8 +1626,7 @@ public class MaterializedViewSubstitutionVisitorTest {
     // yields
     //   residue:  true
     newFilter = /*Y*/
-        SubstitutionVisitor.splitFilter(simplify, x_times_y_gt,
-        y_times_x_gt);
+        SubstitutionVisitor.splitFilter(simplify, x_times_y_gt, y_times_x_gt);
     assertThat(newFilter, notNullValue());
     assertThat(newFilter.isAlwaysTrue(), equalTo(true));
   }

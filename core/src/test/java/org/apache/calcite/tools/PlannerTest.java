@@ -471,8 +471,8 @@ class PlannerTest {
 
   private void checkUnionPruning(String sql, String plan, RelOptRule... extraRules)
       throws SqlParseException, ValidationException, RelConversionException {
-    ImmutableList.Builder<RelOptRule> rules = /*X*/
-        ImmutableList.<RelOptRule>builder().add(PruneEmptyRules.UNION_INSTANCE,
+    ImmutableList.Builder<RelOptRule> rules = ImmutableList.builder();
+    rules.add(PruneEmptyRules.UNION_INSTANCE,
         CoreRules.PROJECT_FILTER_VALUES_MERGE,
         EnumerableRules.ENUMERABLE_PROJECT_RULE,
         EnumerableRules.ENUMERABLE_FILTER_RULE,
@@ -514,8 +514,7 @@ class PlannerTest {
 
     RelOptPlanner planner = relNode.getCluster().getPlanner();
     RuleSet ruleSet =
-        RuleSets.ofList(
-            PruneEmptyRules.UNION_INSTANCE,
+        RuleSets.ofList(PruneEmptyRules.UNION_INSTANCE,
             CoreRules.FILTER_VALUES_MERGE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_FILTER_RULE,
@@ -527,7 +526,8 @@ class PlannerTest {
         .replace(EnumerableConvention.INSTANCE);
 
     RelNode output = /*Y*/
-        program.run(planner, relNode, toTraits, ImmutableList.of(), ImmutableList.of());
+        program.run(planner, relNode, toTraits,
+            ImmutableList.of(), ImmutableList.of());
 
     // Expected outcomes are:
     // 1) relation is optimized to simple VALUES
@@ -544,15 +544,13 @@ class PlannerTest {
    * plans for query using ORDER BY. */
   @Test void testSortPlan() throws Exception {
     RuleSet ruleSet =
-        RuleSets.ofList(
-            CoreRules.SORT_REMOVE,
+        RuleSets.ofList(CoreRules.SORT_REMOVE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE);
     Planner planner = getPlanner(null, Programs.of(ruleSet));
-    SqlNode parse = /*X*/
-        planner.parse("select * from \"emps\" "
-            + "order by \"emps\".\"deptno\"");
+    final String sql = "select * from \"emps\" order by \"emps\".\"deptno\"";
+    SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).project();
     RelTraitSet traitSet = convert.getTraitSet()
@@ -573,8 +571,7 @@ class PlannerTest {
    */
   @Test void testRedundantSortOnJoinPlan() throws Exception {
     RuleSet ruleSet =
-        RuleSets.ofList(
-            CoreRules.SORT_REMOVE,
+        RuleSets.ofList(CoreRules.SORT_REMOVE,
             CoreRules.SORT_JOIN_TRANSPOSE,
             CoreRules.SORT_PROJECT_TRANSPOSE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
@@ -583,12 +580,12 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE);
     Planner planner = getPlanner(null, Programs.of(ruleSet));
-    SqlNode parse = /*X*/
-        planner.parse("select e.\"deptno\" from \"emps\" e "
-            + "left outer join \"depts\" d "
-            + " on e.\"deptno\" = d.\"deptno\" "
-            + "order by e.\"deptno\" "
-            + "limit 10");
+    final String sql = "select e.\"deptno\" from \"emps\" e "
+        + "left outer join \"depts\" d "
+        + " on e.\"deptno\" = d.\"deptno\" "
+        + "order by e.\"deptno\" "
+        + "limit 10";
+    SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
     RelTraitSet traitSet = convert.getTraitSet()
@@ -680,15 +677,15 @@ class PlannerTest {
   // "Redundant throws: 'RelConversionException' listed more then one time"
   private void runDuplicateSortCheck(String sql, String plan) throws Exception {
     RuleSet ruleSet =
-        RuleSets.ofList(
-            CoreRules.SORT_REMOVE,
+        RuleSets.ofList(CoreRules.SORT_REMOVE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_WINDOW_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE,
             CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW);
     Planner planner = /*Y*/
-        getPlanner(null, SqlParser.config().withLex(Lex.JAVA), Programs.of(ruleSet));
+        getPlanner(null, SqlParser.config().withLex(Lex.JAVA),
+            Programs.of(ruleSet));
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
@@ -706,17 +703,16 @@ class PlannerTest {
    * plans for query using two duplicate order by.*/
   @Test void testDuplicateSortPlanWORemoveSortRule() throws Exception {
     RuleSet ruleSet =
-        RuleSets.ofList(
-            EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
+        RuleSets.ofList(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE);
     Planner planner = getPlanner(null, Programs.of(ruleSet));
-    SqlNode parse = /*X*/
-        planner.parse("select \"empid\" from ( "
-            + "select * "
-            + "from \"emps\" "
-            + "order by \"emps\".\"deptno\") "
-            + "order by \"deptno\"");
+    final String sql = "select \"empid\" from ( "
+        + "select * "
+        + "from \"emps\" "
+        + "order by \"emps\".\"deptno\") "
+        + "order by \"deptno\"";
+    SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
     RelTraitSet traitSet = convert.getTraitSet()
@@ -734,8 +730,8 @@ class PlannerTest {
    * SQL-oriented</a>. */
   @Test void testInsertSourceRelTypeWithNullValues() throws Exception {
     Planner planner = getPlanner(null, Programs.standard());
-    SqlNode parse = /*X*/
-        planner.parse("insert into \"emps\" values(1, 1, null, 1, 1)");
+    final String sql = "insert into \"emps\" values(1, 1, null, 1, 1)";
+    SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
     RelNode convert = planner.rel(validate).rel;
     RelDataType insertSourceType = convert.getInput(0).getRowType();
@@ -749,8 +745,7 @@ class PlannerTest {
    * provided with a list of RelTraitDefs to register. */
   @Test void testPlanWithExplicitTraitDefs() throws Exception {
     RuleSet ruleSet =
-        RuleSets.ofList(
-            CoreRules.FILTER_MERGE,
+        RuleSets.ofList(CoreRules.FILTER_MERGE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_FILTER_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE);
@@ -775,8 +770,7 @@ class PlannerTest {
   /** Unit test that calls {@link Planner#transform} twice. */
   @Test void testPlanTransformTwice() throws Exception {
     RuleSet ruleSet =
-        RuleSets.ofList(
-            CoreRules.FILTER_MERGE,
+        RuleSets.ofList(CoreRules.FILTER_MERGE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_FILTER_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE);
@@ -802,15 +796,12 @@ class PlannerTest {
     RelOptRule rule2 = MyFilterProjectRule.config("MYRULE").toRule();
 
     RuleSet ruleSet1 =
-        RuleSets.ofList(
-            rule1,
+        RuleSets.ofList(rule1,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
             EnumerableRules.ENUMERABLE_FILTER_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE);
 
-    RuleSet ruleSet2 =
-        RuleSets.ofList(
-            rule2);
+    RuleSet ruleSet2 = RuleSets.ofList(rule2);
 
     Planner planner = /*Y*/
         getPlanner(null, Programs.of(ruleSet1), Programs.of(ruleSet2));
@@ -830,9 +821,9 @@ class PlannerTest {
   /** Tests that Hive dialect does not generate "AS". */
   @Test void testHiveDialect() throws SqlParseException {
     Planner planner = getPlanner(null);
-    SqlNode parse = /*X*/
-        planner.parse("select * from (select * from \"emps\") as t\n"
-            + "where \"name\" like '%e%'");
+    final String sql = "select * from (select * from \"emps\") as t\n"
+        + "where \"name\" like '%e%'";
+    SqlNode parse = planner.parse(sql);
     final SqlDialect hiveDialect =
         SqlDialect.DatabaseProduct.HIVE.getDialect();
     assertThat(Util.toLinux(parse.toSqlString(hiveDialect).getSql()),
@@ -860,7 +851,8 @@ class PlannerTest {
 
     JdbcConvention out = new JdbcConvention(null, null, "myjdbc");
     Program program1 = /*X*/
-        Programs.ofRules(MockJdbcProjectRule.create(out), MockJdbcTableRule.create(out));
+        Programs.ofRules(MockJdbcProjectRule.create(out),
+            MockJdbcTableRule.create(out));
 
     Planner planner = getPlanner(null, program0, program1);
     SqlNode parse = planner.parse("select T1.\"name\" from \"emps\" as T1 ");
@@ -1478,11 +1470,11 @@ class PlannerTest {
     final RelTraitSet toTraits = relNode.getTraitSet()
         .replace(EnumerableConvention.INSTANCE);
     final RelNode output = /*Y*/
-        program.run(planner, relNode, toTraits, ImmutableList.of(), ImmutableList.of());
+        program.run(planner, relNode, toTraits, ImmutableList.of(),
+            ImmutableList.of());
     final String plan = toString(output);
     assertThat(plan,
-        equalTo(
-            "EnumerableCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{7}])\n"
+        equalTo("EnumerableCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{7}])\n"
             + "  EnumerableUnion(all=[true])\n"
             + "    EnumerableTableScan(table=[[scott, EMP]])\n"
             + "    EnumerableTableScan(table=[[scott, EMP]])\n"

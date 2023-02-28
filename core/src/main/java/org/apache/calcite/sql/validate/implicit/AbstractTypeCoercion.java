@@ -231,7 +231,7 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
           SqlCollation collation = getCollation(fromType);
           syncedType = /*Y*/
               factory.createTypeWithCharsetAndCollation(syncedType, charset,
-              collation);
+                  collation);
         }
       }
     }
@@ -403,7 +403,8 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
     if (SqlTypeUtil.isArray(type1) && SqlTypeUtil.isArray(type2)) {
       if (SqlTypeUtil.equalSansNullability(factory, type1, type2)) {
         resultType = /*Y*/
-            factory.createTypeWithNullability(type1, type1.isNullable() || type2.isNullable());
+            factory.createTypeWithNullability(type1,
+                type1.isNullable() || type2.isNullable());
       }
     }
 
@@ -568,7 +569,8 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
     if (null == resultType) {
       if (SqlTypeUtil.isArray(type1) && SqlTypeUtil.isArray(type2)) {
         RelDataType valType = /*Y*/
-            getWiderTypeForTwo(type1.getComponentType(), type2.getComponentType(), stringPromotion);
+            getWiderTypeForTwo(type1.getComponentType(),
+                type2.getComponentType(), stringPromotion);
         if (null != valType) {
           resultType = factory.createArrayType(valType, -1);
         }
@@ -685,13 +687,12 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
    */
   public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
     List<SqlTypeFamily> numericFamilies = /*X*/
-        ImmutableList.of(SqlTypeFamily.NUMERIC,
-        SqlTypeFamily.DECIMAL,
-        SqlTypeFamily.APPROXIMATE_NUMERIC,
-        SqlTypeFamily.EXACT_NUMERIC,
-        SqlTypeFamily.INTEGER);
+        ImmutableList.of(SqlTypeFamily.NUMERIC, SqlTypeFamily.DECIMAL,
+            SqlTypeFamily.APPROXIMATE_NUMERIC, SqlTypeFamily.EXACT_NUMERIC,
+            SqlTypeFamily.INTEGER);
     List<SqlTypeFamily> dateTimeFamilies = /*Y*/
-        ImmutableList.of(SqlTypeFamily.DATE, SqlTypeFamily.TIME, SqlTypeFamily.TIMESTAMP);
+        ImmutableList.of(SqlTypeFamily.DATE, SqlTypeFamily.TIME,
+            SqlTypeFamily.TIMESTAMP);
     // If the expected type is already a parent of the input type, no need to cast.
     if (expected.getTypeNames().contains(in.getSqlTypeName())) {
       return in;
@@ -759,7 +760,8 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
         && operand instanceof SqlCharStringLiteral) {
       try {
         SqlNode arrayValue = /*X*/
-            SqlParserUtil.parseArrayLiteral(((SqlCharStringLiteral) operand).getValueAs(String.class));
+            SqlParserUtil.parseArrayLiteral(
+                ((SqlCharStringLiteral) operand).getValueAs(String.class));
         call.setOperand(index, arrayValue);
         updateInferredType(arrayValue, targetType);
       } catch (SqlParseException e) {

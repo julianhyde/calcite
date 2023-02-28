@@ -113,7 +113,8 @@ public abstract class MaterializedViewTester {
         final SchemaPlus defaultSchema;
         if (f.schemaSpec == null) {
           defaultSchema = /*Y*/
-              rootSchema.add("hr", new ReflectiveSchema(new MaterializationTest.HrFKUKSchema()));
+              rootSchema.add("hr",
+                  new ReflectiveSchema(new MaterializationTest.HrFKUKSchema()));
         } else {
           defaultSchema = CalciteAssert.addSchema(rootSchema, f.schemaSpec);
         }
@@ -127,7 +128,8 @@ public abstract class MaterializedViewTester {
           String sql = requireNonNull(pair.left, "sql");
           final RelNode mvRel = toRel(cluster, rootSchema, defaultSchema, sql);
           final Table table = /*Y*/
-              tableFactory.createTable(CalciteSchema.from(rootSchema), sql, ImmutableList.of(defaultSchema.getName()));
+              tableFactory.createTable(CalciteSchema.from(rootSchema),
+                  sql, ImmutableList.of(defaultSchema.getName()));
           String name = requireNonNull(pair.right, "name");
           defaultSchema.add(name, table);
           relBuilder.scan(defaultSchema.getName(), name);
@@ -152,9 +154,9 @@ public abstract class MaterializedViewTester {
 
     final CalciteCatalogReader catalogReader = /*X*/
         new CalciteCatalogReader(CalciteSchema.from(rootSchema),
-        CalciteSchema.from(defaultSchema).path(null),
-        new JavaTypeFactoryImpl(),
-        CalciteConnectionConfig.DEFAULT);
+            CalciteSchema.from(defaultSchema).path(null),
+            new JavaTypeFactoryImpl(),
+            CalciteConnectionConfig.DEFAULT);
 
     final SqlValidator validator =
         SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(),
@@ -166,9 +168,12 @@ public abstract class MaterializedViewTester {
         .withExpand(true)
         .withDecorrelationEnabled(true);
     final SqlToRelConverter converter = /*X*/
-        new SqlToRelConverter((rowType, queryString, schemaPath, viewPath) -> {
-          throw new UnsupportedOperationException("cannot expand view");
-        }, validator, catalogReader, cluster, StandardConvertletTable.INSTANCE, config);
+        new SqlToRelConverter(
+            (rowType, queryString, schemaPath, viewPath) -> {
+              throw new UnsupportedOperationException("cannot expand view");
+            },
+            validator, catalogReader, cluster, StandardConvertletTable.INSTANCE,
+            config);
     return converter.convertQuery(validated, false, true).rel;
   }
 

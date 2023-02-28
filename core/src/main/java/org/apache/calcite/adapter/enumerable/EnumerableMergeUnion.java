@@ -73,7 +73,7 @@ public class EnumerableMergeUnion extends EnumerableUnion {
 
     final ParameterExpression inputListExp = /*X*/
         Expressions.parameter(List.class,
-        builder.newName("mergeUnionInputs" + Integer.toUnsignedString(this.getId())));
+            builder.newName("mergeUnionInputs" + Integer.toUnsignedString(this.getId())));
     builder.add(Expressions.declare(0, inputListExp, Expressions.new_(ArrayList.class)));
 
     for (Ord<RelNode> ord : Ord.zip(inputs)) {
@@ -86,9 +86,8 @@ public class EnumerableMergeUnion extends EnumerableUnion {
     }
 
     final PhysType physType = /*X*/
-        PhysTypeImpl.of(implementor.getTypeFactory(),
-        getRowType(),
-        pref.prefer(JavaRowFormat.CUSTOM));
+        PhysTypeImpl.of(implementor.getTypeFactory(), getRowType(),
+            pref.prefer(JavaRowFormat.CUSTOM));
 
     final RelCollation collation = getTraitSet().getCollation();
     if (collation == null || collation.getFieldCollations().isEmpty()) {
@@ -102,15 +101,12 @@ public class EnumerableMergeUnion extends EnumerableUnion {
 
     final Expression equalityComparator = /*X*/
         Util.first(physType.comparer(),
-        Expressions.call(BuiltInMethod.IDENTITY_COMPARER.method));
+            Expressions.call(BuiltInMethod.IDENTITY_COMPARER.method));
 
     final Expression unionExp = /*X*/
-        Expressions.call(BuiltInMethod.MERGE_UNION.method,
-        inputListExp,
-        sortKeySelector,
-        sortComparator,
-        Expressions.constant(all, boolean.class),
-        equalityComparator);
+        Expressions.call(BuiltInMethod.MERGE_UNION.method, inputListExp,
+            sortKeySelector, sortComparator,
+            Expressions.constant(all, boolean.class), equalityComparator);
     builder.add(unionExp);
 
     return implementor.result(physType, builder.toBlock());

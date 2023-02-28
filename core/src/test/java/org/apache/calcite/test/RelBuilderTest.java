@@ -95,6 +95,7 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -188,7 +189,8 @@ public class RelBuilderTest {
 
     // create view
     ViewTableMacro macro = /*Y*/
-        ViewTable.viewMacro(root, viewSql, Collections.singletonList("test"), Arrays.asList("test", "view"), false);
+        ViewTable.viewMacro(root, viewSql, Collections.singletonList("test"),
+            Arrays.asList("test", "view"), false);
 
     // register view (in root schema)
     root.add("MYVIEW", macro);
@@ -448,8 +450,9 @@ public class RelBuilderTest {
         + "]}";
     final int rowCount = 3;
     RelNode root = /*Y*/
-        builder.functionScan(operator, 0, builder.literal(jsonRowType), builder.literal(rowCount))
-        .build();
+        builder.functionScan(operator, 0, builder.literal(jsonRowType),
+                builder.literal(rowCount))
+            .build();
     final String expected = "LogicalTableFunctionScan("
         + "invocation=[dynamicRowType('{\"nullable\":false,\"fields\":["
         + "  {\"name\":\"i\",\"type\":\"INTEGER\",\"nullable\":false},"
@@ -716,7 +719,7 @@ public class RelBuilderTest {
       builder.scan("EMP");
       RexNode call = /*Y*/
           builder.call(SqlStdOperatorTable.PLUS, builder.field(1),
-          builder.field(3));
+              builder.field(3));
       fail("expected error, got " + call);
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(),
@@ -3841,29 +3844,29 @@ public class RelBuilderTest {
 
     RexNode pattern = /*X*/
         builder.patternConcat(builder.literal("STRT"),
-        builder.patternQuantify(builder.literal("DOWN"), builder.literal(1),
-            builder.literal(-1), builder.literal(false)),
-        builder.patternQuantify(builder.literal("UP"), builder.literal(1),
-            builder.literal(-1), builder.literal(false)));
+            builder.patternQuantify(builder.literal("DOWN"), builder.literal(1),
+                builder.literal(-1), builder.literal(false)),
+            builder.patternQuantify(builder.literal("UP"), builder.literal(1),
+                builder.literal(-1), builder.literal(false)));
 
     ImmutableMap.Builder<String, RexNode> pdBuilder = new ImmutableMap.Builder<>();
     RexNode downDefinition = /*X*/
         builder.lessThan(
             builder.call(SqlStdOperatorTable.PREV,
-            builder.patternField("DOWN", intType, 3),
-            builder.literal(0)),
-        builder.call(SqlStdOperatorTable.PREV,
-            builder.patternField("DOWN", intType, 3),
-            builder.literal(1)));
+                builder.patternField("DOWN", intType, 3),
+                builder.literal(0)),
+            builder.call(SqlStdOperatorTable.PREV,
+                builder.patternField("DOWN", intType, 3),
+                builder.literal(1)));
     pdBuilder.put("DOWN", downDefinition);
     RexNode upDefinition = /*X*/
         builder.greaterThan(
             builder.call(SqlStdOperatorTable.PREV,
-            builder.patternField("UP", intType, 3),
-            builder.literal(0)),
-        builder.call(SqlStdOperatorTable.PREV,
-            builder.patternField("UP", intType, 3),
-            builder.literal(1)));
+                builder.patternField("UP", intType, 3),
+                builder.literal(0)),
+            builder.call(SqlStdOperatorTable.PREV,
+                builder.patternField("UP", intType, 3),
+                builder.literal(1)));
     pdBuilder.put("UP", upDefinition);
 
     ImmutableList.Builder<RexNode> measuresBuilder = new ImmutableList.Builder<>();
@@ -4395,8 +4398,7 @@ public class RelBuilderTest {
     assertThat(planBefore, hasTree(expectedLogicalPlan));
 
     RuleSet prepareRules =
-        RuleSets.ofList(
-            EnumerableRules.ENUMERABLE_FILTER_RULE,
+        RuleSets.ofList(EnumerableRules.ENUMERABLE_FILTER_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE,
             EnumerableRules.ENUMERABLE_LIMIT_RULE,
             EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
@@ -4404,7 +4406,8 @@ public class RelBuilderTest {
         .replace(EnumerableConvention.INSTANCE);
     Program program = Programs.of(prepareRules);
     RelNode planAfter = /*Y*/
-        program.run(planBefore.getCluster().getPlanner(), planBefore, desiredTraits, ImmutableList.of(), ImmutableList.of());
+        program.run(planBefore.getCluster().getPlanner(), planBefore,
+            desiredTraits, ImmutableList.of(), ImmutableList.of());
     String expectedEnumerablePlan = "EnumerableLimit(offset=[?1], fetch=[?0])\n"
         + "  EnumerableTableScan(table=[[scott, DEPT]])\n";
     assertThat(planAfter, hasTree(expectedEnumerablePlan));
@@ -4514,8 +4517,10 @@ public class RelBuilderTest {
     RelNode left = builder.scan("orders").build();
     RelNode right = builder.scan("products_temporal").build();
     RexNode period = /*X*/
-        builder.getRexBuilder().makeFieldAccess(builder.getRexBuilder().makeCorrel(left.getRowType(), new CorrelationId(0)),
-        0);
+        builder.getRexBuilder().makeFieldAccess(
+            builder.getRexBuilder().makeCorrel(left.getRowType(),
+                new CorrelationId(0)),
+            0);
     RelNode root3 =
         builder
             .push(left)
@@ -4541,7 +4546,7 @@ public class RelBuilderTest {
     // Attach hints on empty stack.
     final AssertionError error = /*X*/
         assertThrows(AssertionError.class,
-        () -> RelBuilder.create(config().build()).hints(indexHint),
+            () -> RelBuilder.create(config().build()).hints(indexHint),
         "hints() should fail on empty stack");
     assertThat(error.getMessage(),
         containsString("There is no relational expression to attach the hints"));
@@ -4553,8 +4558,7 @@ public class RelBuilderTest {
         .hintOption("_idx2")
         .build();
     // Attach hints on non hintable.
-    final AssertionError error1 = /*X*/
-        assertThrows(AssertionError.class,
+    final Executable executable =
         () -> {
           // Equivalent SQL:
           //   SELECT *
@@ -4576,29 +4580,29 @@ public class RelBuilderTest {
 
           RexNode pattern = /*X*/
               builder.patternConcat(builder.literal("STRT"),
-              builder.patternQuantify(builder.literal("DOWN"), builder.literal(1),
-                  builder.literal(-1), builder.literal(false)),
-              builder.patternQuantify(builder.literal("UP"), builder.literal(1),
-                  builder.literal(-1), builder.literal(false)));
+                  builder.patternQuantify(builder.literal("DOWN"), builder.literal(1),
+                      builder.literal(-1), builder.literal(false)),
+                  builder.patternQuantify(builder.literal("UP"), builder.literal(1),
+                      builder.literal(-1), builder.literal(false)));
 
           ImmutableMap.Builder<String, RexNode> pdBuilder = new ImmutableMap.Builder<>();
           RexNode downDefinition = /*X*/
               builder.lessThan(
                   builder.call(SqlStdOperatorTable.PREV,
-                  builder.patternField("DOWN", intType, 3),
-                  builder.literal(0)),
-              builder.call(SqlStdOperatorTable.PREV,
-                  builder.patternField("DOWN", intType, 3),
-                  builder.literal(1)));
+                      builder.patternField("DOWN", intType, 3),
+                      builder.literal(0)),
+                  builder.call(SqlStdOperatorTable.PREV,
+                      builder.patternField("DOWN", intType, 3),
+                      builder.literal(1)));
           pdBuilder.put("DOWN", downDefinition);
           RexNode upDefinition = /*X*/
               builder.greaterThan(
                   builder.call(SqlStdOperatorTable.PREV,
-                  builder.patternField("UP", intType, 3),
-                  builder.literal(0)),
-              builder.call(SqlStdOperatorTable.PREV,
-                  builder.patternField("UP", intType, 3),
-                  builder.literal(1)));
+                      builder.patternField("UP", intType, 3),
+                      builder.literal(0)),
+                  builder.call(SqlStdOperatorTable.PREV,
+                      builder.patternField("UP", intType, 3),
+                      builder.literal(1)));
           pdBuilder.put("UP", upDefinition);
 
           ImmutableList.Builder<RexNode> measuresBuilder = new ImmutableList.Builder<>();
@@ -4607,12 +4611,13 @@ public class RelBuilderTest {
           measuresBuilder.add(
               builder.alias(
                   builder.call(SqlStdOperatorTable.LAST,
-                          builder.patternField("DOWN", intType, 3),
-                          builder.literal(0)),
+                      builder.patternField("DOWN", intType, 3),
+                      builder.literal(0)),
                   "bottom_nw"));
 
           RexNode after = /*X*/
-              builder.getRexBuilder().makeFlag(SqlMatchRecognize.AfterOption.SKIP_TO_NEXT_ROW);
+              builder.getRexBuilder().makeFlag(
+                  SqlMatchRecognize.AfterOption.SKIP_TO_NEXT_ROW);
 
           ImmutableList.Builder<RexNode> partitionKeysBuilder = new ImmutableList.Builder<>();
           partitionKeysBuilder.add(builder.field("DEPTNO"));
@@ -4627,8 +4632,10 @@ public class RelBuilderTest {
                   measuresBuilder.build(), after, ImmutableMap.of(), false,
                   partitionKeysBuilder.build(), orderKeysBuilder.build(), interval)
               .hints(indexHint);
-        },
-        "hints() should fail on non Hintable relational expression");
+        };
+    final AssertionError error1 = /*X*/
+        assertThrows(AssertionError.class, executable,
+            "hints() should fail on non Hintable relational expression");
     assertThat(error1.getMessage(),
         containsString("The top relational expression is not a Hintable"));
   }

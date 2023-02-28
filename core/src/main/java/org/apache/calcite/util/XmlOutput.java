@@ -642,7 +642,8 @@ public class XmlOutput {
       StringEscaper clone = clone();
       if (clone.translationVector == null) {
         clone.translationVector = /*X*/
-            Lists.newArrayList(requireNonNull(clone.translationTable, "clone.translationTable"));
+            Lists.newArrayList(
+                requireNonNull(clone.translationTable, "clone.translationTable"));
         clone.translationTable = null;
       }
       return clone;

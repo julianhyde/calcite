@@ -71,7 +71,8 @@ public class HsqldbSqlDialect extends SqlDialect {
 
       final String translatedLit = convertTimeUnit(timeUnit);
       SqlCall call2 = /*Y*/
-          SqlFloorFunction.replaceTimeUnitOperand(call, translatedLit, timeUnitNode.getParserPosition());
+          SqlFloorFunction.replaceTimeUnitOperand(call, translatedLit,
+              timeUnitNode.getParserPosition());
       SqlFloorFunction.unparseDatetimeFunction(writer, call2, "TRUNC", true);
       break;
 
@@ -89,7 +90,8 @@ public class HsqldbSqlDialect extends SqlDialect {
     final SqlNode operand = ((SqlBasicCall) aggCall).operand(0);
     final SqlLiteral nullLiteral = SqlLiteral.createNull(SqlParserPos.ZERO);
     final SqlNode unionOperand = /*Y*/
-        SqlStdOperatorTable.VALUES.createCall(SqlParserPos.ZERO, SqlLiteral.createApproxNumeric("0", SqlParserPos.ZERO));
+        SqlStdOperatorTable.VALUES.createCall(SqlParserPos.ZERO,
+            SqlLiteral.createApproxNumeric("0", SqlParserPos.ZERO));
     // For hsqldb, generate
     //   CASE COUNT(*)
     //   WHEN 0 THEN NULL

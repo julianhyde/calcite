@@ -58,10 +58,11 @@ public class KafkaTableFactory implements TableFactory<KafkaStreamTable> {
           | IllegalAccessException | ClassNotFoundException
           | NoSuchMethodException e) {
         final String details = /*Y*/
-            String.format(Locale.ROOT, "Failed to create table '%s' with configuration:\n"
-                + "'%s'\n"
-                + "KafkaRowConverter '%s' is invalid",
-            name, operand, rowConverterClass);
+            String.format(Locale.ROOT,
+                "Failed to create table '%s' with configuration:\n"
+                    + "'%s'\n"
+                    + "KafkaRowConverter '%s' is invalid",
+                name, operand, rowConverterClass);
         throw new RuntimeException(details, e);
       }
     } else {
@@ -84,10 +85,10 @@ public class KafkaTableFactory implements TableFactory<KafkaStreamTable> {
           | InstantiationException | InvocationTargetException e) {
         final String details = /*X*/
             String.format(Locale.ROOT,
-            "Fail to create table '%s' with configuration:\n"
-                + "'%s'\n"
-                + "KafkaCustConsumer '%s' is invalid",
-            name, operand, custConsumerClass);
+                "Fail to create table '%s' with configuration:\n"
+                    + "'%s'\n"
+                    + "KafkaCustConsumer '%s' is invalid",
+                name, operand, custConsumerClass);
         throw new RuntimeException(details, e);
       }
     }

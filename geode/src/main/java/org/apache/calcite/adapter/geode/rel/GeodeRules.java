@@ -224,8 +224,9 @@ public class GeodeRules {
           .replace(sort.getCollation());
 
       GeodeSort geodeSort = /*Y*/
-          new GeodeSort(sort.getCluster(), traitSet, convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
-          sort.getCollation(), sort.fetch);
+          new GeodeSort(sort.getCluster(), traitSet,
+              convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
+              sort.getCollation(), sort.fetch);
 
       call.transformTo(geodeSort);
     }

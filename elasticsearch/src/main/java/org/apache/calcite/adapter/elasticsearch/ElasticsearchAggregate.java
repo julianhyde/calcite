@@ -65,7 +65,8 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
     if (getConvention() != input.getConvention()) {
       String message = /*Y*/
-          String.format(Locale.ROOT, "%s != %s", getConvention(), input.getConvention());
+          String.format(Locale.ROOT, "%s != %s", getConvention(),
+              input.getConvention());
       throw new AssertionError(message);
     }
 
@@ -84,7 +85,9 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
       final SqlKind kind = aggCall.getAggregation().getKind();
       if (!SUPPORTED_AGGREGATIONS.contains(kind)) {
         final String message = /*Y*/
-            String.format(Locale.ROOT, "Aggregation %s not supported (use one of %s)", kind, SUPPORTED_AGGREGATIONS);
+            String.format(Locale.ROOT,
+                "Aggregation %s not supported (use one of %s)", kind,
+                SUPPORTED_AGGREGATIONS);
         throw new InvalidRelException(message);
       }
     }

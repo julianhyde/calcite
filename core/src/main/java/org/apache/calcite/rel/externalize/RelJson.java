@@ -343,7 +343,8 @@ public class RelJson {
     } else {
       final SqlTypeName sqlTypeName = /*X*/
           requireNonNull(Util.enumVal(SqlTypeName.class, (String) o),
-          () -> "unable to find enum value " + o + " in class " + SqlTypeName.class);
+              () -> "unable to find enum value " + o
+                  + " in class " + SqlTypeName.class);
       return typeFactory.createSqlType(sqlTypeName);
     }
   }
@@ -631,7 +632,8 @@ public class RelJson {
     } else {
       map.put("type", windowBound.isPreceding() ? "PRECEDING" : "FOLLOWING");
       RexNode offset = /*Y*/
-          requireNonNull(windowBound.getOffset(), () -> "getOffset for window bound " + windowBound);
+          requireNonNull(windowBound.getOffset(),
+              () -> "getOffset for window bound " + windowBound);
       map.put("offset", toJson(offset));
     }
     return map;

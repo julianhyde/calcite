@@ -190,10 +190,11 @@ public class EnumerableMatch extends Match implements EnumerableRel {
     }
 
     final RexToLixTranslator translator = /*X*/
-        RexToLixTranslator.forAggregation((JavaTypeFactory) getCluster().getTypeFactory(),
-        builder2,
-        new PassedRowsInputGetter(row_, rows_, inputPhysType),
-        implementor.getConformance());
+        RexToLixTranslator.forAggregation(
+            (JavaTypeFactory) getCluster().getTypeFactory(),
+            builder2,
+            new PassedRowsInputGetter(row_, rows_, inputPhysType),
+            implementor.getConformance());
 
     final ParameterExpression result_ =
         Expressions.parameter(physType.getJavaRowType());
@@ -284,13 +285,15 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   private Expression implementMatcher(EnumerableRelImplementor implementor,
       PhysType physType, BlockBuilder builder, ParameterExpression row_) {
     final Expression patternBuilder_ = /*Y*/
-        builder.append("patternBuilder", Expressions.call(BuiltInMethod.PATTERN_BUILDER.method));
+        builder.append("patternBuilder",
+            Expressions.call(BuiltInMethod.PATTERN_BUILDER.method));
     final Expression automaton_ = /*Y*/
-        builder.append(
-            "automaton", Expressions.call(implementPattern(patternBuilder_, pattern),
-            BuiltInMethod.PATTERN_TO_AUTOMATON.method));
+        builder.append("automaton",
+            Expressions.call(implementPattern(patternBuilder_, pattern),
+                BuiltInMethod.PATTERN_TO_AUTOMATON.method));
     Expression matcherBuilder_ = /*Y*/
-        builder.append("matcherBuilder", Expressions.call(BuiltInMethod.MATCHER_BUILDER.method, automaton_));
+        builder.append("matcherBuilder",
+            Expressions.call(BuiltInMethod.MATCHER_BUILDER.method, automaton_));
     final BlockBuilder builder2 = new BlockBuilder();
 
 
@@ -320,9 +323,10 @@ public class EnumerableMatch extends Match implements EnumerableRel {
           implementPredicate(physType, row_, builder2.toBlock());
 
       matcherBuilder_ = /*Y*/
-          Expressions.call(matcherBuilder_, BuiltInMethod.MATCHER_BUILDER_ADD.method,
-          Expressions.constant(entry.getKey()),
-          predicate_);
+          Expressions.call(matcherBuilder_,
+              BuiltInMethod.MATCHER_BUILDER_ADD.method,
+              Expressions.constant(entry.getKey()),
+              predicate_);
     }
     return builder.append("matcher",
         Expressions.call(matcherBuilder_,
@@ -399,7 +403,8 @@ public class EnumerableMatch extends Match implements EnumerableRel {
         patternBuilder_ = implementPattern(patternBuilder_, operand.e);
         if (operand.i > 0) {
           patternBuilder_ = /*Y*/
-              Expressions.call(patternBuilder_, BuiltInMethod.PATTERN_BUILDER_SEQ.method);
+              Expressions.call(patternBuilder_,
+                  BuiltInMethod.PATTERN_BUILDER_SEQ.method);
         }
       }
       return patternBuilder_;
@@ -435,13 +440,15 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       case PREV:
         operand = (RexLiteral) call.getOperands().get(1);
         final int prev = /*Y*/
-            requireNonNull(operand.getValueAs(Integer.class), () -> "operand in " + call);
+            requireNonNull(operand.getValueAs(Integer.class),
+                () -> "operand in " + call);
         this.history = Math.max(this.history, prev);
         break;
       case NEXT:
         operand = (RexLiteral) call.getOperands().get(1);
         final int next = /*Y*/
-            requireNonNull(operand.getValueAs(Integer.class), () -> "operand in " + call);
+            requireNonNull(operand.getValueAs(Integer.class),
+                () -> "operand in " + call);
         this.future = Math.max(this.future, next);
         break;
       default:

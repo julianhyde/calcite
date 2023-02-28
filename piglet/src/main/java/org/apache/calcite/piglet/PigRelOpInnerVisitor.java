@@ -177,7 +177,8 @@ class PigRelOpInnerVisitor extends PigRelOpVisitor {
             final RelDataType scriptType = /*X*/
                 PigTypes.convertSchemaField(outputFieldSchema.getField(j));
             RexNode exp = /*X*/
-                builder.call(SqlStdOperatorTable.ITEM, rexNode, builder.literal(j + 1));
+                builder.call(SqlStdOperatorTable.ITEM, rexNode,
+                    builder.literal(j + 1));
             innerCols.add(builder.getRexBuilder().makeCast(scriptType, exp));
             fieldAlias.add(outputFieldSchema.getField(j).alias);
           }

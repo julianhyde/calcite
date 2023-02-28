@@ -65,8 +65,8 @@ class RedisSchema extends AbstractSchema {
         .map(e -> e.name).collect(Collectors.toSet());
     tableMap = /*X*/
         Maps.asMap(ImmutableSet.copyOf(tableNames),
-        CacheBuilder.newBuilder()
-            .build(CacheLoader.from(this::table)));
+            CacheBuilder.newBuilder()
+                .build(CacheLoader.from(this::table)));
     return tableMap;
   }
 

@@ -37,7 +37,8 @@ class RedisEnumerator implements Enumerator<Object[]> {
     RedisTableFieldInfo tableFieldInfo = schema.getTableFieldInfo(tableName);
 
     RedisJedisManager redisManager = /*Y*/
-        new RedisJedisManager(redisConfig.getHost(), redisConfig.getPort(), redisConfig.getDatabase(), redisConfig.getPassword());
+        new RedisJedisManager(redisConfig.getHost(),
+            redisConfig.getPort(), redisConfig.getDatabase(), redisConfig.getPassword());
 
     try (Jedis jedis = redisManager.getResource()) {
       if (StringUtils.isNotEmpty(redisConfig.getPassword())) {

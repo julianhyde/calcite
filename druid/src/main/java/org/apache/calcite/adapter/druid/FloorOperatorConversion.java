@@ -42,9 +42,7 @@ public class FloorOperatorConversion implements DruidSqlOperatorConverter {
     final RexCall call = (RexCall) rexNode;
     final RexNode arg = call.getOperands().get(0);
     final String druidExpression = /*X*/
-        DruidExpressions.toDruidExpression(arg,
-        rowType,
-        druidQuery);
+        DruidExpressions.toDruidExpression(arg, rowType, druidQuery);
     if (druidExpression == null) {
       return null;
     } else if (call.getOperands().size() == 1) {

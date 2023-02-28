@@ -347,14 +347,16 @@ final class ElasticsearchJson {
       // both can't be null
       if (source == null && fields == null) {
         final String message = /*Y*/
-            String.format(Locale.ROOT, "Both '_source' and 'fields' are missing for %s", id);
+            String.format(Locale.ROOT,
+                "Both '_source' and 'fields' are missing for %s", id);
         throw new IllegalArgumentException(message);
       }
 
       // both can't be non-null
       if (source != null && fields != null) {
         final String message = /*Y*/
-            String.format(Locale.ROOT, "Both '_source' and 'fields' are populated (non-null) for %s", id);
+            String.format(Locale.ROOT,
+                "Both '_source' and 'fields' are populated (non-null) for %s", id);
         throw new IllegalArgumentException(message);
       }
 

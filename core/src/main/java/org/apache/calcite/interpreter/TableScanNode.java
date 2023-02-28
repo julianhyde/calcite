@@ -19,7 +19,6 @@ package org.apache.calcite.interpreter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.TableScan;
@@ -139,7 +138,7 @@ public class TableScanNode implements Node {
       //noinspection unchecked
       final Queryable<Object> queryable = /*Y*/
           Schemas.queryable(root, (Class) elementType,
-          relOptTable.getQualifiedName());
+              relOptTable.getQualifiedName());
       ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
       Class type = (Class) elementType;
       for (Field field : type.getFields()) {
@@ -257,7 +256,8 @@ public class TableScanNode implements Node {
         inputRowType = rel.getRowType();
       } else {
         final Mapping mapping = /*Y*/
-            Mappings.target(acceptedProjects, rel.getTable().getRowType().getFieldCount());
+            Mappings.target(acceptedProjects,
+                rel.getTable().getRowType().getFieldCount());
         filter2 = RexUtil.apply(mapping, filter);
         final RelDataTypeFactory.Builder builder =
             rel.getCluster().getTypeFactory().builder();
@@ -278,16 +278,14 @@ public class TableScanNode implements Node {
       });
     }
     if (rejectedProjects != null) {
+      final @Nullable Object[] values = new Object[rejectedProjects.size()];
       enumerable = /*X*/
-          enumerable.select(new Function1<Row, Row>() {
-            final @Nullable Object[] values = new Object[rejectedProjects.size()];
-            @Override public Row apply(Row row) {
-              final @Nullable Object[] inValues = row.getValues();
-              for (int i = 0; i < rejectedProjects.size(); i++) {
-                values[i] = inValues[rejectedProjects.get(i)];
-              }
-              return Row.asCopy(values);
+          enumerable.select(row -> {
+            final @Nullable Object[] inValues = row.getValues();
+            for (int i = 0; i < rejectedProjects.size(); i++) {
+              values[i] = inValues[rejectedProjects.get(i)];
             }
+            return Row.asCopy(values);
           });
     }
     return new TableScanNode(compiler, rel, enumerable);

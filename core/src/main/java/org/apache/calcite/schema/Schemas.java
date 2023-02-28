@@ -153,8 +153,8 @@ public final class Schemas {
     if (Table.class.isAssignableFrom(clazz)) {
       expression = /*X*/
           Expressions.call(expression(schema),
-          BuiltInMethod.SCHEMA_GET_TABLE.method,
-          Expressions.constant(tableName));
+              BuiltInMethod.SCHEMA_GET_TABLE.method,
+              Expressions.constant(tableName));
       if (ScannableTable.class.isAssignableFrom(clazz)) {
         return Expressions.call(
             BuiltInMethod.SCHEMAS_ENUMERABLE_SCANNABLE.method,
@@ -176,10 +176,10 @@ public final class Schemas {
     } else {
       expression = /*X*/
           Expressions.call(BuiltInMethod.SCHEMAS_QUERYABLE.method,
-          DataContext.ROOT,
-          expression(schema),
-          Expressions.constant(elementType),
-          Expressions.constant(tableName));
+              DataContext.ROOT,
+              expression(schema),
+              Expressions.constant(elementType),
+              Expressions.constant(tableName));
     }
     return EnumUtils.convert(expression, clazz);
   }
@@ -249,7 +249,7 @@ public final class Schemas {
       Class<E> clazz, String tableName) {
     QueryableTable table = /*X*/
         (QueryableTable) requireNonNull(schema.getTable(tableName),
-        () -> "table " + tableName + " is not found in " + schema);
+            () -> "table " + tableName + " is not found in " + schema);
     QueryProvider queryProvider = root.getQueryProvider();
     return table.asQueryable(queryProvider, schema, tableName);
   }

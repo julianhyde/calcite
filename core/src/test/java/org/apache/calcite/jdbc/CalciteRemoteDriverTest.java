@@ -508,7 +508,7 @@ class CalciteRemoteDriverTest {
     try (Connection remoteConnection = getRemoteConnection()) {
       Statement statement = remoteConnection.createStatement();
       statement.setMaxRows(2);
-      ResultSet resultSet = /*X*/
+      ResultSet resultSet =
           statement.executeQuery("select * from \"hr\".\"emps\"");
       int count = 0;
       while (resultSet.next()) {
@@ -578,7 +578,8 @@ class CalciteRemoteDriverTest {
 
   @Test void testRemoteStatementFetch() throws Exception {
     final Connection connection = /*X*/
-        DriverManager.getConnection("jdbc:avatica:remote:factory=" + LocalServiceMoreFactory.class.getName());
+        DriverManager.getConnection("jdbc:avatica:remote:factory="
+            + LocalServiceMoreFactory.class.getName());
     String sql = "select * from \"foo\".\"bar\"";
     Statement statement = connection.createStatement();
     boolean status = statement.execute(sql);
@@ -593,7 +594,8 @@ class CalciteRemoteDriverTest {
 
   @Test void testRemotePreparedStatementFetch() throws Exception {
     final Connection connection = /*X*/
-        DriverManager.getConnection("jdbc:avatica:remote:factory=" + LocalServiceMoreFactory.class.getName());
+        DriverManager.getConnection("jdbc:avatica:remote:factory="
+            + LocalServiceMoreFactory.class.getName());
     assertThat(connection.isClosed(), is(false));
 
     String sql = "select * from \"foo\".\"bar\"";
@@ -891,7 +893,8 @@ class CalciteRemoteDriverTest {
             + LocalServiceModifiableFactory.class.getName());
 
     PreparedStatement pst = /*X*/
-        connection.prepareStatement("insert into \"foo\".\"bar\" values (?, ?, ?, ?, ?)");
+        connection.prepareStatement("insert into \"foo\".\"bar\"\n"
+            + "values (?, ?, ?, ?, ?)");
     pst.setInt(1, 1);
     pst.setInt(2, 1);
     pst.setString(3, "second");

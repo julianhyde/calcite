@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 import static org.apache.calcite.sql.SqlUtil.stripAs;
 
 /**
@@ -89,7 +91,8 @@ public class AggregatingSelectScope
       if (groupList.size() == 1
           && groupList.get(0).getKind() == SqlKind.GROUP_BY_DISTINCT) {
         groupList = /*Y*/
-            new SqlNodeList(((SqlCall) groupList.get(0)).getOperandList(), groupList.getParserPosition());
+            new SqlNodeList(((SqlCall) groupList.get(0)).getOperandList(),
+                groupList.getParserPosition());
         groupByDistinct = true;
       }
       for (SqlNode groupExpr : groupList) {
@@ -148,8 +151,8 @@ public class AggregatingSelectScope
       // OrderExpressionExpander.
       final SelectScope selectScope = (SelectScope) parent;
       List<SqlNode> expandedSelectList = /*X*/
-          Objects.requireNonNull(selectScope.getExpandedSelectList(),
-          () -> "expandedSelectList for " + selectScope);
+          requireNonNull(selectScope.getExpandedSelectList(),
+              () -> "expandedSelectList for " + selectScope);
       for (SqlNode selectItem : expandedSelectList) {
         groupExprs.add(stripAs(selectItem));
       }

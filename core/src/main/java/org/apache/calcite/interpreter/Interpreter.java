@@ -362,7 +362,7 @@ public class Interpreter extends AbstractEnumerable<@Nullable Object[]>
           node = /*X*/
               interpretableRel.implement(
                   new InterpretableRel.InterpreterImplementor(this, null,
-                  DataContexts.EMPTY));
+                      DataContexts.EMPTY));
         } else {
           // Probably need to add a visit(XxxRel) method to CoreCompiler.
           throw new AssertionError("interpreter: no implementation for "

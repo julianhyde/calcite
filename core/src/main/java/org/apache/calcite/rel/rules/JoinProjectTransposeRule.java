@@ -359,11 +359,8 @@ public class JoinProjectTransposeRule
           // shift the references by the adjustment amount
           e = /*X*/
               e.accept(
-                  new RelOptUtil.RexInputConverter(
-                  rexBuilder,
-                  childFields,
-                  joinChildrenFields,
-                  adjustments));
+                  new RelOptUtil.RexInputConverter(rexBuilder, childFields,
+                      joinChildrenFields, adjustments));
         }
         projects.add(Pair.of(e, pair.right));
       }

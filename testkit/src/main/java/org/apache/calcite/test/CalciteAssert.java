@@ -838,7 +838,8 @@ public class CalciteAssert {
           CountriesTableFunction.class.getName(), null, false);
       final String sql = "select * from table(\"countries\"(true))";
       final ViewTableMacro viewMacro = /*Y*/
-          ViewTable.viewMacro(rootSchema, sql, ImmutableList.of("GEO"), emptyPath, false);
+          ViewTable.viewMacro(rootSchema, sql,
+              ImmutableList.of("GEO"), emptyPath, false);
       s.add("countries", viewMacro);
       ModelHandler.addFunctions(s, "states", emptyPath,
           StatesTableFunction.class.getName(), "states", false);
@@ -846,7 +847,8 @@ public class CalciteAssert {
           + " ST_PolyFromText(\"geom\") as \"geom\"\n"
           + "from table(\"states\"(true))";
       final ViewTableMacro viewMacro2 = /*Y*/
-          ViewTable.viewMacro(rootSchema, sql2, ImmutableList.of("GEO"), emptyPath, false);
+          ViewTable.viewMacro(rootSchema, sql2,
+              ImmutableList.of("GEO"), emptyPath, false);
       s.add("states", viewMacro2);
 
       ModelHandler.addFunctions(s, "parks", emptyPath,
@@ -855,7 +857,8 @@ public class CalciteAssert {
           + " ST_PolyFromText(\"geom\") as \"geom\"\n"
           + "from table(\"parks\"(true))";
       final ViewTableMacro viewMacro3 = /*Y*/
-          ViewTable.viewMacro(rootSchema, sql3, ImmutableList.of("GEO"), emptyPath, false);
+          ViewTable.viewMacro(rootSchema, sql3,
+              ImmutableList.of("GEO"), emptyPath, false);
       s.add("parks", viewMacro3);
 
       return s;
@@ -1221,9 +1224,9 @@ public class CalciteAssert {
             + model.substring(endIndex + 1);
       } else if (model.contains("type: ")) {
         model2 = /*Y*/
-            model.replaceFirst(
-                "type: ", java.util.regex.Matcher.quoteReplacement(buf + ",\n"
-            + "type: "));
+            model.replaceFirst("type: ",
+                java.util.regex.Matcher.quoteReplacement(buf + ",\n"
+                    + "type: "));
       } else {
         throw new AssertionError("do not know where to splice");
       }

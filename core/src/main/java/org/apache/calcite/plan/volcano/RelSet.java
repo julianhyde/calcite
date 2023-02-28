@@ -193,8 +193,9 @@ class RelSet {
       boolean useAbstractConverter) {
     RelOptCluster cluster = subset.getCluster();
     List<RelSubset> others = /*X*/
-        subsets.stream().filter(n -> required ? n.isDelivered() : n.isRequired())
-        .collect(Collectors.toList());
+        subsets.stream()
+            .filter(n -> required ? n.isDelivered() : n.isRequired())
+            .collect(Collectors.toList());
 
     for (RelSubset other : others) {
       assert other.getTraitSet().size() == subset.getTraitSet().size();
@@ -242,12 +243,11 @@ class RelSet {
       if (needsConverter) {
         final RelNode enforcer;
         if (useAbstractConverter) {
-          enforcer = /*X*/
-              new AbstractConverter(cluster, from, null, to.getTraitSet());
+          enforcer = new AbstractConverter(cluster, from, null, to.getTraitSet());
         } else {
           Convention convention = /*X*/
               requireNonNull(subset.getConvention(),
-              () -> "convention is null for " + subset);
+                  () -> "convention is null for " + subset);
           enforcer = convention.enforce(from, to.getTraitSet());
         }
 

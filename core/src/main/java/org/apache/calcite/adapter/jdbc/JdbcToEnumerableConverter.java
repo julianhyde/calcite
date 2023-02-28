@@ -182,21 +182,21 @@ public class JdbcToEnumerableConverter
                   DataContext.ROOT));
 
       enumerable = /*Y*/
-          builder0.append(
-              "enumerable", Expressions.call(
-              BuiltInMethod.RESULT_SET_ENUMERABLE_OF_PREPARED.method,
-              Schemas.unwrap(jdbcConvention.expression, DataSource.class),
-              sql_,
-              rowBuilderFactory_,
-              preparedStatementConsumer_));
+          builder0.append("enumerable",
+              Expressions.call(
+                  BuiltInMethod.RESULT_SET_ENUMERABLE_OF_PREPARED.method,
+                  Schemas.unwrap(jdbcConvention.expression, DataSource.class),
+                  sql_,
+                  rowBuilderFactory_,
+                  preparedStatementConsumer_));
     } else {
       enumerable = /*Y*/
-          builder0.append(
-              "enumerable", Expressions.call(
-              BuiltInMethod.RESULT_SET_ENUMERABLE_OF.method,
-              Schemas.unwrap(jdbcConvention.expression, DataSource.class),
-              sql_,
-              rowBuilderFactory_));
+          builder0.append("enumerable",
+              Expressions.call(
+                  BuiltInMethod.RESULT_SET_ENUMERABLE_OF.method,
+                  Schemas.unwrap(jdbcConvention.expression, DataSource.class),
+                  sql_,
+                  rowBuilderFactory_));
     }
     builder0.add(
         Expressions.statement(
@@ -267,19 +267,20 @@ public class JdbcToEnumerableConverter
     case TIME:
     case TIMESTAMP:
       source = /*X*/
-          Expressions.call(getMethod(sqlTypeName, fieldType.isNullable(), offset),
-          Expressions.<Expression>list()
-              .append(
-                  Expressions.call(resultSet_,
-                      getMethod2(sqlTypeName), dateTimeArgs))
-          .appendIf(offset, getTimeZoneExpression(implementor)));
+          Expressions.call(
+              getMethod(sqlTypeName, fieldType.isNullable(), offset),
+              Expressions.<Expression>list()
+                  .append(
+                      Expressions.call(resultSet_,
+                          getMethod2(sqlTypeName), dateTimeArgs))
+                  .appendIf(offset, getTimeZoneExpression(implementor)));
       break;
     case ARRAY:
       final Expression x = /*X*/
           Expressions.convert_(
               Expressions.call(resultSet_, jdbcGetMethod(primitive),
-              Expressions.constant(i + 1)),
-          java.sql.Array.class);
+                  Expressions.constant(i + 1)),
+              java.sql.Array.class);
       source = Expressions.call(BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x);
       break;
     case NULL:
@@ -287,7 +288,8 @@ public class JdbcToEnumerableConverter
       break;
     default:
       source = /*X*/
-          Expressions.call(resultSet_, jdbcGetMethod(primitive), Expressions.constant(i + 1));
+          Expressions.call(resultSet_, jdbcGetMethod(primitive),
+              Expressions.constant(i + 1));
     }
     builder.add(
         Expressions.statement(

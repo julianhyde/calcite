@@ -43,12 +43,12 @@ public class NaryOperatorConverter implements DruidSqlOperatorConverter {
     return operator;
   }
 
-  @Override public @Nullable String toDruidExpression(RexNode rexNode, RelDataType rowType,
-      DruidQuery druidQuery) {
+  @Override public @Nullable String toDruidExpression(RexNode rexNode,
+      RelDataType rowType, DruidQuery druidQuery) {
     final RexCall call = (RexCall) rexNode;
     final List<String> druidExpressions = /*X*/
         DruidExpressions.toDruidExpressions(druidQuery, rowType,
-        call.getOperands());
+            call.getOperands());
     if (druidExpressions == null) {
       return null;
     }

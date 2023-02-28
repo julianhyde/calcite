@@ -1519,9 +1519,9 @@ public class Linq4jTest {
   @Test void testList0() {
     final List<Employee> employees = /*X*/
         Arrays.asList(new Employee(100, "Fred", 10),
-        new Employee(110, "Bill", 30),
-        new Employee(120, "Eric", 10),
-        new Employee(130, "Janet", 10));
+            new Employee(110, "Bill", 30),
+            new Employee(120, "Eric", 10),
+            new Employee(130, "Janet", 10));
     final List<Employee> result = new ArrayList<>();
     Linq4j.asEnumerable(employees)
         .where(e -> e.name.contains("e"))
@@ -1534,9 +1534,9 @@ public class Linq4jTest {
   @Test void testList() {
     final List<Employee> employees = /*X*/
         Arrays.asList(new Employee(100, "Fred", 10),
-        new Employee(110, "Bill", 30),
-        new Employee(120, "Eric", 10),
-        new Employee(130, "Janet", 10));
+            new Employee(110, "Bill", 30),
+            new Employee(120, "Eric", 10),
+            new Employee(130, "Janet", 10));
     final Map<Employee, Department> empDepts = new HashMap<>();
     for (Employee employee : employees) {
       empDepts.put(employee, depts[(employee.deptno - 10) / 10]);
@@ -1781,11 +1781,17 @@ public class Linq4jTest {
 
   @Test void testSequenceEqual() {
     final Enumerable<String> enumerable1 = /*X*/
-        Linq4j.asEnumerable(Collections.unmodifiableCollection(Arrays.asList("ming", "foo", "bar")));
+        Linq4j.asEnumerable(
+            Collections.unmodifiableCollection(
+                Arrays.asList("ming", "foo", "bar")));
     final Enumerable<String> enumerable2 = /*X*/
-        Linq4j.asEnumerable(Collections.unmodifiableCollection(Arrays.asList("ming", "foo", "bar")));
+        Linq4j.asEnumerable(
+            Collections.unmodifiableCollection(
+                Arrays.asList("ming", "foo", "bar")));
     assertTrue(enumerable1.sequenceEqual(enumerable2));
-    assertFalse(enumerable1.sequenceEqual(Linq4j.asEnumerable(new String[]{"ming", "foo", "far"})));
+    assertFalse(
+        enumerable1.sequenceEqual(
+            Linq4j.asEnumerable(new String[]{"ming", "foo", "far"})));
 
     try {
       EnumerableDefaults.sequenceEqual(null, enumerable2);
@@ -1835,9 +1841,13 @@ public class Linq4jTest {
 
   @Test void testSequenceEqualWithComparer() {
     final Enumerable<String> enumerable1 = /*X*/
-        Linq4j.asEnumerable(Collections.unmodifiableCollection(Arrays.asList("ming", "foo", "bar")));
+        Linq4j.asEnumerable(
+            Collections.unmodifiableCollection(
+                Arrays.asList("ming", "foo", "bar")));
     final Enumerable<String> enumerable2 = /*X*/
-        Linq4j.asEnumerable(Collections.unmodifiableCollection(Arrays.asList("ming", "foo", "bar")));
+        Linq4j.asEnumerable(
+            Collections.unmodifiableCollection(
+                Arrays.asList("ming", "foo", "bar")));
     final EqualityComparer<String> equalityComparer = new EqualityComparer<String>() {
       public boolean equal(String v1, String v2) {
         return !Objects.equals(v1, v2); // reverse the equality.

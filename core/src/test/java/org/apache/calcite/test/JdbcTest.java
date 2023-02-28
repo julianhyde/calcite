@@ -264,8 +264,8 @@ public class JdbcTest {
              EmpDeptTableFactory.THREAD_COLLECTION.push(employees)) {
       final CalciteAssert.AssertThat with = /*X*/
           modelWithView("select \"name\", \"empid\" as e, \"salary\" "
-              + "from \"MUTABLE_EMPLOYEES\" where \"deptno\" = 10",
-          null);
+                  + "from \"MUTABLE_EMPLOYEES\" where \"deptno\" = 10",
+              null);
       with.query("select \"name\" from \"adhoc\".V order by \"name\"")
           .returns("name=Simon\n");
       with.doWithConnection(connection -> {
@@ -483,26 +483,30 @@ public class JdbcTest {
     addTableMacro(connection, Smalls.STR_METHOD);
     // check for cast
     ResultSet resultSet = /*X*/
-        connection.createStatement().executeQuery("select * from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2], cast(1 as bigint))) as t(n)");
+        connection.createStatement().executeQuery("select *\n"
+            + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2], cast(1 as bigint))) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N={'a'=1, 'baz'=2}\n"
             + "N=1               \n"));
     // check for Boolean type
     resultSet = /*X*/
-        connection.createStatement().executeQuery("select * from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2], true)) as t(n)");
+        connection.createStatement().executeQuery("select *\n"
+            + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2], true)) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N={'a'=1, 'baz'=2}\n"
             + "N=true            \n"));
     // check for nested cast
     resultSet = /*X*/
-        connection.createStatement().executeQuery("select * from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2],"
+        connection.createStatement().executeQuery("select *\n"
+            + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2],"
             + "cast(cast(1 as int) as varchar(1)))) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N={'a'=1, 'baz'=2}\n"
             + "N=1               \n"));
 
     resultSet = /*X*/
-        connection.createStatement().executeQuery("select * from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2],"
+        connection.createStatement().executeQuery("select *\n"
+            + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2],"
             + "cast(cast(cast('2019-10-18 10:35:23' as TIMESTAMP) as BIGINT) as VARCHAR))) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N={'a'=1, 'baz'=2}     \n"
@@ -511,7 +515,8 @@ public class JdbcTest {
     // check for implicit type coercion
     addTableMacro(connection, Smalls.VIEW_METHOD);
     resultSet = /*X*/
-        connection.createStatement().executeQuery("select * from table(\"s\".\"view\"(5)) as t(n)");
+        connection.createStatement().executeQuery("select *\n"
+            + "from table(\"s\".\"view\"(5)) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N=1\n"
             + "N=3\n"
@@ -1993,7 +1998,8 @@ public class JdbcTest {
     rs.close();
 
     rs = /*X*/
-        calciteStatement.executeQuery("SELECT ID, CARDINALITY(VALS), VALS[2] FROM ARR_TABLE");
+        calciteStatement.executeQuery("SELECT ID, CARDINALITY(VALS), VALS[2]\n"
+            + "FROM ARR_TABLE");
     assertTrue(rs.next());
     assertEquals(1, rs.getInt(1));
     assertEquals(3, rs.getInt(2));
@@ -2001,8 +2007,7 @@ public class JdbcTest {
     assertFalse(rs.next());
     rs.close();
 
-    rs = /*X*/
-        calciteStatement.executeQuery("SELECT * FROM ARR_TABLE2");
+    rs = calciteStatement.executeQuery("SELECT * FROM ARR_TABLE2");
     final ResultSetMetaData metaData = rs.getMetaData();
     assertThat(metaData.getColumnTypeName(1), equalTo("INTEGER"));
     assertThat(metaData.getColumnTypeName(2), equalTo("INTEGER ARRAY"));
@@ -5846,7 +5851,7 @@ public class JdbcTest {
 
         // views only
         try (ResultSet r = /*Y*/
-            metaData.getTables(null, "adhoc", null, new String[]{Schema.TableType.VIEW.jdbcName})) {
+                 metaData.getTables(null, "adhoc", null, new String[]{Schema.TableType.VIEW.jdbcName})) {
           assertEquals(
               "TABLE_CAT=null; TABLE_SCHEM=adhoc; TABLE_NAME=V; TABLE_TYPE=VIEW; REMARKS=null; TYPE_CAT=null; TYPE_SCHEM=null; TYPE_NAME=null; SELF_REFERENCING_COL_NAME=null; REF_GENERATION=null\n",
               CalciteAssert.toString(r));
@@ -6544,7 +6549,8 @@ public class JdbcTest {
           try {
             Statement stmt = connection.createStatement();
             ResultSet rs = /*X*/
-                stmt.executeQuery("select min(\"date\") mindate from \"foodmart\".\"currency\"");
+                stmt.executeQuery("select min(\"date\") mindate\n"
+                    + "from \"foodmart\".\"currency\"");
             assertTrue(rs.next());
             assertEquals(
                 Date.valueOf("1997-01-01"),
@@ -6571,7 +6577,9 @@ public class JdbcTest {
           try {
             Statement stmt = connection.createStatement();
             ResultSet rs = /*X*/
-                stmt.executeQuery("select \"hire_date\" from \"foodmart\".\"employee\" where \"employee_id\" = 1");
+                stmt.executeQuery("select \"hire_date\"\n"
+                    + "from \"foodmart\".\"employee\"\n"
+                    + "where \"employee_id\" = 1");
             assertTrue(rs.next());
             assertEquals(
                 Timestamp.valueOf("1994-12-01 00:00:00"),
@@ -7020,16 +7028,16 @@ public class JdbcTest {
   @Test void testHook() {
     final int[] callCount = {0};
     try (Hook.Closeable ignored = /*X*/
-        Hook.PARSE_TREE.<Object[]>addThread(args -> {
-          assertThat(args.length, equalTo(2));
-          assertThat(args[0], instanceOf(String.class));
-          assertThat(args[0],
-              equalTo("select \"deptno\", \"commission\", sum(\"salary\") s\n"
-                  + "from \"hr\".\"emps\"\n"
-                  + "group by \"deptno\", \"commission\""));
-          assertThat(args[1], instanceOf(SqlSelect.class));
-          ++callCount[0];
-        })) {
+             Hook.PARSE_TREE.<Object[]>addThread(args -> {
+               assertThat(args.length, equalTo(2));
+               assertThat(args[0], instanceOf(String.class));
+               assertThat(args[0],
+                   equalTo("select \"deptno\", \"commission\", sum(\"salary\") s\n"
+                       + "from \"hr\".\"emps\"\n"
+                       + "group by \"deptno\", \"commission\""));
+               assertThat(args[1], instanceOf(SqlSelect.class));
+               ++callCount[0];
+             })) {
       // Simple query does not run the hook.
       testSimple();
       assertThat(callCount[0], equalTo(0));

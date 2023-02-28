@@ -50,8 +50,9 @@ public final class JavaTypeFactoryTest {
    * Struct types with one field are not mapped correctly to Java Classes</a>. */
   @Test void testGetJavaClassWithOneFieldStructDataTypeV2() {
     RelDataType structWithOneField = /*X*/
-        TYPE_FACTORY.createStructType(ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
-        ImmutableList.of("intField"));
+        TYPE_FACTORY.createStructType(
+            ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
+            ImmutableList.of("intField"));
     assertRecordType(TYPE_FACTORY.getJavaClass(structWithOneField));
   }
 
@@ -69,9 +70,8 @@ public final class JavaTypeFactoryTest {
   @Test void testGetJavaClassWithTwoFieldsStructDataTypeV2() {
     RelDataType structWithTwoFields = /*X*/
         TYPE_FACTORY.createStructType(
-            ImmutableList.of(
-            TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER),
-            TYPE_FACTORY.createSqlType(SqlTypeName.VARCHAR)),
+            ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER),
+                TYPE_FACTORY.createSqlType(SqlTypeName.VARCHAR)),
         ImmutableList.of("intField", "strField"));
     assertRecordType(TYPE_FACTORY.getJavaClass(structWithTwoFields));
   }
@@ -83,9 +83,8 @@ public final class JavaTypeFactoryTest {
   @Test void testFieldNullabilityAfterConvertingToSqlStructType() {
     RelDataType javaStructType = /*X*/
         TYPE_FACTORY.createStructType(
-            ImmutableList.of(
-            TYPE_FACTORY.createJavaType(Integer.class),
-            TYPE_FACTORY.createJavaType(int.class)),
+            ImmutableList.of(TYPE_FACTORY.createJavaType(Integer.class),
+                TYPE_FACTORY.createJavaType(int.class)),
         ImmutableList.of("a", "b"));
     RelDataType sqlStructType = TYPE_FACTORY.toSql(javaStructType);
     assertEquals("RecordType(INTEGER a, INTEGER NOT NULL b) NOT NULL",

@@ -251,8 +251,7 @@ public abstract class RelOptMaterializations {
     final RelBuilder relBuilder = /*X*/
         RelFactories.LOGICAL_BUILDER.create(relNode.getCluster(), relOptSchema);
     final RelFieldTrimmer relFieldTrimmer = new RelFieldTrimmer(null, relBuilder);
-    final RelNode rel = relFieldTrimmer.trim(relNode);
-    return rel;
+    return relFieldTrimmer.trim(relNode);
   }
 
   /**

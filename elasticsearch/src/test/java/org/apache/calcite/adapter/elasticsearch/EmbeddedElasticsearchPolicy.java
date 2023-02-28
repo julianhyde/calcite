@@ -122,7 +122,8 @@ class EmbeddedElasticsearchPolicy {
 
     // create index and mapping
     final HttpEntity entity = /*Y*/
-        new StringEntity(mapper().writeValueAsString(mappings), ContentType.APPLICATION_JSON);
+        new StringEntity(mapper().writeValueAsString(mappings),
+            ContentType.APPLICATION_JSON);
     final Request r = new Request("PUT", "/" + index);
     r.setEntity(entity);
     restClient().performRequest(r);
@@ -149,10 +150,10 @@ class EmbeddedElasticsearchPolicy {
   void insertDocument(String index, ObjectNode document) throws IOException {
     Objects.requireNonNull(index, "index");
     Objects.requireNonNull(document, "document");
-    String uri = /*Y*/
-          String.format(Locale.ROOT, "/%s/_doc?refresh", index);
+    String uri = String.format(Locale.ROOT, "/%s/_doc?refresh", index);
     StringEntity entity = /*Y*/
-        new StringEntity(mapper().writeValueAsString(document), ContentType.APPLICATION_JSON);
+        new StringEntity(mapper().writeValueAsString(document),
+            ContentType.APPLICATION_JSON);
     final Request r = new Request("POST", uri);
     r.setEntity(entity);
     restClient().performRequest(r);
@@ -174,7 +175,8 @@ class EmbeddedElasticsearchPolicy {
     }
 
     final StringEntity entity = /*Y*/
-        new StringEntity(String.join("\n", bulk) + "\n", ContentType.APPLICATION_JSON);
+        new StringEntity(String.join("\n", bulk) + "\n",
+            ContentType.APPLICATION_JSON);
 
     final Request r = new Request("POST", "/_bulk?refresh");
     r.setEntity(entity);

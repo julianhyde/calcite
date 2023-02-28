@@ -121,8 +121,8 @@ public class ProjectCorrelateTransposeRule
     rightProject = /*X*/
         rightProject.accept(
             new RelNodesExprsHandler(
-            new RexFieldAccessReplacer(correlate.getCorrelationId(),
-                rexCorrel, rexBuilder, requiredColsMap)));
+                new RexFieldAccessReplacer(correlate.getCorrelationId(),
+                    rexCorrel, rexBuilder, requiredColsMap)));
 
     // create a new correlate with the projected children
     final Correlate newCorrelate =

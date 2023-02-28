@@ -1007,7 +1007,8 @@ public class CalcitePrepareImpl implements CalcitePrepare {
               ? ((Sort) rel).collation
               : RelCollations.EMPTY;
       RelRoot root = /*Y*/
-          new RelRoot(rel, resultType, SqlKind.SELECT, fields, collation, new ArrayList<>());
+          new RelRoot(rel, resultType, SqlKind.SELECT, fields, collation,
+              new ArrayList<>());
 
       if (timingTracer != null) {
         timingTracer.traceTime("end sql2rel");
@@ -1123,7 +1124,8 @@ public class CalcitePrepareImpl implements CalcitePrepare {
             projects.add(rexBuilder.makeInputRef(enumerable, field));
           }
           RexProgram program = /*Y*/
-              RexProgram.create(enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder);
+              RexProgram.create(enumerable.getRowType(), projects, null,
+                  root.validatedRowType, rexBuilder);
           enumerable = EnumerableCalc.create(enumerable, program);
         }
 
@@ -1132,8 +1134,9 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           final SqlConformance conformance = context.config().conformance();
           internalParameters.put("_conformance", conformance);
           bindable = /*Y*/
-              EnumerableInterpretable.toBindable(internalParameters, context.spark(), enumerable,
-              requireNonNull(prefer, "EnumerableRel.Prefer prefer"));
+              EnumerableInterpretable.toBindable(internalParameters,
+                  context.spark(), enumerable,
+                  requireNonNull(prefer, "EnumerableRel.Prefer prefer"));
         } finally {
           CatalogReader.THREAD_LOCAL.remove();
         }
@@ -1263,9 +1266,10 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         MemberExpression memberExpression = (MemberExpression) expression;
         PseudoField field = memberExpression.field;
         Expression targetExpression = /*Y*/
-            requireNonNull(memberExpression.expression, () -> "static field access is not implemented yet."
-                + " field.name=" + field.getName()
-                + ", field.declaringClass=" + field.getDeclaringClass());
+            requireNonNull(memberExpression.expression,
+                () -> "static field access is not implemented yet."
+                    + " field.name=" + field.getName()
+                    + ", field.declaringClass=" + field.getDeclaringClass());
         return rexBuilder.makeFieldAccess(
             toRex(targetExpression),
             field.getName(),

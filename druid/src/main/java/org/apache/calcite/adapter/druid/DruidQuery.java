@@ -88,6 +88,8 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Relational expression representing a scan of a Druid data set.
  */
@@ -184,7 +186,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     this.intervals = ImmutableList.copyOf(intervals);
     this.rels = ImmutableList.copyOf(rels);
     this.converterOperatorMap = /*Y*/
-        Objects.requireNonNull(converterOperatorMap, "Operator map cannot be null");
+        requireNonNull(converterOperatorMap, "Operator map cannot be null");
     assert isValid(Litmus.THROW, null);
   }
 
@@ -335,7 +337,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       if (needUtcTimeExtract(rexNode)) {
         // CASE CAST to TIME/DATE need to make sure that we have valid extraction fn
         extractionFunction = /*Y*/
-            TimeExtractionFunction.translateCastToTimeExtract(rexNode, TimeZone.getTimeZone(druidQuery.getConnectionConfig().timeZone()));
+            TimeExtractionFunction.translateCastToTimeExtract(rexNode,
+                TimeZone.getTimeZone(druidQuery.getConnectionConfig().timeZone()));
         if (extractionFunction == null) {
           // no extraction Function means cast is not valid thus bail out
           return Pair.of(null, null);
@@ -665,7 +668,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       groupSet = aggregate.getGroupSet();
       aggCalls = aggregate.getAggCallList();
       aggNames = /*Y*/
-          Util.skip(aggregate.getRowType().getFieldNames(), groupSet.cardinality());
+          Util.skip(aggregate.getRowType().getFieldNames(),
+              groupSet.cardinality());
     }
 
     Filter havingFilter = null;
@@ -776,7 +780,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
           return null;
         }
         final String virColName = /*Y*/
-            SqlValidatorUtil.uniquify("vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER);
+            SqlValidatorUtil.uniquify("vc", usedFieldNames,
+                SqlValidatorUtil.EXPR_SUGGESTER);
         virtualColumnsBuilder.add(VirtualColumn.builder()
             .withName(virColName)
             .withExpression(expression).withType(
@@ -788,7 +793,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         // simple inputRef or extractable function
         if (usedFieldNames.contains(druidColumn.left)) {
           final String virColName = /*Y*/
-              SqlValidatorUtil.uniquify("vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER);
+              SqlValidatorUtil.uniquify("vc", usedFieldNames,
+                  SqlValidatorUtil.EXPR_SUGGESTER);
           virtualColumnsBuilder.add(VirtualColumn.builder()
               .withName(virColName)
               .withExpression(DruidExpressions.fromColumn(druidColumn.left)).withType(
@@ -839,7 +845,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       if (druidColumn.left != null && druidColumn.right == null) {
         // SIMPLE INPUT REF
         dimensionSpec = /*Y*/
-            new DefaultDimensionSpec(druidColumn.left, druidColumn.left, DruidExpressions.EXPRESSION_TYPES.get(project.getType().getSqlTypeName()));
+            new DefaultDimensionSpec(druidColumn.left, druidColumn.left,
+                DruidExpressions.EXPRESSION_TYPES.get(project.getType().getSqlTypeName()));
         usedFieldNames.add(druidColumn.left);
       } else if (druidColumn.left != null && druidColumn.right != null) {
        // CASE it is an extraction Dimension
@@ -847,14 +854,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         //@TODO Remove it! if else statement is not really needed it is here to make tests pass.
         if (project.getKind() == SqlKind.EXTRACT) {
           columnPrefix =
-              EXTRACT_COLUMN_NAME_PREFIX + "_" + Objects
-                  .requireNonNull(DruidDateTimeUtils
+              EXTRACT_COLUMN_NAME_PREFIX + "_" + requireNonNull(DruidDateTimeUtils
                       .extractGranularity(project, druidQuery.getConnectionConfig().timeZone())
                       .getType().lowerName);
         } else if (project.getKind() == SqlKind.FLOOR) {
           columnPrefix =
-              FLOOR_COLUMN_NAME_PREFIX + "_" + Objects
-                  .requireNonNull(DruidDateTimeUtils
+              FLOOR_COLUMN_NAME_PREFIX + "_" + requireNonNull(DruidDateTimeUtils
                       .extractGranularity(project, druidQuery.getConnectionConfig().timeZone())
                       .getType().lowerName);
         } else {
@@ -864,7 +869,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             .uniquify(columnPrefix, usedFieldNames,
                 SqlValidatorUtil.EXPR_SUGGESTER);
         dimensionSpec = /*Y*/
-            new ExtractionDimensionSpec(druidColumn.left, druidColumn.right, uniqueExtractColumnName);
+            new ExtractionDimensionSpec(druidColumn.left, druidColumn.right,
+                uniqueExtractColumnName);
         usedFieldNames.add(uniqueExtractColumnName);
       } else {
         // CASE it is Expression
@@ -877,10 +883,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             .uniquify("vc", usedFieldNames,
                 SqlValidatorUtil.EXPR_SUGGESTER);
         VirtualColumn vc = /*Y*/
-            new VirtualColumn(name, expression, DruidExpressions.EXPRESSION_TYPES.get(project.getType().getSqlTypeName()));
+            new VirtualColumn(name, expression,
+                DruidExpressions.EXPRESSION_TYPES.get(project.getType().getSqlTypeName()));
         virtualColumnList.add(vc);
         dimensionSpec = /*Y*/
-            new DefaultDimensionSpec(name, name, DruidExpressions.EXPRESSION_TYPES.get(project.getType().getSqlTypeName()));
+            new DefaultDimensionSpec(name, name,
+                DruidExpressions.EXPRESSION_TYPES.get(project.getType().getSqlTypeName()));
         usedFieldNames.add(name);
 
       }
@@ -1002,7 +1010,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         scanColumnNames = rowType.getFieldNames();
       }
       final ScanQuery scanQuery = /*Y*/
-          new ScanQuery(druidTable.dataSource, intervals, jsonFilter, virtualColumnList, scanColumnNames, fetch);
+          new ScanQuery(druidTable.dataSource, intervals, jsonFilter,
+              virtualColumnList, scanColumnNames, fetch);
       return new QuerySpec(QueryType.SCAN, scanQuery.toQuery(), scanColumnNames);
     }
 
@@ -1066,7 +1075,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
           postProjectDimListBuilder.add(existingFieldName);
         } else {
           final String uniquelyProjectFieldName = /*Y*/
-              SqlValidatorUtil.uniquify(pair.right, existingAggFieldsNames, SqlValidatorUtil.EXPR_SUGGESTER);
+              SqlValidatorUtil.uniquify(pair.right,
+                  existingAggFieldsNames, SqlValidatorUtil.EXPR_SUGGESTER);
           postAggs.add(new JsonExpressionPostAgg(uniquelyProjectFieldName, expression, null));
           postProjectDimListBuilder.add(uniquelyProjectFieldName);
           existingAggFieldsNames.add(uniquelyProjectFieldName);
@@ -1084,10 +1094,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
     // handle sort all together
     limit = /*Y*/
-        computeSort(fetch, collationIndexes, collationDirections, numericCollationIndexes, queryOutputFieldNames);
+        computeSort(fetch, collationIndexes, collationDirections,
+            numericCollationIndexes, queryOutputFieldNames);
 
     final String timeSeriesQueryString = /*Y*/
-        planAsTimeSeries(groupByKeyDims, jsonFilter, virtualColumnList, aggregations, postAggs, limit, havingJsonFilter);
+        planAsTimeSeries(groupByKeyDims, jsonFilter,
+            virtualColumnList, aggregations, postAggs, limit, havingJsonFilter);
     if (timeSeriesQueryString != null) {
       final String timeExtractColumn = groupByKeyDims.isEmpty()
           ? null
@@ -1107,13 +1119,15 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
       return new QuerySpec(QueryType.TIMESERIES, timeSeriesQueryString, queryOutputFieldNames);
     }
     final String topNQuery = /*Y*/
-        planAsTopN(groupByKeyDims, jsonFilter, virtualColumnList, aggregations, postAggs, limit, havingJsonFilter);
+        planAsTopN(groupByKeyDims, jsonFilter,
+            virtualColumnList, aggregations, postAggs, limit, havingJsonFilter);
     if (topNQuery != null) {
       return new QuerySpec(QueryType.TOP_N, topNQuery, queryOutputFieldNames);
     }
 
     final String groupByQuery = /*Y*/
-        planAsGroupBy(groupByKeyDims, jsonFilter, virtualColumnList, aggregations, postAggs, limit, havingJsonFilter);
+        planAsGroupBy(groupByKeyDims, jsonFilter,
+            virtualColumnList, aggregations, postAggs, limit, havingJsonFilter);
 
     if (groupByQuery == null) {
       throw new IllegalStateException("Cannot plan Druid Query");
@@ -1407,10 +1421,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         if (aggCall.isApproximate() || config.approximateDistinctCount()) {
           if (complexMetric == null) {
             aggregation = /*Y*/
-                new JsonCardinalityAggregation("cardinality", name, ImmutableList.of(fieldName));
+                new JsonCardinalityAggregation("cardinality", name,
+                    ImmutableList.of(fieldName));
           } else {
             aggregation = /*Y*/
-                    new JsonAggregation(complexMetric.getMetricType(), name, complexMetric.getMetricName(), null);
+                new JsonAggregation(complexMetric.getMetricType(), name,
+                    complexMetric.getMetricName(), null);
           }
           break;
         } else {
@@ -1427,7 +1443,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
           matchNulls = DruidJsonFilter.getSelectorFilter(fieldName, null, null);
         }
         aggregation = /*Y*/
-            new JsonFilteredAggregation(DruidJsonFilter.toNotDruidFilter(matchNulls), new JsonAggregation("count", name, fieldName, aggExpression));
+            new JsonFilteredAggregation(DruidJsonFilter.toNotDruidFilter(matchNulls),
+                new JsonAggregation("count", name, fieldName, aggExpression));
       } else if (!aggCall.isDistinct()) {
         aggregation = new JsonAggregation("count", name, fieldName, aggExpression);
       } else {
@@ -1438,15 +1455,18 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     case SUM:
     case SUM0:
       aggregation = /*Y*/
-          new JsonAggregation(fractional ? "doubleSum" : "longSum", name, fieldName, aggExpression);
+          new JsonAggregation(fractional ? "doubleSum" : "longSum",
+              name, fieldName, aggExpression);
       break;
     case MIN:
       aggregation = /*Y*/
-          new JsonAggregation(fractional ? "doubleMin" : "longMin", name, fieldName, aggExpression);
+          new JsonAggregation(fractional ? "doubleMin" : "longMin",
+              name, fieldName, aggExpression);
       break;
     case MAX:
       aggregation = /*Y*/
-          new JsonAggregation(fractional ? "doubleMax" : "longMax", name, fieldName, aggExpression);
+          new JsonAggregation(fractional ? "doubleMax" : "longMax",
+              name, fieldName, aggExpression);
       break;
     default:
       return null;
@@ -1544,8 +1564,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
     QuerySpec(QueryType queryType, String queryString,
         List<String> fieldNames) {
-      this.queryType = Objects.requireNonNull(queryType, "queryType");
-      this.queryString = Objects.requireNonNull(queryString, "queryString");
+      this.queryType = requireNonNull(queryType, "queryType");
+      this.queryString = requireNonNull(queryString, "queryString");
       this.fieldNames = ImmutableList.copyOf(fieldNames);
     }
 

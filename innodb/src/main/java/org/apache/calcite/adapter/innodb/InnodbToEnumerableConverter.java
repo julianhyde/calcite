@@ -138,10 +138,10 @@ public class InnodbToEnumerableConverter extends ConverterImpl
             constantArrayList(condition.getRangeQueryUpperKey(), Object.class));
     final Expression cond =
         list.append("condition",
-            Expressions.call(
-                IndexCondition.class,
+            Expressions.call(IndexCondition.class,
                 "create", indexName, queryType, pointQueryKey,
-                rangeQueryLowerOp, rangeQueryUpperOp, rangeQueryLowerKey, rangeQueryUpperKey));
+                rangeQueryLowerOp, rangeQueryUpperOp, rangeQueryLowerKey,
+                rangeQueryUpperKey));
     final Expression ascOrder = /*X*/
         Expressions.constant(innodbImplementor.ascOrder);
     Expression enumerable =

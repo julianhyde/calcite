@@ -77,19 +77,21 @@ public class RelationalJdbcExample {
     Connection connection = DriverManager.getConnection("jdbc:calcite:", info);
 
     Statement statement = connection.createStatement();
-    ResultSet resultSet = /*X*/
-        statement.executeQuery("SELECT \"b\".\"author\", \"b\".\"retailCost\", \"i\".\"quantityInStock\"\n"
-            + "FROM \"TEST\".\"BookMaster\" AS \"b\" "
-            + " INNER JOIN \"TEST\".\"BookInventory\" AS \"i\""
-            + "  ON \"b\".\"itemNumber\" = \"i\".\"itemNumber\"\n "
-            + "WHERE  \"b\".\"retailCost\" > 0");
+    String sql = "SELECT \"b\".\"author\", \"b\".\"retailCost\", \"i\".\"quantityInStock\"\n"
+        + "FROM \"TEST\".\"BookMaster\" AS \"b\" "
+        + " INNER JOIN \"TEST\".\"BookInventory\" AS \"i\""
+        + "  ON \"b\".\"itemNumber\" = \"i\".\"itemNumber\"\n "
+        + "WHERE  \"b\".\"retailCost\" > 0";
+    ResultSet resultSet = statement.executeQuery(sql);
 
     final StringBuilder buf = new StringBuilder();
     while (resultSet.next()) {
       ResultSetMetaData metaData = resultSet.getMetaData();
       for (int i = 1; i <= metaData.getColumnCount(); i++) {
         buf.append(i > 1 ? "; " : "")
-            .append(metaData.getColumnLabel(i)).append("=").append(resultSet.getObject(i));
+            .append(metaData.getColumnLabel(i))
+            .append("=")
+            .append(resultSet.getObject(i));
       }
       LOGGER.info("Result entry: " + buf.toString());
       buf.setLength(0);

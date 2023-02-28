@@ -42,9 +42,10 @@ public class EnumerableLimitSortRule extends RelRule<EnumerableLimitSortRule.Con
     final Sort sort = call.rel(0);
     RelNode input = sort.getInput();
     final Sort o = /*X*/
-        EnumerableLimitSort.create(convert(input, input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
-        sort.getCollation(),
-        sort.offset, sort.fetch);
+        EnumerableLimitSort.create(
+            convert(input,
+                input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
+            sort.getCollation(), sort.offset, sort.fetch);
 
     call.transformTo(o);
   }
@@ -53,7 +54,11 @@ public class EnumerableLimitSortRule extends RelRule<EnumerableLimitSortRule.Con
   @Value.Immutable
   public interface Config extends RelRule.Config {
     Config DEFAULT = /*X*/
-        ImmutableEnumerableLimitSortRule.Config.of().withOperandSupplier(b0 -> b0.operand(LogicalSort.class).predicate(sort -> sort.fetch != null).anyInputs());
+        ImmutableEnumerableLimitSortRule.Config.of()
+            .withOperandSupplier(b0 ->
+                b0.operand(LogicalSort.class)
+                    .predicate(sort -> sort.fetch != null)
+                    .anyInputs());
 
     @Override default EnumerableLimitSortRule toRule() {
       return new EnumerableLimitSortRule(this);

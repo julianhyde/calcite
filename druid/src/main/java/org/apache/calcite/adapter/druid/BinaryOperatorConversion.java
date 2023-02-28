@@ -47,7 +47,7 @@ public class BinaryOperatorConversion implements DruidSqlOperatorConverter {
 
     final List<String> druidExpressions = /*X*/
         DruidExpressions.toDruidExpressions(druidQuery, rowType,
-        call.getOperands());
+            call.getOperands());
     if (druidExpressions == null) {
       return null;
     }

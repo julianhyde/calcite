@@ -344,7 +344,8 @@ public final class BitSets {
         return o;
       }
       BitSet b = /*Y*/
-          requireNonNull(equivalence.get(pos), () -> "equivalence.get(pos) for " + pos);
+          requireNonNull(equivalence.get(pos),
+              () -> "equivalence.get(pos) for " + pos);
       o = (BitSet) b.clone();
       int i = b.nextSetBit(pos + 1);
       for (; i >= 0; i = b.nextSetBit(i + 1)) {

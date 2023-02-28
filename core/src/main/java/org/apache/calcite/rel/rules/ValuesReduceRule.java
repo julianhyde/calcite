@@ -157,8 +157,8 @@ public class ValuesReduceRule
           RexNode e = projectExpr.accept(shuttle);
           if (RexLiteral.isNullLiteral(e)) {
             e = /*X*/
-                rexBuilder.makeAbstractCast(project.getRowType().getFieldList().get(k).getType(),
-                e);
+                rexBuilder.makeAbstractCast(
+                    project.getRowType().getFieldList().get(k).getType(), e);
           }
           reducibleExps.add(e);
         }

@@ -68,40 +68,45 @@ public class ElasticsearchToEnumerableConverter extends ConverterImpl implements
 
     final RelDataType rowType = getRowType();
     final PhysType physType = /*Y*/
-        PhysTypeImpl.of(relImplementor.getTypeFactory(), rowType, prefer.prefer(JavaRowFormat.ARRAY));
+        PhysTypeImpl.of(relImplementor.getTypeFactory(),
+            rowType, prefer.prefer(JavaRowFormat.ARRAY));
     final Expression fields = /*Y*/
-        block.append(
-            "fields", constantArrayList(
-            Pair.zip(ElasticsearchRules.elasticsearchFieldNames(rowType),
-                new AbstractList<Class>() {
-                  @Override public Class get(int index) {
-                    return physType.fieldClass(index);
-                  }
+        block.append("fields",
+            constantArrayList(
+                Pair.zip(ElasticsearchRules.elasticsearchFieldNames(rowType),
+                    new AbstractList<Class>() {
+                      @Override public Class get(int index) {
+                        return physType.fieldClass(index);
+                      }
 
-                  @Override public int size() {
-                    return rowType.getFieldCount();
-                  }
-                }),
-            Pair.class));
+                      @Override public int size() {
+                        return rowType.getFieldCount();
+                      }
+                    }),
+                Pair.class));
     final Expression table = /*Y*/
-        block.append("table", implementor.table
-            .getExpression(ElasticsearchTable.ElasticsearchQueryable.class));
+        block.append("table",
+            implementor.table.getExpression(
+                ElasticsearchTable.ElasticsearchQueryable.class));
     final Expression ops = block.append("ops", Expressions.constant(implementor.list));
     final Expression sort = block.append("sort", constantArrayList(implementor.sort, Pair.class));
     final Expression groupBy = block.append("groupBy", Expressions.constant(implementor.groupBy));
     final Expression aggregations = /*Y*/
-        block.append("aggregations", constantArrayList(implementor.aggregations, Pair.class));
+        block.append("aggregations",
+            constantArrayList(implementor.aggregations, Pair.class));
 
     final Expression mappings = /*Y*/
-        block.append("mappings", Expressions.constant(implementor.expressionItemMap));
+        block.append("mappings",
+            Expressions.constant(implementor.expressionItemMap));
 
     final Expression offset = block.append("offset", Expressions.constant(implementor.offset));
     final Expression fetch = block.append("fetch", Expressions.constant(implementor.fetch));
 
     Expression enumerable = /*Y*/
-        block.append(
-            "enumerable", Expressions.call(table, ElasticsearchMethod.ELASTICSEARCH_QUERYABLE_FIND.method, ops,
-            fields, sort, groupBy, aggregations, mappings, offset, fetch));
+        block.append("enumerable",
+            Expressions.call(table,
+                ElasticsearchMethod.ELASTICSEARCH_QUERYABLE_FIND.method, ops,
+                fields, sort, groupBy, aggregations, mappings, offset, fetch));
     block.add(Expressions.return_(null, enumerable));
     return relImplementor.result(physType, block.toBlock());
   }

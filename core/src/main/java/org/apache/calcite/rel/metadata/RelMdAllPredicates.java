@@ -237,7 +237,8 @@ public class RelMdAllPredicates
                 e -> RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping));
         newPreds = /*Y*/
-            newPreds.union(rexBuilder, RelOptPredicateList.of(rexBuilder, updatedPreds));
+            newPreds.union(rexBuilder,
+                RelOptPredicateList.of(rexBuilder, updatedPreds));
       }
     }
 
@@ -251,10 +252,10 @@ public class RelMdAllPredicates
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
     final RelDataType fullRowType = /*X*/
         SqlValidatorUtil.createJoinType(rexBuilder.getTypeFactory(),
-        join.getLeft().getRowType(),
-        join.getRight().getRowType(),
-        null,
-        ImmutableList.of());
+            join.getLeft().getRowType(),
+            join.getRight().getRowType(),
+            null,
+            ImmutableList.of());
     for (int idx : inputFieldsUsed) {
       final RexInputRef inputRef = RexInputRef.of(idx, fullRowType.getFieldList());
       final Set<RexNode> originalExprs = mq.getExpressionLineage(join, inputRef);
@@ -328,7 +329,8 @@ public class RelMdAllPredicates
             shift = lRefs.size();
           }
           currentTablesMapping.put(rightRef,
-              RelTableRef.of(rightRef.getTable(), shift + rightRef.getEntityNumber()));
+              RelTableRef.of(rightRef.getTable(),
+                  shift + rightRef.getEntityNumber()));
         }
         // Add to existing qualified names
         for (RelTableRef newRef : currentTablesMapping.values()) {

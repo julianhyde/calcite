@@ -106,7 +106,8 @@ public class AggregateStarTableRule
     final RelOptCluster cluster = scan.getCluster();
     final RelOptTable table = scan.getTable();
     final RelOptLattice lattice = /*Y*/
-        requireNonNull(planner.getLattice(table), () -> "planner.getLattice(table) is null for " + table);
+        requireNonNull(planner.getLattice(table),
+            () -> "planner.getLattice(table) is null for " + table);
     final List<Lattice.Measure> measures =
         lattice.lattice.toMeasures(aggregate.getAggCallList());
     final Pair<CalciteSchema.TableEntry, TileKey> pair =

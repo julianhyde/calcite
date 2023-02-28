@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Namespace based on a table from the catalog. */
@@ -48,7 +50,7 @@ class TableNamespace extends AbstractNamespace {
   private TableNamespace(SqlValidatorImpl validator, SqlValidatorTable table,
       List<RelDataTypeField> fields) {
     super(validator, null);
-    this.table = Objects.requireNonNull(table, "table");
+    this.table = requireNonNull(table, "table");
     this.extendedFields = ImmutableList.copyOf(fields);
   }
 
@@ -106,7 +108,7 @@ class TableNamespace extends AbstractNamespace {
       final RelOptTable relOptTable =
           ((RelOptTable) table).extend(extendedFields);
       final SqlValidatorTable validatorTable =
-          Objects.requireNonNull(
+          requireNonNull(
             relOptTable.unwrap(SqlValidatorTable.class),
             () -> "cant unwrap SqlValidatorTable from " + relOptTable);
       return new TableNamespace(validator, validatorTable, ImmutableList.of());
@@ -120,8 +122,8 @@ class TableNamespace extends AbstractNamespace {
    */
   private RelDataType getBaseRowType() {
     final Table schemaTable = /*X*/
-        Objects.requireNonNull(table.unwrap(Table.class),
-        () -> "can't unwrap Table from " + table);
+        requireNonNull(table.unwrap(Table.class),
+            () -> "can't unwrap Table from " + table);
     if (schemaTable instanceof ModifiableViewTable) {
       final Table underlying =
           ((ModifiableViewTable) schemaTable).unwrap(Table.class);

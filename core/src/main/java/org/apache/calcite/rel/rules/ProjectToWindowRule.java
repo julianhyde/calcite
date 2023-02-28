@@ -158,25 +158,25 @@ public abstract class ProjectToWindowRule
       final LogicalCalc calc = LogicalCalc.create(input, program);
       final CalcRelSplitter transform = /*Y*/
           new WindowedAggRelSplitter(calc, call.builder()) {
-        @Override protected RelNode handle(RelNode rel) {
-          if (!(rel instanceof LogicalCalc)) {
-            return rel;
-          }
-          final LogicalCalc calc = (LogicalCalc) rel;
-          final RexProgram program = calc.getProgram();
-          relBuilder.push(calc.getInput());
-          if (program.getCondition() != null) {
-            relBuilder.filter(
-                program.expandLocalRef(program.getCondition()));
-          }
-          if (!program.projectsOnlyIdentity()) {
-            relBuilder.project(
-                Util.transform(program.getProjectList(), program::expandLocalRef),
-                calc.getRowType().getFieldNames());
-          }
-          return relBuilder.build();
-        }
-      };
+            @Override protected RelNode handle(RelNode rel) {
+              if (!(rel instanceof LogicalCalc)) {
+                return rel;
+              }
+              final LogicalCalc calc = (LogicalCalc) rel;
+              final RexProgram program = calc.getProgram();
+              relBuilder.push(calc.getInput());
+              if (program.getCondition() != null) {
+                relBuilder.filter(
+                    program.expandLocalRef(program.getCondition()));
+              }
+              if (!program.projectsOnlyIdentity()) {
+                relBuilder.project(
+                    Util.transform(program.getProjectList(), program::expandLocalRef),
+                    calc.getRowType().getFieldNames());
+              }
+              return relBuilder.build();
+            }
+          };
       RelNode newRel = transform.execute();
       call.transformTo(newRel);
     }

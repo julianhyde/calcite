@@ -120,7 +120,8 @@ public class JdbcRules {
       (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
         final RelOptCluster cluster = left.getCluster();
         final RelTraitSet traitSet = /*X*/
-            cluster.traitSetOf(requireNonNull(left.getConvention(), "left.getConvention()"));
+            cluster.traitSetOf(
+                requireNonNull(left.getConvention(), "left.getConvention()"));
         try {
           return new JdbcJoin(cluster, traitSet, left, right, condition,
               variablesSet, joinType);
@@ -153,7 +154,8 @@ public class JdbcRules {
       (input, hints, groupSet, groupSets, aggCalls) -> {
         final RelOptCluster cluster = input.getCluster();
         final RelTraitSet traitSet = /*X*/
-            cluster.traitSetOf(requireNonNull(input.getConvention(), "input.getConvention()"));
+            cluster.traitSetOf(
+                requireNonNull(input.getConvention(), "input.getConvention()"));
         try {
           return new JdbcAggregate(cluster, traitSet, input, groupSet,
               groupSets, aggCalls);
@@ -174,7 +176,8 @@ public class JdbcRules {
         RelNode input = inputs.get(0);
         RelOptCluster cluster = input.getCluster();
         final RelTraitSet traitSet = /*X*/
-            cluster.traitSetOf(requireNonNull(input.getConvention(), "input.getConvention()"));
+            cluster.traitSetOf(
+                requireNonNull(input.getConvention(), "input.getConvention()"));
         switch (kind) {
         case UNION:
           return new JdbcUnion(cluster, traitSet, inputs, all);

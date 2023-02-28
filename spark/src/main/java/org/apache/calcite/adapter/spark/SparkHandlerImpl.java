@@ -75,8 +75,8 @@ public class SparkHandlerImpl implements CalcitePrepare.SparkHandler {
     final Calendar calendar = Util.calendar();
     classId = /*X*/
         new AtomicInteger(calendar.get(Calendar.HOUR_OF_DAY) * 10000
-        + calendar.get(Calendar.MINUTE) * 100
-        + calendar.get(Calendar.SECOND));
+            + calendar.get(Calendar.MINUTE) * 100
+            + calendar.get(Calendar.SECOND));
   }
 
   /** Creates a SparkHandlerImpl, initializing on first call. Calcite-core calls

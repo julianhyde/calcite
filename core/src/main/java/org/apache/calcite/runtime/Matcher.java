@@ -138,8 +138,8 @@ public class Matcher<E> {
 
         for (DeterministicAutomaton.Transition transition : transitions) {
           final PartialMatch<E> newMatch = /*Y*/
-              new PartialMatch<>(-1L, ImmutableList.of(transition.symbol), ImmutableList.of(rows.get()),
-              transition.toState);
+              new PartialMatch<>(-1L, ImmutableList.of(transition.symbol),
+                  ImmutableList.of(rows.get()), transition.toState);
           newMatches.add(newMatch);
         }
       }

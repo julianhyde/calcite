@@ -2618,9 +2618,11 @@ public class SqlFunctions {
    */
   public static java.sql.Timestamp internalToTimestamp(long v) {
     final LocalDateTime dateTime = /*X*/
-        LocalDateTime.ofEpochSecond(Math.floorDiv(v, DateTimeUtils.MILLIS_PER_SECOND),
-        (int) (Math.floorMod(v, DateTimeUtils.MILLIS_PER_SECOND) * DateTimeUtils.NANOS_PER_MILLI),
-        ZoneOffset.UTC);
+        LocalDateTime.ofEpochSecond(
+            Math.floorDiv(v, DateTimeUtils.MILLIS_PER_SECOND),
+            (int) (Math.floorMod(v, DateTimeUtils.MILLIS_PER_SECOND)
+                * DateTimeUtils.NANOS_PER_MILLI),
+            ZoneOffset.UTC);
     return java.sql.Timestamp.valueOf(dateTime);
   }
 
@@ -3611,7 +3613,8 @@ public class SqlFunctions {
             Linq4j.enumerator(map.entrySet());
 
         Enumerator<List<Comparable>> transformed = /*Y*/
-            Linq4j.transform(enumerator, e -> FlatLists.of(e.getKey(), e.getValue()));
+            Linq4j.transform(enumerator,
+                e -> FlatLists.of(e.getKey(), e.getValue()));
         enumerators.add(transformed);
         break;
       default:

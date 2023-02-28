@@ -557,7 +557,9 @@ class TypeCoercionTest {
 
     // INTERVAL
     RelDataType checkedType15 = /*X*/
-        f.typeFactory.createSqlIntervalType(new SqlIntervalQualifier(TimeUnit.YEAR, TimeUnit.MONTH, SqlParserPos.ZERO));
+        f.typeFactory.createSqlIntervalType(
+            new SqlIntervalQualifier(TimeUnit.YEAR, TimeUnit.MONTH,
+                SqlParserPos.ZERO));
     f.checkShouldCast(checkedType15, ImmutableList.of(checkedType15));
     f.shouldNotCast(checkedType15, SqlTypeFamily.DECIMAL);
     f.shouldNotCast(checkedType15, SqlTypeFamily.NUMERIC);
@@ -722,7 +724,9 @@ class TypeCoercionTest {
       SqlIntervalQualifier intervalQualifier =
           new SqlIntervalQualifier(TimeUnit.DAY, TimeUnit.MINUTE, SqlParserPos.ZERO);
       allTypes = /*Y*/
-          combine(atomicTypes, complexTypes, ImmutableList.of(nullType, this.typeFactory.createSqlIntervalType(intervalQualifier)));
+          combine(atomicTypes, complexTypes,
+              ImmutableList.of(nullType,
+                  this.typeFactory.createSqlIntervalType(intervalQualifier)));
 
       // CHARACTERS
       ImmutableList.Builder<RelDataType> builder6 = ImmutableList.builder();

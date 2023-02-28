@@ -129,10 +129,11 @@ public class ProjectJoinJoinRemoveRule
 
     final RexNode condition = /*Y*/
         RexUtil.shift(topJoin.getCondition(), leftBottomChildSize, -offset);
-    final RelNode join = relBuilder.push(bottomJoin.getLeft())
-        .push(topJoin.getRight())
-        .join(topJoin.getJoinType(), condition)
-        .build();
+    final RelNode join =
+        relBuilder.push(bottomJoin.getLeft())
+            .push(topJoin.getRight())
+            .join(topJoin.getJoinType(), condition)
+            .build();
 
     final List<RexNode> newExprs = project.getProjects().stream()
         .map(expr -> RexUtil.shift(expr, leftBottomChildSize, -offset))

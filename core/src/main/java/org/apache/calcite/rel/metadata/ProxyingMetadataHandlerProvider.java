@@ -29,8 +29,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A MetadataHandlerProvider built on a RelMetadataProvider.
@@ -67,7 +68,8 @@ public class ProxyingMetadataHandlerProvider implements MetadataHandlerProvider 
     try {
       field = metadataType.getField("DEF");
       def = /*Y*/
-          Objects.requireNonNull((MetadataDef<?>) field.get(null), () -> "Unexpected failure. " + handlerClass);
+          requireNonNull((MetadataDef<?>) field.get(null),
+              () -> "Unexpected failure. " + handlerClass);
     } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
@@ -77,29 +79,34 @@ public class ProxyingMetadataHandlerProvider implements MetadataHandlerProvider 
         .collect(Collectors.toMap(Method::getName, f -> f));
     InvocationHandler handler = (proxy, method, args) -> {
       Method metadataMethod = /*Y*/
-          Objects.requireNonNull(methodMap.get(method.getName()), () -> "Not supported: " + method);
-      RelNode rel = Objects.requireNonNull((RelNode) args[0], "rel must be non null");
+          requireNonNull(methodMap.get(method.getName()),
+              () -> "Not supported: " + method);
+      RelNode rel = requireNonNull((RelNode) args[0], "rel must be non null");
       RelMetadataQuery mq = /*Y*/
-          Objects.requireNonNull((RelMetadataQuery) args[1], "mq must be non null");
+          requireNonNull((RelMetadataQuery) args[1], "mq must be non null");
 
       // using deprecated RelMetadataProvider method here as the non-deprecated methods completely
       // sidestep the purpose of RelMetadataProvider reflection-based functionality.
+      @SuppressWarnings({"unchecked", "rawtypes"})
       UnboundMetadata metadata = /*X*/
-          provider.apply((Class<? extends RelNode>) rel.getClass(),
-          (Class<? extends Metadata>) metadataType);
+          provider.apply(rel.getClass(),
+              (Class<? extends Metadata>) metadataType);
 
       if (metadata == null) {
-        Method handlerMethod = Arrays.stream(handlerClass.getMethods())
-            .filter(m -> m.getName().equals(metadataMethod.getName()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Unable to find method."));
+        Method handlerMethod =
+            Arrays.stream(handlerClass.getMethods())
+                .filter(m -> m.getName().equals(metadataMethod.getName()))
+                .findFirst()
+                .orElseThrow(()
+                    -> new IllegalArgumentException("Unable to find method."));
         throw new IllegalArgumentException(
-            String.format(Locale.ROOT, "No handler for "
-            + "method [%s] applied to argument of type [%s]; we recommend you create a "
-            + "catch-all (RelNode) handler", handlerMethod, rel.getClass()));
+            String.format(Locale.ROOT, "No handler for method [%s] applied to "
+                + "argument of type [%s]; we recommend you create a catch-all "
+                + "(RelNode) handler", handlerMethod, rel.getClass()));
       }
-      Metadata bound = Objects.requireNonNull(metadata, "expected defined metadata")
-          .bind(rel, mq);
+      Metadata bound =
+          requireNonNull(metadata, "expected defined metadata")
+              .bind(rel, mq);
 
       Object[] abbreviatedArgs = new Object[args.length - 2];
       System.arraycopy(args, 2, abbreviatedArgs, 0, abbreviatedArgs.length);

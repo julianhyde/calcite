@@ -47,7 +47,8 @@ class PigScriptTest extends PigRelTestBase {
     projectRootDir = System.getProperty("user.dir");
     dataFile = projectRootDir + "/src/test/resources/input.data";
     List<String> lines = /*Y*/
-        Arrays.asList("yahoo 10", "twitter 3", "facebook 10", "yahoo 15", "facebook 5", "twitter 2");
+        Arrays.asList("yahoo 10", "twitter 3", "facebook 10",
+            "yahoo 15", "facebook 5", "twitter 2");
     Files.write(Paths.get(dataFile), lines, StandardCharsets.UTF_8);
   }
 

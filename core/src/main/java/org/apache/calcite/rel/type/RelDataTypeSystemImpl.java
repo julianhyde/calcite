@@ -227,11 +227,15 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
         int precision = typeFactory.getTypeSystem().getMaxPrecision(typeName);
         if (typeName.allowsScale()) {
           argumentType = /*X*/
-              typeFactory.createTypeWithNullability(typeFactory.createSqlType(typeName, precision, argumentType.getScale()),
-              argumentType.isNullable());
+              typeFactory.createTypeWithNullability(
+                  typeFactory.createSqlType(typeName, precision,
+                      argumentType.getScale()),
+                  argumentType.isNullable());
         } else {
           argumentType = /*X*/
-              typeFactory.createTypeWithNullability(typeFactory.createSqlType(typeName, precision), argumentType.isNullable());
+              typeFactory.createTypeWithNullability(
+                  typeFactory.createSqlType(typeName, precision),
+                  argumentType.isNullable());
         }
       }
     }

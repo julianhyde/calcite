@@ -85,9 +85,9 @@ class LimitSortTest {
     Comparator<String> cmp = Comparator.<String>naturalOrder()::compare;
     Enumerable<Row> ordered = /*X*/
         EnumerableDefaults.orderBy(this.enumerable(seed),
-        s -> s.key,
-        cmp,
-        offset, fetch);
+            s -> s.key,
+            cmp,
+            offset, fetch);
 
     List<Row> result = ordered.toList();
     assertTrue(

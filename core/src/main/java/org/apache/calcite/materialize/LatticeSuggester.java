@@ -249,7 +249,8 @@ public class LatticeSuggester {
                         (DerivedColRef) colRef;
                     final String alias = deriveAlias(measure, derivedColRef);
                     column = /*Y*/
-                        latticeBuilder.expression(derivedColRef.e, alias, derivedColRef.tableAliases());
+                        latticeBuilder.expression(derivedColRef.e, alias,
+                            derivedColRef.tableAliases());
                   } else {
                     throw new AssertionError("expression in measure");
                   }

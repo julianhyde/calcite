@@ -489,7 +489,9 @@ public class RexUtil {
     final SqlTypeName name2 = type2.getSqlTypeName();
     final RelDataType type1Final = type1;
     SqlTypeFamily family = /*Y*/
-        requireNonNull(name1.getFamily(), () -> "SqlTypeFamily is null for type " + type1Final + ", SqlTypeName " + name1);
+        requireNonNull(name1.getFamily(),
+            () -> "SqlTypeFamily is null for type " + type1Final
+                + ", SqlTypeName " + name1);
     if (family == name2.getFamily()) {
       switch (family) {
       case NUMERIC:
@@ -1156,7 +1158,8 @@ public class RexUtil {
       SqlValidatorUtil.@Nullable Suggester suggester) {
     if (names != null && suggester != null) {
       names = /*Y*/
-          SqlValidatorUtil.uniquify(names, suggester, typeFactory.getTypeSystem().isSchemaCaseSensitive());
+          SqlValidatorUtil.uniquify(names, suggester,
+              typeFactory.getTypeSystem().isSchemaCaseSensitive());
     }
     final RelDataTypeFactory.Builder builder = typeFactory.builder();
     for (int i = 0; i < exprs.size(); i++) {
@@ -2160,8 +2163,7 @@ public class RexUtil {
               switch (e2.getKind()) {
               case EQUALS:
                 RexCall call2 = (RexCall) e2;
-                if (call2.getOperands().get(0)
-                    .equals(call.getOperands().get(0))
+                if (call2.getOperands().get(0).equals(call.getOperands().get(0))
                     && call2.getOperands().get(1) instanceof RexLiteral
                     && !call.getOperands().get(1)
                           .equals(call2.getOperands().get(1))) {
@@ -2285,9 +2287,10 @@ public class RexUtil {
               inputRef = /*X*/
                   RexTableInputRef.of(
                       requireNonNull(tableMapping.get(inputRef.getTableRef()),
-                      () -> "tableMapping.get(...) for " + inputRefFinal.getTableRef()),
-                  inputRef.getIndex(),
-                  inputRef.getType());
+                          () -> "tableMapping.get(...) for "
+                              + inputRefFinal.getTableRef()),
+                      inputRef.getIndex(),
+                      inputRef.getType());
             }
             if (ec != null) {
               Set<RexTableInputRef> s = ec.get(inputRef);
@@ -2324,7 +2327,8 @@ public class RexUtil {
               inputRef = /*X*/
                   RexTableInputRef.of(
                       requireNonNull(tableMapping.get(inputRef.getTableRef()),
-                      () -> "tableMapping.get(...) for " + inputRefFinal.getTableRef()),
+                          () -> "tableMapping.get(...) for "
+                              + inputRefFinal.getTableRef()),
                   inputRef.getIndex(),
                   inputRef.getType());
             }

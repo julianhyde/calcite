@@ -110,7 +110,8 @@ abstract class DruidJsonFilter implements DruidJson {
     if (isNumeric) {
       //need bound filter since it one of operands is numeric
       partialFilter = /*Y*/
-          new JsonBound(columnName, literalValue, false, literalValue, false, true, extractionFunction);
+          new JsonBound(columnName, literalValue, false, literalValue,
+              false, true, extractionFunction);
     } else {
       partialFilter = new JsonSelector(columnName, literalValue, extractionFunction);
     }

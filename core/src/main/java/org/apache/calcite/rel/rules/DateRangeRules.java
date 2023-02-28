@@ -162,7 +162,7 @@ public abstract class DateRangeRules {
       e = /*X*/
           e.accept(
               new ExtractShuttle(rexBuilder, timeUnit, operandRanges, timeUnits,
-              timeZone));
+                  timeZone));
     }
     return e;
   }
@@ -322,7 +322,8 @@ public abstract class DateRangeRules {
             final RexCall subCall = (RexCall) op1;
             final RexLiteral flag = (RexLiteral) subCall.operands.get(1);
             final TimeUnitRange timeUnit = /*Y*/
-                (TimeUnitRange) requireNonNull(flag.getValue(), () -> "timeUnit is null for " + subCall);
+                requireNonNull((TimeUnitRange) flag.getValue(),
+                    () -> "timeUnit is null for " + subCall);
             return compareFloorCeil(call.getKind().reverse(),
                 subCall.getOperands().get(0), (RexLiteral) op0,
                 timeUnit, op1.getKind() == SqlKind.FLOOR);
@@ -347,7 +348,8 @@ public abstract class DateRangeRules {
             final RexCall subCall = (RexCall) op0;
             final RexLiteral flag = (RexLiteral) subCall.operands.get(1);
             final TimeUnitRange timeUnit = /*Y*/
-                (TimeUnitRange) requireNonNull(flag.getValue(), () -> "timeUnit is null for " + subCall);
+                requireNonNull((TimeUnitRange) flag.getValue(),
+                    () -> "timeUnit is null for " + subCall);
             return compareFloorCeil(call.getKind(),
                 subCall.getOperands().get(0), (RexLiteral) op1,
                 timeUnit, op0.getKind() == SqlKind.FLOOR);
@@ -418,7 +420,7 @@ public abstract class DateRangeRules {
             clonedOperand = /*X*/
                 clonedOperand.accept(
                     new ExtractShuttle(rexBuilder, timeUnit, operandRanges,
-                    timeUnitRanges, timeZone));
+                        timeUnitRanges, timeZone));
           }
           if ((clonedOperand != operand) && (update != null)) {
             update[0] = true;
@@ -657,7 +659,8 @@ public abstract class DateRangeRules {
       case DATE:
         // Cast date to timestamp with local time zone
         final DateString d = /*Y*/
-            requireNonNull(timeLiteral.getValueAs(DateString.class), "timeLiteral.getValueAs(DateString.class)");
+            requireNonNull(timeLiteral.getValueAs(DateString.class),
+                "timeLiteral.getValueAs(DateString.class)");
         return Util.calendar(d.getMillisSinceEpoch());
       default:
         throw Util.unexpected(timeLiteral.getTypeName());

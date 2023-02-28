@@ -250,7 +250,8 @@ public abstract class Match extends SingleRel {
       }
       if (aggFunction != null) {
         RexMRAggCall aggCall = /*Y*/
-            new RexMRAggCall(aggFunction, call.getType(), call.getOperands(), aggregateCalls.size());
+            new RexMRAggCall(aggFunction, call.getType(), call.getOperands(),
+                aggregateCalls.size());
         aggregateCalls.add(aggCall);
         Set<String> pv = new PatternVarFinder().go(call.getOperands());
         if (pv.size() == 0) {

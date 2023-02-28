@@ -220,14 +220,18 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       SqlConformance conformance, BlockBuilder list,
       Expression root, RexCall rexCall, Expression inputEnumerable,
       PhysType inputPhysType, PhysType outputPhysType) {
-    return new RexToLixTranslator(null, typeFactory, root, null, list,
-        null, new RexBuilder(typeFactory), conformance, null)
-        .translateTableFunction(rexCall, inputEnumerable, inputPhysType, outputPhysType);
+    final RexToLixTranslator translator =
+        new RexToLixTranslator(null, typeFactory, root, null, list,
+            null, new RexBuilder(typeFactory), conformance, null);
+    return translator
+        .translateTableFunction(rexCall, inputEnumerable, inputPhysType,
+            outputPhysType);
   }
 
   /** Creates a translator for translating aggregate functions. */
   public static RexToLixTranslator forAggregation(JavaTypeFactory typeFactory,
-      BlockBuilder list, @Nullable InputGetter inputGetter, SqlConformance conformance) {
+      BlockBuilder list, @Nullable InputGetter inputGetter,
+      SqlConformance conformance) {
     final ParameterExpression root = DataContext.ROOT;
     return new RexToLixTranslator(null, typeFactory, root, inputGetter, list,
         null, new RexBuilder(typeFactory), conformance, null);
@@ -293,34 +297,34 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case CHAR:
       case VARCHAR:
         convert =
-            Expressions.call(BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand);
+            Expressions.call(BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
+                operand);
         break;
       case TIME:
         convert = /*X*/
-            Expressions.call(BuiltInMethod.TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIME_TO_STRING.method,
-                    operand)),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
+            Expressions.call(
+                BuiltInMethod.TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
+                RexImpTable.optimize2(operand,
+                    Expressions.call(BuiltInMethod.UNIX_TIME_TO_STRING.method,
+                        operand)),
+                Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
         break;
       case TIMESTAMP:
         convert = /*X*/
-            Expressions.call(BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    operand)),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
+            Expressions.call(
+                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                RexImpTable.optimize2(operand,
+                    Expressions.call(
+                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                        operand)),
+                Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
         break;
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
-                operand));
+                Expressions.call(
+                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
+                    operand));
         break;
       default:
         break;
@@ -336,7 +340,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case DATE:
         convert = /*X*/
             Expressions.multiply(Expressions.convert_(operand, long.class),
-            Expressions.constant(DateTimeUtils.MILLIS_PER_DAY));
+                Expressions.constant(DateTimeUtils.MILLIS_PER_DAY));
         break;
       case TIME:
         convert =
@@ -351,21 +355,20 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case TIME_WITH_LOCAL_TIME_ZONE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
                 Expressions.call(
-                    BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                    Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+                    BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
+                    Expressions.call(BuiltInMethod.UNIX_DATE_TO_STRING.method,
+                        Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
+                    operand,
+                    Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
         break;
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+                Expressions.call(
+                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
+                    operand,
+                    Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
         break;
       default:
         break;
@@ -382,51 +385,50 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         break;
       case DATE:
         convert = /*X*/
-            Expressions.call(BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    Expressions.multiply(
-                        Expressions.convert_(operand, long.class),
-                        Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)))),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
+            Expressions.call(
+                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                RexImpTable.optimize2(operand,
+                    Expressions.call(
+                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                        Expressions.multiply(
+                            Expressions.convert_(operand, long.class),
+                            Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)))),
+                Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
         break;
       case TIME:
         convert = /*X*/
-            Expressions.call(BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    Expressions.add(
-                        Expressions.multiply(
-                            Expressions.convert_(
-                                Expressions.call(BuiltInMethod.CURRENT_DATE.method, root),
-                                long.class),
-                            Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-                        Expressions.convert_(operand, long.class)))),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
+            Expressions.call(
+                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                RexImpTable.optimize2(operand,
+                    Expressions.call(
+                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                        Expressions.add(
+                            Expressions.multiply(
+                                Expressions.convert_(
+                                    Expressions.call(BuiltInMethod.CURRENT_DATE.method, root),
+                                    long.class),
+                                Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
+                            Expressions.convert_(operand, long.class)))),
+                Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
         break;
       case TIME_WITH_LOCAL_TIME_ZONE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
                 Expressions.call(
-                    BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                    Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
-                operand));
+                    BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                    Expressions.call(BuiltInMethod.UNIX_DATE_TO_STRING.method,
+                        Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
+                    operand));
         break;
       case TIMESTAMP:
         convert = /*X*/
-            Expressions.call(BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    operand)),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
+            Expressions.call(
+                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                RexImpTable.optimize2(operand,
+                    Expressions.call(
+                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                        operand)),
+                Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
         break;
       default:
         break;
@@ -437,8 +439,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case CHAR:
       case VARCHAR:
         convert = /*X*/
-            Expressions.call(BuiltInMethod.STRING_TO_BOOLEAN.method,
-            operand);
+            Expressions.call(BuiltInMethod.STRING_TO_BOOLEAN.method, operand);
         break;
       default:
         break;
@@ -452,49 +453,47 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case DATE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                operand));
+                Expressions.call(BuiltInMethod.UNIX_DATE_TO_STRING.method,
+                    operand));
         break;
       case TIME:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.UNIX_TIME_TO_STRING.method,
-                operand));
+                Expressions.call(BuiltInMethod.UNIX_TIME_TO_STRING.method,
+                    operand));
         break;
       case TIME_WITH_LOCAL_TIME_ZONE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+                Expressions.call(
+                    BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
+                    operand,
+                    Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
         break;
       case TIMESTAMP:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                operand));
+                Expressions.call(BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                    operand));
         break;
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+                Expressions.call(
+                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
+                    operand,
+                    Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
         break;
       case INTERVAL_YEAR:
       case INTERVAL_YEAR_MONTH:
       case INTERVAL_MONTH:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
-                operand,
-                Expressions.constant(requireNonNull(interval, "interval").timeUnitRange)));
+                Expressions.call(
+                    BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
+                    operand,
+                    Expressions.constant(
+                        requireNonNull(interval, "interval").timeUnitRange)));
         break;
       case INTERVAL_DAY:
       case INTERVAL_DAY_HOUR:
@@ -508,20 +507,20 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       case INTERVAL_SECOND:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
-                operand,
-                Expressions.constant(requireNonNull(interval, "interval").timeUnitRange),
-                Expressions.constant(
-                    interval.getFractionalSecondPrecision(
-                        typeFactory.getTypeSystem()))));
+                Expressions.call(
+                    BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
+                    operand,
+                    Expressions.constant(
+                        requireNonNull(interval, "interval").timeUnitRange),
+                    Expressions.constant(
+                        interval.getFractionalSecondPrecision(
+                            typeFactory.getTypeSystem()))));
         break;
       case BOOLEAN:
         convert = /*X*/
             RexImpTable.optimize2(operand,
-            Expressions.call(
-                BuiltInMethod.BOOLEAN_TO_STRING.method,
-                operand));
+                Expressions.call(BuiltInMethod.BOOLEAN_TO_STRING.method,
+                    operand));
         break;
       default:
         break;
@@ -607,7 +606,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
           () -> "null SqlTypeFamily for " + sourceType + ", SqlTypeName "
               + sourceType.getSqlTypeName())) {
       case NUMERIC:
-        final BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
+        final BigDecimal multiplier =
+            targetType.getSqlTypeName().getEndUnit().multiplier;
         final BigDecimal divider = BigDecimal.ONE;
         convert = RexImpTable.multiplyDivide(convert, multiplier, divider);
         break;
@@ -621,7 +621,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     return scaleIntervalToNumber(sourceType, targetType, convert);
   }
 
-  private @Nullable Expression translateCastToTime(RelDataType sourceType, Expression operand) {
+  private @Nullable Expression translateCastToTime(RelDataType sourceType,
+      Expression operand) {
     Expression convert = null;
     switch (sourceType.getSqlTypeName()) {
     case CHAR:
@@ -632,27 +633,26 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     case TIME_WITH_LOCAL_TIME_ZONE:
       convert = /*X*/
           RexImpTable.optimize2(operand,
-          Expressions.call(
-              BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-              operand,
-              Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+              Expressions.call(
+                  BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
+                  operand,
+                  Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
       break;
     case TIMESTAMP:
       convert = /*X*/
           Expressions.convert_(
-              Expressions.call(
-              BuiltInMethod.FLOOR_MOD.method,
-              operand,
-              Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-          int.class);
+              Expressions.call(BuiltInMethod.FLOOR_MOD.method,
+                  operand,
+                  Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
+              int.class);
       break;
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
       convert = /*X*/
           RexImpTable.optimize2(operand,
-          Expressions.call(
-              BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-              operand,
-              Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+              Expressions.call(
+                  BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
+                  operand,
+                  Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
       break;
     default:
       break;
@@ -660,33 +660,29 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     return convert;
   }
 
-  private @Nullable Expression translateCastToDate(RelDataType sourceType, Expression operand) {
-    Expression convert = null;
+  private @Nullable Expression translateCastToDate(RelDataType sourceType,
+      Expression operand) {
     switch (sourceType.getSqlTypeName()) {
     case CHAR:
     case VARCHAR:
-      convert =
-          Expressions.call(BuiltInMethod.STRING_TO_DATE.method, operand);
-      break;
+      return Expressions.call(BuiltInMethod.STRING_TO_DATE.method, operand);
+
     case TIMESTAMP:
-      convert = /*X*/
-          Expressions.convert_(
-              Expressions.call(BuiltInMethod.FLOOR_DIV.method,
+      return Expressions.convert_(
+          Expressions.call(BuiltInMethod.FLOOR_DIV.method,
               operand, Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
           int.class);
-      break;
+
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      convert = /*X*/
-          RexImpTable.optimize2(operand,
+      return RexImpTable.optimize2(operand,
           Expressions.call(
               BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE.method,
               operand,
               Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
-      break;
+
     default:
-      break;
+      return null;
     }
-    return convert;
   }
 
   /**
@@ -815,13 +811,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
               byte[].class));
     case GEOMETRY:
       final Geometry geom = /*Y*/
-          requireNonNull(literal.getValueAs(Geometry.class), () -> "getValueAs(Geometries.Geom) for " + literal);
+          requireNonNull(literal.getValueAs(Geometry.class),
+              () -> "getValueAs(Geometries.Geom) for " + literal);
       final String wkt = SpatialTypeFunctions.ST_AsWKT(geom);
       return Expressions.call(null, BuiltInMethod.ST_GEOM_FROM_EWKT.method,
           Expressions.constant(wkt));
     case SYMBOL:
       value2 = /*Y*/
-          requireNonNull(literal.getValueAs(Enum.class), () -> "getValueAs(Enum.class) for " + literal);
+          requireNonNull(literal.getValueAs(Enum.class),
+              () -> "getValueAs(Enum.class) for " + literal);
       javaClass = value2.getClass();
       break;
     default:
@@ -1024,7 +1022,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     // Generate one line of code to get the input, e.g.,
     // "final Employee current =(Employee) inputEnumerator.current();"
     final Expression valueExpression = /*X*/
-        requireNonNull(inputGetter, "inputGetter").field(list, inputRef.getIndex(), currentStorageType);
+        requireNonNull(inputGetter, "inputGetter")
+            .field(list, inputRef.getIndex(), currentStorageType);
 
     // Generate one line of code for the value of RexInputRef, e.g.,
     // "final Integer input_value = current.commission;"
@@ -1211,7 +1210,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     final RexNode node = call.getOperands().get(0);
     final RexNode offset = call.getOperands().get(1);
     final Expression offs = /*Y*/
-            Expressions.multiply(translate(offset), Expressions.constant(-1));
+        Expressions.multiply(translate(offset), Expressions.constant(-1));
     requireNonNull((EnumerableMatch.PrevInputGetter) inputGetter, "inputGetter")
         .setOffset(offs);
     return node.accept(this);
@@ -1279,7 +1278,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     // [ELSE] clause
     if (pos == operandList.size() - 1) {
       Expression res = /*Y*/
-          implementCallOperand2(operandList.get(pos), storageTypes.get(pos), currentTranslator);
+          implementCallOperand2(operandList.get(pos), storageTypes.get(pos),
+              currentTranslator);
       currentBlockBuilder.add(
           Expressions.statement(
               Expressions.assign(valueVariable,
@@ -1292,7 +1292,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         implementCallOperand(testerNode, storageTypes.get(pos), currentTranslator);
     final Expression tester = /*X*/
         Expressions.andAlso(Expressions.not(testerResult.isNullVariable),
-        testerResult.valueVariable);
+            testerResult.valueVariable);
     // Code for {if} branch
     final RexNode ifTrueNode = operandList.get(pos + 1);
     final BlockBuilder ifTrueBlockBuilder =
@@ -1300,7 +1300,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     final RexToLixTranslator ifTrueTranslator =
         currentTranslator.setBlock(ifTrueBlockBuilder);
     final Expression ifTrueRes = /*Y*/
-        implementCallOperand2(ifTrueNode, storageTypes.get(pos + 1), ifTrueTranslator);
+        implementCallOperand2(ifTrueNode, storageTypes.get(pos + 1),
+            ifTrueTranslator);
     // Assign the value: case_when_value = ifTrueRes
     ifTrueBlockBuilder.add(
         Expressions.statement(
@@ -1349,8 +1350,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     final Expression valueExpression = /*X*/
         EnumUtils.convert(
             Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
-            Expressions.constant("?" + dynamicParam.getIndex())),
-        storageType);
+                Expressions.constant("?" + dynamicParam.getIndex())),
+            storageType);
     final ParameterExpression valueVariable =
         Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));
     list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
@@ -1388,8 +1389,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
           Expressions.parameter(Boolean.TYPE, list.newName("corInp_isNull"));
       final Expression isNullExpression = /*X*/
           Expressions.condition(condition,
-          RexImpTable.TRUE_EXPR,
-          checkNull(valueVariable));
+              RexImpTable.TRUE_EXPR,
+              checkNull(valueVariable));
       list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
       final Result result1 = new Result(isNullVariable, valueVariable);
       rexWithStorageTypeResultMap.put(key, result1);
@@ -1400,8 +1401,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       RexNode rxName =
           builder.makeLiteral(fieldName, typeFactory.createType(String.class), true);
       RexCall accessCall = /*X*/
-          (RexCall) builder.makeCall(fieldAccess.getType(), SqlStdOperatorTable.STRUCT_ACCESS,
-          ImmutableList.of(target, rxIndex, rxName));
+          (RexCall) builder.makeCall(fieldAccess.getType(),
+              SqlStdOperatorTable.STRUCT_ACCESS,
+              ImmutableList.of(target, rxIndex, rxName));
       final Result result2 = accessCall.accept(this);
       rexWithStorageTypeResultMap.put(key, result2);
       return result2;

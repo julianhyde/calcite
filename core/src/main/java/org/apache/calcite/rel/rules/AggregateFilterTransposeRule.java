@@ -100,8 +100,8 @@ public class AggregateFilterTransposeRule
             newGroupSet, null, aggregate.getAggCallList());
     final Mappings.TargetMapping mapping = /*X*/
         Mappings.target(newGroupSet::indexOf,
-        input.getRowType().getFieldCount(),
-        newGroupSet.cardinality());
+            input.getRowType().getFieldCount(),
+            newGroupSet.cardinality());
     final RexNode newCondition =
         RexUtil.apply(mapping, filter.getCondition());
     final Filter newFilter = /*Y*/

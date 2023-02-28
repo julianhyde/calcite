@@ -73,46 +73,66 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     // Same as "EMP_20" except it uses ModifiableViewTable which populates
     // constrained columns with default values on INSERT and has a single constraint on DEPTNO.
     List<String> empModifiableViewNames = /*X*/
-        ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(), "EMP_MODIFIABLEVIEW");
+        ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(),
+            "EMP_MODIFIABLEVIEW");
     TableMacro empModifiableViewMacro = /*Y*/
-        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER from EMPDEFAULTS"
-            + " where DEPTNO = 20", empModifiableViewNames.subList(0, 2),
-        ImmutableList.of(empModifiableViewNames.get(2)), true);
-    TranslatableTable empModifiableView = empModifiableViewMacro.apply(ImmutableList.of());
+        MockModifiableViewRelOptTable.viewMacro(rootSchema,
+            "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER from EMPDEFAULTS"
+                + " where DEPTNO = 20",
+            empModifiableViewNames.subList(0, 2),
+            ImmutableList.of(empModifiableViewNames.get(2)), true);
+    TranslatableTable empModifiableView =
+        empModifiableViewMacro.apply(ImmutableList.of());
     MockModifiableViewRelOptTable mockEmpViewTable = /*X*/
-        MockModifiableViewRelOptTable.create((MockModifiableViewRelOptTable.MockModifiableViewTable) empModifiableView, this,
-        empModifiableViewNames.get(0), empModifiableViewNames.get(1),
-        empModifiableViewNames.get(2), false, 20, null);
+        MockModifiableViewRelOptTable.create(
+            (MockModifiableViewRelOptTable.MockModifiableViewTable)
+                empModifiableView, this,
+            empModifiableViewNames.get(0), empModifiableViewNames.get(1),
+            empModifiableViewNames.get(2), false, 20, null);
     registerTable(mockEmpViewTable);
 
     // Same as "EMP_MODIFIABLEVIEW" except that all columns are in the view, columns are reordered,
     // and there is an `extra` extended column.
     List<String> empModifiableViewNames2 = /*X*/
-        ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(), "EMP_MODIFIABLEVIEW2");
+        ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(),
+            "EMP_MODIFIABLEVIEW2");
     TableMacro empModifiableViewMacro2 = /*Y*/
-        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE, MGR, COMM"
-            + " from EMPDEFAULTS extend (EXTRA boolean)"
-            + " where DEPTNO = 20", empModifiableViewNames2.subList(0, 2),
-        ImmutableList.of(empModifiableViewNames.get(2)), true);
-    TranslatableTable empModifiableView2 = empModifiableViewMacro2.apply(ImmutableList.of());
+        MockModifiableViewRelOptTable.viewMacro(rootSchema,
+            "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE, MGR, COMM"
+                + " from EMPDEFAULTS extend (EXTRA boolean)"
+                + " where DEPTNO = 20",
+            empModifiableViewNames2.subList(0, 2),
+            ImmutableList.of(empModifiableViewNames.get(2)),
+            true);
+    TranslatableTable empModifiableView2 =
+        empModifiableViewMacro2.apply(ImmutableList.of());
     MockModifiableViewRelOptTable mockEmpViewTable2 = /*X*/
-        MockModifiableViewRelOptTable.create((MockModifiableViewRelOptTable.MockModifiableViewTable) empModifiableView2, this,
-        empModifiableViewNames2.get(0), empModifiableViewNames2.get(1),
-        empModifiableViewNames2.get(2), false, 20, null);
+        MockModifiableViewRelOptTable.create(
+            (MockModifiableViewRelOptTable.MockModifiableViewTable)
+                empModifiableView2, this,
+            empModifiableViewNames2.get(0), empModifiableViewNames2.get(1),
+            empModifiableViewNames2.get(2), false, 20, null);
     registerTable(mockEmpViewTable2);
 
     // Same as "EMP_MODIFIABLEVIEW" except that comm is not in the view.
     List<String> empModifiableViewNames3 = /*X*/
-        ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(), "EMP_MODIFIABLEVIEW3");
+        ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(),
+            "EMP_MODIFIABLEVIEW3");
     TableMacro empModifiableViewMacro3 = /*Y*/
-        MockModifiableViewRelOptTable.viewMacro(rootSchema, "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER from EMPDEFAULTS"
-            + " where DEPTNO = 20", empModifiableViewNames3.subList(0, 2),
-        ImmutableList.of(empModifiableViewNames3.get(2)), true);
-    TranslatableTable empModifiableView3 = empModifiableViewMacro3.apply(ImmutableList.of());
+        MockModifiableViewRelOptTable.viewMacro(rootSchema,
+            "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER from EMPDEFAULTS"
+                + " where DEPTNO = 20",
+            empModifiableViewNames3.subList(0, 2),
+            ImmutableList.of(empModifiableViewNames3.get(2)),
+            true);
+    TranslatableTable empModifiableView3 =
+        empModifiableViewMacro3.apply(ImmutableList.of());
     MockModifiableViewRelOptTable mockEmpViewTable3 = /*X*/
-        MockModifiableViewRelOptTable.create((MockModifiableViewRelOptTable.MockModifiableViewTable) empModifiableView3, this,
-        empModifiableViewNames3.get(0), empModifiableViewNames3.get(1),
-        empModifiableViewNames3.get(2), false, 20, null);
+        MockModifiableViewRelOptTable.create(
+            (MockModifiableViewRelOptTable.MockModifiableViewTable)
+                empModifiableView3, this,
+            empModifiableViewNames3.get(0), empModifiableViewNames3.get(1),
+            empModifiableViewNames3.get(2), false, 20, null);
     registerTable(mockEmpViewTable3);
 
     // Register "EMPM" table.
@@ -136,9 +156,9 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     registerSchema(structTypeSchema);
     final List<CompoundNameColumn> columnsExtended = /*X*/
         Arrays.asList(new CompoundNameColumn("", "K0", f.varchar20TypeNull),
-        new CompoundNameColumn("", "C1", f.varchar20TypeNull),
-        new CompoundNameColumn("F0", "C0", f.intType),
-        new CompoundNameColumn("F1", "C1", f.intTypeNull));
+            new CompoundNameColumn("", "C1", f.varchar20TypeNull),
+            new CompoundNameColumn("F0", "C0", f.intType),
+            new CompoundNameColumn("F1", "C1", f.intTypeNull));
     final List<CompoundNameColumn> extendedColumns =
         new ArrayList<>(columnsExtended);
     extendedColumns.add(new CompoundNameColumn("F2", "C2", f.varchar20Type));

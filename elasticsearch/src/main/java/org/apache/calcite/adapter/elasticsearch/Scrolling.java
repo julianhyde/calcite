@@ -65,7 +65,7 @@ class Scrolling {
 
     AutoClosingIterator iterator = /*X*/
         new AutoClosingIterator(new SequentialIterator(first, transport, limit),
-        scrollId -> transport.closeScroll(Collections.singleton(scrollId)));
+            scrollId -> transport.closeScroll(Collections.singleton(scrollId)));
 
     Iterator<ElasticsearchJson.SearchHit> result = flatten(iterator);
     // apply limit
@@ -83,7 +83,8 @@ class Scrolling {
   private static Iterator<ElasticsearchJson.SearchHit> flatten(
       Iterator<ElasticsearchJson.Result> results) {
     final Iterator<Iterator<ElasticsearchJson.SearchHit>> inputs = /*Y*/
-        Iterators.transform(results, input -> input.searchHits().hits().iterator());
+        Iterators.transform(results,
+            input -> input.searchHits().hits().iterator());
     return Iterators.concat(inputs);
   }
 

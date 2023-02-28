@@ -252,7 +252,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       final int k = j;
 
       RelDataType type = /*X*/
-          leastRestrictive(Util.transform(types, t -> t.getFieldList().get(k).getType()));
+          leastRestrictive(
+              Util.transform(types, t -> t.getFieldList().get(k).getType()));
       if (type == null) {
         return null;
       }
@@ -276,9 +277,9 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
     final RelDataType type = /*X*/
         leastRestrictive(
             Util.transform(types,
-            t -> t instanceof ArraySqlType
-                ? ((ArraySqlType) t).getComponentType()
-                : ((MultisetSqlType) t).getComponentType()));
+                t -> t instanceof ArraySqlType
+                    ? ((ArraySqlType) t).getComponentType()
+                    : ((MultisetSqlType) t).getComponentType()));
     if (type == null) {
       return null;
     }
@@ -298,12 +299,14 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       isNullable |= type.isNullable();
     }
     final RelDataType keyType = /*X*/
-        leastRestrictive(Util.transform(types, t -> ((MapSqlType) t).getKeyType()));
+        leastRestrictive(
+            Util.transform(types, t -> ((MapSqlType) t).getKeyType()));
     if (keyType == null) {
       return null;
     }
     final RelDataType valueType = /*X*/
-        leastRestrictive(Util.transform(types, t -> ((MapSqlType) t).getValueType()));
+        leastRestrictive(
+            Util.transform(types, t -> ((MapSqlType) t).getValueType()));
     if (valueType == null) {
       return null;
     }
@@ -478,7 +481,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       for (RelDataTypeField field : fields) {
         if (field.getIndex() != fieldList.size()) {
           field = /*Y*/
-              new RelDataTypeFieldImpl(field.getName(), fieldList.size(), field.getType());
+              new RelDataTypeFieldImpl(field.getName(), fieldList.size(),
+                  field.getType());
         }
         fieldList.add(field);
       }

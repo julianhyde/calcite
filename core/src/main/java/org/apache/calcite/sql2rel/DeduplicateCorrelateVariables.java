@@ -42,7 +42,8 @@ public class DeduplicateCorrelateVariables extends RelHomogeneousShuttle {
   private DeduplicateCorrelateVariables(RexBuilder builder,
       CorrelationId canonicalId, ImmutableSet<CorrelationId> alternateIds) {
     dedupRex = /*Y*/
-        new DeduplicateCorrelateVariablesShuttle(builder, canonicalId, alternateIds, this);
+        new DeduplicateCorrelateVariablesShuttle(builder, canonicalId,
+            alternateIds, this);
   }
 
   /**

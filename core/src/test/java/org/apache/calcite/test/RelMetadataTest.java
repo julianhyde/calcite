@@ -1620,9 +1620,9 @@ public class RelMetadataTest {
 
     final LogicalProject project = /*Y*/
         LogicalProject.create(empSort, ImmutableList.of(),
-        projects,
-        ImmutableList.of("a", "b", "c", "d"),
-        ImmutableSet.of());
+            projects,
+            ImmutableList.of("a", "b", "c", "d"),
+            ImmutableSet.of());
 
     final LogicalTableScan deptScan =
         LogicalTableScan.create(cluster, deptTable, ImmutableList.of());
@@ -1634,9 +1634,9 @@ public class RelMetadataTest {
 
     final ImmutableIntList leftKeys = ImmutableIntList.of(2);
     final ImmutableIntList rightKeys = ImmutableIntList.of(0);
-    final EnumerableMergeJoin join;
-    join = /*Y*/
-        EnumerableMergeJoin.create(project, deptSort, rexBuilder.makeLiteral(true), leftKeys, rightKeys, JoinRelType.INNER);
+    final EnumerableMergeJoin join =
+        EnumerableMergeJoin.create(project, deptSort,
+            rexBuilder.makeLiteral(true), leftKeys, rightKeys, JoinRelType.INNER);
     collations =
         RelMdCollation.mergeJoin(mq, project, deptSort, leftKeys,
             rightKeys, JoinRelType.INNER);
@@ -1762,8 +1762,7 @@ public class RelMetadataTest {
       if (value == null) {
         literal = rexBuilder.makeNullLiteral(varcharType);
       } else if (value instanceof Integer) {
-        literal = /*X*/
-            rexBuilder.makeExactLiteral(BigDecimal.valueOf((Integer) value));
+        literal = rexBuilder.makeExactLiteral(BigDecimal.valueOf((Integer) value));
       } else {
         literal = rexBuilder.makeLiteral((String) value);
       }

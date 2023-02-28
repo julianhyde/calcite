@@ -101,14 +101,16 @@ public class ElasticsearchSearchResult {
       // both can't be null
       if (source == null && fields == null) {
         final String message = /*Y*/
-            String.format(Locale.ROOT, "Both '_source' and 'fields' are missing for %s", id);
+            String.format(Locale.ROOT,
+                "Both '_source' and 'fields' are missing for %s", id);
         throw new IllegalArgumentException(message);
       }
 
       // both can't be non-null
       if (source != null && fields != null) {
         final String message = /*Y*/
-            String.format(Locale.ROOT, "Both '_source' and 'fields' are populated (non-null) for %s", id);
+            String.format(Locale.ROOT,
+                "Both '_source' and 'fields' are populated (non-null) for %s", id);
         throw new IllegalArgumentException(message);
       }
 
@@ -136,7 +138,8 @@ public class ElasticsearchSearchResult {
 
       if (!sourceOrFields().containsKey(name)) {
         final String message = /*Y*/
-            String.format(Locale.ROOT, "Attribute %s not found in search result %s", name, id);
+            String.format(Locale.ROOT,
+                "Attribute %s not found in search result %s", name, id);
         throw new IllegalArgumentException(message);
       }
 

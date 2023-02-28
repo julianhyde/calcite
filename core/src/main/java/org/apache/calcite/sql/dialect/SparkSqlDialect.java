@@ -107,7 +107,8 @@ public class SparkSqlDialect extends SqlDialect {
         final TimeUnitRange timeUnit = timeUnitNode.getValueAs(TimeUnitRange.class);
 
         SqlCall call2 = /*Y*/
-            SqlFloorFunction.replaceTimeUnitOperand(call, timeUnit.name(), timeUnitNode.getParserPosition());
+            SqlFloorFunction.replaceTimeUnitOperand(call, timeUnit.name(),
+                timeUnitNode.getParserPosition());
         SqlFloorFunction.unparseDatetimeFunction(writer, call2, "DATE_TRUNC", false);
         break;
       case TRIM:

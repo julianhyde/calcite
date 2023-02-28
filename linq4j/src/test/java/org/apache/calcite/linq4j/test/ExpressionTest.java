@@ -79,10 +79,8 @@ public class ExpressionTest {
     // that adds 1 to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(2)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(2)),
+            Arrays.asList(paramExpr));
 
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
@@ -123,10 +121,8 @@ public class ExpressionTest {
     Short a = 2;
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(a)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(a)),
+            Arrays.asList(paramExpr));
 
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
@@ -167,10 +163,8 @@ public class ExpressionTest {
     // that adds 1 to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(Byte.valueOf("2"))),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(Byte.valueOf("2"))),
+            Arrays.asList(paramExpr));
 
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
@@ -210,10 +204,8 @@ public class ExpressionTest {
     // that adds 1 to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(2d)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(2d)),
+            Arrays.asList(paramExpr));
 
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
@@ -253,10 +245,8 @@ public class ExpressionTest {
     // that adds 1L to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(2L)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(2L)),
+            Arrays.asList(paramExpr));
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
     assertEquals(
@@ -295,10 +285,8 @@ public class ExpressionTest {
     // that adds 1f to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(2.0f)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(2.0f)),
+            Arrays.asList(paramExpr));
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
     assertEquals(
@@ -337,10 +325,8 @@ public class ExpressionTest {
     // that adds (int)10 to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(10)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(10)),
+            Arrays.asList(paramExpr));
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
     assertEquals(
@@ -379,10 +365,8 @@ public class ExpressionTest {
     // that adds 10.1d to the parameter value.
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.add(
-            paramExpr,
-            Expressions.constant(10.1d)),
-        Arrays.asList(paramExpr));
+            Expressions.add(paramExpr, Expressions.constant(10.1d)),
+            Arrays.asList(paramExpr));
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
     assertEquals(
@@ -421,11 +405,9 @@ public class ExpressionTest {
 
     FunctionExpression lambdaExpr = /*X*/
         Expressions.lambda(
-            Expressions.block(
-            (Type) null,
-            Expressions.return_(
-                null, paramExpr)),
-        Arrays.asList(paramExpr, param2Expr));
+            Expressions.block((Type) null,
+                Expressions.return_(null, paramExpr)),
+            Arrays.asList(paramExpr, param2Expr));
 
     // Print out the expression.
     String s = Expressions.toString(lambdaExpr);
@@ -1002,18 +984,10 @@ public class ExpressionTest {
     DeclarationStatement yDecl;
     Node node =
         Expressions.block(
-            xDecl = /*X*/
-                Expressions.declare(0,
-                "x",
-                Expressions.constant(10)),
-            yDecl = /*X*/
-                Expressions.declare(0,
-                "y",
-                Expressions.constant(0)),
+            xDecl = Expressions.declare(0, "x", Expressions.constant(10)),
+            yDecl = Expressions.declare(0, "y", Expressions.constant(0)),
             Expressions.while_(
-                Expressions.lessThan(
-                    xDecl.parameter,
-                    Expressions.constant(5)),
+                Expressions.lessThan(xDecl.parameter, Expressions.constant(5)),
                 Expressions.statement(
                     Expressions.preIncrementAssign(yDecl.parameter))));
     assertEquals(
@@ -1454,41 +1428,37 @@ public class ExpressionTest {
     ParameterExpression x = Expressions.parameter(Object.class, "p");
     Expression current4 = /*X*/
         builder.append("current4",
-        Expressions.convert_(x, Object[].class));
+            Expressions.convert_(x, Object[].class));
     Expression v = /*X*/
         builder.append("v",
-        Expressions.convert_(
-            Expressions.arrayIndex(
-                current4,
-                Expressions.constant(4)), Short.class));
+            Expressions.convert_(
+                Expressions.arrayIndex(current4, Expressions.constant(4)),
+                Short.class));
     Expression v0 = /*X*/
         builder.append("v0",
-        Expressions.convert_(v, Number.class));
+            Expressions.convert_(v, Number.class));
     Expression v1 = /*X*/
         builder.append("v1",
-        Expressions.convert_(
-            Expressions.arrayIndex(
-                current4,
-                Expressions.constant(4)), Short.class));
+            Expressions.convert_(
+                Expressions.arrayIndex(current4, Expressions.constant(4)),
+                Short.class));
     Expression v2 = /*X*/
-        builder.append("v2",
-        Expressions.convert_(v, Number.class));
+        builder.append("v2", Expressions.convert_(v, Number.class));
     Expression v3 = /*X*/
         builder.append("v3",
         Expressions.convert_(
-            Expressions.arrayIndex(
-                current4,
-                Expressions.constant(4)), Short.class));
+            Expressions.arrayIndex(current4, Expressions.constant(4)),
+            Short.class));
     Expression v4 = /*X*/
         builder.append("v4",
-        Expressions.convert_(v3, Number.class));
+            Expressions.convert_(v3, Number.class));
     Expression v5 = builder.append("v5", Expressions.call(v4, "intValue"));
     Expression v6 = /*X*/
         builder.append("v6",
-        Expressions.condition(
-            Expressions.equal(v2, Expressions.constant(null)),
-            Expressions.constant(null),
-            Expressions.equal(v5, Expressions.constant(1997))));
+            Expressions.condition(
+                Expressions.equal(v2, Expressions.constant(null)),
+                Expressions.constant(null),
+                Expressions.equal(v5, Expressions.constant(1997))));
     builder.add(Expressions.return_(null, v6));
     assertEquals(
         "{\n"

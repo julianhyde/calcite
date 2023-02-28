@@ -201,10 +201,13 @@ public class EnumerableHashJoin extends Join implements EnumerableRel {
     Expression predicate = Expressions.constant(null);
     if (!joinInfo.nonEquiConditions.isEmpty()) {
       RexNode nonEquiCondition = /*X*/
-          RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+          RexUtil.composeConjunction(getCluster().getRexBuilder(),
+              joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
         predicate = /*Y*/
-            EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+            EnumUtils.generatePredicate(implementor,
+                getCluster().getRexBuilder(), left, right, leftResult.physType,
+                rightResult.physType, nonEquiCondition);
       }
     }
     return implementor.result(
@@ -244,10 +247,13 @@ public class EnumerableHashJoin extends Join implements EnumerableRel {
     Expression predicate = Expressions.constant(null);
     if (!joinInfo.nonEquiConditions.isEmpty()) {
       RexNode nonEquiCondition = /*X*/
-          RexUtil.composeConjunction(getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+          RexUtil.composeConjunction(getCluster().getRexBuilder(),
+              joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
         predicate = /*Y*/
-            EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+            EnumUtils.generatePredicate(implementor,
+                getCluster().getRexBuilder(), left, right, leftResult.physType,
+                rightResult.physType, nonEquiCondition);
       }
     }
     return implementor.result(

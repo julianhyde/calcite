@@ -129,7 +129,8 @@ public class EnumerableCorrelate extends Correlate
           Expressions.parameter(Modifier.FINAL,
               Primitive.box(corrVarType), "$box" + getCorrelVariable());
       corrRef = /*Y*/
-          (ParameterExpression) corrBlock.append(getCorrelVariable(), Expressions.unbox(corrArg));
+          (ParameterExpression) corrBlock.append(getCorrelVariable(),
+              Expressions.unbox(corrArg));
     }
 
     implementor.registerCorrelVariable(getCorrelVariable(), corrRef,

@@ -183,9 +183,9 @@ public class SplunkConnectionImpl implements SplunkConnection {
 
   private static void parseResults(InputStream in, SearchResultListener srl) {
     try (CSVReader r = /*X*/
-        new CSVReader(
-            new BufferedReader(
-            new InputStreamReader(in, StandardCharsets.UTF_8)))) {
+             new CSVReader(
+                 new BufferedReader(
+                     new InputStreamReader(in, StandardCharsets.UTF_8)))) {
       String[] header = r.readNext();
       if (header != null
           && header.length > 0

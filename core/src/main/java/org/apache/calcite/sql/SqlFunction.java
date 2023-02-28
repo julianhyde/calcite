@@ -247,7 +247,8 @@ public class SqlFunction extends SqlOperator {
     final List<SqlNode> args = constructOperandList(validator, call, argNames);
 
     final List<RelDataType> argTypes = /*Y*/
-        constructArgTypeList(validator, scope, call, args, convertRowArgToColumnList);
+        constructArgTypeList(validator, scope,
+            call, args, convertRowArgToColumnList);
 
     SqlFunction function =
         (SqlFunction) SqlUtil.lookupRoutine(validator.getOperatorTable(),
@@ -309,7 +310,8 @@ public class SqlFunction extends SqlOperator {
         // check if the identifier represents type
         final SqlFunction x = (SqlFunction) call.getOperator();
         final SqlIdentifier identifier = /*Y*/
-            Util.first(x.getSqlIdentifier(), new SqlIdentifier(x.getName(), SqlParserPos.ZERO));
+            Util.first(x.getSqlIdentifier(),
+                new SqlIdentifier(x.getName(), SqlParserPos.ZERO));
         RelDataType type = validator.getCatalogReader().getNamedType(identifier);
         if (type != null) {
           function = new SqlTypeConstructorFunction(identifier, type);
@@ -320,7 +322,8 @@ public class SqlFunction extends SqlOperator {
         // handling is turned off then create a more permissive function
         if (function == null && validator.config().lenientOperatorLookup()) {
           function = /*Y*/
-              new SqlUnresolvedFunction(identifier, null, null, OperandTypes.VARIADIC, null, x.getFunctionType());
+              new SqlUnresolvedFunction(identifier, null,
+                  null, OperandTypes.VARIADIC, null, x.getFunctionType());
           break validCoercionType;
         }
         throw validator.handleUnresolvedFunction(call, this, argTypes,

@@ -125,7 +125,8 @@ public class XmlFunctions {
         for (int i = 0; i < nodes.getLength(); i++) {
           Node item = castNonNull(nodes.item(i));
           Node firstChild = /*Y*/
-              requireNonNull(item.getFirstChild(), () -> "firstChild of node " + item);
+              requireNonNull(item.getFirstChild(),
+                  () -> "firstChild of node " + item);
           result.add(firstChild.getTextContent());
         }
         return StringUtils.join(result, " ");

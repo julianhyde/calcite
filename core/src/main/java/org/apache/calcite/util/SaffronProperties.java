@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Properties;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Provides an environment for debugging information, et cetera, used by
  * saffron.
@@ -126,7 +128,7 @@ public interface SaffronProperties {
       Properties properties = new Properties();
 
       // read properties from the file "saffron.properties", if it exists in classpath
-      try (InputStream stream = Objects.requireNonNull(Helper.class.getClassLoader(), "classLoader")
+      try (InputStream stream = requireNonNull(Helper.class.getClassLoader(), "classLoader")
           .getResourceAsStream("saffron.properties")) {
         if (stream != null) {
           properties.load(stream);
@@ -143,8 +145,8 @@ public interface SaffronProperties {
       for (Object objectKey : Collections.list(source.keys())) {
         String key = (String) objectKey;
         String value = /*X*/
-            Objects.requireNonNull(source.getProperty(key),
-            () -> "value for " + key);
+            requireNonNull(source.getProperty(key),
+                () -> "value for " + key);
         if (key.startsWith("saffron.") || key.startsWith("net.sf.saffron.")) {
           properties.setProperty(key, value);
         }

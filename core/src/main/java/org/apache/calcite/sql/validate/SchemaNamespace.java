@@ -39,9 +39,9 @@ class SchemaNamespace extends AbstractNamespace {
   private final ImmutableList<String> names;
 
   /** Creates a SchemaNamespace. */
-  SchemaNamespace(SqlValidatorImpl validator, ImmutableList<String> names) {
+  SchemaNamespace(SqlValidatorImpl validator, List<String> names) {
     super(validator, null);
-    this.names = Objects.requireNonNull(names, "names");
+    this.names = ImmutableList.copyOf(names);
   }
 
   @Override protected RelDataType validateImpl(RelDataType targetRowType) {
@@ -52,7 +52,7 @@ class SchemaNamespace extends AbstractNamespace {
       final List<String> names1 = moniker.getFullyQualifiedNames();
       final SqlValidatorTable table = /*X*/
           requireNonNull(validator.catalogReader.getTable(names1),
-          () -> "table " + names1 + " is not found in scope " + names);
+              () -> "table " + names1 + " is not found in scope " + names);
       builder.add(Util.last(names1), table.getRowType());
     }
     return builder.build();

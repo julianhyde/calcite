@@ -365,12 +365,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
               final SqlUnresolvedFunction unresolvedFunction = (SqlUnresolvedFunction) operator;
               final SqlOperator lookup = /*X*/
                   SqlValidatorUtil.lookupSqlFunctionByID(SqlStdOperatorTable.instance(),
-                  unresolvedFunction.getSqlIdentifier(),
-                  unresolvedFunction.getFunctionType());
+                      unresolvedFunction.getSqlIdentifier(),
+                      unresolvedFunction.getFunctionType());
               if (lookup != null) {
                 operator = lookup;
                 call = /*Y*/
-                    operator.createCall(call.getFunctionQuantifier(), call.getParserPosition(), call.getOperandList());
+                    operator.createCall(call.getFunctionQuantifier(),
+                        call.getParserPosition(), call.getOperandList());
               }
             }
             if (operator == SqlStdOperatorTable.CAST

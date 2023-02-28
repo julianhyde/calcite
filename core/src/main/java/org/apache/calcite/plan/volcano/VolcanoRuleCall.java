@@ -304,7 +304,7 @@ public class VolcanoRuleCall extends RelOptRuleCall {
       } else {
         parentOperand = /*X*/
             requireNonNull(operand.getParent(),
-            () -> "operand.getParent() for " + operand);
+                () -> "operand.getParent() for " + operand);
         final RelNode parentRel = rels[parentOperand.ordinalInRule];
         final List<RelNode> inputs = parentRel.getInputs();
         // if the child is unordered, then add all rels in all input subsets to the successors list

@@ -249,9 +249,8 @@ class ColumnLoader<T> {
       switch (rep) {
       case OBJECT:
       case JAVA_SQL_TIMESTAMP:
-        final List<@Nullable Long> longs = /*Y*/
-            Util.transform((List<@Nullable Timestamp>) list, (Timestamp t) -> t == null ? null : t.getTime());
-        return longs;
+        return Util.transform((List<@Nullable Timestamp>) list,
+            (Timestamp t) -> t == null ? null : t.getTime());
       default:
         break;
       }
@@ -260,9 +259,8 @@ class ColumnLoader<T> {
       switch (rep) {
       case OBJECT:
       case JAVA_SQL_TIME:
-        return Util.<@Nullable Time, @Nullable Integer>transform(
-            (List<@Nullable Time>) list, (Time t) -> t == null
-                ? null
+        return Util.<@Nullable Time, @Nullable Integer>transform((List<@Nullable Time>) list,
+            (Time t) -> t == null ? null
                 : (int) (t.getTime() % DateTimeUtils.MILLIS_PER_DAY));
       default:
         break;

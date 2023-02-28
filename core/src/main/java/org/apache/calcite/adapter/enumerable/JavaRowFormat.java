@@ -185,10 +185,11 @@ public enum JavaRowFormat {
       }
     }
 
-    @Override public Expression field(Expression expression, int field, @Nullable Type fromType,
-        Type fieldType) {
+    @Override public Expression field(Expression expression, int field,
+        @Nullable Type fromType, Type fieldType) {
       final MethodCallExpression e = /*Y*/
-          Expressions.call(expression, BuiltInMethod.LIST_GET.method, Expressions.constant(field));
+          Expressions.call(expression, BuiltInMethod.LIST_GET.method,
+              Expressions.constant(field));
       if (fromType == null) {
         fromType = e.getType();
       }
@@ -214,10 +215,11 @@ public enum JavaRowFormat {
       return Expressions.call(BuiltInMethod.ROW_AS_COPY.method, expressions);
     }
 
-    @Override public Expression field(Expression expression, int field, @Nullable Type fromType,
-        Type fieldType) {
+    @Override public Expression field(Expression expression, int field,
+        @Nullable Type fromType, Type fieldType) {
       final Expression e = /*Y*/
-          Expressions.call(expression, BuiltInMethod.ROW_VALUE.method, Expressions.constant(field));
+          Expressions.call(expression,
+              BuiltInMethod.ROW_VALUE.method, Expressions.constant(field));
       if (fromType == null) {
         fromType = e.getType();
       }
@@ -245,8 +247,8 @@ public enum JavaRowFormat {
       return Expressions.call(BuiltInMethod.ARRAY_COMPARER.method);
     }
 
-    @Override public Expression field(Expression expression, int field, @Nullable Type fromType,
-        Type fieldType) {
+    @Override public Expression field(Expression expression, int field,
+        @Nullable Type fromType, Type fieldType) {
       final IndexExpression e = /*Y*/
           Expressions.arrayIndex(expression, Expressions.constant(field));
       if (fromType == null) {

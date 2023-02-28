@@ -218,7 +218,8 @@ public class RexOver extends RexCall {
   @Override public int hashCode() {
     if (hash == 0) {
       hash = /*Y*/
-          Objects.hash(super.hashCode(), window, distinct, ignoreNulls, op.allowsFraming());
+          Objects.hash(super.hashCode(), window, distinct, ignoreNulls,
+              op.allowsFraming());
     }
     return hash;
   }

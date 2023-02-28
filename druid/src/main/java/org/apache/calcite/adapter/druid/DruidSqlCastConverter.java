@@ -111,8 +111,8 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
       final String typeCastExpression;
       if (fromExprType != toExprType) {
         typeCastExpression = /*Y*/
-            DruidQuery.format("CAST(%s, '%s')", operandExpression, toExprType
-            .toString());
+            DruidQuery.format("CAST(%s, '%s')", operandExpression,
+                toExprType.toString());
       } else {
         // case it is the same type it is ok to skip CAST
         typeCastExpression = operandExpression;
@@ -139,10 +139,9 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
     // Cast strings to date times by parsing them from SQL format.
     final String timestampExpression = /*X*/
         DruidExpressions.functionCall("timestamp_parse",
-        ImmutableList.of(
-            operand,
-            DruidExpressions.stringLiteral(format),
-            DruidExpressions.stringLiteral(timeZone.getID())));
+            ImmutableList.of(operand,
+                DruidExpressions.stringLiteral(format),
+                DruidExpressions.stringLiteral(timeZone.getID())));
 
     if (toType == SqlTypeName.DATE) {
       // case to date we need to floor to day first

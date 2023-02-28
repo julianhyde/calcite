@@ -104,7 +104,8 @@ class SimpleCalciteSchema extends CalciteSchema {
       boolean caseSensitive) {
     // Check implicit schemas.
     final String schemaName2 = /*X*/
-        caseSensitive ? schemaName : caseInsensitiveLookup(schema.getSubSchemaNames(), schemaName);
+        caseSensitive ? schemaName
+            : caseInsensitiveLookup(schema.getSubSchemaNames(), schemaName);
     if (schemaName2 == null) {
       return null;
     }
@@ -119,7 +120,8 @@ class SimpleCalciteSchema extends CalciteSchema {
       boolean caseSensitive) {
     // Check implicit tables.
     final String tableName2 = /*X*/
-        caseSensitive ? tableName : caseInsensitiveLookup(schema.getTableNames(), tableName);
+        caseSensitive ? tableName
+            : caseInsensitiveLookup(schema.getTableNames(), tableName);
     if (tableName2 == null) {
       return null;
     }
@@ -133,7 +135,8 @@ class SimpleCalciteSchema extends CalciteSchema {
   @Override protected @Nullable TypeEntry getImplicitType(String name, boolean caseSensitive) {
     // Check implicit types.
     final String name2 = /*X*/
-        caseSensitive ? name : caseInsensitiveLookup(schema.getTypeNames(), name);
+        caseSensitive ? name
+            : caseInsensitiveLookup(schema.getTypeNames(), name);
     if (name2 == null) {
       return null;
     }
@@ -220,8 +223,9 @@ class SimpleCalciteSchema extends CalciteSchema {
   @Override protected CalciteSchema snapshot(@Nullable CalciteSchema parent,
       SchemaVersion version) {
     CalciteSchema snapshot = /*Y*/
-        new SimpleCalciteSchema(parent, schema.snapshot(version), name, null, tableMap, latticeMap, typeMap,
-        functionMap, functionNames, nullaryFunctionMap, getPath());
+        new SimpleCalciteSchema(parent, schema.snapshot(version), name, null,
+            tableMap, latticeMap, typeMap,
+            functionMap, functionNames, nullaryFunctionMap, getPath());
     for (CalciteSchema subSchema : subSchemaMap.map().values()) {
       CalciteSchema subSchemaSnapshot = subSchema.snapshot(snapshot, version);
       snapshot.subSchemaMap.put(subSchema.name, subSchemaSnapshot);

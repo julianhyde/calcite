@@ -166,9 +166,11 @@ public class BlockBuilder {
           result = ((DeclarationStatement) statement).parameter;
         } else if (statement instanceof GotoStatement) {
           statements.remove(statements.size() - 1);
+          final GotoStatement gotoStatement = (GotoStatement) statement;
           result = /*Y*/
-              append_(name, requireNonNull(((GotoStatement) statement).expression, "expression"),
-              optimize);
+              append_(name,
+                  requireNonNull(gotoStatement.expression, "expression"),
+                  optimize);
           if (isSimpleExpression(result)) {
             // already simple; no need to declare a variable or
             // even to evaluate the expression
@@ -367,8 +369,7 @@ public class BlockBuilder {
     }
     final IdentityHashMap<ParameterExpression, Expression> subMap =
         new IdentityHashMap<>(useCounter.map.size());
-    final Shuttle visitor = /*X*/
-        new InlineVariableVisitor(subMap);
+    final Shuttle visitor = new InlineVariableVisitor(subMap);
     final ArrayList<Statement> oldStatements = new ArrayList<>(statements);
     statements.clear();
 

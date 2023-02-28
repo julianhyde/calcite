@@ -140,7 +140,8 @@ public class SortJoinTransposeRule
         return;
       }
       newLeftInput = /*Y*/
-          sort.copy(sort.getTraitSet(), join.getLeft(), sort.getCollation(), sort.offset, sort.fetch);
+          sort.copy(sort.getTraitSet(), join.getLeft(), sort.getCollation(),
+              sort.offset, sort.fetch);
       newRightInput = join.getRight();
     } else {
       final RelCollation rightCollation =
@@ -155,13 +156,16 @@ public class SortJoinTransposeRule
       }
       newLeftInput = join.getLeft();
       newRightInput = /*Y*/
-          sort.copy(sort.getTraitSet().replace(rightCollation), join.getRight(), rightCollation, sort.offset, sort.fetch);
+          sort.copy(sort.getTraitSet().replace(rightCollation),
+              join.getRight(), rightCollation, sort.offset, sort.fetch);
     }
     // We copy the join and the top sort operator
     final RelNode joinCopy = /*Y*/
-        join.copy(join.getTraitSet(), join.getCondition(), newLeftInput, newRightInput, join.getJoinType(), join.isSemiJoinDone());
+        join.copy(join.getTraitSet(), join.getCondition(), newLeftInput,
+            newRightInput, join.getJoinType(), join.isSemiJoinDone());
     final RelNode sortCopy = /*Y*/
-        sort.copy(sort.getTraitSet(), joinCopy, sort.getCollation(), sort.offset, sort.fetch);
+        sort.copy(sort.getTraitSet(), joinCopy, sort.getCollation(),
+            sort.offset, sort.fetch);
 
     call.transformTo(sortCopy);
   }

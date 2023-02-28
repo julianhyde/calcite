@@ -724,43 +724,55 @@ class DateRangeRulesTest {
 
     Fixture2() {
       exYearTs = /*Y*/
-          rexBuilder.makeCall(SqlStdOperatorTable.EXTRACT, ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.YEAR), ts));
+          rexBuilder.makeCall(SqlStdOperatorTable.EXTRACT,
+              ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.YEAR), ts));
       exMonthTs = /*Y*/
           rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.EXTRACT,
-          ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.MONTH), ts));
+              ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.MONTH), ts));
       exDayTs = /*Y*/
           rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.EXTRACT,
-          ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.DAY), ts));
+              ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.DAY), ts));
       exYearD = /*Y*/
-          rexBuilder.makeCall(SqlStdOperatorTable.EXTRACT, ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.YEAR), d));
+          rexBuilder.makeCall(SqlStdOperatorTable.EXTRACT,
+              ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.YEAR), d));
       exMonthD = /*Y*/
           rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.EXTRACT,
-          ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.MONTH), d));
+              ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.MONTH), d));
       exDayD = /*Y*/
           rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.EXTRACT,
-          ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.DAY), d));
+              ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.DAY), d));
 
       floorYear = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.YEAR)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.YEAR)));
       floorMonth = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MONTH)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MONTH)));
       floorDay = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.DAY)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.DAY)));
       floorHour = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.HOUR)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.HOUR)));
       floorMinute = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MINUTE)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.FLOOR,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MINUTE)));
 
       ceilYear = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.YEAR)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.YEAR)));
       ceilMonth = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MONTH)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MONTH)));
       ceilDay = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.DAY)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.DAY)));
       ceilHour = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.HOUR)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.HOUR)));
       ceilMinute = /*Y*/
-          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL, ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MINUTE)));
+          rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.CEIL,
+              ImmutableList.of(ts, rexBuilder.makeFlag(TimeUnitRange.MINUTE)));
     }
   }
 }

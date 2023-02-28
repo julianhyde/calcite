@@ -159,11 +159,12 @@ public class RelMdUniqueKeys
 
       Iterable<List<ImmutableBitSet>> product = /*X*/
           Linq4j.product(
-              Util.transform(colMask,
-              in -> Util.filter(
-                  requireNonNull(mapInToOutPos.get(in),
-                      () -> "no entry for column " + in + " in mapInToOutPos: " + mapInToOutPos)
-                      .powerSet(), bs -> !bs.isEmpty())));
+              Util.transform(colMask, in ->
+                  Util.filter(
+                      requireNonNull(mapInToOutPos.get(in),
+                          () -> "no entry for column " + in
+                              + " in mapInToOutPos: " + mapInToOutPos).powerSet(),
+                      bs -> !bs.isEmpty())));
 
       resultBuilder.addAll(Util.transform(product, ImmutableBitSet::union));
     }

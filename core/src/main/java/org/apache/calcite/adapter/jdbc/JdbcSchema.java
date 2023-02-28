@@ -181,8 +181,8 @@ public class JdbcSchema implements Schema {
     } else {
       SqlDialectFactory factory = /*X*/
           AvaticaUtils.instantiatePlugin(SqlDialectFactory.class, sqlDialectFactory);
-      return JdbcSchema.create(
-          parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema);
+      return JdbcSchema.create(parentSchema, name, dataSource, factory,
+          jdbcCatalog, jdbcSchema);
     }
   }
 
@@ -428,7 +428,8 @@ public class JdbcSchema implements Schema {
       }
       if (component == null) {
         component = /*X*/
-            typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.ANY), true);
+            typeFactory.createTypeWithNullability(
+                typeFactory.createSqlType(SqlTypeName.ANY), true);
       }
       return typeFactory.createArrayType(component, -1);
     default:

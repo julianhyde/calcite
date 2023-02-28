@@ -313,18 +313,17 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       final Expression partitionRowCount =
           builder3.append("partRows", Expressions.field(rows_, "length"));
       final Expression maxX = /*Y*/
-          builder3.append(
-              "maxX", Expressions.subtract(
-              partitionRowCount, Expressions.constant(1)));
+          builder3.append("maxX",
+              Expressions.subtract(partitionRowCount, Expressions.constant(1)));
 
       final Expression startUnchecked = /*Y*/
-          builder4.append(
-              "start", translateBound(translator, i_, row_, minX, maxX, rows_,
-              group, true, inputPhysType, keySelector, keyComparator));
+          builder4.append("start",
+              translateBound(translator, i_, row_, minX, maxX, rows_,
+                  group, true, inputPhysType, keySelector, keyComparator));
       final Expression endUnchecked = /*Y*/
-          builder4.append(
-              "end", translateBound(translator, i_, row_, minX, maxX, rows_,
-              group, false, inputPhysType, keySelector, keyComparator));
+          builder4.append("end",
+              translateBound(translator, i_, row_, minX, maxX, rows_,
+                  group, false, inputPhysType, keySelector, keyComparator));
 
       final Expression startX;
       final Expression endX;
@@ -376,7 +375,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
       BinaryExpression rowCountWhenNonEmpty = /*X*/
           Expressions.add(startX == minX ? endX : Expressions.subtract(endX, startX),
-          Expressions.constant(1));
+              Expressions.constant(1));
 
       final Expression frameRowCount;
 
@@ -410,7 +409,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
           : Expressions.notEqual(startX, prevStart);
       Expression needRecomputeWindow = /*X*/
           Expressions.orElse(lowerBoundCanChange,
-          Expressions.lessThan(endX, prevEnd));
+              Expressions.lessThan(endX, prevEnd));
 
       BlockStatement resetWindowState = builder6.toBlock();
       if (resetWindowState.statements.size() == 1) {
@@ -471,9 +470,9 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         // For instance, row_number does not use for loop to compute the value
         Statement forAggLoop = /*X*/
             Expressions.for_(Arrays.asList(jDecl),
-            Expressions.lessThanOrEqual(jDecl.parameter, endX),
-            Expressions.preIncrementAssign(jDecl.parameter),
-            forBlock);
+                Expressions.lessThanOrEqual(jDecl.parameter, endX),
+                Expressions.preIncrementAssign(jDecl.parameter),
+                forBlock);
         if (!hasRows.equals(Expressions.constant(true))) {
           forAggLoop = Expressions.ifThen(hasRows, forAggLoop);
         }
@@ -590,15 +589,11 @@ public class EnumerableWindow extends Window implements EnumerableRel {
           return hasRows;
         }
 
-        //noinspection UnnecessaryLocalVariable
-        Expression res = /*Y*/
-            block.append(
-                "rowInFrame", Expressions.foldAnd(
+        return block.append("rowInFrame",
+            Expressions.foldAnd(
                 ImmutableList.of(hasRows,
                     Expressions.greaterThanOrEqual(rowIndex, minIndex),
                     Expressions.lessThanOrEqual(rowIndex, maxIndex))));
-
-        return res;
       }
 
       @Override public Expression rowInFrame(Expression rowIndex) {
@@ -680,24 +675,21 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
       final Expression tempList_ = /*X*/
           builder.append("tempList",
-          Expressions.convert_(
-              Expressions.call(
-                  source_,
-                  BuiltInMethod.INTO.method,
-                  Expressions.new_(ArrayList.class)),
-              List.class), false);
+              Expressions.convert_(
+                  Expressions.call(source_,
+                      BuiltInMethod.INTO.method,
+                      Expressions.new_(ArrayList.class)),
+                  List.class),
+              false);
       return Pair.of(tempList_,
-          builder.append(
-            "iterator",
-            Expressions.call(
-                null,
-                BuiltInMethod.SORTED_MULTI_MAP_SINGLETON.method,
-                comparator_,
-                tempList_)));
+          builder.append("iterator",
+              Expressions.call(null,
+                  BuiltInMethod.SORTED_MULTI_MAP_SINGLETON.method,
+                  comparator_,
+                  tempList_)));
     }
     Expression multiMap_ =
-        builder.append(
-            "multiMap", Expressions.new_(SortedMultiMap.class));
+        builder.append("multiMap", Expressions.new_(SortedMultiMap.class));
     final BlockBuilder builder2 = new BlockBuilder();
     final ParameterExpression v_ =
         Expressions.parameter(inputPhysType.getJavaRowType(),
@@ -843,7 +835,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       }
       ParameterExpression aggRes = /*Y*/
           Expressions.parameter(0, aggHolderType,
-          builder.newName(aggName + "w" + windowIdx));
+              builder.newName(aggName + "w" + windowIdx));
 
       builder.add(
           Expressions.declare(0, aggRes,
@@ -904,18 +896,21 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       }
       nonEmpty = true;
       Expression res = /*Y*/
-          agg.implementor.implementResult(requireNonNull(agg.context, "agg.context"), new WinAggResultContextImpl(builder, requireNonNull(agg.state, "agg.state"), frame) {
-            @Override public List<RexNode> rexArguments() {
-              return rexArguments.apply(agg);
-            }
-          });
+          agg.implementor.implementResult(
+              requireNonNull(agg.context, "agg.context"),
+              new WinAggResultContextImpl(builder,
+                  requireNonNull(agg.state, "agg.state"), frame) {
+                @Override public List<RexNode> rexArguments() {
+                  return rexArguments.apply(agg);
+                }
+              });
       // Several count(a) and count(b) might share the result
       Expression result = /*Y*/
           requireNonNull(agg.result, () -> "agg.result for " + agg.call);
       Expression aggRes = /*Y*/
-          builder.append("a" + agg.aggIdx + "res", EnumUtils.convert(res, result.getType()));
-      builder.add(
-          Expressions.statement(Expressions.assign(result, aggRes)));
+          builder.append("a" + agg.aggIdx + "res",
+              EnumUtils.convert(res, result.getType()));
+      builder.add(Expressions.statement(Expressions.assign(result, aggRes)));
     }
     return nonEmpty;
   }
