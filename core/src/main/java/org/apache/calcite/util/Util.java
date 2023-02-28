@@ -1802,11 +1802,12 @@ public class Util {
    * <p>The returned object is an {@link Iterable},
    * which makes it ideal for use with the 'foreach' construct. For example,
    *
-   * <blockquote><code>List&lt;Number&gt; numbers = Arrays.asList(1, 2, 3.14,
-   * 4, null, 6E23);<br>
-   * for (int myInt : filter(numbers, Integer.class)) {<br>
-   * &nbsp;&nbsp;&nbsp;&nbsp;print(i);<br>
-   * }</code></blockquote>
+   * <blockquote><pre>{@code
+   *   List<Number> numbers = Arrays.asList(1, 2, 3.14, 4, null, 6E23);
+   *   for (int myInt : filter(numbers, Integer.class)) {
+   *     print(i);
+   *   }
+   * }</pre></blockquote>
    *
    * <p>will print 1, 2, 4.
    *
