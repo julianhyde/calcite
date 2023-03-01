@@ -1084,7 +1084,8 @@ public class RelToSqlConverter extends SqlImplementor
     if (e.getOrderKeys() != null) {
       for (RelFieldCollation fc : e.getOrderKeys().getFieldCollations()) {
         if (fc.nullDirection != RelFieldCollation.NullDirection.UNSPECIFIED) {
-          boolean first = fc.nullDirection == RelFieldCollation.NullDirection.FIRST;
+          boolean first =
+              fc.nullDirection == RelFieldCollation.NullDirection.FIRST;
           SqlNode nullDirectionNode =
               dialect.emulateNullDirection(context.field(fc.getFieldIndex()),
                   first, fc.direction.isDescending());
@@ -1098,7 +1099,8 @@ public class RelToSqlConverter extends SqlImplementor
         orderBySqlList.add(context.toSql(fc));
       }
     }
-    final SqlNodeList orderByList = new SqlNodeList(orderBySqlList, SqlParserPos.ZERO);
+    final SqlNodeList orderByList =
+        new SqlNodeList(orderBySqlList, SqlParserPos.ZERO);
 
     final SqlLiteral rowsPerMatch = e.isAllRows()
         ? SqlMatchRecognize.RowsPerMatchOption.ALL_ROWS.symbol(POS)
@@ -1113,7 +1115,8 @@ public class RelToSqlConverter extends SqlImplementor
       RexCall call = (RexCall) e.getAfter();
       String operand =
           requireNonNull(stringValue(call.getOperands().get(0)),
-              () -> "non-null string value expected for 0th operand of AFTER call " + call);
+              () -> "non-null string expected for 0th operand of AFTER call "
+                  + call);
       after = call.getOperator().createCall(POS, new SqlIdentifier(operand, POS));
     }
 

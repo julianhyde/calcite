@@ -327,7 +327,8 @@ public class SqlOperatorTest {
       Pattern.compile("(?s).*Invalid argument\\(s\\) for 'POWER' function.*");
 
   private static final Pattern CODE_2201F =
-      Pattern.compile("(?s).*could not calculate results for the following row.*PC=5 Code=2201F.*");
+      Pattern.compile("(?s).*could not calculate results for the following "
+          + "row.*PC=5 Code=2201F.*");
 
   /**
    * Whether DECIMAL type is implemented.
@@ -5817,8 +5818,8 @@ public class SqlOperatorTest {
   private static Pair<String, Hook.Closeable> fixedTimeString(TimeZone tz) {
     final Calendar calendar = getFixedCalendar();
     final long timeInMillis = calendar.getTimeInMillis();
-    final Hook.Closeable closeable =
-        Hook.CURRENT_TIME.addThread((Consumer<Holder<Long>>) o -> o.set(timeInMillis));
+    final Consumer<Holder<Long>> consumer = o -> o.set(timeInMillis);
+    final Hook.Closeable closeable = Hook.CURRENT_TIME.addThread(consumer);
     return Pair.of(toTimeString(tz, calendar), closeable);
   }
 

@@ -126,14 +126,16 @@ public interface SaffronProperties {
     static SaffronProperties instance() {
       Properties properties = new Properties();
 
-      // read properties from the file "saffron.properties", if it exists in classpath
-      try (InputStream stream = requireNonNull(Helper.class.getClassLoader(), "classLoader")
-          .getResourceAsStream("saffron.properties")) {
+      // Read properties from the file "saffron.properties", if it exists in
+      // classpath.
+      try (InputStream stream =
+               requireNonNull(Helper.class.getClassLoader(), "classLoader")
+                   .getResourceAsStream("saffron.properties")) {
         if (stream != null) {
           properties.load(stream);
         }
       } catch (IOException e) {
-        throw new RuntimeException("while reading from saffron.properties file", e);
+        throw new RuntimeException("while reading saffron.properties file", e);
       } catch (SecurityException ignore) {
         // Ignore SecurityException on purpose because if
         // we can't get to the file we fall through.

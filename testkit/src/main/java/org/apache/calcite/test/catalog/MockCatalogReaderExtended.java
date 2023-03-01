@@ -77,8 +77,9 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
             "EMP_MODIFIABLEVIEW");
     TableMacro empModifiableViewMacro =
         MockModifiableViewRelOptTable.viewMacro(rootSchema,
-            "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER from EMPDEFAULTS"
-                + " where DEPTNO = 20",
+            "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER\n"
+                + "from EMPDEFAULTS\n"
+                + "where DEPTNO = 20",
             empModifiableViewNames.subList(0, 2),
             ImmutableList.of(empModifiableViewNames.get(2)), true);
     TranslatableTable empModifiableView =
@@ -98,9 +99,10 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
             "EMP_MODIFIABLEVIEW2");
     TableMacro empModifiableViewMacro2 =
         MockModifiableViewRelOptTable.viewMacro(rootSchema,
-            "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE, MGR, COMM"
-                + " from EMPDEFAULTS extend (EXTRA boolean)"
-                + " where DEPTNO = 20",
+            "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE,"
+                + " MGR, COMM\n"
+                + "from EMPDEFAULTS extend (EXTRA boolean)\n"
+                + "where DEPTNO = 20",
             empModifiableViewNames2.subList(0, 2),
             ImmutableList.of(empModifiableViewNames.get(2)),
             true);
@@ -120,8 +122,9 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
             "EMP_MODIFIABLEVIEW3");
     TableMacro empModifiableViewMacro3 =
         MockModifiableViewRelOptTable.viewMacro(rootSchema,
-            "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER from EMPDEFAULTS"
-                + " where DEPTNO = 20",
+            "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER\n"
+                + "from EMPDEFAULTS\n"
+                + "where DEPTNO = 20",
             empModifiableViewNames3.subList(0, 2),
             ImmutableList.of(empModifiableViewNames3.get(2)),
             true);

@@ -132,7 +132,8 @@ public class TableFunctionImpl extends ReflectiveFunctionBase
                       Expressions.call(translator.getRoot(),
                           BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method),
                       Expressions.constant(null, SchemaPlus.class),
-                      Expressions.constant(call.getOperator().getName(), String.class));
+                      Expressions.constant(call.getOperator().getName(),
+                          String.class));
               expr =
                   Expressions.call(queryable,
                       BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);

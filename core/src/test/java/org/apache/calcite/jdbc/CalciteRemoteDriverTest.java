@@ -88,8 +88,12 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Test for Calcite's remote JDBC driver.
- * Technically speaking, the test is thread safe, however Caclite/Avatica have thread-safety issues
- * see https://issues.apache.org/jira/browse/CALCITE-2853.
+ *
+ * <p>Technically, the test is thread-safe, however Calcite/Avatica have
+ * thread-safety issues; see
+ * <a href="https://issues.apache.org/jira/browse/CALCITE-2853">
+ * [CALCITE-2853] avatica.MetaImpl and calcite.jdbc.CalciteMetaImpl are not
+ * thread-safe</a>.
  */
 @Execution(ExecutionMode.SAME_THREAD)
 class CalciteRemoteDriverTest {
@@ -151,8 +155,8 @@ class CalciteRemoteDriverTest {
     localConnection = CalciteAssert.hr().connect();
 
     // Make sure we pick an ephemeral port for the server
-    start =
-        Main.start(new String[]{Factory.class.getName()}, 0, AvaticaJsonHandler::new);
+    final String[] args = {Factory.class.getName()};
+    start = Main.start(args, 0, AvaticaJsonHandler::new);
   }
 
   protected static Connection getRemoteConnection() throws SQLException {

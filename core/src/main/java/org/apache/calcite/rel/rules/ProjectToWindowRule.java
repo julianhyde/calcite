@@ -171,7 +171,8 @@ public abstract class ProjectToWindowRule
               }
               if (!program.projectsOnlyIdentity()) {
                 relBuilder.project(
-                    Util.transform(program.getProjectList(), program::expandLocalRef),
+                    Util.transform(program.getProjectList(),
+                        program::expandLocalRef),
                     calc.getRowType().getFieldNames());
               }
               return relBuilder.build();
@@ -183,7 +184,8 @@ public abstract class ProjectToWindowRule
 
     /** Rule configuration. */
     @Value.Immutable
-    public interface ProjectToLogicalProjectAndWindowRuleConfig extends ProjectToWindowRule.Config {
+    public interface ProjectToLogicalProjectAndWindowRuleConfig
+        extends ProjectToWindowRule.Config {
       ProjectToLogicalProjectAndWindowRuleConfig DEFAULT =
           ImmutableProjectToLogicalProjectAndWindowRuleConfig.of()
               .withOperandSupplier(b ->

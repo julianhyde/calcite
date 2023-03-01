@@ -771,7 +771,8 @@ public class AggregateReduceFunctionsRule
     RexNode nul = rexBuilder.makeNullLiteral(zero.getType());
     final RexNode avgSumXSumY =
         rexBuilder.makeCall(SqlStdOperatorTable.CASE,
-            rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, countArg, zero), nul,
+            rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, countArg, zero),
+            nul,
             rexBuilder.makeCall(SqlStdOperatorTable.DIVIDE, sumXSumY, countArg));
     final RexNode avgSumXSumYCast =
         rexBuilder.ensureType(oldCallType, avgSumXSumY, true);

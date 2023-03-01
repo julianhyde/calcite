@@ -261,7 +261,8 @@ class ColumnLoader<T> {
       switch (rep) {
       case OBJECT:
       case JAVA_SQL_TIME:
-        return Util.<@Nullable Time, @Nullable Integer>transform((List<@Nullable Time>) list,
+        return Util.<@Nullable Time, @Nullable Integer>transform(
+            (List<@Nullable Time>) list,
             (Time t) -> t == null ? null
                 : (int) (t.getTime() % DateTimeUtils.MILLIS_PER_DAY));
       default:

@@ -342,7 +342,8 @@ public class RelMdAllPredicates
                 e -> RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping));
         newPreds =
-            newPreds.union(rexBuilder, RelOptPredicateList.of(rexBuilder, updatedPreds));
+            newPreds.union(rexBuilder,
+                RelOptPredicateList.of(rexBuilder, updatedPreds));
       }
     }
     return newPreds;
@@ -351,7 +352,8 @@ public class RelMdAllPredicates
   /**
    * Extracts predicates for a Sort.
    */
-  public @Nullable RelOptPredicateList getAllPredicates(Sort sort, RelMetadataQuery mq) {
+  public @Nullable RelOptPredicateList getAllPredicates(Sort sort,
+      RelMetadataQuery mq) {
     return mq.getAllPredicates(sort.getInput());
   }
 

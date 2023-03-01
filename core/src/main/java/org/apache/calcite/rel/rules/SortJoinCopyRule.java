@@ -97,7 +97,8 @@ public class SortJoinCopyRule
       newLeftInput = join.getLeft();
     } else {
       final RelCollation leftCollation =
-          RelCollationTraitDef.INSTANCE.canonize(RelCollations.of(leftFieldCollation));
+          RelCollationTraitDef.INSTANCE.canonize(
+              RelCollations.of(leftFieldCollation));
       // If left table already sorted don't add a sort
       if (RelMdUtil.checkInputForCollationAndLimit(
           metadataQuery,

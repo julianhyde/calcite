@@ -180,7 +180,8 @@ public class JdbcSchema implements Schema {
           parentSchema, name, dataSource, jdbcCatalog, jdbcSchema);
     } else {
       SqlDialectFactory factory =
-          AvaticaUtils.instantiatePlugin(SqlDialectFactory.class, sqlDialectFactory);
+          AvaticaUtils.instantiatePlugin(SqlDialectFactory.class,
+              sqlDialectFactory);
       return JdbcSchema.create(parentSchema, name, dataSource, factory,
           jdbcCatalog, jdbcSchema);
     }

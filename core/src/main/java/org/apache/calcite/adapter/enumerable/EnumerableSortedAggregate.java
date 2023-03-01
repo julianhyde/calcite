@@ -209,8 +209,7 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
 
     final Expression keySelector_ =
         builder.append("keySelector",
-            inputPhysType.generateSelector(parameter,
-                groupSet.asList(),
+            inputPhysType.generateSelector(parameter, groupSet.asList(),
                 keyPhysType.getFormat()));
     // Generate the appropriate key Comparator. In the case of NULL values
     // in group keys, the comparator must be able to support NULL values by giving a
@@ -218,14 +217,12 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
     final Expression comparator =
         keyPhysType.generateComparator(
             requireNonNull(getTraitSet().getCollation(),
-                () -> "getTraitSet().getCollation() is null, current traits are "
+                () -> "getTraitSet().getCollation() is null; traits are "
                     + getTraitSet()));
 
     final Expression resultSelector_ =
         builder.append("resultSelector",
-            Expressions.lambda(Function2.class,
-                resultBlock.toBlock(),
-                key_,
+            Expressions.lambda(Function2.class, resultBlock.toBlock(), key_,
                 acc_));
 
     builder.add(

@@ -1762,7 +1762,8 @@ public class RelMetadataTest {
       if (value == null) {
         literal = rexBuilder.makeNullLiteral(varcharType);
       } else if (value instanceof Integer) {
-        literal = rexBuilder.makeExactLiteral(BigDecimal.valueOf((Integer) value));
+        literal =
+            rexBuilder.makeExactLiteral(BigDecimal.valueOf((Integer) value));
       } else {
         literal = rexBuilder.makeLiteral((String) value);
       }

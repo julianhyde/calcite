@@ -93,7 +93,7 @@ public class RelationalJdbcExample {
             .append("=")
             .append(resultSet.getObject(i));
       }
-      LOGGER.info("Result entry: " + buf.toString());
+      LOGGER.info("Result entry: " + buf);
       buf.setLength(0);
     }
     resultSet.close();

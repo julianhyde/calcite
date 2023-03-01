@@ -307,11 +307,13 @@ class RelOptRulesTest extends RelOptTestBase {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2865">[CALCITE-2865]
-   * FilterProjectTransposeRule generates wrong traitSet when copyFilter/Project is true</a>. */
+   * FilterProjectTransposeRule generates wrong traitSet when
+   * copyFilter/copyProject is true</a>. */
   @Test void testFilterProjectTransposeRule() {
     List<RelOptRule> rules =
         Arrays.asList(
-            CoreRules.FILTER_PROJECT_TRANSPOSE, // default: copyFilter=true, copyProject=true
+            // default: copyFilter=true, copyProject=true
+            CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_PROJECT_TRANSPOSE.config
                 .withOperandFor(Filter.class,
                     filter -> !RexUtil.containsCorrelation(filter.getCondition()),

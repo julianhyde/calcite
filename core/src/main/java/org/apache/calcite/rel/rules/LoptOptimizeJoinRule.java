@@ -1073,7 +1073,8 @@ public class LoptOptimizeJoinRule
       BitSet selfJoinFactor = new BitSet(multiJoin.getNumJoinFactors());
       Integer factor =
           requireNonNull(multiJoin.getOtherSelfJoinFactor(factorToAdd),
-              () -> "multiJoin.getOtherSelfJoinFactor(" + factorToAdd + ") is null");
+              () -> "multiJoin.getOtherSelfJoinFactor(" + factorToAdd
+                  + ") is null");
       selfJoinFactor.set(factor);
       if (multiJoin.hasAllFactors(left, selfJoinFactor)) {
         childNo = 0;

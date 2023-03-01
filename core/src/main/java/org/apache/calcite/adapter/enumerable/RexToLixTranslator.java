@@ -1275,10 +1275,12 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
    *      }
    * }</pre></blockquote>
    */
-  private static void implementRecursively(final RexToLixTranslator currentTranslator,
-      final List<RexNode> operandList, final ParameterExpression valueVariable, int pos) {
-    final BlockBuilder currentBlockBuilder = currentTranslator.getBlockBuilder();
-    final List<@Nullable Type> storageTypes = EnumUtils.internalTypes(operandList);
+  private static void implementRecursively(RexToLixTranslator currentTranslator,
+      List<RexNode> operandList, ParameterExpression valueVariable, int pos) {
+    final BlockBuilder currentBlockBuilder =
+        currentTranslator.getBlockBuilder();
+    final List<@Nullable Type> storageTypes =
+        EnumUtils.internalTypes(operandList);
     // [ELSE] clause
     if (pos == operandList.size() - 1) {
       Expression res =
@@ -1293,7 +1295,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     // Condition code: !a_isNull && a_value
     final RexNode testerNode = operandList.get(pos);
     final Result testerResult =
-        implementCallOperand(testerNode, storageTypes.get(pos), currentTranslator);
+        implementCallOperand(testerNode, storageTypes.get(pos),
+            currentTranslator);
     final Expression tester =
         Expressions.andAlso(Expressions.not(testerResult.isNullVariable),
             testerResult.valueVariable);
@@ -1329,7 +1332,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         Expressions.ifThenElse(tester, ifTrue, ifFalse));
   }
 
-  private Result toInnerStorageType(final Result result, final Type storageType) {
+  private Result toInnerStorageType(Result result, Type storageType) {
     final Expression valueExpression =
         EnumUtils.toInternal(result.valueVariable, storageType);
     if (valueExpression.equals(result.valueVariable)) {
@@ -1345,7 +1348,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   }
 
   @Override public Result visitDynamicParam(RexDynamicParam dynamicParam) {
-    final Pair<RexNode, @Nullable Type> key = Pair.of(dynamicParam, currentStorageType);
+    final Pair<RexNode, @Nullable Type> key =
+        Pair.of(dynamicParam, currentStorageType);
     if (rexWithStorageTypeResultMap.containsKey(key)) {
       return rexWithStorageTypeResultMap.get(key);
     }
@@ -1357,18 +1361,22 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 Expressions.constant("?" + dynamicParam.getIndex())),
             storageType);
     final ParameterExpression valueVariable =
-        Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));
+        Expressions.parameter(valueExpression.getType(),
+            list.newName("value_dynamic_param"));
     list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
     final ParameterExpression isNullVariable =
         Expressions.parameter(Boolean.TYPE, list.newName("isNull_dynamic_param"));
-    list.add(Expressions.declare(Modifier.FINAL, isNullVariable, checkNull(valueVariable)));
+    list.add(
+        Expressions.declare(Modifier.FINAL, isNullVariable,
+            checkNull(valueVariable)));
     final Result result = new Result(isNullVariable, valueVariable);
     rexWithStorageTypeResultMap.put(key, result);
     return result;
   }
 
   @Override public Result visitFieldAccess(RexFieldAccess fieldAccess) {
-    final Pair<RexNode, @Nullable Type> key = Pair.of(fieldAccess, currentStorageType);
+    final Pair<RexNode, @Nullable Type> key =
+        Pair.of(fieldAccess, currentStorageType);
     if (rexWithStorageTypeResultMap.containsKey(key)) {
       return rexWithStorageTypeResultMap.get(key);
     }
@@ -1395,7 +1403,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
           Expressions.condition(condition,
               RexImpTable.TRUE_EXPR,
               checkNull(valueVariable));
-      list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
+      list.add(
+          Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
       final Result result1 = new Result(isNullVariable, valueVariable);
       rexWithStorageTypeResultMap.put(key, result1);
       return result1;

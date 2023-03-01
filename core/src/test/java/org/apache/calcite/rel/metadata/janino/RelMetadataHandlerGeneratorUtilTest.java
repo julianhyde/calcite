@@ -160,7 +160,8 @@ class RelMetadataHandlerGeneratorUtilTest {
   private static String readResource(String resourceName) {
     URL url =
         castNonNull(
-            RelMetadataHandlerGeneratorUtilTest.class.getClassLoader().getResource(resourceName));
+            RelMetadataHandlerGeneratorUtilTest.class.getClassLoader()
+                .getResource(resourceName));
     try (Reader reader = Sources.of(url).reader()) {
       return CharStreams.toString(reader).replace("\r\n", "\n");
     } catch (IOException e) {

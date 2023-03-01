@@ -838,7 +838,8 @@ class PredicateAnalyzer {
     @Override public QueryExpression gt(LiteralExpression literal) {
       Object value = literal.value();
       builder =
-          addFormatIfNecessary(literal, rangeQuery(getFieldReference()).gt(value));
+          addFormatIfNecessary(literal,
+              rangeQuery(getFieldReference()).gt(value));
       return this;
     }
 

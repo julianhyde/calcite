@@ -266,7 +266,9 @@ public class JsonFunctions {
         }
       } else if (context.mode == PathMode.STRICT
           && !isScalarObject(value)) {
-        exc = RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc(value.toString()).ex();
+        exc =
+            RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc(
+                value.toString()).ex();
       } else {
         return value;
       }

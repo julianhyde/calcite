@@ -39,8 +39,8 @@ class SqlTypeFixture {
   final RelDataType sqlUnknown = type(SqlTypeName.UNKNOWN, false);
   final RelDataType sqlAny = type(SqlTypeName.ANY, false);
   final RelDataType sqlFloat = type(SqlTypeName.FLOAT, false);
-  final RelDataType sqlTimestampPrec0 = type(SqlTypeName.TIMESTAMP, 0, false);
-  final RelDataType sqlTimestampPrec3 = type(SqlTypeName.TIMESTAMP, 3, false);
+  final RelDataType sqlTimestampPrec0 = type(SqlTypeName.TIMESTAMP, 0);
+  final RelDataType sqlTimestampPrec3 = type(SqlTypeName.TIMESTAMP, 3);
   final RelDataType sqlGeometry = type(SqlTypeName.GEOMETRY, false);
   final RelDataType arrayFloat =
       notNullable(typeFactory.createArrayType(sqlFloat, -1));
@@ -70,8 +70,8 @@ class SqlTypeFixture {
       notNullable(typeFactory.createMapType(sqlInt, sqlInt));
   final RelDataType mapOfIntNullable =
       nullable(typeFactory.createMapType(sqlInt, sqlInt));
-  final RelDataType sqlChar1 = type(SqlTypeName.CHAR, 1, false);
-  final RelDataType sqlChar10 = type(SqlTypeName.CHAR, 10, false);
+  final RelDataType sqlChar1 = type(SqlTypeName.CHAR, 1);
+  final RelDataType sqlChar10 = type(SqlTypeName.CHAR, 10);
   final RelDataType arraySqlChar10 =
       notNullable(typeFactory.createArrayType(sqlChar10, -1));
   final RelDataType arraySqlChar1 =
@@ -85,9 +85,8 @@ class SqlTypeFixture {
   final RelDataType mapSqlChar1 =
       notNullable(typeFactory.createMapType(sqlChar1, sqlChar1));
 
-  private RelDataType type(SqlTypeName typeName, int precision, boolean nullable) {
-    final RelDataType type = typeFactory.createSqlType(typeName, precision);
-    return typeFactory.createTypeWithNullability(type, nullable);
+  private RelDataType type(SqlTypeName typeName, int precision) {
+    return notNullable(typeFactory.createSqlType(typeName, precision));
   }
 
   private RelDataType type(SqlTypeName typeName, boolean nullable) {
