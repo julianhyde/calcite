@@ -155,8 +155,7 @@ public class EnumerableTableFunctionScan extends TableFunctionScan
             (RexCall) getCall(),
             inputEnumerable,
             result.physType,
-            physType
-        ));
+            physType));
 
     return implementor.result(physType, builder.toBlock());
   }

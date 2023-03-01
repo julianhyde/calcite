@@ -236,8 +236,7 @@ public class EnumerableSortedAggregate extends EnumerableAggregateBase implement
                         BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method),
                     Expressions.call(lambdaFactory,
                         BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method,
-                        resultSelector_), comparator)
-                    )));
+                        resultSelector_), comparator))));
 
     return implementor.result(physType, builder.toBlock());
   }

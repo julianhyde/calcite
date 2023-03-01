@@ -4037,36 +4037,20 @@ public class RelBuilderTest {
    * {@link org.apache.calcite.rex.RexUnknownAs#FALSE} mode for filter
    * conditions. */
   @Test void testFilterSimplification() {
-    final RelBuilder builder = RelBuilder.create(config().build());
-    final RelNode root =
-        builder.scan("EMP")
+    Function<RelBuilder, RelNode> f = b ->
+        b.scan("EMP")
             .filter(
-                builder.or(
-                     builder.literal(null),
-                     builder.and(
-                         builder.equals(builder.field(2), builder.literal(1)),
-                         builder.equals(builder.field(2), builder.literal(2))
-             )))
+                b.or(b.literal(null),
+                     b.and(b.equals(b.field(2), b.literal(1)),
+                         b.equals(b.field(2), b.literal(2)))))
             .build();
-    assertThat(root, hasTree("LogicalValues(tuples=[[]])\n"));
-  }
-
-  @Test void testFilterWithoutSimplification() {
-    final RelBuilder builder = createBuilder(c -> c.withSimplify(false));
-    final RelNode root =
-        builder.scan("EMP")
-            .filter(
-                builder.or(
-                    builder.literal(null),
-                    builder.and(
-                        builder.equals(builder.field(2), builder.literal(1)),
-                        builder.equals(builder.field(2), builder.literal(2))
-                    )))
-            .build();
-    final String expected = ""
+    final String expected = "LogicalValues(tuples=[[]])\n";
+    final String expectedWithoutSimplify = ""
         + "LogicalFilter(condition=[OR(null:NULL, AND(=($2, 1), =($2, 2)))])\n"
         + "  LogicalTableScan(table=[[scott, EMP]])\n";
-    assertThat(root, hasTree(expected));
+    assertThat(f.apply(createBuilder()), hasTree(expected));
+    assertThat(f.apply(createBuilder(c -> c.withSimplify(false))),
+        hasTree(expectedWithoutSimplify));
   }
 
   @Test void testRelBuilderToString() {

@@ -510,8 +510,7 @@ public class CalciteMetaImpl extends MetaImpl {
             .selectMany(schema -> functions(schema, catalog, matcher(functionNamePattern)))
             .orderBy(x ->
                 (Comparable) FlatLists.of(
-                    x.functionCat, x.functionSchem, x.functionName, x.specificName
-                )),
+                    x.functionCat, x.functionSchem, x.functionName, x.specificName)),
         MetaFunction.class,
         "FUNCTION_CAT",
         "FUNCTION_SCHEM",
@@ -536,8 +535,7 @@ public class CalciteMetaImpl extends MetaImpl {
                   schema.getName(),
                   op.getName(),
                   (short) DatabaseMetaData.functionResultUnknown,
-                  op.getName()
-              ));
+                  op.getName()));
     }
     return Linq4j.asEnumerable(schema.calciteSchema.getFunctionNames())
         .selectMany(name ->

@@ -118,8 +118,7 @@ public class EnumerableLimitSort extends Sort implements EnumerableRel {
                             Expressions.constant(offsetVal)))
                     .appendIfNotNull(
                         builder.appendIfNotNull("fetch",
-                            Expressions.constant(fetchVal)))
-            )));
+                            Expressions.constant(fetchVal))))));
     return implementor.result(physType, builder.toBlock());
   }
 }

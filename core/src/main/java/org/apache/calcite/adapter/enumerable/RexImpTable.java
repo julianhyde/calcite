@@ -1403,8 +1403,7 @@ public class RexImpTable {
           Expressions.statement(
               Expressions.call(add.accumulator().get(0),
                   BuiltInMethod.COLLECTION_RETAIN_ALL.method,
-                  add.arguments().get(0))
-          ));
+                  add.arguments().get(0))));
 
       add.currentBlock().add(
           Expressions.ifThenElse(
