@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql.fun;
 
+import org.apache.calcite.linq4j.Nullness;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
@@ -99,14 +100,15 @@ public class SqlJsonValueFunction extends SqlFunction {
   }
 
   /** Returns whether there is an explicit return type specification. */
-  public static boolean hasExplicitTypeSpec(List<@Nullable SqlNode> operands) {
+  public static boolean hasExplicitTypeSpec(List<SqlNode> operands) {
     return operands.size() > 2
         && isReturningTypeSymbol(operands.get(2));
   }
 
   @Deprecated // to be removed before 2.0
   public static boolean hasExplicitTypeSpec(@Nullable SqlNode[] operands) {
-    return hasExplicitTypeSpec(Arrays.asList(operands));
+    return hasExplicitTypeSpec(
+        Arrays.asList(Nullness.castNonNullArray(operands)));
   }
 
   private static boolean isReturningTypeSymbol(@Nullable SqlNode node) {
