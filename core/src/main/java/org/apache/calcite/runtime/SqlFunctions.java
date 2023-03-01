@@ -708,7 +708,8 @@ public class SqlFunctions {
   }
 
   /** SQL {@code CONVERT(s, src_charset, dest_charset)} function. */
-  public static String convertWithCharset(String s, String srcCharset, String destCharset) {
+  public static String convertWithCharset(String s, String srcCharset,
+      String destCharset) {
     final Charset src = SqlUtil.getCharset(srcCharset);
     final Charset dest = SqlUtil.getCharset(destCharset);
     byte[] bytes = s.getBytes(src);

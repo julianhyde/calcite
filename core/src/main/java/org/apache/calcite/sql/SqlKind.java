@@ -1202,6 +1202,7 @@ public enum SqlKind {
    * {@link #JOIN},
    * {@link #OTHER_FUNCTION},
    * {@link #CAST},
+   * {@link #CONVERT},
    * {@link #TRIM},
    * {@link #LITERAL_CHAIN},
    * {@link #JDBC_FN},
@@ -1211,7 +1212,6 @@ public enum SqlKind {
    * {@link #COLLECTION_TABLE},
    * {@link #TABLESAMPLE},
    * {@link #UNNEST}
-   * {@link #CONVERT}
    * or an aggregate function, DML or DDL.
    */
   public static final Set<SqlKind> EXPRESSION =

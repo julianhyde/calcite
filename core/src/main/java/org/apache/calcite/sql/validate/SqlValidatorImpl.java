@@ -3868,15 +3868,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // we stripped the field access. Recurse to this method, the DOT's operand
         // can be another SqlCall, or an SqlIdentifier.
         checkRollUp(grandParent, parent, stripDot, scope, contextClause);
+      } else if (stripDot.getKind() == SqlKind.CONVERT) {
+        // operand[1] doesn't need to be checked for CONVERT
+        SqlNode child = ((SqlCall) stripDot).getOperandList().get(0);
+        checkRollUp(parent, current, child, scope, contextClause);
       } else {
-        List<? extends @Nullable SqlNode> children = ((SqlCall) stripDot).getOperandList();
-        if (stripDot.getKind() == SqlKind.CONVERT) {
-          // operand[1] doesn't need to be checked for CONVERT
-          checkRollUp(parent, current, children.get(0), scope, contextClause);
-        } else {
-          for (SqlNode child : children) {
-            checkRollUp(parent, current, child, scope, contextClause);
-          }
+        List<? extends @Nullable SqlNode> children =
+            ((SqlCall) stripDot).getOperandList();
+        for (SqlNode child : children) {
+          checkRollUp(parent, current, child, scope, contextClause);
         }
       }
     } else if (current instanceof SqlIdentifier) {

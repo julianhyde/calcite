@@ -3502,14 +3502,15 @@ public class SqlOperatorTest {
     f.setFor(SqlStdOperatorTable.CONVERT, VM_FENNEL, VM_JAVA);
     f.checkFails("convert('a', utf8, utf10)", "UTF10", false);
     f.checkFails("select ^convert(col, latin1, utf8)^\n"
-                    + "from (select 1 as col\n"
-                    + " from (values(true)))",
-            "Invalid type 'INTEGER NOT NULL' in 'CONVERT' function\\. Only 'CHARACTER' type is supported",
-            false);
+            + "from (select 1 as col\n"
+            + " from (values(true)))",
+        "Invalid type 'INTEGER NOT NULL' in 'CONVERT' function\\. "
+            + "Only 'CHARACTER' type is supported",
+        false);
     f.check("select convert(col, latin1, utf8)\n"
-                    + "from (select 'a' as col\n"
-                    + " from (values(true)))",
-            SqlTests.ANY_TYPE_CHECKER, 'a');
+            + "from (select 'a' as col\n"
+            + " from (values(true)))",
+        SqlTests.ANY_TYPE_CHECKER, 'a');
 
     f.checkType("convert('a', utf16, gbk)", "CHAR(1) NOT NULL");
     f.checkType("convert(null, utf16, gbk)", "NULL");

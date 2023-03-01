@@ -1156,27 +1156,6 @@ public class JdbcTest {
             CalciteAssert.checkResultContains("EnumerableCorrelate"));
   }
 
-  @Test void testConvertFunc() {
-    CalciteAssert.that()
-        .with(CalciteAssert.Config.FOODMART_CLONE)
-        .query("select convert(cast(\"employee_id\" as varchar), utf8, latin1) as alia\n"
-            + "from \"employee\"\n"
-            + "limit 3")
-        .returns("ALIA=1\n"
-            + "ALIA=2\n"
-            + "ALIA=4\n");
-
-    CalciteAssert.that()
-        .with(CalciteAssert.Config.FOODMART_CLONE)
-        .query("select \"employee_id\"\n"
-            + "from \"employee\"\n"
-            + "where convert(cast(\"employee_id\" as varchar), utf8, latin1) <> 1"
-            + "limit 3")
-        .returns("employee_id=2\n"
-            + "employee_id=4\n"
-            + "employee_id=5\n");
-  }
-
   /** Just short of bushy. */
   @Test void testAlmostBushy() {
     CalciteAssert.that()

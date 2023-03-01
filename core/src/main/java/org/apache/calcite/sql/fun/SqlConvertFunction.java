@@ -39,35 +39,28 @@ import java.util.List;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Common base for the <code>CONVERT</code> function.
  * <p>The SQL syntax is
  *
- * <blockquote>
- * <code>CONVERT(<i>character String</i>, <i>sourceCharset</i>,
- * <i>destCharset</i>)</code>
- * </blockquote>
+ * <blockquote><pre>
+ *   {@code CONVERT(characterString, sourceCharset, destCharset)}
+ * </pre></blockquote>
  */
 public class SqlConvertFunction extends SqlFunction {
   //~ Constructors -----------------------------------------------------------
 
   protected SqlConvertFunction(String name) {
-    super(
-        name,
-        SqlKind.CONVERT,
-        ReturnTypes.ARG0,
-        null,
-        null,
+    super(name, SqlKind.CONVERT, ReturnTypes.ARG0, null, null,
         SqlFunctionCategory.STRING);
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public void validateCall(
-          SqlCall call,
-          SqlValidator validator,
-          SqlValidatorScope scope,
-          SqlValidatorScope operandScope) {
+  @Override public void validateCall(SqlCall call, SqlValidator validator,
+      SqlValidatorScope scope, SqlValidatorScope operandScope) {
     // The base method validates all operands. We override because
     // we don't want to validate the Charset as identifier.
     final List<SqlNode> operands = call.getOperandList();
@@ -83,33 +76,28 @@ public class SqlConvertFunction extends SqlFunction {
     super.validateQuantifier(validator, call);
   }
 
-  @Override public <R> void acceptCall(
-          SqlVisitor<R> visitor,
-          SqlCall call,
-          boolean onlyExpressions,
-          SqlBasicVisitor.ArgHandler<R> argHandler) {
+  @Override public <R> void acceptCall(SqlVisitor<R> visitor, SqlCall call,
+      boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler) {
     if (onlyExpressions) {
-      // both operand[1] and operand[2] are not an expression, but Charset identifier
+      // Both operand[1] and operand[2] are not an expression, but Charset
+      // identifier
       argHandler.visitChild(visitor, call, 0, call.operand(0));
     } else {
       super.acceptCall(visitor, call, onlyExpressions, argHandler);
     }
   }
 
-  @Override public RelDataType deriveType(
-          SqlValidator validator,
-          SqlValidatorScope scope,
-          SqlCall call) {
+  @Override public RelDataType deriveType(SqlValidator validator,
+      SqlValidatorScope scope, SqlCall call) {
     // special case for CONVERT: don't need to derive type for Charsets
     RelDataType nodeType =
-            validator.deriveType(scope, call.operand(0));
-    assert nodeType != null;
+        validator.deriveType(scope, call.operand(0));
+    requireNonNull(nodeType, "nodeType");
     return validateOperands(validator, scope, call);
   }
 
-  @Override public boolean checkOperandTypes(
-          SqlCallBinding callBinding,
-          boolean throwOnFailure) {
+  @Override public boolean checkOperandTypes(SqlCallBinding callBinding,
+      boolean throwOnFailure) {
     // type of operand[0] should be Character or NULL
     final RelDataType t = callBinding.getOperandType(0);
     if (SqlTypeUtil.isNull(t)) {
@@ -127,10 +115,7 @@ public class SqlConvertFunction extends SqlFunction {
     return true;
   }
 
-  @Override public void unparse(
-      SqlWriter writer,
-      SqlCall call,
-      int leftPrec,
+  @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
       int rightPrec) {
     final SqlWriter.Frame frame = writer.startFunCall(getName());
     for (SqlNode node : call.getOperandList()) {
@@ -145,9 +130,9 @@ public class SqlConvertFunction extends SqlFunction {
     case 3:
       return "{0}({1}, {2}, {3})";
     default:
-      break;
+      throw new IllegalStateException("operandsCount should be 3, got "
+          + operandsCount);
     }
-    throw new IllegalStateException("operandsCount should be 3, got " + operandsCount);
   }
 
   @Override public SqlOperandCountRange getOperandCountRange() {

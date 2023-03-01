@@ -5343,7 +5343,7 @@ public class SqlParserTest {
 
     // TRANSLATE need to be implemented (syntax may be different)
     expr("translate('abc' using lazy_translation)")
-        .ok("TRANSLATE('abc' USING `LAZY_TRANSLATION`)");
+        .ok("TRANSLATE('abc', `LAZY_TRANSLATION`)");
   }
 
   @Test void testTranslate3() {

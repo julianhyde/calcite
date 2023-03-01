@@ -3158,7 +3158,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
 
   @Test void testConvertFunc() {
     final String sql = "select convert(ename, latin1, utf8) as new_ename\n"
-            + "from emp";
+        + "from emp";
     sql(sql).withTrim(true).ok();
   }
 

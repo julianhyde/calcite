@@ -7285,8 +7285,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     sql("select convert(cast(deptno as varchar), utf16, utf8) from emp");
     sql("select convert(null, gbk, utf8) from emp");
     sql("select ^convert(deptno, utf8, latin1)^ from emp")
-            .fails("Invalid type 'INTEGER NOT NULL' in 'CONVERT' function\\. "
-                    + "Only 'CHARACTER' type is supported");
+        .fails("Invalid type 'INTEGER NOT NULL' in 'CONVERT' function\\. "
+            + "Only 'CHARACTER' type is supported");
     sql("select convert(ename, utf8, utf9) from emp").fails("UTF9");
   }
 

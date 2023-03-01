@@ -1560,11 +1560,16 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       SqlBasicFunction.create("REPLACE", ReturnTypes.ARG0_NULLABLE_VARYING,
           OperandTypes.STRING_STRING_STRING, SqlFunctionCategory.STRING);
 
-  /**
-   * The <code>CONVERT(<i>char_value</i>, <i>src_charsetName</i>, <i>dest_charsetName</i>)</code>
-   * function converts char_value with dest_charsetName,
-   * whose original encoding is specified by src_charsetName.
-   */
+  /** The {@code CONVERT(charValue, srcCharsetName, destCharsetName)}
+   * function converts {@code charValue} with {@code destCharsetName},
+   * whose original encoding is specified by {@code srcCharsetName}.
+   *
+   * <p>The SQL standard defines
+   * {@code CONVERT(charValue USING transcodingName)}, and MySQL implements it;
+   * Calcite does not currently support this.
+   *
+   * <p>MySQL and Microsoft SQL Server have a {@code CONVERT(type, value)}
+   * function; Calcite does not currently support this, either. */
   public static final SqlFunction CONVERT =
       new SqlConvertFunction("CONVERT");
 
