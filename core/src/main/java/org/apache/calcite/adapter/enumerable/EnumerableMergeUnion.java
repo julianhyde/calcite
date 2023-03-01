@@ -58,7 +58,7 @@ public class EnumerableMergeUnion extends EnumerableUnion {
   public static EnumerableMergeUnion create(RelCollation collation, List<RelNode> inputs,
       boolean all) {
     final RelOptCluster cluster = inputs.get(0).getCluster();
-    final RelTraitSet traitSet = /*X*/
+    final RelTraitSet traitSet =
         cluster.traitSetOf(EnumerableConvention.INSTANCE).replace(collation);
     return new EnumerableMergeUnion(cluster, traitSet, inputs, all);
   }
@@ -71,7 +71,7 @@ public class EnumerableMergeUnion extends EnumerableUnion {
   @Override public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     final BlockBuilder builder = new BlockBuilder();
 
-    final ParameterExpression inputListExp = /*X*/
+    final ParameterExpression inputListExp =
         Expressions.parameter(List.class,
             builder.newName("mergeUnionInputs" + Integer.toUnsignedString(this.getId())));
     builder.add(Expressions.declare(0, inputListExp, Expressions.new_(ArrayList.class)));
@@ -85,7 +85,7 @@ public class EnumerableMergeUnion extends EnumerableUnion {
               Expressions.call(inputListExp, BuiltInMethod.COLLECTION_ADD.method, childExp)));
     }
 
-    final PhysType physType = /*X*/
+    final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), getRowType(),
             pref.prefer(JavaRowFormat.CUSTOM));
 
@@ -99,11 +99,11 @@ public class EnumerableMergeUnion extends EnumerableUnion {
     final Expression sortKeySelector = pair.left;
     final Expression sortComparator = pair.right;
 
-    final Expression equalityComparator = /*X*/
+    final Expression equalityComparator =
         Util.first(physType.comparer(),
             Expressions.call(BuiltInMethod.IDENTITY_COMPARER.method));
 
-    final Expression unionExp = /*X*/
+    final Expression unionExp =
         Expressions.call(BuiltInMethod.MERGE_UNION.method, inputListExp,
             sortKeySelector, sortComparator,
             Expressions.constant(all, boolean.class), equalityComparator);

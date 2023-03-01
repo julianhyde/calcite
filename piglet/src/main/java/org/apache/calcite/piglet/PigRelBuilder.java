@@ -187,7 +187,7 @@ public class PigRelBuilder extends RelBuilder {
     if (udfClass == JythonFunction.class) {
       final String[] args = pigFunc.getCtorArgs();
       assert args != null && args.length == 2;
-      final String fileName = /*Y*/
+      final String fileName =
           args[0].substring(args[0].lastIndexOf("/") + 1,
               args[0].lastIndexOf(".py"));
       // key = [clas name]_[file name]_[function name]
@@ -263,7 +263,7 @@ public class PigRelBuilder extends RelBuilder {
    * @return This builder
    */
   private RelBuilder scan(RelOptTable tableSchema) {
-    final RelNode scan = /*X*/
+    final RelNode scan =
         getScanFactory()
             .createScan(ViewExpanders.simpleContext(cluster), tableSchema);
     push(scan);
@@ -507,7 +507,7 @@ public class PigRelBuilder extends RelBuilder {
   public RelBuilder multiSetFlatten() {
     // [CALCITE-3193] Add RelBuilder.uncollect method, and interface
     // UncollectFactory, to instantiate Uncollect
-    Uncollect uncollect = /*X*/
+    Uncollect uncollect =
         Uncollect.create(cluster.traitSetOf(Convention.NONE),
             build(),
             false,
@@ -543,7 +543,7 @@ public class PigRelBuilder extends RelBuilder {
     final  RelNode inputRel = peek();
 
     // First project out a combined column which is a of all other columns
-    final RexNode row = /*Y*/
+    final RexNode row =
         getRexBuilder()
             .makeCall(inputRel.getRowType(), SqlStdOperatorTable.ROW, fields());
     project(ImmutableList.of(literal("all"), row));

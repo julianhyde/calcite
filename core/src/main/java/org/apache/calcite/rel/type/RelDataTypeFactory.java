@@ -568,7 +568,7 @@ public interface RelDataTypeFactory {
      * Makes sure that field names are unique.
      */
     public Builder uniquify() {
-      final List<String> uniqueNames = /*Y*/
+      final List<String> uniqueNames =
           SqlValidatorUtil.uniquify(names,
               typeFactory.getTypeSystem().isSchemaCaseSensitive());
       if (uniqueNames != names) {

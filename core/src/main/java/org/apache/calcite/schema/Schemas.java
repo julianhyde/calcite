@@ -151,7 +151,7 @@ public final class Schemas {
       String tableName, Class clazz) {
     final MethodCallExpression expression;
     if (Table.class.isAssignableFrom(clazz)) {
-      expression = /*X*/
+      expression =
           Expressions.call(expression(schema),
               BuiltInMethod.SCHEMA_GET_TABLE.method,
               Expressions.constant(tableName));
@@ -174,7 +174,7 @@ public final class Schemas {
             DataContext.ROOT);
       }
     } else {
-      expression = /*X*/
+      expression =
           Expressions.call(BuiltInMethod.SCHEMAS_QUERYABLE.method,
               DataContext.ROOT,
               expression(schema),
@@ -247,7 +247,7 @@ public final class Schemas {
   /** Returns a {@link Queryable}, given a schema and table name. */
   public static <E> Queryable<E> queryable(DataContext root, SchemaPlus schema,
       Class<E> clazz, String tableName) {
-    QueryableTable table = /*X*/
+    QueryableTable table =
         (QueryableTable) requireNonNull(schema.getTable(tableName),
             () -> "table " + tableName + " is not found in " + schema);
     QueryProvider queryProvider = root.getQueryProvider();

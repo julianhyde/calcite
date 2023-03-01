@@ -59,7 +59,7 @@ public class MethodCallExpression extends Expression {
         this.targetExpression == null
             ? null
             : this.targetExpression.accept(shuttle);
-    List<Expression> expressions = /*X*/
+    List<Expression> expressions =
         Expressions.acceptExpressions(this.expressions, shuttle);
     return shuttle.visit(this, targetExpression, expressions);
   }

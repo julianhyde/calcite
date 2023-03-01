@@ -30,7 +30,7 @@ public class ProjectNode extends AbstractSingleNode<Project> {
   public ProjectNode(Compiler compiler, Project rel) {
     super(compiler, rel);
     this.projectCount = rel.getProjects().size();
-    this.scalar = /*Y*/
+    this.scalar =
         compiler.compile(rel.getProjects(), rel.getInput().getRowType());
     this.context = compiler.createContext();
   }

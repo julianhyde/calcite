@@ -743,7 +743,7 @@ public abstract class ReturnTypes {
                     argType1.getFullTypeString()));
           }
 
-          pickedCollation = /*X*/
+          pickedCollation =
               requireNonNull(
                   SqlCollation.getCoercibilityDyadicOperator(
                       getCollation(argType0), getCollation(argType1)),
@@ -788,7 +788,7 @@ public abstract class ReturnTypes {
                   getCharset(pickedType), getCollation(pickedType));
         }
         if (ret.getSqlTypeName() == SqlTypeName.NULL) {
-          ret = /*X*/
+          ret =
               typeFactory.createTypeWithNullability(
                   typeFactory.createSqlType(SqlTypeName.VARCHAR), true);
         }

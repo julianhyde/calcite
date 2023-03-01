@@ -187,7 +187,7 @@ public enum JavaRowFormat {
 
     @Override public Expression field(Expression expression, int field,
         @Nullable Type fromType, Type fieldType) {
-      final MethodCallExpression e = /*Y*/
+      final MethodCallExpression e =
           Expressions.call(expression, BuiltInMethod.LIST_GET.method,
               Expressions.constant(field));
       if (fromType == null) {
@@ -217,7 +217,7 @@ public enum JavaRowFormat {
 
     @Override public Expression field(Expression expression, int field,
         @Nullable Type fromType, Type fieldType) {
-      final Expression e = /*Y*/
+      final Expression e =
           Expressions.call(expression,
               BuiltInMethod.ROW_VALUE.method, Expressions.constant(field));
       if (fromType == null) {
@@ -249,7 +249,7 @@ public enum JavaRowFormat {
 
     @Override public Expression field(Expression expression, int field,
         @Nullable Type fromType, Type fieldType) {
-      final IndexExpression e = /*Y*/
+      final IndexExpression e =
           Expressions.arrayIndex(expression, Expressions.constant(field));
       if (fromType == null) {
         fromType = e.getType();

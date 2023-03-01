@@ -103,7 +103,7 @@ public class AggregateJoinRemoveRule
 
     RelNode node;
     if (isLeftJoin) {
-      node = /*Y*/
+      node =
           aggregate.copy(aggregate.getTraitSet(), join.getLeft(),
               aggregate.getGroupSet(), aggregate.getGroupSets(),
               aggregate.getAggCallList());

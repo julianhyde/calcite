@@ -119,7 +119,7 @@ public class GeodeAggregate extends Aggregate implements GeodeRel {
         aggCallFieldNames.add(inputFields.get(0));
       }
 
-      String oqlAggregateCall = /*Y*/
+      String oqlAggregateCall =
           Util.toString(aggCallFieldNames, functionName + "(", ", ", ")");
 
       aggregateFunctionMap.put(aggCall.getName(), oqlAggregateCall);

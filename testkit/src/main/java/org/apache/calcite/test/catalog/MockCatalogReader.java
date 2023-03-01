@@ -184,7 +184,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
   protected void registerType(final List<String> names, final RelProtoDataType relProtoDataType) {
     assert names.get(0).equals(DEFAULT_CATALOG);
     final List<String> schemaPath = Util.skipLast(names);
-    final CalciteSchema schema = /*Y*/
+    final CalciteSchema schema =
         SqlValidatorUtil.getSchema(rootSchema,
             schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.add(Util.last(names), relProtoDataType);
@@ -214,7 +214,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     assert names.get(0).equals(DEFAULT_CATALOG);
     List<String> schemaPath = Util.skipLast(names);
     String tableName = Util.last(names);
-    CalciteSchema schema = /*Y*/
+    CalciteSchema schema =
         SqlValidatorUtil.getSchema(rootSchema,
             schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.removeTable(tableName);
@@ -225,7 +225,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     assert names.get(0).equals(DEFAULT_CATALOG);
     final List<String> schemaPath = Util.skipLast(names);
     final String tableName = Util.last(names);
-    final CalciteSchema schema = /*Y*/
+    final CalciteSchema schema =
         SqlValidatorUtil.getSchema(rootSchema,
             schemaPath, SqlNameMatchers.withCaseSensitive(true));
     schema.add(tableName, table);
@@ -445,7 +445,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
       @Override public Table extend(final List<RelDataTypeField> fields) {
         return new ModifiableTable(Util.last(names)) {
           @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-            ImmutableList<RelDataTypeField> allFields = /*X*/
+            ImmutableList<RelDataTypeField> allFields =
                 ImmutableList.copyOf(
                     Iterables.concat(
                         ModifiableTable.this.getRowType(typeFactory).getFieldList(),
@@ -606,7 +606,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     }
 
     public void onRegister(RelDataTypeFactory typeFactory) {
-      rowType = /*Y*/
+      rowType =
           typeFactory.createStructType(kind, Pair.right(columnList),
               Pair.left(columnList));
       collationList = deduceMonotonicity(this);
@@ -940,11 +940,11 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     }
 
     @Override public RelNode toRel(ToRelContext context) {
-      RelNode rel = /*Y*/
+      RelNode rel =
           LogicalTableScan.create(context.getCluster(), fromTable,
               context.getTableHints());
       final RexBuilder rexBuilder = context.getCluster().getRexBuilder();
-      rel = /*X*/
+      rel =
           LogicalFilter.create(rel, getConstraint(rexBuilder, rel.getRowType()));
       final List<RelDataTypeField> fieldList =
           rel.getRowType().getFieldList();

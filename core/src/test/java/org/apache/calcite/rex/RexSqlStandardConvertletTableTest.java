@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.hasToString;
 class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
 
   @Test void testCoalesce() {
-    final Project project = /*X*/
+    final Project project =
         (Project) convertSqlToRel("SELECT COALESCE(NULL, 'a')", false);
     final RexNode rex = project.getProjects().get(0);
     final RexToSqlNodeConverter rexToSqlNodeConverter = rexToSqlNodeConverter();

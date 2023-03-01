@@ -343,7 +343,7 @@ public final class BitSets {
       if (o != null) {
         return o;
       }
-      BitSet b = /*Y*/
+      BitSet b =
           requireNonNull(equivalence.get(pos),
               () -> "equivalence.get(pos) for " + pos);
       o = (BitSet) b.clone();

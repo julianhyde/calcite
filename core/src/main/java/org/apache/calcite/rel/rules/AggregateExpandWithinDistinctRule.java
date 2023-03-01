@@ -404,7 +404,7 @@ public class AggregateExpandWithinDistinctRule
       }
       RelBuilder.AggCall aggCall;
       if (c.distinctKeys == null) {
-        aggCall = /*Y*/
+        aggCall =
             b.aggregateCall(SqlStdOperatorTable.MIN,
                 b.field(registrar.getAgg(i)));
       } else {

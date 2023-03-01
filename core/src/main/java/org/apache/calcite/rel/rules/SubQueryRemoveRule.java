@@ -126,7 +126,7 @@ public class SubQueryRemoveRule
       RelBuilder builder, int inputCount, int offset) {
     builder.push(e.rel);
     final RelMetadataQuery mq = e.rel.getCluster().getMetadataQuery();
-    final Boolean unique = /*Y*/
+    final Boolean unique =
         mq.areColumnsUnique(builder.peek(), ImmutableBitSet.of());
     if (unique == null || !unique) {
       builder.aggregate(builder.groupKey(),
@@ -243,7 +243,7 @@ public class SubQueryRemoveRule
                 builder.count(false, "d", builder.field(0)))
             .as("q")
             .join(JoinRelType.INNER);
-        caseRexNode = /*Y*/
+        caseRexNode =
             builder.call(SqlStdOperatorTable.CASE,
                 builder.equals(builder.field("q", "c"), builder.literal(0)),
                 literalFalse,
@@ -286,7 +286,7 @@ public class SubQueryRemoveRule
                 builder.max(builder.field(0)).as("m"))
             .as("q")
             .join(JoinRelType.INNER);
-        caseRexNode = /*Y*/
+        caseRexNode =
             builder.call(SqlStdOperatorTable.CASE,
                 builder.equals(builder.field("c"), builder.literal(0)),
                 literalFalse,
@@ -346,7 +346,7 @@ public class SubQueryRemoveRule
         parentQueryFields.add(builder.alias(literalTrue, indicator));
         builder.project(parentQueryFields).as("q");
         builder.join(JoinRelType.LEFT, literalTrue, variablesSet);
-        caseRexNode = /*Y*/
+        caseRexNode =
             builder.call(SqlStdOperatorTable.CASE,
                 builder.isNull(builder.field("q", indicator)),
                 literalFalse,
@@ -399,7 +399,7 @@ public class SubQueryRemoveRule
         parentQueryFields.add(builder.alias(literalTrue, indicator));
         builder.project(parentQueryFields).as("q"); // TODO use projectPlus
         builder.join(JoinRelType.LEFT, literalTrue, variablesSet);
-        caseRexNode = /*Y*/
+        caseRexNode =
             builder.call(SqlStdOperatorTable.CASE,
                 builder.isNull(builder.field("q", indicator)),
                 literalFalse,
@@ -662,7 +662,7 @@ public class SubQueryRemoveRule
             builder.or(
                 builder.and(conditions),
                 builder.or(isNullOperands)));
-        RexNode project = /*X*/
+        RexNode project =
             builder.and(
                 fields.stream()
                     .map(builder::isNotNull)
@@ -824,7 +824,7 @@ public class SubQueryRemoveRule
     final int fieldCount = builder.peek().getRowType().getFieldCount();
     final Set<CorrelationId>  variablesSet =
         RelOptUtil.getVariablesUsed(e.rel);
-    final RexNode target = /*Y*/
+    final RexNode target =
         rule.apply(e, variablesSet, logic, builder, 1, fieldCount);
     final RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
     builder.project(shuttle.apply(project.getProjects()),
@@ -850,7 +850,7 @@ public class SubQueryRemoveRule
           LogicVisitor.find(RelOptUtil.Logic.TRUE, ImmutableList.of(c), e);
       final Set<CorrelationId>  variablesSet =
           RelOptUtil.getVariablesUsed(e.rel);
-      final RexNode target = /*Y*/
+      final RexNode target =
           rule.apply(e, variablesSet, logic,
               builder, 1, builder.peek().getRowType().getFieldCount());
       final RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
@@ -875,7 +875,7 @@ public class SubQueryRemoveRule
     final int fieldCount = join.getRowType().getFieldCount();
     final Set<CorrelationId>  variablesSet =
         RelOptUtil.getVariablesUsed(e.rel);
-    final RexNode target = /*Y*/
+    final RexNode target =
         rule.apply(e, variablesSet, logic, builder, 2, fieldCount);
     final RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
     builder.join(join.getJoinType(), shuttle.apply(join.getCondition()));

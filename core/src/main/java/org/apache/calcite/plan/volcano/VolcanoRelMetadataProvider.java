@@ -61,7 +61,7 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
 
     return (rel, mq) -> {
       final RelSubset subset = (RelSubset) rel;
-      final RelMetadataProvider provider = /*X*/
+      final RelMetadataProvider provider =
           requireNonNull(rel.getCluster().getMetadataProvider(),
               "metadataProvider");
 

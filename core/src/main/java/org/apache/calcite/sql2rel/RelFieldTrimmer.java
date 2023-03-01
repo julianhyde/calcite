@@ -308,7 +308,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
   protected TrimResult result(RelNode r, final Mapping mapping) {
     final RexBuilder rexBuilder = relBuilder.getRexBuilder();
     for (final CorrelationId correlation : r.getVariablesSet()) {
-      r = /*X*/
+      r =
           r.accept(new CorrelationReferenceFinder() {
             @Override protected RexNode handle(RexFieldAccess fieldAccess) {
               final RexCorrelVariable v =
@@ -385,7 +385,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       ImmutableBitSet fieldsUsed,
       Set<RelDataTypeField> extraFields) {
     final RexProgram rexProgram = calc.getProgram();
-    final List<RexNode> projs = /*Y*/
+    final List<RexNode> projs =
         Util.transform(rexProgram.getProjectList(), rexProgram::expandLocalRef);
 
     final RexNode conditionExpr =
@@ -456,7 +456,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
     if (conditionExpr != null) {
       newConditionExpr = conditionExpr.accept(shuttle);
     }
-    final RexProgram newRexProgram = /*Y*/
+    final RexProgram newRexProgram =
         RexProgram.create(newInputRelNode.getRowType(), newProjects,
             newConditionExpr, newRowType.getFieldNames(),
             newInputRelNode.getCluster().getRexBuilder());
@@ -881,7 +881,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         relBuilder.antiJoin(newConditionExpr);
       }
       Mapping inputMapping = inputMappings.get(0);
-      mapping = /*Y*/
+      mapping =
           Mappings.create(MappingType.INVERSE_SURJECTION,
               join.getRowType().getFieldCount(),
               newSystemFieldCount + inputMapping.getTargetCount());
@@ -1092,7 +1092,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     if (newAggCallList.isEmpty() && newGroupSet.isEmpty()) {
       // Add a dummy call if all the column fields have been trimmed
-      mapping = /*X*/
+      mapping =
           Mappings.create(MappingType.INVERSE_SURJECTION,
               mapping.getSourceCount(), 1);
       newAggCallList.add(relBuilder.count(false, "DUMMY"));
@@ -1180,7 +1180,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     LogicalTableFunctionScan newTabFun = tabFun;
     if (!tabFun.getInputs().equals(newInputs)) {
-      newTabFun = /*Y*/
+      newTabFun =
           tabFun.copy(tabFun.getTraitSet(), newInputs, tabFun.getCall(),
               tabFun.getElementType(), tabFun.getRowType(),
               tabFun.getColumnMappings());

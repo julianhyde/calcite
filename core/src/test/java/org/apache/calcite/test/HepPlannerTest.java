@@ -367,7 +367,7 @@ class HepPlannerTest {
     HepPlanner planner = new HepPlanner(HepProgram.builder().build());
     RelNode tableRel = sql("select * from dept").toRel();
     RelNode queryRel = tableRel;
-    RelOptMaterialization mat1 = /*X*/
+    RelOptMaterialization mat1 =
         new RelOptMaterialization(tableRel, queryRel, null,
             ImmutableList.of("default", "mv"));
     planner.addMaterialization(mat1);

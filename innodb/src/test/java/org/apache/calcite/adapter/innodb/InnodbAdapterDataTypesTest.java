@@ -40,7 +40,7 @@ import java.time.zone.ZoneRules;
  */
 public class InnodbAdapterDataTypesTest {
 
-  private static final ImmutableMap<String, String> INNODB_MODEL = /*Y*/
+  private static final ImmutableMap<String, String> INNODB_MODEL =
       ImmutableMap.of("model",
           Sources.of(InnodbAdapterTest.class.getResource("/model.json"))
               .file().getAbsolutePath());

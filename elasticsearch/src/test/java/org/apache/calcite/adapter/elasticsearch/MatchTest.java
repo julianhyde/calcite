@@ -83,7 +83,7 @@ class MatchTest {
    */
   @BeforeAll
   public static void setup() throws Exception {
-    final Map<String, String> mapping = /*Y*/
+    final Map<String, String> mapping =
         ImmutableMap.of("city", "text", "state", "keyword", "pop", "long");
 
     NODE.createIndex(ZIPS, mapping);
@@ -120,7 +120,7 @@ class MatchTest {
         new ElasticsearchSchema(NODE.restClient(), NODE.mapper(), ZIPS));
 
     // add calcite view programmatically
-    final String viewSql = /*Y*/
+    final String viewSql =
         String.format(Locale.ROOT, "select cast(_MAP['city'] AS varchar(20)) AS \"city\", "
             + " cast(_MAP['loc'][0] AS float) AS \"longitude\",\n"
             + " cast(_MAP['loc'][1] AS float) AS \"latitude\",\n"
@@ -170,14 +170,14 @@ class MatchTest {
         new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RexBuilder rexBuilder = new RexBuilder(typeFactory);
 
-    RexNode nameRexNode = /*Y*/
+    RexNode nameRexNode =
         rexBuilder.makeCall(SqlStdOperatorTable.ITEM,
             rexBuilder.makeInputRef(typeFactory.createSqlType(SqlTypeName.ANY), 0),
             rexBuilder.makeCharLiteral(
                 new NlsString("city", typeFactory.getDefaultCharset().name(),
                     SqlCollation.COERCIBLE)));
 
-    RelDataType mapType = /*X*/
+    RelDataType mapType =
         typeFactory.createMapType(typeFactory.createSqlType(SqlTypeName.VARCHAR),
             typeFactory.createTypeWithNullability(
                 typeFactory.createSqlType(SqlTypeName.ANY), true));

@@ -143,9 +143,9 @@ public class BlockBuilder {
           if (declaration.initializer != null && isSafeForReuse(declaration)) {
             x = append(newName, declaration.initializer);
           } else {
-            ParameterExpression pe = /*X*/
+            ParameterExpression pe =
                 Expressions.parameter(declaration.parameter.type, newName);
-            DeclarationStatement newDeclaration = /*X*/
+            DeclarationStatement newDeclaration =
                 Expressions.declare(declaration.modifiers, pe, declaration.initializer);
             x = pe;
             add(newDeclaration);
@@ -167,7 +167,7 @@ public class BlockBuilder {
         } else if (statement instanceof GotoStatement) {
           statements.remove(statements.size() - 1);
           final GotoStatement gotoStatement = (GotoStatement) statement;
-          result = /*Y*/
+          result =
               append_(name,
                   requireNonNull(gotoStatement.expression, "expression"),
                   optimize);
@@ -175,7 +175,7 @@ public class BlockBuilder {
             // already simple; no need to declare a variable or
             // even to evaluate the expression
           } else {
-            DeclarationStatement declare = /*Y*/
+            DeclarationStatement declare =
                 Expressions.declare(Modifier.FINAL, newName(name, optimize), result);
             add(declare);
             result = declare.parameter;
@@ -238,7 +238,7 @@ public class BlockBuilder {
         return decl.parameter;
       }
     }
-    DeclarationStatement declare = /*Y*/
+    DeclarationStatement declare =
         Expressions.declare(Modifier.FINAL, newName(name, optimize), expression);
     add(declare);
     return declare.parameter;

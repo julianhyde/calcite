@@ -233,7 +233,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       typeBuilder.addAll(inputPhysType.getRowType().getFieldList());
       for (AggImpState agg : aggs) {
         // CALCITE-4326
-        String name = /*Y*/
+        String name =
             requireNonNull(agg.call.name, () -> "agg.call.name for " + agg.call);
         typeBuilder.add(name, agg.call.type);
       }
@@ -312,15 +312,15 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       final Expression minX = Expressions.constant(0);
       final Expression partitionRowCount =
           builder3.append("partRows", Expressions.field(rows_, "length"));
-      final Expression maxX = /*Y*/
+      final Expression maxX =
           builder3.append("maxX",
               Expressions.subtract(partitionRowCount, Expressions.constant(1)));
 
-      final Expression startUnchecked = /*Y*/
+      final Expression startUnchecked =
           builder4.append("start",
               translateBound(translator, i_, row_, minX, maxX, rows_,
                   group, true, inputPhysType, keySelector, keyComparator));
-      final Expression endUnchecked = /*Y*/
+      final Expression endUnchecked =
           builder4.append("end",
               translateBound(translator, i_, row_, minX, maxX, rows_,
                   group, false, inputPhysType, keySelector, keyComparator));
@@ -346,14 +346,14 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                     Expressions.call(null, BuiltInMethod.MATH_MIN.method,
                         endUnchecked, maxX));
 
-        ParameterExpression startPe = /*Y*/
+        ParameterExpression startPe =
             Expressions.parameter(0, int.class, builder4.newName("startChecked"));
-        ParameterExpression endPe = /*Y*/
+        ParameterExpression endPe =
             Expressions.parameter(0, int.class, builder4.newName("endChecked"));
         builder4.add(Expressions.declare(Modifier.FINAL, startPe, null));
         builder4.add(Expressions.declare(Modifier.FINAL, endPe, null));
 
-        hasRows = /*Y*/
+        hasRows =
             builder4.append("hasRows", Expressions.lessThanOrEqual(startTmp, endTmp));
         builder4.add(
             Expressions.ifThenElse(hasRows,
@@ -373,7 +373,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
       final BlockBuilder builder5 = new BlockBuilder(true, builder4);
 
-      BinaryExpression rowCountWhenNonEmpty = /*X*/
+      BinaryExpression rowCountWhenNonEmpty =
           Expressions.add(startX == minX ? endX : Expressions.subtract(endX, startX),
               Expressions.constant(1));
 
@@ -389,7 +389,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                     Expressions.constant(0)));
       }
 
-      ParameterExpression actualStart = /*X*/
+      ParameterExpression actualStart =
           Expressions.parameter(0, int.class, builder5.newName("actualStart"));
 
       final BlockBuilder builder6 = new BlockBuilder(true, builder5);
@@ -407,7 +407,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
           group.lowerBound.isUnbounded() && group.lowerBound.isPreceding()
           ? Expressions.constant(false)
           : Expressions.notEqual(startX, prevStart);
-      Expression needRecomputeWindow = /*X*/
+      Expression needRecomputeWindow =
           Expressions.orElse(lowerBoundCanChange,
               Expressions.lessThan(endX, prevEnd));
 
@@ -468,7 +468,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       BlockStatement forBlock = builder7.toBlock();
       if (!forBlock.statements.isEmpty()) {
         // For instance, row_number does not use for loop to compute the value
-        Statement forAggLoop = /*X*/
+        Statement forAggLoop =
             Expressions.for_(Arrays.asList(jDecl),
                 Expressions.lessThanOrEqual(jDecl.parameter, endX),
                 Expressions.preIncrementAssign(jDecl.parameter),
@@ -673,7 +673,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       //       SortedMultiMap.singletonArrayIterator(comparator, tempList);
       //   final List<Xxx> list = new ArrayList<Xxx>(tempList.size());
 
-      final Expression tempList_ = /*X*/
+      final Expression tempList_ =
           builder.append("tempList",
               Expressions.convert_(
                   Expressions.call(source_,
@@ -833,7 +833,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
       if (Primitive.is(aggHolderType) && !Primitive.is(aggStorageType)) {
         aggHolderType = Primitive.box(aggHolderType);
       }
-      ParameterExpression aggRes = /*Y*/
+      ParameterExpression aggRes =
           Expressions.parameter(0, aggHolderType,
               builder.newName(aggName + "w" + windowIdx));
 
@@ -895,7 +895,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         continue;
       }
       nonEmpty = true;
-      Expression res = /*Y*/
+      Expression res =
           agg.implementor.implementResult(
               requireNonNull(agg.context, "agg.context"),
               new WinAggResultContextImpl(builder,
@@ -905,9 +905,9 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                 }
               });
       // Several count(a) and count(b) might share the result
-      Expression result = /*Y*/
+      Expression result =
           requireNonNull(agg.result, () -> "agg.result for " + agg.call);
-      Expression aggRes = /*Y*/
+      Expression aggRes =
           builder.append("a" + agg.aggIdx + "res",
               EnumUtils.convert(res, result.getType()));
       builder.add(Expressions.statement(Expressions.assign(result, aggRes)));
@@ -975,7 +975,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
     if (bound.getOffset() == null) {
       desiredKeyType = Primitive.box(desiredKeyType);
     }
-    Expression val = /*X*/
+    Expression val =
         translator.translate(new RexInputRef(orderKey, keyType), desiredKeyType);
     if (!bound.isCurrentRow()) {
       RexNode node = bound.getOffset();

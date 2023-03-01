@@ -42,7 +42,7 @@ import java.util.Properties;
  */
 public class RelationalJdbcExample {
 
-  protected static final Logger LOGGER = /*X*/
+  protected static final Logger LOGGER =
       LoggerFactory.getLogger(RelationalJdbcExample.class.getName());
 
   private RelationalJdbcExample() {

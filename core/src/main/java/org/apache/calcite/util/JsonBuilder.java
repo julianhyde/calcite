@@ -35,7 +35,7 @@ public class JsonBuilder {
   /** Maps control characters (0 .. 31) to JSON escaped strings.
    * Tab, newline, form feed and carriage return are mapped to '\t', '\n',
    * '\f', 'r' respectively; others are mapped to '\\u00xx' for some 'xx'. */
-  private static final ImmutableList<String> ESCAPED = /*X*/
+  private static final ImmutableList<String> ESCAPED =
       ImmutableList.of("\\u0000",
           "\\u0001",
           "\\u0002",

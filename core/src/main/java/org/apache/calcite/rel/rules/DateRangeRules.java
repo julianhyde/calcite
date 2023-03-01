@@ -159,7 +159,7 @@ public abstract class DateRangeRules {
     }
     final Map<RexNode, RangeSet<Calendar>> operandRanges = new HashMap<>();
     for (TimeUnitRange timeUnit : timeUnits) {
-      e = /*X*/
+      e =
           e.accept(
               new ExtractShuttle(rexBuilder, timeUnit, operandRanges, timeUnits,
                   timeZone));
@@ -321,7 +321,7 @@ public abstract class DateRangeRules {
             assert op1 instanceof RexCall;
             final RexCall subCall = (RexCall) op1;
             final RexLiteral flag = (RexLiteral) subCall.operands.get(1);
-            final TimeUnitRange timeUnit = /*Y*/
+            final TimeUnitRange timeUnit =
                 requireNonNull((TimeUnitRange) flag.getValue(),
                     () -> "timeUnit is null for " + subCall);
             return compareFloorCeil(call.getKind().reverse(),
@@ -347,7 +347,7 @@ public abstract class DateRangeRules {
           if (isFloorCeilCall(op0)) {
             final RexCall subCall = (RexCall) op0;
             final RexLiteral flag = (RexLiteral) subCall.operands.get(1);
-            final TimeUnitRange timeUnit = /*Y*/
+            final TimeUnitRange timeUnit =
                 requireNonNull((TimeUnitRange) flag.getValue(),
                     () -> "timeUnit is null for " + subCall);
             return compareFloorCeil(call.getKind(),
@@ -417,7 +417,7 @@ public abstract class DateRangeRules {
         for (RexNode operand : exprs) {
           RexNode clonedOperand = operand;
           for (TimeUnitRange timeUnit : timeUnitRanges) {
-            clonedOperand = /*X*/
+            clonedOperand =
                 clonedOperand.accept(
                     new ExtractShuttle(rexBuilder, timeUnit, operandRanges,
                         timeUnitRanges, timeZone));
@@ -658,7 +658,7 @@ public abstract class DateRangeRules {
                 "timeLiteral.getValueAs(Long.class)"));
       case DATE:
         // Cast date to timestamp with local time zone
-        final DateString d = /*Y*/
+        final DateString d =
             requireNonNull(timeLiteral.getValueAs(DateString.class),
                 "timeLiteral.getValueAs(DateString.class)");
         return Util.calendar(d.getMillisSinceEpoch());

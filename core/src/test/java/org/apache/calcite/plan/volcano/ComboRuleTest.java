@@ -164,7 +164,7 @@ class ComboRuleTest {
       List<RelNode> newInputs = ImmutableList.of(call.rel(2));
       IntermediateNode oldInter = call.rel(1);
       RelNode physRel = call.rel(0).copy(call.rel(0).getTraitSet(), newInputs);
-      RelNode converted = /*Y*/
+      RelNode converted =
           new IntermediateNode(physRel.getCluster(), physRel,
               oldInter.nodesBelowCount + 1);
       call.transformTo(converted);

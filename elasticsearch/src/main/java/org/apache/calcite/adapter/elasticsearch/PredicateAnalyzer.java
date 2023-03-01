@@ -266,14 +266,14 @@ class PredicateAnalyzer {
       case FUNCTION:
         if (call.getOperator().getName().equalsIgnoreCase("CONTAINS")) {
           List<Expression> operands = visitList(call.getOperands());
-          String query = /*Y*/
+          String query =
               convertQueryString(operands.subList(0, operands.size() - 1),
                   operands.get(operands.size() - 1));
           return QueryExpression.create(new NamedFieldExpression()).queryString(query);
         }
         // fall through
       default:
-        String message = /*Y*/
+        String message =
             format(Locale.ROOT,
                 "Unsupported syntax [%s] for call: [%s]", syntax, call);
         throw new PredicateAnalyzerException(message);
@@ -503,7 +503,7 @@ class PredicateAnalyzer {
       }
 
       if (literal == null || terminal == null) {
-        String message = /*Y*/
+        String message =
             String.format(Locale.ROOT,
                 "Unexpected combination of expressions [left: %s] [right: %s]",
                 left, right);
@@ -837,7 +837,7 @@ class PredicateAnalyzer {
 
     @Override public QueryExpression gt(LiteralExpression literal) {
       Object value = literal.value();
-      builder = /*Y*/
+      builder =
           addFormatIfNecessary(literal, rangeQuery(getFieldReference()).gt(value));
       return this;
     }

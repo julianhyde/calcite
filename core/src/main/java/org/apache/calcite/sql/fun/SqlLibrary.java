@@ -95,7 +95,7 @@ public enum SqlLibrary {
   public static List<SqlLibrary> parse(String libraryNameList) {
     final ImmutableList.Builder<SqlLibrary> list = ImmutableList.builder();
     for (String libraryName : libraryNameList.split(",")) {
-      SqlLibrary library = /*X*/
+      SqlLibrary library =
           requireNonNull(SqlLibrary.of(libraryName),
               () -> "library does not exist: " + libraryName);
       list.add(library);

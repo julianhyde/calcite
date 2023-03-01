@@ -371,7 +371,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
   //~ Static fields/initializers ---------------------------------------------
 
   /** List of all numeric function names defined by JDBC. */
-  private static final String NUMERIC_FUNCTIONS = /*X*/
+  private static final String NUMERIC_FUNCTIONS =
       constructFuncList("ABS", "ACOS", "ASIN", "ATAN", "ATAN2",
           "CBRT", "CEILING", "COS", "COT",
           "DEGREES", "EXP", "FLOOR", "LOG", "LOG10", "MOD", "PI",
@@ -379,14 +379,14 @@ public class SqlJdbcFunctionCall extends SqlFunction {
           "TAN", "TRUNCATE");
 
   /** List of all string function names defined by JDBC. */
-  private static final String STRING_FUNCTIONS = /*X*/
+  private static final String STRING_FUNCTIONS =
       constructFuncList("ASCII", "CHAR", "CONCAT",
           "DIFFERENCE", "INSERT", "LCASE",
           "LEFT", "LENGTH", "LOCATE", "LTRIM", "REPEAT", "REPLACE",
           "RIGHT", "RTRIM", "SOUNDEX", "SPACE", "SUBSTRING", "UCASE");
 
   /** List of all time/date function names defined by JDBC. */
-  private static final String TIME_DATE_FUNCTIONS = /*X*/
+  private static final String TIME_DATE_FUNCTIONS =
       constructFuncList("CONVERT_TIMEZONE", "CURDATE", "CURTIME",
           "DAYNAME", "DAYOFMONTH", "DAYOFWEEK",
           "DAYOFYEAR", "HOUR", "MINUTE", "MONTH", "MONTHNAME", "NOW",
@@ -394,7 +394,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
           "TO_DATE", "TO_TIMESTAMP", "WEEK", "YEAR");
 
   /** List of all system function names defined by JDBC. */
-  private static final String SYSTEM_FUNCTIONS = /*X*/
+  private static final String SYSTEM_FUNCTIONS =
       constructFuncList("CONVERT", "DATABASE", "IFNULL", "USER");
 
   //~ Instance fields --------------------------------------------------------

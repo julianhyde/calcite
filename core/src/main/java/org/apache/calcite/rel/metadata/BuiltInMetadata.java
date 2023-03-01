@@ -45,7 +45,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about the selectivity of a predicate. */
   public interface Selectivity extends Metadata {
-    MetadataDef<Selectivity> DEF = /*Y*/
+    MetadataDef<Selectivity> DEF =
         MetadataDef.of(Selectivity.class, Selectivity.Handler.class,
             BuiltInMethod.SELECTIVITY.method);
 
@@ -74,7 +74,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about which combinations of columns are unique identifiers. */
   public interface UniqueKeys extends Metadata {
-    MetadataDef<UniqueKeys> DEF = /*Y*/
+    MetadataDef<UniqueKeys> DEF =
         MetadataDef.of(UniqueKeys.class, UniqueKeys.Handler.class,
             BuiltInMethod.UNIQUE_KEYS.method);
 
@@ -107,7 +107,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about whether a set of columns uniquely identifies a row. */
   public interface ColumnUniqueness extends Metadata {
-    MetadataDef<ColumnUniqueness> DEF = /*Y*/
+    MetadataDef<ColumnUniqueness> DEF =
         MetadataDef.of(ColumnUniqueness.class, ColumnUniqueness.Handler.class,
             BuiltInMethod.COLUMN_UNIQUENESS.method);
 
@@ -149,7 +149,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about which columns are sorted. */
   public interface Collation extends Metadata {
-    MetadataDef<Collation> DEF = /*Y*/
+    MetadataDef<Collation> DEF =
         MetadataDef.of(Collation.class, Collation.Handler.class,
             BuiltInMethod.COLLATIONS.method);
 
@@ -179,7 +179,7 @@ public abstract class BuiltInMetadata {
    * among nodes, but it may be partitioned among threads running on the same
    * node. */
   public interface Distribution extends Metadata {
-    MetadataDef<Distribution> DEF = /*Y*/
+    MetadataDef<Distribution> DEF =
         MetadataDef.of(Distribution.class, Distribution.Handler.class,
             BuiltInMethod.DISTRIBUTION.method);
 
@@ -205,7 +205,7 @@ public abstract class BuiltInMetadata {
    * multimap only once.
    */
   public interface NodeTypes extends Metadata {
-    MetadataDef<NodeTypes> DEF = /*Y*/
+    MetadataDef<NodeTypes> DEF =
         MetadataDef.of(NodeTypes.class, NodeTypes.Handler.class,
             BuiltInMethod.NODE_TYPES.method);
 
@@ -230,7 +230,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about the number of rows returned by a relational expression. */
   public interface RowCount extends Metadata {
-    MetadataDef<RowCount> DEF = /*Y*/
+    MetadataDef<RowCount> DEF =
         MetadataDef.of(RowCount.class, RowCount.Handler.class,
             BuiltInMethod.ROW_COUNT.method);
 
@@ -259,7 +259,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the maximum number of rows returned by a relational
    * expression. */
   public interface MaxRowCount extends Metadata {
-    MetadataDef<MaxRowCount> DEF = /*Y*/
+    MetadataDef<MaxRowCount> DEF =
         MetadataDef.of(MaxRowCount.class, MaxRowCount.Handler.class,
             BuiltInMethod.MAX_ROW_COUNT.method);
 
@@ -289,7 +289,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the minimum number of rows returned by a relational
    * expression. */
   public interface MinRowCount extends Metadata {
-    MetadataDef<MinRowCount> DEF = /*Y*/
+    MetadataDef<MinRowCount> DEF =
         MetadataDef.of(MinRowCount.class, MinRowCount.Handler.class,
             BuiltInMethod.MIN_ROW_COUNT.method);
 
@@ -318,7 +318,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the number of distinct rows returned by a set of columns
    * in a relational expression. */
   public interface DistinctRowCount extends Metadata {
-    MetadataDef<DistinctRowCount> DEF = /*Y*/
+    MetadataDef<DistinctRowCount> DEF =
         MetadataDef.of(DistinctRowCount.class, DistinctRowCount.Handler.class,
             BuiltInMethod.DISTINCT_ROW_COUNT.method);
 
@@ -380,7 +380,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the number of distinct values in the original source of a
    * column or set of columns. */
   public interface PopulationSize extends Metadata {
-    MetadataDef<PopulationSize> DEF = /*Y*/
+    MetadataDef<PopulationSize> DEF =
         MetadataDef.of(PopulationSize.class, PopulationSize.Handler.class,
             BuiltInMethod.POPULATION_SIZE.method);
 
@@ -411,7 +411,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about the size of rows and columns. */
   public interface Size extends Metadata {
-    MetadataDef<Size> DEF = /*Y*/
+    MetadataDef<Size> DEF =
         MetadataDef.of(Size.class, Size.Handler.class,
             BuiltInMethod.AVERAGE_ROW_SIZE.method,
             BuiltInMethod.AVERAGE_COLUMN_SIZES.method);
@@ -454,7 +454,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about the origins of columns. */
   public interface ColumnOrigin extends Metadata {
-    MetadataDef<ColumnOrigin> DEF = /*Y*/
+    MetadataDef<ColumnOrigin> DEF =
         MetadataDef.of(ColumnOrigin.class, ColumnOrigin.Handler.class,
             BuiltInMethod.COLUMN_ORIGIN.method);
 
@@ -486,7 +486,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about the origins of expressions. */
   public interface ExpressionLineage extends Metadata {
-    MetadataDef<ExpressionLineage> DEF = /*Y*/
+    MetadataDef<ExpressionLineage> DEF =
         MetadataDef.of(ExpressionLineage.class, ExpressionLineage.Handler.class,
             BuiltInMethod.EXPRESSION_LINEAGE.method);
 
@@ -529,7 +529,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata to obtain references to tables used by a given expression. */
   public interface TableReferences extends Metadata {
-    MetadataDef<TableReferences> DEF = /*Y*/
+    MetadataDef<TableReferences> DEF =
         MetadataDef.of(TableReferences.class, TableReferences.Handler.class,
             BuiltInMethod.TABLE_REFERENCES.method);
 
@@ -565,7 +565,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the cost of evaluating a relational expression, including
    * all of its inputs. */
   public interface CumulativeCost extends Metadata {
-    MetadataDef<CumulativeCost> DEF = /*Y*/
+    MetadataDef<CumulativeCost> DEF =
         MetadataDef.of(CumulativeCost.class, CumulativeCost.Handler.class,
             BuiltInMethod.CUMULATIVE_COST.method);
 
@@ -596,7 +596,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the cost of evaluating a relational expression, not
    * including its inputs. */
   public interface NonCumulativeCost extends Metadata {
-    MetadataDef<NonCumulativeCost> DEF = /*Y*/
+    MetadataDef<NonCumulativeCost> DEF =
         MetadataDef.of(NonCumulativeCost.class, NonCumulativeCost.Handler.class,
             BuiltInMethod.NON_CUMULATIVE_COST.method);
 
@@ -628,7 +628,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about whether a relational expression should appear in a plan. */
   public interface ExplainVisibility extends Metadata {
-    MetadataDef<ExplainVisibility> DEF = /*Y*/
+    MetadataDef<ExplainVisibility> DEF =
         MetadataDef.of(ExplainVisibility.class, ExplainVisibility.Handler.class,
             BuiltInMethod.EXPLAIN_VISIBILITY.method);
 
@@ -657,7 +657,7 @@ public abstract class BuiltInMetadata {
   /** Metadata about the predicates that hold in the rows emitted from a
    * relational expression. */
   public interface Predicates extends Metadata {
-    MetadataDef<Predicates> DEF = /*Y*/
+    MetadataDef<Predicates> DEF =
         MetadataDef.of(Predicates.class, Predicates.Handler.class,
             BuiltInMethod.PREDICATES.method);
 
@@ -691,7 +691,7 @@ public abstract class BuiltInMetadata {
    * {@link org.apache.calcite.rel.core.TableScan} for the result predicates.
    */
   public interface AllPredicates extends Metadata {
-    MetadataDef<AllPredicates> DEF = /*Y*/
+    MetadataDef<AllPredicates> DEF =
             MetadataDef.of(AllPredicates.class, AllPredicates.Handler.class,
                 BuiltInMethod.ALL_PREDICATES.method);
 
@@ -720,7 +720,7 @@ public abstract class BuiltInMetadata {
    * how its operators are assigned to processes with independent resource
    * pools. */
   public interface Parallelism extends Metadata {
-    MetadataDef<Parallelism> DEF = /*Y*/
+    MetadataDef<Parallelism> DEF =
         MetadataDef.of(Parallelism.class, Parallelism.Handler.class,
             BuiltInMethod.IS_PHASE_TRANSITION.method,
             BuiltInMethod.SPLIT_COUNT.method);
@@ -760,7 +760,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata to get the lower bound cost of a RelNode. */
   public interface LowerBoundCost extends Metadata {
-    MetadataDef<LowerBoundCost> DEF = /*Y*/
+    MetadataDef<LowerBoundCost> DEF =
         MetadataDef.of(LowerBoundCost.class, LowerBoundCost.Handler.class,
             BuiltInMethod.LOWER_BOUND_COST.method);
 
@@ -782,7 +782,7 @@ public abstract class BuiltInMetadata {
 
   /** Metadata about the memory use of an operator. */
   public interface Memory extends Metadata {
-    MetadataDef<Memory> DEF = /*Y*/
+    MetadataDef<Memory> DEF =
         MetadataDef.of(Memory.class, Memory.Handler.class,
             BuiltInMethod.MEMORY.method,
             BuiltInMethod.CUMULATIVE_MEMORY_WITHIN_PHASE.method,

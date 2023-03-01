@@ -105,7 +105,7 @@ public class AggregateStarTableRule
     }
     final RelOptCluster cluster = scan.getCluster();
     final RelOptTable table = scan.getTable();
-    final RelOptLattice lattice = /*Y*/
+    final RelOptLattice lattice =
         requireNonNull(planner.getLattice(table),
             () -> "planner.getLattice(table) is null for " + table);
     final List<Lattice.Measure> measures =

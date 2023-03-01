@@ -69,7 +69,7 @@ public class DruidSchema extends AbstractSchema {
           new DruidConnectionImpl(url, coordinatorUrl);
       Set<String> tableNames = connection.tableNames();
 
-      tableMap = /*X*/
+      tableMap =
           Maps.asMap(ImmutableSet.copyOf(tableNames),
               CacheBuilder.newBuilder()
                   .build(CacheLoader.from(name -> table(name, connection))));

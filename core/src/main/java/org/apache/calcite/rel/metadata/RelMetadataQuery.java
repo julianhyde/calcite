@@ -878,7 +878,7 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
       SqlExplainLevel explainLevel) {
     for (;;) {
       try {
-        Boolean b = /*Y*/
+        Boolean b =
             explainVisibilityHandler.isVisibleInExplain(rel, this, explainLevel);
         return b == null || b;
       } catch (MetadataHandlerProvider.NoHandler e) {

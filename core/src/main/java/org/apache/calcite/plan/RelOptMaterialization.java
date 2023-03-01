@@ -89,7 +89,7 @@ public class RelOptMaterialization {
   public static @Nullable RelNode tryUseStar(RelNode rel,
       final RelOptTable starRelOptTable) {
     final StarTable starTable = starRelOptTable.unwrapOrThrow(StarTable.class);
-    RelNode rel2 = /*X*/
+    RelNode rel2 =
         rel.accept(new RelShuttleImpl() {
           @Override public RelNode visit(TableScan scan) {
             RelOptTable relOptTable = scan.getTable();
@@ -154,7 +154,7 @@ public class RelOptMaterialization {
                       Mappings.offsetTarget(
                           Mappings.offsetSource(rightMapping, offset),
                           leftMapping.getTargetCount()));
-              final RelNode project = /*X*/
+              final RelNode project =
                   RelOptUtil.createProject(
                       leftRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
                       Mappings.asListNonNull(mapping.inverse()));
@@ -180,7 +180,7 @@ public class RelOptMaterialization {
                   Mappings.merge(
                       Mappings.offsetSource(leftMapping, offset),
                       Mappings.offsetTarget(rightMapping, leftCount));
-              final RelNode project = /*X*/
+              final RelNode project =
                   RelOptUtil.createProject(
                       rightRelOptTable.toRel(ViewExpanders.simpleContext(cluster)),
                       Mappings.asListNonNull(mapping.inverse()));
@@ -203,7 +203,7 @@ public class RelOptMaterialization {
       // No rewrite happened.
       return null;
     }
-    final Program program = /*X*/
+    final Program program =
         Programs.hep(
             ImmutableList.of(CoreRules.PROJECT_FILTER_TRANSPOSE,
                 CoreRules.AGGREGATE_PROJECT_MERGE,
@@ -273,7 +273,7 @@ public class RelOptMaterialization {
    * as close to leaves as possible.
    */
   public static RelNode toLeafJoinForm(RelNode rel) {
-    final Program program = /*X*/
+    final Program program =
         Programs.hep(
             ImmutableList.of(CoreRules.JOIN_PROJECT_RIGHT_TRANSPOSE,
                 CoreRules.JOIN_PROJECT_LEFT_TRANSPOSE,
@@ -287,7 +287,7 @@ public class RelOptMaterialization {
           RelOptUtil.dumpPlan("before", rel, SqlExplainFormat.TEXT,
               SqlExplainLevel.DIGEST_ATTRIBUTES));
     }
-    final RelNode rel2 = /*Y*/
+    final RelNode rel2 =
         program.run(castNonNull(null), rel, castNonNull(null),
             ImmutableList.of(), ImmutableList.of());
     if (CalciteSystemProperty.DEBUG.value()) {

@@ -72,10 +72,10 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     MockSchema salesSchema = new MockSchema("SALES");
     // Same as "EMP_20" except it uses ModifiableViewTable which populates
     // constrained columns with default values on INSERT and has a single constraint on DEPTNO.
-    List<String> empModifiableViewNames = /*X*/
+    List<String> empModifiableViewNames =
         ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(),
             "EMP_MODIFIABLEVIEW");
-    TableMacro empModifiableViewMacro = /*Y*/
+    TableMacro empModifiableViewMacro =
         MockModifiableViewRelOptTable.viewMacro(rootSchema,
             "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER from EMPDEFAULTS"
                 + " where DEPTNO = 20",
@@ -83,7 +83,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
             ImmutableList.of(empModifiableViewNames.get(2)), true);
     TranslatableTable empModifiableView =
         empModifiableViewMacro.apply(ImmutableList.of());
-    MockModifiableViewRelOptTable mockEmpViewTable = /*X*/
+    MockModifiableViewRelOptTable mockEmpViewTable =
         MockModifiableViewRelOptTable.create(
             (MockModifiableViewRelOptTable.MockModifiableViewTable)
                 empModifiableView, this,
@@ -93,10 +93,10 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
 
     // Same as "EMP_MODIFIABLEVIEW" except that all columns are in the view, columns are reordered,
     // and there is an `extra` extended column.
-    List<String> empModifiableViewNames2 = /*X*/
+    List<String> empModifiableViewNames2 =
         ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(),
             "EMP_MODIFIABLEVIEW2");
-    TableMacro empModifiableViewMacro2 = /*Y*/
+    TableMacro empModifiableViewMacro2 =
         MockModifiableViewRelOptTable.viewMacro(rootSchema,
             "select ENAME, EMPNO, JOB, DEPTNO, SLACKER, SAL, EXTRA, HIREDATE, MGR, COMM"
                 + " from EMPDEFAULTS extend (EXTRA boolean)"
@@ -106,7 +106,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
             true);
     TranslatableTable empModifiableView2 =
         empModifiableViewMacro2.apply(ImmutableList.of());
-    MockModifiableViewRelOptTable mockEmpViewTable2 = /*X*/
+    MockModifiableViewRelOptTable mockEmpViewTable2 =
         MockModifiableViewRelOptTable.create(
             (MockModifiableViewRelOptTable.MockModifiableViewTable)
                 empModifiableView2, this,
@@ -115,10 +115,10 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
     registerTable(mockEmpViewTable2);
 
     // Same as "EMP_MODIFIABLEVIEW" except that comm is not in the view.
-    List<String> empModifiableViewNames3 = /*X*/
+    List<String> empModifiableViewNames3 =
         ImmutableList.of(salesSchema.getCatalogName(), salesSchema.getName(),
             "EMP_MODIFIABLEVIEW3");
-    TableMacro empModifiableViewMacro3 = /*Y*/
+    TableMacro empModifiableViewMacro3 =
         MockModifiableViewRelOptTable.viewMacro(rootSchema,
             "select EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, SLACKER from EMPDEFAULTS"
                 + " where DEPTNO = 20",
@@ -127,7 +127,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
             true);
     TranslatableTable empModifiableView3 =
         empModifiableViewMacro3.apply(ImmutableList.of());
-    MockModifiableViewRelOptTable mockEmpViewTable3 = /*X*/
+    MockModifiableViewRelOptTable mockEmpViewTable3 =
         MockModifiableViewRelOptTable.create(
             (MockModifiableViewRelOptTable.MockModifiableViewTable)
                 empModifiableView3, this,
@@ -154,7 +154,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
 
     MockSchema structTypeSchema = new MockSchema("STRUCT");
     registerSchema(structTypeSchema);
-    final List<CompoundNameColumn> columnsExtended = /*X*/
+    final List<CompoundNameColumn> columnsExtended =
         Arrays.asList(new CompoundNameColumn("", "K0", f.varchar20TypeNull),
             new CompoundNameColumn("", "C1", f.varchar20TypeNull),
             new CompoundNameColumn("F0", "C0", f.intType),

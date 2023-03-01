@@ -491,7 +491,7 @@ public final class AggregateExpandDistinctAggregatesRule
         RexNode expr = relBuilder.equals(nodeZ, relBuilder.literal(v));
         if (distinctFilterArg > -1) {
           // 'AND' the filter of the distinct aggregate call and the group value.
-          expr = /*Y*/
+          expr =
               relBuilder.and(expr,
                   relBuilder.call(SqlStdOperatorTable.IS_TRUE,
                       relBuilder.field(distinctFilterArg)));
@@ -514,7 +514,7 @@ public final class AggregateExpandDistinctAggregatesRule
       if (!aggCall.isDistinct()) {
         aggregation = SqlStdOperatorTable.MIN;
         newArgList = ImmutableIntList.of(x++);
-        newFilterArg = /*Y*/
+        newFilterArg =
             requireNonNull(filters.get(Pair.of(groupSet, -1)),
                 "filters.get(Pair.of(groupSet, -1))");
       } else {
@@ -523,7 +523,7 @@ public final class AggregateExpandDistinctAggregatesRule
         final ImmutableBitSet newGroupSet = ImmutableBitSet.of(aggCall.getArgList())
             .setIf(aggCall.filterArg, aggCall.filterArg >= 0)
             .union(groupSet);
-        newFilterArg = /*Y*/
+        newFilterArg =
             requireNonNull(filters.get(Pair.of(newGroupSet, aggCall.filterArg)),
                 "filters.get(of(newGroupSet, aggCall.filterArg))");
       }

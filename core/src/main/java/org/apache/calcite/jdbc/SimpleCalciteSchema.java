@@ -103,7 +103,7 @@ class SimpleCalciteSchema extends CalciteSchema {
   @Override protected @Nullable CalciteSchema getImplicitSubSchema(String schemaName,
       boolean caseSensitive) {
     // Check implicit schemas.
-    final String schemaName2 = /*X*/
+    final String schemaName2 =
         caseSensitive ? schemaName
             : caseInsensitiveLookup(schema.getSubSchemaNames(), schemaName);
     if (schemaName2 == null) {
@@ -119,7 +119,7 @@ class SimpleCalciteSchema extends CalciteSchema {
   @Override protected @Nullable TableEntry getImplicitTable(String tableName,
       boolean caseSensitive) {
     // Check implicit tables.
-    final String tableName2 = /*X*/
+    final String tableName2 =
         caseSensitive ? tableName
             : caseInsensitiveLookup(schema.getTableNames(), tableName);
     if (tableName2 == null) {
@@ -134,7 +134,7 @@ class SimpleCalciteSchema extends CalciteSchema {
 
   @Override protected @Nullable TypeEntry getImplicitType(String name, boolean caseSensitive) {
     // Check implicit types.
-    final String name2 = /*X*/
+    final String name2 =
         caseSensitive ? name
             : caseInsensitiveLookup(schema.getTypeNames(), name);
     if (name2 == null) {
@@ -222,7 +222,7 @@ class SimpleCalciteSchema extends CalciteSchema {
 
   @Override protected CalciteSchema snapshot(@Nullable CalciteSchema parent,
       SchemaVersion version) {
-    CalciteSchema snapshot = /*Y*/
+    CalciteSchema snapshot =
         new SimpleCalciteSchema(parent, schema.snapshot(version), name, null,
             tableMap, latticeMap, typeMap,
             functionMap, functionNames, nullaryFunctionMap, getPath());

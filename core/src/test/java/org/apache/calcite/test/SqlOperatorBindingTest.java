@@ -123,15 +123,15 @@ class SqlOperatorBindingTest {
    * literal</a>.
    */
   @Test void testRexNodeLiteral() {
-    final RexNode literal = /*X*/
+    final RexNode literal =
         rexBuilder.makeZeroLiteral(integerDataType);
 
-    final RexNode castLiteral = /*X*/
+    final RexNode castLiteral =
         rexBuilder.makeCall(integerDataType,
             SqlStdOperatorTable.CAST,
             Lists.newArrayList(literal));
 
-    final RexNode castCastLiteral = /*X*/
+    final RexNode castCastLiteral =
         rexBuilder.makeCall(integerDataType,
             SqlStdOperatorTable.CAST,
             Lists.newArrayList(castLiteral));

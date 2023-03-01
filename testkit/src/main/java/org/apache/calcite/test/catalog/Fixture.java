@@ -85,7 +85,7 @@ final class Fixture extends AbstractFixture {
       .kind(StructKind.PEEK_FIELDS)
       .build();
   final RelDataType empListType = array(empRecordType);
-  final ObjectSqlType addressType = /*Y*/
+  final ObjectSqlType addressType =
       new ObjectSqlType(SqlTypeName.STRUCTURED,
           new SqlIdentifier("ADDRESS", SqlParserPos.ZERO),
           false,
@@ -95,15 +95,15 @@ final class Fixture extends AbstractFixture {
               new RelDataTypeFieldImpl("STATE", 3, varchar20Type)),
           RelDataTypeComparability.NONE);
   // Row(f0 int, f1 varchar)
-  final RelDataType recordType1 = /*X*/
+  final RelDataType recordType1 =
       typeFactory.createStructType(Arrays.asList(intType, varcharType),
           Arrays.asList("f0", "f1"));
   // Row(f0 int not null, f1 varchar null)
-  final RelDataType recordType2 = /*X*/
+  final RelDataType recordType2 =
       typeFactory.createStructType(Arrays.asList(intType, nullable(varcharType)),
           Arrays.asList("f0", "f1"));
   // Row(f0 Row(ff0 int not null, ff1 varchar null) null, f1 timestamp not null)
-  final RelDataType recordType3 = /*X*/
+  final RelDataType recordType3 =
       typeFactory.createStructType(
           Arrays.asList(
               nullable(
@@ -113,13 +113,13 @@ final class Fixture extends AbstractFixture {
               timestampType),
           Arrays.asList("f0", "f1"));
   // Row(f0 bigint not null, f1 decimal null) array
-  final RelDataType recordType4 = /*X*/
+  final RelDataType recordType4 =
       array(
           typeFactory.createStructType(
               Arrays.asList(bigintType, nullable(decimalType)),
               Arrays.asList("f0", "f1")));
   // Row(f0 varchar not null, f1 timestamp null) multiset
-  final RelDataType recordType5 = /*X*/
+  final RelDataType recordType5 =
       typeFactory.createMultisetType(
           typeFactory.createStructType(
               Arrays.asList(varcharType, timestampTypeNull),
@@ -135,7 +135,7 @@ final class Fixture extends AbstractFixture {
   final RelDataType varchar5MultisetArrayType = array(varchar5MultisetType);
   final RelDataType intArrayMultisetType = typeFactory.createMultisetType(intArrayType, -1);
   // Row(f0 int array multiset, f1 varchar(5) array) array multiset
-  final RelDataType rowArrayMultisetType = /*X*/
+  final RelDataType rowArrayMultisetType =
       typeFactory.createMultisetType(
           array(
               typeFactory.createStructType(

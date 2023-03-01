@@ -246,7 +246,7 @@ public class SqlFunction extends SqlOperator {
 
     final List<SqlNode> args = constructOperandList(validator, call, argNames);
 
-    final List<RelDataType> argTypes = /*Y*/
+    final List<RelDataType> argTypes =
         constructArgTypeList(validator, scope,
             call, args, convertRowArgToColumnList);
 
@@ -309,7 +309,7 @@ public class SqlFunction extends SqlOperator {
 
         // check if the identifier represents type
         final SqlFunction x = (SqlFunction) call.getOperator();
-        final SqlIdentifier identifier = /*Y*/
+        final SqlIdentifier identifier =
             Util.first(x.getSqlIdentifier(),
                 new SqlIdentifier(x.getName(), SqlParserPos.ZERO));
         RelDataType type = validator.getCatalogReader().getNamedType(identifier);
@@ -321,7 +321,7 @@ public class SqlFunction extends SqlOperator {
         // if function doesn't exist within operator table and known function
         // handling is turned off then create a more permissive function
         if (function == null && validator.config().lenientOperatorLookup()) {
-          function = /*Y*/
+          function =
               new SqlUnresolvedFunction(identifier, null,
                   null, OperandTypes.VARIADIC, null, x.getFunctionType());
           break validCoercionType;

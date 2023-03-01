@@ -147,7 +147,7 @@ class TraitPropagationTest {
         }
       };
 
-      final RelOptAbstractTable t1 = /*Y*/
+      final RelOptAbstractTable t1 =
           new RelOptAbstractTable(relOptSchema, "t1",
               table.getRowType(typeFactory)) {
             @Override public <T> T unwrap(Class<T> clazz) {
@@ -160,7 +160,7 @@ class TraitPropagationTest {
       final RelNode rt1 = LogicalTableScan.create(cluster, t1, ImmutableList.of());
 
       // project s column
-      RelNode project = /*Y*/
+      RelNode project =
           LogicalProject.create(rt1, ImmutableList.of(),
               ImmutableList.of((RexNode) rexBuilder.makeInputRef(stringType, 0),
                   rexBuilder.makeInputRef(integerType, 1)),
@@ -169,11 +169,11 @@ class TraitPropagationTest {
               ImmutableSet.of());
 
       // aggregate on s, count
-      AggregateCall aggCall = /*Y*/
+      AggregateCall aggCall =
           AggregateCall.create(SqlStdOperatorTable.COUNT,
               false, false, false, Collections.singletonList(1), -1,
               null, RelCollations.EMPTY, sqlBigInt, "cnt");
-      RelNode agg = /*Y*/
+      RelNode agg =
           new LogicalAggregate(cluster,
               cluster.traitSetOf(Convention.NONE), ImmutableList.of(), project,
               ImmutableBitSet.of(0), null, Collections.singletonList(aggCall));
@@ -211,7 +211,7 @@ class TraitPropagationTest {
       LogicalAggregate rel = call.rel(0);
       assert rel.getGroupSet().cardinality() == 1;
       int aggIndex = rel.getGroupSet().iterator().next();
-      RelTrait collation = /*X*/
+      RelTrait collation =
           RelCollations.of(
               new RelFieldCollation(aggIndex,
                   RelFieldCollation.Direction.ASCENDING,
@@ -305,7 +305,7 @@ class TraitPropagationTest {
 
     @Override public RelNode convert(RelNode rel) {
       final Sort sort = (Sort) rel;
-      final RelNode input = /*Y*/
+      final RelNode input =
           convert(sort.getInput(), rel.getCluster().traitSetOf(PHYSICAL));
       return new PhysSort(rel.getCluster(),
           input.getTraitSet().plus(sort.getCollation()),
@@ -461,7 +461,7 @@ class TraitPropagationTest {
               typeFactory,
               prepareContext.config());
     final RexBuilder rexBuilder = new RexBuilder(typeFactory);
-    final RelOptPlanner planner = /*Y*/
+    final RelOptPlanner planner =
         new VolcanoPlanner(config.getCostFactory(), config.getContext());
 
     // set up rules before we generate cluster

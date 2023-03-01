@@ -41,7 +41,7 @@ public class EnumerableLimitSortRule extends RelRule<EnumerableLimitSortRule.Con
   @Override public void onMatch(RelOptRuleCall call) {
     final Sort sort = call.rel(0);
     RelNode input = sort.getInput();
-    final Sort o = /*X*/
+    final Sort o =
         EnumerableLimitSort.create(
             convert(input,
                 input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
@@ -53,7 +53,7 @@ public class EnumerableLimitSortRule extends RelRule<EnumerableLimitSortRule.Con
   /** Rule configuration. */
   @Value.Immutable
   public interface Config extends RelRule.Config {
-    Config DEFAULT = /*X*/
+    Config DEFAULT =
         ImmutableEnumerableLimitSortRule.Config.of()
             .withOperandSupplier(b0 ->
                 b0.operand(LogicalSort.class)

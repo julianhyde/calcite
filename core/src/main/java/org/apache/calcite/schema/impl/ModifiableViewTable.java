@@ -200,7 +200,7 @@ public class ModifiableViewTable extends ViewTable
 
     @Override public ColumnStrategy generationStrategy(RelOptTable table,
         int iColumn) {
-      final ModifiableViewTable viewTable = /*X*/
+      final ModifiableViewTable viewTable =
           requireNonNull(table.unwrap(ModifiableViewTable.class),
               () -> "unable to unwrap ModifiableViewTable from " + table);
       assert iColumn < viewTable.columnMapping.size();
@@ -228,7 +228,7 @@ public class ModifiableViewTable extends ViewTable
 
     @Override public RexNode newColumnDefaultValue(RelOptTable table,
         int iColumn, InitializerContext context) {
-      final ModifiableViewTable viewTable = /*X*/
+      final ModifiableViewTable viewTable =
           requireNonNull(table.unwrap(ModifiableViewTable.class),
               () -> "unable to unwrap ModifiableViewTable from " + table);
       assert iColumn < viewTable.columnMapping.size();

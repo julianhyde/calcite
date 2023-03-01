@@ -84,7 +84,7 @@ public class MaterializedViewFilterScanRule
     final List<RelOptMaterialization> materializations =
         planner.getMaterializations();
     if (!materializations.isEmpty()) {
-      RelNode root = /*Y*/
+      RelNode root =
           filter.copy(filter.getTraitSet(), Collections.singletonList(scan));
       List<RelOptMaterialization> applicableMaterializations =
           RelOptMaterializations.getApplicableMaterializations(root, materializations);

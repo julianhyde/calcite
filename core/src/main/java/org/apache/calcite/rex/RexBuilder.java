@@ -405,7 +405,7 @@ public class RexBuilder {
     if (nullWhenCountZero) {
       final RelDataType bigintType =
           typeFactory.createSqlType(SqlTypeName.BIGINT);
-      result = /*X*/
+      result =
           makeCall(SqlStdOperatorTable.CASE,
               makeCall(SqlStdOperatorTable.GREATER_THAN,
                   new RexOver(bigintType, SqlStdOperatorTable.COUNT, exprs,
@@ -707,7 +707,7 @@ public class RexBuilder {
   }
 
   private RexNode makeCastBooleanToExact(RelDataType toType, RexNode exp) {
-    final RexNode casted = /*Y*/
+    final RexNode casted =
         makeCall(SqlStdOperatorTable.CASE, exp,
             makeExactLiteral(BigDecimal.ONE, toType),
             makeZeroLiteral(toType));
@@ -977,7 +977,7 @@ public class RexBuilder {
         Charset charset = type.getCharset();
         assert charset != null : "type.getCharset() must not be null";
         assert type.getCollation() != null : "type.getCollation() must not be null";
-        o = /*X*/
+        o =
             new NlsString(nlsString.getValue(), charset.name(),
                 type.getCollation());
       }
@@ -1361,7 +1361,7 @@ public class RexBuilder {
         final List<RelDataType> types = ranges.stream()
             .map(RexNode::getType)
             .collect(Collectors.toList());
-        RelDataType sargType = /*Y*/
+        RelDataType sargType =
             requireNonNull(typeFactory.leastRestrictive(types),
                 () -> "Can't find leastRestrictive type for SARG among " + types);
         return makeCall(SqlStdOperatorTable.SEARCH, arg,
@@ -1403,7 +1403,7 @@ public class RexBuilder {
               ImmutableRangeSet.<Comparable>of(
                   Range.closed(lowerValue, upperValue)));
       List<RelDataType> types = ImmutableList.of(lower.getType(), upper.getType());
-      RelDataType sargType = /*Y*/
+      RelDataType sargType =
           requireNonNull(typeFactory.leastRestrictive(types),
               () -> "Can't find leastRestrictive type for SARG among " + types);
       return makeCall(SqlStdOperatorTable.SEARCH, arg,

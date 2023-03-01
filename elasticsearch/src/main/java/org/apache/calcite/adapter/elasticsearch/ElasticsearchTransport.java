@@ -108,7 +108,7 @@ final class ElasticsearchTransport {
   private ElasticsearchVersion version() {
     final HttpRequest request = new HttpGet("/");
     // version extract function
-    final Function<ObjectNode, ElasticsearchVersion> fn = /*X*/
+    final Function<ObjectNode, ElasticsearchVersion> fn =
         node -> ElasticsearchVersion.fromString(
             node.get("version").get("number").asText());
     return rawHttp(ObjectNode.class)
@@ -243,7 +243,7 @@ final class ElasticsearchTransport {
       try (InputStream is = response.getEntity().getContent()) {
         return mapper.readValue(is, klass);
       } catch (IOException e) {
-        final String message = /*Y*/
+        final String message =
             String.format(Locale.ROOT,
                 "Couldn't parse HTTP response %s into %s", response, klass);
         throw new UncheckedIOException(message, e);
@@ -277,7 +277,7 @@ final class ElasticsearchTransport {
       final HttpEntity entity = request instanceof HttpEntityEnclosingRequest
           ? ((HttpEntityEnclosingRequest) request).getEntity() : null;
 
-      final Request r = /*X*/
+      final Request r =
           new Request(request.getRequestLine().getMethod(),
               request.getRequestLine().getUri());
       r.setEntity(entity);
@@ -289,7 +289,7 @@ final class ElasticsearchTransport {
       if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
         final String error = EntityUtils.toString(response.getEntity());
 
-        final String message = /*Y*/
+        final String message =
             String.format(Locale.ROOT,
                 "Error while querying Elastic (on %s/%s) status: %s\n"
                     + "Payload:\n"

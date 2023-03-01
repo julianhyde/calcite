@@ -195,7 +195,7 @@ public class EnumerableAggregate extends EnumerableAggregateBase implements Enum
     final List<Expression> initExpressions = new ArrayList<>();
     final BlockBuilder initBlock = new BlockBuilder();
 
-    final List<Type> aggStateTypes = /*X*/
+    final List<Type> aggStateTypes =
         createAggStateTypes(initExpressions, initBlock, aggs, typeFactory);
 
     final PhysType accPhysType =

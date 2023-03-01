@@ -53,7 +53,7 @@ class RelDataTypeSystemTest {
       }
 
       int resultScale = Math.max(type1.getScale(), type2.getScale());
-      int resultPrecision = /*Y*/
+      int resultPrecision =
           resultScale
               + Math.max(type1.getPrecision() - type1.getScale(),
                   type2.getPrecision() - type2.getScale())
@@ -127,7 +127,7 @@ class RelDataTypeSystemTest {
     RelDataType operand1 = TYPE_FACTORY.createSqlType(SqlTypeName.DECIMAL, 10, 1);
     RelDataType operand2 = TYPE_FACTORY.createSqlType(SqlTypeName.DECIMAL, 10, 2);
 
-    RelDataType dataType = /*Y*/
+    RelDataType dataType =
         SqlStdOperatorTable.MINUS.inferReturnType(TYPE_FACTORY,
             Lists.newArrayList(operand1, operand2));
     assertEquals(12, dataType.getPrecision());

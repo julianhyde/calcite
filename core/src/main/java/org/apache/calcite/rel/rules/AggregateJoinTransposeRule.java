@@ -171,7 +171,7 @@ public class AggregateJoinTransposeRule
     // Do the columns used by the join appear in the output of the aggregate?
     final ImmutableBitSet aggregateColumns = aggregate.getGroupSet();
     final RelMetadataQuery mq = call.getMetadataQuery();
-    final ImmutableBitSet keyColumns = /*Y*/
+    final ImmutableBitSet keyColumns =
         keyColumns(aggregateColumns,
             mq.getPulledUpPredicates(join).pulledUpPredicates);
     final ImmutableBitSet joinColumns =
@@ -255,7 +255,7 @@ public class AggregateJoinTransposeRule
               aggregation.unwrapOrThrow(SqlSplittableAggFunction.class);
           if (!aggCall.e.getArgList().isEmpty()
               && fieldSet.contains(ImmutableBitSet.of(aggCall.e.getArgList()))) {
-            final RexNode singleton = /*Y*/
+            final RexNode singleton =
                 splitter.singleton(rexBuilder, joinInput.getRowType(),
                     aggCall.e.transform(mapping));
 
@@ -289,7 +289,7 @@ public class AggregateJoinTransposeRule
           final AggregateCall call1;
           if (fieldSet.contains(ImmutableBitSet.of(aggCall.e.getArgList()))) {
             final AggregateCall splitCall = splitter.split(aggCall.e, mapping);
-            call1 = /*Y*/
+            call1 =
                 splitCall.adaptTo(joinInput, splitCall.getArgList(),
                     splitCall.filterArg, oldGroupKeyCount, newGroupKeyCount);
           } else {
@@ -318,7 +318,7 @@ public class AggregateJoinTransposeRule
     }
 
     // Update condition
-    final Mapping mapping = /*X*/
+    final Mapping mapping =
         (Mapping) Mappings.target(map::get,
             join.getRowType().getFieldCount(),
             belowOffset);

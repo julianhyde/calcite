@@ -179,7 +179,7 @@ public class JdbcSchema implements Schema {
       return JdbcSchema.create(
           parentSchema, name, dataSource, jdbcCatalog, jdbcSchema);
     } else {
-      SqlDialectFactory factory = /*X*/
+      SqlDialectFactory factory =
           AvaticaUtils.instantiatePlugin(SqlDialectFactory.class, sqlDialectFactory);
       return JdbcSchema.create(parentSchema, name, dataSource, factory,
           jdbcCatalog, jdbcSchema);
@@ -422,12 +422,12 @@ public class JdbcSchema implements Schema {
       if (typeString != null && typeString.endsWith(" ARRAY")) {
         // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type
         // "INTEGER".
-        final String remaining = /*Y*/
+        final String remaining =
             typeString.substring(0, typeString.length() - " ARRAY".length());
         component = parseTypeString(typeFactory, remaining);
       }
       if (component == null) {
-        component = /*X*/
+        component =
             typeFactory.createTypeWithNullability(
                 typeFactory.createSqlType(SqlTypeName.ANY), true);
       }

@@ -187,7 +187,7 @@ public class MysqlSqlDialect extends SqlDialect {
   @Override public SqlNode rewriteSingleValueExpr(SqlNode aggCall) {
     final SqlNode operand = ((SqlBasicCall) aggCall).operand(0);
     final SqlLiteral nullLiteral = SqlLiteral.createNull(SqlParserPos.ZERO);
-    final SqlNode unionOperand = /*Y*/
+    final SqlNode unionOperand =
         new SqlSelect(SqlParserPos.ZERO, SqlNodeList.EMPTY,
             SqlNodeList.of(nullLiteral), null, null, null, null,
             SqlNodeList.EMPTY, null, null, null, null, SqlNodeList.EMPTY);

@@ -616,19 +616,19 @@ class CsvTest {
 
     try (Connection connection =
         DriverManager.getConnection("jdbc:calcite:", info)) {
-      ResultSet res = /*Y*/
+      ResultSet res =
           connection.getMetaData().getColumns(null, null,
               "DATE", "JOINEDAT");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.DATE);
 
-      res = /*Y*/
+      res =
           connection.getMetaData().getColumns(null, null,
               "DATE", "JOINTIME");
       res.next();
       assertEquals(res.getInt("DATA_TYPE"), java.sql.Types.TIME);
 
-      res = /*Y*/
+      res =
           connection.getMetaData().getColumns(null, null,
               "DATE", "JOINTIMES");
       res.next();
@@ -766,7 +766,7 @@ class CsvTest {
     properties.setProperty("caseSensitive", "true");
     try (Connection connection =
         DriverManager.getConnection("jdbc:calcite:", properties)) {
-      final CalciteConnection calciteConnection = /*X*/
+      final CalciteConnection calciteConnection =
           connection.unwrap(CalciteConnection.class);
 
       final Schema schema =

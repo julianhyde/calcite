@@ -1098,11 +1098,11 @@ public abstract class SqlTypeUtil {
         scale = maxScale;
       }
 
-      typeNameSpec = /*X*/
+      typeNameSpec =
           new SqlBasicTypeNameSpec(typeName, precision, scale, charSetName,
               SqlParserPos.ZERO);
     } else if (isCollection(type)) {
-      typeNameSpec = /*X*/
+      typeNameSpec =
           new SqlCollectionTypeNameSpec(
               convertTypeToSpec(getComponentTypeOrThrow(type)).getTypeNameSpec(),
               typeName, SqlParserPos.ZERO);

@@ -49,7 +49,7 @@ public abstract class CsvTable extends AbstractTable {
       return protoRowType.apply(typeFactory);
     }
     if (rowType == null) {
-      rowType = /*Y*/
+      rowType =
           CsvEnumerator.deduceRowType((JavaTypeFactory) typeFactory, source,
               null, isStream());
     }

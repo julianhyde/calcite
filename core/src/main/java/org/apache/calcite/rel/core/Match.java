@@ -249,7 +249,7 @@ public abstract class Match extends SingleRel {
         visitEach(call.operands);
       }
       if (aggFunction != null) {
-        RexMRAggCall aggCall = /*Y*/
+        RexMRAggCall aggCall =
             new RexMRAggCall(aggFunction, call.getType(), call.getOperands(),
                 aggregateCalls.size());
         aggregateCalls.add(aggCall);

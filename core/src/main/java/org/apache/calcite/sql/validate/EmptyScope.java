@@ -143,7 +143,7 @@ class EmptyScope implements SqlValidatorScope {
       CalciteSchema.TableEntry entry =
           schema.getTable(schemaName, nameMatcher.isCaseSensitive());
       if (entry == null) {
-        entry = /*Y*/
+        entry =
             schema.getTableBasedOnNullaryFunction(schemaName,
                 nameMatcher.isCaseSensitive());
       }

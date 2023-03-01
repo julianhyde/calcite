@@ -166,7 +166,7 @@ class InnodbFilterTranslator {
             pushDownRexNodeList, remainderRexNodeList);
 
     // handle point query if possible
-    condition = /*Y*/
+    condition =
         handlePointQuery(condition, keyMeta, leftMostKeyNodes,
             keyOrdToNodesMap, pushDownRexNodeList, remainderRexNodeList);
     if (condition.canPushDown()) {
@@ -174,10 +174,10 @@ class InnodbFilterTranslator {
     }
 
     // handle range query
-    condition = /*Y*/
+    condition =
         handleRangeQuery(condition, keyMeta, leftMostKeyNodes,
             pushDownRexNodeList, remainderRexNodeList, ">=", ">");
-    condition = /*Y*/
+    condition =
         handleRangeQuery(condition, keyMeta, leftMostKeyNodes,
             pushDownRexNodeList, remainderRexNodeList, "<=", "<");
 

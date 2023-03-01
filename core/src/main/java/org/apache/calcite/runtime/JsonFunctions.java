@@ -138,7 +138,7 @@ public class JsonFunctions {
         if (input.hasException()) {
           return JsonPathContext.withStrictException(pathSpec, input.exc);
         }
-        ctx = /*Y*/
+        ctx =
             JsonPath.parse(input.obj(),
                 Configuration.builder()
                     .jsonProvider(JSON_PATH_JSON_PROVIDER)
@@ -149,7 +149,7 @@ public class JsonFunctions {
         if (input.hasException()) {
           return JsonPathContext.withJavaObj(PathMode.LAX, null);
         }
-        ctx = /*Y*/
+        ctx =
             JsonPath.parse(input.obj(),
                 Configuration.builder()
                     .options(Option.SUPPRESS_EXCEPTIONS)
@@ -351,7 +351,7 @@ public class JsonFunctions {
               emptyBehavior.toString()).ex();
         }
       } else if (context.mode == PathMode.STRICT && isScalarObject(value)) {
-        exc = /*X*/
+        exc =
             RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc(
                 value.toString()).ex();
       } else {
@@ -628,7 +628,7 @@ public class JsonFunctions {
 
   public static String jsonRemove(JsonValueContext input, String... pathSpecs) {
     try {
-      DocumentContext ctx = /*Y*/
+      DocumentContext ctx =
           JsonPath.parse(input.obj(),
               Configuration.builder()
                   .options(Option.SUPPRESS_EXCEPTIONS)
@@ -664,7 +664,7 @@ public class JsonFunctions {
     int step = type == JsonModifyMode.REMOVE ? 1 : 2;
     assert kvs.length % step == 0;
     String result = null;
-    DocumentContext ctx = /*Y*/
+    DocumentContext ctx =
         JsonPath.parse(jsonDoc.obj(),
             Configuration.builder()
                 .options(Option.SUPPRESS_EXCEPTIONS)

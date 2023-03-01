@@ -129,12 +129,12 @@ public class PlannerImpl implements Planner, ViewExpander {
         context.maybeUnwrap(CalciteConnectionConfigImpl.class)
             .orElse(CalciteConnectionConfig.DEFAULT);
     if (!config.isSet(CalciteConnectionProperty.CASE_SENSITIVE)) {
-      config = /*Y*/
+      config =
           config.set(CalciteConnectionProperty.CASE_SENSITIVE,
               String.valueOf(parserConfig.caseSensitive()));
     }
     if (!config.isSet(CalciteConnectionProperty.CONFORMANCE)) {
-      config = /*Y*/
+      config =
           config.set(CalciteConnectionProperty.CONFORMANCE,
               String.valueOf(parserConfig.conformance()));
     }
@@ -255,11 +255,11 @@ public class PlannerImpl implements Planner, ViewExpander {
 
   @Override public RelRoot rel(SqlNode sql) {
     ensure(State.STATE_4_VALIDATED);
-    SqlNode validatedSqlNode = /*Y*/
+    SqlNode validatedSqlNode =
         requireNonNull(this.validatedSqlNode,
             "validatedSqlNode is null. Need to call #validate() first");
     final RexBuilder rexBuilder = createRexBuilder();
-    final RelOptCluster cluster = /*X*/
+    final RelOptCluster cluster =
         RelOptCluster.create(requireNonNull(planner, "planner"),
             rexBuilder);
     final SqlToRelConverter.Config config =
@@ -272,7 +272,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
     final RelBuilder relBuilder =
         config.getRelBuilderFactory().create(cluster, null);
-    root = /*X*/
+    root =
         root.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
     state = State.STATE_5_CONVERTED;
     return root;

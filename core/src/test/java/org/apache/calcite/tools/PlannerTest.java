@@ -143,7 +143,7 @@ class PlannerTest {
   }
 
   @Test void testParseIdentifierMaxLengthWithIncreased() throws Exception {
-    Planner planner = /*Y*/
+    Planner planner =
         getPlanner(null, SqlParser.config().withIdentifierMaxLength(512));
     planner.parse("select name as "
         + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"");
@@ -525,7 +525,7 @@ class PlannerTest {
     RelTraitSet toTraits = relNode.getTraitSet()
         .replace(EnumerableConvention.INSTANCE);
 
-    RelNode output = /*Y*/
+    RelNode output =
         program.run(planner, relNode, toTraits,
             ImmutableList.of(), ImmutableList.of());
 
@@ -683,7 +683,7 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_WINDOW_RULE,
             EnumerableRules.ENUMERABLE_SORT_RULE,
             CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW);
-    Planner planner = /*Y*/
+    Planner planner =
         getPlanner(null, SqlParser.config().withLex(Lex.JAVA),
             Programs.of(ruleSet));
     SqlNode parse = planner.parse(sql);
@@ -803,7 +803,7 @@ class PlannerTest {
 
     RuleSet ruleSet2 = RuleSets.ofList(rule2);
 
-    Planner planner = /*Y*/
+    Planner planner =
         getPlanner(null, Programs.of(ruleSet1), Programs.of(ruleSet2));
     SqlNode parse = planner.parse("select * from \"emps\"");
     SqlNode validate = planner.validate(parse);
@@ -850,7 +850,7 @@ class PlannerTest {
             EnumerableRules.ENUMERABLE_PROJECT_RULE);
 
     JdbcConvention out = new JdbcConvention(null, null, "myjdbc");
-    Program program1 = /*X*/
+    Program program1 =
         Programs.ofRules(MockJdbcProjectRule.create(out),
             MockJdbcTableRule.create(out));
 
@@ -916,7 +916,7 @@ class PlannerTest {
       buf.append("\njoin \"depts\" as d").append(i);
       buf.append("\non d").append(i).append(".\"deptno\" = d").append(i - 1).append(".\"deptno\"");
     }
-    Planner planner = /*Y*/
+    Planner planner =
         getPlanner(null, Programs.heuristicJoinOrder(Programs.RULE_SET, false, 6));
     SqlNode parse = planner.parse(buf.toString());
 
@@ -996,7 +996,7 @@ class PlannerTest {
   }
 
   private void checkHeuristic(String sql, String expected) throws Exception {
-    Planner planner = /*Y*/
+    Planner planner =
         getPlanner(null, Programs.heuristicJoinOrder(Programs.RULE_SET, false, 0));
     SqlNode parse = planner.parse(sql);
     SqlNode validate = planner.validate(parse);
@@ -1469,7 +1469,7 @@ class PlannerTest {
     final Program program = Programs.of(ruleSet);
     final RelTraitSet toTraits = relNode.getTraitSet()
         .replace(EnumerableConvention.INSTANCE);
-    final RelNode output = /*Y*/
+    final RelNode output =
         program.run(planner, relNode, toTraits, ImmutableList.of(),
             ImmutableList.of());
     final String plan = toString(output);

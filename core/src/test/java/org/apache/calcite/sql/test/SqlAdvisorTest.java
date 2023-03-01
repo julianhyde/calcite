@@ -1141,20 +1141,20 @@ class SqlAdvisorTest extends SqlValidatorTestCase {
 
     // closed double-quote
     sql = replaceQuotes(parserConfig, "select * from t where [^] and x = y");
-    expected = /*Y*/
+    expected =
         replaceQuotes(parserConfig, "SELECT * FROM t WHERE _suggest_ and x = y");
     fixture.withSql(sql).assertSimplify(expected);
 
     // closed double-quote containing extra stuff
     sql = replaceQuotes(parserConfig, "select * from t where [^foo] and x = y");
-    expected = /*Y*/
+    expected =
         replaceQuotes(parserConfig, "SELECT * FROM t WHERE _suggest_ and x = y");
     fixture.withSql(sql).assertSimplify(expected);
 
     // escaped double-quote containing extra stuff
-    sql = /*Y*/
+    sql =
         replaceQuotes(parserConfig, "select * from t where [^f]]oo] and x = y");
-    expected = /*Y*/
+    expected =
         replaceQuotes(parserConfig, "SELECT * FROM t WHERE _suggest_ and x = y");
     fixture.withSql(sql).assertSimplify(expected);
   }

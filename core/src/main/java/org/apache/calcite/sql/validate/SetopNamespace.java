@@ -69,7 +69,7 @@ public class SetopNamespace extends AbstractNamespace {
       final SqlValidatorNamespace namespace =
           requireNonNull(validator.getNamespace(operand),
               () -> "namespace for " + operand);
-      monotonicity = /*Y*/
+      monotonicity =
           combine(monotonicity,
               namespace.getMonotonicity(
                   namespace.getRowType().getFieldNames().get(index)));
@@ -102,7 +102,7 @@ public class SetopNamespace extends AbstractNamespace {
     case UNION:
     case INTERSECT:
     case EXCEPT:
-      final SqlValidatorScope scope = /*X*/
+      final SqlValidatorScope scope =
           requireNonNull(validator.scopes.get(call),
               () -> "scope for " + call);
       for (SqlNode operand : call.getOperandList()) {

@@ -156,7 +156,7 @@ public abstract class ProjectToWindowRule
               project.getCluster().getRexBuilder());
       // temporary LogicalCalc, never registered
       final LogicalCalc calc = LogicalCalc.create(input, program);
-      final CalcRelSplitter transform = /*Y*/
+      final CalcRelSplitter transform =
           new WindowedAggRelSplitter(calc, call.builder()) {
             @Override protected RelNode handle(RelNode rel) {
               if (!(rel instanceof LogicalCalc)) {

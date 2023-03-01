@@ -173,7 +173,7 @@ public abstract class Prepare {
     final RelTraitSet desiredTraits = getDesiredRootTraitSet(root);
 
     final Program program = getProgram();
-    final RelNode rootRel4 = /*X*/
+    final RelNode rootRel4 =
         program.run(planner, root.rel, desiredTraits, materializationList,
             latticeList);
     if (LOGGER.isDebugEnabled()) {

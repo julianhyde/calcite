@@ -140,7 +140,7 @@ public class SelectScope extends ListScope {
     final List<SqlWindow> windowList =
         (List<SqlWindow>) (List) select.getWindowList();
     for (SqlWindow window : windowList) {
-      final SqlIdentifier declId = /*X*/
+      final SqlIdentifier declId =
           requireNonNull(window.getDeclName(),
               () -> "declName of window " + window);
       assert declId.isSimple();

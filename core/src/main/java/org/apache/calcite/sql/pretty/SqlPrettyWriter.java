@@ -1422,7 +1422,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
     public void set(String name, String value) {
-      final Method method = /*X*/
+      final Method method =
           requireNonNull(setterMethods.get(name),
               () -> "setter method " + name + " not found");
       try {
@@ -1433,7 +1433,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
     public @Nullable Object get(String name) {
-      final Method method = /*X*/
+      final Method method =
           requireNonNull(getterMethods.get(name),
               () -> "getter method " + name + " not found");
       try {

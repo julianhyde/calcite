@@ -224,7 +224,7 @@ public class RelMdAllPredicates
         final Map<RelTableRef, RelTableRef> currentTablesMapping = new HashMap<>();
         for (RelTableRef rightRef : tableRefs) {
           int shift = 0;
-          Collection<RelTableRef> lRefs = /*X*/
+          Collection<RelTableRef> lRefs =
               qualifiedNamesToRefs.get(rightRef.getQualifiedName());
           if (lRefs != null) {
             shift = lRefs.size();
@@ -236,7 +236,7 @@ public class RelMdAllPredicates
             Util.transform(inputPreds.pulledUpPredicates,
                 e -> RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping));
-        newPreds = /*Y*/
+        newPreds =
             newPreds.union(rexBuilder,
                 RelOptPredicateList.of(rexBuilder, updatedPreds));
       }
@@ -250,7 +250,7 @@ public class RelMdAllPredicates
 
     // Infer column origin expressions for given references
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
-    final RelDataType fullRowType = /*X*/
+    final RelDataType fullRowType =
         SqlValidatorUtil.createJoinType(rexBuilder.getTypeFactory(),
             join.getLeft().getRowType(),
             join.getRight().getRowType(),
@@ -323,7 +323,7 @@ public class RelMdAllPredicates
         final Map<RelTableRef, RelTableRef> currentTablesMapping = new HashMap<>();
         for (RelTableRef rightRef : tableRefs) {
           int shift = 0;
-          Collection<RelTableRef> lRefs = /*X*/
+          Collection<RelTableRef> lRefs =
               qualifiedNamesToRefs.get(rightRef.getQualifiedName());
           if (lRefs != null) {
             shift = lRefs.size();
@@ -341,7 +341,7 @@ public class RelMdAllPredicates
             Util.transform(inputPreds.pulledUpPredicates,
                 e -> RexUtil.swapTableReferences(rexBuilder, e,
                     currentTablesMapping));
-        newPreds = /*Y*/
+        newPreds =
             newPreds.union(rexBuilder, RelOptPredicateList.of(rexBuilder, updatedPreds));
       }
     }

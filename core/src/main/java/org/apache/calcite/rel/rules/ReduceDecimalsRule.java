@@ -842,11 +842,11 @@ public class ReduceDecimalsRule
           || SqlTypeUtil.isApproximateNumeric(typeB)) {
         List<RexNode> newOperands;
         if (SqlTypeUtil.isApproximateNumeric(typeA)) {
-          newOperands = /*X*/
+          newOperands =
               ImmutableList.of(operands.get(0),
                   ensureType(real8, operands.get(1)));
         } else {
-          newOperands = /*X*/
+          newOperands =
               ImmutableList.of(ensureType(real8, operands.get(0)),
                   operands.get(1));
         }

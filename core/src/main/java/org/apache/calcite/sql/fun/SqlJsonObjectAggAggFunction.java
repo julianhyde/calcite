@@ -48,7 +48,7 @@ public class SqlJsonObjectAggAggFunction extends SqlAggFunction {
         (callBinding, returnType, operandTypes) -> {
           RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
           operandTypes[0] = typeFactory.createSqlType(SqlTypeName.VARCHAR);
-          operandTypes[1] = /*X*/
+          operandTypes[1] =
               typeFactory.createTypeWithNullability(
                   typeFactory.createSqlType(SqlTypeName.ANY), true);
         },

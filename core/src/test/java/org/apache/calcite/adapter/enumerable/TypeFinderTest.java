@@ -59,7 +59,7 @@ class TypeFinderTest {
 
   @Test void testFunctionExpression1() {
     ParameterExpression param = Expressions.parameter(String.class, "input");
-    FunctionExpression expr = /*Y*/
+    FunctionExpression expr =
         Expressions.lambda(Function1.class,
             Expressions.block(Expressions.return_(null, param)),
             param);
@@ -76,7 +76,7 @@ class TypeFinderTest {
   }
 
   @Test void testFunctionExpression2() {
-    FunctionExpression expr = /*Y*/
+    FunctionExpression expr =
         Expressions.lambda(Function1.class,
             Expressions.block(
                 Expressions.return_(null, Expressions.constant(1L, Long.class))),

@@ -207,7 +207,7 @@ public abstract class SpatialRules {
         op1 = within.operands.get(1);
         final Geometry g1 = constantGeom(op1);
         if (RexUtil.isLiteral(within.operands.get(2), true)) {
-          final Number distance = /*X*/
+          final Number distance =
               requireNonNull((Number) value(within.operands.get(2)),
                   () -> "distance for " + within);
           switch (Double.compare(distance.doubleValue(), 0D)) {

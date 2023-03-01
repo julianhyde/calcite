@@ -158,7 +158,7 @@ class RelMetadataHandlerGeneratorUtilTest {
   }
 
   private static String readResource(String resourceName) {
-    URL url = /*X*/
+    URL url =
         castNonNull(
             RelMetadataHandlerGeneratorUtilTest.class.getClassLoader().getResource(resourceName));
     try (Reader reader = Sources.of(url).reader()) {

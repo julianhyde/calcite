@@ -44,7 +44,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
       DruidQuery druidQuery) {
 
     final RexNode operand = ((RexCall) rexNode).getOperands().get(0);
-    final String operandExpression = /*Y*/
+    final String operandExpression =
         DruidExpressions.toDruidExpression(operand, topRel, druidQuery);
 
     if (operandExpression == null) {
@@ -110,7 +110,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
       }
       final String typeCastExpression;
       if (fromExprType != toExprType) {
-        typeCastExpression = /*Y*/
+        typeCastExpression =
             DruidQuery.format("CAST(%s, '%s')", operandExpression,
                 toExprType.toString());
       } else {
@@ -137,7 +137,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
       String operand,
       final SqlTypeName toType, String format) {
     // Cast strings to date times by parsing them from SQL format.
-    final String timestampExpression = /*X*/
+    final String timestampExpression =
         DruidExpressions.functionCall("timestamp_parse",
             ImmutableList.of(operand,
                 DruidExpressions.stringLiteral(format),

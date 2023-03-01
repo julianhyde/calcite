@@ -159,7 +159,7 @@ class VolcanoPlannerTest {
         .changeTraits(singleRel, cluster.traitSetOf(PHYS_CALLING_CONVENTION));
 
     // Binary RelNode with identical input on either side
-    PhysBiRel parent = /*X*/
+    PhysBiRel parent =
         new PhysBiRel(cluster, cluster.traitSetOf(PHYS_CALLING_CONVENTION),
             singlePhy, singlePhy);
     planner.setRoot(parent);

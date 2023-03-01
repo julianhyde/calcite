@@ -56,7 +56,7 @@ class SqlSetOptionOperatorTest {
 
   private static void checkSqlSetOptionSame(SqlNode node) {
     SqlSetOption opt = (SqlSetOption) node;
-    SqlCall returned = /*X*/
+    SqlCall returned =
         opt.getOperator().createCall(opt.getFunctionQuantifier(),
             opt.getParserPosition(),
             opt.getOperandList());

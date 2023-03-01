@@ -648,7 +648,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       final SqlValidator validator =
           createSqlValidator(context, catalogReader);
 
-      preparedResult = /*X*/
+      preparedResult =
           preparingStmt.prepareSql(sqlNode, Object.class, validator, true);
       switch (sqlNode.getKind()) {
       case INSERT:
@@ -1006,7 +1006,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           rel instanceof Sort
               ? ((Sort) rel).collation
               : RelCollations.EMPTY;
-      RelRoot root = /*Y*/
+      RelRoot root =
           new RelRoot(rel, resultType, SqlKind.SELECT, fields, collation,
               new ArrayList<>());
 
@@ -1123,7 +1123,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           for (int field : Pair.left(root.fields)) {
             projects.add(rexBuilder.makeInputRef(enumerable, field));
           }
-          RexProgram program = /*Y*/
+          RexProgram program =
               RexProgram.create(enumerable.getRowType(), projects, null,
                   root.validatedRowType, rexBuilder);
           enumerable = EnumerableCalc.create(enumerable, program);
@@ -1133,7 +1133,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
           CatalogReader.THREAD_LOCAL.set(catalogReader);
           final SqlConformance conformance = context.config().conformance();
           internalParameters.put("_conformance", conformance);
-          bindable = /*Y*/
+          bindable =
               EnumerableInterpretable.toBindable(internalParameters,
                   context.spark(), enumerable,
                   requireNonNull(prefer, "EnumerableRel.Prefer prefer"));
@@ -1265,7 +1265,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
         // Case-sensitive name match because name was previously resolved.
         MemberExpression memberExpression = (MemberExpression) expression;
         PseudoField field = memberExpression.field;
-        Expression targetExpression = /*Y*/
+        Expression targetExpression =
             requireNonNull(memberExpression.expression,
                 () -> "static field access is not implemented yet."
                     + " field.name=" + field.getName()

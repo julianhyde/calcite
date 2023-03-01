@@ -57,7 +57,7 @@ public class KafkaTableFactory implements TableFactory<KafkaStreamTable> {
       } catch (InstantiationException | InvocationTargetException
           | IllegalAccessException | ClassNotFoundException
           | NoSuchMethodException e) {
-        final String details = /*Y*/
+        final String details =
             String.format(Locale.ROOT,
                 "Failed to create table '%s' with configuration:\n"
                     + "'%s'\n"
@@ -83,7 +83,7 @@ public class KafkaTableFactory implements TableFactory<KafkaStreamTable> {
                 .newInstance(OffsetResetStrategy.NONE));
       } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException
           | InstantiationException | InvocationTargetException e) {
-        final String details = /*X*/
+        final String details =
             String.format(Locale.ROOT,
                 "Fail to create table '%s' with configuration:\n"
                     + "'%s'\n"

@@ -181,7 +181,7 @@ public class JdbcToEnumerableConverter
                       toIndexesTableExpression(sqlString)),
                   DataContext.ROOT));
 
-      enumerable = /*Y*/
+      enumerable =
           builder0.append("enumerable",
               Expressions.call(
                   BuiltInMethod.RESULT_SET_ENUMERABLE_OF_PREPARED.method,
@@ -190,7 +190,7 @@ public class JdbcToEnumerableConverter
                   rowBuilderFactory_,
                   preparedStatementConsumer_));
     } else {
-      enumerable = /*Y*/
+      enumerable =
           builder0.append("enumerable",
               Expressions.call(
                   BuiltInMethod.RESULT_SET_ENUMERABLE_OF.method,
@@ -266,7 +266,7 @@ public class JdbcToEnumerableConverter
     case DATE:
     case TIME:
     case TIMESTAMP:
-      source = /*X*/
+      source =
           Expressions.call(
               getMethod(sqlTypeName, fieldType.isNullable(), offset),
               Expressions.<Expression>list()
@@ -276,7 +276,7 @@ public class JdbcToEnumerableConverter
                   .appendIf(offset, getTimeZoneExpression(implementor)));
       break;
     case ARRAY:
-      final Expression x = /*X*/
+      final Expression x =
           Expressions.convert_(
               Expressions.call(resultSet_, jdbcGetMethod(primitive),
                   Expressions.constant(i + 1)),
@@ -287,7 +287,7 @@ public class JdbcToEnumerableConverter
       source = RexImpTable.NULL_EXPR;
       break;
     default:
-      source = /*X*/
+      source =
           Expressions.call(resultSet_, jdbcGetMethod(primitive),
               Expressions.constant(i + 1));
     }

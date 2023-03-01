@@ -68,7 +68,7 @@ public class SqlSpatialTypeOperatorTable implements SqlOperatorTable {
         AggregateFunctionImpl.create(SpatialTypeFunctions.Collect.class)));
 
     // Create a catalog reader to retrieve the operators.
-    CalciteCatalogReader catalogReader = /*X*/
+    CalciteCatalogReader catalogReader =
         new CalciteCatalogReader(rootSchema,
             ImmutableList.of(),
             new JavaTypeFactoryImpl(),

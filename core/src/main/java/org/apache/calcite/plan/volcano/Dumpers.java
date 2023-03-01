@@ -178,7 +178,7 @@ class Dumpers {
     }
     pw.println("digraph G {");
     pw.println("\troot [style=filled,label=\"Root\"];");
-    PartiallyOrderedSet<RelSubset> subsetPoset = /*X*/
+    PartiallyOrderedSet<RelSubset> subsetPoset =
         new PartiallyOrderedSet<>(
             (e1, e2) -> e1.getTraitSet().satisfies(e2.getTraitSet()));
     Set<RelSubset> nonEmptySubsets = new HashSet<>();

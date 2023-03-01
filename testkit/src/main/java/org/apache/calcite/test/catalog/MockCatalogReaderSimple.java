@@ -207,7 +207,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerSchema(customerSchema);
 
     // Register "CONTACT" table.
-    MockTable contactTable = /*Y*/
+    MockTable contactTable =
         MockTable.create(this, customerSchema, "CONTACT", false, 1000);
     contactTable.addColumn("CONTACTNO", fixture.intType);
     contactTable.addColumn("FNAME", fixture.varchar10Type);
@@ -228,7 +228,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(contactPeekTable);
 
     // Register "ACCOUNT" table.
-    MockTable accountTable = /*Y*/
+    MockTable accountTable =
         MockTable.create(this, customerSchema, "ACCOUNT", false, 457);
     accountTable.addColumn("ACCTNO", fixture.intType);
     accountTable.addColumn("TYPE", fixture.varchar20Type);
@@ -236,7 +236,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(accountTable);
 
     // Register "ORDERS" stream.
-    MockTable ordersStream = /*Y*/
+    MockTable ordersStream =
         MockTable.create(this, salesSchema, "ORDERS", true,
             Double.POSITIVE_INFINITY);
     ordersStream.addColumn("ROWTIME", fixture.timestampType);
@@ -247,7 +247,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     // Register "SHIPMENTS" stream.
     // "ROWTIME" is not column 0, just to mix things up.
-    MockTable shipmentsStream = /*Y*/
+    MockTable shipmentsStream =
         MockTable.create(this, salesSchema, "SHIPMENTS", true,
             Double.POSITIVE_INFINITY);
     shipmentsStream.addColumn("ORDERID", fixture.intType);
@@ -256,7 +256,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(shipmentsStream);
 
     // Register "PRODUCTS" table.
-    MockTable productsTable = /*Y*/
+    MockTable productsTable =
         MockTable.create(this, salesSchema, "PRODUCTS", false, 200D);
     productsTable.addColumn("PRODUCTID", fixture.intType);
     productsTable.addColumn("NAME", fixture.varchar20Type);
@@ -264,7 +264,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(productsTable);
 
     // Register "EMPTY_PRODUCTS" table.
-    MockTable emptyProductsTable = /*Y*/
+    MockTable emptyProductsTable =
         MockTable.create(this, salesSchema, "EMPTY_PRODUCTS", false, 0D, 0D);
     emptyProductsTable.addColumn("PRODUCTID", fixture.intType);
     emptyProductsTable.addColumn("NAME", fixture.varchar20Type);
@@ -283,7 +283,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     registerTable(productsTemporalTable);
 
     // Register "SUPPLIERS" table.
-    MockTable suppliersTable = /*Y*/
+    MockTable suppliersTable =
         MockTable.create(this, salesSchema, "SUPPLIERS", false, 10D);
     suppliersTable.addColumn("SUPPLIERID", fixture.intType);
     suppliersTable.addColumn("NAME", fixture.varchar20Type);
@@ -309,7 +309,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 tableRowType.getFieldList().get(7);
             final RelDataTypeField salField =
                 tableRowType.getFieldList().get(5);
-            final List<RexNode> nodes = /*X*/
+            final List<RexNode> nodes =
                 Arrays.asList(
                     rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
                         rexBuilder.makeInputRef(deptnoField.getType(),
@@ -345,7 +345,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 tableRowType.getFieldList().get(7);
             final RelDataTypeField salField =
                 tableRowType.getFieldList().get(5);
-            final List<RexNode> nodes = /*X*/
+            final List<RexNode> nodes =
                 Arrays.asList(
                     rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
                         rexBuilder.makeInputRef(deptnoField.getType(),
@@ -373,7 +373,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     MockSchema structTypeSchema = new MockSchema("STRUCT");
     registerSchema(structTypeSchema);
-    final List<CompoundNameColumn> columns = /*X*/
+    final List<CompoundNameColumn> columns =
         Arrays.asList(new CompoundNameColumn("", "K0", fixture.varchar20Type),
             new CompoundNameColumn("", "C1", fixture.varchar20Type),
             new CompoundNameColumn("F1", "A0", fixture.intType),
@@ -393,7 +393,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
     }
     registerTable(structTypeTable);
 
-    final List<CompoundNameColumn> columnsNullable = /*X*/
+    final List<CompoundNameColumn> columnsNullable =
         Arrays.asList(new CompoundNameColumn("", "K0", fixture.varchar20TypeNull),
             new CompoundNameColumn("", "C1", fixture.varchar20TypeNull),
             new CompoundNameColumn("F1", "A0", fixture.intTypeNull),

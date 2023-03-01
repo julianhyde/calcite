@@ -55,7 +55,7 @@ public class GeodeSimpleSchema extends AbstractSchema {
     this.regionNames = regionNames;
     this.pdxAutoSerializerPackageExp = pdxAutoSerializerPackageExp;
 
-    this.clientCache = /*X*/
+    this.clientCache =
         GeodeUtils.createClientCache(locatorHost,
             locatorPort,
             pdxAutoSerializerPackageExp,
@@ -71,7 +71,7 @@ public class GeodeSimpleSchema extends AbstractSchema {
 
         Region region = GeodeUtils.createRegion(clientCache, regionName);
 
-        Table table = /*Y*/
+        Table table =
             new GeodeSimpleScannableTable(regionName,
                 autodetectRelTypeFromRegion(region), clientCache);
 

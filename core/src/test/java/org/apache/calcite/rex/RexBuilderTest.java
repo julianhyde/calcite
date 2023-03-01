@@ -100,10 +100,10 @@ class RexBuilderTest {
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     RexBuilder builder = new RexBuilder(typeFactory);
 
-    RexNode node = /*X*/
+    RexNode node =
         new RexLiteral(Boolean.TRUE,
             typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
-    RexNode ensuredNode = /*X*/
+    RexNode ensuredNode =
         builder.ensureType(typeFactory.createSqlType(SqlTypeName.ANY), node,
             true);
 
@@ -117,10 +117,10 @@ class RexBuilderTest {
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     RexBuilder builder = new RexBuilder(typeFactory);
 
-    RexNode node = /*X*/
+    RexNode node =
         new RexLiteral(Boolean.TRUE,
             typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
-    RexNode ensuredNode = /*X*/
+    RexNode ensuredNode =
         builder.ensureType(typeFactory.createSqlType(SqlTypeName.BOOLEAN), node,
             true);
 
@@ -134,10 +134,10 @@ class RexBuilderTest {
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     RexBuilder builder = new RexBuilder(typeFactory);
 
-    RexNode node = /*X*/
+    RexNode node =
         new RexLiteral(Boolean.TRUE,
             typeFactory.createSqlType(SqlTypeName.BOOLEAN), SqlTypeName.BOOLEAN);
-    RexNode ensuredNode = /*X*/
+    RexNode ensuredNode =
         builder.ensureType(typeFactory.createSqlType(SqlTypeName.INTEGER), node,
             true);
 
@@ -246,7 +246,7 @@ class RexBuilderTest {
     final RexBuilder builder = new RexBuilder(typeFactory);
 
     // The new way
-    final TimestampWithTimeZoneString ts = /*X*/
+    final TimestampWithTimeZoneString ts =
         new TimestampWithTimeZoneString(1969, 7, 21, 2, 56, 15,
             TimeZone.getTimeZone("PST").getID());
     checkTimestampWithLocalTimeZone(
@@ -570,26 +570,26 @@ class RexBuilderTest {
 
     RexLiteral literal = builder.makePreciseStringLiteral("foobar");
     assertEquals("'foobar'", literal.toString());
-    literal = /*X*/
+    literal =
         builder.makePreciseStringLiteral(
             new ByteString(new byte[] { 'f', 'o', 'o', 'b', 'a', 'r'}),
             "UTF8", SqlCollation.IMPLICIT);
     assertEquals("_UTF8'foobar'", literal.toString());
     assertEquals("_UTF8'foobar':CHAR(6) CHARACTER SET \"UTF-8\"",
         literal.computeDigest(RexDigestIncludeType.ALWAYS));
-    literal = /*X*/
+    literal =
         builder.makePreciseStringLiteral(
             new ByteString("\u82f1\u56fd".getBytes(StandardCharsets.UTF_8)),
             "UTF8", SqlCollation.IMPLICIT);
     assertEquals("_UTF8'\u82f1\u56fd'", literal.toString());
     // Test again to check decode cache.
-    literal = /*X*/
+    literal =
         builder.makePreciseStringLiteral(
             new ByteString("\u82f1".getBytes(StandardCharsets.UTF_8)),
             "UTF8", SqlCollation.IMPLICIT);
     assertEquals("_UTF8'\u82f1'", literal.toString());
     try {
-      literal = /*X*/
+      literal =
           builder.makePreciseStringLiteral(
               new ByteString("\u82f1\u56fd".getBytes(StandardCharsets.UTF_8)),
               "GB2312", SqlCollation.IMPLICIT);
@@ -682,7 +682,7 @@ class RexBuilderTest {
         new MySqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RexBuilder builder = new RexBuilder(targetTypeFactory);
 
-    final RexOver node = /*Y*/
+    final RexOver node =
         (RexOver) builder.makeOver(type, SqlStdOperatorTable.COUNT,
             ImmutableList.of(builder.makeInputRef(type, 0)),
             ImmutableList.of(builder.makeInputRef(type, 1)),
@@ -807,7 +807,7 @@ class RexBuilderTest {
     RelDataType intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
     RelDataType longType = typeFactory.createSqlType(SqlTypeName.BIGINT);
 
-    RelDataType structType = /*X*/
+    RelDataType structType =
         typeFactory.createStructType(Arrays.asList(intType, longType),
             Arrays.asList("x", "y"));
     RexInputRef inputRef = builder.makeInputRef(structType, 0);

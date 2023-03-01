@@ -192,7 +192,7 @@ public abstract class RelOptMaterializations {
     // First, if the materialization is in terms of a star table, rewrite
     // the query in terms of the star table.
     if (materialization.starRelOptTable != null) {
-      RelNode newRoot = /*Y*/
+      RelNode newRoot =
           RelOptMaterialization.tryUseStar(root, materialization.starRelOptTable);
       if (newRoot != null) {
         root = newRoot;
@@ -248,7 +248,7 @@ public abstract class RelOptMaterializations {
     if (relOptTables.size() != 0) {
       relOptSchema = relOptTables.get(0).getRelOptSchema();
     }
-    final RelBuilder relBuilder = /*X*/
+    final RelBuilder relBuilder =
         RelFactories.LOGICAL_BUILDER.create(relNode.getCluster(), relOptSchema);
     final RelFieldTrimmer relFieldTrimmer = new RelFieldTrimmer(null, relBuilder);
     return relFieldTrimmer.trim(relNode);

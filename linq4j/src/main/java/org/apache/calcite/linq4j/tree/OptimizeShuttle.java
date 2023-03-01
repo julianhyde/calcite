@@ -194,12 +194,12 @@ public class OptimizeShuttle extends Shuttle {
         Expression expr = null;
         if (eq(ternary.expression1, expression1)) {
           // (a ? b : c) == b === a || c == b
-          expr = /*Y*/
+          expr =
               Expressions.orElse(ternary.expression0,
                   Expressions.equal(ternary.expression2, expression1));
         } else if (eq(ternary.expression2, expression1)) {
           // (a ? b : c) == c === !a || b == c
-          expr = /*Y*/
+          expr =
               Expressions.orElse(Expressions.not(ternary.expression0),
                   Expressions.equal(ternary.expression1, expression1));
         }

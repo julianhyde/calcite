@@ -110,7 +110,7 @@ public class MaterializedViewTable extends ViewTable {
       super(schema, viewSql,
           viewSchemaPath != null ? viewSchemaPath : schema.path(null), viewPath,
           Boolean.TRUE);
-      this.key = /*X*/
+      this.key =
           requireNonNull(
               MaterializationService.instance()
                   .defineMaterialization(schema, null, viewSql, schemaPath,

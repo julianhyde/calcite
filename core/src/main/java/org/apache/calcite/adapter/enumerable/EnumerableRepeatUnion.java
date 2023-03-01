@@ -74,7 +74,7 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
     Expression cleanUpFunctionExp = Expressions.constant(null);
     if (transientTable != null) {
       // root.getRootSchema().add(tableName, table);
-      Expression tableExp = /*X*/
+      Expression tableExp =
           implementor.stash(
               requireNonNull(transientTable.unwrap(TransientTable.class)),
               TransientTable.class);
@@ -89,7 +89,7 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
               tableNameExp,
               tableExp));
       // root.getRootSchema().removeTable(tableName);
-      cleanUpFunctionExp = /*Y*/
+      cleanUpFunctionExp =
           Expressions.lambda(Function0.class,
               Expressions.call(
                   Expressions.call(implementor.getRootExpression(),
@@ -103,11 +103,11 @@ public class EnumerableRepeatUnion extends RepeatUnion implements EnumerableRel 
     Expression seedExp = builder.append("seed", seedResult.block);
     Expression iterativeExp = builder.append("iteration", iterationResult.block);
 
-    PhysType physType = /*X*/
+    PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), getRowType(),
             pref.prefer(seedResult.format));
 
-    Expression unionExp = /*X*/
+    Expression unionExp =
         Expressions.call(BuiltInMethod.REPEAT_UNION.method,
             seedExp,
             iterativeExp,

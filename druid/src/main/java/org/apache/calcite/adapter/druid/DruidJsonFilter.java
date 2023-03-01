@@ -98,7 +98,7 @@ abstract class DruidJsonFilter implements DruidJson {
     }
     final boolean isNumeric = refNode.getType().getFamily() == SqlTypeFamily.NUMERIC
         || rexLiteral.getType().getFamily() == SqlTypeFamily.NUMERIC;
-    final Pair<String, ExtractionFunction> druidColumn = /*Y*/
+    final Pair<String, ExtractionFunction> druidColumn =
         DruidQuery.toDruidColumn(refNode, rowType, druidQuery);
     final String columnName = druidColumn.left;
     final ExtractionFunction extractionFunction = druidColumn.right;
@@ -109,7 +109,7 @@ abstract class DruidJsonFilter implements DruidJson {
     final DruidJsonFilter partialFilter;
     if (isNumeric) {
       //need bound filter since it one of operands is numeric
-      partialFilter = /*Y*/
+      partialFilter =
           new JsonBound(columnName, literalValue, false, literalValue,
               false, true, extractionFunction);
     } else {

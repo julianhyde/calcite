@@ -105,7 +105,7 @@ public class PigRelToSqlConverter extends RelToSqlConverter {
         orderList.add(builder.context.toSql(orderKey));
       }
 
-      final SqlNode sqlWindow = /*X*/
+      final SqlNode sqlWindow =
           SqlWindow.create(null, // Window declaration name
               null, // Window reference name
               new SqlNodeList(partitionList, POS),

@@ -196,7 +196,7 @@ public class SimpleProfiler implements Profiler {
             }
             space.dependencies.or(dependents.toBitSet());
             for (int d : dependents) {
-              Space spaceD = /*Y*/
+              Space spaceD =
                   requireNonNull(singletonSpaces.get(d),
                       () -> "singletonSpaces.get(d) is null for " + d);
               spaceD.dependents.add(s.columnOrdinals);
@@ -208,7 +208,7 @@ public class SimpleProfiler implements Profiler {
         final SortedSet<Comparable> valueSet;
         if (space.columns.size() == 1) {
           nullCount = space.nullCount;
-          valueSet = /*X*/
+          valueSet =
               ImmutableSortedSet.copyOf(
                   Util.transform(space.values, Iterables::getOnlyElement));
         } else {
@@ -282,7 +282,7 @@ public class SimpleProfiler implements Profiler {
 
     private boolean hasNull(ImmutableBitSet columnOrdinals) {
       for (Integer columnOrdinal : columnOrdinals) {
-        Space space = /*Y*/
+        Space space =
             requireNonNull(singletonSpaces.get(columnOrdinal),
                 () -> "singletonSpaces.get(columnOrdinal) is null for "
                     + columnOrdinal);

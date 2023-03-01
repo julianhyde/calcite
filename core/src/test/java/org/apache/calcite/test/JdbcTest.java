@@ -262,7 +262,7 @@ public class JdbcTest {
     employees.add(new Employee(135, 10, "Simon", 56.7f, null));
     try (TryThreadLocal.Memo ignore =
              EmpDeptTableFactory.THREAD_COLLECTION.push(employees)) {
-      final CalciteAssert.AssertThat with = /*X*/
+      final CalciteAssert.AssertThat with =
           modelWithView("select \"name\", \"empid\" as e, \"salary\" "
                   + "from \"MUTABLE_EMPLOYEES\" where \"deptno\" = 10",
               null);
@@ -482,21 +482,21 @@ public class JdbcTest {
         DriverManager.getConnection("jdbc:calcite:");
     addTableMacro(connection, Smalls.STR_METHOD);
     // check for cast
-    ResultSet resultSet = /*X*/
+    ResultSet resultSet =
         connection.createStatement().executeQuery("select *\n"
             + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2], cast(1 as bigint))) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N={'a'=1, 'baz'=2}\n"
             + "N=1               \n"));
     // check for Boolean type
-    resultSet = /*X*/
+    resultSet =
         connection.createStatement().executeQuery("select *\n"
             + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2], true)) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
         equalTo("N={'a'=1, 'baz'=2}\n"
             + "N=true            \n"));
     // check for nested cast
-    resultSet = /*X*/
+    resultSet =
         connection.createStatement().executeQuery("select *\n"
             + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2],"
             + "cast(cast(1 as int) as varchar(1)))) as t(n)");
@@ -504,7 +504,7 @@ public class JdbcTest {
         equalTo("N={'a'=1, 'baz'=2}\n"
             + "N=1               \n"));
 
-    resultSet = /*X*/
+    resultSet =
         connection.createStatement().executeQuery("select *\n"
             + "from table(\"s\".\"str\"(MAP['a', 1, 'baz', 2],"
             + "cast(cast(cast('2019-10-18 10:35:23' as TIMESTAMP) as BIGINT) as VARCHAR))) as t(n)");
@@ -514,7 +514,7 @@ public class JdbcTest {
 
     // check for implicit type coercion
     addTableMacro(connection, Smalls.VIEW_METHOD);
-    resultSet = /*X*/
+    resultSet =
         connection.createStatement().executeQuery("select *\n"
             + "from table(\"s\".\"view\"(5)) as t(n)");
     assertThat(CalciteAssert.toString(resultSet),
@@ -1997,7 +1997,7 @@ public class JdbcTest {
     assertFalse(rs.next());
     rs.close();
 
-    rs = /*X*/
+    rs =
         calciteStatement.executeQuery("SELECT ID, CARDINALITY(VALS), VALS[2]\n"
             + "FROM ARR_TABLE");
     assertTrue(rs.next());
@@ -5314,7 +5314,7 @@ public class JdbcTest {
             }
             statement.setMaxRows(2);
             assertEquals(2, statement.getMaxRows());
-            final ResultSet resultSet = /*X*/
+            final ResultSet resultSet =
                 statement.executeQuery("select * from \"hr\".\"emps\"");
             assertTrue(resultSet.next());
             assertTrue(resultSet.next());
@@ -5850,7 +5850,7 @@ public class JdbcTest {
         }
 
         // views only
-        try (ResultSet r = /*Y*/
+        try (ResultSet r =
                  metaData.getTables(null, "adhoc", null,
                      new String[]{Schema.TableType.VIEW.jdbcName})) {
           assertEquals(
@@ -6549,7 +6549,7 @@ public class JdbcTest {
         .doWithConnection(connection -> {
           try {
             Statement stmt = connection.createStatement();
-            ResultSet rs = /*X*/
+            ResultSet rs =
                 stmt.executeQuery("select min(\"date\") mindate\n"
                     + "from \"foodmart\".\"currency\"");
             assertTrue(rs.next());
@@ -6577,7 +6577,7 @@ public class JdbcTest {
         .doWithConnection(connection -> {
           try {
             Statement stmt = connection.createStatement();
-            ResultSet rs = /*X*/
+            ResultSet rs =
                 stmt.executeQuery("select \"hire_date\"\n"
                     + "from \"foodmart\".\"employee\"\n"
                     + "where \"employee_id\" = 1");
@@ -7028,7 +7028,7 @@ public class JdbcTest {
   /** Tests that {@link Hook#PARSE_TREE} works. */
   @Test void testHook() {
     final int[] callCount = {0};
-    try (Hook.Closeable ignored = /*X*/
+    try (Hook.Closeable ignored =
              Hook.PARSE_TREE.<Object[]>addThread(args -> {
                assertThat(args.length, equalTo(2));
                assertThat(args[0], instanceOf(String.class));
@@ -7074,7 +7074,7 @@ public class JdbcTest {
 
     // create schema "/a"
     final Map<String, Schema> aSubSchemaMap = new HashMap<>();
-    final SchemaPlus aSchema = /*Y*/
+    final SchemaPlus aSchema =
         rootSchema.add("a", new AbstractSchema() {
           @Override protected Map<String, Schema> getSubSchemaMap() {
             return aSubSchemaMap;
@@ -7098,7 +7098,7 @@ public class JdbcTest {
 
     // create schema "/a"
     final Map<String, Schema> aSubSchemaMap = new HashMap<>();
-    final SchemaPlus aSchema = /*Y*/
+    final SchemaPlus aSchema =
         rootSchema.add("a", new AbstractSchema() {
           @Override protected Map<String, Schema> getSubSchemaMap() {
             return aSubSchemaMap;
@@ -7126,7 +7126,7 @@ public class JdbcTest {
     final Map<String, Schema> dummySubSchemaMap = new HashMap<>();
     final Map<String, Table> dummyTableMap = new HashMap<>();
     final Map<String, RelProtoDataType> dummyTypeMap = new HashMap<>();
-    final SchemaPlus dummySchema = /*Y*/
+    final SchemaPlus dummySchema =
         rootSchema.add("dummy", new AbstractSchema() {
           @Override protected Map<String, Schema> getSubSchemaMap() {
             return dummySubSchemaMap;
@@ -7169,7 +7169,7 @@ public class JdbcTest {
     final Multimap<String, org.apache.calcite.schema.Function> functionMap =
         LinkedListMultimap.create();
     // create schema "/a"
-    final SchemaPlus aSchema = /*Y*/
+    final SchemaPlus aSchema =
         rootSchema.add("a", new AbstractSchema() {
           @Override protected Multimap<String, org.apache.calcite.schema.Function>
           getFunctionMultimap() {

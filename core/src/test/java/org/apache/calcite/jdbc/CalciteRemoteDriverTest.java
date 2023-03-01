@@ -151,7 +151,7 @@ class CalciteRemoteDriverTest {
     localConnection = CalciteAssert.hr().connect();
 
     // Make sure we pick an ephemeral port for the server
-    start = /*Y*/
+    start =
         Main.start(new String[]{Factory.class.getName()}, 0, AvaticaJsonHandler::new);
   }
 
@@ -173,7 +173,7 @@ class CalciteRemoteDriverTest {
   }
 
   @Test void testCatalogsLocal() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory=" + LJS);
     assertThat(connection.isClosed(), is(false));
     final ResultSet resultSet = connection.getMetaData().getCatalogs();
@@ -188,7 +188,7 @@ class CalciteRemoteDriverTest {
   }
 
   @Test void testSchemasLocal() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory=" + LJS);
     assertThat(connection.isClosed(), is(false));
     final ResultSet resultSet = connection.getMetaData().getSchemas();
@@ -577,7 +577,7 @@ class CalciteRemoteDriverTest {
   }
 
   @Test void testRemoteStatementFetch() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory="
             + LocalServiceMoreFactory.class.getName());
     String sql = "select * from \"foo\".\"bar\"";
@@ -593,7 +593,7 @@ class CalciteRemoteDriverTest {
   }
 
   @Test void testRemotePreparedStatementFetch() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory="
             + LocalServiceMoreFactory.class.getName());
     assertThat(connection.isClosed(), is(false));
@@ -816,7 +816,7 @@ class CalciteRemoteDriverTest {
 
   /** Test remote Statement insert. */
   @Test void testInsert() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory="
             + LocalServiceModifiableFactory.class.getName());
     assertThat(connection.isClosed(), is(false));
@@ -835,7 +835,7 @@ class CalciteRemoteDriverTest {
 
   /** Test remote Statement batched insert. */
   @Test void testInsertBatch() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory="
             + LocalServiceModifiableFactory.class.getName());
     assertThat(connection.getMetaData().supportsBatchUpdates(), is(true));
@@ -867,7 +867,7 @@ class CalciteRemoteDriverTest {
    * Remote PreparedStatement insert WITHOUT bind variables.
    */
   @Test void testRemotePreparedStatementInsert() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory="
             + LocalServiceModifiableFactory.class.getName());
     assertThat(connection.isClosed(), is(false));
@@ -888,11 +888,11 @@ class CalciteRemoteDriverTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3338">[CALCITE-3338]
    * Error with executeBatch and preparedStatement when using RemoteMeta</a>. */
   @Test void testInsertBatchWithPreparedStatement() throws Exception {
-    final Connection connection = /*X*/
+    final Connection connection =
         DriverManager.getConnection("jdbc:avatica:remote:factory="
             + LocalServiceModifiableFactory.class.getName());
 
-    PreparedStatement pst = /*X*/
+    PreparedStatement pst =
         connection.prepareStatement("insert into \"foo\".\"bar\"\n"
             + "values (?, ?, ?, ?, ?)");
     pst.setInt(1, 1);

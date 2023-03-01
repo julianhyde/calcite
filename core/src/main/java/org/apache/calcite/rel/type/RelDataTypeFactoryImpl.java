@@ -251,7 +251,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       // first type?
       final int k = j;
 
-      RelDataType type = /*X*/
+      RelDataType type =
           leastRestrictive(
               Util.transform(types, t -> t.getFieldList().get(k).getType()));
       if (type == null) {
@@ -274,7 +274,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       }
       isNullable |= type.isNullable();
     }
-    final RelDataType type = /*X*/
+    final RelDataType type =
         leastRestrictive(
             Util.transform(types,
                 t -> t instanceof ArraySqlType
@@ -298,13 +298,13 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       }
       isNullable |= type.isNullable();
     }
-    final RelDataType keyType = /*X*/
+    final RelDataType keyType =
         leastRestrictive(
             Util.transform(types, t -> ((MapSqlType) t).getKeyType()));
     if (keyType == null) {
       return null;
     }
-    final RelDataType valueType = /*X*/
+    final RelDataType valueType =
         leastRestrictive(
             Util.transform(types, t -> ((MapSqlType) t).getValueType()));
     if (valueType == null) {
@@ -421,7 +421,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       final List<String> names,
       final List<RelDataType> types,
       final boolean nullable) {
-    final RelDataType type = /*X*/
+    final RelDataType type =
         KEY2TYPE_CACHE.getIfPresent(new Key(kind, names, types, nullable));
     if (type != null) {
       return type;
@@ -480,7 +480,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       List<RelDataTypeField> fields = type.getFieldList();
       for (RelDataTypeField field : fields) {
         if (field.getIndex() != fieldList.size()) {
-          field = /*Y*/
+          field =
               new RelDataTypeFieldImpl(field.getName(), fieldList.size(),
                   field.getType());
         }

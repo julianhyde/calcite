@@ -100,7 +100,7 @@ public class HintStrategyTable {
    */
   public boolean validateHint(RelHint hint) {
     final Key key = Key.of(hint.hintName);
-    boolean hintExists = /*X*/
+    boolean hintExists =
         this.errorHandler.check(this.strategies.containsKey(key),
             "Hint: {} should be registered in the {}",
             hint.hintName,

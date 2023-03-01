@@ -94,7 +94,7 @@ public class EnumerableInterpreter extends SingleRel
     final BlockBuilder builder = new BlockBuilder();
     final PhysType physType =
         PhysTypeImpl.of(typeFactory, getRowType(), JavaRowFormat.ARRAY);
-    final Expression interpreter_ = /*Y*/
+    final Expression interpreter_ =
         builder.append("interpreter",
             Expressions.new_(Interpreter.class, implementor.getRootExpression(),
                 implementor.stash(getInput(), RelNode.class)));

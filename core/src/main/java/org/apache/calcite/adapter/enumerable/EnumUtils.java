@@ -540,7 +540,7 @@ public class EnumUtils {
           // Try to call "toString()" method
           // E.g. from "Integer" to "String"
           // Generate "x == null ? null : x.toString()"
-          result = /*X*/
+          result =
               Expressions.condition(
                   Expressions.equal(operand, RexImpTable.NULL_EXPR),
                   RexImpTable.NULL_EXPR,
@@ -821,7 +821,7 @@ public class EnumUtils {
     // Find the fixed window for a timestamp given a window size and an offset, and return the
     // window start.
     // wmColExprToLong - (wmColExprToLong + windowSizeMillis - offsetMillis) % windowSizeMillis
-    Expression windowStartExpr = /*X*/
+    Expression windowStartExpr =
         Expressions.subtract(wmColExprToLong,
             Expressions.modulo(
                 Expressions.add(wmColExprToLong,
@@ -832,7 +832,7 @@ public class EnumUtils {
 
     // The window end equals to the window start plus window size.
     // windowStartMillis + sizeMillis
-    Expression windowEndExpr = /*X*/
+    Expression windowEndExpr =
         Expressions.add(windowStartExpr, windowSizeExpr);
 
     expressions.add(windowEndExpr);
@@ -924,10 +924,10 @@ public class EnumUtils {
       for (@Nullable Object[] element : elements) {
         SortedMultiMap<Pair<Long, Long>, @Nullable Object[]> session =
             sessionKeyMap.computeIfAbsent(element[indexOfKeyColumn], k -> new SortedMultiMap<>());
-        Object watermark = /*Y*/
+        Object watermark =
             requireNonNull(element[indexOfWatermarkedColumn],
                 "element[indexOfWatermarkedColumn]");
-        Pair<Long, Long> initWindow = /*X*/
+        Pair<Long, Long> initWindow =
             computeInitWindow(SqlFunctions.toLong(watermark), gap);
         session.putMulti(initWindow, element);
       }
@@ -1038,10 +1038,10 @@ public class EnumUtils {
         return takeOne();
       } else {
         @Nullable Object[] current = inputEnumerator.current();
-        Object watermark = /*Y*/
+        Object watermark =
             requireNonNull(current[indexOfWatermarkedColumn],
                 "element[indexOfWatermarkedColumn]");
-        List<Pair<Long, Long>> windows = /*Y*/
+        List<Pair<Long, Long>> windows =
             hopWindows(SqlFunctions.toLong(watermark), emitFrequency,
                 windowSize, offset);
         for (Pair<Long, Long> window : windows) {

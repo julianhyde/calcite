@@ -40,7 +40,7 @@ public class EnumerableValuesRule extends ConverterRule {
 
   @Override public RelNode convert(RelNode rel) {
     final Values logicalValues = (Values) rel;
-    final EnumerableValues enumerableValues = /*X*/
+    final EnumerableValues enumerableValues =
         EnumerableValues.create(logicalValues.getCluster(),
             logicalValues.getRowType(), logicalValues.getTuples());
     return enumerableValues.copy(

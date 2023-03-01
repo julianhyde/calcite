@@ -178,10 +178,10 @@ class MutableRelTest {
   }
 
   @Test void testUpdateInputOfUnion() {
-    MutableRel mutableRel = /*X*/
+    MutableRel mutableRel =
         createMutableRel("select sal from emp where deptno = 10"
             + "union select sal from emp where ename like 'John%'");
-    MutableRel childMutableRel = /*X*/
+    MutableRel childMutableRel =
         createMutableRel("select sal from emp where deptno = 12");
     mutableRel.setInput(0, childMutableRel);
     String actual = RelOptUtil.toString(MutableRels.fromMutable(mutableRel));
@@ -197,7 +197,7 @@ class MutableRelTest {
   }
 
   @Test void testParentInfoOfUnion() {
-    MutableRel mutableRel = /*X*/
+    MutableRel mutableRel =
         createMutableRel("select sal from emp where deptno = 10"
             + "union select sal from emp where ename like 'John%'");
     for (MutableRel input: mutableRel.getInputs()) {

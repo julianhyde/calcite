@@ -256,7 +256,7 @@ class CachingCalciteSchema extends CalciteSchema {
 
   @Override protected CalciteSchema snapshot(@Nullable CalciteSchema parent,
       SchemaVersion version) {
-    CalciteSchema snapshot = /*Y*/
+    CalciteSchema snapshot =
         new CachingCalciteSchema(parent, schema.snapshot(version), name, null,
             tableMap, latticeMap, typeMap,
             functionMap, functionNames, nullaryFunctionMap, getPath());
@@ -339,7 +339,7 @@ class CachingCalciteSchema extends CalciteSchema {
     private SubSchemaCache(final CalciteSchema calciteSchema,
         Set<String> names) {
       this.names = NameSet.immutableCopyOf(names);
-      this.cache = /*X*/
+      this.cache =
           CacheBuilder.newBuilder().build(new CacheLoader<String, CalciteSchema>() {
             @SuppressWarnings("NullableProblems")
             @Override public CalciteSchema load(String schemaName) {

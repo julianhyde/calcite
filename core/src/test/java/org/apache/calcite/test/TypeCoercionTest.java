@@ -556,7 +556,7 @@ class TypeCoercionTest {
     f.shouldCast(checkedType14, SqlTypeFamily.NUMERIC, f.intType);
 
     // INTERVAL
-    RelDataType checkedType15 = /*X*/
+    RelDataType checkedType15 =
         f.typeFactory.createSqlIntervalType(
             new SqlIntervalQualifier(TimeUnit.YEAR, TimeUnit.MONTH,
                 SqlParserPos.ZERO));
@@ -723,7 +723,7 @@ class TypeCoercionTest {
       // ALL
       SqlIntervalQualifier intervalQualifier =
           new SqlIntervalQualifier(TimeUnit.DAY, TimeUnit.MINUTE, SqlParserPos.ZERO);
-      allTypes = /*Y*/
+      allTypes =
           combine(atomicTypes, complexTypes,
               ImmutableList.of(nullType,
                   this.typeFactory.createSqlIntervalType(intervalQualifier)));

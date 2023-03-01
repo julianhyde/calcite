@@ -309,7 +309,7 @@ class RelOptRulesTest extends RelOptTestBase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2865">[CALCITE-2865]
    * FilterProjectTransposeRule generates wrong traitSet when copyFilter/Project is true</a>. */
   @Test void testFilterProjectTransposeRule() {
-    List<RelOptRule> rules = /*X*/
+    List<RelOptRule> rules =
         Arrays.asList(
             CoreRules.FILTER_PROJECT_TRANSPOSE, // default: copyFilter=true, copyProject=true
             CoreRules.FILTER_PROJECT_TRANSPOSE.config
@@ -646,12 +646,12 @@ class RelOptRulesTest extends RelOptTestBase {
       RexInputRef ref4 = b.field(2, 1, "DNAME");
 
       // ref1 IS NOT DISTINCT FROM ref2
-      RexCall cond1 = /*Y*/
+      RexCall cond1 =
           (RexCall) b.call(SqlStdOperatorTable.OR, b.equals(ref1, ref2),
               b.call(SqlStdOperatorTable.AND, b.isNull(ref1), b.isNull(ref2)));
 
       // ref3 IS NOT DISTINCT FROM ref4
-      RexCall cond2 = /*Y*/
+      RexCall cond2 =
           (RexCall) b.call(SqlStdOperatorTable.OR, b.equals(ref3, ref4),
               b.call(SqlStdOperatorTable.AND, b.isNull(ref3), b.isNull(ref4)));
 
@@ -1128,7 +1128,7 @@ class RelOptRulesTest extends RelOptTestBase {
         rel.getCluster().traitSet()
             .replace(0, EnumerableConvention.INSTANCE);
 
-    RelNode relAfter = /*Y*/
+    RelNode relAfter =
         program.run(fixture.planner, rel, toTraits,
             Collections.emptyList(), Collections.emptyList());
 
@@ -1938,7 +1938,7 @@ class RelOptRulesTest extends RelOptTestBase {
           .values(new String[]{"f3", "f4"}, "1", "2")
           .project(b.field(0),
               b.getRexBuilder().makeFieldAccess(rexCorrel, 0)).build();
-      LogicalCorrelate correlate = /*Y*/
+      LogicalCorrelate correlate =
           new LogicalCorrelate(left.getCluster(), left.getTraitSet(),
               ImmutableList.of(), left, right, correlationId,
               ImmutableBitSet.of(0), type);
@@ -3506,7 +3506,7 @@ class RelOptRulesTest extends RelOptTestBase {
         + " inner join EMPTY_PRODUCTS as d on e.PRODUCTID = d.PRODUCTID\n"
         + " where e.SUPPLIERID > 10) dt\n"
         + " on products.PRODUCTID = dt.PRODUCTID";
-    Collection<RelOptRule> rules = /*X*/
+    Collection<RelOptRule> rules =
         Arrays.asList(PruneEmptyRules.EMPTY_TABLE_INSTANCE,
             PruneEmptyRules.JOIN_RIGHT_INSTANCE,
             PruneEmptyRules.FILTER_INSTANCE,
@@ -3820,7 +3820,7 @@ class RelOptRulesTest extends RelOptTestBase {
       // CASE WHEN x % 2 = 1 THEN x < 2
       //      WHEN x % 3 = 2 THEN x < 1
       //      ELSE x < 3
-      final RexNode caseRexNode = /*Y*/
+      final RexNode caseRexNode =
           rexBuilder.makeCall(
               SqlStdOperatorTable.CASE,
               rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
@@ -4535,7 +4535,7 @@ class RelOptRulesTest extends RelOptTestBase {
     // LogicalCorrelate.
     final LogicalCorrelate logicalCorrelate =
         (LogicalCorrelate) rel.getInput(0).getInput(0);
-    CustomCorrelate customCorrelate = /*X*/
+    CustomCorrelate customCorrelate =
         new CustomCorrelate(logicalCorrelate.getCluster(),
             logicalCorrelate.getTraitSet(),
             logicalCorrelate.getHints(),
@@ -4544,7 +4544,7 @@ class RelOptRulesTest extends RelOptTestBase {
             logicalCorrelate.getCorrelationId(),
             logicalCorrelate.getRequiredColumns(),
             logicalCorrelate.getJoinType());
-    RelNode newRoot = /*X*/
+    RelNode newRoot =
         rel.copy(rel.getTraitSet(),
             ImmutableList.of(
                 rel.getInput(0).copy(rel.getInput(0).getTraitSet(),
@@ -5277,7 +5277,7 @@ class RelOptRulesTest extends RelOptTestBase {
             MockSchema schema = new MockSchema("SALES");
             registerSchema(schema);
             final boolean nullable = true;
-            final RelDataType timestampType = /*X*/
+            final RelDataType timestampType =
                 typeFactory.createTypeWithNullability(
                     typeFactory.createSqlType(SqlTypeName.TIMESTAMP),
                     nullable);
@@ -7057,7 +7057,7 @@ class RelOptRulesTest extends RelOptTestBase {
     @Override public void onMatch(RelOptRuleCall call) {
       final LogicalFilter logicalFilter = call.rel(0);
       final RelNode input = logicalFilter.getInput();
-      final MyFilter myFilter = /*Y*/
+      final MyFilter myFilter =
           new MyFilter(input.getCluster(), input.getTraitSet(), input,
               logicalFilter.getCondition());
       call.transformTo(myFilter);
@@ -7113,7 +7113,7 @@ class RelOptRulesTest extends RelOptTestBase {
     @Override public void onMatch(RelOptRuleCall call) {
       final LogicalProject logicalProject = call.rel(0);
       final RelNode input = logicalProject.getInput();
-      final MyProject myProject = /*Y*/
+      final MyProject myProject =
           new MyProject(input.getCluster(), input.getTraitSet(), input,
               logicalProject.getProjects(), logicalProject.getRowType());
       call.transformTo(myProject);

@@ -335,7 +335,7 @@ public abstract class MutableRels {
       RelSubset subset = (RelSubset) rel;
       RelNode best = subset.getBest();
       if (best == null) {
-        best = /*Y*/
+        best =
             requireNonNull(subset.getOriginal(),
                 () -> "subset.getOriginal() is null for " + subset);
       }

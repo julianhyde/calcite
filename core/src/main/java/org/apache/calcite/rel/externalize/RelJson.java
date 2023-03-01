@@ -341,7 +341,7 @@ public class RelJson {
       final boolean nullable = get(map, "nullable");
       return typeFactory.createTypeWithNullability(type, nullable);
     } else {
-      final SqlTypeName sqlTypeName = /*X*/
+      final SqlTypeName sqlTypeName =
           requireNonNull(Util.enumVal(SqlTypeName.class, (String) o),
               () -> "unable to find enum value " + o
                   + " in class " + SqlTypeName.class);
@@ -631,7 +631,7 @@ public class RelJson {
       map.put("type", windowBound.isPreceding() ? "UNBOUNDED_PRECEDING" : "UNBOUNDED_FOLLOWING");
     } else {
       map.put("type", windowBound.isPreceding() ? "PRECEDING" : "FOLLOWING");
-      RexNode offset = /*Y*/
+      RexNode offset =
           requireNonNull(windowBound.getOffset(),
               () -> "getOffset for window bound " + windowBound);
       map.put("offset", toJson(offset));

@@ -77,7 +77,7 @@ public class Graphs {
           if (edge.target.equals(edge2.left)) {
             final Pair<V, V> key = Pair.of(graph1.source(edge), edge2.right);
             int[] bestDistance = shortestDistances.get(key);
-            int[] arc2Distance = /*Y*/
+            int[] arc2Distance =
                 requireNonNull(shortestDistances.get(edge2),
                     () -> "shortestDistances.get(edge2) for " + edge2);
             if ((bestDistance == null)

@@ -1915,7 +1915,7 @@ public abstract class EnumerableDefaults {
         // moment when we are sure
         // that it will be really needed, i.e. when the first outer
         // enumerator item is processed
-        final Supplier<Lookup<TKey, TInner>> innerLookup = /*X*/
+        final Supplier<Lookup<TKey, TInner>> innerLookup =
             Suppliers.memoize(() ->
                 comparer == null
                     ? inner.toLookup(innerKeySelector)
@@ -2656,7 +2656,7 @@ public abstract class EnumerableDefaults {
         // must supply a comparator if the key does not extend Comparable.
         // Otherwise there will be a ClassCastException while retrieving.
         final Map<TKey, List<TSource>> map = new TreeMap<>(comparator);
-        final LookupImpl<TKey, TSource> lookup = /*Y*/
+        final LookupImpl<TKey, TSource> lookup =
             toLookup_(map, source, keySelector, Functions.identitySelector());
         return lookup.valuesEnumerable().enumerator();
       }
@@ -3535,7 +3535,7 @@ public abstract class EnumerableDefaults {
     // preserved.
     // Java 8 cannot infer return type with LinkedHashMap::new is used
     @SuppressWarnings("Convert2MethodRef")
-    final Map<TKey, TElement> map = /*X*/
+    final Map<TKey, TElement> map =
         new WrapMap<>(() -> new LinkedHashMap<Wrapped<TKey>, TElement>(),
             comparer);
     try (Enumerator<TSource> os = source.enumerator()) {
@@ -4295,7 +4295,7 @@ public abstract class EnumerableDefaults {
               if (!advanceLeft(left, leftKey)) {
                 done = true;
               }
-              results = /*Y*/
+              results =
                   new CartesianProductJoinEnumerator<>(resultSelector,
                       Linq4j.enumerator(lefts),
                       Linq4j.enumerator(Collections.singletonList(null)));
@@ -4354,7 +4354,7 @@ public abstract class EnumerableDefaults {
                   Linq4j.enumerator(rights));
         } else {
           // we must verify the non equi-join predicate, use nested loop join for that
-          results = /*Y*/
+          results =
               nestedLoopJoin(Linq4j.asEnumerable(lefts),
                   Linq4j.asEnumerable(rights), extraPredicate, resultSelector,
                   joinType).enumerator();

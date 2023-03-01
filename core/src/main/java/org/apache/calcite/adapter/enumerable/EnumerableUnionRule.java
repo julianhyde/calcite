@@ -48,7 +48,7 @@ class EnumerableUnionRule extends ConverterRule {
     final Union union = (Union) rel;
     final EnumerableConvention out = EnumerableConvention.INSTANCE;
     final RelTraitSet traitSet = rel.getCluster().traitSet().replace(out);
-    final List<RelNode> newInputs = /*X*/
+    final List<RelNode> newInputs =
         Util.transform(union.getInputs(), n -> convert(n, traitSet));
     return new EnumerableUnion(rel.getCluster(), traitSet,
         newInputs, union.all);

@@ -165,7 +165,7 @@ final class MergeUnionEnumerator<TSource, TKey> implements Enumerator<TSource> {
             continue;
           }
 
-          final int comp = /*X*/
+          final int comp =
               compare(currentInputsValues[candidateIndex],
                   currentInputsValues[i]);
           if (comp > 0) {

@@ -89,7 +89,7 @@ public class AggregatingSelectScope
       // if the DISTINCT keyword of GROUP BY is present it can be the only item
       if (groupList.size() == 1
           && groupList.get(0).getKind() == SqlKind.GROUP_BY_DISTINCT) {
-        groupList = /*Y*/
+        groupList =
             new SqlNodeList(((SqlCall) groupList.get(0)).getOperandList(),
                 groupList.getParserPosition());
         groupByDistinct = true;
@@ -149,7 +149,7 @@ public class AggregatingSelectScope
       // Remove the AS operator so the expressions are consistent with
       // OrderExpressionExpander.
       final SelectScope selectScope = (SelectScope) parent;
-      List<SqlNode> expandedSelectList = /*X*/
+      List<SqlNode> expandedSelectList =
           requireNonNull(selectScope.getExpandedSelectList(),
               () -> "expandedSelectList for " + selectScope);
       for (SqlNode selectItem : expandedSelectList) {

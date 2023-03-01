@@ -37,7 +37,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
   @Override public @Nullable String toDruidExpression(RexNode rexNode, RelDataType rowType,
       DruidQuery query) {
     final RexCall call = (RexCall) rexNode;
-    final String arg = /*X*/
+    final String arg =
         DruidExpressions.toDruidExpression(call.getOperands().get(0), rowType, query);
     if (arg == null) {
       return null;
@@ -47,7 +47,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
     final String length;
     // SQL is 1-indexed, Druid is 0-indexed.
     if (!call.getOperands().get(1).isA(SqlKind.LITERAL)) {
-      final String arg1 = /*X*/
+      final String arg1 =
           DruidExpressions.toDruidExpression(call.getOperands().get(1), rowType, query);
       if (arg1 == null) {
         // can not infer start index expression bailout.
@@ -55,7 +55,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
       }
       startIndex = DruidQuery.format("(%s - 1)", arg1);
     } else {
-      startIndex = /*X*/
+      startIndex =
           DruidExpressions.numberLiteral(RexLiteral.intValue(call.getOperands().get(1)) - 1);
     }
 
@@ -63,7 +63,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
       //case substring from start index with length
       if (!call.getOperands().get(2).isA(SqlKind.LITERAL)) {
         // case it is an expression try to parse it
-        length = /*X*/
+        length =
             DruidExpressions.toDruidExpression(call.getOperands().get(2), rowType, query);
         if (length == null) {
           return null;

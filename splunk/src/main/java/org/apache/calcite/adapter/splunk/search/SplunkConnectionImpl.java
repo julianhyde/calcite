@@ -182,7 +182,7 @@ public class SplunkConnectionImpl implements SplunkConnection {
   }
 
   private static void parseResults(InputStream in, SearchResultListener srl) {
-    try (CSVReader r = /*X*/
+    try (CSVReader r =
              new CSVReader(
                  new BufferedReader(
                      new InputStreamReader(in, StandardCharsets.UTF_8)))) {

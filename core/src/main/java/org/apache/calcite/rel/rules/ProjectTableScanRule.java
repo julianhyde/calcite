@@ -128,7 +128,7 @@ public class ProjectTableScanRule
       filtersPushDown = ImmutableList.of();
       projectsPushDown = selectedColumns;
     }
-    Bindables.BindableTableScan newScan = /*X*/
+    Bindables.BindableTableScan newScan =
         Bindables.BindableTableScan.create(scan.getCluster(), scan.getTable(),
             filtersPushDown, projectsPushDown);
     Mapping mapping =

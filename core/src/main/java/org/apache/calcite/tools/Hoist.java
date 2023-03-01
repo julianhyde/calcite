@@ -147,10 +147,10 @@ public class Hoist {
       this.ordinal = ordinal;
       this.node = Objects.requireNonNull(node, "node");
       final SqlParserPos pos = node.getParserPosition();
-      start = /*Y*/
+      start =
           SqlParserUtil.lineColToIndex(originalSql,
               pos.getLineNum(), pos.getColumnNum());
-      end = /*Y*/
+      end =
           SqlParserUtil.lineColToIndex(originalSql,
               pos.getEndLineNum(), pos.getEndColumnNum()) + 1;
 

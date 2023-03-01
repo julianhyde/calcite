@@ -357,7 +357,7 @@ public class JoinProjectTransposeRule
         RexNode e = pair.left;
         if (adjustmentAmount != 0) {
           // shift the references by the adjustment amount
-          e = /*X*/
+          e =
               e.accept(
                   new RelOptUtil.RexInputConverter(rexBuilder, childFields,
                       joinChildrenFields, adjustments));

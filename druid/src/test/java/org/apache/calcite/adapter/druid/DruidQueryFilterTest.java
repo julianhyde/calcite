@@ -95,7 +95,7 @@ class DruidQueryFilterTest {
             f.rexBuilder.makeLiteral("lower-bound"),
             f.rexBuilder.makeLiteral("upper-bound"));
     RelDataType relDataType = f.typeFactory.createSqlType(SqlTypeName.BOOLEAN);
-    RexNode betweenRexNode = /*Y*/
+    RexNode betweenRexNode =
         f.rexBuilder.makeCall(relDataType,
             SqlInternalOperators.DRUID_BETWEEN, listRexNodes);
 

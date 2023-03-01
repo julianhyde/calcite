@@ -445,7 +445,7 @@ public abstract class Expressions {
    */
   public static MethodCallExpression call(Type type, String methodName,
       Iterable<? extends Expression> arguments) {
-    Method method = /*Y*/
+    Method method =
         Types.lookupMethod(Types.toClass(type), methodName,
             Types.toClassArray(arguments));
     return new MethodCallExpression(method, null, toList(arguments));

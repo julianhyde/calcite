@@ -141,7 +141,7 @@ public class ReflectiveSchema
           // This enables to keep the same Statistics.of below
           referentialConstraints = ImmutableList.of();
         }
-        table.statistic = /*X*/
+        table.statistic =
             Statistics.of(
                 ImmutableList.copyOf(
                     Iterables.concat(referentialConstraints,
@@ -400,7 +400,7 @@ public class ReflectiveSchema
 
     @Override public Expression getExpression(SchemaPlus schema,
         String tableName, Class clazz) {
-      ReflectiveSchema reflectiveSchema = /*X*/
+      ReflectiveSchema reflectiveSchema =
           requireNonNull(schema.unwrap(ReflectiveSchema.class),
               () -> "schema.unwrap(ReflectiveSchema.class) for " + schema);
       return Expressions.field(

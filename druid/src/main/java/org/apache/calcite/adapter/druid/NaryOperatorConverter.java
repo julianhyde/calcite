@@ -46,7 +46,7 @@ public class NaryOperatorConverter implements DruidSqlOperatorConverter {
   @Override public @Nullable String toDruidExpression(RexNode rexNode,
       RelDataType rowType, DruidQuery druidQuery) {
     final RexCall call = (RexCall) rexNode;
-    final List<String> druidExpressions = /*X*/
+    final List<String> druidExpressions =
         DruidExpressions.toDruidExpressions(druidQuery, rowType,
             call.getOperands());
     if (druidExpressions == null) {

@@ -124,7 +124,7 @@ public class XmlFunctions {
         List<@Nullable String> result = new ArrayList<>();
         for (int i = 0; i < nodes.getLength(); i++) {
           Node item = castNonNull(nodes.item(i));
-          Node firstChild = /*Y*/
+          Node firstChild =
               requireNonNull(item.getFirstChild(),
                   () -> "firstChild of node " + item);
           result.add(firstChild.getTextContent());

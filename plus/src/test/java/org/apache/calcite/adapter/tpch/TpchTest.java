@@ -750,7 +750,7 @@ class TpchTest {
           + "order by\n"
           + "  cntrycode"};
 
-  static final List<String> QUERIES = /*X*/
+  static final List<String> QUERIES =
       ImmutableList.copyOf(QUERY_ARRAY);
 
   @Disabled("it's wasting time")

@@ -158,7 +158,7 @@ public class Programs {
       final RelMetadataProvider metadataProvider) {
     requireNonNull(metadataProvider, "metadataProvider");
     return (planner, rel, requiredOutputTraits, materializations, lattices) -> {
-      final HepPlanner hepPlanner = /*Y*/
+      final HepPlanner hepPlanner =
           new HepPlanner(hepProgram, null, noDag, null, RelOptCostImpl.FACTORY);
 
       List<RelMetadataProvider> list = Lists.newArrayList(metadataProvider);
@@ -333,7 +333,7 @@ public class Programs {
         List<RelOptMaterialization> materializations,
         List<RelOptLattice> lattices) {
       for (Program program : programs) {
-        rel = /*X*/
+        rel =
             program.run(planner, rel, requiredOutputTraits, materializations,
                 lattices);
       }

@@ -1117,12 +1117,12 @@ public class Lattice {
         if (node.alias == null) {
           node.alias = Util.last(node.table.t.getQualifiedName());
         }
-        node.alias = /*Y*/
+        node.alias =
             SqlValidatorUtil.uniquify(node.alias, aliases,
                 SqlValidatorUtil.ATTEMPT_SUGGESTER);
         node.startCol = c;
         for (String name : node.table.t.getRowType().getFieldNames()) {
-          final String alias = /*Y*/
+          final String alias =
               SqlValidatorUtil.uniquify(name, columnAliases,
                   SqlValidatorUtil.ATTEMPT_SUGGESTER);
           final BaseColumn column =

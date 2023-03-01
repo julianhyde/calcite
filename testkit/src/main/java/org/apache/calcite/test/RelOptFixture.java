@@ -369,7 +369,7 @@ class RelOptFixture {
 
     final RelNode r2;
     if (planner instanceof VolcanoPlanner) {
-      r2 = /*Y*/
+      r2 =
           planner.changeTraits(relBefore,
               relBefore.getTraitSet().replace(EnumerableConvention.INSTANCE));
     } else {

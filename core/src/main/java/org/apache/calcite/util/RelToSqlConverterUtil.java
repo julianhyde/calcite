@@ -45,7 +45,7 @@ public abstract class RelToSqlConverterUtil {
       int leftPrec,
       int rightPrec) {
     final SqlLiteral valueToTrim = call.operand(1);
-    String value = /*Y*/
+    String value =
         requireNonNull(valueToTrim.toValue(),
             () -> "call.operand(1).toValue() for call " + call);
     if (value.matches("\\s+")) {
@@ -103,7 +103,7 @@ public abstract class RelToSqlConverterUtil {
    * @return the regex pattern of the character to be trimmed
    */
   public static SqlCharStringLiteral createRegexPatternLiteral(SqlNode call, SqlLiteral trimFlag) {
-    final String regexPattern = /*Y*/
+    final String regexPattern =
         requireNonNull(((SqlCharStringLiteral) call).toValue(),
             () -> "null value for SqlNode " + call);
     String escaped = escapeSpecialChar(regexPattern);
@@ -134,7 +134,7 @@ public abstract class RelToSqlConverterUtil {
    * @return escape character if any special character is present in the string
    */
   private static String escapeSpecialChar(String inputString) {
-    final String[] specialCharacters = /*Y*/
+    final String[] specialCharacters =
         {"\\", "^", "$", "{", "}", "[", "]", "(", ")", ".",
             "*", "+", "?", "|", "<", ">", "-", "&", "%", "@"};
 

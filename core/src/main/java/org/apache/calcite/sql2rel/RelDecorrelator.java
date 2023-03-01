@@ -856,7 +856,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       assert newInput != null;
 
       if (!joinedInputs.contains(newInput)) {
-        final List<Integer> positions = /*Y*/
+        final List<Integer> positions =
             requireNonNull(mapNewInputToOutputs.get(newInput),
                 () -> "mapNewInputToOutputs.get(" + newInput + ")");
 
@@ -892,7 +892,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final RelNode newInput = frame.r;
       assert newInput != null;
 
-      final List<Integer> newLocalOutputs = /*Y*/
+      final List<Integer> newLocalOutputs =
           requireNonNull(mapNewInputToOutputs.get(newInput),
               () -> "mapNewInputToOutputs.get(" + newInput + ")");
 
@@ -927,7 +927,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
   }
 
   private RelNode getCorRel(CorRef corVar) {
-    final RelNode r = /*Y*/
+    final RelNode r =
         requireNonNull(cm.mapCorToCorRel.get(corVar.corr),
             () -> "cm.mapCorToCorRel.get(" + corVar.corr + ")");
     return requireNonNull(r.getInput(0),
@@ -1027,7 +1027,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
     // can directly add positions into corDefOutputs since join
     // does not change the output ordering from the inputs.
-    RelNode valueGen = /*X*/
+    RelNode valueGen =
         requireNonNull(
             createValueGenerator(corVarList, leftInputOutputCount, corDefOutputs),
             "createValueGenerator(...) is null");
@@ -1358,7 +1358,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         oldInput = oldInput0;
         break;
       }
-      RelNode newInput = /*Y*/
+      RelNode newInput =
           requireNonNull(map.get(oldInput0),
               () -> "map.get(oldInput0) for " + oldInput0).r;
       newOrdinal += newInput.getRowType().getFieldCount();
@@ -2438,7 +2438,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       int joinOutputProjExprCount =
           leftInputFieldCount + aggInputProjects.size() + 1;
 
-      right = /*Y*/
+      right =
           d.createProjectWithAdditionalExprs(right,
               ImmutableList.of(Pair.of(rexBuilder.makeLiteral(true), "nullIndicator")));
 

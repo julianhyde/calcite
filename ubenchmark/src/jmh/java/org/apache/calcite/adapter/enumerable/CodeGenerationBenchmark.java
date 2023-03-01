@@ -191,7 +191,7 @@ public class CodeGenerationBenchmark {
       }
 
       try {
-        compilerFactory = /*X*/
+        compilerFactory =
             CompilerFactoryFactory.getDefaultCompilerFactory(
                 CodeGenerationBenchmark.class.getClassLoader());
       } catch (Exception e) {

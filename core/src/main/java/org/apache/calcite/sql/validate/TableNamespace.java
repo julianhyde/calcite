@@ -120,7 +120,7 @@ class TableNamespace extends AbstractNamespace {
    * columns of the underlying table.
    */
   private RelDataType getBaseRowType() {
-    final Table schemaTable = /*X*/
+    final Table schemaTable =
         requireNonNull(table.unwrap(Table.class),
             () -> "can't unwrap Table from " + table);
     if (schemaTable instanceof ModifiableViewTable) {

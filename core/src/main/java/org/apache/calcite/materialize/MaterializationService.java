@@ -142,7 +142,7 @@ public class MaterializationService {
     RelDataType rowType = null;
     if (tableEntry == null) {
       Table table = tableFactory.createTable(schema, viewSql, viewSchemaPath);
-      final String tableName = /*Y*/
+      final String tableName =
           Schemas.uniqueTableName(schema, Util.first(suggestedTableName, "m"));
       tableEntry = schema.add(tableName, table, ImmutableList.of(viewSql));
       Hook.CREATE_MATERIALIZATION.run(tableName);

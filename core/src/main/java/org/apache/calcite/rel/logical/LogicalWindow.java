@@ -144,7 +144,7 @@ public final class LogicalWindow extends Window {
           return ref;
         }
         constants.add(literal);
-        ref = /*Y*/
+        ref =
             new RexInputRef(constantPool.size() + inputFieldCount,
                 literal.getType());
         constantPool.put(literal, ref);
@@ -364,7 +364,7 @@ public final class LogicalWindow extends Window {
     final RexWindow aggWindow = over.getWindow();
 
     // Look up or create a window.
-    RelCollation orderKeys = /*X*/
+    RelCollation orderKeys =
         getCollation(
             Lists.newArrayList(
                 Util.filter(aggWindow.orderKeys,

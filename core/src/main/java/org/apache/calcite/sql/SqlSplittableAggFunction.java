@@ -189,7 +189,7 @@ public interface SqlSplittableAggFunction {
       }
       final RexNode predicate =
           RexUtil.composeConjunction(rexBuilder, predicates, true);
-      final RexNode rexOne = /*X*/
+      final RexNode rexOne =
           rexBuilder.makeExactLiteral(BigDecimal.ONE, aggregateCall.getType());
       if (predicate == null) {
         return rexOne;

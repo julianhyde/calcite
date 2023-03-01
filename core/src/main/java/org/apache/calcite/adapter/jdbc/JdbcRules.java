@@ -119,7 +119,7 @@ public class JdbcRules {
   static final RelFactories.JoinFactory JOIN_FACTORY =
       (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
         final RelOptCluster cluster = left.getCluster();
-        final RelTraitSet traitSet = /*X*/
+        final RelTraitSet traitSet =
             cluster.traitSetOf(
                 requireNonNull(left.getConvention(), "left.getConvention()"));
         try {
@@ -153,7 +153,7 @@ public class JdbcRules {
   public static final RelFactories.AggregateFactory AGGREGATE_FACTORY =
       (input, hints, groupSet, groupSets, aggCalls) -> {
         final RelOptCluster cluster = input.getCluster();
-        final RelTraitSet traitSet = /*X*/
+        final RelTraitSet traitSet =
             cluster.traitSetOf(
                 requireNonNull(input.getConvention(), "input.getConvention()"));
         try {
@@ -175,7 +175,7 @@ public class JdbcRules {
       (kind, inputs, all) -> {
         RelNode input = inputs.get(0);
         RelOptCluster cluster = input.getCluster();
-        final RelTraitSet traitSet = /*X*/
+        final RelTraitSet traitSet =
             cluster.traitSetOf(
                 requireNonNull(input.getConvention(), "input.getConvention()"));
         switch (kind) {

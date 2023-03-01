@@ -85,7 +85,7 @@ class CalciteMaterializer extends CalcitePrepareImpl.CalcitePreparingStmt {
     useStar(schema, materialization);
 
     List<String> tableName = materialization.materializedTable.path();
-    RelOptTable table = /*X*/
+    RelOptTable table =
         requireNonNull(this.catalogReader.getTable(tableName),
             () -> "table " + tableName + " is not found");
     materialization.tableRel =

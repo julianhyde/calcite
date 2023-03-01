@@ -111,7 +111,7 @@ public class JdbcCatalogSchema extends AbstractSchema {
              connection.getMetaData().getSchemas(catalog, null)) {
       defaultSchemaName = connection.getSchema();
       while (resultSet.next()) {
-        final String schemaName = /*X*/
+        final String schemaName =
             requireNonNull(resultSet.getString(1),
                 "got null schemaName from the database");
         builder.put(schemaName,

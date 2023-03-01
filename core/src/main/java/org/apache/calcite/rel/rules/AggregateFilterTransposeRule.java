@@ -98,13 +98,13 @@ public class AggregateFilterTransposeRule
     final Aggregate newAggregate =
         aggregate.copy(aggregate.getTraitSet(), input,
             newGroupSet, null, aggregate.getAggCallList());
-    final Mappings.TargetMapping mapping = /*X*/
+    final Mappings.TargetMapping mapping =
         Mappings.target(newGroupSet::indexOf,
             input.getRowType().getFieldCount(),
             newGroupSet.cardinality());
     final RexNode newCondition =
         RexUtil.apply(mapping, filter.getCondition());
-    final Filter newFilter = /*Y*/
+    final Filter newFilter =
         filter.copy(filter.getTraitSet(), newAggregate, newCondition);
     if (allColumnsInAggregate && aggregate.getGroupType() == Group.SIMPLE) {
       // Everything needed by the filter is returned by the aggregate.

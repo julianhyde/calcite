@@ -107,7 +107,7 @@ public class Interpreter extends AbstractEnumerable<@Nullable Object[]>
 
   @Override public Enumerator<@Nullable Object[]> enumerator() {
     start();
-    final NodeInfo nodeInfo = /*Y*/
+    final NodeInfo nodeInfo =
         requireNonNull(nodes.get(rootRel), () -> "nodeInfo for " + rootRel);
     final Enumerator<Row> rows;
     if (nodeInfo.rowEnumerable != null) {
@@ -359,7 +359,7 @@ public class Interpreter extends AbstractEnumerable<@Nullable Object[]>
       if (!found) {
         if (p instanceof InterpretableRel) {
           InterpretableRel interpretableRel = (InterpretableRel) p;
-          node = /*X*/
+          node =
               interpretableRel.implement(
                   new InterpretableRel.InterpreterImplementor(this, null,
                       DataContexts.EMPTY));

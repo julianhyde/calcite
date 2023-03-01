@@ -114,7 +114,7 @@ public class FrameworksTest {
           };
 
           // "SELECT * FROM myTable"
-          final RelOptAbstractTable relOptTable = /*X*/
+          final RelOptAbstractTable relOptTable =
               new RelOptAbstractTable(relOptSchema, "myTable",
                   table.getRowType(typeFactory)) {
               };

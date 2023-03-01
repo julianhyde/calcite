@@ -485,9 +485,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     RexBuilder rexBuilder = cx.getRexBuilder();
     final List<RexNode> exprList = new ArrayList<>();
     final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-    final RexLiteral unknownLiteral = /*X*/
+    final RexLiteral unknownLiteral =
         rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.BOOLEAN));
-    final RexLiteral nullLiteral = /*X*/
+    final RexLiteral nullLiteral =
         rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));
     for (int i = 0; i < whenList.size(); i++) {
       if (SqlUtil.isNullLiteral(whenList.get(i), false)) {
@@ -652,7 +652,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       requireNonNull(argComponentType, () -> "componentType of " + arg);
 
       RelDataType typeFinal = type;
-      final RelDataType componentType = /*X*/
+      final RelDataType componentType =
           requireNonNull(type.getComponentType(),
               () -> "componentType of " + typeFinal);
       if (argComponentType.isStruct()
@@ -689,7 +689,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
       RexNode pad =
           rexBuilder.makeExactLiteral(val.subtract(BigDecimal.ONE));
-      RexNode cast = /*X*/
+      RexNode cast =
           rexBuilder.makeReinterpretCast(rexInterval.getType(), pad,
               rexBuilder.makeLiteral(false));
       RexNode sum =
@@ -810,7 +810,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     // use the specified type as the return type.
     List<SqlNode> operands = call.getOperandList();
     @SuppressWarnings("all")
-    boolean hasExplicitReturningType = /*X*/
+    boolean hasExplicitReturningType =
         SqlJsonValueFunction.hasExplicitTypeSpec(operands.toArray(SqlNode.EMPTY_ARRAY));
     if (hasExplicitReturningType) {
       operands = SqlJsonValueFunction.removeTypeSpecOperands(call);
@@ -921,7 +921,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     final boolean isNumericIndex = SqlTypeUtil.isIntType(exprs.get(1).getType());
 
     if (isRowTypeField && isNumericIndex) {
-      final SqlOperatorBinding opBinding = /*X*/
+      final SqlOperatorBinding opBinding =
           new RexCallBinding(cx.getTypeFactory(), op, exprs, ImmutableList.of());
       final RelDataType operandType = opBinding.getOperandType(0);
 
@@ -1450,13 +1450,13 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         count = SqlStdOperatorTable.REGR_COUNT.createCall(pos, arg0, arg1);
       } else {
         sumArgSquared = SqlStdOperatorTable.SUM.createCall(pos, argSquared, dependent);
-        sum0 = /*X*/
+        sum0 =
             SqlStdOperatorTable.SUM.createCall(pos, arg0,
                 Objects.equals(dependent, arg0Input) ? arg1 : dependent);
-        sum1 = /*X*/
+        sum1 =
             SqlStdOperatorTable.SUM.createCall(pos, arg1,
                 Objects.equals(dependent, arg1Input) ? arg0 : dependent);
-        count = /*X*/
+        count =
             SqlStdOperatorTable.REGR_COUNT.createCall(pos, arg0,
                 Objects.equals(dependent, arg0Input) ? arg1 : dependent);
       }
@@ -1473,7 +1473,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         denominator = countCasted;
       } else {
         final SqlNumericLiteral one = SqlLiteral.createExactNumeric("1", pos);
-        denominator = /*Y*/
+        denominator =
             new SqlCase(SqlParserPos.ZERO, countCasted,
                 SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, countCasted, one)),
                 SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
@@ -1603,7 +1603,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       } else {
         final SqlNumericLiteral one = SqlLiteral.createExactNumeric("1", pos);
         final SqlLiteral nullLiteral = SqlLiteral.createNull(SqlParserPos.ZERO);
-        denominator = /*Y*/
+        denominator =
             new SqlCase(SqlParserPos.ZERO, count,
                 SqlNodeList.of(SqlStdOperatorTable.EQUALS.createCall(pos, count, one)),
                 SqlNodeList.of(getCastedSqlNode(nullLiteral, varType, pos, null)),
@@ -1794,7 +1794,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       switch (library) {
       case POSTGRESQL:
         if (call.operandCount() == 2) {
-          newStart = /*Y*/
+          newStart =
               rexBuilder.makeCall(SqlStdOperatorTable.CASE,
                   rexBuilder.makeCall(SqlStdOperatorTable.LESS_THAN, start,
                       oneLiteral),
@@ -1804,7 +1804,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
         break;
       case BIG_QUERY:
-        newStart = /*Y*/
+        newStart =
             rexBuilder.makeCall(SqlStdOperatorTable.CASE,
                 rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
                     zeroLiteral),
@@ -1816,7 +1816,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 start);
         break;
       default:
-        newStart = /*Y*/
+        newStart =
             rexBuilder.makeCall(SqlStdOperatorTable.CASE,
                 rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, start,
                     zeroLiteral),
@@ -1932,7 +1932,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     RoundingMode.UNNECESSARY));
         break;
       default:
-        interval2Add = /*Y*/
+        interval2Add =
             multiply(rexBuilder,
                 rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
       }
@@ -1967,7 +1967,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     RoundingMode.UNNECESSARY));
         break;
       default:
-        interval2Sub = /*Y*/
+        interval2Sub =
             multiply(rexBuilder,
                 rexBuilder.makeIntervalLiteral(unit.multiplier, qualifier), op1);
       }

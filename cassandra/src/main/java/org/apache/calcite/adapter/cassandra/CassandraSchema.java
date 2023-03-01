@@ -159,7 +159,7 @@ public class CassandraSchema extends AbstractSchema {
       final String columnName = column.getName().asInternal();
 
       if (dataType instanceof ListType) {
-        SqlTypeName arrayInnerType = /*X*/
+        SqlTypeName arrayInnerType =
             CQL_TO_SQL_TYPE.lookup(((ListType) dataType).getElementType());
 
         fieldInfo.add(columnName,
@@ -167,7 +167,7 @@ public class CassandraSchema extends AbstractSchema {
                     typeFactory.createSqlType(arrayInnerType), -1))
             .nullable(true);
       } else if (dataType instanceof SetType) {
-        SqlTypeName multiSetInnerType = /*X*/
+        SqlTypeName multiSetInnerType =
             CQL_TO_SQL_TYPE.lookup(((SetType) dataType).getElementType());
 
         fieldInfo.add(columnName,

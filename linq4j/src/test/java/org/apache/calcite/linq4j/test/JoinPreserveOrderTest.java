@@ -106,12 +106,12 @@ public final class JoinPreserveOrderTest {
   public static Stream<Arguments> data() {
     List<Arguments> data = new ArrayList<>();
     List<String> empOrderColNames = Arrays.asList("name", "deptno", "eid");
-    List<Function1<Employee, Comparable>> empOrderColSelectors = /*X*/
+    List<Function1<Employee, Comparable>> empOrderColSelectors =
         Arrays.asList(Employee::getName,
             Employee::getDeptno,
             Employee::getEid);
     List<String> deptOrderColNames = Arrays.asList("name", "deptno", "did");
-    List<Function1<Department, Comparable>> deptOrderColSelectors = /*X*/
+    List<Function1<Department, Comparable>> deptOrderColSelectors =
         Arrays.asList(Department::getName,
             Department::getDeptno,
             Department::getDid);
@@ -123,12 +123,12 @@ public final class JoinPreserveOrderTest {
             for (Boolean nullsFirstR : trueFalse) {
               for (Boolean ascendingR : trueFalse) {
                 Object[] params = new Object[2];
-                params[0] = /*X*/
+                params[0] =
                     new Field<>(empOrderColNames.get(i),
                         empOrderColSelectors.get(i),
                         ascendingL,
                         nullsFirstL);
-                params[1] = /*X*/
+                params[1] =
                     new Field<>(deptOrderColNames.get(j),
                         deptOrderColSelectors.get(j),
                         ascendingR,

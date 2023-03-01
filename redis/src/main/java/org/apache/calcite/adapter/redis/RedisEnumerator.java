@@ -36,7 +36,7 @@ class RedisEnumerator implements Enumerator<Object[]> {
   RedisEnumerator(RedisConfig redisConfig, RedisSchema schema, String tableName) {
     RedisTableFieldInfo tableFieldInfo = schema.getTableFieldInfo(tableName);
 
-    RedisJedisManager redisManager = /*Y*/
+    RedisJedisManager redisManager =
         new RedisJedisManager(redisConfig.getHost(),
             redisConfig.getPort(), redisConfig.getDatabase(), redisConfig.getPassword());
 

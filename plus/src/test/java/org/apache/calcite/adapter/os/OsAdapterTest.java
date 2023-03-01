@@ -240,7 +240,7 @@ class OsAdapterTest {
   }
 
   @Test void testStdin() throws SQLException {
-    try (Hook.Closeable ignore = /*X*/
+    try (Hook.Closeable ignore =
              Hook.STANDARD_STREAMS.addThread((Consumer<Holder<Object[]>>) o -> {
                final Object[] values = o.get();
                final InputStream in = (InputStream) values[0];

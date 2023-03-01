@@ -189,7 +189,7 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       rexProgramBuilder.addProject(entry.getValue(), entry.getKey());
     }
 
-    final RexToLixTranslator translator = /*X*/
+    final RexToLixTranslator translator =
         RexToLixTranslator.forAggregation(
             (JavaTypeFactory) getCluster().getTypeFactory(),
             builder2,
@@ -284,14 +284,14 @@ public class EnumerableMatch extends Match implements EnumerableRel {
 
   private Expression implementMatcher(EnumerableRelImplementor implementor,
       PhysType physType, BlockBuilder builder, ParameterExpression row_) {
-    final Expression patternBuilder_ = /*Y*/
+    final Expression patternBuilder_ =
         builder.append("patternBuilder",
             Expressions.call(BuiltInMethod.PATTERN_BUILDER.method));
-    final Expression automaton_ = /*Y*/
+    final Expression automaton_ =
         builder.append("automaton",
             Expressions.call(implementPattern(patternBuilder_, pattern),
                 BuiltInMethod.PATTERN_TO_AUTOMATON.method));
-    Expression matcherBuilder_ = /*Y*/
+    Expression matcherBuilder_ =
         builder.append("matcherBuilder",
             Expressions.call(BuiltInMethod.MATCHER_BUILDER.method, automaton_));
     final BlockBuilder builder2 = new BlockBuilder();
@@ -322,7 +322,7 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       final Expression predicate_ =
           implementPredicate(physType, row_, builder2.toBlock());
 
-      matcherBuilder_ = /*Y*/
+      matcherBuilder_ =
           Expressions.call(matcherBuilder_,
               BuiltInMethod.MATCHER_BUILDER_ADD.method,
               Expressions.constant(entry.getKey()),
@@ -337,7 +337,7 @@ public class EnumerableMatch extends Match implements EnumerableRel {
   private static Expression implementPredicate(PhysType physType,
       ParameterExpression rows_, BlockStatement body) {
     final List<MemberDeclaration> memberDeclarations = new ArrayList<>();
-    ParameterExpression row_ = /*X*/
+    ParameterExpression row_ =
         Expressions.parameter(
             Types.of(MemoryFactory.Memory.class,
             physType.getJavaRowType()), "row_");
@@ -402,7 +402,7 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       for (Ord<RexNode> operand : Ord.zip(concat.operands)) {
         patternBuilder_ = implementPattern(patternBuilder_, operand.e);
         if (operand.i > 0) {
-          patternBuilder_ = /*Y*/
+          patternBuilder_ =
               Expressions.call(patternBuilder_,
                   BuiltInMethod.PATTERN_BUILDER_SEQ.method);
         }
@@ -439,14 +439,14 @@ public class EnumerableMatch extends Match implements EnumerableRel {
       switch (call.op.kind) {
       case PREV:
         operand = (RexLiteral) call.getOperands().get(1);
-        final int prev = /*Y*/
+        final int prev =
             requireNonNull(operand.getValueAs(Integer.class),
                 () -> "operand in " + call);
         this.history = Math.max(this.history, prev);
         break;
       case NEXT:
         operand = (RexLiteral) call.getOperands().get(1);
-        final int next = /*Y*/
+        final int next =
             requireNonNull(operand.getValueAs(Integer.class),
                 () -> "operand in " + call);
         this.future = Math.max(this.future, next);

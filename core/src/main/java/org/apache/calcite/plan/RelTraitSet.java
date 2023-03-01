@@ -693,7 +693,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
     for (int i = 0; i < traits.length; i++) {
       final RelTrait trait = traits[i];
       if (trait instanceof RelCompositeTrait) {
-        x = /*Y*/
+        x =
             x.replace(i, ((RelCompositeTrait) trait).size() == 1
                 ? ((RelCompositeTrait) trait).trait(0)
                 : trait.getTraitDef().getDefault());

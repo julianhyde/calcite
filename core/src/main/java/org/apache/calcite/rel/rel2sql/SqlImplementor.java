@@ -799,7 +799,7 @@ public abstract class SqlImplementor {
         break;
       }
       if (not) {
-        op = /*Y*/
+        op =
             requireNonNull(getInverseOperator(call),
                 () -> "unable to negate " + call.getKind());
       }
@@ -952,7 +952,7 @@ public abstract class SqlImplementor {
 
       for (Window.RexWinAggCall winAggCall: group.aggCalls) {
         SqlAggFunction aggFunction = (SqlAggFunction) winAggCall.getOperator();
-        final SqlWindow sqlWindow = /*Y*/
+        final SqlWindow sqlWindow =
                 SqlWindow.create(null, null,
                     new SqlNodeList(partitionKeys, POS),
                     new SqlNodeList(orderByKeys, POS),
@@ -989,7 +989,7 @@ public abstract class SqlImplementor {
 
     private SqlCall toSql(@Nullable RexProgram program, RexOver rexOver) {
       final RexWindow rexWindow = rexOver.getWindow();
-      final SqlNodeList partitionList = /*X*/
+      final SqlNodeList partitionList =
           new SqlNodeList(toSql(program, rexWindow.partitionKeys), POS);
 
       List<SqlNode> orderNodes = Expressions.list();
@@ -1021,7 +1021,7 @@ public abstract class SqlImplementor {
         upperBound = createSqlWindowBound(rexWindow.getUpperBound());
       }
 
-      final SqlWindow sqlWindow = /*Y*/
+      final SqlWindow sqlWindow =
           SqlWindow.create(null, null, partitionList,
               orderList, isRows, lowerBound, upperBound, allowPartial, POS);
 
@@ -1039,7 +1039,7 @@ public abstract class SqlImplementor {
       }
       SqlCall aggFunctionCall;
       if (isDistinct) {
-        aggFunctionCall = /*X*/
+        aggFunctionCall =
             op.createCall(SqlSelectKeyword.DISTINCT.symbol(POS), POS, operands);
       } else {
         aggFunctionCall = op.createCall(POS, operands);
@@ -1128,7 +1128,7 @@ public abstract class SqlImplementor {
                 first, field.direction.isDescending());
         if (nullDirectionNode != null) {
           orderByList.add(nullDirectionNode);
-          field = /*Y*/
+          field =
               new RelFieldCollation(field.getFieldIndex(), field.getDirection(),
                   RelFieldCollation.NullDirection.UNSPECIFIED);
         }
@@ -1144,7 +1144,7 @@ public abstract class SqlImplementor {
       if (field.getNullDirection() != RelFieldCollation.NullDirection.UNSPECIFIED) {
         final boolean first =
             field.getNullDirection() == RelFieldCollation.NullDirection.FIRST;
-        nullDirectionNode = /*X*/
+        nullDirectionNode =
             dialect.emulateNullDirection(node, first,
                 field.getDirection().isDescending());
       }
@@ -1179,7 +1179,7 @@ public abstract class SqlImplementor {
       final SqlLiteral qualifier =
           distinct ? SqlSelectKeyword.DISTINCT.symbol(POS) : null;
       if (op instanceof SqlSumEmptyIsZeroAggFunction) {
-        final SqlNode node = /*Y*/
+        final SqlNode node =
             toSql(SqlStdOperatorTable.SUM, distinct, operandList, filterArg,
                 collation, approximate);
         return SqlStdOperatorTable.COALESCE.createCall(POS, node, ZERO);
@@ -1224,7 +1224,7 @@ public abstract class SqlImplementor {
         call2 = call;
       } else {
         assert dialect.supportsAggregateFunctionFilter(); // we checked above
-        call2 = /*Y*/
+        call2 =
             SqlStdOperatorTable.FILTER.createCall(POS, call, field(filterArg));
       }
 
@@ -1393,7 +1393,7 @@ public abstract class SqlImplementor {
     default:
       break;
     }
-    SqlTypeFamily family = /*Y*/
+    SqlTypeFamily family =
         requireNonNull(typeName.getFamily(),
             () -> "literal " + literal
                 + " has null SqlTypeFamily, and is SqlTypeName is " + typeName);

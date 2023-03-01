@@ -64,7 +64,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
     super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
 
     if (getConvention() != input.getConvention()) {
-      String message = /*Y*/
+      String message =
           String.format(Locale.ROOT, "%s != %s", getConvention(),
               input.getConvention());
       throw new AssertionError(message);
@@ -84,7 +84,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
       final SqlKind kind = aggCall.getAggregation().getKind();
       if (!SUPPORTED_AGGREGATIONS.contains(kind)) {
-        final String message = /*Y*/
+        final String message =
             String.format(Locale.ROOT,
                 "Aggregation %s not supported (use one of %s)", kind,
                 SUPPORTED_AGGREGATIONS);

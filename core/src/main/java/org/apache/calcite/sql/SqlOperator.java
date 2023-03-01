@@ -586,7 +586,7 @@ public abstract class SqlOperator {
 
     final List<SqlNode> args = constructOperandList(validator, call, null);
 
-    final List<RelDataType> argTypes = /*Y*/
+    final List<RelDataType> argTypes =
         constructArgTypeList(validator, scope, call, args, false);
 
     // Always disable type coercion for builtin operator operands,

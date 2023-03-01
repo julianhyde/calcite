@@ -86,7 +86,7 @@ public class SortUnionTransposeRule
       if (!RelMdUtil.checkInputForCollationAndLimit(mq, input,
           sort.getCollation(), sort.offset, sort.fetch)) {
         ret = false;
-        Sort branchSort = /*Y*/
+        Sort branchSort =
             sort.copy(sort.getTraitSet(), input,
                 sort.getCollation(), sort.offset, sort.fetch);
         inputs.add(branchSort);
@@ -101,7 +101,7 @@ public class SortUnionTransposeRule
     // create new union and sort
     Union unionCopy = (Union) union
         .copy(union.getTraitSet(), inputs, union.all);
-    Sort result = /*Y*/
+    Sort result =
         sort.copy(sort.getTraitSet(), unionCopy, sort.getCollation(),
             sort.offset, sort.fetch);
     call.transformTo(result);

@@ -284,7 +284,7 @@ class TpcdsTest {
         sql = sql.replace(" = '", " = DATE '");
       } else {
         // Until TPC-DS generator can handle date(...).
-        sql = /*Y*/
+        sql =
             sql.replace("'date([YEAR]+\"-01-01\",[YEAR]+\"-07-24\",sales)'",
                 "DATE '1998-08-18'");
       }

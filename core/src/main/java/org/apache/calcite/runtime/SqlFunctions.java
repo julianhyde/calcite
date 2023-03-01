@@ -2617,7 +2617,7 @@ public class SqlFunctions {
    * @see #toLong(Timestamp) converse method
    */
   public static java.sql.Timestamp internalToTimestamp(long v) {
-    final LocalDateTime dateTime = /*X*/
+    final LocalDateTime dateTime =
         LocalDateTime.ofEpochSecond(
             Math.floorDiv(v, DateTimeUtils.MILLIS_PER_SECOND),
             (int) (Math.floorMod(v, DateTimeUtils.MILLIS_PER_SECOND)
@@ -3424,7 +3424,7 @@ public class SqlFunctions {
   }
 
   private static AtomicLong getAtomicLong(String key) {
-    final Map<String, AtomicLong> map = /*Y*/
+    final Map<String, AtomicLong> map =
         requireNonNull(THREAD_SEQUENCES.get(), "THREAD_SEQUENCES.get()");
     AtomicLong atomic = map.get(key);
     if (atomic == null) {
@@ -3612,7 +3612,7 @@ public class SqlFunctions {
         Enumerator<Map.Entry<Comparable, Comparable>> enumerator =
             Linq4j.enumerator(map.entrySet());
 
-        Enumerator<List<Comparable>> transformed = /*Y*/
+        Enumerator<List<Comparable>> transformed =
             Linq4j.transform(enumerator,
                 e -> FlatLists.of(e.getKey(), e.getValue()));
         enumerators.add(transformed);

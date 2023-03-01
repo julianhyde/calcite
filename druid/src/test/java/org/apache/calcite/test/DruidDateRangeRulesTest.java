@@ -175,13 +175,13 @@ class DruidDateRangeRulesTest {
     private final RexNode exDay;
 
     Fixture2() {
-      exYear = /*Y*/
+      exYear =
           rexBuilder.makeCall(SqlStdOperatorTable.EXTRACT,
               ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.YEAR), ts));
-      exMonth = /*Y*/
+      exMonth =
           rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.EXTRACT,
               ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.MONTH), ts));
-      exDay = /*Y*/
+      exDay =
           rexBuilder.makeCall(intRelDataType, SqlStdOperatorTable.EXTRACT,
               ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.DAY), ts));
     }

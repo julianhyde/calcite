@@ -133,7 +133,7 @@ public interface RexImplicationCheckerFixtures {
           .add("string", stringDataType)
           .build();
 
-      executor = /*X*/
+      executor =
           Frameworks.withPrepare((cluster, relOptSchema, rootSchema, statement) ->
               new RexExecutorImpl(
                   DataContexts.of(statement.getConnection(), rootSchema)));

@@ -139,7 +139,7 @@ public class CassandraTable extends AbstractQueryableTable
     final RelDataType rowType = getRowType(typeFactory);
 
     Function1<String, Void> addField = fieldName -> {
-      RelDataType relDataType = /*X*/
+      RelDataType relDataType =
           requireNonNull(rowType.getField(fieldName, true, false)).getType();
       fieldInfo.add(fieldName, relDataType).nullable(true);
       return null;

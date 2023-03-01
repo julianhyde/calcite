@@ -117,7 +117,7 @@ public class SetopOperandTypeChecker implements SqlOperandTypeChecker {
             TypeCoercion typeCoercion = validator.getTypeCoercion();
             RelDataType widenType = typeCoercion.getWiderTypeFor(columnIthTypes, true);
             if (null != widenType) {
-              coerced = /*X*/
+              coerced =
                   typeCoercion.rowTypeCoercion(callBinding.getScope(),
                       callBinding.operand(j), i, widenType) || coerced;
             }

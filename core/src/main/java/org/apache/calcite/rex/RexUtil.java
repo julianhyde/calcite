@@ -488,7 +488,7 @@ public class RexUtil {
     final SqlTypeName name1 = type1.getSqlTypeName();
     final SqlTypeName name2 = type2.getSqlTypeName();
     final RelDataType type1Final = type1;
-    SqlTypeFamily family = /*Y*/
+    SqlTypeFamily family =
         requireNonNull(name1.getFamily(),
             () -> "SqlTypeFamily is null for type " + type1Final
                 + ", SqlTypeName " + name1);
@@ -1157,7 +1157,7 @@ public class RexUtil {
       @Nullable List<? extends @Nullable String> names,
       SqlValidatorUtil.@Nullable Suggester suggester) {
     if (names != null && suggester != null) {
-      names = /*Y*/
+      names =
           SqlValidatorUtil.uniquify(names, suggester,
               typeFactory.getTypeSystem().isSchemaCaseSensitive());
     }
@@ -2158,7 +2158,7 @@ public class RexUtil {
     case EQUALS:
       final RexCall call = (RexCall) e;
       if (call.getOperands().get(1) instanceof RexLiteral) {
-        notTerms = /*Y*/
+        notTerms =
             Util.filter(notTerms, e2 -> {
               switch (e2.getKind()) {
               case EQUALS:
@@ -2284,7 +2284,7 @@ public class RexUtil {
           @Override public RexNode visitTableInputRef(RexTableInputRef inputRef) {
             if (tableMapping != null) {
               RexTableInputRef inputRefFinal = inputRef;
-              inputRef = /*X*/
+              inputRef =
                   RexTableInputRef.of(
                       requireNonNull(tableMapping.get(inputRef.getTableRef()),
                           () -> "tableMapping.get(...) for "
@@ -2324,7 +2324,7 @@ public class RexUtil {
             }
             if (tableMapping != null) {
               RexTableInputRef inputRefFinal = inputRef;
-              inputRef = /*X*/
+              inputRef =
                   RexTableInputRef.of(
                       requireNonNull(tableMapping.get(inputRef.getTableRef()),
                           () -> "tableMapping.get(...) for "

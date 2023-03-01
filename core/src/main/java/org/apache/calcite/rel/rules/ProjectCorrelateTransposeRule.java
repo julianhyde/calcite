@@ -118,7 +118,7 @@ public class ProjectCorrelateTransposeRule
             correlationId);
 
     // updates RexCorrelVariable and sets actual RelDataType for RexFieldAccess
-    rightProject = /*X*/
+    rightProject =
         rightProject.accept(
             new RelNodesExprsHandler(
                 new RexFieldAccessReplacer(correlate.getCorrelationId(),

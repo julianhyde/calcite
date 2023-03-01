@@ -266,7 +266,7 @@ public class EnumerableTableScan
     switch (relFieldType.getSqlTypeName()) {
     case ARRAY:
     case MULTISET:
-      final RelDataType fieldType = /*Y*/
+      final RelDataType fieldType =
           requireNonNull(relFieldType.getComponentType(),
               () -> "relFieldType.getComponentType() for " + relFieldType);
       if (fieldType.isStruct()) {
@@ -276,7 +276,7 @@ public class EnumerableTableScan
         // We need to convert to a List<List>.
         final JavaTypeFactory typeFactory =
                 (JavaTypeFactory) getCluster().getTypeFactory();
-        final PhysType elementPhysType = /*X*/
+        final PhysType elementPhysType =
             PhysTypeImpl.of(typeFactory, fieldType, JavaRowFormat.CUSTOM);
         final MethodCallExpression e2 =
             Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);

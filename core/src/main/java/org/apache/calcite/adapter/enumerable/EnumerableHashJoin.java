@@ -200,11 +200,11 @@ public class EnumerableHashJoin extends Join implements EnumerableRel {
             joinInfo.leftKeys, JavaRowFormat.LIST);
     Expression predicate = Expressions.constant(null);
     if (!joinInfo.nonEquiConditions.isEmpty()) {
-      RexNode nonEquiCondition = /*X*/
+      RexNode nonEquiCondition =
           RexUtil.composeConjunction(getCluster().getRexBuilder(),
               joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
-        predicate = /*Y*/
+        predicate =
             EnumUtils.generatePredicate(implementor,
                 getCluster().getRexBuilder(), left, right, leftResult.physType,
                 rightResult.physType, nonEquiCondition);
@@ -246,11 +246,11 @@ public class EnumerableHashJoin extends Join implements EnumerableRel {
             joinInfo.leftKeys, JavaRowFormat.LIST);
     Expression predicate = Expressions.constant(null);
     if (!joinInfo.nonEquiConditions.isEmpty()) {
-      RexNode nonEquiCondition = /*X*/
+      RexNode nonEquiCondition =
           RexUtil.composeConjunction(getCluster().getRexBuilder(),
               joinInfo.nonEquiConditions, true);
       if (nonEquiCondition != null) {
-        predicate = /*Y*/
+        predicate =
             EnumUtils.generatePredicate(implementor,
                 getCluster().getRexBuilder(), left, right, leftResult.physType,
                 rightResult.physType, nonEquiCondition);

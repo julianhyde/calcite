@@ -843,7 +843,7 @@ public class RexLiteral extends RexNode {
       final Comparable v;
       switch (typeName) {
       case DATE:
-        final Calendar cal = /*Y*/
+        final Calendar cal =
             DateTimeUtils.parseDateFormat(literal,
                 new SimpleDateFormat(format, Locale.ROOT), tz);
         if (cal == null) {

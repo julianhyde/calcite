@@ -335,7 +335,7 @@ public abstract class Sources {
         return this;
       } else {
         if (!isFile(this)) {
-          String rest = /*Y*/
+          String rest =
               Sources.trimOrNull(url.toExternalForm(), parent.url().toExternalForm());
           if (rest != null
               && rest.startsWith("/")) {

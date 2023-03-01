@@ -206,9 +206,9 @@ public class JethroDataSqlDialect extends SqlDialect {
         final Multimap<String, JethroSupportedFunction> supportedFunctions =
             LinkedHashMultimap.create();
         while (functionsTupleSet.next()) {
-          String functionName = /*X*/
+          String functionName =
               requireNonNull(functionsTupleSet.getString(1), "functionName");
-          String operandsType = /*X*/
+          String operandsType =
               requireNonNull(functionsTupleSet.getString(3),
                   () -> "operands for " + functionName);
           supportedFunctions.put(functionName,

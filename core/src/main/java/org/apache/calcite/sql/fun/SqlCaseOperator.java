@@ -252,7 +252,7 @@ public class SqlCaseOperator extends SqlOperator {
       }
     }
 
-    SqlNode elseOp = /*Y*/
+    SqlNode elseOp =
         requireNonNull(caseCall.getElseOperand(),
             () -> "elseOperand for " + caseCall);
     argTypes.add(

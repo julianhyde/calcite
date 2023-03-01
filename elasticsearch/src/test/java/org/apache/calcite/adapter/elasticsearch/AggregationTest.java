@@ -94,7 +94,7 @@ class AggregationTest {
         new ElasticsearchSchema(NODE.restClient(), NODE.mapper(), NAME));
 
     // add calcite view programmatically
-    final String viewSql = /*Y*/
+    final String viewSql =
         String.format(Locale.ROOT,
             "select _MAP['cat1'] AS \"cat1\", "
                 + " _MAP['cat2']  AS \"cat2\", "

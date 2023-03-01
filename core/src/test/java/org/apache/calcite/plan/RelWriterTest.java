@@ -1489,7 +1489,7 @@ class RelWriterTest {
       final FrameworkConfig config = RelBuilderTest.config().build();
       final RelBuilder b = RelBuilder.create(config);
       RelNode rel = relFn.apply(b);
-      final String relJson = /*Y*/
+      final String relJson =
           RelOptUtil.dumpPlan("", rel, SqlExplainFormat.JSON,
               SqlExplainLevel.EXPPLAN_ATTRIBUTES);
       assertThat(relJson, matcher);
@@ -1500,7 +1500,7 @@ class RelWriterTest {
       final FrameworkConfig config = RelBuilderTest.config().build();
       final RelBuilder b = RelBuilder.create(config);
       RelNode rel = relFn.apply(b);
-      final String relJson = /*Y*/
+      final String relJson =
           RelOptUtil.dumpPlan("", rel, SqlExplainFormat.JSON,
               SqlExplainLevel.EXPPLAN_ATTRIBUTES);
       final String plan;

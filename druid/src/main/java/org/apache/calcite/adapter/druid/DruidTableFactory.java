@@ -148,7 +148,7 @@ public class DruidTableFactory implements TableFactory {
     final Object interval = operand.get("interval");
     final List<Interval> intervals;
     if (interval instanceof String) {
-      intervals = /*X*/
+      intervals =
           ImmutableList.of(
               new Interval(interval, ISOChronology.getInstanceUTC()));
     } else {
@@ -158,7 +158,7 @@ public class DruidTableFactory implements TableFactory {
     final String dataSourceName = Util.first(dataSource, name);
 
     if (dimensionsRaw == null || metricsRaw == null) {
-      DruidConnectionImpl connection = /*Y*/
+      DruidConnectionImpl connection =
           new DruidConnectionImpl(druidSchema.url,
               druidSchema.url.replace(":8082", ":8081"));
       return DruidTable.create(druidSchema, dataSourceName, intervals,

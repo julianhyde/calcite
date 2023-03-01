@@ -189,7 +189,7 @@ public class ProfilerImpl implements Profiler {
       }
       // The surprise queue must have enough room for all singleton groups
       // plus all initial groups.
-      surprises = /*Y*/
+      surprises =
           new SurpriseQueue(1 + columns.size() + initialGroups.size(),
               interestingCount);
     }
@@ -422,7 +422,7 @@ public class ProfilerImpl implements Profiler {
         return rowCount;
       default:
         double c = rowCount;
-        List<ImmutableBitSet> parents = /*Y*/
+        List<ImmutableBitSet> parents =
             requireNonNull(keyPoset.getParents(columns, true),
                 () -> "keyPoset.getParents(columns, true) is null for "
                     + columns);
@@ -439,7 +439,7 @@ public class ProfilerImpl implements Profiler {
                   requireNonNull(d1, "d1").cardinality, c2);
           c = Math.min(c, d);
         }
-        List<ImmutableBitSet> children = /*Y*/
+        List<ImmutableBitSet> children =
             requireNonNull(keyPoset.getChildren(columns, true),
                 () -> "keyPoset.getChildren(columns, true) is null for "
                     + columns);

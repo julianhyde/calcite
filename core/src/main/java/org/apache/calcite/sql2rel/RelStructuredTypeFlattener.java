@@ -416,7 +416,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
       RelNode restructuredInput = tryRestructure(oldInput, getNewForOldRel(oldInput));
       // expected that after restructuring indexes in AggregateCalls again became relevant,
       // leave it as is but with new input
-      RelNode newRel = /*Y*/
+      RelNode newRel =
           rel.copy(rel.getTraitSet(), restructuredInput, rel.getGroupSet(),
               rel.getGroupSets(), rel.getAggCallList());
       if (!SqlTypeUtil.isFlat(rel.getRowType())) {
@@ -710,7 +710,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             }
           }
         } else {
-          newExp = /*Y*/
+          newExp =
               rexBuilder.makeCall(exp.getType(), operator,
                   shuttle.visitList(operands));
           // flatten call result type

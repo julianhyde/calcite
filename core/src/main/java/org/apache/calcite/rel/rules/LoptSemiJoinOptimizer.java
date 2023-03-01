@@ -584,7 +584,7 @@ public class LoptSemiJoinOptimizer {
       // be accounted for.
       if (bestDimIdx != -1) {
         int bestDimIdxFinal = bestDimIdx;
-        LogicalJoin semiJoin = /*Y*/
+        LogicalJoin semiJoin =
             requireNonNull(possibleDimensions.get(bestDimIdxFinal),
                 () -> "possibleDimensions.get(" + bestDimIdxFinal + ") is null");
         LogicalJoin chosenSemiJoin =

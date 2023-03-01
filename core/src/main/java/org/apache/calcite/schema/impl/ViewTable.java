@@ -130,7 +130,7 @@ public class ViewTable
           context.expandView(rowType, queryString, schemaPath, viewPath);
       final RelNode rel = RelOptUtil.createCastRel(root.rel, rowType, true);
       // Expand any views
-      final RelNode rel2 = /*X*/
+      final RelNode rel2 =
           rel.accept(new RelShuttleImpl() {
             @Override public RelNode visit(TableScan scan) {
               final RelOptTable table = scan.getTable();

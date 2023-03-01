@@ -229,7 +229,7 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
         Charset charset = fromType.getCharset();
         if (charset != null && SqlTypeUtil.inCharFamily(syncedType)) {
           SqlCollation collation = getCollation(fromType);
-          syncedType = /*Y*/
+          syncedType =
               factory.createTypeWithCharsetAndCollation(syncedType, charset,
                   collation);
         }
@@ -402,7 +402,7 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
 
     if (SqlTypeUtil.isArray(type1) && SqlTypeUtil.isArray(type2)) {
       if (SqlTypeUtil.equalSansNullability(factory, type1, type2)) {
-        resultType = /*Y*/
+        resultType =
             factory.createTypeWithNullability(type1,
                 type1.isNullable() || type2.isNullable());
       }
@@ -568,7 +568,7 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
     }
     if (null == resultType) {
       if (SqlTypeUtil.isArray(type1) && SqlTypeUtil.isArray(type2)) {
-        RelDataType valType = /*Y*/
+        RelDataType valType =
             getWiderTypeForTwo(type1.getComponentType(),
                 type2.getComponentType(), stringPromotion);
         if (null != valType) {
@@ -686,11 +686,11 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
    * @return common type of implicit cast, null if we do not find any
    */
   public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
-    List<SqlTypeFamily> numericFamilies = /*X*/
+    List<SqlTypeFamily> numericFamilies =
         ImmutableList.of(SqlTypeFamily.NUMERIC, SqlTypeFamily.DECIMAL,
             SqlTypeFamily.APPROXIMATE_NUMERIC, SqlTypeFamily.EXACT_NUMERIC,
             SqlTypeFamily.INTEGER);
-    List<SqlTypeFamily> dateTimeFamilies = /*Y*/
+    List<SqlTypeFamily> dateTimeFamilies =
         ImmutableList.of(SqlTypeFamily.DATE, SqlTypeFamily.TIME,
             SqlTypeFamily.TIMESTAMP);
     // If the expected type is already a parent of the input type, no need to cast.
@@ -759,7 +759,7 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
         && SqlTypeUtil.isArray(targetType)
         && operand instanceof SqlCharStringLiteral) {
       try {
-        SqlNode arrayValue = /*X*/
+        SqlNode arrayValue =
             SqlParserUtil.parseArrayLiteral(
                 ((SqlCharStringLiteral) operand).getValueAs(String.class));
         call.setOperand(index, arrayValue);

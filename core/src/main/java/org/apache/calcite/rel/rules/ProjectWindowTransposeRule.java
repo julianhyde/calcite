@@ -179,7 +179,7 @@ public class ProjectWindowTransposeRule
     final List<RexNode> topProjExps =
         indexAdjustment.visitList(project.getProjects());
 
-    final Project newTopProj = /*X*/
+    final Project newTopProj =
         project.copy(newLogicalWindow.getTraitSet(), newLogicalWindow,
             topProjExps, project.getRowType());
 

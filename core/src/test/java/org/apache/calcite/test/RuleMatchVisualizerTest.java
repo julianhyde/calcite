@@ -109,7 +109,7 @@ class RuleMatchVisualizerTest extends RelOptTestBase {
    */
   private String normalize(String str) {
     // rename rel ids
-    str = /*X*/
+    str =
         renameMatches(str,
             Pattern.compile("\"([0-9]+)\"|"
                 + "\"label\" *: *\"#([0-9]+)-|"

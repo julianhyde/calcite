@@ -260,7 +260,7 @@ public class PhysTypeImpl implements PhysType {
     // this method.
     PhysType targetPhysType =
         PhysTypeImpl.of(typeFactory, rowType, targetFormat, false);
-    final Expression selector = /*Y*/
+    final Expression selector =
         Expressions.lambda(Function1.class,
             targetPhysType.record(fieldReferences(o_, Util.range(fieldCount))),
             o_);
@@ -525,7 +525,7 @@ public class PhysTypeImpl implements PhysType {
 
   @Override public PhysType component(int fieldOrdinal) {
     final RelDataTypeField field = rowType.getFieldList().get(fieldOrdinal);
-    RelDataType componentType = /*Y*/
+    RelDataType componentType =
         requireNonNull(field.getType().getComponentType(),
             () -> "field.getType().getComponentType() for " + field);
     return PhysTypeImpl.of(typeFactory,

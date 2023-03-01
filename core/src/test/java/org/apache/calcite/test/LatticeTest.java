@@ -683,7 +683,7 @@ class LatticeTest {
   @Disabled
   @Test void testAllFoodmartQueries() {
     // Test ids that had bugs in them until recently. Useful for a sanity check.
-    final List<Integer> fixed = /*Y*/
+    final List<Integer> fixed =
         ImmutableList.of(13, 24, 28, 30, 61, 76, 79, 81,
             85, 98, 101, 107, 128, 129, 130, 131);
     // Test ids that still have bugs

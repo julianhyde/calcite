@@ -63,7 +63,7 @@ public class EnumerableLimitSort extends Sort implements EnumerableRel {
       @Nullable RexNode offset,
       @Nullable RexNode fetch) {
     final RelOptCluster cluster = input.getCluster();
-    final RelTraitSet traitSet = /*X*/
+    final RelTraitSet traitSet =
         cluster.traitSetOf(EnumerableConvention.INSTANCE).replace(collation);
     return new EnumerableLimitSort(cluster, traitSet, input, collation, offset, fetch);
   }
@@ -87,7 +87,7 @@ public class EnumerableLimitSort extends Sort implements EnumerableRel {
     final BlockBuilder builder = new BlockBuilder();
     final EnumerableRel child = (EnumerableRel) this.getInput();
     final Result result = implementor.visitChild(this, 0, child, pref);
-    final PhysType physType = /*X*/
+    final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), this.getRowType(),
             result.format);
     final Expression childExp = builder.append("child", result.block);

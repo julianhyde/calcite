@@ -98,11 +98,11 @@ class InnodbEnumerator implements Enumerator<Object> {
       return new ByteString((byte[]) obj);
     case TIMESTAMP:
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-      Timestamp timestamp = /*Y*/
+      Timestamp timestamp =
           Utils.convertDateTime((String) obj, relDataType.getPrecision());
       return shift(timestamp).getTime();
     case TIME:
-      Time time = /*Y*/
+      Time time =
           Utils.convertTime((String) obj, relDataType.getPrecision());
       return shift(time).getTime();
     case DATE:

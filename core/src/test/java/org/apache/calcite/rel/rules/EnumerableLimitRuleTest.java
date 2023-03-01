@@ -84,7 +84,7 @@ class EnumerableLimitRuleTest {
     RelTraitSet desiredTraits = planBefore.getTraitSet()
         .replace(EnumerableConvention.INSTANCE);
     Program program = Programs.of(prepareRules);
-    RelNode planAfter = /*Y*/
+    RelNode planAfter =
         program.run(planBefore.getCluster().getPlanner(), planBefore,
             desiredTraits, ImmutableList.of(), ImmutableList.of());
 

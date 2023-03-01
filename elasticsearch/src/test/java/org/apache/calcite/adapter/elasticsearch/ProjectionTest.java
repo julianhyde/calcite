@@ -49,7 +49,7 @@ class ProjectionTest {
 
   @BeforeAll
   public static void setupInstance() throws Exception {
-    final Map<String, String> mappings = /*Y*/
+    final Map<String, String> mappings =
         ImmutableMap.of("A", "keyword",
             "b", "keyword", "cCC", "keyword", "DDd", "keyword");
 
@@ -69,7 +69,7 @@ class ProjectionTest {
         new ElasticsearchSchema(NODE.restClient(), NODE.mapper(), NAME));
 
     // add calcite view programmatically
-    final String viewSql = /*Y*/
+    final String viewSql =
         String.format(Locale.ROOT, "select cast(_MAP['A'] AS varchar(2)) AS a,"
             + " cast(_MAP['b'] AS varchar(2)) AS b, "
             + " cast(_MAP['cCC'] AS varchar(2)) AS c, "

@@ -198,7 +198,7 @@ public class RelMetadataFixture {
       Project project = (Project) rel;
       Preconditions.checkArgument(project.getVariablesSet().isEmpty(),
           "Calc does not allow variables");
-      RexProgram program = /*X*/
+      RexProgram program =
           RexProgram.create(project.getInput().getRowType(),
               project.getProjects(),
               null,

@@ -381,7 +381,7 @@ public class CalciteMetaImpl extends MetaImpl {
     final CalciteMetaSchema schema = (CalciteMetaSchema) schema_;
     return Linq4j.asEnumerable(schema.calciteSchema.getTableNames())
         .select((Function1<String, MetaTable>) name -> {
-          final Table table = /*X*/
+          final Table table =
               requireNonNull(schema.calciteSchema.getTable(name, true),
                   () -> "table " + name + " is not found (case sensitive)")
                   .getTable();
@@ -664,7 +664,7 @@ public class CalciteMetaImpl extends MetaImpl {
       int fetchMaxRowCount) throws NoSuchStatementException {
     final CalciteConnectionImpl calciteConnection = getConnection();
     CalciteServerStatement stmt = calciteConnection.server.getStatement(h);
-    final Signature signature = /*Y*/
+    final Signature signature =
         requireNonNull(stmt.getSignature(),
             () -> "stmt.getSignature() is null for " + stmt);
     final Iterator<Object> iterator;
@@ -698,7 +698,7 @@ public class CalciteMetaImpl extends MetaImpl {
       throws NoSuchStatementException {
     final CalciteConnectionImpl calciteConnection = getConnection();
     CalciteServerStatement stmt = calciteConnection.server.getStatement(h);
-    final Signature signature = /*Y*/
+    final Signature signature =
         requireNonNull(stmt.getSignature(),
             () -> "stmt.getSignature() is null for " + stmt);
 
@@ -708,7 +708,7 @@ public class CalciteMetaImpl extends MetaImpl {
           _createIterable(h, signature, parameterValues, null);
       final Iterator<Object> iterator = iterable.iterator();
       stmt.setResultSet(iterator);
-      metaResultSet = /*Y*/
+      metaResultSet =
           MetaResultSet.count(h.connectionId, h.id,
               ((Number) iterator.next()).intValue());
     } else {

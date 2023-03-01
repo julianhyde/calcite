@@ -121,11 +121,11 @@ public class TableFunctionImpl extends ReflectiveFunctionBase
         new ReflectiveCallNotNullImplementor(method) {
           @Override public Expression implement(RexToLixTranslator translator,
               RexCall call, List<Expression> translatedOperands) {
-            Expression expr = /*Y*/
+            Expression expr =
                 super.implement(translator, call, translatedOperands);
             final Class<?> returnType = method.getReturnType();
             if (QueryableTable.class.isAssignableFrom(returnType)) {
-              Expression queryable = /*X*/
+              Expression queryable =
                   Expressions.call(
                       Expressions.convert_(expr, QueryableTable.class),
                       BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
@@ -133,11 +133,11 @@ public class TableFunctionImpl extends ReflectiveFunctionBase
                           BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method),
                       Expressions.constant(null, SchemaPlus.class),
                       Expressions.constant(call.getOperator().getName(), String.class));
-              expr = /*Y*/
+              expr =
                   Expressions.call(queryable,
                       BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);
             } else {
-              expr = /*Y*/
+              expr =
                   Expressions.call(expr,
                       BuiltInMethod.SCANNABLE_TABLE_SCAN.method,
                       translator.getRoot());

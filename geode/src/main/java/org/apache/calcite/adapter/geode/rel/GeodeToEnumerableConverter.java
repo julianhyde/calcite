@@ -94,7 +94,7 @@ public class GeodeToEnumerableConverter extends ConverterImpl implements Enumera
 
     // PhysType is Enumerable Adapter class that maps SQL types (getRowType)
     // with physical Java types (getJavaTypes())
-    final PhysType physType = /*X*/
+    final PhysType physType =
         PhysTypeImpl.of(implementor.getTypeFactory(), rowType,
             pref.prefer(JavaRowFormat.ARRAY));
 

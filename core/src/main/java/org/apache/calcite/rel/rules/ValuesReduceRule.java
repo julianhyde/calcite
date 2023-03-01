@@ -156,7 +156,7 @@ public class ValuesReduceRule
           ++k;
           RexNode e = projectExpr.accept(shuttle);
           if (RexLiteral.isNullLiteral(e)) {
-            e = /*X*/
+            e =
                 rexBuilder.makeAbstractCast(
                     project.getRowType().getFieldList().get(k).getType(), e);
           }

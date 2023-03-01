@@ -203,7 +203,7 @@ public class EnumerableRules {
       EnumerableInterpreterRule.DEFAULT_CONFIG
           .toRule(EnumerableInterpreterRule.class);
 
-  public static final List<RelOptRule> ENUMERABLE_RULES = /*X*/
+  public static final List<RelOptRule> ENUMERABLE_RULES =
       ImmutableList.of(EnumerableRules.ENUMERABLE_JOIN_RULE,
           EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
           EnumerableRules.ENUMERABLE_CORRELATE_RULE,

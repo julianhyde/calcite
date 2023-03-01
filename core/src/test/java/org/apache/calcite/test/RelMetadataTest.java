@@ -1618,7 +1618,7 @@ public class RelMetadataTest {
     assertThat(collations.get(0).getFieldCollations().get(1).getFieldIndex(),
         equalTo(0));
 
-    final LogicalProject project = /*Y*/
+    final LogicalProject project =
         LogicalProject.create(empSort, ImmutableList.of(),
             projects,
             ImmutableList.of("a", "b", "c", "d"),
@@ -1662,7 +1662,7 @@ public class RelMetadataTest {
         equalTo(antiJoin.getTraitSet().getTraits(RelCollationTraitDef.INSTANCE)));
 
     // Values (empty)
-    collations = /*Y*/
+    collations =
         RelMdCollation.values(mq, empTable.getRowType(), ImmutableList.of());
     assertThat(collations.toString(),
         equalTo("[[0, 1, 2, 3, 4, 5, 6, 7, 8], "
@@ -1934,7 +1934,7 @@ public class RelMetadataTest {
     final RelBuilder relBuilder = RelBuilder.proto().create(cluster, null);
     final RelMetadataQuery mq = cluster.getMetadataQuery();
 
-    final LogicalTableScan empScan = /*Y*/
+    final LogicalTableScan empScan =
         LogicalTableScan.create(cluster, empTable, ImmutableList.of());
     relBuilder.push(empScan);
 
@@ -2895,7 +2895,7 @@ public class RelMetadataTest {
   @Test void testTableReferencesJoinUnknownNode() {
     final String sql = "select * from emp limit 10";
     final RelNode node = sql(sql).toRel();
-    final RelNode nodeWithUnknown = /*X*/
+    final RelNode nodeWithUnknown =
         new DummyRelNode(node.getCluster(), node.getTraitSet(), node);
     final RexBuilder rexBuilder = node.getCluster().getRexBuilder();
     // Join
@@ -2930,7 +2930,7 @@ public class RelMetadataTest {
   @Test void testTableReferencesUnionUnknownNode() {
     final String sql = "select * from emp limit 10";
     final RelNode node = sql(sql).toRel();
-    final RelNode nodeWithUnknown = /*X*/
+    final RelNode nodeWithUnknown =
         new DummyRelNode(node.getCluster(), node.getTraitSet(), node);
     // Union
     final LogicalUnion union =

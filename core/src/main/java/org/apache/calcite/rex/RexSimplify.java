@@ -515,7 +515,7 @@ public class RexSimplify {
       case GREATER_THAN_OR_EQUAL:
       case LESS_THAN_OR_EQUAL:
         // "x = x" simplifies to "null or x is not null" (similarly <= and >=)
-        newExpr = /*Y*/
+        newExpr =
             rexBuilder.makeCall(SqlStdOperatorTable.OR,
                 rexBuilder.makeNullLiteral(e.getType()),
                 rexBuilder.makeCall(SqlStdOperatorTable.IS_NOT_NULL, o0));
@@ -524,7 +524,7 @@ public class RexSimplify {
       case LESS_THAN:
       case GREATER_THAN:
         // "x != x" simplifies to "null and x is null" (similarly < and >)
-        newExpr = /*Y*/
+        newExpr =
             rexBuilder.makeCall(SqlStdOperatorTable.AND,
                 rexBuilder.makeNullLiteral(e.getType()),
                 rexBuilder.makeCall(SqlStdOperatorTable.IS_NULL, o0));
@@ -673,7 +673,7 @@ public class RexSimplify {
         continue;
       }
       terms.set(i, simplify.simplify(t, unknownAs));
-      RelOptPredicateList newPredicates = /*Y*/
+      RelOptPredicateList newPredicates =
           simplify.predicates.union(rexBuilder,
               RelOptPredicateList.of(rexBuilder, terms.subList(i, i + 1)));
       simplify = simplify.withPredicates(newPredicates);
@@ -710,7 +710,7 @@ public class RexSimplify {
       terms.set(i, t2);
       final RexNode inverse =
           simplify.simplify(isNotTrue(t2), RexUnknownAs.UNKNOWN);
-      final RelOptPredicateList newPredicates = /*Y*/
+      final RelOptPredicateList newPredicates =
           simplify.predicates.union(rexBuilder,
               RelOptPredicateList.of(rexBuilder, ImmutableList.of(inverse)));
       simplify = simplify.withPredicates(newPredicates);
@@ -1607,7 +1607,7 @@ public class RexSimplify {
           && comparison.kind != SqlKind.NOT_EQUALS) { // not supported yet
         final C v0 = comparison.literal.getValueAs(clazz);
         if (v0 != null) {
-          final RexNode result = /*Y*/
+          final RexNode result =
               processRange(rexBuilder, terms, rangeTerms,
                   predicate, comparison.ref, v0, comparison.kind);
           if (result != null) {
@@ -1709,7 +1709,7 @@ public class RexSimplify {
           if (constant == null) {
             break;
           }
-          final RexNode result = /*Y*/
+          final RexNode result =
               processRange(rexBuilder, terms, rangeTerms,
                   term, comparison.ref, constant, comparison.kind);
           if (result != null) {
@@ -2024,7 +2024,7 @@ public class RexSimplify {
                         notEqualsComparison.ref);
                 final RexNode constantNull =
                     rexBuilder.makeNullLiteral(trueLiteral.getType());
-                final RexNode newCondition = /*X*/
+                final RexNode newCondition =
                     simplify(
                         rexBuilder.makeCall(SqlStdOperatorTable.OR, isNotNull,
                             constantNull),
@@ -2380,7 +2380,7 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a <= x < b OR a < x < b
-            r = /*Y*/
+            r =
                 Range.range(r.lowerEndpoint(), r.lowerBoundType(), v0,
                     BoundType.OPEN);
           } else {
@@ -2415,7 +2415,7 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a <= x <= b OR a < x <= b
-            r = /*Y*/
+            r =
                 Range.range(r.lowerEndpoint(), r.lowerBoundType(), v0,
                     BoundType.CLOSED);
           } else {
@@ -2451,7 +2451,7 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a < x <= b OR a < x < b
-            r = /*Y*/
+            r =
                 Range.range(v0, BoundType.OPEN, r.upperEndpoint(),
                     r.upperBoundType());
           } else {
@@ -2486,7 +2486,7 @@ public class RexSimplify {
               return rexBuilder.makeLiteral(false);
             }
             // a <= x <= b OR a <= x < b
-            r = /*Y*/
+            r =
                 Range.range(v0, BoundType.CLOSED, r.upperEndpoint(),
                     r.upperBoundType());
           } else {

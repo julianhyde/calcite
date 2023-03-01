@@ -55,7 +55,7 @@ class BooleanLogicTest {
   @BeforeAll
   public static void setupInstance() throws Exception {
 
-    final Map<String, String> mapping = /*Y*/
+    final Map<String, String> mapping =
         ImmutableMap.of("a", "keyword", "b", "keyword",
             "c", "keyword", "int", "long");
 
@@ -74,7 +74,7 @@ class BooleanLogicTest {
         new ElasticsearchSchema(NODE.restClient(), NODE.mapper(), NAME));
 
     // add calcite view programmatically
-    final String viewSql = /*Y*/
+    final String viewSql =
         String.format(Locale.ROOT, "select cast(_MAP['a'] AS varchar(2)) AS a, "
             + " cast(_MAP['b'] AS varchar(2)) AS b, "
             + " cast(_MAP['c'] AS varchar(2)) AS c, "

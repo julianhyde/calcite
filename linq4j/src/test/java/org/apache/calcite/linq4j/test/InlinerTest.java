@@ -50,7 +50,7 @@ class InlinerTest {
   }
 
   @Test void testInlineSingleUsage() {
-    DeclarationStatement decl = /*Y*/
+    DeclarationStatement decl =
         Expressions.declare(16, "x", Expressions.add(ONE, TWO));
     b.add(decl);
     b.add(Expressions.return_(null, decl.parameter));
@@ -79,7 +79,7 @@ class InlinerTest {
   @Test void testNoInlineMultipleUsage() {
     ParameterExpression p1 = Expressions.parameter(int.class, "p1");
     ParameterExpression p2 = Expressions.parameter(int.class, "p2");
-    DeclarationStatement decl = /*Y*/
+    DeclarationStatement decl =
         Expressions.declare(16, "x", Expressions.subtract(p1, p2));
     b.add(decl);
     b.add(
@@ -100,7 +100,7 @@ class InlinerTest {
 
     builder.add(Expressions.declare(0, t, null));
 
-    Expression v = /*Y*/
+    Expression v =
         builder.append("v",
             Expressions.makeTernary(ExpressionType.Conditional,
                 Expressions.makeBinary(ExpressionType.NotEqual,
@@ -140,7 +140,7 @@ class InlinerTest {
 
     builder.add(Expressions.declare(modifiers, t, null));
 
-    Expression v = /*Y*/
+    Expression v =
         builder.append("v",
             Expressions.makeTernary(ExpressionType.Conditional,
                 Expressions.makeBinary(ExpressionType.NotEqual,
@@ -161,7 +161,7 @@ class InlinerTest {
 
     builder.add(Expressions.declare(0, t, TWO));
 
-    Expression v = /*Y*/
+    Expression v =
         builder.append("v",
             Expressions.makeTernary(ExpressionType.Conditional,
                 Expressions.makeBinary(ExpressionType.NotEqual,
@@ -186,7 +186,7 @@ class InlinerTest {
     final ParameterExpression v = Expressions.parameter(int.class, "v");
 
     Expression t = builder.append("t", Expressions.add(u, v));
-    Expression b = /*Y*/
+    Expression b =
         builder.append("b",
             Expressions.condition(Expressions.greaterThan(t, ONE), TRUE, TRUE));
 
@@ -203,7 +203,7 @@ class InlinerTest {
     builder.add(Expressions.declare(Modifier.FINAL, t, ONE));
     final ParameterExpression u = Expressions.parameter(int.class, "u");
     builder.add(Expressions.declare(Modifier.FINAL, u, null));
-    Statement st = /*X*/
+    Statement st =
         Expressions.statement(
             Expressions.assign(u,
                 Expressions.makeBinary(ExpressionType.Add, t, TWO)));

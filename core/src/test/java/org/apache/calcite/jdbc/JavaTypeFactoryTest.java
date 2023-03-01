@@ -49,7 +49,7 @@ public final class JavaTypeFactoryTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2677">[CALCITE-2677]
    * Struct types with one field are not mapped correctly to Java Classes</a>. */
   @Test void testGetJavaClassWithOneFieldStructDataTypeV2() {
-    RelDataType structWithOneField = /*X*/
+    RelDataType structWithOneField =
         TYPE_FACTORY.createStructType(
             ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER)),
             ImmutableList.of("intField"));
@@ -68,7 +68,7 @@ public final class JavaTypeFactoryTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-2677">[CALCITE-2677]
    * Struct types with one field are not mapped correctly to Java Classes</a>. */
   @Test void testGetJavaClassWithTwoFieldsStructDataTypeV2() {
-    RelDataType structWithTwoFields = /*X*/
+    RelDataType structWithTwoFields =
         TYPE_FACTORY.createStructType(
             ImmutableList.of(TYPE_FACTORY.createSqlType(SqlTypeName.INTEGER),
                 TYPE_FACTORY.createSqlType(SqlTypeName.VARCHAR)),
@@ -81,7 +81,7 @@ public final class JavaTypeFactoryTest {
    * Java-oriented field type is wrongly forced to be NOT NULL after being converted to
    * SQL-oriented</a>. */
   @Test void testFieldNullabilityAfterConvertingToSqlStructType() {
-    RelDataType javaStructType = /*X*/
+    RelDataType javaStructType =
         TYPE_FACTORY.createStructType(
             ImmutableList.of(TYPE_FACTORY.createJavaType(Integer.class),
                 TYPE_FACTORY.createJavaType(int.class)),

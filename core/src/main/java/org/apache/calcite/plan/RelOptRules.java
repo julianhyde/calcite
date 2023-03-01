@@ -61,7 +61,7 @@ public class RelOptRules {
           CoreRules.FILTER_CALC_MERGE,
           CoreRules.PROJECT_CALC_MERGE);
 
-  static final List<RelOptRule> BASE_RULES = /*X*/
+  static final List<RelOptRule> BASE_RULES =
       ImmutableList.of(CoreRules.AGGREGATE_STAR_TABLE,
           CoreRules.AGGREGATE_PROJECT_STAR_TABLE,
           CalciteSystemProperty.COMMUTE.value()
@@ -89,7 +89,7 @@ public class RelOptRules {
           CoreRules.EXCHANGE_REMOVE_CONSTANT_KEYS,
           CoreRules.SORT_EXCHANGE_REMOVE_CONSTANT_KEYS);
 
-  static final List<RelOptRule> ABSTRACT_RULES = /*X*/
+  static final List<RelOptRule> ABSTRACT_RULES =
       ImmutableList.of(CoreRules.AGGREGATE_ANY_PULL_UP_CONSTANTS,
           CoreRules.UNION_PULL_UP_CONSTANTS,
           PruneEmptyRules.UNION_INSTANCE,
@@ -111,7 +111,7 @@ public class RelOptRules {
           DateRangeRules.FILTER_INSTANCE,
           CoreRules.INTERSECT_TO_DISTINCT);
 
-  static final List<RelOptRule> ABSTRACT_RELATIONAL_RULES = /*X*/
+  static final List<RelOptRule> ABSTRACT_RELATIONAL_RULES =
       ImmutableList.of(CoreRules.FILTER_INTO_JOIN,
           CoreRules.JOIN_CONDITION_PUSH,
           AbstractConverter.ExpandConversionRule.INSTANCE,
@@ -129,7 +129,7 @@ public class RelOptRules {
           CoreRules.CALC_REMOVE,
           CoreRules.SORT_REMOVE);
 
-  static final List<RelOptRule> CONSTANT_REDUCTION_RULES = /*X*/
+  static final List<RelOptRule> CONSTANT_REDUCTION_RULES =
       ImmutableList.of(CoreRules.PROJECT_REDUCE_EXPRESSIONS,
           CoreRules.FILTER_REDUCE_EXPRESSIONS,
           CoreRules.CALC_REDUCE_EXPRESSIONS,
@@ -140,7 +140,7 @@ public class RelOptRules {
           CoreRules.PROJECT_VALUES_MERGE,
           CoreRules.AGGREGATE_VALUES);
 
-  public static final List<RelOptRule> MATERIALIZATION_RULES = /*X*/
+  public static final List<RelOptRule> MATERIALIZATION_RULES =
       ImmutableList.of(MaterializedViewRules.FILTER_SCAN,
           MaterializedViewRules.PROJECT_FILTER,
           MaterializedViewRules.FILTER,

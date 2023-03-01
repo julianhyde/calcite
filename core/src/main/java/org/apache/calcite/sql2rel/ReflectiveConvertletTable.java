@@ -90,7 +90,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
     map.put(parameterType, (SqlRexConvertlet) (cx, call) -> {
       try {
         @SuppressWarnings("argument.type.incompatible")
-        RexNode result = /*Y*/
+        RexNode result =
             (RexNode) method.invoke(ReflectiveConvertletTable.this, cx, call);
         return requireNonNull(result,
             () -> "null result from " + method + " for call " + call);
@@ -137,7 +137,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
     map.put(opClass, (SqlRexConvertlet) (cx, call) -> {
       try {
         @SuppressWarnings("argument.type.incompatible")
-        RexNode result = /*Y*/
+        RexNode result =
             (RexNode) method.invoke(ReflectiveConvertletTable.this, cx,
                 call.getOperator(), call);
         return requireNonNull(result,

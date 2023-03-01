@@ -112,7 +112,7 @@ public abstract class MaterializedViewTester {
       try {
         final SchemaPlus defaultSchema;
         if (f.schemaSpec == null) {
-          defaultSchema = /*Y*/
+          defaultSchema =
               rootSchema.add("hr",
                   new ReflectiveSchema(new MaterializationTest.HrFKUKSchema()));
         } else {
@@ -127,7 +127,7 @@ public abstract class MaterializedViewTester {
         for (Pair<String, String> pair: f.materializationList) {
           String sql = requireNonNull(pair.left, "sql");
           final RelNode mvRel = toRel(cluster, rootSchema, defaultSchema, sql);
-          final Table table = /*Y*/
+          final Table table =
               tableFactory.createTable(CalciteSchema.from(rootSchema),
                   sql, ImmutableList.of(defaultSchema.getName()));
           String name = requireNonNull(pair.right, "name");
@@ -152,7 +152,7 @@ public abstract class MaterializedViewTester {
     final SqlParser parser = SqlParser.create(sql, SqlParser.Config.DEFAULT);
     final SqlNode parsed = parser.parseStmt();
 
-    final CalciteCatalogReader catalogReader = /*X*/
+    final CalciteCatalogReader catalogReader =
         new CalciteCatalogReader(CalciteSchema.from(rootSchema),
             CalciteSchema.from(defaultSchema).path(null),
             new JavaTypeFactoryImpl(),
@@ -167,7 +167,7 @@ public abstract class MaterializedViewTester {
         .withTrimUnusedFields(true)
         .withExpand(true)
         .withDecorrelationEnabled(true);
-    final SqlToRelConverter converter = /*X*/
+    final SqlToRelConverter converter =
         new SqlToRelConverter(
             (rowType, queryString, schemaPath, viewPath) -> {
               throw new UnsupportedOperationException("cannot expand view");

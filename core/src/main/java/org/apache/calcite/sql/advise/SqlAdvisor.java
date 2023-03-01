@@ -370,7 +370,7 @@ public class SqlAdvisor {
 
   private static boolean isSelectListItem(SqlNode root,
       final SqlParserPos pos, String hintToken) {
-    List<SqlNode> nodes = /*Y*/
+    List<SqlNode> nodes =
         SqlUtil.getAncestry(root,
             input -> input instanceof SqlIdentifier
                 && ((SqlIdentifier) input).names.contains(hintToken),

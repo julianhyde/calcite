@@ -136,7 +136,7 @@ public class TableScanNode implements Node {
     final Enumerable<Row> rowEnumerable;
     if (elementType instanceof Class) {
       //noinspection unchecked
-      final Queryable<Object> queryable = /*Y*/
+      final Queryable<Object> queryable =
           Schemas.queryable(root, (Class) elementType,
               relOptTable.getQualifiedName());
       ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
@@ -255,7 +255,7 @@ public class TableScanNode implements Node {
         filter2 = filter;
         inputRowType = rel.getRowType();
       } else {
-        final Mapping mapping = /*Y*/
+        final Mapping mapping =
             Mappings.target(acceptedProjects,
                 rel.getTable().getRowType().getFieldCount());
         filter2 = RexUtil.apply(mapping, filter);
@@ -279,7 +279,7 @@ public class TableScanNode implements Node {
     }
     if (rejectedProjects != null) {
       final @Nullable Object[] values = new Object[rejectedProjects.size()];
-      enumerable = /*X*/
+      enumerable =
           enumerable.select(row -> {
             final @Nullable Object[] inValues = row.getValues();
             for (int i = 0; i < rejectedProjects.size(); i++) {

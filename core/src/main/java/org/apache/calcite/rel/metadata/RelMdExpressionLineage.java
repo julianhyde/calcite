@@ -134,7 +134,7 @@ public class RelMdExpressionLineage
     // Infer column origin expressions for given references
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
     for (int idx : inputFieldsUsed) {
-      final RexNode inputRef = /*X*/
+      final RexNode inputRef =
           RexTableInputRef.of(RelTableRef.of(rel.getTable(), 0),
               RexInputRef.of(idx, rel.getRowType().getFieldList()));
       final RexInputRef ref = RexInputRef.of(idx, rel.getRowType().getFieldList());
@@ -169,7 +169,7 @@ public class RelMdExpressionLineage
     // Infer column origin expressions for given references
     final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
     for (int idx : inputFieldsUsed) {
-      final RexInputRef inputRef = /*Y*/
+      final RexInputRef inputRef =
           RexInputRef.of(rel.getGroupSet().nth(idx),
               input.getRowType().getFieldList());
       final Set<RexNode> originalExprs = mq.getExpressionLineage(input, inputRef);
@@ -203,7 +203,7 @@ public class RelMdExpressionLineage
     if (rel.getJoinType().isOuterJoin()) {
       // If we reference the inner side, we will bail out
       if (rel.getJoinType() == JoinRelType.LEFT) {
-        ImmutableBitSet rightFields = /*X*/
+        ImmutableBitSet rightFields =
             ImmutableBitSet.range(nLeftColumns, rel.getRowType().getFieldCount());
         if (inputFieldsUsed.intersects(rightFields)) {
           // We cannot map origin of this expression.
@@ -262,7 +262,7 @@ public class RelMdExpressionLineage
         mapping.put(RexInputRef.of(idx, rel.getRowType().getFieldList()), originalExprs);
       } else {
         // Right input.
-        final RexInputRef inputRef = /*Y*/
+        final RexInputRef inputRef =
             RexInputRef.of(idx - nLeftColumns,
                 rightInput.getRowType().getFieldList());
         final Set<RexNode> originalExprs = mq.getExpressionLineage(rightInput, inputRef);
@@ -272,13 +272,13 @@ public class RelMdExpressionLineage
         }
         // Right input references might need to be updated if there are
         // table names clashes with left input
-        final RelDataType fullRowType = /*X*/
+        final RelDataType fullRowType =
             SqlValidatorUtil.createJoinType(rexBuilder.getTypeFactory(),
                 rel.getLeft().getRowType(),
                 rel.getRight().getRowType(),
                 null,
                 ImmutableList.of());
-        final Set<RexNode> updatedExprs = /*X*/
+        final Set<RexNode> updatedExprs =
             ImmutableSet.copyOf(
                 Util.transform(originalExprs, e ->
                     RexUtil.swapTableReferences(rexBuilder, e,
@@ -317,7 +317,7 @@ public class RelMdExpressionLineage
       }
       for (RelTableRef tableRef : tableRefs) {
         int shift = 0;
-        Collection<RelTableRef> lRefs = /*X*/
+        Collection<RelTableRef> lRefs =
             qualifiedNamesToRefs.get(tableRef.getQualifiedName());
         if (lRefs != null) {
           shift = lRefs.size();
@@ -492,7 +492,7 @@ public class RelMdExpressionLineage
       RexNode expr, ImmutableBitSet predFieldsUsed, Map<RexInputRef, Set<RexNode>> mapping,
       Map<RexInputRef, RexNode> singleMapping) {
     final @KeyFor("mapping") RexInputRef inputRef = mapping.keySet().iterator().next();
-    final Set<RexNode> replacements = /*Y*/
+    final Set<RexNode> replacements =
         requireNonNull(mapping.remove(inputRef),
             () -> "mapping.remove(inputRef) is null for " + inputRef);
     Set<RexNode> result = new HashSet<>();

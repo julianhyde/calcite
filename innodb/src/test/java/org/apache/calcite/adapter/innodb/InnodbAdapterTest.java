@@ -57,7 +57,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class InnodbAdapterTest {
 
-  private static final ImmutableMap<String, String> INNODB_MODEL = /*Y*/
+  private static final ImmutableMap<String, String> INNODB_MODEL =
       ImmutableMap.of("model",
           Sources.of(InnodbAdapterTest.class.getResource("/model.json"))
               .file().getAbsolutePath());
@@ -1080,7 +1080,7 @@ public class InnodbAdapterTest {
         .failsAtValidation("Object 'NOT_EXIST' not found");
   }
 
-  static List<Pair<Integer, String>> rows = /*X*/
+  static List<Pair<Integer, String>> rows =
       Lists.newArrayList(
           Pair.of(7369, "EMPNO=7369; ENAME=SMITH; JOB=CLERK; AGE=30; MGR=7902; "
               + "HIREDATE=1980-12-17; SAL=800.00; COMM=null; DEPTNO=20; EMAIL=smith@calcite; "

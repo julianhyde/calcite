@@ -178,7 +178,7 @@ class RelSet {
   public RelSubset add(RelNode rel) {
     assert equivalentSet == null : "adding to a dead set";
     final RelTraitSet traitSet = rel.getTraitSet().simplify();
-    final RelSubset subset = /*X*/
+    final RelSubset subset =
         getOrCreateSubset(rel.getCluster(), traitSet, rel.isEnforcer());
     subset.add(rel);
     return subset;
@@ -192,7 +192,7 @@ class RelSet {
   void addConverters(RelSubset subset, boolean required,
       boolean useAbstractConverter) {
     RelOptCluster cluster = subset.getCluster();
-    List<RelSubset> others = /*X*/
+    List<RelSubset> others =
         subsets.stream()
             .filter(n -> required ? n.isDelivered() : n.isRequired())
             .collect(Collectors.toList());
@@ -245,7 +245,7 @@ class RelSet {
         if (useAbstractConverter) {
           enforcer = new AbstractConverter(cluster, from, null, to.getTraitSet());
         } else {
-          Convention convention = /*X*/
+          Convention convention =
               requireNonNull(subset.getConvention(),
                   () -> "convention is null for " + subset);
           enforcer = convention.enforce(from, to.getTraitSet());

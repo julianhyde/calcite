@@ -68,7 +68,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
   private final Function1<ResultSet, Function0<T>> rowBuilderFactory;
   private final @Nullable PreparedStatementEnricher preparedStatementEnricher;
 
-  private static final Logger LOGGER = /*X*/
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ResultSetEnumerable.class);
 
   private @Nullable Long queryStart;

@@ -121,7 +121,7 @@ class EmbeddedElasticsearchPolicy {
     }
 
     // create index and mapping
-    final HttpEntity entity = /*Y*/
+    final HttpEntity entity =
         new StringEntity(mapper().writeValueAsString(mappings),
             ContentType.APPLICATION_JSON);
     final Request r = new Request("PUT", "/" + index);
@@ -151,7 +151,7 @@ class EmbeddedElasticsearchPolicy {
     Objects.requireNonNull(index, "index");
     Objects.requireNonNull(document, "document");
     String uri = String.format(Locale.ROOT, "/%s/_doc?refresh", index);
-    StringEntity entity = /*Y*/
+    StringEntity entity =
         new StringEntity(mapper().writeValueAsString(document),
             ContentType.APPLICATION_JSON);
     final Request r = new Request("POST", uri);
@@ -174,7 +174,7 @@ class EmbeddedElasticsearchPolicy {
       bulk.add(mapper().writeValueAsString(doc));
     }
 
-    final StringEntity entity = /*Y*/
+    final StringEntity entity =
         new StringEntity(String.join("\n", bulk) + "\n",
             ContentType.APPLICATION_JSON);
 
