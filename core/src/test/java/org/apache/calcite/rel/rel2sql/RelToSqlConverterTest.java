@@ -84,6 +84,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -98,6 +99,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -118,11 +120,19 @@ import static java.util.Objects.requireNonNull;
  */
 class RelToSqlConverterTest {
 
+  private static final Supplier<DialectTestConfig> CONFIG_SUPPLIER =
+      Suppliers.memoize(() ->
+          DialectTestConfigs.INSTANCE_SUPPLIER.get()
+              .withReference("calcite")
+              .withPath(RelToSqlConverterTest.class,
+                  dialectName -> dialectName + ".json")
+              .withDialect("hsqldb", d -> d.withExecute(true)));
+
   private Sql fixture() {
     return new Sql(CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
         CalciteSqlDialect.DEFAULT, SqlParser.Config.DEFAULT, ImmutableSet.of(),
         UnaryOperator.identity(), null, ImmutableList.of(),
-        DialectTestConfigs.INSTANCE_SUPPLIER.get(), RelDataTypeSystem.DEFAULT);
+        CONFIG_SUPPLIER.get(), RelDataTypeSystem.DEFAULT);
   }
 
   /** Initiates a test case with a given SQL query. */
