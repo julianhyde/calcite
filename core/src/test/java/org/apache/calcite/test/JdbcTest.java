@@ -783,14 +783,22 @@ public class JdbcTest {
     checkMockDdl(counter, true,
         driver2.withPrepareFactory(() -> new CountingPrepare(counter)));
 
-    // MockDdlDriver2 implements commit if we override its withPrepare method.
+    // MockDdlDriver2 implements commit if we override its createPrepareFactory
+    // method. The method is deprecated but override still needs to work.
     checkMockDdl(counter, true,
         new MockDdlDriver2(counter) {
-          /** We override a deprecated method so that we can test that it still
-           * works. */
           @SuppressWarnings("deprecation")
           @Override protected Function0<CalcitePrepare> createPrepareFactory() {
             return () -> new CountingPrepare(counter);
+          }
+        });
+
+    // MockDdlDriver2 implements commit if we override its createPrepareFactory
+    // method.
+    checkMockDdl(counter, true,
+        new MockDdlDriver2(counter) {
+          @Override public CalcitePrepare createPrepare() {
+            return new CountingPrepare(counter);
           }
         });
   }
@@ -802,12 +810,12 @@ public class JdbcTest {
          Statement statement = connection.createStatement()) {
       final int original = counter.get();
       if (hasCommit) {
-        statement.executeUpdate("COMMIT");
+        int rowCount = statement.executeUpdate("COMMIT");
+        assertThat(rowCount, is(0));
         assertThat(counter.get() - original, is(1));
       } else {
         assertThrows(SQLException.class,
-            () -> statement.executeUpdate("COMMIT"),
-            "xxx");
+            () -> statement.executeUpdate("COMMIT"));
       }
     } catch (SQLException e) {
       throw new AssertionError(e);
