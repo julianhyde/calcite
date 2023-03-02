@@ -27,6 +27,7 @@ import org.apache.calcite.avatica.HandlerImpl;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.UnregisteredDriver;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.model.JsonSchema;
 import org.apache.calcite.model.ModelHandler;
 import org.apache.calcite.schema.SchemaFactory;
@@ -46,45 +47,70 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Calcite JDBC driver.
  */
 public class Driver extends UnregisteredDriver {
   public static final String CONNECT_STRING_PREFIX = "jdbc:calcite:";
 
-  final Supplier<CalcitePrepare> prepareFactory;
+  protected final @Nullable Supplier<CalcitePrepare> prepareFactory;
 
   static {
     new Driver().register();
   }
 
-  @SuppressWarnings("method.invocation.invalid")
+  /** Creates a Driver. */
   public Driver() {
-    super();
-    this.prepareFactory = createPrepareFactory();
+    this(null);
   }
 
-  private Driver(Supplier<CalcitePrepare> prepareFactory) {
-    super();
+  /** Creates a Driver with a factory for {@code CalcitePrepare} objects;
+   * if the factory is null, the driver will call
+   * {@link #createPrepareFactory()}. */
+  protected Driver(@Nullable Supplier<CalcitePrepare> prepareFactory) {
     this.prepareFactory = prepareFactory;
   }
 
-  /** Allows changing prepareFactory without having to subclass Driver.
+  /** Creates a copy of this Driver with a new factory for creating
+   * {@link CalcitePrepare}.
    *
-   * @param prepareFactory {@link org.apache.calcite.jdbc.CalcitePrepare}
+   * <p>Allows users of the Driver to change the factory without subclassing
+   * the Driver. But subclasses of the driver should override this method to
+   * create an instance of their subclass.
+   *
+   * @param prepareFactory Supplier of a {@code CalcitePrepare}
    * @return Driver with the provided prepareFactory
    */
   public Driver withPrepareFactory(Supplier<CalcitePrepare> prepareFactory) {
-    return this.prepareFactory == prepareFactory
-        ? this : new Driver(prepareFactory);
+    requireNonNull(prepareFactory, "prepareFactory");
+    if (this.prepareFactory == prepareFactory) {
+      return this;
+    }
+    return new Driver(prepareFactory);
   }
 
-  /** Returns the CalcitePrepare of this Driver instance.*/
+  /** Creates a {@link CalcitePrepare} to be used to prepare a statement for
+   * execution.
+   *
+   * <p>If you wish to use a custom prepare, either override this method or
+   * call {@link #withPrepareFactory(Supplier)}. */
   public CalcitePrepare createPrepare() {
-    return prepareFactory.get();
+    if (prepareFactory != null) {
+      return prepareFactory.get();
+    }
+    return createPrepareFactory().apply();
   }
 
-  protected Supplier<CalcitePrepare> createPrepareFactory() {
+  /** Returns a factory with which to create a {@link CalcitePrepare}.
+   *
+   * <p>Now deprecated; if you wish to use a custom prepare, overrides of this
+   * method will still work, but we prefer that you call
+   * {@link #withPrepareFactory(Supplier)}
+   * or override {@link #createPrepare()}. */
+  @Deprecated // to be removed before 2.0
+  protected Function0<CalcitePrepare> createPrepareFactory() {
     return CalcitePrepare.DEFAULT_FACTORY;
   }
 
