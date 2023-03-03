@@ -19,6 +19,7 @@ package org.apache.calcite.rel.rel2sql;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.test.CalciteAssert;
+import org.apache.calcite.util.Token;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -34,9 +35,10 @@ import java.util.function.UnaryOperator;
 class RelToSqlConverterStructsTest {
 
   private RelToSqlConverterTest.Sql sql(String sql) {
+    final Token token = RelToSqlConverterTest.Sql.FIXTURE_TOKEN.token();
     return new RelToSqlConverterTest.Sql(CalciteAssert.SchemaSpec.MY_DB, sql,
         CalciteSqlDialect.DEFAULT, SqlParser.Config.DEFAULT, ImmutableSet.of(),
-        UnaryOperator.identity(), null, ImmutableList.of(),
+        UnaryOperator.identity(), null, ImmutableList.of(), token,
         DialectTestConfigs.INSTANCE_SUPPLIER.get());
   }
 
@@ -47,7 +49,7 @@ class RelToSqlConverterStructsTest {
         + "ROW(\"n2\".\"d\") AS \"n2\", \"xs\", "
         + "\"e\"\n"
         + "FROM \"myDb\".\"myTable\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testNestedSchemaRootColumns() {
@@ -55,7 +57,7 @@ class RelToSqlConverterStructsTest {
     String expected = "SELECT \"a\", "
         + "\"e\"\n"
         + "FROM \"myDb\".\"myTable\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testNestedSchemaNestedColumns() {
@@ -68,7 +70,7 @@ class RelToSqlConverterStructsTest {
         + "\"n1\".\"n11\".\"b\", "
         + "\"n2\".\"d\"\n"
         + "FROM \"myDb\".\"myTable\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for

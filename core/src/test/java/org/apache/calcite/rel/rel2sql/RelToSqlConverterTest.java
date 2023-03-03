@@ -86,6 +86,7 @@ import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.ConversionUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.TestUtil;
+import org.apache.calcite.util.Token;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Suppliers;
@@ -94,6 +95,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -133,10 +135,16 @@ class RelToSqlConverterTest {
                   dialectName -> dialectName + ".json")
               .withDialect("hsqldb", d -> d.withExecute(true)));
 
+  @AfterAll
+  static void assertFixtureTrackerIsEmpty() {
+    Sql.FIXTURE_TOKEN.assertEmpty();
+  }
+
   private Sql fixture() {
+    Token id = Sql.FIXTURE_TOKEN.token();
     return new Sql(CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
         CalciteSqlDialect.DEFAULT, SqlParser.Config.DEFAULT, ImmutableSet.of(),
-        UnaryOperator.identity(), null, ImmutableList.of(),
+        UnaryOperator.identity(), null, ImmutableList.of(), id,
         CONFIG_SUPPLIER.get());
   }
 
@@ -249,7 +257,7 @@ class RelToSqlConverterTest {
         + "\n(SELECT TRUE AS $f0) AS t\nGROUP BY t.$f0";
     sql(query)
         .withRedshift().ok(expectedRedshift)
-        .withInformix().ok(expectedInformix);
+        .withInformix().ok(expectedInformix).done();
   }
 
   @Test void testGroupByDateLiteral() {
@@ -261,14 +269,14 @@ class RelToSqlConverterTest {
         + "\n(SELECT DATE '2022-01-01' AS $f0) AS t\nGROUP BY t.$f0";
     sql(query)
         .withRedshift().ok(expectedRedshift)
-        .withInformix().ok(expectedInformix);
+        .withInformix().ok(expectedInformix).done();
   }
 
   @Test void testSimpleSelectStarFromProductTable() {
     String query = "select * from \"product\"";
     String expected = "SELECT *\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -285,7 +293,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_id\"\n"
         + "ORDER BY \"product_id\" DESC";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-6006">[CALCITE-6006]</a>
@@ -351,7 +359,8 @@ class RelToSqlConverterTest {
         .withBigQuery().ok(expectedBigQuery)
         .withFirebolt().ok(expectedFirebolt)
         .withMysql().ok(expectedMysql)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-6566">[CALCITE-6566]</a>
@@ -379,7 +388,8 @@ class RelToSqlConverterTest {
         .withMysql().ok(expectedMysql)
         .withClickHouse().ok(expectedClickHouse)
         .withPresto().ok(expectedPresto)
-        .withOracle().ok(expectedOracle);
+        .withOracle().ok(expectedOracle)
+        .done();
   }
 
   @Test void testPiFunctionWithoutParentheses() {
@@ -405,7 +415,8 @@ class RelToSqlConverterTest {
         .withMysql().ok(expectedMysql)
         .withClickHouse().ok(expectedClickHouse)
         .withPresto().ok(expectedPresto)
-        .withOracle().ok(expectedOracle);
+        .withOracle().ok(expectedOracle)
+        .done();
   }
 
   @Test void testNiladicCurrentDateFunction() {
@@ -424,7 +435,8 @@ class RelToSqlConverterTest {
         .withPostgresql().ok(expectedPostgresql)
         .withSpark().ok(expectedSpark)
         .withMysql().ok(expectedMysql)
-        .withOracle().ok(expectedOracle);
+        .withOracle().ok(expectedOracle)
+        .done();
   }
 
   @Test void testPivotToSqlFromProductTable() {
@@ -452,14 +464,14 @@ class RelToSqlConverterTest {
         + "FROM foodmart.product\n"
         + "GROUP BY net_weight";
     sql(query).ok(expected)
-        .withBigQuery().ok(expectedBigQuery);
+        .withBigQuery().ok(expectedBigQuery).done();
   }
 
   @Test void testSimpleSelectQueryFromProductTable() {
     String query = "select \"product_id\", \"product_class_id\" from \"product\"";
     final String expected = "SELECT \"product_id\", \"product_class_id\"\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithWhereClauseOfLessThan() {
@@ -468,7 +480,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\", \"shelf_width\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_id\" < 10";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectWhereNotEqualsOrNull() {
@@ -478,7 +490,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\", \"shelf_width\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"net_weight\" <> CAST(10 AS DOUBLE) OR \"net_weight\" IS NULL";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -488,7 +500,7 @@ class RelToSqlConverterTest {
     String query = "select * from \"product\" tablesample bernoulli(11)";
     final String expected = "SELECT *\n"
         + "FROM \"foodmart\".\"product\" TABLESAMPLE BERNOULLI(11.00)";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -518,7 +530,7 @@ class RelToSqlConverterTest {
     String query = "select * from \"product\" TABLESAMPLE system(11) repeatable(10)";
     final String expected = "SELECT *\n"
         + "FROM \"foodmart\".\"product\" TABLESAMPLE SYSTEM(11.00) REPEATABLE(10)";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -535,7 +547,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"COMM\" IS NULL OR \"COMM\" NOT IN (1, 2)";
-    relFn(relFn).ok(expected);
+    relFn(relFn).ok(expected).done();
   }
 
   @Test void testSelectWhereNotEquals() {
@@ -548,7 +560,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"COMM\" IS NULL OR \"COMM\" <> 1";
-    relFn(relFn).ok(expected);
+    relFn(relFn).ok(expected).done();
   }
 
   @Test void testSelectWhereIn() {
@@ -559,7 +571,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"COMM\" IN (1, 2)";
-    relFn(relFn).ok(expected);
+    relFn(relFn).ok(expected).done();
   }
 
   @Test void testSelectWhereIn2() {
@@ -610,7 +622,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE (\"product_id\" = 10 OR \"product_id\" <= 5) "
         + "AND (CAST(80 AS DOUBLE) >= \"shelf_width\" OR \"shelf_width\" > CAST(30 AS DOUBLE))";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
 
@@ -619,7 +631,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT COUNT(*)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\", \"product_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithHiveCube() {
@@ -628,9 +640,8 @@ class RelToSqlConverterTest {
     String expected = "SELECT `product_class_id`, `product_id`, COUNT(*)\n"
             + "FROM `foodmart`.`product`\n"
             + "GROUP BY `product_class_id`, `product_id` WITH CUBE";
-    sql(query).withHive().ok(expected);
-    SqlDialect sqlDialect = sql(query).withHive().dialect;
-    assertTrue(sqlDialect.supportsGroupByWithCube());
+    final Sql sql = sql(query).withHive().ok(expected).done();
+    assertTrue(sql.dialect.supportsGroupByWithCube());
   }
 
   @Test void testSelectQueryWithHiveRollup() {
@@ -639,9 +650,8 @@ class RelToSqlConverterTest {
     String expected = "SELECT `product_class_id`, `product_id`, COUNT(*)\n"
             + "FROM `foodmart`.`product`\n"
             + "GROUP BY `product_class_id`, `product_id` WITH ROLLUP";
-    sql(query).withHive().ok(expected);
-    SqlDialect sqlDialect = sql(query).withHive().dialect;
-    assertTrue(sqlDialect.supportsGroupByWithRollup());
+    final Sql sql = sql(query).withHive().ok(expected).done();
+    assertTrue(sql.dialect.supportsGroupByWithRollup());
   }
 
   @Test void testSelectQueryWithGroupByEmpty() {
@@ -659,12 +669,14 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withMysql().ok(expectedMysql)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
     sql(sql1)
         .ok(expected)
         .withMysql().ok(expectedMysql)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testSelectQueryWithGroupByEmpty2() {
@@ -675,7 +687,8 @@ class RelToSqlConverterTest {
     sql(query)
         .ok(expected)
         .withMysql().ok(expectedMysql)
-        .withPresto().ok(expected);
+        .withPresto().ok(expected)
+        .done();
   }
 
   /** When ceiling/flooring an integer, BigQuery returns a double while Calcite and other dialects
@@ -731,7 +744,8 @@ class RelToSqlConverterTest {
     relFn(relFn)
         .ok(expected)
         .withMysql().ok(expectedMysql)
-        .withPresto().ok(expected);
+        .withPresto().ok(expected)
+        .done();
   }
 
   /** Test case for
@@ -750,7 +764,7 @@ class RelToSqlConverterTest {
         + " \"product_class_id\")\n"
         + "ORDER BY \"brand_name\", \"product_class_id\"";
     sql(query)
-        .withPostgresql().ok(expected);
+        .withPostgresql().ok(expected).done();
   }
 
   /** Test case for
@@ -777,7 +791,7 @@ class RelToSqlConverterTest {
         + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
         + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0"
         + " AND \"JOB\" = 'DEVELOP') AS \"t\"";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** As {@link #testGroupSuperset()},
@@ -807,7 +821,7 @@ class RelToSqlConverterTest {
         + " AND \"C\" > 10) AS \"t\") "
         + "AS \"t0\"\n"
         + "WHERE \"JOB\" = 'DEVELOP'";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** As {@link #testGroupSuperset()},
@@ -841,7 +855,7 @@ class RelToSqlConverterTest {
         + " AND (\"C\" > 10 OR \"S\" < 3000)) AS \"t\") "
         + "AS \"t0\"\n"
         + "WHERE \"JOB\" = 'DEVELOP'";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** As {@link #testGroupSuperset()}, but with no Filter between the Aggregate
@@ -861,7 +875,7 @@ class RelToSqlConverterTest {
         + "GROUP BY GROUPING SETS((\"EMPNO\", \"ENAME\", \"JOB\"),"
         + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
         + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** As {@link #testGroupSuperset()}, but with no Filter between the Aggregate
@@ -883,7 +897,7 @@ class RelToSqlConverterTest {
         + " (\"EMPNO\", \"ENAME\"), \"EMPNO\")\n"
         + "HAVING GROUPING(\"EMPNO\", \"ENAME\", \"JOB\") <> 0\n"
         + "ORDER BY 4";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** As {@link #testGroupSuperset()}, but with Filter condition and Where condition. */
@@ -914,7 +928,7 @@ class RelToSqlConverterTest {
         + " AND GROUP_ID(\"EMPNO\") < 1) AS \"t\") "
         + "AS \"t0\"\n"
         + "WHERE \"JOB\" = 'DEVELOP'";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
 
@@ -992,7 +1006,8 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withMysql().ok(expectedMysql)
         .withMysql8().ok(expectedMysql8)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** As {@link #testSelectQueryWithGroupByRollup()},
@@ -1019,7 +1034,8 @@ class RelToSqlConverterTest {
     sql(query)
         .ok(expected)
         .withMysql().ok(expectedMysql)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** Test case for
@@ -1035,7 +1051,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY ROLLUP(\"brand_name\", \"product_class_id\")";
     sql(query1)
-        .withPostgresql().ok(expected1);
+        .withPostgresql().ok(expected1).done();
 
     final String query2 = "select \"product_class_id\", \"brand_name\", \"product_id\"\n"
         + "from \"product\"\n"
@@ -1047,7 +1063,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY ROLLUP(\"brand_name\", \"product_class_id\", \"product_id\")";
     sql(query2)
-        .withPostgresql().ok(expected2);
+        .withPostgresql().ok(expected2).done();
   }
 
   /** Tests a query with GROUP BY and a sub-query which is also with GROUP BY.
@@ -1064,7 +1080,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\", \"product_id\") AS \"t1\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Tests query without GROUP BY but an aggregate function
@@ -1084,7 +1100,7 @@ class RelToSqlConverterTest {
         + "GROUP BY `product_class_id`, `product_id`) AS `t1`";
     sql(query)
         .ok(expected)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql).done();
 
     // Equivalent sub-query that uses SELECT DISTINCT
     final String query2 = "select sum(\"product_id\")\n"
@@ -1092,7 +1108,7 @@ class RelToSqlConverterTest {
         + "    from \"product\") as t";
     sql(query2)
         .ok(expected)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql).done();
   }
 
   /** CUBE of one column is equivalent to ROLLUP, and Calcite recognizes
@@ -1123,7 +1139,8 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withMysql().ok(expectedMysql)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** As {@link #testSelectQueryWithSingletonCube()}, but no ORDER BY
@@ -1148,7 +1165,8 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withMysql().ok(expectedMysql)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** Cannot rewrite if ORDER BY contains a column not in GROUP BY (in this
@@ -1179,7 +1197,8 @@ class RelToSqlConverterTest {
     sql(query)
         .ok(expected)
         .withMysql().ok(expectedMysql)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** As {@link #testSelectQueryWithSingletonCube()}, but with LIMIT. */
@@ -1210,7 +1229,8 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withMysql().ok(expectedMysql)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /**
@@ -1290,7 +1310,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT MIN(\"net_weight\")\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithMinAggregateFunction1() {
@@ -1299,7 +1319,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_class_id\", MIN(\"net_weight\")\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithSumAggregateFunction() {
@@ -1308,7 +1328,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT SUM(\"net_weight\")\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithMultipleAggregateFunction() {
@@ -1318,7 +1338,7 @@ class RelToSqlConverterTest {
         + " COUNT(*)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithMultipleAggregateFunction1() {
@@ -1329,7 +1349,7 @@ class RelToSqlConverterTest {
         + " SUM(\"net_weight\"), MIN(\"low_fat\"), COUNT(*)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithGroupByAndProjectList() {
@@ -1339,7 +1359,7 @@ class RelToSqlConverterTest {
         + " COUNT(*)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\", \"product_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testCastDecimal1() {
@@ -1347,7 +1367,7 @@ class RelToSqlConverterTest {
         + " from \"expense_fact\"";
     final String expected = "SELECT -0.0000000123\n"
         + "FROM \"foodmart\".\"expense_fact\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /**
@@ -1362,7 +1382,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     sql(query)
         .withRedshift()
-        .ok(expectedRedshift);
+        .ok(expectedRedshift).done();
   }
 
   /**
@@ -1377,7 +1397,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     sql(query)
         .withRedshift()
-        .ok(expectedRedshift);
+        .ok(expectedRedshift).done();
   }
 
   /**
@@ -1392,7 +1412,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     sql(query)
         .withRedshift()
-        .ok(expectedRedshift);
+        .ok(expectedRedshift).done();
   }
 
   /** Test case for
@@ -1414,7 +1434,7 @@ class RelToSqlConverterTest {
         .withOracleModifiedTypeSystem()
         .ok(expectedOracle)
         .withRedshift()
-        .ok(expectedRedshift);
+        .ok(expectedRedshift).done();
   }
 
   /** Test case for
@@ -1428,13 +1448,13 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"expense_fact\"";
     sql(query)
         .withPostgresqlModifiedTypeSystem()
-        .ok(expectedPostgresql);
+        .ok(expectedPostgresql).done();
 
     final String expectedOracle = "SELECT CAST(\"store_id\" AS VARCHAR(175))\n"
         + "FROM \"foodmart\".\"expense_fact\"";
     sql(query)
         .withOracleModifiedTypeSystem()
-        .ok(expectedOracle);
+        .ok(expectedOracle).done();
   }
 
   /** Test case for
@@ -1453,7 +1473,8 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\"";
     relFn(relFn)
         .withPostgresql().ok(expectedPostgresql)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql)
+        .done();
   }
 
   /** As {@link #testSum0BecomesCoalesce()} but for windowed aggregates. */
@@ -1475,7 +1496,9 @@ class RelToSqlConverterTest {
     RuleSet rules =
         RuleSets.ofList(CoreRules.PROJECT_OVER_SUM_TO_SUM0_RULE);
 
-    sql(query).withPostgresql().optimize(rules, hepPlanner).ok(expectedPostgresql);
+    sql(query)
+        .withPostgresql().optimize(rules, hepPlanner).ok(expectedPostgresql)
+        .done();
   }
 
   /** Test case for
@@ -1488,7 +1511,8 @@ class RelToSqlConverterTest {
     final String expectedQuery = "SELECT \"product_id\"\nFROM \"foodmart\".\"product\"\nWHERE "
         + "(\"product_id\" = 0) = (\"product_class_id\" = 0)";
     sql(query)
-        .ok(expectedQuery);
+        .ok(expectedQuery)
+        .done();
   }
 
   @Test void testMissingParenthesesWithCondition2() {
@@ -1498,7 +1522,8 @@ class RelToSqlConverterTest {
         + "WHERE (\"product_id\" = 0) IN "
         + "(SELECT \"product_id\" = 0\nFROM \"foodmart\".\"product\")";
     sql(query)
-        .ok(expectedQuery);
+        .ok(expectedQuery)
+        .done();
   }
 
   @Test void testMissingParenthesesWithProject() {
@@ -1507,7 +1532,8 @@ class RelToSqlConverterTest {
     final String expectedQuery = "SELECT (\"product_id\" = 0) = (\"product_class_id\" = 0)\n"
         + "FROM \"foodmart\".\"product\"";
     sql(query)
-        .ok(expectedQuery);
+        .ok(expectedQuery)
+        .done();
   }
 
   @Test void testMissingParenthesesWithSubquery1() {
@@ -1521,7 +1547,8 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     sql(query)
         .withConfig(c -> c.withExpand(false))
-        .ok(expectedQuery);
+        .ok(expectedQuery)
+        .done();
   }
 
   @Test void testMissingParenthesesWithSubquery2() {
@@ -1535,7 +1562,8 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     sql(query)
         .withConfig(c -> c.withExpand(false))
-        .ok(expectedQuery);
+        .ok(expectedQuery)
+        .done();
   }
 
   @Test void testMissingParenthesesWithSubquery3() {
@@ -1551,7 +1579,8 @@ class RelToSqlConverterTest {
         + "IN (SELECT \"product_class_id\" = 0\nFROM \"foodmart\".\"product\")";
     sql(query)
         .withConfig(c -> c.withExpand(false))
-        .ok(expectedQuery);
+        .ok(expectedQuery)
+        .done();
   }
 
   /** Test case for
@@ -1568,8 +1597,12 @@ class RelToSqlConverterTest {
         + "from \"foodmart\".\"product\"";
     final String expectedQuery = "SELECT PERCENTILE_CONT(product_id, 0.5) OVER ()\n"
         + "FROM foodmart.product";
-    sql(partitionQuery).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedPartition);
-    sql(query).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedQuery);
+    sql(partitionQuery)
+        .withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedPartition)
+        .done();
+    sql(query)
+        .withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedQuery)
+        .done();
   }
 
   /** Test case for
@@ -1586,8 +1619,12 @@ class RelToSqlConverterTest {
         + "from \"foodmart\".\"product\"";
     final String expectedQuery = "SELECT PERCENTILE_DISC(product_id, 0.5) OVER ()\n"
         + "FROM foodmart.product";
-    sql(partitionQuery).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedPartition);
-    sql(query).withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedQuery);
+    sql(partitionQuery)
+        .withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedPartition)
+        .done();
+    sql(query)
+        .withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).ok(expectedQuery)
+        .done();
   }
 
   /** Test case for
@@ -1659,14 +1696,14 @@ class RelToSqlConverterTest {
         + "FROM (SELECT RANK() OVER (ORDER BY \"SAL\") AS \"rank\"\n"
         + "FROM \"scott\".\"EMP\") AS \"t\"\n"
         + "HAVING COUNT(DISTINCT \"rank\") >= 10";
-    relFn(relFn).withPostgresql().ok(expectedPostgresql);
+    relFn(relFn).withPostgresql().ok(expectedPostgresql).done();
 
     // Oracle does support nested aggregations
     final String expectedOracle =
         "SELECT COUNT(DISTINCT RANK() OVER (ORDER BY \"SAL\")) \"c\"\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "HAVING COUNT(DISTINCT RANK() OVER (ORDER BY \"SAL\")) >= 10";
-    relFn(relFn).withOracle().ok(expectedOracle);
+    relFn(relFn).withOracle().ok(expectedOracle).done();
   }
 
   @Test void testSemiJoin() {
@@ -1870,7 +1907,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"EMPNO\" IN (0, 1, 2, 3) AND \"DEPTNO\" IN (5, 6, 7)";
-    relFn(relFn).ok(expected);
+    relFn(relFn).ok(expected).done();
   }
 
   /** Test case for
@@ -1890,7 +1927,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"EMPNO\" >= 6 AND \"EMPNO\" < 8 OR \"EMPNO\" >= 10 AND \"EMPNO\" < 12";
-    relFn(relFn).optimize(rules, null).ok(expected);
+    relFn(relFn).optimize(rules, null).ok(expected).done();
   }
 
   /** Test case for
@@ -1909,7 +1946,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"COMM\" IS NULL OR \"COMM\" IN (1.0, 20000.0)";
-    relFn(relFn).ok(expected);
+    relFn(relFn).ok(expected).done();
   }
 
   /** Test case for
@@ -1930,7 +1967,7 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"COMM\" IS NULL OR \"COMM\" >= 1.0 AND \"COMM\" <= 20000.0";
 
-    relFn(relFn).ok(expected);
+    relFn(relFn).ok(expected).done();
   }
 
   /** Test case for
@@ -1983,7 +2020,8 @@ class RelToSqlConverterTest {
         .withPostgresql().ok(expectedPostgresql)
         .withSpark().ok(expectedSpark)
         .withVertica().ok(expectedVertica)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** Test case for
@@ -2003,7 +2041,7 @@ class RelToSqlConverterTest {
         .build();
     final String expectedSql = "SELECT COUNT(`MGR`) AS `c`\n"
         + "FROM `scott`.`EMP`";
-    relFn(relFn).withMysql().ok(expectedSql);
+    relFn(relFn).withMysql().ok(expectedSql).done();
   }
 
   /** As {@link #testNestedAggregatesMySqlTable()}, but input is a sub-query,
@@ -2018,7 +2056,7 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT COUNT(`MGR`) AS `c`\n"
         + "FROM `scott`.`EMP`\n"
         + "WHERE `DEPTNO` = 10";
-    relFn(relFn).withMysql().ok(expectedSql);
+    relFn(relFn).withMysql().ok(expectedSql).done();
   }
 
   /** Test case for
@@ -2042,7 +2080,7 @@ class RelToSqlConverterTest {
         + "LEFT JOIN \"scott\".\"DEPT\" "
         + "ON \"EMP\".\"DEPTNO\" = \"DEPT\".\"DEPTNO\" "
         + "AND \"DEPT\".\"DNAME\" LIKE 'ACCOUNTING'";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testSelectQueryWithGroupByAndProjectList1() {
@@ -2052,7 +2090,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT COUNT(*)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\", \"product_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithGroupByHaving() {
@@ -2062,7 +2100,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\", \"product_id\"\n"
         + "HAVING \"product_id\" > 10";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -2084,7 +2122,7 @@ class RelToSqlConverterTest {
         + "ON \"product\".\"product_id\" = \"sales_fact_1997\".\"product_id\"\n"
         + "GROUP BY \"product\".\"product_id\"\n"
         + "HAVING COUNT(*) > 1";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -2107,7 +2145,7 @@ class RelToSqlConverterTest {
         + "GROUP BY \"product\".\"product_id\"\n"
         + "HAVING COUNT(*) > 1) AS \"t2\"\n"
         + "WHERE \"t2\".\"product_id\" > 100";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -2164,7 +2202,7 @@ class RelToSqlConverterTest {
     relFn(b -> root)
         .withBigQuery().ok(expectedBigQuery)
         .withMysql().ok(expectedMysql)
-        .withPostgresql().ok(expectedPostgresql);
+        .withPostgresql().ok(expectedPostgresql).done();
   }
 
   /** Test case for
@@ -2220,7 +2258,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withBigQuery().ok(expectedBigQuery)
         .withPostgresql().ok(expectedPostgresql)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql).done();
   }
 
   @Test void testHaving4() {
@@ -2241,7 +2279,8 @@ class RelToSqlConverterTest {
         + "HAVING AVG(\"gross_weight\") > CAST(50 AS DOUBLE)) AS \"t2\"\n"
         + "GROUP BY \"product_id\"\n"
         + "HAVING AVG(\"AGW\") > 6.00E1";
-    sql(query).ok(expected);
+    sql(query).ok(expected)
+        .done();
   }
 
   @Test void testSelectQueryWithOrderByClause() {
@@ -2250,7 +2289,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"net_weight\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithOrderByClause1() {
@@ -2259,7 +2298,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\", \"net_weight\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"net_weight\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithTwoOrderByClause() {
@@ -2268,7 +2307,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"net_weight\", \"gross_weight\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithAscDescOrderByClause() {
@@ -2277,7 +2316,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"net_weight\", \"gross_weight\" DESC, \"low_fat\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** A dialect that doesn't treat integer literals in the ORDER BY as field
@@ -2319,15 +2358,16 @@ class RelToSqlConverterTest {
         .dialect(nonOrdinalDialect())
         .ok("SELECT JOB, ENAME\n"
             + "FROM scott.EMP\n"
-            + "ORDER BY 1, '23', 12, ENAME, 34 DESC NULLS LAST");
+            + "ORDER BY 1, '23', 12, ENAME, 34 DESC NULLS LAST").done();
   }
 
   @Test void testNoNeedRewriteOrderByConstantsForOver() {
     final String query = "select row_number() over "
         + "(order by 1 nulls last) from \"employee\"";
     // Default dialect keep numeric constant keys in the over of order-by.
-    sql(query).ok("SELECT ROW_NUMBER() OVER (ORDER BY 1)\n"
-        + "FROM \"foodmart\".\"employee\"");
+    final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY 1)\n"
+        + "FROM \"foodmart\".\"employee\"";
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -2356,7 +2396,7 @@ class RelToSqlConverterTest {
         .dialect(nonOrdinalDialect())
         .ok(nonOrdinalExpected)
         .dialect(PrestoSqlDialect.DEFAULT)
-        .ok(prestoExpected);
+        .ok(prestoExpected).done();
   }
 
   /**
@@ -2413,7 +2453,7 @@ class RelToSqlConverterTest {
         + " \"net_weight\" AS \"product_id\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY 1";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testOrderByColumnWithSameNameAsAlias2() {
@@ -2432,7 +2472,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL, 2";
     sql(query).ok(expected)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql).done();
   }
 
   @Test void testHiveSelectCharset() {
@@ -2440,7 +2480,7 @@ class RelToSqlConverterTest {
         + "from \"foodmart\".\"reserve_employee\"";
     final String expected = "SELECT `hire_date`, CAST(`hire_date` AS VARCHAR(10))\n"
         + "FROM `foodmart`.`reserve_employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   /** Test case for
@@ -2479,7 +2519,7 @@ class RelToSqlConverterTest {
         + "from \"foodmart\".\"reserve_employee\" ";
     final String expected = "SELECT `employee_id`\n"
         + "FROM `foodmart`.`reserve_employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testBigQueryCast() {
@@ -2513,7 +2553,7 @@ class RelToSqlConverterTest {
             + "CAST(CAST(employee_id AS STRING) AS TIME), "
             + "CAST(CAST(employee_id AS STRING) AS BOOL)\n"
             + "FROM foodmart.reserve_employee";
-    sql(query).withBigQuery().ok(expected);
+    sql(query).withBigQuery().ok(expected).done();
   }
 
   @Test void testBigQueryParseDatetimeFunctions() {
@@ -2554,13 +2594,15 @@ class RelToSqlConverterTest {
     final String expectedTimestampTrunc =
         "SELECT TIMESTAMP_TRUNC(TIMESTAMP '2012-02-03 15:30:00', MONTH)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(timestampTrunc).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedTimestampTrunc);
+    sql(timestampTrunc).withLibrary(SqlLibrary.BIG_QUERY)
+        .ok(expectedTimestampTrunc).done();
 
     String timeTrunc = "select time_trunc(time '15:30:00', minute)\n"
         + "from \"foodmart\".\"product\"\n";
     final String expectedTimeTrunc = "SELECT TIME_TRUNC(TIME '15:30:00', MINUTE)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(timeTrunc).withLibrary(SqlLibrary.BIG_QUERY).ok(expectedTimeTrunc);
+    sql(timeTrunc).withLibrary(SqlLibrary.BIG_QUERY)
+        .ok(expectedTimeTrunc).done();
   }
 
   @Test void testBigQueryDatetimeFormatFunctions() {
@@ -2587,15 +2629,17 @@ class RelToSqlConverterTest {
     final String expectedBqFormatDatetime =
         "SELECT FORMAT_DATETIME('%R', TIMESTAMP '2012-02-03 12:34:34')\n"
             + "FROM foodmart.product";
-    final Sql sql = fixture().withBigQuery().withLibrary(SqlLibrary.BIG_QUERY);
-    sql.withSql(formatTime)
-        .ok(expectedBqFormatTime);
-    sql.withSql(formatDate)
-        .ok(expectedBqFormatDate);
-    sql.withSql(formatTimestamp)
-        .ok(expectedBqFormatTimestamp);
-    sql.withSql(formatDatetime)
-        .ok(expectedBqFormatDatetime);
+
+    final Function<String, Sql> factory = sql ->
+        fixture().withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).withSql(sql);
+    factory.apply(formatTime)
+        .ok(expectedBqFormatTime).done();
+    factory.apply(formatDate)
+        .ok(expectedBqFormatDate).done();
+    factory.apply(formatTimestamp)
+        .ok(expectedBqFormatTimestamp).done();
+    factory.apply(formatDatetime)
+        .ok(expectedBqFormatDatetime).done();
   }
 
   /**
@@ -2723,7 +2767,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withBigQuery().ok(expectedBigQuery)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   @Test void testHiveSparkAndBqTrimWithBoth() {
@@ -2736,7 +2780,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withBigQuery().ok(expectedBigQuery)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   @Test void testHiveSparkAndBqTrimWithLeading() {
@@ -2749,7 +2793,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withBigQuery().ok(expectedBigQuery)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   @Test void testHiveSparkAndBqTrimWithTailing() {
@@ -2762,7 +2806,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withBigQuery().ok(expectedBigQuery)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   /** Test case for
@@ -2777,7 +2821,8 @@ class RelToSqlConverterTest {
         + "FROM foodmart.reserve_employee";
     sql(query)
         .withBigQuery().ok(expected)
-        .withHsqldb().ok(expectedHsqldb);
+        .withHsqldb().ok(expectedHsqldb)
+        .done();
   }
 
   /** Test case for
@@ -2791,7 +2836,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`reserve_employee`";
     sql(query)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   @Test void testBqTrimWithBothChar() {
@@ -2800,7 +2845,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT TRIM('abcda', 'a')\n"
         + "FROM foodmart.reserve_employee";
     sql(query)
-        .withBigQuery().ok(expected);
+        .withBigQuery().ok(expected).done();
   }
 
   @Test void testHiveAndSparkTrimWithBothChar() {
@@ -2810,7 +2855,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`reserve_employee`";
     sql(query)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   @Test void testHiveBqTrimWithTailingChar() {
@@ -2819,7 +2864,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT RTRIM('abcd', 'a')\n"
         + "FROM foodmart.reserve_employee";
     sql(query)
-        .withBigQuery().ok(expected);
+        .withBigQuery().ok(expected).done();
   }
 
   @Test void testHiveAndSparkTrimWithTailingChar() {
@@ -2829,7 +2874,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`reserve_employee`";
     sql(query)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   @Test void testBqTrimWithBothSpecialCharacter() {
@@ -2839,7 +2884,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.reserve_employee";
     sql(query)
       .withBigQuery()
-      .ok(expected);
+      .ok(expected).done();
   }
 
   @Test void testHiveAndSparkTrimWithBothSpecialCharacter() {
@@ -2850,7 +2895,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`reserve_employee`";
     sql(query)
         .withHive().ok(expected)
-        .withSpark().ok(expected);
+        .withSpark().ok(expected).done();
   }
 
   /** Test case for
@@ -2874,7 +2919,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withExasol().ok(expectedExasol)
         .withMssql().ok(expectedMssql)
-        .withRedshift().ok(expectedRedshift);
+        .withRedshift().ok(expectedRedshift).done();
   }
 
   /** Test case for
@@ -2909,7 +2954,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.employee\n"
         + "WHERE (hire_date - INTERVAL '19800' SECOND(5))"
         + " > CAST(hire_date AS TIMESTAMP)";
-    sql(query).withExasol().ok(expected);
+    sql(query).withExasol().ok(expected).done();
   }
 
   /**
@@ -2926,7 +2971,7 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"DEPTNO\" = 21";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testUnparseIn2() {
@@ -2937,7 +2982,7 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"DEPTNO\" IN (20, 21)";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testUnparseInStruct1() {
@@ -2953,7 +2998,7 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE ROW(\"DEPTNO\", \"JOB\") = ROW(1, 'PRESIDENT')";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testUnparseInStruct2() {
@@ -2971,7 +3016,7 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT *\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE ROW(\"DEPTNO\", \"JOB\") IN (ROW(1, 'PRESIDENT'), ROW(2, 'PRESIDENT'))";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** Test case for
@@ -2996,7 +3041,7 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\")\n"
         + "OFFSET 1 ROWS\n"
         + "FETCH NEXT 3 ROWS ONLY";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testSelectQueryWithLimitClause() {
@@ -3015,14 +3060,15 @@ class RelToSqlConverterTest {
         + "OFFSET 10";
     sql(query).withHive().ok(expected)
         .withVertica().ok(expectedVertica)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testPositionFunctionForHive() {
     final String query = "select position('A' IN 'ABC') from \"product\"";
     final String expected = "SELECT INSTR('ABC', 'A')\n"
         + "FROM `foodmart`.`product`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testPositionFunctionForMySql() {
@@ -3036,7 +3082,7 @@ class RelToSqlConverterTest {
     final String query = "select position('A' IN 'ABC') from \"product\"";
     final String expected = "SELECT INSTR('ABC', 'A')\n"
         + "FROM foodmart.product";
-    sql(query).withBigQuery().ok(expected);
+    sql(query).withBigQuery().ok(expected).done();
   }
 
   /** Test case for
@@ -3116,7 +3162,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.product";
     sql(query)
         .withPostgresql().ok(expectedPostgresql)
-        .withBigQuery().ok(expectedBigQuery);
+        .withBigQuery().ok(expectedBigQuery).done();
   }
 
   @Test void testIdentifier() {
@@ -3153,14 +3199,14 @@ class RelToSqlConverterTest {
         .withMysql().ok(expectedMysql)
         .withOracle().ok(expectedOracle)
         .withPostgresql().ok(expectedPostgresql)
-        .withExasol().ok(expectedExasol);
+        .withExasol().ok(expectedExasol).done();
   }
 
   @Test void testModFunctionForHive() {
     final String query = "select mod(11,3) from \"product\"";
     final String expected = "SELECT 11 % 3\n"
         + "FROM `foodmart`.`product`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testUnionOperatorForBigQuery() {
@@ -3171,7 +3217,7 @@ class RelToSqlConverterTest {
         + "UNION DISTINCT\n"
         + "SELECT 1\n"
         + "FROM foodmart.product";
-    sql(query).withBigQuery().ok(expected);
+    sql(query).withBigQuery().ok(expected).done();
   }
 
   @Test void testUnionAllOperatorForBigQuery() {
@@ -3182,7 +3228,7 @@ class RelToSqlConverterTest {
         + "UNION ALL\n"
         + "SELECT 1\n"
         + "FROM foodmart.product";
-    sql(query).withBigQuery().ok(expected);
+    sql(query).withBigQuery().ok(expected).done();
   }
 
   @Test void testIntersectOperatorForBigQuery() {
@@ -3193,7 +3239,7 @@ class RelToSqlConverterTest {
         + "INTERSECT DISTINCT\n"
         + "SELECT 1\n"
         + "FROM foodmart.product";
-    sql(query).withBigQuery().ok(expected);
+    sql(query).withBigQuery().ok(expected).done();
   }
 
   @Test void testExceptOperatorForBigQuery() {
@@ -3204,7 +3250,7 @@ class RelToSqlConverterTest {
         + "EXCEPT DISTINCT\n"
         + "SELECT 1\n"
         + "FROM foodmart.product";
-    sql(query).withBigQuery().ok(expected);
+    sql(query).withBigQuery().ok(expected).done();
   }
 
   @Test void testSelectOrderByDescNullsFirst() {
@@ -3219,7 +3265,7 @@ class RelToSqlConverterTest {
         + "ORDER BY CASE WHEN [product_id] IS NULL THEN 0 ELSE 1 END, [product_id] DESC";
     sql(query)
         .withHive().ok(expected)
-        .withMssql().ok(mssqlExpected);
+        .withMssql().ok(mssqlExpected).done();
   }
 
   @Test void testSelectOrderByAscNullsLast() {
@@ -3234,7 +3280,7 @@ class RelToSqlConverterTest {
         + "ORDER BY CASE WHEN [product_id] IS NULL THEN 1 ELSE 0 END, [product_id]";
     sql(query)
         .withHive().ok(expected)
-        .withMssql().ok(mssqlExpected);
+        .withMssql().ok(mssqlExpected).done();
   }
 
   @Test void testSelectOrderByAscNullsFirst() {
@@ -3250,7 +3296,7 @@ class RelToSqlConverterTest {
         + "ORDER BY [product_id]";
     sql(query)
         .withHive().ok(expected)
-        .withMssql().ok(mssqlExpected);
+        .withMssql().ok(mssqlExpected).done();
   }
 
   @Test void testSelectOrderByDescNullsLast() {
@@ -3266,7 +3312,8 @@ class RelToSqlConverterTest {
         + "ORDER BY [product_id] DESC";
     sql(query)
         .withHive().ok(expectedHive)
-        .withMssql().ok(mssqlExpected);
+        .withMssql().ok(mssqlExpected)
+        .done();
   }
 
   @Test void testHiveSelectQueryWithOverDescAndNullsFirstShouldBeEmulated() {
@@ -3275,7 +3322,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
         + "OVER (ORDER BY `hire_date` IS NULL DESC, `hire_date` DESC)\n"
         + "FROM `foodmart`.`employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOverAscAndNullsLastShouldBeEmulated() {
@@ -3283,7 +3330,7 @@ class RelToSqlConverterTest {
         + "(order by \"hire_date\" nulls last) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date` IS NULL, `hire_date`)\n"
         + "FROM `foodmart`.`employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOverAscNullsFirstShouldNotAddNullEmulation() {
@@ -3291,7 +3338,7 @@ class RelToSqlConverterTest {
         + "(order by \"hire_date\" nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date`)\n"
         + "FROM `foodmart`.`employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSubstring() {
@@ -3299,7 +3346,7 @@ class RelToSqlConverterTest {
             + "from \"foodmart\".\"reserve_employee\"";
     final String expected = "SELECT SUBSTRING('ABC', 2)\n"
             + "FROM `foodmart`.`reserve_employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSubstringWithLength() {
@@ -3307,7 +3354,7 @@ class RelToSqlConverterTest {
             + "from \"foodmart\".\"reserve_employee\"";
     final String expected = "SELECT SUBSTRING('ABC', 2, 3)\n"
             + "FROM `foodmart`.`reserve_employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSubstringWithANSI() {
@@ -3315,7 +3362,7 @@ class RelToSqlConverterTest {
             + "from \"foodmart\".\"reserve_employee\"";
     final String expected = "SELECT SUBSTRING('ABC', 2)\n"
             + "FROM `foodmart`.`reserve_employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSubstringWithANSIAndLength() {
@@ -3323,7 +3370,7 @@ class RelToSqlConverterTest {
             + "from \"foodmart\".\"reserve_employee\"";
     final String expected = "SELECT SUBSTRING('ABC', 2, 3)\n"
             + "FROM `foodmart`.`reserve_employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOverDescNullsLastShouldNotAddNullEmulation() {
@@ -3331,7 +3378,7 @@ class RelToSqlConverterTest {
             + "(order by \"hire_date\" desc nulls last) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withHive().ok(expected);
+    sql(query).withHive().ok(expected).done();
   }
 
   /** Test case for
@@ -3349,7 +3396,8 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`product`";
     sql(query)
         .withMysql().ok(expectedMysql)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** Test case for
@@ -3371,7 +3419,8 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`salary`";
     sql(query)
         .withMysql().ok(expectedMysql)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testHiveSelectQueryWithOrderByDescAndHighNullsWithVersionGreaterThanOrEq21() {
@@ -3392,8 +3441,10 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` DESC NULLS FIRST";
-    sql(query).dialect(hive2_1Dialect).ok(expected);
-    sql(query).dialect(hive2_2_Dialect).ok(expected);
+    sql(query)
+        .dialect(hive2_1Dialect).ok(expected)
+        .dialect(hive2_2_Dialect).ok(expected)
+        .done();
   }
 
   @Test void testHiveSelectQueryWithOverDescAndHighNullsWithVersionGreaterThanOrEq21() {
@@ -3413,8 +3464,8 @@ class RelToSqlConverterTest {
         + "(order by \"hire_date\" desc nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY hire_date DESC NULLS FIRST)\n"
         + "FROM foodmart.employee";
-    sql(query).dialect(hive2_1Dialect).ok(expected);
-    sql(query).dialect(hive2_2_Dialect).ok(expected);
+    sql(query).dialect(hive2_1Dialect).ok(expected).done();
+    sql(query).dialect(hive2_2_Dialect).ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOrderByDescAndHighNullsWithVersion20() {
@@ -3428,7 +3479,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL DESC, `product_id` DESC";
-    sql(query).dialect(hive2_1_0_Dialect).ok(expected);
+    sql(query).dialect(hive2_1_0_Dialect).ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOverDescAndHighNullsWithVersion20() {
@@ -3442,7 +3493,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() OVER "
         + "(ORDER BY hire_date IS NULL DESC, hire_date DESC)\n"
         + "FROM foodmart.employee";
-    sql(query).dialect(hive2_1_0_Dialect).ok(expected);
+    sql(query).dialect(hive2_1_0_Dialect).ok(expected).done();
   }
 
   @Test void testJethroDataSelectQueryWithOrderByDescAndNullsFirstShouldBeEmulated() {
@@ -3452,7 +3503,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"product_id\", \"product_id\" DESC";
-    sql(query).withJethro().ok(expected);
+    sql(query).withJethro().ok(expected).done();
   }
 
   @Test void testJethroDataSelectQueryWithOverDescAndNullsFirstShouldBeEmulated() {
@@ -3462,7 +3513,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() OVER "
             + "(ORDER BY \"hire_date\", \"hire_date\" DESC)\n"
             + "FROM \"foodmart\".\"employee\"";
-    sql(query).withJethro().ok(expected);
+    sql(query).withJethro().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOrderByDescAndNullsFirstShouldBeEmulated() {
@@ -3471,7 +3522,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL DESC, `product_id` DESC";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOverDescAndNullsFirstShouldBeEmulated() {
@@ -3480,7 +3531,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() OVER "
             + "(ORDER BY `hire_date` IS NULL DESC, `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOrderByAscAndNullsLastShouldBeEmulated() {
@@ -3489,7 +3540,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL, `product_id`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOverAscAndNullsLastShouldBeEmulated() {
@@ -3498,7 +3549,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() OVER "
             + "(ORDER BY `hire_date` IS NULL, `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOrderByAscNullsFirstShouldNotAddNullEmulation() {
@@ -3507,7 +3558,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOverAscNullsFirstShouldNotAddNullEmulation() {
@@ -3515,7 +3566,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOrderByDescNullsLastShouldNotAddNullEmulation() {
@@ -3524,7 +3575,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` DESC";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlSelectQueryWithOverDescNullsLastShouldNotAddNullEmulation() {
@@ -3532,7 +3583,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" desc nulls last) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlCastToVarcharWithLessThanMaxPrecision() {
@@ -3540,7 +3591,7 @@ class RelToSqlConverterTest {
         + "from \"product\" ";
     final String expected = "SELECT CAST(`product_id` AS CHAR(50)), `product_id`\n"
         + "FROM `foodmart`.`product`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlCastToTimestamp() {
@@ -3550,7 +3601,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`employee`\n"
         + "WHERE (`hire_date` - INTERVAL '19800' SECOND)"
         + " > CAST(`hire_date` AS DATETIME)";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlCastToVarcharWithGreaterThanMaxPrecision() {
@@ -3558,7 +3609,7 @@ class RelToSqlConverterTest {
         + "from \"product\" ";
     final String expected = "SELECT CAST(`product_id` AS CHAR(255)), `product_id`\n"
         + "FROM `foodmart`.`product`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlUnparseListAggCall() {
@@ -3582,7 +3633,7 @@ class RelToSqlConverterTest {
         + "GROUP_CONCAT(`product_name`), GROUP_CONCAT(`product_name` SEPARATOR ',')\n"
         + "FROM `foodmart`.`product`\n"
         + "GROUP BY `product_id`";
-    sql(query).withMysql().ok(expected);
+    sql(query).withMysql().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOrderByAscNullsLastAndNoEmulation() {
@@ -3591,7 +3642,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id`";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOverAscNullsLastAndNoEmulation() {
@@ -3599,7 +3650,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" nulls last) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOrderByAscNullsFirstAndNullEmulation() {
@@ -3608,7 +3659,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL DESC, `product_id`";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOverAscNullsFirstAndNullEmulation() {
@@ -3617,7 +3668,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
             + "OVER (ORDER BY `hire_date` IS NULL DESC, `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOrderByDescNullsFirstAndNoEmulation() {
@@ -3626,7 +3677,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` DESC";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOverDescNullsFirstAndNoEmulation() {
@@ -3634,7 +3685,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" desc nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOrderByDescNullsLastAndNullEmulation() {
@@ -3643,7 +3694,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL, `product_id` DESC";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithHighNullsSelectWithOverDescNullsLastAndNullEmulation() {
@@ -3652,7 +3703,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
             + "OVER (ORDER BY `hire_date` IS NULL, `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlHigh().ok(expected);
+    sql(query).withMysqlHigh().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOrderByDescAndNullsFirstShouldNotBeEmulated() {
@@ -3661,7 +3712,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` DESC";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOverDescAndNullsFirstShouldNotBeEmulated() {
@@ -3669,7 +3720,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" desc nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOrderByAscAndNullsFirstShouldNotBeEmulated() {
@@ -3678,7 +3729,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id`";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOverAscAndNullsFirstShouldNotBeEmulated() {
@@ -3686,7 +3737,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOrderByDescAndNullsLastShouldBeEmulated() {
@@ -3695,7 +3746,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL, `product_id` DESC";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOverDescAndNullsLastShouldBeEmulated() {
@@ -3704,7 +3755,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
             + "OVER (ORDER BY `hire_date` IS NULL, `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOrderByAscAndNullsLastShouldBeEmulated() {
@@ -3713,7 +3764,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL, `product_id`";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithFirstNullsSelectWithOverAscAndNullsLastShouldBeEmulated() {
@@ -3722,7 +3773,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
             + "OVER (ORDER BY `hire_date` IS NULL, `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlFirst().ok(expected);
+    sql(query).withMysqlFirst().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOrderByDescAndNullsFirstShouldBeEmulated() {
@@ -3731,7 +3782,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL DESC, `product_id` DESC";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOverDescAndNullsFirstShouldBeEmulated() {
@@ -3740,7 +3791,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
             + "OVER (ORDER BY `hire_date` IS NULL DESC, `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOrderByAscAndNullsFirstShouldBeEmulated() {
@@ -3749,7 +3800,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` IS NULL DESC, `product_id`";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOverAscAndNullsFirstShouldBeEmulated() {
@@ -3758,7 +3809,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() "
             + "OVER (ORDER BY `hire_date` IS NULL DESC, `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOrderByDescAndNullsLastShouldNotBeEmulated() {
@@ -3767,7 +3818,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id` DESC";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOverDescAndNullsLastShouldNotBeEmulated() {
@@ -3775,7 +3826,7 @@ class RelToSqlConverterTest {
             + "over (order by \"hire_date\" desc nulls last) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date` DESC)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOrderByAscAndNullsLastShouldNotBeEmulated() {
@@ -3784,7 +3835,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT `product_id`\n"
         + "FROM `foodmart`.`product`\n"
         + "ORDER BY `product_id`";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   @Test void testMySqlWithLastNullsSelectWithOverAscAndNullsLastShouldNotBeEmulated() {
@@ -3792,7 +3843,7 @@ class RelToSqlConverterTest {
             + "(order by \"hire_date\" nulls last) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY `hire_date`)\n"
             + "FROM `foodmart`.`employee`";
-    sql(query).withMysqlLast().ok(expected);
+    sql(query).withMysqlLast().ok(expected).done();
   }
 
   /** Test case for
@@ -3845,7 +3896,8 @@ class RelToSqlConverterTest {
         .withClickHouse().ok(expectedClickHouse)
         .withMysql().ok(expectedMysql)
         .withHive().ok(expectedHive)
-        .withSpark().ok(expectedSpark);
+        .withSpark().ok(expectedSpark)
+        .done();
   }
 
   @Test void testCastToVarcharWithPrecision() {
@@ -3859,7 +3911,8 @@ class RelToSqlConverterTest {
     sql(query)
         .withMysql().ok(expectedMysql)
         .withHive().ok(expectedHive)
-        .withSpark().ok(expectedSpark);
+        .withSpark().ok(expectedSpark)
+        .done();
   }
 
   @Test void testCastToChar() {
@@ -3876,7 +3929,8 @@ class RelToSqlConverterTest {
         .withMysql().ok(expectedMysql)
         .withMssql().ok(expectedMssql)
         .withHive().ok(expectedHive)
-        .withSpark().ok(expectedSpark);
+        .withSpark().ok(expectedSpark)
+        .done();
   }
 
   @Test void testCastToCharWithPrecision() {
@@ -3893,7 +3947,8 @@ class RelToSqlConverterTest {
         .withMysql().ok(expectedMysql)
         .withMssql().ok(expectedMssql)
         .withHive().ok(expectedHive)
-        .withSpark().ok(expectedSpark);
+        .withSpark().ok(expectedSpark)
+        .done();
   }
 
   @Test void testSelectQueryWithLimitClauseWithoutOrder() {
@@ -3917,7 +3972,8 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withClickHouse().ok(expectedClickHouse)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testSelectQueryWithLimitOffsetClause() {
@@ -3941,7 +3997,8 @@ class RelToSqlConverterTest {
         + "OFFSET 10";
     sql(query).ok(expected)
         .withBigQuery().ok(expectedBigQuery)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testSelectQueryWithParameters() {
@@ -3952,7 +4009,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_id\" = ? "
         + "AND ? >= \"shelf_width\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithFetchOffsetClause() {
@@ -3963,7 +4020,7 @@ class RelToSqlConverterTest {
         + "ORDER BY \"product_id\"\n"
         + "OFFSET 10 ROWS\n"
         + "FETCH NEXT 100 ROWS ONLY";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithFetchClause() {
@@ -3987,7 +4044,7 @@ class RelToSqlConverterTest {
         .withMssql(10).ok(expectedMssql10)
         .withMssql(11).ok(expectedMssql)
         .withMssql(14).ok(expectedMssql)
-        .withSybase().ok(expectedSybase);
+        .withSybase().ok(expectedSybase).done();
   }
 
   @Test void testSelectQueryComplex() {
@@ -3999,7 +4056,7 @@ class RelToSqlConverterTest {
         + "WHERE CAST(\"cases_per_pallet\" AS INTEGER) > 100\n"
         + "GROUP BY \"product_id\", \"units_per_case\"\n"
         + "ORDER BY \"units_per_case\" DESC";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectQueryWithGroup() {
@@ -4013,7 +4070,7 @@ class RelToSqlConverterTest {
         + "WHERE \"hire_date\" > '2015-01-01' "
         + "AND (\"position_title\" = 'SDE' OR \"position_title\" = 'SDM')\n"
         + "GROUP BY \"store_id\", \"position_title\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSimpleJoin() {
@@ -4094,7 +4151,7 @@ class RelToSqlConverterTest {
         + ".\"product_class_id\"\n"
         + "WHERE \"customer\".\"city\" = 'San Francisco' AND "
         + "\"product_class\".\"product_department\" = 'Snacks'";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSimpleJoinUsing() {
@@ -4171,7 +4228,7 @@ class RelToSqlConverterTest {
         + ".\"product_class_id\"\n"
         + "WHERE \"customer\".\"city\" = 'San Francisco' AND "
         + "\"product_class\".\"product_department\" = 'Snacks'";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -4188,7 +4245,7 @@ class RelToSqlConverterTest {
         + "INNER JOIN (SELECT sales_fact_19970.customer_id\n"
         + "FROM foodmart.sales_fact_1997 AS sales_fact_19970) AS t0 ON t.customer_id = t0.customer_id";
 
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testCartesianProductWithCommaSyntax() {
@@ -4196,7 +4253,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT *\n"
         + "FROM \"foodmart\".\"department\",\n"
         + "\"foodmart\".\"employee\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -4207,7 +4264,7 @@ class RelToSqlConverterTest {
     final String sql = "SELECT 1\n"
         + "from emps\n"
         + "join emp on (emp.deptno = emps.empno and manager)";
-    final String s = sql(sql).schema(CalciteAssert.SchemaSpec.POST).exec();
+    final String s = sql(sql).schema(CalciteAssert.SchemaSpec.POST).done().exec();
     assertThat(s, notNullValue()); // sufficient that conversion did not throw
   }
 
@@ -4232,7 +4289,7 @@ class RelToSqlConverterTest {
         + "LEFT JOIN \"scott\".\"DEPT\" "
         + "ON \"EMP\".\"DEPTNO\" = \"DEPT\".\"DEPTNO\" "
         + "AND \"DEPT\".\"DNAME\" NOT LIKE 'ACCOUNTING'";
-    relFn(relFn).ok(expectedSql);
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testCartesianProductWithInnerJoinSyntax() {
@@ -4241,7 +4298,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT *\n"
         + "FROM \"foodmart\".\"department\",\n"
         + "\"foodmart\".\"employee\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testFullJoinOnTrueCondition() {
@@ -4250,7 +4307,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT *\n"
         + "FROM \"foodmart\".\"department\"\n"
         + "FULL JOIN \"foodmart\".\"employee\" ON TRUE";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testCaseOnSubQuery() {
@@ -4264,7 +4321,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"customer\") AS \"t\",\n"
         + "(VALUES (0)) AS \"t0\" (\"G\")\n"
         + "GROUP BY \"t0\".\"G\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSimpleIn() {
@@ -4281,7 +4338,7 @@ class RelToSqlConverterTest {
         + "WHERE \"store_id\" < 150\n"
         + "GROUP BY \"department_id\") AS \"t1\" "
         + "ON \"department\".\"department_id\" = \"t1\".\"department_id\"";
-    sql(query).withConfig(c -> c.withExpand(true)).ok(expected);
+    sql(query).withConfig(c -> c.withExpand(true)).ok(expected).done();
   }
 
   /** Test case for
@@ -4296,7 +4353,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.employee AS employee\n"
         + "INNER JOIN foodmart.department AS department "
         + "ON employee.department_id = department.department_id";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectSelfJoinStar() {
@@ -4307,7 +4364,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.employee AS employee\n"
         + "INNER JOIN foodmart.employee AS employee0 "
         + "ON employee.department_id = employee0.department_id";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectJoin() {
@@ -4319,7 +4376,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.employee AS employee\n"
         + "INNER JOIN foodmart.department AS department "
         + "ON employee.department_id = department.department_id";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectSelfJoin() {
@@ -4331,7 +4388,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.employee AS employee\n"
         + "INNER JOIN foodmart.employee AS employee0 "
         + "ON employee.department_id = employee0.department_id";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectWhere() {
@@ -4340,7 +4397,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT employee.employee_id\n"
         + "FROM foodmart.employee AS employee\n"
         + "WHERE employee.department_id < 1000";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectJoinWhere() {
@@ -4354,7 +4411,7 @@ class RelToSqlConverterTest {
         + "INNER JOIN foodmart.department AS department "
         + "ON employee.department_id = department.department_id\n"
         + "WHERE employee.employee_id < 1000";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectSelfJoinWhere() {
@@ -4368,7 +4425,7 @@ class RelToSqlConverterTest {
         + "INNER JOIN foodmart.employee AS employee0 "
         + "ON employee.department_id = employee0.department_id\n"
         + "WHERE employee0.employee_id < 2000";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectCast() {
@@ -4377,7 +4434,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT reserve_employee.hire_date, "
         + "CAST(reserve_employee.hire_date AS VARCHAR(10))\n"
         + "FROM foodmart.reserve_employee AS reserve_employee";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectSelectQueryWithGroupByHaving() {
@@ -4388,7 +4445,7 @@ class RelToSqlConverterTest {
         + "FROM foodmart.product AS product\n"
         + "GROUP BY product.product_class_id, product.product_id\n"
         + "HAVING product.product_id > 10";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
 
@@ -4402,7 +4459,7 @@ class RelToSqlConverterTest {
         + "WHERE CAST(product.cases_per_pallet AS INTEGER) > 100\n"
         + "GROUP BY product.product_id, product.units_per_case\n"
         + "ORDER BY product.units_per_case DESC";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   /** Test case for
@@ -4423,7 +4480,7 @@ class RelToSqlConverterTest {
         + "WHERE CAST(t.cases_per_pallet AS INTEGER) > 100\n"
         + "GROUP BY t.product_id, t.units_per_case\n"
         + "ORDER BY t.units_per_case DESC";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2SubQueryFromUnion() {
@@ -4453,7 +4510,7 @@ class RelToSqlConverterTest {
         + "WHERE CAST(t3.cases_per_pallet AS INTEGER) > 100\n"
         + "GROUP BY t3.product_id, t3.units_per_case\n"
         + "ORDER BY t3.units_per_case DESC";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   @Test void testDb2DialectSelectQueryWithGroup() {
@@ -4469,7 +4526,7 @@ class RelToSqlConverterTest {
         + "AND (reserve_employee.position_title = 'SDE' OR "
         + "reserve_employee.position_title = 'SDM')\n"
         + "GROUP BY reserve_employee.store_id, reserve_employee.position_title";
-    sql(query).withDb2().ok(expected);
+    sql(query).withDb2().ok(expected).done();
   }
 
   /** Test case for
@@ -4494,7 +4551,7 @@ class RelToSqlConverterTest {
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
         .ok(expected)
-        .withDb2().ok(expectedDb2);
+        .withDb2().ok(expectedDb2).done();
   }
 
   /** Test case for
@@ -4527,7 +4584,7 @@ class RelToSqlConverterTest {
     // The hook prevents RelBuilder from removing "FALSE AND FALSE" and such
     try (Hook.Closeable ignore =
              Hook.REL_BUILDER_SIMPLIFY.addThread(Hook.propertyJ(false))) {
-      sql(query).ok(expected);
+      sql(query).ok(expected).done();
     }
   }
 
@@ -4552,7 +4609,7 @@ class RelToSqlConverterTest {
         + "WHERE \"EMP\".\"JOB\" LIKE 'PRESIDENT'";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   /** Test case for
@@ -4572,7 +4629,7 @@ class RelToSqlConverterTest {
         + "WHERE \"EMP\".\"JOB\" LIKE 'PRESIDENT'";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   @Test void testWhereCase() {
@@ -4589,7 +4646,7 @@ class RelToSqlConverterTest {
         + " ELSE CAST(\"DEPT\".\"DEPTNO\" AS INTEGER) = 10 END";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   /** Test case for
@@ -4613,7 +4670,7 @@ class RelToSqlConverterTest {
     final RuleSet rules = RuleSets.ofList(CoreRules.UNION_MERGE);
     sql(query)
         .optimize(rules, null)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   /** Test case for
@@ -4636,7 +4693,7 @@ class RelToSqlConverterTest {
         + "UNION ALL\n"
         + "SELECT \"product_id\", 0E0 AS \"net_weight\"\n"
         + "FROM \"foodmart\".\"sales_fact_1997\") AS \"t1\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
 
@@ -4661,7 +4718,7 @@ class RelToSqlConverterTest {
         + "INTERSECT ALL\n"
         + "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\")";
-    sql(discardedParenthesesQuery).ok(discardedParenthesesRes);
+    sql(discardedParenthesesQuery).ok(discardedParenthesesRes).done();
 
     // Parentheses will be retained because sub-query has LIMIT or OFFSET.
     // If parentheses are discarded the semantics of parsing will be affected.
@@ -4689,7 +4746,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "OFFSET 5 ROWS\n"
         + "FETCH NEXT 5 ROWS ONLY)";
-    sql(allSetOpQuery).ok(allSetOpRes);
+    sql(allSetOpQuery).ok(allSetOpRes).done();
 
     // After the config is enabled, order by will be retained, so parentheses are required.
     final String retainOrderQuery = "SELECT \"product_id\" FROM \"product\""
@@ -4701,7 +4758,9 @@ class RelToSqlConverterTest {
         + "(SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"product_id\")";
-    sql(retainOrderQuery).withConfig(c -> c.withRemoveSortInSubQuery(false)).ok(retainOrderResult);
+    sql(retainOrderQuery)
+        .withConfig(c -> c.withRemoveSortInSubQuery(false))
+        .ok(retainOrderResult).done();
 
     // Parentheses are required to keep ORDER and LIMIT on the sub-query.
     final String retainLimitQuery = "SELECT \"product_id\" FROM \"product\""
@@ -4714,7 +4773,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"product_id\"\n"
         + "FETCH NEXT 2 ROWS ONLY)";
-    sql(retainLimitQuery).ok(retainLimitResult);
+    sql(retainLimitQuery).ok(retainLimitResult).done();
   }
 
 
@@ -4744,7 +4803,7 @@ class RelToSqlConverterTest {
     final String query = "select \"customer_id\" as \"*\" from \"customer\"";
     final String expected = "SELECT \"customer_id\" AS \"*\"\n"
         + "FROM \"foodmart\".\"customer\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testLiteral() {
@@ -4809,7 +4868,7 @@ class RelToSqlConverterTest {
     String expectedHsqldb = "SELECT *\n"
         + "FROM (VALUES (" + expected + ")) AS t (EXPR$0)";
     sql("VALUES " + expression)
-        .withHsqldb().ok(expectedHsqldb);
+        .withHsqldb().ok(expectedHsqldb).done();
   }
 
   /** Test case for
@@ -4820,7 +4879,7 @@ class RelToSqlConverterTest {
     String query = "SELECT row_number() over (order by \"hire_date\") FROM \"employee\"";
     String expected = "SELECT ROW_NUMBER() OVER (ORDER BY \"hire_date\")\n"
         + "FROM \"foodmart\".\"employee\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -4944,15 +5003,15 @@ class RelToSqlConverterTest {
         RuleSets.ofList(CoreRules.PROJECT_OVER_SUM_TO_SUM0_RULE,
             CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW);
 
-    sql(query0).optimize(rules, hepPlanner).ok(expected0);
-    sql(query1).optimize(rules, hepPlanner).ok(expected1);
-    sql(query2).optimize(rules, hepPlanner).ok(expected2);
-    sql(query3).optimize(rules, hepPlanner).ok(expected3);
-    sql(query4).optimize(rules, hepPlanner).ok(expected4);
-    sql(query5).optimize(rules, hepPlanner).ok(expected5);
-    sql(query6).optimize(rules, hepPlanner).ok(expected6);
-    sql(query7).optimize(rules, hepPlanner).ok(expected7);
-    sql(query8).optimize(rules, hepPlanner).ok(expected8);
+    sql(query0).optimize(rules, hepPlanner).ok(expected0).done();
+    sql(query1).optimize(rules, hepPlanner).ok(expected1).done();
+    sql(query2).optimize(rules, hepPlanner).ok(expected2).done();
+    sql(query3).optimize(rules, hepPlanner).ok(expected3).done();
+    sql(query4).optimize(rules, hepPlanner).ok(expected4).done();
+    sql(query5).optimize(rules, hepPlanner).ok(expected5).done();
+    sql(query6).optimize(rules, hepPlanner).ok(expected6).done();
+    sql(query7).optimize(rules, hepPlanner).ok(expected7).done();
+    sql(query8).optimize(rules, hepPlanner).ok(expected8).done();
   }
 
   /** Test case for
@@ -5022,7 +5081,7 @@ class RelToSqlConverterTest {
             CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.AGGREGATE_PROJECT_MERGE,
             CoreRules.AGGREGATE_JOIN_TRANSPOSE_EXTENDED);
-    sql(query).withPostgresql().optimize(rules, hepPlanner).ok(expect);
+    sql(query).withPostgresql().optimize(rules, hepPlanner).ok(expect).done();
   }
 
   @Test void testMultiplicationNotAliasedToStar() {
@@ -5038,7 +5097,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"customer\") AS \"t0\" ON \"t\".\"customer_id\" = \"t0\".\"customer_id\"\n"
         + "GROUP BY \"t\".\"customer_id\"";
     RuleSet rules = RuleSets.ofList(CoreRules.PROJECT_JOIN_TRANSPOSE);
-    sql(sql).optimize(rules, null).ok(expected);
+    sql(sql).optimize(rules, null).ok(expected).done();
   }
 
   @Test void testMultiplicationRetainsExplicitAlias() {
@@ -5053,14 +5112,14 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"customer\") AS \"t0\" ON \"t\".\"customer_id\" = \"t0\""
         + ".\"customer_id\"";
     RuleSet rules = RuleSets.ofList(CoreRules.PROJECT_JOIN_TRANSPOSE);
-    sql(sql).optimize(rules, null).ok(expected);
+    sql(sql).optimize(rules, null).ok(expected).done();
   }
 
   @Test void testRankFunctionForPrintingOfFrameBoundary() {
     String query = "SELECT rank() over (order by \"hire_date\") FROM \"employee\"";
     String expected = "SELECT RANK() OVER (ORDER BY \"hire_date\")\n"
         + "FROM \"foodmart\".\"employee\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testLeadFunctionForPrintingOfFrameBoundary() {
@@ -5069,7 +5128,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT LEAD(\"employee_id\", 1, 'NA') OVER "
         + "(PARTITION BY \"hire_date\" ORDER BY \"employee_id\")\n"
         + "FROM \"foodmart\".\"employee\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testLagFunctionForPrintingOfFrameBoundary() {
@@ -5078,7 +5137,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT LAG(\"employee_id\", 1, 'NA') OVER "
         + "(PARTITION BY \"hire_date\" ORDER BY \"employee_id\")\n"
         + "FROM \"foodmart\".\"employee\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -5099,7 +5158,7 @@ class RelToSqlConverterTest {
         + " ROW_NUMBER() OVER (ORDER BY \"product_id\") AS \"RN\"\n"
         + "FROM \"foodmart\".\"product\") AS \"t\"";
     sql(query)
-        .withPostgresql().ok(expected);
+        .withPostgresql().ok(expected).done();
   }
 
   /** Test case for
@@ -5162,14 +5221,15 @@ class RelToSqlConverterTest {
         .withOracle().ok(expectedOracle)
         .withPostgresql().ok(expectedPostgresql)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testFetchMssql() {
     String query = "SELECT * FROM \"employee\" LIMIT 1";
     String expected = "SELECT TOP (1) *\nFROM [foodmart].[employee]";
     sql(query)
-        .withMssql().ok(expected);
+        .withMssql().ok(expected).done();
   }
 
   @Test void testFetchOffset() {
@@ -5192,7 +5252,8 @@ class RelToSqlConverterTest {
         .withMssql().ok(expectedMssql)
         .withSybase().ok(expectedSybase)
         .withPresto().ok(expectedPresto)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testFloorMssqlMonth() {
@@ -5200,7 +5261,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT CONVERT(DATETIME, CONVERT(VARCHAR(7), [hire_date] , 126)+'-01')\n"
         + "FROM [foodmart].[employee]";
     sql(query)
-        .withMssql().ok(expected);
+        .withMssql().ok(expected).done();
   }
 
   @Test void testFloorMysqlMonth() {
@@ -5208,7 +5269,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT DATE_FORMAT(`hire_date`, '%Y-%m-01')\n"
         + "FROM `foodmart`.`employee`";
     sql(query)
-        .withMysql().ok(expected);
+        .withMysql().ok(expected).done();
   }
 
   @Test void testFloorWeek() {
@@ -5226,7 +5287,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withClickHouse().ok(expectedClickHouse)
         .withMssql().ok(expectedMssql)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql).done();
   }
 
   @Test void testUnparseSqlIntervalQualifierDb2() {
@@ -5238,7 +5299,7 @@ class RelToSqlConverterTest {
         + " > TIMESTAMP '2005-10-17 00:00:00'";
 
     sql(queryDatePlus)
-        .withDb2().ok(expectedDatePlus);
+        .withDb2().ok(expectedDatePlus).done();
 
     String queryDateMinus = "select  * from \"employee\" where  \"hire_date\" - "
         + "INTERVAL '19800' SECOND(5) > TIMESTAMP '2005-10-17 00:00:00' ";
@@ -5248,7 +5309,7 @@ class RelToSqlConverterTest {
         + " > TIMESTAMP '2005-10-17 00:00:00'";
 
     sql(queryDateMinus)
-        .withDb2().ok(expectedDateMinus);
+        .withDb2().ok(expectedDateMinus).done();
   }
 
   @Test void testUnparseSqlIntervalQualifierMySql() {
@@ -5258,7 +5319,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`employee`\n"
         + "WHERE (`hire_date` - INTERVAL '19800' SECOND)"
         + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql0).withMysql().ok(expect0);
+    sql(sql0).withMysql().ok(expect0).done();
 
     final String sql1 = "select  * from \"employee\" where  \"hire_date\" + "
         + "INTERVAL '10' HOUR > TIMESTAMP '2005-10-17 00:00:00' ";
@@ -5266,7 +5327,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`employee`\n"
         + "WHERE (`hire_date` + INTERVAL '10' HOUR)"
         + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql1).withMysql().ok(expect1);
+    sql(sql1).withMysql().ok(expect1).done();
 
     final String sql2 = "select  * from \"employee\" where  \"hire_date\" + "
         + "INTERVAL '1-2' year to month > TIMESTAMP '2005-10-17 00:00:00' ";
@@ -5274,7 +5335,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`employee`\n"
         + "WHERE (`hire_date` + INTERVAL '1-2' YEAR_MONTH)"
         + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql2).withMysql().ok(expect2);
+    sql(sql2).withMysql().ok(expect2).done();
 
     final String sql3 = "select  * from \"employee\" "
         + "where  \"hire_date\" + INTERVAL '39:12' MINUTE TO SECOND"
@@ -5283,7 +5344,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`employee`\n"
         + "WHERE (`hire_date` + INTERVAL '39:12' MINUTE_SECOND)"
         + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql3).withMysql().ok(expect3);
+    sql(sql3).withMysql().ok(expect3).done();
   }
 
   @Test void testUnparseSqlIntervalQualifierMsSql() {
@@ -5294,7 +5355,7 @@ class RelToSqlConverterTest {
         + "WHERE DATEADD(SECOND, 19800, [hire_date]) > '2005-10-17 00:00:00'";
 
     sql(queryDatePlus)
-        .withMssql().ok(expectedDatePlus);
+        .withMssql().ok(expectedDatePlus).done();
 
     String queryDateMinus = "select  * from \"employee\" where  \"hire_date\" -"
         + "INTERVAL '19800' SECOND(5) > TIMESTAMP '2005-10-17 00:00:00' ";
@@ -5303,7 +5364,7 @@ class RelToSqlConverterTest {
         + "WHERE DATEADD(SECOND, -19800, [hire_date]) > '2005-10-17 00:00:00'";
 
     sql(queryDateMinus)
-        .withMssql().ok(expectedDateMinus);
+        .withMssql().ok(expectedDateMinus).done();
 
     String queryDateMinusNegate = "select  * from \"employee\" "
         + "where  \"hire_date\" -INTERVAL '-19800' SECOND(5)"
@@ -5313,7 +5374,7 @@ class RelToSqlConverterTest {
         + "WHERE DATEADD(SECOND, 19800, [hire_date]) > '2005-10-17 00:00:00'";
 
     sql(queryDateMinusNegate)
-        .withMssql().ok(expectedDateMinusNegate);
+        .withMssql().ok(expectedDateMinusNegate).done();
   }
 
   @Test void testUnparseSqlIntervalQualifierBigQuery() {
@@ -5323,7 +5384,7 @@ class RelToSqlConverterTest {
             + "FROM foodmart.employee\n"
             + "WHERE (hire_date - INTERVAL 19800 SECOND)"
             + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql0).withBigQuery().ok(expect0);
+    sql(sql0).withBigQuery().ok(expect0).done();
 
     final String sql1 = "select  * from \"employee\" where  \"hire_date\" + "
             + "INTERVAL '10' HOUR > TIMESTAMP '2005-10-17 00:00:00' ";
@@ -5331,11 +5392,13 @@ class RelToSqlConverterTest {
             + "FROM foodmart.employee\n"
             + "WHERE (hire_date + INTERVAL 10 HOUR)"
             + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql1).withBigQuery().ok(expect1);
+    sql(sql1).withBigQuery().ok(expect1).done();
 
     final String sql2 = "select  * from \"employee\" where  \"hire_date\" + "
             + "INTERVAL '1 2:34:56.78' DAY TO SECOND > TIMESTAMP '2005-10-17 00:00:00' ";
-    sql(sql2).withBigQuery().throws_("Only INT64 is supported as the interval value for BigQuery.");
+    sql(sql2).withBigQuery()
+        .throws_("Only INT64 is supported as the interval value for BigQuery.")
+        .done();
   }
 
   @Test void testUnparseSqlIntervalQualifierFirebolt() {
@@ -5345,7 +5408,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"employee\"\n"
         + "WHERE (\"hire_date\" - INTERVAL '19800 SECOND ')"
         + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql0).withFirebolt().ok(expect0);
+    sql(sql0).withFirebolt().ok(expect0).done();
 
     final String sql1 = "select  * from \"employee\" where  \"hire_date\" + "
         + "INTERVAL '10' HOUR > TIMESTAMP '2005-10-17 00:00:00' ";
@@ -5353,11 +5416,13 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"employee\"\n"
         + "WHERE (\"hire_date\" + INTERVAL '10 HOUR ')"
         + " > TIMESTAMP '2005-10-17 00:00:00'";
-    sql(sql1).withFirebolt().ok(expect1);
+    sql(sql1).withFirebolt().ok(expect1).done();
 
     final String sql2 = "select  * from \"employee\" where  \"hire_date\" + "
         + "INTERVAL '1 2:34:56.78' DAY TO SECOND > TIMESTAMP '2005-10-17 00:00:00' ";
-    sql(sql2).withFirebolt().throws_("Only INT64 is supported as the interval value for Firebolt.");
+    sql(sql2).withFirebolt()
+        .throws_("Only INT64 is supported as the interval value for Firebolt.")
+        .done();
   }
 
   @Test void testFloorMysqlWeek() {
@@ -5365,7 +5430,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT STR_TO_DATE(DATE_FORMAT(`hire_date` , '%x%v-1'), '%x%v-%w')\n"
         + "FROM `foodmart`.`employee`";
     sql(query)
-        .withMysql().ok(expected);
+        .withMysql().ok(expected).done();
   }
 
   @Test void testFloorMonth() {
@@ -5380,7 +5445,7 @@ class RelToSqlConverterTest {
     sql(query)
         .withClickHouse().ok(expectedClickHouse)
         .withMssql().ok(expectedMssql)
-        .withMysql().ok(expectedMysql);
+        .withMysql().ok(expectedMysql).done();
   }
 
   @Test void testFloorMysqlHour() {
@@ -5388,7 +5453,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT DATE_FORMAT(`hire_date`, '%Y-%m-%d %H:00:00')\n"
         + "FROM `foodmart`.`employee`";
     sql(query)
-        .withMysql().ok(expected);
+        .withMysql().ok(expected).done();
   }
 
   @Test void testFloorMysqlMinute() {
@@ -5396,7 +5461,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT DATE_FORMAT(`hire_date`, '%Y-%m-%d %H:%i:00')\n"
         + "FROM `foodmart`.`employee`";
     sql(query)
-        .withMysql().ok(expected);
+        .withMysql().ok(expected).done();
   }
 
   @Test void testFloorMysqlSecond() {
@@ -5404,7 +5469,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT DATE_FORMAT(`hire_date`, '%Y-%m-%d %H:%i:%s')\n"
         + "FROM `foodmart`.`employee`";
     sql(query)
-        .withMysql().ok(expected);
+        .withMysql().ok(expected).done();
   }
 
   /** Test case for
@@ -5437,7 +5502,7 @@ class RelToSqlConverterTest {
         .withHsqldb().ok(expected)
         .withMysql().ok(expectedMysql)
         .withOracle().ok(expectedOracle)
-        .withPostgresql().ok(expectedPostgresql);
+        .withPostgresql().ok(expectedPostgresql).done();
   }
 
   @Test void testSubstring() {
@@ -5473,7 +5538,8 @@ class RelToSqlConverterTest {
         .withPresto().ok(expectedPresto)
         .withRedshift().ok(expectedRedshift)
         .withSnowflake().ok(expectedSnowflake)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testSubstringWithFor() {
@@ -5509,7 +5575,8 @@ class RelToSqlConverterTest {
         .withPresto().ok(expectedPresto)
         .withRedshift().ok(expectedRedshift)
         .withSnowflake().ok(expectedSnowflake)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** Test case for
@@ -5525,7 +5592,7 @@ class RelToSqlConverterTest {
         + "WHERE EXISTS (SELECT COUNT(*)\n"
         + "FROM \"foodmart\".\"sales_fact_1997\"\n"
         + "WHERE \"product_id\" = \"product\".\"product_id\")";
-    sql(query).withConfig(c -> c.withExpand(false)).ok(expected);
+    sql(query).withConfig(c -> c.withExpand(false)).ok(expected).done();
   }
 
   @Test void testNotExistsWithExpand() {
@@ -5538,7 +5605,7 @@ class RelToSqlConverterTest {
         + "WHERE NOT EXISTS (SELECT COUNT(*)\n"
         + "FROM \"foodmart\".\"sales_fact_1997\"\n"
         + "WHERE \"product_id\" = \"product\".\"product_id\")";
-    sql(query).withConfig(c -> c.withExpand(false)).ok(expected);
+    sql(query).withConfig(c -> c.withExpand(false)).ok(expected).done();
   }
 
   @Test void testSubQueryInWithExpand() {
@@ -5551,7 +5618,7 @@ class RelToSqlConverterTest {
         + "WHERE \"product_id\" IN (SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"sales_fact_1997\"\n"
         + "WHERE \"product_id\" = \"product\".\"product_id\")";
-    sql(query).withConfig(c -> c.withExpand(false)).ok(expected);
+    sql(query).withConfig(c -> c.withExpand(false)).ok(expected).done();
   }
 
   @Test void testSubQueryInWithExpand2() {
@@ -5560,7 +5627,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT \"product_name\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_id\" = 1 OR \"product_id\" = 2";
-    sql(query).withConfig(c -> c.withExpand(false)).ok(expected);
+    sql(query).withConfig(c -> c.withExpand(false)).ok(expected).done();
   }
 
   @Test void testSubQueryNotInWithExpand() {
@@ -5573,7 +5640,7 @@ class RelToSqlConverterTest {
         + "WHERE \"product_id\" NOT IN (SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"sales_fact_1997\"\n"
         + "WHERE \"product_id\" = \"product\".\"product_id\")";
-    sql(query).withConfig(c -> c.withExpand(false)).ok(expected);
+    sql(query).withConfig(c -> c.withExpand(false)).ok(expected).done();
   }
 
   /** Test case for
@@ -5617,7 +5684,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT \"product_name\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_name\" LIKE 'abc'";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testNotLike() {
@@ -5626,7 +5693,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT \"product_name\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_name\" NOT LIKE 'abc'";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testIlike() {
@@ -5635,7 +5702,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT \"product_name\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_name\" ILIKE 'abC'";
-    sql(query).withLibrary(SqlLibrary.POSTGRESQL).ok(expected);
+    sql(query).withLibrary(SqlLibrary.POSTGRESQL).ok(expected).done();
   }
 
   @Test void testRlike() {
@@ -5653,7 +5720,8 @@ class RelToSqlConverterTest {
     sql(query)
         .withLibrary(SqlLibrary.SPARK).ok(expectedSpark)
         .withLibrary(SqlLibrary.HIVE).ok(expectedHive)
-        .withLibrary(SqlLibrary.MYSQL).ok(expectedMysql);
+        .withLibrary(SqlLibrary.MYSQL).ok(expectedMysql)
+        .done();
   }
 
   @Test void testNotRlike() {
@@ -5671,7 +5739,8 @@ class RelToSqlConverterTest {
     sql(query)
         .withLibrary(SqlLibrary.SPARK).ok(expected)
         .withLibrary(SqlLibrary.HIVE).ok(expectedHive)
-        .withLibrary(SqlLibrary.MYSQL).ok(expectedMysql);
+        .withLibrary(SqlLibrary.MYSQL).ok(expectedMysql)
+        .done();
   }
 
   @Test void testNotIlike() {
@@ -5680,7 +5749,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT \"product_name\"\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "WHERE \"product_name\" NOT ILIKE 'abC'";
-    sql(query).withLibrary(SqlLibrary.POSTGRESQL).ok(expected);
+    sql(query).withLibrary(SqlLibrary.POSTGRESQL).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression() {
@@ -5707,7 +5776,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   /** Test for <a href="https://issues.apache.org/jira/browse/CALCITE-5877">[CALCITE-5877]
@@ -5754,7 +5823,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression3() {
@@ -5777,7 +5846,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression4() {
@@ -5800,7 +5869,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression5() {
@@ -5823,7 +5892,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression6() {
@@ -5846,7 +5915,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression7() {
@@ -5869,7 +5938,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression8() {
@@ -5892,7 +5961,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression9() {
@@ -5915,7 +5984,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression10() {
@@ -5940,7 +6009,7 @@ class RelToSqlConverterTest {
         + "\"A\" AS PREV(\"A\".\"net_weight\", 0) < PREV(\"A\".\"net_weight\", 1), "
         + "\"B\" AS PREV(\"B\".\"net_weight\", 0) > PREV(\"B\".\"net_weight\", 1), "
         + "\"C\" AS PREV(\"C\".\"net_weight\", 0) < PREV(\"C\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression11() {
@@ -5963,7 +6032,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression12() {
@@ -5987,7 +6056,7 @@ class RelToSqlConverterTest {
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))\n"
         + "ORDER BY \"net_weight\"";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternExpression13() {
@@ -6088,7 +6157,7 @@ class RelToSqlConverterTest {
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))\n"
         + "ORDER BY \"net_weight\"";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeDefineClause() {
@@ -6111,7 +6180,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeDefineClause2() {
@@ -6134,7 +6203,7 @@ class RelToSqlConverterTest {
         + "FIRST(\"DOWN\".\"net_weight\", 0), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "LAST(\"UP\".\"net_weight\", 0))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeDefineClause3() {
@@ -6157,7 +6226,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "LAST(\"UP\".\"net_weight\", 0) + LAST(\"UP\".\"gross_weight\", 0))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeDefineClause4() {
@@ -6182,7 +6251,7 @@ class RelToSqlConverterTest {
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(LAST(\"UP\".\"net_weight\", 0) + "
         + "LAST(\"UP\".\"gross_weight\", 0), 3))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures1() {
@@ -6218,7 +6287,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures2() {
@@ -6250,7 +6319,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures3() {
@@ -6282,7 +6351,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures4() {
@@ -6315,7 +6384,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures5() {
@@ -6349,7 +6418,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures6() {
@@ -6382,7 +6451,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeMeasures7() {
@@ -6416,7 +6485,7 @@ class RelToSqlConverterTest {
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))\n"
         + "ORDER BY \"START_NW\", \"UP_CNT\"";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternSkip1() {
@@ -6440,7 +6509,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternSkip2() {
@@ -6464,7 +6533,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternSkip3() {
@@ -6487,7 +6556,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternSkip4() {
@@ -6511,7 +6580,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizePatternSkip5() {
@@ -6535,7 +6604,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeSubset1() {
@@ -6561,7 +6630,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "NEXT(PREV(\"UP\".\"net_weight\", 0), 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeSubset2() {
@@ -6596,7 +6665,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeSubset3() {
@@ -6630,7 +6699,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeSubset4() {
@@ -6664,7 +6733,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeRowsPerMatch1() {
@@ -6699,7 +6768,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeRowsPerMatch2() {
@@ -6734,7 +6803,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"net_weight\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeWithin() {
@@ -6762,7 +6831,7 @@ class RelToSqlConverterTest {
         + "PREV(\"DOWN\".\"salary\", 1), "
         + "\"UP\" AS PREV(\"UP\".\"salary\", 0) > "
         + "PREV(\"UP\".\"salary\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testMatchRecognizeIn() {
@@ -6790,7 +6859,7 @@ class RelToSqlConverterTest {
         + "CAST(0 AS DOUBLE) OR PREV(\"DOWN\".\"net_weight\", 0) = CAST(1 AS DOUBLE), "
         + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
         + "PREV(\"UP\".\"net_weight\", 1))";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   /**
@@ -6843,7 +6912,7 @@ class RelToSqlConverterTest {
         .withOracle().ok(expectedOracle)
         .withPostgresql().ok(expectedPostgresql)
         .withRedshift().ok(expectedRedshift)
-        .withSnowflake().ok(expectedSnowflake);
+        .withSnowflake().ok(expectedSnowflake).done();
   }
 
   /**
@@ -6854,13 +6923,13 @@ class RelToSqlConverterTest {
    */
   @Test void testThreeValues() {
     final String sql = "select * from (values (1), (2), (3)) as t(\"a\")\n";
-    sql(sql)
-        .withRedshift().ok("SELECT *\n"
-            + "FROM (SELECT 1 AS \"a\"\n"
-            + "UNION ALL\n"
-            + "SELECT 2 AS \"a\"\n"
-            + "UNION ALL\n"
-            + "SELECT 3 AS \"a\")");
+    final String expected = "SELECT *\n"
+        + "FROM (SELECT 1 AS \"a\"\n"
+        + "UNION ALL\n"
+        + "SELECT 2 AS \"a\"\n"
+        + "UNION ALL\n"
+        + "SELECT 3 AS \"a\")";
+    sql(sql).withRedshift().ok(expected).done();
   }
 
   @Test void testValuesEmpty() {
@@ -6884,7 +6953,7 @@ class RelToSqlConverterTest {
         .withClickHouse().ok(expectedClickHouse)
         .withMysql().ok(expectedMysql)
         .withOracle().ok(expectedOracle)
-        .withPostgresql().ok(expectedPostgresql);
+        .withPostgresql().ok(expectedPostgresql).done();
   }
 
   /** Tests SELECT without FROM clause; effectively the same as a VALUES
@@ -6907,7 +6976,7 @@ class RelToSqlConverterTest {
         .withClickHouse().ok(expectedClickHouse)
         .withHive().ok(expectedHive)
         .withMysql().ok(expectedMysql)
-        .withPostgresql().ok(expectedPostgresql);
+        .withPostgresql().ok(expectedPostgresql).done();
   }
 
   @Test void testSelectOne() {
@@ -6923,7 +6992,7 @@ class RelToSqlConverterTest {
         .withClickHouse().ok(expectedClickHouse)
         .withHive().ok(expectedHive)
         .withMysql().ok(expectedMysql)
-        .withPostgresql().ok(expectedPostgresql);
+        .withPostgresql().ok(expectedPostgresql).done();
   }
 
   /** As {@link #testValuesEmpty()} but with extra {@code SUBSTRING}. Before
@@ -6940,7 +7009,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT SUBSTRING(`Y`, 1, 1)\n"
         + "FROM (SELECT NULL AS `X`, NULL AS `Y`) AS `t`\n"
         + "WHERE 1 = 0";
-    sql(sql).optimize(rules, null).withMysql().ok(expected);
+    sql(sql).optimize(rules, null).withMysql().ok(expected).done();
   }
 
   /** Test case for
@@ -7010,13 +7079,13 @@ class RelToSqlConverterTest {
     final String expected = ""
         + "SELECT \"warehouse_class_id\" AS \"id\", \"description\"\n"
         + "FROM \"foodmart\".\"warehouse_class\"";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
 
     final String sql2 = "select \"warehouse_class_id\", \"description\"\n"
         + "from \"warehouse_class\"";
     final String expected2 = "SELECT *\n"
         + "FROM \"foodmart\".\"warehouse_class\"";
-    sql(sql2).ok(expected2);
+    sql(sql2).ok(expected2).done();
   }
 
   @Test void testPreservePermutation() {
@@ -7024,7 +7093,7 @@ class RelToSqlConverterTest {
         + "from \"warehouse_class\"";
     final String expected = "SELECT \"description\", \"warehouse_class_id\"\n"
         + "FROM \"foodmart\".\"warehouse_class\"";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testFieldNamesWithAggregateSubQuery() {
@@ -7047,7 +7116,7 @@ class RelToSqlConverterTest {
         + "GROUP BY \"customer\".\"city\","
         + " \"sales_fact_1997\".\"store_sales\") AS \"t0\"\n"
         + "GROUP BY \"t0\".\"city\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testUnparseSelectMustUseDialect() {
@@ -7065,7 +7134,7 @@ class RelToSqlConverterTest {
         super.unparseCall(writer, call, leftPrec, rightPrec);
       }
     };
-    sql(query).dialect(dialect).ok(expected);
+    sql(query).dialect(dialect).ok(expected).done();
 
     assertThat("Dialect must be able to customize unparseCall() for SqlSelect",
         callsUnparseCallOnSqlSelect[0], is(true));
@@ -7082,7 +7151,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"department\") AS \"$cor0\",\n"
         + "LATERAL (SELECT \"$cor0\".\"$f2\" AS \"D_PLUSONE\"\n"
         + "FROM (VALUES (TRUE)) AS \"t\" (\"EXPR$0\")) AS \"t1\"";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   /** Test case for
@@ -7095,7 +7164,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\" AS \"$cor0\",\n"
         + "LATERAL (SELECT *\n"
         + "FROM TABLE(RAMP(\"$cor0\".\"product_id\"))) AS \"t\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testUncollectExplicitAlias() {
@@ -7106,7 +7175,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"DEPTID\" + 1\n"
         + "FROM UNNEST (SELECT COLLECT(\"department_id\") AS \"DEPTID\"\n"
         + "FROM \"foodmart\".\"department\") AS \"t0\" (\"DEPTID\")";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   @Test void testUncollectImplicitAlias() {
@@ -7117,7 +7186,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT \"col_0\" + 1\n"
         + "FROM UNNEST (SELECT COLLECT(\"department_id\")\n"
         + "FROM \"foodmart\".\"department\") AS \"t0\" (\"col_0\")";
-    sql(sql).ok(expected);
+    sql(sql).ok(expected).done();
   }
 
   /** Test case for
@@ -7154,7 +7223,7 @@ class RelToSqlConverterTest {
         + "WITHIN GROUP (ORDER BY \"net_weight\" DESC)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testWithinGroup2() {
@@ -7165,7 +7234,7 @@ class RelToSqlConverterTest {
         + "WITHIN GROUP (ORDER BY \"low_fat\", \"net_weight\" DESC NULLS LAST)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testWithinGroup3() {
@@ -7177,7 +7246,7 @@ class RelToSqlConverterTest {
         + "WITHIN GROUP (ORDER BY \"net_weight\" DESC), MIN(\"low_fat\")\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testWithinGroup4() {
@@ -7189,7 +7258,7 @@ class RelToSqlConverterTest {
         + "WITHIN GROUP (ORDER BY \"net_weight\" DESC)\n"
         + "FROM \"foodmart\".\"product\"\n"
         + "GROUP BY \"product_class_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonValueExpressionOperator() {
@@ -7202,28 +7271,28 @@ class RelToSqlConverterTest {
         + "\"product_name\" FORMAT JSON, "
         + "\"product_name\" FORMAT JSON\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonExists() {
     String query = "select json_exists(\"product_name\", 'lax $') from \"product\"";
     final String expected = "SELECT JSON_EXISTS(\"product_name\", 'lax $')\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonPretty() {
     String query = "select json_pretty(\"product_name\") from \"product\"";
     final String expected = "SELECT JSON_PRETTY(\"product_name\")\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonValue() {
     String query = "select json_value(\"product_name\", 'lax $') from \"product\"";
     final String expected = "SELECT JSON_VALUE(\"product_name\", 'lax $')\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonQuery() {
@@ -7231,21 +7300,21 @@ class RelToSqlConverterTest {
     final String expected = "SELECT JSON_QUERY(\"product_name\", 'lax $' "
         + "WITHOUT ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonArray() {
     String query = "select json_array(\"product_name\", \"product_name\") from \"product\"";
     final String expected = "SELECT JSON_ARRAY(\"product_name\", \"product_name\" ABSENT ON NULL)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonArrayAgg() {
     String query = "select json_arrayagg(\"product_name\") from \"product\"";
     final String expected = "SELECT JSON_ARRAYAGG(\"product_name\" ABSENT ON NULL)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonObject() {
@@ -7253,7 +7322,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT "
         + "JSON_OBJECT(KEY \"product_name\" VALUE \"product_id\" NULL ON NULL)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonObjectAgg() {
@@ -7261,7 +7330,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT "
         + "JSON_OBJECTAGG(KEY \"product_name\" VALUE \"product_id\" NULL ON NULL)\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonPredicate() {
@@ -7289,7 +7358,7 @@ class RelToSqlConverterTest {
         + "\"product_name\" IS NOT JSON ARRAY, "
         + "\"product_name\" IS NOT JSON SCALAR\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   /** Test case for
@@ -7341,7 +7410,7 @@ class RelToSqlConverterTest {
         + "LEFT JOIN \"tpch\".\"part\" ON \"t\".\"nation_name\" = \"part\".\"p_brand\"";
     relFn(relFn)
         .schema(CalciteAssert.SchemaSpec.TPCH)
-        .withPostgresql().ok(expectedPostgresql);
+        .withPostgresql().ok(expectedPostgresql).done();
   }
 
   /** A cartesian product is unparsed as a CROSS JOIN on Spark,
@@ -7359,7 +7428,7 @@ class RelToSqlConverterTest {
     Consumer<String> fn = sql ->
         sql(sql)
             .withSpark().ok(expectedSpark)
-            .withMysql().ok(expectedMysql);
+            .withMysql().ok(expectedMysql).done();
     fn.accept("select * from \"employee\", \"department\"");
     fn.accept("select * from \"employee\" cross join \"department\"");
     fn.accept("select * from \"employee\" join \"department\" on true");
@@ -7389,7 +7458,8 @@ class RelToSqlConverterTest {
     sql(sql)
         .withMysql().ok(expectedMysql)
         .withSpark().ok(expectedSpark)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   /** As {@link #testCommaCrossJoin3way()}, but shows that if there is a
@@ -7403,7 +7473,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`store`\n"
         + "LEFT JOIN `foodmart`.`employee` ON TRUE\n"
         + "CROSS JOIN `foodmart`.`department`";
-    sql(sql).withMysql().ok(expectedMysql);
+    sql(sql).withMysql().ok(expectedMysql).done();
   }
 
   /** As {@link #testLeftJoinPreventsCommaJoin()}, but the non-cross-join
@@ -7417,7 +7487,7 @@ class RelToSqlConverterTest {
         + "FROM `foodmart`.`store`\n"
         + "CROSS JOIN `foodmart`.`employee`\n"
         + "RIGHT JOIN `foodmart`.`department` ON TRUE";
-    sql(sql).withMysql().ok(expectedMysql);
+    sql(sql).withMysql().ok(expectedMysql).done();
   }
 
   /** As {@link #testLeftJoinPreventsCommaJoin()}, but the impediment is a
@@ -7432,7 +7502,7 @@ class RelToSqlConverterTest {
         + "INNER JOIN `foodmart`.`employee`"
         + " ON `store`.`store_id` = `employee`.`store_id`\n"
         + "CROSS JOIN `foodmart`.`department`";
-    sql(sql).withMysql().ok(expectedMysql);
+    sql(sql).withMysql().ok(expectedMysql).done();
   }
 
   /** Test case for
@@ -7561,7 +7631,7 @@ class RelToSqlConverterTest {
         + "from \"product\"\n";
     final String expected = "SELECT SUBSTRING(`brand_name`, 2)\n"
         + "FROM `foodmart`.`product`";
-    sql(query).withSpark().ok(expected);
+    sql(query).withSpark().ok(expected).done();
   }
 
   @Test void testSubstringWithForInSpark() {
@@ -7569,7 +7639,7 @@ class RelToSqlConverterTest {
         + "from \"product\"\n";
     final String expected = "SELECT SUBSTRING(`brand_name`, 2, 3)\n"
         + "FROM `foodmart`.`product`";
-    sql(query).withSpark().ok(expected);
+    sql(query).withSpark().ok(expected).done();
   }
 
   @Test void testFloorInSpark() {
@@ -7577,7 +7647,7 @@ class RelToSqlConverterTest {
         + "from \"employee\"";
     final String expected = "SELECT DATE_TRUNC('MINUTE', `hire_date`)\n"
         + "FROM `foodmart`.`employee`";
-    sql(query).withSpark().ok(expected);
+    sql(query).withSpark().ok(expected).done();
   }
 
   @Test void testNumericFloorInSpark() {
@@ -7585,14 +7655,14 @@ class RelToSqlConverterTest {
         + "from \"employee\"";
     final String expected = "SELECT FLOOR(`salary`)\n"
         + "FROM `foodmart`.`employee`";
-    sql(query).withSpark().ok(expected);
+    sql(query).withSpark().ok(expected).done();
   }
 
   @Test void testJsonStorageSize() {
     String query = "select json_storage_size(\"product_name\") from \"product\"";
     final String expected = "SELECT JSON_STORAGE_SIZE(\"product_name\")\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testCubeWithGroupBy() {
@@ -7608,7 +7678,8 @@ class RelToSqlConverterTest {
     sql(query)
         .ok(expected)
         .withPresto().ok(expected)
-        .withSpark().ok(expectedSpark);
+        .withSpark().ok(expectedSpark)
+        .done();
   }
 
   @Test void testRollupWithGroupBy() {
@@ -7628,7 +7699,8 @@ class RelToSqlConverterTest {
         .ok(expected)
         .withPresto().ok(expected)
         .withSpark().ok(expectedSpark)
-        .withStarRocks().ok(expectedStarRocks);
+        .withStarRocks().ok(expectedStarRocks)
+        .done();
   }
 
   @Test void testJsonType() {
@@ -7636,7 +7708,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT "
         + "JSON_TYPE(\"product_name\")\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonDepth() {
@@ -7644,7 +7716,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT "
         + "JSON_DEPTH(\"product_name\")\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonLength() {
@@ -7653,21 +7725,21 @@ class RelToSqlConverterTest {
     final String expected = "SELECT JSON_LENGTH(\"product_name\", 'lax $'), "
         + "JSON_LENGTH(\"product_name\")\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonKeys() {
     String query = "select json_keys(\"product_name\", 'lax $') from \"product\"";
     final String expected = "SELECT JSON_KEYS(\"product_name\", 'lax $')\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testJsonRemove() {
     String query = "select json_remove(\"product_name\", '$[0]') from \"product\"";
     final String expected = "SELECT JSON_REMOVE(\"product_name\", '$[0]')\n"
            + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test public void testJsonInsert() {
@@ -7677,9 +7749,10 @@ class RelToSqlConverterTest {
     final String expected0 = "SELECT JSON_INSERT(\"product_name\", '$', 10)\n"
         + "FROM \"foodmart\".\"product\"";
     final String expected1 = "SELECT JSON_INSERT(NULL, '$', 10, '$', NULL, '$', "
-        + "'\n\t\n')\nFROM \"foodmart\".\"product\"";
-    sql(query0).ok(expected0);
-    sql(query1).ok(expected1);
+        + "'\n\t\n')\n"
+        + "FROM \"foodmart\".\"product\"";
+    sql(query0).ok(expected0).done();
+    sql(query1).ok(expected1).done();
   }
 
   @Test public void testJsonReplace() {
@@ -7690,8 +7763,8 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     final String expected1 = "SELECT JSON_REPLACE(NULL, '$', 10, '$', NULL, '$', "
         + "'\n\t\n')\nFROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
-    sql(query1).ok(expected1);
+    sql(query).ok(expected).done();
+    sql(query1).ok(expected1).done();
   }
 
   @Test public void testJsonSet() {
@@ -7702,8 +7775,8 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"";
     final String expected1 = "SELECT JSON_SET(NULL, '$', 10, '$', NULL, '$', "
         + "'\n\t\n')\nFROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
-    sql(query1).ok(expected1);
+    sql(query).ok(expected).done();
+    sql(query1).ok(expected1).done();
   }
 
   @Test void testUnionAll() {
@@ -7740,7 +7813,7 @@ class RelToSqlConverterTest {
     sql(query)
         .ok(expectedNoExpand)
         .withConfig(c -> c.withExpand(true)).ok(expected)
-        .withOracle().ok(expectedOracle);
+        .withOracle().ok(expectedOracle).done();
   }
 
   @Test void testSmallintOracle() {
@@ -7748,7 +7821,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT CAST(\"department_id\" AS NUMBER(5))\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withOracle().ok(expected);
+        .withOracle().ok(expected).done();
   }
 
   @Test void testBigintOracle() {
@@ -7756,7 +7829,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT CAST(\"department_id\" AS NUMBER(19))\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withOracle().ok(expected);
+        .withOracle().ok(expected).done();
   }
 
   @Test void testDoubleOracle() {
@@ -7764,7 +7837,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT CAST(\"department_id\" AS DOUBLE PRECISION)\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withOracle().ok(expected);
+        .withOracle().ok(expected).done();
   }
 
   @Test void testRedshiftCastToTinyint() {
@@ -7772,7 +7845,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT CAST(\"department_id\" AS \"int2\")\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withRedshift().ok(expected);
+        .withRedshift().ok(expected).done();
   }
 
   @Test void testRedshiftCastToDouble() {
@@ -7780,7 +7853,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT CAST(\"department_id\" AS \"float8\")\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withRedshift().ok(expected);
+        .withRedshift().ok(expected).done();
   }
 
   @Test void testIndexOperatorsBigQuery() {
@@ -7806,7 +7879,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT TO_DATE('1978-05-02', 'YYYY-MM-DD')\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withOracle().ok(expected);
+        .withOracle().ok(expected).done();
   }
 
   @Test void testTimestampLiteralOracle() {
@@ -7815,7 +7888,7 @@ class RelToSqlConverterTest {
         + " 'YYYY-MM-DD HH24:MI:SS.FF')\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withOracle().ok(expected);
+        .withOracle().ok(expected).done();
   }
 
   @Test void testTimeLiteralOracle() {
@@ -7823,7 +7896,7 @@ class RelToSqlConverterTest {
     String expected = "SELECT TO_TIME('12:34:56.78', 'HH24:MI:SS.FF')\n"
         + "FROM \"foodmart\".\"employee\"";
     sql(query)
-        .withOracle().ok(expected);
+        .withOracle().ok(expected).done();
   }
 
   @Test void testSupportsDataType() {
@@ -7847,32 +7920,32 @@ class RelToSqlConverterTest {
     final String query = "SELECT NULL FROM \"product\"";
     final String expected = "SELECT NULL\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectRawNullWithAlias() {
     final String query = "SELECT NULL AS DUMMY FROM \"product\"";
     final String expected = "SELECT NULL AS \"DUMMY\"\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectNullWithCast() {
     final String query = "SELECT CAST(NULL AS INT)";
     final String expected = "SELECT *\n"
         + "FROM (VALUES (NULL)) AS \"t\" (\"EXPR$0\")";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
     // validate
-    sql(expected).exec();
+    sql(expected).done().exec();
   }
 
   @Test void testSelectNullWithCount() {
     final String query = "SELECT COUNT(CAST(NULL AS INT))";
     final String expected = "SELECT COUNT(\"$f0\")\n"
         + "FROM (VALUES (NULL)) AS \"t\" (\"$f0\")";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
     // validate
-    sql(expected).exec();
+    sql(expected).done().exec();
   }
 
   @Test void testSelectNullWithGroupByNull() {
@@ -7882,9 +7955,9 @@ class RelToSqlConverterTest {
     final String expected = "SELECT COUNT(\"$f1\")\n"
         + "FROM (VALUES (NULL, NULL)) AS \"t\" (\"$f0\", \"$f1\")\n"
         + "GROUP BY \"$f0\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
     // validate
-    sql(expected).exec();
+    sql(expected).done().exec();
   }
 
   @Test void testSelectNullWithGroupByVar() {
@@ -7894,9 +7967,9 @@ class RelToSqlConverterTest {
     final String expected = "SELECT COUNT(CAST(NULL AS INTEGER))\n"
         + "FROM \"foodmart\".\"account\"\n"
         + "GROUP BY \"account_type\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
     // validate
-    sql(expected).exec();
+    sql(expected).done().exec();
   }
 
   @Test void testSelectNullWithInsert() {
@@ -7916,9 +7989,9 @@ class RelToSqlConverterTest {
         + "AS \"Custom_Members\"\n"
         + "FROM (VALUES (1, NULL, '123', '123')) "
         + "AS \"t\" (\"EXPR$0\", \"EXPR$1\", \"EXPR$2\", \"EXPR$3\")";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
     // validate
-    sql(expected).exec();
+    sql(expected).done().exec();
   }
 
   @Test void testSelectNullWithInsertFromJoin() {
@@ -7946,9 +8019,9 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "INNER JOIN \"foodmart\".\"sales_fact_1997\" "
         + "ON \"product\".\"product_id\" = \"sales_fact_1997\".\"product_id\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
     // validate
-    sql(expected).exec();
+    sql(expected).done().exec();
   }
 
   @Test void testCastDecimalOverflow() {
@@ -7957,13 +8030,13 @@ class RelToSqlConverterTest {
     final String expected =
         "SELECT CAST('11111111111111111111111111111111.111111' AS DECIMAL(19, 6)) AS \"num\"\n"
             + "FROM \"foodmart\".\"product\"";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
 
     final String query2 =
         "SELECT CAST(1111111 AS DECIMAL(5,2)) AS \"num\" from \"product\"";
     final String expected2 = "SELECT CAST(1111111 AS DECIMAL(5, 2)) AS \"num\"\n"
         + "FROM \"foodmart\".\"product\"";
-    sql(query2).ok(expected2);
+    sql(query2).ok(expected2).done();
   }
 
   @Test void testCastInStringIntegerComparison() {
@@ -7981,7 +8054,7 @@ class RelToSqlConverterTest {
         + "CAST('1996-01-01 ' || '00:00:00' AS TIMESTAMP)";
     sql(query)
         .ok(expected)
-        .withBigQuery().ok(expectedBiqquery);
+        .withBigQuery().ok(expectedBiqquery).done();
   }
 
   /** Test case for
@@ -8070,7 +8143,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT COUNT(*)\n"
             + "FROM \"foodmart\".\"product\"";
     Sql sql = sql(query);
-    sql.ok(expected);
+    sql.ok(expected).done();
   }
 
   @Test void testSelectApproxCountDistinct() {
@@ -8094,7 +8167,8 @@ class RelToSqlConverterTest {
         .withOracle().ok(expectedApproxQuota)
         .withSnowflake().ok(expectedApproxQuota)
         .withPresto().ok(expectedPrestoSql)
-        .withStarRocks().ok(expectedStarRocksSql);
+        .withStarRocks().ok(expectedStarRocksSql)
+        .done();
   }
 
   @Test void testRowValueExpression() {
@@ -8177,7 +8251,7 @@ class RelToSqlConverterTest {
         .withMysql().ok(expectedMysqlX)
         .withOracle().ok(expectedOracleX)
         .withMssql().ok(expectedMssqlX)
-        .withCalcite().ok(expectedCalciteX);
+        .withCalcite().ok(expectedCalciteX).done();
   }
 
   /** Test case for
@@ -8284,7 +8358,7 @@ class RelToSqlConverterTest {
         + "FROM \"SCOTT\".\"DEPT\"";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   @Test void testMerge() {
@@ -8518,7 +8592,7 @@ class RelToSqlConverterTest {
         + "FROM \"SCOTT\".\"DEPT\"";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   @Test void testInsertValuesWithDynamicParams() {
@@ -8532,7 +8606,7 @@ class RelToSqlConverterTest {
         + "FROM (VALUES (0)) AS \"t\" (\"ZERO\")";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   @Test void testInsertValuesWithExplicitColumnsAndDynamicParams() {
@@ -8548,7 +8622,7 @@ class RelToSqlConverterTest {
         + "FROM (VALUES (0)) AS \"t\" (\"ZERO\")";
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .ok(expected);
+        .ok(expected).done();
   }
 
   @Test void testTableFunctionScan() {
@@ -8561,11 +8635,12 @@ class RelToSqlConverterTest {
         + "FROM TABLE(DEDUP(CURSOR ((SELECT \"product_id\", \"product_name\"\n"
         + "FROM \"foodmart\".\"product\")), CURSOR ((SELECT \"employee_id\", \"full_name\"\n"
         + "FROM \"foodmart\".\"employee\")), 'NAME'))";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
 
     final String query2 = "select * from table(ramp(3))";
-    sql(query2).ok("SELECT *\n"
-        + "FROM TABLE(RAMP(3))");
+    final String expected2 = "SELECT *\n"
+        + "FROM TABLE(RAMP(3))";
+    sql(query2).ok(expected2).done();
   }
 
   @Test void testTableFunctionScanWithComplexQuery() {
@@ -8584,7 +8659,7 @@ class RelToSqlConverterTest {
         + "CURSOR ((SELECT \"employee_id\", \"full_name\"\n"
         + "FROM \"foodmart\".\"employee\"\n"
         + "GROUP BY \"employee_id\", \"full_name\")), 'NAME'))";
-    sql(query).ok(expected);
+    sql(query).ok(expected).done();
   }
 
    /** Test case for
@@ -8635,7 +8710,7 @@ class RelToSqlConverterTest {
     sql(sql)
         .parserConfig(parserConfig)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .withBigQuery().ok(expected);
+        .withBigQuery().ok(expected).done();
   }
 
   /** Test case for
@@ -8659,7 +8734,7 @@ class RelToSqlConverterTest {
     // in which "isHavingAlias" is true.
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
-        .withBigQuery().ok(expected);
+        .withBigQuery().ok(expected).done();
   }
 
   /** Test case for
@@ -9170,6 +9245,9 @@ class RelToSqlConverterTest {
 
   /** Fluid interface to run tests. */
   static class Sql {
+    static final Token.Pool FIXTURE_TOKEN = Token.pool();
+
+    private final Token token;
     private final CalciteAssert.SchemaSpec schemaSpec;
     private final String sql;
     private final SqlDialect dialect;
@@ -9184,8 +9262,9 @@ class RelToSqlConverterTest {
         SqlParser.Config parserConfig, Set<SqlLibrary> librarySet,
         UnaryOperator<SqlToRelConverter.Config> config,
         @Nullable Function<RelBuilder, RelNode> relFn,
-        List<Function<RelNode, RelNode>> transforms,
+        List<Function<RelNode, RelNode>> transforms, Token token,
         DialectTestConfig dialectTestConfig) {
+      this.token = requireNonNull(token, "token");
       this.schemaSpec = schemaSpec;
       this.sql = sql;
       this.dialect = dialect;
@@ -9200,17 +9279,17 @@ class RelToSqlConverterTest {
 
     Sql withSql(String sql) {
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     Sql dialect(SqlDialect dialect) {
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     Sql relFn(Function<RelBuilder, RelNode> relFn) {
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     Sql withCalcite() {
@@ -9386,12 +9465,12 @@ class RelToSqlConverterTest {
 
     Sql parserConfig(SqlParser.Config parserConfig) {
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     Sql withConfig(UnaryOperator<SqlToRelConverter.Config> config) {
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     final Sql withLibrary(SqlLibrary library) {
@@ -9402,7 +9481,7 @@ class RelToSqlConverterTest {
       final ImmutableSet<SqlLibrary> librarySet1 =
           ImmutableSet.copyOf(librarySet);
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet1, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     Sql optimize(final RuleSet ruleSet,
@@ -9419,7 +9498,7 @@ class RelToSqlConverterTest {
                 ImmutableList.of(), ImmutableList.of());
           });
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
     }
 
     Sql ok(String expectedQuery) {
@@ -9471,7 +9550,15 @@ class RelToSqlConverterTest {
 
     public Sql schema(CalciteAssert.SchemaSpec schemaSpec) {
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, dialectTestConfig);
+          relFn, transforms, token, dialectTestConfig);
+    }
+
+    public Sql done() {
+      token.close();
+      // TODO: run all deferred tests, e.g.
+      //  config.run(sql);
+      return this;
     }
   }
+
 }
