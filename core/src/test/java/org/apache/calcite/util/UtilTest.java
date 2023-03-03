@@ -119,6 +119,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -1831,6 +1832,25 @@ class UtilTest {
         fail("resource method name must be camel case: " + method.getName());
       }
     }
+  }
+
+  @SuppressWarnings("resource")
+  @Test void testToken() {
+    final Token.Pool pool = Token.pool();
+    final Token token1 = pool.token();
+    final Token token2 = pool.token();
+    final Token token3 = pool.token();
+    final Token token4 = pool.token();
+    token2.close();
+    token4.close();
+    // Token 2 closed twice
+    assertThrows(RuntimeException.class, token2::close);
+    token1.close();
+    // Pool is not empty
+    assertThrows(RuntimeException.class, pool::assertEmpty);
+    token3.close();
+    // Pool is now empty
+    pool.assertEmpty();
   }
 
   /** Tests that sorted sets behave the way we expect. */
