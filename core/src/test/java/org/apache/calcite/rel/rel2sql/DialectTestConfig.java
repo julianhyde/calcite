@@ -22,8 +22,12 @@ import com.google.common.collect.ImmutableMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -148,15 +152,19 @@ class DialectTestConfig {
     /** The dialect object. */
     final SqlDialect sqlDialect;
 
+    /** Whether the dialect is enabled in the test. */
+    final boolean enabled;
+
     /** Whether the test should execute queries in this dialect. If there is a
      * reference, compares the results to the reference. */
     final boolean execute;
 
     Dialect(String name, DialectCode code, SqlDialect sqlDialect,
-        boolean execute) {
+        boolean enabled, boolean execute) {
       this.name = requireNonNull(name, "name");
       this.code = requireNonNull(code, "code");
       this.sqlDialect = requireNonNull(sqlDialect, "sqlDialect");
+      this.enabled = enabled;
       this.execute = execute;
     }
 
@@ -169,18 +177,43 @@ class DialectTestConfig {
 
     /** Creates a Dialect. */
     public static Dialect of(DialectCode dialectCode, SqlDialect dialect) {
-      return new Dialect(dialectCode.name(), dialectCode, dialect, false);
+      return new Dialect(dialectCode.name(), dialectCode, dialect, true, false);
     }
 
     @Override public String toString() {
       return name;
     }
 
+    public Dialect withEnabled(boolean enabled) {
+      if (enabled == this.enabled) {
+        return this;
+      }
+      return new Dialect(name, code, sqlDialect, enabled, execute);
+    }
+
     public Dialect withExecute(boolean execute) {
       if (execute == this.execute) {
         return this;
       }
-      return new Dialect(name, code, sqlDialect, execute);
+      return new Dialect(name, code, sqlDialect, enabled, execute);
+    }
+
+    /** Performs an action with the dialect's connection,
+     * or no-ops if no connection. */
+    public void withConnection(Consumer<Connection> consumer) {
+      // TODO:
+    }
+
+    /** Performs an action with a statement from the dialect's connection,
+     * or no-ops if no connection. */
+    public void withStatement(Consumer<Statement> consumer) {
+      withConnection(connection -> {
+        try (Statement statement = connection.createStatement()) {
+          consumer.accept(statement);
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
+        }
+      });
     }
   }
 }

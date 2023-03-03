@@ -84,6 +84,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -129,6 +131,7 @@ import static org.apache.calcite.rel.rel2sql.DialectCode.SPARK;
 import static org.apache.calcite.rel.rel2sql.DialectCode.SYBASE;
 import static org.apache.calcite.rel.rel2sql.DialectCode.VERTICA;
 import static org.apache.calcite.test.Matchers.isLinux;
+import static org.apache.calcite.test.Matchers.returnsUnordered;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -147,6 +150,7 @@ class RelToSqlConverterTest {
       Suppliers.memoize(() ->
           DialectTestConfigs.INSTANCE_SUPPLIER.get()
               .withReference(CALCITE)
+              .withDialects(d -> d.withEnabled(false))
               .withPath(RelToSqlConverterTest.class,
                   dialectName -> dialectName + ".json"));
 
@@ -7044,8 +7048,31 @@ class RelToSqlConverterTest {
 
     public Sql done() {
       token.close();
-      // TODO: run all deferred tests, e.g.
-      //  config.run(sql);
+
+      // TODO: defer dialect specific checks until this point (e.g. that the
+      // SQL for MySQL should be Xxx and the SQL for PostgreSQL should be Yyy)
+
+      // Generate the query in all enabled dialects, and check results if there
+      // is a reference dialect.
+      dialectTestConfig.dialectMap.forEach((dialectName, dialect) -> {
+        if (dialect.enabled) {
+          final String[] referenceResultSet = null;
+
+          String sql = dialect(dialect.code).exec();
+          if (dialect.execute) {
+            dialect.withStatement(statement -> {
+              try {
+                final ResultSet resultSet = statement.executeQuery(sql);
+                if (referenceResultSet != null) {
+                  assertThat(resultSet, returnsUnordered(referenceResultSet));
+                }
+              } catch (SQLException e) {
+                throw new RuntimeException(e);
+              }
+            });
+          }
+        }
+      });
       return this;
     }
   }
