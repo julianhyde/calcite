@@ -19,7 +19,6 @@ package org.apache.calcite.rel.rel2sql;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
 import static org.apache.calcite.rel.rel2sql.DialectTestConfigs.JETHRO_DIALECT_SUPPLIER;
 
@@ -50,10 +49,10 @@ enum DialectCode {
   MYSQL_LAST(DialectTestConfigs.mysqlDialect(8, NullCollation.LAST)),
   NON_ORDINAL(DialectTestConfigs.nonOrdinalDialect()),
   ORACLE(SqlDialect.DatabaseProduct.ORACLE),
-  ORACLE_11(DialectTestConfigs.oracleDialect(11, -1)),
-  ORACLE_12(DialectTestConfigs.oracleDialect(12, -1)),
-  ORACLE_19(DialectTestConfigs.oracleDialect(19, -1)),
-  ORACLE_23(DialectTestConfigs.oracleDialect(23, -1)),
+  ORACLE_11(DialectTestConfigs.oracleDialect(11, null)),
+  ORACLE_12(DialectTestConfigs.oracleDialect(12, null)),
+  ORACLE_19(DialectTestConfigs.oracleDialect(19, null)),
+  ORACLE_23(DialectTestConfigs.oracleDialect(23, null)),
   /** Oracle dialect with max length for varchar set to 512. */
   ORACLE_MODIFIED(DialectTestConfigs.oracleDialect(12, 512)),
   POSTGRESQL(SqlDialect.DatabaseProduct.POSTGRESQL),
@@ -61,7 +60,7 @@ enum DialectCode {
   POSTGRESQL_MODIFIED(DialectTestConfigs.postgresqlDialect(256, false)),
   /** Postgresql dialect with modified decimal type. */
   POSTGRESQL_MODIFIED_DECIMAL(
-      DialectTestConfigs.postgresqlDialect(-1, true)),
+      DialectTestConfigs.postgresqlDialect(null, true)),
   PRESTO(SqlDialect.DatabaseProduct.PRESTO),
   REDSHIFT(SqlDialect.DatabaseProduct.REDSHIFT),
   SNOWFLAKE(SqlDialect.DatabaseProduct.SNOWFLAKE),
