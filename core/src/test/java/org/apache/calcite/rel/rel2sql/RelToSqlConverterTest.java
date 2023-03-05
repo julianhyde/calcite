@@ -17,9 +17,6 @@
 package org.apache.calcite.rel.rel2sql;
 
 import org.apache.calcite.config.NullCollation;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelCollations;
@@ -43,12 +40,9 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
-import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlWriterConfig;
 import org.apache.calcite.sql.dialect.HiveSqlDialect;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -58,20 +52,12 @@ import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.CalciteAssert;
-import org.apache.calcite.test.MockSqlOperatorTable;
 import org.apache.calcite.test.RelBuilderTest;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.Planner;
-import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Token;
 import org.apache.calcite.util.Util;
 
@@ -79,17 +65,11 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -103,44 +83,30 @@ import static org.apache.calcite.rel.rel2sql.DialectCode.CALCITE;
 import static org.apache.calcite.rel.rel2sql.DialectCode.CLICKHOUSE;
 import static org.apache.calcite.rel.rel2sql.DialectCode.DB2;
 import static org.apache.calcite.rel.rel2sql.DialectCode.EXASOL;
-import static org.apache.calcite.rel.rel2sql.DialectCode.FIREBOLT;
 import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE;
 import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE_2_0;
 import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE_2_1;
 import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE_2_2;
 import static org.apache.calcite.rel.rel2sql.DialectCode.HSQLDB;
-import static org.apache.calcite.rel.rel2sql.DialectCode.INFORMIX;
 import static org.apache.calcite.rel.rel2sql.DialectCode.JETHRO;
 import static org.apache.calcite.rel.rel2sql.DialectCode.MOCK;
 import static org.apache.calcite.rel.rel2sql.DialectCode.MSSQL_2008;
 import static org.apache.calcite.rel.rel2sql.DialectCode.MSSQL_2012;
 import static org.apache.calcite.rel.rel2sql.DialectCode.MSSQL_2017;
 import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL;
-import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_8;
-import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_FIRST;
 import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_HIGH;
-import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_LAST;
 import static org.apache.calcite.rel.rel2sql.DialectCode.NON_ORDINAL;
 import static org.apache.calcite.rel.rel2sql.DialectCode.ORACLE;
-import static org.apache.calcite.rel.rel2sql.DialectCode.ORACLE_MODIFIED;
 import static org.apache.calcite.rel.rel2sql.DialectCode.POSTGRESQL;
-import static org.apache.calcite.rel.rel2sql.DialectCode.POSTGRESQL_MODIFIED;
 import static org.apache.calcite.rel.rel2sql.DialectCode.PRESTO;
-import static org.apache.calcite.rel.rel2sql.DialectCode.REDSHIFT;
-import static org.apache.calcite.rel.rel2sql.DialectCode.SNOWFLAKE;
-import static org.apache.calcite.rel.rel2sql.DialectCode.SPARK;
 import static org.apache.calcite.rel.rel2sql.DialectCode.SYBASE;
-import static org.apache.calcite.rel.rel2sql.DialectCode.VERTICA;
 import static org.apache.calcite.test.Matchers.isLinux;
-import static org.apache.calcite.test.Matchers.returnsUnordered;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Tests for {@link RelToSqlConverter}.
@@ -158,48 +124,31 @@ class RelToSqlConverterTest {
 
   @AfterAll
   static void assertFixtureTrackerIsEmpty() {
-    Sql.FIXTURE_TOKEN.assertEmpty();
+    RelToSqlFixture.POOL.assertEmpty();
   }
 
-  private Sql fixture() {
-    Token id = Sql.FIXTURE_TOKEN.token();
+  /** Creates a fixture. */
+  private RelToSqlFixture fixture() {
+    Token id = RelToSqlFixture.POOL.token();
     final DialectTestConfig dialectTestConfig = CONFIG_SUPPLIER.get();
     final DialectTestConfig.Dialect dialect =
         dialectTestConfig.get(CALCITE);
-    return new Sql(CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
+    return new RelToSqlFixture(id, CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
         dialect, SqlParser.Config.DEFAULT, ImmutableSet.of(),
-        UnaryOperator.identity(), null, ImmutableList.of(), id,
+        UnaryOperator.identity(), null, ImmutableList.of(),
         dialectTestConfig, RelDataTypeSystem.DEFAULT);
   }
 
-  /** Initiates a test case with a given SQL query. */
-  private Sql sql(String sql) {
+  /** Creates a fixture and initializes it with a SQL query. */
+  private RelToSqlFixture sql(String sql) {
     return fixture().withSql(sql);
   }
 
   /** Initiates a test case with a given {@link RelNode} supplier. */
-  private Sql relFn(Function<RelBuilder, RelNode> relFn) {
+  private RelToSqlFixture relFn(Function<RelBuilder, RelNode> relFn) {
     return fixture()
         .schema(CalciteAssert.SchemaSpec.SCOTT_WITH_TEMPORAL)
         .relFn(relFn);
-  }
-
-  private static Planner getPlanner(List<RelTraitDef> traitDefs,
-      SqlParser.Config parserConfig, SchemaPlus schema,
-      SqlToRelConverter.Config sqlToRelConf, Collection<SqlLibrary> librarySet,
-      RelDataTypeSystem typeSystem, Program... programs) {
-    final FrameworkConfig config = Frameworks.newConfigBuilder()
-        .parserConfig(parserConfig)
-        .defaultSchema(schema)
-        .traitDefs(traitDefs)
-        .sqlToRelConverterConfig(sqlToRelConf)
-        .programs(programs)
-        .operatorTable(MockSqlOperatorTable.standard()
-            .plus(librarySet)
-            .extend())
-        .typeSystem(typeSystem)
-        .build();
-    return Frameworks.getPlanner(config);
   }
 
   /** Returns a collection of common dialects, and the database products they
@@ -226,34 +175,6 @@ class RelToSqlConverterTest {
     return RelBuilder.create(RelBuilderTest.config().build());
   }
 
-  /** Converts a relational expression to SQL. */
-  private String toSql(RelNode root) {
-    return toSql(root, CALCITE);
-  }
-
-  /** Converts a relational expression to SQL in a given dialect. */
-  private static String toSql(RelNode root,
-      DialectCode dialectCode) {
-    return toSql(root, dialectCode, c ->
-        c.withAlwaysUseParentheses(false)
-            .withSelectListItemsOnSeparateLines(false)
-            .withUpdateSetListNewline(false)
-            .withIndentation(0));
-  }
-
-  /** Converts a relational expression to SQL in a given dialect
-   * and with a particular writer configuration. */
-  private static String toSql(RelNode root,
-      DialectCode dialectCode,
-      UnaryOperator<SqlWriterConfig> transform) {
-    final DialectTestConfig.Dialect dialect =
-        CONFIG_SUPPLIER.get().get(dialectCode);
-    final SqlDialect sqlDialect = dialect.sqlDialect;
-    final RelToSqlConverter converter = new RelToSqlConverter(sqlDialect);
-    final SqlNode sqlNode = converter.visitRoot(root).asStatement();
-    return sqlNode.toSqlString(c -> transform.apply(c.withDialect(sqlDialect)))
-        .getSql();
-  }
 
   @Test void testGroupByBooleanLiteral() {
     String query = "select avg(\"salary\") from \"employee\" group by true";
@@ -462,8 +383,8 @@ class RelToSqlConverterTest {
     String expected = "SELECT product_class_id, product_id, COUNT(*)\n"
             + "FROM foodmart.product\n"
             + "GROUP BY product_class_id, product_id WITH CUBE";
-    final Sql sql = sql(query).withHive().ok(expected).done();
-    assertTrue(sql.dialect.sqlDialect.supportsGroupByWithCube());
+    final RelToSqlFixture f = sql(query).withHive().ok(expected).done();
+    assertTrue(f.dialect.sqlDialect.supportsGroupByWithCube());
   }
 
   @Test void testSelectQueryWithHiveRollup() {
@@ -472,8 +393,8 @@ class RelToSqlConverterTest {
     String expected = "SELECT product_class_id, product_id, COUNT(*)\n"
             + "FROM foodmart.product\n"
             + "GROUP BY product_class_id, product_id WITH ROLLUP";
-    final Sql sql = sql(query).withHive().ok(expected).done();
-    assertTrue(sql.dialect.sqlDialect.supportsGroupByWithRollup());
+    final RelToSqlFixture f = sql(query).withHive().ok(expected).done();
+    assertTrue(f.dialect.sqlDialect.supportsGroupByWithRollup());
   }
 
   @Test void testSelectQueryWithGroupByEmpty() {
@@ -1133,10 +1054,9 @@ class RelToSqlConverterTest {
     final RelNode root = builder
         .scan("DEPT")
         .scan("EMP")
-        .join(
-            JoinRelType.ANTI, builder.equals(
-              builder.field(2, 1, "DEPTNO"),
-              builder.field(2, 0, "DEPTNO")))
+        .join(JoinRelType.ANTI,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
+                builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
@@ -1144,7 +1064,9 @@ class RelToSqlConverterTest {
         + "WHERE NOT EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"EMP\".\"DEPTNO\")";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   /** Test case for
@@ -1191,10 +1113,9 @@ class RelToSqlConverterTest {
     final RelNode root = builder
         .scan("DEPT")
         .scan("EMP")
-        .join(
-            JoinRelType.SEMI, builder.equals(
-              builder.field(2, 1, "DEPTNO"),
-              builder.field(2, 0, "DEPTNO")))
+        .join(JoinRelType.SEMI,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
+                builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
@@ -1202,7 +1123,9 @@ class RelToSqlConverterTest {
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"EMP\".\"DEPTNO\")";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   @Test void testSemiJoinFilter() {
@@ -1212,12 +1135,11 @@ class RelToSqlConverterTest {
         .scan("EMP")
         .filter(
             builder.call(SqlStdOperatorTable.GREATER_THAN,
-              builder.field("EMPNO"),
-              builder.literal((short) 10)))
-        .join(
-            JoinRelType.SEMI, builder.equals(
-            builder.field(2, 1, "DEPTNO"),
-            builder.field(2, 0, "DEPTNO")))
+                builder.field("EMPNO"),
+                builder.literal((short) 10)))
+        .join(JoinRelType.SEMI,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
+                builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
@@ -1227,7 +1149,9 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"EMPNO\" > 10) AS \"t\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"t\".\"DEPTNO\")";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   @Test void testSemiJoinProject() {
@@ -1236,12 +1160,13 @@ class RelToSqlConverterTest {
         .scan("DEPT")
         .scan("EMP")
         .project(
-            builder.field(builder.peek().getRowType().getField("EMPNO", false, false).getIndex()),
-            builder.field(builder.peek().getRowType().getField("DEPTNO", false, false).getIndex()))
-        .join(
-            JoinRelType.SEMI, builder.equals(
-              builder.field(2, 1, "DEPTNO"),
-              builder.field(2, 0, "DEPTNO")))
+            builder.field(builder.peek().getRowType()
+                .getField("EMPNO", false, false).getIndex()),
+            builder.field(builder.peek().getRowType()
+                .getField("DEPTNO", false, false).getIndex()))
+        .join(JoinRelType.SEMI,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
+                builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
@@ -1250,7 +1175,9 @@ class RelToSqlConverterTest {
         + "FROM (SELECT \"EMPNO\", \"DEPTNO\"\n"
         + "FROM \"scott\".\"EMP\") AS \"t\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"t\".\"DEPTNO\")";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   /** Test case for
@@ -1266,9 +1193,8 @@ class RelToSqlConverterTest {
     final RelNode root = builder
         .push(base)
         .scan("DEPT")
-        .join(
-            JoinRelType.SEMI, builder.equals(
-                builder.field(2, 1, "DEPTNO"),
+        .join(JoinRelType.SEMI,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
                 builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
@@ -1282,7 +1208,9 @@ class RelToSqlConverterTest {
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE \"t\".\"DEPTNO\" = \"DEPT\".\"DEPTNO\")) AS \"t\"";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   @Test void testSemiNestedJoin() {
@@ -1290,18 +1218,16 @@ class RelToSqlConverterTest {
     final RelNode base = builder
         .scan("EMP")
         .scan("EMP")
-        .join(
-            JoinRelType.INNER, builder.equals(
-              builder.field(2, 0, "EMPNO"),
-              builder.field(2, 1, "EMPNO")))
+        .join(JoinRelType.INNER,
+            builder.equals(builder.field(2, 0, "EMPNO"),
+                builder.field(2, 1, "EMPNO")))
         .build();
     final RelNode root = builder
         .scan("DEPT")
         .push(base)
-        .join(
-            JoinRelType.SEMI, builder.equals(
-              builder.field(2, 1, "DEPTNO"),
-              builder.field(2, 0, "DEPTNO")))
+        .join(JoinRelType.SEMI,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
+                builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
@@ -1310,7 +1236,9 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\"\n"
         + "INNER JOIN \"scott\".\"EMP\" AS \"EMP0\" ON \"EMP\".\"EMPNO\" = \"EMP0\".\"EMPNO\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"EMP\".\"DEPTNO\")";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   /** Test case for
@@ -1321,17 +1249,15 @@ class RelToSqlConverterTest {
     final RelNode base = builder
         .scan("EMP")
         .scan("EMP")
-        .join(
-            JoinRelType.SEMI, builder.equals(
-                builder.field(2, 0, "EMPNO"),
+        .join(JoinRelType.SEMI,
+            builder.equals(builder.field(2, 0, "EMPNO"),
                 builder.field(2, 1, "EMPNO")))
         .build();
     final RelNode root = builder
         .scan("DEPT")
         .push(base)
-        .join(
-            JoinRelType.INNER, builder.equals(
-                builder.field(2, 1, "DEPTNO"),
+        .join(JoinRelType.INNER,
+            builder.equals(builder.field(2, 1, "DEPTNO"),
                 builder.field(2, 0, "DEPTNO")))
         .project(builder.field("DEPTNO"))
         .build();
@@ -1341,9 +1267,11 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"EMP\" AS \"EMP0\"\n"
-        + "WHERE \"EMP\".\"EMPNO\" = \"EMP0\".\"EMPNO\")) AS \"t\" ON \"DEPT\".\"DEPTNO\" = \"t\""
-        + ".\"DEPTNO\"";
-    assertThat(toSql(root), isLinux(expectedSql));
+        + "WHERE \"EMP\".\"EMPNO\" = \"EMP0\".\"EMPNO\")) AS \"t\""
+        + " ON \"DEPT\".\"DEPTNO\" = \"t\".\"DEPTNO\"";
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
+    f.done();
   }
 
   /** Test case for
@@ -1970,7 +1898,7 @@ class RelToSqlConverterTest {
         "SELECT FORMAT_DATETIME('%R', TIMESTAMP '2012-02-03 12:34:34')\n"
             + "FROM foodmart.product";
 
-    final Function<String, Sql> factory = sql ->
+    final Function<String, RelToSqlFixture> factory = sql ->
         fixture().withBigQuery().withLibrary(SqlLibrary.BIG_QUERY).withSql(sql);
     factory.apply(formatTime)
         .ok(expectedBqFormatTime).done();
@@ -5652,7 +5580,8 @@ class RelToSqlConverterTest {
         + "(2, 'yy')) AS \"t\" (\"a\", \"b\")\n"
         + "FULL JOIN (VALUES (1, 'x '),\n"
         + "(2, 'yy')) AS \"t0\" (\"a\", \"b\") ON TRUE";
-    assertThat(toSql(root), isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root), isLinux(expectedSql));
 
     // Now with indentation.
     final String expectedSql2 = "SELECT \"t\".\"a\"\n"
@@ -5660,10 +5589,9 @@ class RelToSqlConverterTest {
         + "        (2, 'yy')) AS \"t\" (\"a\", \"b\")\n"
         + "  FULL JOIN (VALUES (1, 'x '),\n"
         + "        (2, 'yy')) AS \"t0\" (\"a\", \"b\") ON TRUE";
-    assertThat(
-        toSql(root, CALCITE,
-            c -> c.withIndentation(2)),
+    assertThat(f.toSql(root, CALCITE, c -> c.withIndentation(2)),
         isLinux(expectedSql2));
+    f.done();
   }
 
   @Test void testTableScanHints() {
@@ -5681,15 +5609,13 @@ class RelToSqlConverterTest {
 
     final String expectedSql = "SELECT \"PRODUCT\"\n"
         + "FROM \"scott\".\"orders\"";
-    assertThat(
-        toSql(root, CALCITE),
-        isLinux(expectedSql));
+    final RelToSqlFixture f = fixture();
+    assertThat(f.toSql(root, CALCITE), isLinux(expectedSql));
     final String expectedSql2 = "SELECT PRODUCT\n"
         + "FROM scott.orders\n"
         + "/*+ PLACEHOLDERS(a = 'b') */";
-    assertThat(
-        toSql(root, ANSI),
-        isLinux(expectedSql2));
+    assertThat(f.toSql(root, ANSI), isLinux(expectedSql2));
+    f.done();
   }
 
   /** Test case for
@@ -6527,8 +6453,7 @@ class RelToSqlConverterTest {
     final String query = "select count(*) from \"product\"";
     final String expected = "SELECT COUNT(*)\n"
             + "FROM \"foodmart\".\"product\"";
-    Sql sql = sql(query);
-    sql.ok(expected).done();
+    sql(query).ok(expected).done();
   }
 
   @Test void testSelectApproxCountDistinct() {
@@ -6790,310 +6715,6 @@ class RelToSqlConverterTest {
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
         .withBigQuery().ok(expected).done();
-  }
-
-  /** Fluid interface to run tests. */
-  static class Sql {
-    static final Token.Pool FIXTURE_TOKEN = Token.pool();
-
-    private final Token token;
-    private final CalciteAssert.SchemaSpec schemaSpec;
-    private final String sql;
-    private final DialectTestConfig.Dialect dialect;
-    private final Set<SqlLibrary> librarySet;
-    private final @Nullable Function<RelBuilder, RelNode> relFn;
-    private final List<Function<RelNode, RelNode>> transforms;
-    private final SqlParser.Config parserConfig;
-    private final UnaryOperator<SqlToRelConverter.Config> config;
-    private final DialectTestConfig dialectTestConfig;
-    private final RelDataTypeSystem typeSystem;
-
-    Sql(CalciteAssert.SchemaSpec schemaSpec, String sql,
-        DialectTestConfig.Dialect dialect,
-        SqlParser.Config parserConfig, Set<SqlLibrary> librarySet,
-        UnaryOperator<SqlToRelConverter.Config> config,
-        @Nullable Function<RelBuilder, RelNode> relFn,
-        List<Function<RelNode, RelNode>> transforms, Token token,
-        DialectTestConfig dialectTestConfig, RelDataTypeSystem typeSystem) {
-      this.token = requireNonNull(token, "token");
-      this.schemaSpec = schemaSpec;
-      this.sql = sql;
-      this.dialect = dialect;
-      this.librarySet = librarySet;
-      this.relFn = relFn;
-      this.transforms = ImmutableList.copyOf(transforms);
-      this.parserConfig = parserConfig;
-      this.config = config;
-      this.dialectTestConfig =
-          requireNonNull(dialectTestConfig, "dialectTestConfig");
-      this.typeSystem = requireNonNull(typeSystem, "typeSystem");
-    }
-
-    Sql withSql(String sql) {
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql dialect(DialectCode dialectCode) {
-      DialectTestConfig.Dialect dialect = dialectTestConfig.get(dialectCode);
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql relFn(Function<RelBuilder, RelNode> relFn) {
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql withCalcite() {
-      return dialect(CALCITE);
-    }
-
-    Sql withClickHouse() {
-      return dialect(CLICKHOUSE);
-    }
-
-    Sql withDb2() {
-      return dialect(DB2);
-    }
-
-    Sql withExasol() {
-      return dialect(EXASOL);
-    }
-
-    Sql withFirebolt() {
-      return dialect(FIREBOLT);
-    }
-
-    Sql withHive() {
-      return dialect(HIVE);
-    }
-
-    Sql withHsqldb() {
-      return dialect(HSQLDB);
-    }
-
-    Sql withJethro() {
-      return dialect(JETHRO);
-    }
-
-    Sql withMssql() {
-      return dialect(MSSQL_2017); // MSSQL 2008 = 10.0, 2012 = 11.0, 2017 = 14.0
-    }
-
-    Sql withMysql() {
-      return dialect(MYSQL);
-    }
-
-    Sql withMysqlHigh() {
-      return dialect(MYSQL_HIGH);
-    }
-
-    Sql withMysqlFirst() {
-      return dialect(MYSQL_FIRST);
-    }
-
-    Sql withMysqlLast() {
-      return dialect(MYSQL_LAST);
-    }
-
-    Sql withMysql8() {
-      return dialect(MYSQL_8);
-    }
-
-    Sql withOracle() {
-      return dialect(ORACLE);
-    }
-
-    Sql withPostgresql() {
-      return dialect(POSTGRESQL);
-    }
-
-    Sql withPresto() {
-      return dialect(PRESTO);
-    }
-
-    Sql withRedshift() {
-      return dialect(REDSHIFT);
-    }
-
-    Sql withInformix() {
-      return dialect(INFORMIX);
-    }
-
-    Sql withSnowflake() {
-      return dialect(SNOWFLAKE);
-    }
-
-    Sql withSybase() {
-      return dialect(SYBASE);
-    }
-
-    Sql withVertica() {
-      return dialect(VERTICA);
-    }
-
-    Sql withBigQuery() {
-      return dialect(BIG_QUERY);
-    }
-
-    Sql withSpark() {
-      return dialect(SPARK);
-    }
-
-    Sql withPostgresqlModifiedTypeSystem() {
-      return dialect(POSTGRESQL_MODIFIED);
-    }
-
-    Sql withOracleModifiedTypeSystem() {
-      return dialect(ORACLE_MODIFIED);
-    }
-
-    Sql parserConfig(SqlParser.Config parserConfig) {
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql withConfig(UnaryOperator<SqlToRelConverter.Config> config) {
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql withTestConfig(UnaryOperator<DialectTestConfig> transform) {
-      DialectTestConfig dialectTestConfig =
-          transform.apply(this.dialectTestConfig);
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql withTypeSystem(RelDataTypeSystem typeSystem) {
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    final Sql withLibrary(SqlLibrary library) {
-      return withLibrarySet(ImmutableSet.of(library));
-    }
-
-    Sql withLibrarySet(Iterable<? extends SqlLibrary> librarySet) {
-      final ImmutableSet<SqlLibrary> librarySet1 =
-          ImmutableSet.copyOf(librarySet);
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet1, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    /** Disables this test for a given list of dialects. */
-    Sql withDisable(DialectCode code0, DialectCode... codes) {
-      final Set<DialectCode> dialectCodes = EnumSet.of(code0, codes);
-      return withTestConfig(c ->
-          c.withDialects(d ->
-              dialectCodes.contains(d.code) ? d.withEnabled(false) : d));
-    }
-
-    Sql optimize(final RuleSet ruleSet,
-        final @Nullable RelOptPlanner relOptPlanner) {
-      final List<Function<RelNode, RelNode>> transforms =
-          FlatLists.append(this.transforms, r -> {
-            Program program = Programs.of(ruleSet);
-            final RelOptPlanner p =
-                Util.first(relOptPlanner,
-                    new HepPlanner(
-                        new HepProgramBuilder().addRuleClass(RelOptRule.class)
-                            .build()));
-            return program.run(p, r, r.getTraitSet(),
-                ImmutableList.of(), ImmutableList.of());
-          });
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    Sql ok(String expectedQuery) {
-      return withTestConfig(c ->
-          c.withDialect(dialect.name, d ->
-              d.withExpectedQuery(expectedQuery)
-                  .withEnabled(true)));
-    }
-
-    Sql throws_(String errorMessage) {
-      try {
-        final String s = exec();
-        throw new AssertionError("Expected exception with message `"
-            + errorMessage + "` but nothing was thrown; got " + s);
-      } catch (Exception e) {
-        assertThat(e.getMessage(), is(errorMessage));
-        return this;
-      }
-    }
-
-    String exec() {
-      try {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
-        final SchemaPlus defaultSchema =
-            CalciteAssert.addSchema(rootSchema, schemaSpec);
-        RelNode rel;
-        if (relFn != null) {
-          final FrameworkConfig frameworkConfig = RelBuilderTest.config()
-              .defaultSchema(defaultSchema)
-              .build();
-          final RelBuilder relBuilder = RelBuilder.create(frameworkConfig);
-          rel = relFn.apply(relBuilder);
-        } else {
-          final SqlToRelConverter.Config config = this.config.apply(SqlToRelConverter.config()
-              .withTrimUnusedFields(false));
-          final Planner planner =
-              getPlanner(null, parserConfig, defaultSchema, config, librarySet, typeSystem);
-          SqlNode parse = planner.parse(sql);
-          SqlNode validate = planner.validate(parse);
-          rel = planner.rel(validate).project();
-        }
-        for (Function<RelNode, RelNode> transform : transforms) {
-          rel = transform.apply(rel);
-        }
-        return toSql(rel, dialect.code);
-      } catch (Exception e) {
-        throw TestUtil.rethrow(e);
-      }
-    }
-
-    public Sql schema(CalciteAssert.SchemaSpec schemaSpec) {
-      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
-          relFn, transforms, token, dialectTestConfig, typeSystem);
-    }
-
-    public Sql done() {
-      token.close();
-
-      // TODO: defer dialect specific checks until this point (e.g. that the
-      // SQL for MySQL should be Xxx and the SQL for PostgreSQL should be Yyy)
-
-      // Generate the query in all enabled dialects, and check results if there
-      // is a reference dialect.
-      dialectTestConfig.dialectMap.forEach((dialectName, dialect) -> {
-        if (dialect.enabled) {
-          final String[] referenceResultSet = null;
-
-          String sql = dialect(dialect.code).exec();
-
-          if (dialect.expectedQuery != null) {
-            assertThat(sql, is(dialect.expectedQuery));
-          }
-
-          if (dialect.execute) {
-            dialect.withStatement(statement -> {
-              try {
-                final ResultSet resultSet = statement.executeQuery(sql);
-                if (referenceResultSet != null) {
-                  assertThat(resultSet, returnsUnordered(referenceResultSet));
-                }
-              } catch (SQLException e) {
-                throw new RuntimeException(e);
-              }
-            });
-          }
-        }
-      });
-      return this;
-    }
   }
 
 }

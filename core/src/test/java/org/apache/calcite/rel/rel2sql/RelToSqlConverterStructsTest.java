@@ -36,15 +36,22 @@ import static org.apache.calcite.rel.rel2sql.DialectCode.CALCITE;
  */
 class RelToSqlConverterStructsTest {
 
-  private RelToSqlConverterTest.Sql sql(String sql) {
-    final Token token = RelToSqlConverterTest.Sql.FIXTURE_TOKEN.token();
+  /** Creates a fixture. */
+  private static RelToSqlFixture fixture() {
+    final Token token = RelToSqlFixture.POOL.token();
     final DialectTestConfig testConfig =
         DialectTestConfigs.INSTANCE_SUPPLIER.get();
     final DialectTestConfig.Dialect calcite = testConfig.get(CALCITE);
-    return new RelToSqlConverterTest.Sql(CalciteAssert.SchemaSpec.MY_DB, sql,
+    return new RelToSqlFixture(token,
+        CalciteAssert.SchemaSpec.MY_DB, "?",
         calcite, SqlParser.Config.DEFAULT, ImmutableSet.of(),
-        UnaryOperator.identity(), null, ImmutableList.of(), token,
+        UnaryOperator.identity(), null, ImmutableList.of(),
         DialectTestConfigs.INSTANCE_SUPPLIER.get(), RelDataTypeSystem.DEFAULT);
+  }
+
+  /** Creates a fixture and initializes it with a SQL query. */
+  private RelToSqlFixture sql(String sql) {
+    return fixture().withSql(sql);
   }
 
   @Test void testNestedSchemaSelectStar() {
