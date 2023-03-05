@@ -72,7 +72,7 @@ class DialectTestConfigs {
 
   static SqlDialect mysqlDialect(@Nullable Integer majorVersion,
       @Nullable NullCollation nullCollation) {
-      SqlDialect d = SqlDialect.DatabaseProduct.MYSQL.getDialect();
+    final SqlDialect d = SqlDialect.DatabaseProduct.MYSQL.getDialect();
     SqlDialect.Context context =
         MysqlSqlDialect.DEFAULT_CONTEXT
             .withIdentifierQuoteString(d.quoteIdentifier("").substring(0, 1))
@@ -88,10 +88,15 @@ class DialectTestConfigs {
     return new MysqlSqlDialect(context);
   }
 
-  static SqlDialect oracleDialect(final int majorVersion,
-      final int maxVarcharLength) {
-    SqlDialect.Context context = OracleSqlDialect.DEFAULT_CONTEXT;
-    if (maxVarcharLength >= 0) {
+  static SqlDialect oracleDialect(final @Nullable Integer majorVersion,
+      final @Nullable Integer maxVarcharLength) {
+    final SqlDialect oracleDialect = OracleSqlDialect.DEFAULT;
+    SqlDialect.Context context =
+        OracleSqlDialect.DEFAULT_CONTEXT
+            .withIdentifierQuoteString(oracleDialect.quoteIdentifier("")
+                .substring(0, 1))
+            .withNullCollation(oracleDialect.getNullCollation());
+    if (maxVarcharLength != null) {
       context = context.withDataTypeSystem(new RelDataTypeSystemImpl() {
         @Override public int getMaxPrecision(SqlTypeName typeName) {
           switch (typeName) {
@@ -104,21 +109,17 @@ class DialectTestConfigs {
       });
     }
 
-    if (majorVersion >= 0) {
-      final SqlDialect oracleDialect = OracleSqlDialect.DEFAULT;
+    if (majorVersion != null) {
       context =
-          context.withDatabaseMajorVersion(majorVersion)
-              .withIdentifierQuoteString(oracleDialect.quoteIdentifier("")
-                  .substring(0, 1))
-              .withNullCollation(oracleDialect.getNullCollation());
+          context.withDatabaseMajorVersion(majorVersion);
     }
     return new OracleSqlDialect(context);
   }
 
-  static SqlDialect postgresqlDialect(final int maxVarcharLength,
+  static SqlDialect postgresqlDialect(final @Nullable Integer maxVarcharLength,
       final boolean modifyDecimal) {
     SqlDialect.Context context = PostgresqlSqlDialect.DEFAULT_CONTEXT;
-    if (maxVarcharLength >= 0) {
+    if (maxVarcharLength != null) {
       context =
           context
               .withDataTypeSystem(new RelDataTypeSystemImpl() {
