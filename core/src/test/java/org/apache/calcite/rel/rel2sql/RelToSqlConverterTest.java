@@ -87,6 +87,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -161,7 +162,8 @@ class RelToSqlConverterTest {
               .withReference(CALCITE)
               .withDialects(d -> d.withEnabled(false))
               .withPath(RelToSqlConverterTest.class,
-                  dialectName -> dialectName + ".json"));
+                  dialectName -> dialectName + ".json")
+              .withDialect(HSQLDB, d -> d.withExecute(true)));
 
   @AfterAll
   static void assertFixtureTrackerIsEmpty() {
@@ -4737,6 +4739,7 @@ class RelToSqlConverterTest {
         + "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\")";
     sql(discardedParenthesesQuery).ok(discardedParenthesesRes)
+        .withDisable(BIG_QUERY)
         .done();
 
     // Parentheses will be retained because sub-query has LIMIT or OFFSET.
@@ -4766,6 +4769,7 @@ class RelToSqlConverterTest {
         + "OFFSET 5 ROWS\n"
         + "FETCH NEXT 5 ROWS ONLY)";
     sql(allSetOpQuery).ok(allSetOpRes)
+        .withDisable(BIG_QUERY, CLICKHOUSE, MSSQL_2008, SYBASE)
         .done();
 
     // After the config is enabled, order by will be retained, so parentheses are required.
@@ -9564,6 +9568,14 @@ class RelToSqlConverterTest {
           relFn, transforms, token, dialectTestConfig);
     }
 
+    /** Disables this test for a given list of dialects. */
+    Sql withDisable(DialectCode code0, DialectCode... codes) {
+      final Set<DialectCode> dialectCodes = EnumSet.of(code0, codes);
+      return withTestConfig(c ->
+          c.withDialects(d ->
+              dialectCodes.contains(d.code) ? d.withEnabled(false) : d));
+    }
+
     Sql optimize(final RuleSet ruleSet,
         final @Nullable RelOptPlanner relOptPlanner) {
       final List<Function<RelNode, RelNode>> transforms =
@@ -9582,8 +9594,10 @@ class RelToSqlConverterTest {
     }
 
     Sql ok(String expectedQuery) {
-      assertThat(exec(), isLinux(expectedQuery));
-      return this;
+      return withTestConfig(c ->
+          c.withDialect(dialect.name, d ->
+              d.withExpectedQuery(expectedQuery)
+                  .withEnabled(true)));
     }
 
     Sql throws_(String errorMessage) {
@@ -9646,6 +9660,11 @@ class RelToSqlConverterTest {
           final String[] referenceResultSet = null;
 
           String sql = dialect(dialect.code).exec();
+
+          if (dialect.expectedQuery != null) {
+            assertThat(sql, is(dialect.expectedQuery));
+          }
+
           if (dialect.execute) {
             dialect.withStatement(statement -> {
               try {
