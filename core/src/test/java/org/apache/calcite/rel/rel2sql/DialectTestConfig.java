@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -159,13 +160,19 @@ class DialectTestConfig {
      * reference, compares the results to the reference. */
     final boolean execute;
 
+    /** The query that we expect to be generated for this dialect in this test
+     * run. Is only set during a test run, and is always null in the base
+     * configuration. */
+    final @Nullable String expectedQuery;
+
     Dialect(String name, DialectCode code, SqlDialect sqlDialect,
-        boolean enabled, boolean execute) {
+        boolean enabled, boolean execute, @Nullable String expectedQuery) {
       this.name = requireNonNull(name, "name");
       this.code = requireNonNull(code, "code");
       this.sqlDialect = requireNonNull(sqlDialect, "sqlDialect");
       this.enabled = enabled;
       this.execute = execute;
+      this.expectedQuery = expectedQuery;
     }
 
     /** Creates a Dialect based on a
@@ -177,7 +184,8 @@ class DialectTestConfig {
 
     /** Creates a Dialect. */
     public static Dialect of(DialectCode dialectCode, SqlDialect dialect) {
-      return new Dialect(dialectCode.name(), dialectCode, dialect, true, false);
+      return new Dialect(dialectCode.name(), dialectCode, dialect, true, false,
+          null);
     }
 
     @Override public String toString() {
@@ -188,14 +196,24 @@ class DialectTestConfig {
       if (enabled == this.enabled) {
         return this;
       }
-      return new Dialect(name, code, sqlDialect, enabled, execute);
+      return new Dialect(name, code, sqlDialect, enabled, execute,
+          expectedQuery);
     }
 
     public Dialect withExecute(boolean execute) {
       if (execute == this.execute) {
         return this;
       }
-      return new Dialect(name, code, sqlDialect, enabled, execute);
+      return new Dialect(name, code, sqlDialect, enabled, execute,
+          expectedQuery);
+    }
+
+    public Dialect withExpectedQuery(String expectedQuery) {
+      if (Objects.equals(expectedQuery, this.expectedQuery)) {
+        return this;
+      }
+      return new Dialect(name, code, sqlDialect, enabled, execute,
+          expectedQuery);
     }
 
     /** Performs an action with the dialect's connection,
