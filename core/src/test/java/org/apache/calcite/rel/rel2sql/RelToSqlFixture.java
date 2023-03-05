@@ -365,14 +365,9 @@ class RelToSqlFixture {
   }
 
   RelToSqlFixture throws_(String errorMessage) {
-    try {
-      final String s = exec();
-      throw new AssertionError("Expected exception with message `"
-          + errorMessage + "` but nothing was thrown; got " + s);
-    } catch (Exception e) {
-      assertThat(e.getMessage(), is(errorMessage));
-      return this;
-    }
+    return withTestConfig(c ->
+        c.withDialect(dialect.code,
+            d -> d.withExpectedError(errorMessage).withEnabled(true)));
   }
 
   String exec() {
@@ -418,7 +413,20 @@ class RelToSqlFixture {
       if (dialect.enabled) {
         final String[] referenceResultSet = null;
 
-        String sql = dialect(dialect.code).exec();
+        final String sql;
+        if (dialect.expectedError != null) {
+          try {
+            sql = dialect(dialect.code).exec();
+            throw new AssertionError("Expected exception with message `"
+                + dialect.expectedError + "` but nothing was thrown; got "
+                + sql);
+          } catch (Exception e) {
+            assertThat(e.getMessage(), is(dialect.expectedError));
+            return;
+          }
+        } else {
+          sql = dialect(dialect.code).exec();
+        }
 
         if (dialect.expectedQuery != null) {
           assertThat(sql, is(dialect.expectedQuery));
