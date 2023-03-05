@@ -165,14 +165,21 @@ class DialectTestConfig {
      * configuration. */
     final @Nullable String expectedQuery;
 
+    /** The error that we expect to be thrown for this dialect in this test
+     * run. Is only set during a test run, and is always null in the base
+     * configuration. */
+    final @Nullable String expectedError;
+
     Dialect(String name, DialectCode code, SqlDialect sqlDialect,
-        boolean enabled, boolean execute, @Nullable String expectedQuery) {
+        boolean enabled, boolean execute, @Nullable String expectedQuery,
+        @Nullable String expectedError) {
       this.name = requireNonNull(name, "name");
       this.code = requireNonNull(code, "code");
       this.sqlDialect = requireNonNull(sqlDialect, "sqlDialect");
       this.enabled = enabled;
       this.execute = execute;
       this.expectedQuery = expectedQuery;
+      this.expectedError = expectedError;
     }
 
     /** Creates a Dialect based on a
@@ -185,7 +192,7 @@ class DialectTestConfig {
     /** Creates a Dialect. */
     public static Dialect of(DialectCode dialectCode, SqlDialect dialect) {
       return new Dialect(dialectCode.name(), dialectCode, dialect, true, false,
-          null);
+          null, null);
     }
 
     @Override public String toString() {
@@ -197,7 +204,7 @@ class DialectTestConfig {
         return this;
       }
       return new Dialect(name, code, sqlDialect, enabled, execute,
-          expectedQuery);
+          expectedQuery, expectedError);
     }
 
     public Dialect withExecute(boolean execute) {
@@ -205,7 +212,7 @@ class DialectTestConfig {
         return this;
       }
       return new Dialect(name, code, sqlDialect, enabled, execute,
-          expectedQuery);
+          expectedQuery, expectedError);
     }
 
     public Dialect withExpectedQuery(String expectedQuery) {
@@ -213,7 +220,15 @@ class DialectTestConfig {
         return this;
       }
       return new Dialect(name, code, sqlDialect, enabled, execute,
-          expectedQuery);
+          expectedQuery, expectedError);
+    }
+
+    public Dialect withExpectedError(String expectedError) {
+      if (Objects.equals(expectedError, this.expectedError)) {
+        return this;
+      }
+      return new Dialect(name, code, sqlDialect, enabled, execute,
+          expectedQuery, expectedError);
     }
 
     /** Performs an action with the dialect's connection,
