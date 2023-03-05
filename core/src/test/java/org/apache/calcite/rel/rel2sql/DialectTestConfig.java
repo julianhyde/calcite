@@ -24,7 +24,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -40,10 +39,10 @@ import static java.util.Objects.requireNonNull;
 class DialectTestConfig {
   final ImmutableMap<String, Dialect> dialectMap;
 
-  /** The name of the reference dialect. If not null, the queries from this
+  /** The code of the reference dialect. If not null, the queries from this
    * dialect as used as exemplars for other dialects: the other dialects are
    * expected to return the same set of rows as the reference. */
-  final @Nullable String refDialectName;
+  final @Nullable DialectCode refDialectCode;
 
   /** The name of the class relative to which the resource file containing
    * query responses is located. */
@@ -55,11 +54,11 @@ class DialectTestConfig {
   private final Function<String, String> function;
 
   private DialectTestConfig(Map<String, Dialect> dialectMap,
-      @Nullable String refDialectName,
+      @Nullable DialectCode refDialectCode,
       @SuppressWarnings("rawtypes") Class testClass,
       Function<String, String> function) {
     this.dialectMap = ImmutableMap.copyOf(dialectMap);
-    this.refDialectName = refDialectName;
+    this.refDialectCode = refDialectCode;
     this.testClass = requireNonNull(testClass, "testClass");
     this.function = requireNonNull(function, "function");
   }
@@ -70,6 +69,29 @@ class DialectTestConfig {
     dialects.forEach(dialect -> map.put(dialect.name, dialect));
     return new DialectTestConfig(map.build(), null, RelToSqlConverterTest.class,
         UnaryOperator.identity());
+  }
+
+  /** Applies a transform to the dialect with a given code.
+   *
+   * <p>Throws if there is no such dialect. */
+  public DialectTestConfig withDialect(DialectCode code,
+      UnaryOperator<Dialect> dialectTransform) {
+    return withDialect(code.name(), dialectTransform);
+  }
+
+  /** Applies a transform to each dialect. */
+  public DialectTestConfig withDialects(
+      UnaryOperator<Dialect> dialectTransform) {
+    final ImmutableMap.Builder<String, Dialect> b =
+        ImmutableMap.builder();
+    dialectMap.forEach((name, dialect) ->
+        b.put(dialect.name, dialectTransform.apply(dialect)));
+    final ImmutableMap<String, Dialect> dialectMap2 = b.build();
+    if (dialectMap2.equals(dialectMap)) {
+      return this;
+    }
+    return new DialectTestConfig(dialectMap2, refDialectCode, testClass,
+        function);
   }
 
   /** Applies a transform to the dialect with a given name.
@@ -84,16 +106,16 @@ class DialectTestConfig {
     }
     final Map<String, Dialect> dialectMap2 = new LinkedHashMap<>(dialectMap);
     dialectMap2.put(name, dialect2);
-    return new DialectTestConfig(dialectMap2, refDialectName, testClass,
+    return new DialectTestConfig(dialectMap2, refDialectCode, testClass,
         function);
   }
 
   /** Sets the name of the reference dialect. */
-  public DialectTestConfig withReference(String refDialectName) {
-    if (Objects.equals(refDialectName, this.refDialectName)) {
+  public DialectTestConfig withReference(DialectCode refDialectCode) {
+    if (refDialectCode == this.refDialectCode) {
       return this;
     }
-    return new DialectTestConfig(dialectMap, refDialectName, testClass,
+    return new DialectTestConfig(dialectMap, refDialectCode, testClass,
         function);
   }
 
@@ -104,14 +126,24 @@ class DialectTestConfig {
     if (testClass == this.testClass && function == this.function) {
       return this;
     }
-    return new DialectTestConfig(dialectMap, refDialectName, testClass,
+    return new DialectTestConfig(dialectMap, refDialectCode, testClass,
         function);
+  }
+
+  /** Returns the dialect with the given code. */
+  public Dialect get(DialectCode dialectCode) {
+    return requireNonNull(dialectMap.get(dialectCode.name()),
+        () -> "dialect " + dialectCode);
   }
 
   /** Definition of a dialect. */
   static class Dialect {
     /** The name of this dialect. */
     final String name;
+
+    /** The code of this dialect.
+     * Having a code isn't strictly necessary, but it makes tests more concise. */
+    final DialectCode code;
 
     /** The dialect object. */
     final SqlDialect sqlDialect;
@@ -120,22 +152,24 @@ class DialectTestConfig {
      * reference, compares the results to the reference. */
     final boolean execute;
 
-    Dialect(String name, SqlDialect sqlDialect, boolean execute) {
+    Dialect(String name, DialectCode code, SqlDialect sqlDialect,
+        boolean execute) {
       this.name = requireNonNull(name, "name");
+      this.code = requireNonNull(code, "code");
       this.sqlDialect = requireNonNull(sqlDialect, "sqlDialect");
       this.execute = execute;
     }
 
     /** Creates a Dialect based on a
      *  {@link org.apache.calcite.sql.SqlDialect.DatabaseProduct}. */
-    public static Dialect of(String name,
+    public static Dialect of(DialectCode dialectCode,
         SqlDialect.DatabaseProduct databaseProduct) {
-      return of(name, databaseProduct.getDialect());
+      return of(dialectCode, databaseProduct.getDialect());
     }
 
     /** Creates a Dialect. */
-    public static Dialect of(String name, SqlDialect dialect) {
-      return new Dialect(name, dialect, false);
+    public static Dialect of(DialectCode dialectCode, SqlDialect dialect) {
+      return new Dialect(dialectCode.name(), dialectCode, dialect, false);
     }
 
     @Override public String toString() {
@@ -146,7 +180,7 @@ class DialectTestConfig {
       if (execute == this.execute) {
         return this;
       }
-      return new Dialect(name, sqlDialect, execute);
+      return new Dialect(name, code, sqlDialect, execute);
     }
   }
 }
