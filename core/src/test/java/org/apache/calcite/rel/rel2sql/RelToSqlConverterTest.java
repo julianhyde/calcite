@@ -46,20 +46,11 @@ import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlDialect.DatabaseProduct;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlSelect;
-import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.SqlWriterConfig;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.dialect.HiveSqlDialect;
-import org.apache.calcite.sql.dialect.MssqlSqlDialect;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
-import org.apache.calcite.sql.dialect.PrestoSqlDialect;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -67,7 +58,6 @@ import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.test.MockSqlOperatorTable;
@@ -87,7 +77,6 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -97,7 +86,6 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -106,7 +94,40 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.apache.calcite.rel.rel2sql.DialectTestConfigs.mysqlDialect;
+import static org.apache.calcite.rel.rel2sql.DialectCode.ANSI;
+import static org.apache.calcite.rel.rel2sql.DialectCode.BIG_QUERY;
+import static org.apache.calcite.rel.rel2sql.DialectCode.CALCITE;
+import static org.apache.calcite.rel.rel2sql.DialectCode.CLICKHOUSE;
+import static org.apache.calcite.rel.rel2sql.DialectCode.DB2;
+import static org.apache.calcite.rel.rel2sql.DialectCode.EXASOL;
+import static org.apache.calcite.rel.rel2sql.DialectCode.FIREBOLT;
+import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE;
+import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE_2_0;
+import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE_2_1;
+import static org.apache.calcite.rel.rel2sql.DialectCode.HIVE_2_2;
+import static org.apache.calcite.rel.rel2sql.DialectCode.HSQLDB;
+import static org.apache.calcite.rel.rel2sql.DialectCode.INFORMIX;
+import static org.apache.calcite.rel.rel2sql.DialectCode.JETHRO;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MOCK;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MSSQL_2008;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MSSQL_2012;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MSSQL_2017;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_8;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_FIRST;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_HIGH;
+import static org.apache.calcite.rel.rel2sql.DialectCode.MYSQL_LAST;
+import static org.apache.calcite.rel.rel2sql.DialectCode.NON_ORDINAL;
+import static org.apache.calcite.rel.rel2sql.DialectCode.ORACLE;
+import static org.apache.calcite.rel.rel2sql.DialectCode.ORACLE_MODIFIED;
+import static org.apache.calcite.rel.rel2sql.DialectCode.POSTGRESQL;
+import static org.apache.calcite.rel.rel2sql.DialectCode.POSTGRESQL_MODIFIED;
+import static org.apache.calcite.rel.rel2sql.DialectCode.PRESTO;
+import static org.apache.calcite.rel.rel2sql.DialectCode.REDSHIFT;
+import static org.apache.calcite.rel.rel2sql.DialectCode.SNOWFLAKE;
+import static org.apache.calcite.rel.rel2sql.DialectCode.SPARK;
+import static org.apache.calcite.rel.rel2sql.DialectCode.SYBASE;
+import static org.apache.calcite.rel.rel2sql.DialectCode.VERTICA;
 import static org.apache.calcite.test.Matchers.isLinux;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -125,10 +146,9 @@ class RelToSqlConverterTest {
   private static final Supplier<DialectTestConfig> CONFIG_SUPPLIER =
       Suppliers.memoize(() ->
           DialectTestConfigs.INSTANCE_SUPPLIER.get()
-              .withReference("calcite")
+              .withReference(CALCITE)
               .withPath(RelToSqlConverterTest.class,
-                  dialectName -> dialectName + ".json")
-              .withDialect("hsqldb", d -> d.withExecute(true)));
+                  dialectName -> dialectName + ".json"));
 
   @AfterAll
   static void assertFixtureTrackerIsEmpty() {
@@ -137,10 +157,13 @@ class RelToSqlConverterTest {
 
   private Sql fixture() {
     Token id = Sql.FIXTURE_TOKEN.token();
+    final DialectTestConfig dialectTestConfig = CONFIG_SUPPLIER.get();
+    final DialectTestConfig.Dialect dialect =
+        dialectTestConfig.get(CALCITE);
     return new Sql(CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
-        CalciteSqlDialect.DEFAULT, SqlParser.Config.DEFAULT, ImmutableSet.of(),
+        dialect, SqlParser.Config.DEFAULT, ImmutableSet.of(),
         UnaryOperator.identity(), null, ImmutableList.of(), id,
-        CONFIG_SUPPLIER.get(), RelDataTypeSystem.DEFAULT);
+        dialectTestConfig, RelDataTypeSystem.DEFAULT);
   }
 
   /** Initiates a test case with a given SQL query. */
@@ -175,22 +198,21 @@ class RelToSqlConverterTest {
 
   /** Returns a collection of common dialects, and the database products they
    * represent. */
-  private static Map<SqlDialect, DatabaseProduct> dialects() {
-    return ImmutableMap.<SqlDialect, DatabaseProduct>builder()
-        .put(DatabaseProduct.BIG_QUERY.getDialect(), DatabaseProduct.BIG_QUERY)
-        .put(DatabaseProduct.CALCITE.getDialect(), DatabaseProduct.CALCITE)
-        .put(DatabaseProduct.DB2.getDialect(), DatabaseProduct.DB2)
-        .put(DatabaseProduct.EXASOL.getDialect(), DatabaseProduct.EXASOL)
-        .put(DatabaseProduct.HIVE.getDialect(), DatabaseProduct.HIVE)
-        .put(DialectTestConfigs.JETHRO_DIALECT_SUPPLIER.get(),
-            DatabaseProduct.JETHRO)
-        .put(DatabaseProduct.MSSQL.getDialect(), DatabaseProduct.MSSQL)
-        .put(DatabaseProduct.MYSQL.getDialect(), DatabaseProduct.MYSQL)
-        .put(mysqlDialect(NullCollation.HIGH), DatabaseProduct.MYSQL)
-        .put(DatabaseProduct.ORACLE.getDialect(), DatabaseProduct.ORACLE)
-        .put(DatabaseProduct.POSTGRESQL.getDialect(), DatabaseProduct.POSTGRESQL)
-        .put(DatabaseProduct.PRESTO.getDialect(), DatabaseProduct.PRESTO)
-        .build();
+  private static List<DialectTestConfig.Dialect> dialects() {
+    return ImmutableList.of(BIG_QUERY,
+            CALCITE,
+            DB2,
+            EXASOL,
+            HIVE,
+            JETHRO, MSSQL_2017,
+            MYSQL,
+            MYSQL_HIGH,
+            ORACLE,
+            POSTGRESQL,
+            PRESTO)
+        .stream()
+        .map(dialectCode -> CONFIG_SUPPLIER.get().get(dialectCode))
+        .collect(Util.toImmutableList());
   }
 
   /** Creates a RelBuilder. */
@@ -200,12 +222,13 @@ class RelToSqlConverterTest {
 
   /** Converts a relational expression to SQL. */
   private String toSql(RelNode root) {
-    return toSql(root, DatabaseProduct.CALCITE.getDialect());
+    return toSql(root, CALCITE);
   }
 
   /** Converts a relational expression to SQL in a given dialect. */
-  private static String toSql(RelNode root, SqlDialect dialect) {
-    return toSql(root, dialect, c ->
+  private static String toSql(RelNode root,
+      DialectCode dialectCode) {
+    return toSql(root, dialectCode, c ->
         c.withAlwaysUseParentheses(false)
             .withSelectListItemsOnSeparateLines(false)
             .withUpdateSetListNewline(false)
@@ -214,11 +237,15 @@ class RelToSqlConverterTest {
 
   /** Converts a relational expression to SQL in a given dialect
    * and with a particular writer configuration. */
-  private static String toSql(RelNode root, SqlDialect dialect,
+  private static String toSql(RelNode root,
+      DialectCode dialectCode,
       UnaryOperator<SqlWriterConfig> transform) {
-    final RelToSqlConverter converter = new RelToSqlConverter(dialect);
+    final DialectTestConfig.Dialect dialect =
+        CONFIG_SUPPLIER.get().get(dialectCode);
+    final SqlDialect sqlDialect = dialect.sqlDialect;
+    final RelToSqlConverter converter = new RelToSqlConverter(sqlDialect);
     final SqlNode sqlNode = converter.visitRoot(root).asStatement();
-    return sqlNode.toSqlString(c -> transform.apply(c.withDialect(dialect)))
+    return sqlNode.toSqlString(c -> transform.apply(c.withDialect(sqlDialect)))
         .getSql();
   }
 
@@ -430,7 +457,7 @@ class RelToSqlConverterTest {
             + "FROM foodmart.product\n"
             + "GROUP BY product_class_id, product_id WITH CUBE";
     final Sql sql = sql(query).withHive().ok(expected).done();
-    assertTrue(sql.dialect.supportsGroupByWithCube());
+    assertTrue(sql.dialect.sqlDialect.supportsGroupByWithCube());
   }
 
   @Test void testSelectQueryWithHiveRollup() {
@@ -440,7 +467,7 @@ class RelToSqlConverterTest {
             + "FROM foodmart.product\n"
             + "GROUP BY product_class_id, product_id WITH ROLLUP";
     final Sql sql = sql(query).withHive().ok(expected).done();
-    assertTrue(sql.dialect.supportsGroupByWithRollup());
+    assertTrue(sql.dialect.sqlDialect.supportsGroupByWithRollup());
   }
 
   @Test void testSelectQueryWithGroupByEmpty() {
@@ -1086,7 +1113,7 @@ class RelToSqlConverterTest {
                     .mapToObj(i -> b.equals(b.field("EMPNO"), b.literal(i)))
                     .collect(Collectors.toList())))
         .build();
-    final SqlDialect dialect = DatabaseProduct.CALCITE.getDialect();
+    final SqlDialect dialect = CONFIG_SUPPLIER.get().get(CALCITE).sqlDialect;
     final RelNode root = relFn.apply(relBuilder());
     final RelToSqlConverter converter = new RelToSqlConverter(dialect);
     final SqlNode sqlNode = converter.visitRoot(root).asStatement();
@@ -1737,16 +1764,6 @@ class RelToSqlConverterTest {
     sql(query).ok(expected).done();
   }
 
-  /** A dialect that doesn't treat integer literals in the ORDER BY as field
-   * references. */
-  private SqlDialect nonOrdinalDialect() {
-    return new SqlDialect(SqlDialect.EMPTY_CONTEXT) {
-      @Override public SqlConformance getConformance() {
-        return SqlConformanceEnum.STRICT_99;
-      }
-    };
-  }
-
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-5044">[CALCITE-5044]
    * JDBC adapter generates integer literal in ORDER BY, which some dialects
@@ -1773,7 +1790,7 @@ class RelToSqlConverterTest {
         .ok("SELECT \"JOB\", \"ENAME\"\n"
             + "FROM \"scott\".\"EMP\"\n"
             + "ORDER BY '1', '23', '12', \"ENAME\", '34' DESC NULLS LAST")
-        .dialect(nonOrdinalDialect())
+        .dialect(NON_ORDINAL)
         .ok("SELECT JOB, ENAME\n"
             + "FROM scott.EMP\n"
             + "ORDER BY 1, '23', 12, ENAME, 34 DESC NULLS LAST").done();
@@ -1811,9 +1828,9 @@ class RelToSqlConverterTest {
         + "ORDER BY COUNT(*) IS NULL, 2";
     sql(query)
         .ok(ordinalExpected)
-        .dialect(nonOrdinalDialect())
+        .dialect(NON_ORDINAL)
         .ok(nonOrdinalExpected)
-        .dialect(PrestoSqlDialect.DEFAULT)
+        .dialect(PRESTO)
         .ok(prestoExpected).done();
   }
 
@@ -2492,60 +2509,31 @@ class RelToSqlConverterTest {
   }
 
   @Test void testHiveSelectQueryWithOrderByDescAndHighNullsWithVersionGreaterThanOrEq21() {
-    final HiveSqlDialect hive2_1Dialect =
-        new HiveSqlDialect(HiveSqlDialect.DEFAULT_CONTEXT
-            .withDatabaseMajorVersion(2)
-            .withDatabaseMinorVersion(1)
-            .withNullCollation(NullCollation.LOW));
-
-    final HiveSqlDialect hive2_2_Dialect =
-        new HiveSqlDialect(HiveSqlDialect.DEFAULT_CONTEXT
-            .withDatabaseMajorVersion(2)
-            .withDatabaseMinorVersion(2)
-            .withNullCollation(NullCollation.LOW));
-
     final String query = "select \"product_id\" from \"product\"\n"
         + "order by \"product_id\" desc nulls first";
     final String expected = "SELECT product_id\n"
         + "FROM foodmart.product\n"
         + "ORDER BY product_id DESC NULLS FIRST";
-    sql(query).dialect(hive2_1Dialect).ok(expected).done();
-    sql(query).dialect(hive2_2_Dialect).ok(expected).done();
+    sql(query).dialect(HIVE_2_1).ok(expected).done();
+    sql(query).dialect(HIVE_2_2).ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOverDescAndHighNullsWithVersionGreaterThanOrEq21() {
-    final HiveSqlDialect hive2_1Dialect =
-        new HiveSqlDialect(SqlDialect.EMPTY_CONTEXT
-            .withDatabaseMajorVersion(2)
-            .withDatabaseMinorVersion(1)
-            .withNullCollation(NullCollation.LOW));
-
-    final HiveSqlDialect hive2_2_Dialect =
-        new HiveSqlDialect(SqlDialect.EMPTY_CONTEXT
-            .withDatabaseMajorVersion(2)
-            .withDatabaseMinorVersion(2)
-            .withNullCollation(NullCollation.LOW));
-
     final String query = "SELECT row_number() over "
         + "(order by \"hire_date\" desc nulls first) FROM \"employee\"";
     final String expected = "SELECT ROW_NUMBER() OVER (ORDER BY hire_date DESC NULLS FIRST)\n"
         + "FROM foodmart.employee";
-    sql(query).dialect(hive2_1Dialect).ok(expected).done();
-    sql(query).dialect(hive2_2_Dialect).ok(expected).done();
+    sql(query).dialect(HIVE_2_1).ok(expected).done();
+    sql(query).dialect(HIVE_2_2).ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOrderByDescAndHighNullsWithVersion20() {
-    final HiveSqlDialect hive2_1_0_Dialect =
-        new HiveSqlDialect(HiveSqlDialect.DEFAULT_CONTEXT
-            .withDatabaseMajorVersion(2)
-            .withDatabaseMinorVersion(0)
-            .withNullCollation(NullCollation.LOW));
     final String query = "select \"product_id\" from \"product\"\n"
         + "order by \"product_id\" desc nulls first";
     final String expected = "SELECT product_id\n"
         + "FROM foodmart.product\n"
         + "ORDER BY product_id IS NULL DESC, product_id DESC";
-    sql(query).dialect(hive2_1_0_Dialect).ok(expected).done();
+    sql(query).dialect(HIVE_2_0).ok(expected).done();
   }
 
   @Test void testHiveSelectQueryWithOverDescAndHighNullsWithVersion20() {
@@ -2559,7 +2547,7 @@ class RelToSqlConverterTest {
     final String expected = "SELECT ROW_NUMBER() OVER "
         + "(ORDER BY hire_date IS NULL DESC, hire_date DESC)\n"
         + "FROM foodmart.employee";
-    sql(query).dialect(hive2_1_0_Dialect).ok(expected).done();
+    sql(query).dialect(HIVE_2_0).ok(expected).done();
   }
 
   @Test void testJethroDataSelectQueryWithOrderByDescAndNullsFirstShouldBeEmulated() {
@@ -2993,7 +2981,7 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "ORDER BY \"product_id\"\n"
         + "FETCH NEXT 100 ROWS ONLY";
-    final String expectedMssql10 = "SELECT TOP (100) [product_id]\n"
+    final String expectedMssql2008 = "SELECT TOP (100) [product_id]\n"
         + "FROM [foodmart].[product]\n"
         + "ORDER BY CASE WHEN [product_id] IS NULL THEN 1 ELSE 0 END, [product_id]";
     final String expectedMssql = "SELECT TOP (100) [product_id]\n"
@@ -3003,9 +2991,9 @@ class RelToSqlConverterTest {
         + "FROM foodmart.product\n"
         + "ORDER BY product_id";
     sql(query).ok(expected)
-        .withMssql(10).ok(expectedMssql10)
-        .withMssql(11).ok(expectedMssql)
-        .withMssql(14).ok(expectedMssql)
+        .dialect(MSSQL_2008).ok(expectedMssql2008)
+        .dialect(MSSQL_2012).ok(expectedMssql)
+        .dialect(MSSQL_2017).ok(expectedMssql)
         .withSybase().ok(expectedSybase).done();
   }
 
@@ -3623,7 +3611,8 @@ class RelToSqlConverterTest {
         + "INTERSECT ALL\n"
         + "SELECT \"product_id\"\n"
         + "FROM \"foodmart\".\"product\")";
-    sql(discardedParenthesesQuery).ok(discardedParenthesesRes).done();
+    sql(discardedParenthesesQuery).ok(discardedParenthesesRes)
+        .done();
 
     // Parentheses will be retained because sub-query has LIMIT or OFFSET.
     // If parentheses are discarded the semantics of parsing will be affected.
@@ -3651,7 +3640,8 @@ class RelToSqlConverterTest {
         + "FROM \"foodmart\".\"product\"\n"
         + "OFFSET 5 ROWS\n"
         + "FETCH NEXT 5 ROWS ONLY)";
-    sql(allSetOpQuery).ok(allSetOpRes).done();
+    sql(allSetOpQuery).ok(allSetOpRes)
+        .done();
 
     // After the config is enabled, order by will be retained, so parentheses are required.
     final String retainOrderQuery = "SELECT \"product_id\" FROM \"product\""
@@ -5663,7 +5653,7 @@ class RelToSqlConverterTest {
         + "  FULL JOIN (VALUES (1, 'x '),\n"
         + "        (2, 'yy')) AS \"t0\" (\"a\", \"b\") ON TRUE";
     assertThat(
-        toSql(root, DatabaseProduct.CALCITE.getDialect(),
+        toSql(root, CALCITE,
             c -> c.withIndentation(2)),
         isLinux(expectedSql2));
   }
@@ -5684,13 +5674,13 @@ class RelToSqlConverterTest {
     final String expectedSql = "SELECT \"PRODUCT\"\n"
         + "FROM \"scott\".\"orders\"";
     assertThat(
-        toSql(root, DatabaseProduct.CALCITE.getDialect()),
+        toSql(root, CALCITE),
         isLinux(expectedSql));
     final String expectedSql2 = "SELECT PRODUCT\n"
         + "FROM scott.orders\n"
         + "/*+ PLACEHOLDERS(a = 'b') */";
     assertThat(
-        toSql(root, new AnsiSqlDialect(SqlDialect.EMPTY_CONTEXT)),
+        toSql(root, ANSI),
         isLinux(expectedSql2));
   }
 
@@ -5749,20 +5739,13 @@ class RelToSqlConverterTest {
     final String expected = "SELECT *\n"
         + "FROM foodmart.product";
 
-    final boolean[] callsUnparseCallOnSqlSelect = {false};
-    final SqlDialect dialect = new SqlDialect(SqlDialect.EMPTY_CONTEXT) {
-      @Override public void unparseCall(SqlWriter writer, SqlCall call,
-          int leftPrec, int rightPrec) {
-        if (call instanceof SqlSelect) {
-          callsUnparseCallOnSqlSelect[0] = true;
-        }
-        super.unparseCall(writer, call, leftPrec, rightPrec);
-      }
-    };
-    sql(query).dialect(dialect).ok(expected).done();
+    final int originalCount =
+        MockSqlDialect.THREAD_UNPARSE_SELECT_COUNT.get().get();
+    sql(query).dialect(MOCK).ok(expected).done();
 
     assertThat("Dialect must be able to customize unparseCall() for SqlSelect",
-        callsUnparseCallOnSqlSelect[0], is(true));
+        MockSqlDialect.THREAD_UNPARSE_SELECT_COUNT.get().get(),
+        is(originalCount + 1));
   }
 
   @Test void testCorrelate() {
@@ -6358,10 +6341,11 @@ class RelToSqlConverterTest {
         new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataType booleanDataType = typeFactory.createSqlType(SqlTypeName.BOOLEAN);
     final RelDataType integerDataType = typeFactory.createSqlType(SqlTypeName.INTEGER);
-    final SqlDialect oracleDialect = DatabaseProduct.ORACLE.getDialect();
+    final DialectTestConfig testConfig = CONFIG_SUPPLIER.get();
+    final SqlDialect oracleDialect = testConfig.get(ORACLE).sqlDialect;
     assertFalse(oracleDialect.supportsDataType(booleanDataType));
     assertTrue(oracleDialect.supportsDataType(integerDataType));
-    final SqlDialect postgresqlDialect = DatabaseProduct.POSTGRESQL.getDialect();
+    final SqlDialect postgresqlDialect = testConfig.get(POSTGRESQL).sqlDialect;
     assertTrue(postgresqlDialect.supportsDataType(booleanDataType));
     assertTrue(postgresqlDialect.supportsDataType(integerDataType));
   }
@@ -6512,15 +6496,16 @@ class RelToSqlConverterTest {
   }
 
   @Test void testDialectQuoteStringLiteral() {
-    dialects().forEach((dialect, databaseProduct) -> {
+    dialects().forEach(d -> {
+      final SqlDialect dialect = d.sqlDialect;
       assertThat(dialect.quoteStringLiteral(""), is("''"));
       assertThat(dialect.quoteStringLiteral("can't run"),
-          databaseProduct == DatabaseProduct.BIG_QUERY
+          d.code == BIG_QUERY
               ? is("'can\\'t run'")
               : is("'can''t run'"));
 
       assertThat(dialect.unquoteStringLiteral("''"), is(""));
-      if (databaseProduct == DatabaseProduct.BIG_QUERY) {
+      if (d.code == BIG_QUERY) {
         assertThat(dialect.unquoteStringLiteral("'can\\'t run'"),
             is("can't run"));
       } else {
@@ -6806,7 +6791,7 @@ class RelToSqlConverterTest {
     private final Token token;
     private final CalciteAssert.SchemaSpec schemaSpec;
     private final String sql;
-    private final SqlDialect dialect;
+    private final DialectTestConfig.Dialect dialect;
     private final Set<SqlLibrary> librarySet;
     private final @Nullable Function<RelBuilder, RelNode> relFn;
     private final List<Function<RelNode, RelNode>> transforms;
@@ -6815,7 +6800,8 @@ class RelToSqlConverterTest {
     private final DialectTestConfig dialectTestConfig;
     private final RelDataTypeSystem typeSystem;
 
-    Sql(CalciteAssert.SchemaSpec schemaSpec, String sql, SqlDialect dialect,
+    Sql(CalciteAssert.SchemaSpec schemaSpec, String sql,
+        DialectTestConfig.Dialect dialect,
         SqlParser.Config parserConfig, Set<SqlLibrary> librarySet,
         UnaryOperator<SqlToRelConverter.Config> config,
         @Nullable Function<RelBuilder, RelNode> relFn,
@@ -6840,7 +6826,8 @@ class RelToSqlConverterTest {
           relFn, transforms, token, dialectTestConfig, typeSystem);
     }
 
-    Sql dialect(SqlDialect dialect) {
+    Sql dialect(DialectCode dialectCode) {
+      DialectTestConfig.Dialect dialect = dialectTestConfig.get(dialectCode);
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
           relFn, transforms, token, dialectTestConfig, typeSystem);
     }
@@ -6851,125 +6838,107 @@ class RelToSqlConverterTest {
     }
 
     Sql withCalcite() {
-      return dialect(DatabaseProduct.CALCITE.getDialect());
+      return dialect(CALCITE);
     }
 
     Sql withClickHouse() {
-      return dialect(DatabaseProduct.CLICKHOUSE.getDialect());
+      return dialect(CLICKHOUSE);
     }
 
     Sql withDb2() {
-      return dialect(DatabaseProduct.DB2.getDialect());
+      return dialect(DB2);
     }
 
     Sql withExasol() {
-      return dialect(DatabaseProduct.EXASOL.getDialect());
+      return dialect(EXASOL);
     }
 
     Sql withFirebolt() {
-      return dialect(DatabaseProduct.FIREBOLT.getDialect());
+      return dialect(FIREBOLT);
     }
 
     Sql withHive() {
-      return dialect(DatabaseProduct.HIVE.getDialect());
+      return dialect(HIVE);
     }
 
     Sql withHsqldb() {
-      return dialect(DatabaseProduct.HSQLDB.getDialect());
+      return dialect(HSQLDB);
     }
 
     Sql withJethro() {
-      return dialect(DialectTestConfigs.JETHRO_DIALECT_SUPPLIER.get());
+      return dialect(JETHRO);
     }
 
     Sql withMssql() {
-      return withMssql(14); // MSSQL 2008 = 10.0, 2012 = 11.0, 2017 = 14.0
-    }
-
-    Sql withMssql(int majorVersion) {
-      final SqlDialect mssqlDialect = DatabaseProduct.MSSQL.getDialect();
-      return dialect(
-          new MssqlSqlDialect(MssqlSqlDialect.DEFAULT_CONTEXT
-              .withDatabaseMajorVersion(majorVersion)
-              .withIdentifierQuoteString(mssqlDialect.quoteIdentifier("")
-                  .substring(0, 1))
-              .withNullCollation(mssqlDialect.getNullCollation())));
+      return dialect(MSSQL_2017); // MSSQL 2008 = 10.0, 2012 = 11.0, 2017 = 14.0
     }
 
     Sql withMysql() {
-      return dialect(DatabaseProduct.MYSQL.getDialect());
+      return dialect(MYSQL);
     }
 
     Sql withMysqlHigh() {
-      return dialect(mysqlDialect(NullCollation.HIGH));
+      return dialect(MYSQL_HIGH);
     }
 
     Sql withMysqlFirst() {
-      return dialect(mysqlDialect(NullCollation.FIRST));
+      return dialect(MYSQL_FIRST);
     }
 
     Sql withMysqlLast() {
-      return dialect(mysqlDialect(NullCollation.LAST));
+      return dialect(MYSQL_LAST);
     }
 
     Sql withMysql8() {
-      final SqlDialect mysqlDialect = DatabaseProduct.MYSQL.getDialect();
-      return dialect(
-          new SqlDialect(MysqlSqlDialect.DEFAULT_CONTEXT
-              .withDatabaseMajorVersion(8)
-              .withIdentifierQuoteString(mysqlDialect.quoteIdentifier("")
-                  .substring(0, 1))
-              .withNullCollation(mysqlDialect.getNullCollation())));
+      return dialect(MYSQL_8);
     }
 
     Sql withOracle() {
-      return dialect(DatabaseProduct.ORACLE.getDialect());
+      return dialect(ORACLE);
     }
 
     Sql withPostgresql() {
-      return dialect(DatabaseProduct.POSTGRESQL.getDialect());
+      return dialect(POSTGRESQL);
     }
 
     Sql withPresto() {
-      return dialect(DatabaseProduct.PRESTO.getDialect());
+      return dialect(PRESTO);
     }
 
     Sql withRedshift() {
-      return dialect(DatabaseProduct.REDSHIFT.getDialect());
+      return dialect(REDSHIFT);
     }
 
     Sql withInformix() {
-      return dialect(DatabaseProduct.INFORMIX.getDialect());
+      return dialect(INFORMIX);
     }
 
     Sql withSnowflake() {
-      return dialect(DatabaseProduct.SNOWFLAKE.getDialect());
+      return dialect(SNOWFLAKE);
     }
 
     Sql withSybase() {
-      return dialect(DatabaseProduct.SYBASE.getDialect());
+      return dialect(SYBASE);
     }
 
     Sql withVertica() {
-      return dialect(DatabaseProduct.VERTICA.getDialect());
+      return dialect(VERTICA);
     }
 
     Sql withBigQuery() {
-      return dialect(DatabaseProduct.BIG_QUERY.getDialect());
+      return dialect(BIG_QUERY);
     }
 
     Sql withSpark() {
-      return dialect(DatabaseProduct.SPARK.getDialect());
+      return dialect(SPARK);
     }
 
     Sql withPostgresqlModifiedTypeSystem() {
-      // Postgresql dialect with max length for varchar set to 256
-      return dialect(DialectTestConfigs.postgresqlDialect(256));
+      return dialect(POSTGRESQL_MODIFIED);
     }
 
     Sql withOracleModifiedTypeSystem() {
-      // Oracle dialect with max length for varchar set to 512
-      return dialect(DialectTestConfigs.oracleDialect(512));
+      return dialect(ORACLE_MODIFIED);
     }
 
     Sql parserConfig(SqlParser.Config parserConfig) {
@@ -6978,6 +6947,13 @@ class RelToSqlConverterTest {
     }
 
     Sql withConfig(UnaryOperator<SqlToRelConverter.Config> config) {
+      return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
+          relFn, transforms, token, dialectTestConfig, typeSystem);
+    }
+
+    Sql withTestConfig(UnaryOperator<DialectTestConfig> transform) {
+      DialectTestConfig dialectTestConfig =
+          transform.apply(this.dialectTestConfig);
       return new Sql(schemaSpec, sql, dialect, parserConfig, librarySet, config,
           relFn, transforms, token, dialectTestConfig, typeSystem);
     }
@@ -7055,7 +7031,7 @@ class RelToSqlConverterTest {
         for (Function<RelNode, RelNode> transform : transforms) {
           rel = transform.apply(rel);
         }
-        return toSql(rel, dialect);
+        return toSql(rel, dialect.code);
       } catch (Exception e) {
         throw TestUtil.rethrow(e);
       }

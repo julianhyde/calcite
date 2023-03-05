@@ -25,16 +25,15 @@ import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.dialect.OracleSqlDialect;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 
-import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import static org.apache.calcite.rel.rel2sql.DialectTestConfig.Dialect.of;
 
 /** Utilities for {@link DialectTestConfig}. */
 class DialectTestConfigs {
@@ -45,7 +44,9 @@ class DialectTestConfigs {
       Suppliers.memoize(() -> {
         final ImmutableList.Builder<DialectTestConfig.Dialect> b =
             ImmutableList.builder();
-        extracted(b::add);
+        for (DialectCode dialectCode : DialectCode.values()) {
+          b.add(dialectCode.toDialect());
+        }
         final ImmutableList<DialectTestConfig.Dialect> list = b.build();
         final Iterable<String> dialectNames =
             Util.transform(list, dialect -> dialect.name);
@@ -54,47 +55,6 @@ class DialectTestConfigs {
         }
         return DialectTestConfig.of(list);
       })::get;
-
-  private static void extracted(Consumer<DialectTestConfig.Dialect> list) {
-    // The following list must be ordered by dialect name.
-    list.accept(of("bigquery", SqlDialect.DatabaseProduct.BIG_QUERY));
-    list.accept(of("calcite", SqlDialect.DatabaseProduct.CALCITE));
-    list.accept(of("clickhouse", SqlDialect.DatabaseProduct.CLICKHOUSE));
-    list.accept(of("db2", SqlDialect.DatabaseProduct.DB2));
-    list.accept(of("exasol", SqlDialect.DatabaseProduct.EXASOL));
-    list.accept(of("firebolt", SqlDialect.DatabaseProduct.FIREBOLT));
-    list.accept(of("hive", SqlDialect.DatabaseProduct.HIVE));
-    list.accept(of("hsqldb", SqlDialect.DatabaseProduct.HSQLDB));
-    list.accept(of("informix", SqlDialect.DatabaseProduct.INFORMIX));
-    list.accept(of("jethro", JETHRO_DIALECT_SUPPLIER.get()));
-    // MSSQL 2008 = 10.0, 2012 = 11.0, 2017 = 14.0
-    list.accept(of("mssql", mssqlDialect(14)));
-
-    final SqlDialect mysqlDialect =
-        SqlDialect.DatabaseProduct.MYSQL.getDialect();
-    list.accept(of("mysql", mysqlDialect));
-    final SqlDialect mysql8Dialect =
-        new SqlDialect(
-            MysqlSqlDialect.DEFAULT_CONTEXT.withDatabaseMajorVersion(8)
-                .withIdentifierQuoteString(mysqlDialect.quoteIdentifier("")
-                    .substring(0, 1))
-                .withNullCollation(mysqlDialect.getNullCollation()));
-    list.accept(of("mysql-8", mysql8Dialect));
-    list.accept(of("mysql-first", mysqlDialect(NullCollation.FIRST)));
-    list.accept(of("mysql-high", mysqlDialect(NullCollation.HIGH)));
-    list.accept(of("mysql-last", mysqlDialect(NullCollation.LAST)));
-
-    list.accept(of("oracle", SqlDialect.DatabaseProduct.ORACLE));
-    list.accept(of("oracle-modified", oracleDialect(512)));
-    list.accept(of("postgresql", SqlDialect.DatabaseProduct.POSTGRESQL));
-    list.accept(of("postgresql-modified", postgresqlDialect(256)));
-    list.accept(of("presto", SqlDialect.DatabaseProduct.PRESTO));
-    list.accept(of("redshift", SqlDialect.DatabaseProduct.REDSHIFT));
-    list.accept(of("snowflake", SqlDialect.DatabaseProduct.SNOWFLAKE));
-    list.accept(of("spark", SqlDialect.DatabaseProduct.SPARK));
-    list.accept(of("sybase", SqlDialect.DatabaseProduct.SYBASE));
-    list.accept(of("vertica", SqlDialect.DatabaseProduct.VERTICA));
-  }
 
   static MysqlSqlDialect mysqlDialect(NullCollation nullCollation) {
     return new MysqlSqlDialect(MysqlSqlDialect.DEFAULT_CONTEXT
@@ -129,6 +89,9 @@ class DialectTestConfigs {
         }));
   }
 
+  /** Creates a dialect for Microsoft SQL Server.
+   *
+   * <p>MSSQL 2008 has version 10.0, 2012 has 11.0, 2017 has 14.0. */
   static SqlDialect mssqlDialect(int majorVersion) {
     final SqlDialect mssqlDialect =
         SqlDialect.DatabaseProduct.MSSQL.getDialect();
@@ -137,6 +100,16 @@ class DialectTestConfigs {
         .withIdentifierQuoteString(mssqlDialect.quoteIdentifier("")
             .substring(0, 1))
         .withNullCollation(mssqlDialect.getNullCollation()));
+  }
+
+  /** Creates a dialect that doesn't treat integer literals in the ORDER BY as
+   * field references. */
+  static SqlDialect nonOrdinalDialect() {
+    return new SqlDialect(SqlDialect.EMPTY_CONTEXT) {
+      @Override public SqlConformance getConformance() {
+        return SqlConformanceEnum.STRICT_99;
+      }
+    };
   }
 
   static final Supplier<SqlDialect> JETHRO_DIALECT_SUPPLIER =
