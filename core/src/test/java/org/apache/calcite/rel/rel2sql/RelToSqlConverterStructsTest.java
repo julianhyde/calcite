@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.rel.rel2sql;
 
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.util.Token;
@@ -28,6 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.UnaryOperator;
 
+import static org.apache.calcite.rel.rel2sql.DialectCode.CALCITE;
+
 /**
  * Tests for {@link RelToSqlConverter} on a schema that has nested structures of multiple
  * levels.
@@ -36,8 +37,11 @@ class RelToSqlConverterStructsTest {
 
   private RelToSqlConverterTest.Sql sql(String sql) {
     final Token token = RelToSqlConverterTest.Sql.FIXTURE_TOKEN.token();
+    final DialectTestConfig testConfig =
+        DialectTestConfigs.INSTANCE_SUPPLIER.get();
+    final DialectTestConfig.Dialect calcite = testConfig.get(CALCITE);
     return new RelToSqlConverterTest.Sql(CalciteAssert.SchemaSpec.MY_DB, sql,
-        CalciteSqlDialect.DEFAULT, SqlParser.Config.DEFAULT, ImmutableSet.of(),
+        calcite, SqlParser.Config.DEFAULT, ImmutableSet.of(),
         UnaryOperator.identity(), null, ImmutableList.of(), token,
         DialectTestConfigs.INSTANCE_SUPPLIER.get());
   }
