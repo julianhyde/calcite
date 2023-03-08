@@ -52,6 +52,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -424,15 +425,34 @@ class RelToSqlFixture {
   public RelToSqlFixture done() {
     token.close();
 
-    // TODO: defer dialect specific checks until this point (e.g. that the
-    // SQL for MySQL should be Xxx and the SQL for PostgreSQL should be Yyy)
+    final List<String> referenceResultSet;
+    if (testConfig.refDialectCode != null) {
+      DialectTestConfig.Dialect referenceDialect =
+          testConfig.get(testConfig.refDialectCode);
+      final List<String> rows = new ArrayList<>();
+      final String referenceSql =
+          testConfig.refDialectCode == CALCITE && relFn == null
+              ? sql
+              : dialect(testConfig.refDialectCode).exec();
+      if (referenceDialect.withStatement(statement -> {
+        try (ResultSet resultSet = statement.executeQuery(referenceSql)) {
+          CalciteAssert.toStringList(resultSet, rows);
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
+        }
+      })) {
+        referenceResultSet = ImmutableList.copyOf(rows);
+      } else {
+        referenceResultSet = null;
+      }
+    } else {
+      referenceResultSet = null;
+    }
 
     // Generate the query in all enabled dialects, and check results if there
     // is a reference dialect.
     testConfig.dialectMap.forEach((dialectName, dialect) -> {
       if (dialect.enabled) {
-        final String[] referenceResultSet = null;
-
         final String sql;
         if (dialect.expectedError != null) {
           try {
