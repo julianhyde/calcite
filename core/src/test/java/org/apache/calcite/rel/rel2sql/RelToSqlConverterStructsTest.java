@@ -45,7 +45,8 @@ class RelToSqlConverterStructsTest {
         CalciteAssert.SchemaSpec.MY_DB, "?",
         calcite, SqlParser.Config.DEFAULT, ImmutableSet.of(),
         UnaryOperator.identity(), null, ImmutableList.of(),
-        DialectTestConfigs.INSTANCE_SUPPLIER.get());
+        DialectTestConfigs.INSTANCE_SUPPLIER.get(),
+        RelToSqlFixture::transformWriter);
   }
 
   /** Creates a fixture and initializes it with a SQL query. */
