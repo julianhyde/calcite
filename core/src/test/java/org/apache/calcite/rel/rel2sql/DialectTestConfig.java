@@ -16,7 +16,11 @@
  */
 package org.apache.calcite.rel.rel2sql;
 
+import org.apache.calcite.jdbc.CalciteJdbc41Factory;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.test.CalciteAssert;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -28,6 +32,7 @@ import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -231,16 +236,38 @@ class DialectTestConfig {
           expectedQuery, expectedError);
     }
 
-    /** Performs an action with the dialect's connection,
-     * or no-ops if no connection. */
-    public void withConnection(Consumer<Connection> consumer) {
-      // TODO:
+    /** Performs an action with the dialect's connection and returns true;
+     * if no connection, no-ops and returns false. */
+    public boolean withConnection(Consumer<Connection> consumer) {
+      switch (code) {
+      case CALCITE:
+        final CalciteJdbc41Factory factory = new CalciteJdbc41Factory();
+        final Driver driver = new Driver();
+        final String url = "jdbc:calcite:";
+        final CalciteSchema rootSchema = CalciteSchema.createRootSchema(false);
+        CalciteAssert.addSchema(rootSchema.plus(),
+            CalciteAssert.SchemaSpec.JDBC_FOODMART,
+            CalciteAssert.SchemaSpec.POST,
+            CalciteAssert.SchemaSpec.SCOTT,
+            CalciteAssert.SchemaSpec.SCOTT_WITH_TEMPORAL,
+            CalciteAssert.SchemaSpec.TPCH);
+        try (Connection connection =
+                 factory.newConnection(driver, factory, url, new Properties(),
+                     rootSchema, null)) {
+          consumer.accept(connection);
+          return true;
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
+        }
+      default:
+        return false;
+      }
     }
 
     /** Performs an action with a statement from the dialect's connection,
      * or no-ops if no connection. */
-    public void withStatement(Consumer<Statement> consumer) {
-      withConnection(connection -> {
+    public boolean withStatement(Consumer<Statement> consumer) {
+      return withConnection(connection -> {
         try (Statement statement = connection.createStatement()) {
           consumer.accept(statement);
         } catch (SQLException e) {
