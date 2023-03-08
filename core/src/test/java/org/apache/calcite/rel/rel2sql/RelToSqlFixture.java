@@ -109,6 +109,7 @@ class RelToSqlFixture {
   private final UnaryOperator<SqlToRelConverter.Config> configTransform;
   private final DialectTestConfig testConfig;
   private final RelDataTypeSystem typeSystem;
+  private final UnaryOperator<SqlWriterConfig> writerTransform;
 
   RelToSqlFixture(Token token, CalciteAssert.SchemaSpec schemaSpec, String sql,
       DialectTestConfig.Dialect dialect, SqlParser.Config parserConfig,
@@ -117,6 +118,7 @@ class RelToSqlFixture {
       @Nullable Function<RelBuilder, RelNode> relFn,
       List<Function<RelNode, RelNode>> relTransforms,
       DialectTestConfig testConfig,
+      UnaryOperator<SqlWriterConfig> writerTransform,
       RelDataTypeSystem typeSystem) {
     this.token = requireNonNull(token, "token");
     this.schemaSpec = schemaSpec;
@@ -127,15 +129,23 @@ class RelToSqlFixture {
     this.relTransforms = ImmutableList.copyOf(relTransforms);
     this.parserConfig = parserConfig;
     this.configTransform = configTransform;
-    this.testConfig =
-        requireNonNull(testConfig, "testConfig");
+    this.testConfig = requireNonNull(testConfig, "testConfig");
+    this.writerTransform = requireNonNull(writerTransform, "writerTransform");
     this.typeSystem = requireNonNull(typeSystem, "typeSystem");
+  }
+
+  /** Default writer configuration. */
+  static SqlWriterConfig transformWriter(SqlWriterConfig c) {
+    return c.withAlwaysUseParentheses(false)
+        .withSelectListItemsOnSeparateLines(false)
+        .withUpdateSetListNewline(false)
+        .withIndentation(0);
   }
 
   public RelToSqlFixture schema(CalciteAssert.SchemaSpec schemaSpec) {
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture withSql(String sql) {
@@ -144,7 +154,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture dialect(DialectCode dialectCode) {
@@ -158,7 +168,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture parserConfig(SqlParser.Config parserConfig) {
@@ -167,7 +177,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public final RelToSqlFixture withLibrary(SqlLibrary library) {
@@ -183,7 +193,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet1, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture withConfig(
@@ -193,7 +203,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture relFn(Function<RelBuilder, RelNode> relFn) {
@@ -202,7 +212,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture withExtraTransform(
@@ -211,7 +221,7 @@ class RelToSqlFixture {
         FlatLists.append(relTransforms, relTransform);
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms2,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture withTestConfig(
@@ -219,7 +229,17 @@ class RelToSqlFixture {
     DialectTestConfig testConfig = transform.apply(this.testConfig);
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
+  }
+
+  public RelToSqlFixture withWriterConfig(
+      UnaryOperator<SqlWriterConfig> writerTransform) {
+    if (writerTransform.equals(this.writerTransform)) {
+      return this;
+    }
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+        parserConfig, librarySet, configTransform, relFn, relTransforms,
+        testConfig, writerTransform, typeSystem);
   }
 
   public RelToSqlFixture withTypeSystem(RelDataTypeSystem typeSystem) {
@@ -228,7 +248,7 @@ class RelToSqlFixture {
     }
     return new RelToSqlFixture(token, schemaSpec, sql, dialect,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
-        testConfig, typeSystem);
+        testConfig, writerTransform, typeSystem);
   }
 
   RelToSqlFixture withCalcite() {
@@ -468,24 +488,20 @@ class RelToSqlFixture {
   }
 
   /** Converts a relational expression to SQL. */
-  String toSql(RelNode root) {
+  private String toSql(RelNode root) {
     return toSql(root, CALCITE);
   }
 
   /** Converts a relational expression to SQL in a given dialect. */
-  String toSql(RelNode root,
+  private String toSql(RelNode root,
       DialectCode dialectCode) {
-    return toSql(root, dialectCode, c ->
-        c.withAlwaysUseParentheses(false)
-            .withSelectListItemsOnSeparateLines(false)
-            .withUpdateSetListNewline(false)
-            .withIndentation(0));
+    return toSql(root, dialectCode, writerTransform);
   }
 
   /** Converts a relational expression to SQL in a given dialect
    * and with a particular writer configuration. */
   // TODO: make this method private, and other toSql methods, and change tests
-  String toSql(RelNode root, DialectCode dialectCode,
+  private String toSql(RelNode root, DialectCode dialectCode,
       UnaryOperator<SqlWriterConfig> transform) {
     final DialectTestConfig.Dialect dialect = testConfig.get(dialectCode);
     final SqlDialect sqlDialect = dialect.sqlDialect;

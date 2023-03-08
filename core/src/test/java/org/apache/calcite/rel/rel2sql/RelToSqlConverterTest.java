@@ -100,7 +100,6 @@ import static org.apache.calcite.rel.rel2sql.DialectCode.ORACLE;
 import static org.apache.calcite.rel.rel2sql.DialectCode.POSTGRESQL;
 import static org.apache.calcite.rel.rel2sql.DialectCode.PRESTO;
 import static org.apache.calcite.rel.rel2sql.DialectCode.SYBASE;
-import static org.apache.calcite.test.Matchers.isLinux;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -135,8 +134,8 @@ class RelToSqlConverterTest {
         dialectTestConfig.get(CALCITE);
     return new RelToSqlFixture(id, CalciteAssert.SchemaSpec.JDBC_FOODMART, "?",
         dialect, SqlParser.Config.DEFAULT, ImmutableSet.of(),
-        UnaryOperator.identity(), null, ImmutableList.of(),
-        dialectTestConfig, RelDataTypeSystem.DEFAULT);
+        UnaryOperator.identity(), null, ImmutableList.of(), dialectTestConfig,
+        RelToSqlFixture::transformWriter, RelDataTypeSystem.DEFAULT);
   }
 
   /** Creates a fixture and initializes it with a SQL query. */
@@ -1050,23 +1049,20 @@ class RelToSqlConverterTest {
   }
 
   @Test void testAntiJoin() {
-    final RelBuilder builder = relBuilder();
-    final RelNode root = builder
-        .scan("DEPT")
-        .scan("EMP")
-        .join(JoinRelType.ANTI,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("DEPT")
+            .scan("EMP")
+            .join(JoinRelType.ANTI,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE NOT EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"EMP\".\"DEPTNO\")";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** Test case for
@@ -1109,39 +1105,35 @@ class RelToSqlConverterTest {
   }
 
   @Test void testSemiJoin() {
-    final RelBuilder builder = relBuilder();
-    final RelNode root = builder
-        .scan("DEPT")
-        .scan("EMP")
-        .join(JoinRelType.SEMI,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("DEPT")
+            .scan("EMP")
+            .join(JoinRelType.SEMI,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"EMP\".\"DEPTNO\")";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testSemiJoinFilter() {
-    final RelBuilder builder = relBuilder();
-    final RelNode root = builder
-        .scan("DEPT")
-        .scan("EMP")
-        .filter(
-            builder.call(SqlStdOperatorTable.GREATER_THAN,
-                builder.field("EMPNO"),
-                builder.literal((short) 10)))
-        .join(JoinRelType.SEMI,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("DEPT")
+            .scan("EMP")
+            .filter(
+                b.call(SqlStdOperatorTable.GREATER_THAN,
+                    b.field("EMPNO"),
+                    b.literal((short) 10)))
+            .join(JoinRelType.SEMI,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE EXISTS (SELECT 1\n"
@@ -1149,55 +1141,46 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\"\n"
         + "WHERE \"EMPNO\" > 10) AS \"t\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"t\".\"DEPTNO\")";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testSemiJoinProject() {
-    final RelBuilder builder = relBuilder();
-    final RelNode root = builder
-        .scan("DEPT")
-        .scan("EMP")
-        .project(
-            builder.field(builder.peek().getRowType()
-                .getField("EMPNO", false, false).getIndex()),
-            builder.field(builder.peek().getRowType()
-                .getField("DEPTNO", false, false).getIndex()))
-        .join(JoinRelType.SEMI,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("DEPT")
+            .scan("EMP")
+            .project(
+                b.field(b.peek().getRowType()
+                    .getField("EMPNO", false, false).getIndex()),
+                b.field(b.peek().getRowType()
+                    .getField("DEPTNO", false, false).getIndex()))
+            .join(JoinRelType.SEMI,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM (SELECT \"EMPNO\", \"DEPTNO\"\n"
         + "FROM \"scott\".\"EMP\") AS \"t\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"t\".\"DEPTNO\")";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-5395">[CALCITE-5395]
    * RelToSql converter fails when SELECT * is under a semi-join node</a>. */
   @Test void testUnionUnderSemiJoinNode() {
-    final RelBuilder builder = relBuilder();
-    final RelNode base = builder
-        .scan("EMP")
-        .scan("EMP")
-        .union(true)
-        .build();
-    final RelNode root = builder
-        .push(base)
-        .scan("DEPT")
-        .join(JoinRelType.SEMI,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("EMP")
+            .scan("EMP")
+            .union(true)
+            .scan("DEPT")
+            .join(JoinRelType.SEMI,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
         + "FROM (SELECT *\n"
         + "FROM (SELECT *\n"
@@ -1208,59 +1191,54 @@ class RelToSqlConverterTest {
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE \"t\".\"DEPTNO\" = \"DEPT\".\"DEPTNO\")) AS \"t\"";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   @Test void testSemiNestedJoin() {
-    final RelBuilder builder = relBuilder();
-    final RelNode base = builder
-        .scan("EMP")
-        .scan("EMP")
-        .join(JoinRelType.INNER,
-            builder.equals(builder.field(2, 0, "EMPNO"),
-                builder.field(2, 1, "EMPNO")))
-        .build();
-    final RelNode root = builder
-        .scan("DEPT")
-        .push(base)
-        .join(JoinRelType.SEMI,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> baseFn = b ->
+        b.scan("EMP")
+            .scan("EMP")
+            .join(JoinRelType.INNER,
+                b.equals(b.field(2, 0, "EMPNO"),
+                    b.field(2, 1, "EMPNO")))
+            .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("DEPT")
+            .push(baseFn.apply(b))
+            .join(JoinRelType.SEMI,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPTNO\"\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "WHERE EXISTS (SELECT 1\n"
         + "FROM \"scott\".\"EMP\"\n"
-        + "INNER JOIN \"scott\".\"EMP\" AS \"EMP0\" ON \"EMP\".\"EMPNO\" = \"EMP0\".\"EMPNO\"\n"
+        + "INNER JOIN \"scott\".\"EMP\" AS \"EMP0\""
+        + " ON \"EMP\".\"EMPNO\" = \"EMP0\".\"EMPNO\"\n"
         + "WHERE \"DEPT\".\"DEPTNO\" = \"EMP\".\"DEPTNO\")";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-5394">[CALCITE-5394]
    * RelToSql converter fails when semi-join is under a join node</a>. */
   @Test void testSemiJoinUnderJoin() {
-    final RelBuilder builder = relBuilder();
-    final RelNode base = builder
-        .scan("EMP")
-        .scan("EMP")
-        .join(JoinRelType.SEMI,
-            builder.equals(builder.field(2, 0, "EMPNO"),
-                builder.field(2, 1, "EMPNO")))
-        .build();
-    final RelNode root = builder
-        .scan("DEPT")
-        .push(base)
-        .join(JoinRelType.INNER,
-            builder.equals(builder.field(2, 1, "DEPTNO"),
-                builder.field(2, 0, "DEPTNO")))
-        .project(builder.field("DEPTNO"))
-        .build();
+    final Function<RelBuilder, RelNode> baseFn = b ->
+        b.scan("EMP")
+            .scan("EMP")
+            .join(JoinRelType.SEMI,
+                b.equals(b.field(2, 0, "EMPNO"),
+                    b.field(2, 1, "EMPNO")))
+            .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.scan("DEPT")
+            .push(baseFn.apply(b))
+            .join(JoinRelType.INNER,
+                b.equals(b.field(2, 1, "DEPTNO"),
+                    b.field(2, 0, "DEPTNO")))
+            .project(b.field("DEPTNO"))
+            .build();
     final String expectedSql = "SELECT \"DEPT\".\"DEPTNO\"\n"
         + "FROM \"scott\".\"DEPT\"\n"
         + "INNER JOIN (SELECT *\n"
@@ -1269,9 +1247,7 @@ class RelToSqlConverterTest {
         + "FROM \"scott\".\"EMP\" AS \"EMP0\"\n"
         + "WHERE \"EMP\".\"EMPNO\" = \"EMP0\".\"EMPNO\")) AS \"t\""
         + " ON \"DEPT\".\"DEPTNO\" = \"t\".\"DEPTNO\"";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
-    f.done();
+    relFn(relFn).ok(expectedSql).done();
   }
 
   /** Test case for
@@ -5568,20 +5544,17 @@ class RelToSqlConverterTest {
    * Re-aliasing of VALUES that has column aliases produces wrong SQL in the
    * JDBC adapter</a>. */
   @Test void testValuesReAlias() {
-    final RelBuilder builder = relBuilder();
-    final RelNode root = builder
-        .values(new String[]{ "a", "b" }, 1, "x ", 2, "yy")
-        .values(new String[]{ "a", "b" }, 1, "x ", 2, "yy")
-        .join(JoinRelType.FULL)
-        .project(builder.field("a"))
-        .build();
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.values(new String[]{ "a", "b" }, 1, "x ", 2, "yy")
+            .values(new String[]{ "a", "b" }, 1, "x ", 2, "yy")
+            .join(JoinRelType.FULL)
+            .project(b.field("a"))
+            .build();
     final String expectedSql = "SELECT \"t\".\"a\"\n"
         + "FROM (VALUES (1, 'x '),\n"
         + "(2, 'yy')) AS \"t\" (\"a\", \"b\")\n"
         + "FULL JOIN (VALUES (1, 'x '),\n"
         + "(2, 'yy')) AS \"t0\" (\"a\", \"b\") ON TRUE";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root), isLinux(expectedSql));
 
     // Now with indentation.
     final String expectedSql2 = "SELECT \"t\".\"a\"\n"
@@ -5589,33 +5562,39 @@ class RelToSqlConverterTest {
         + "        (2, 'yy')) AS \"t\" (\"a\", \"b\")\n"
         + "  FULL JOIN (VALUES (1, 'x '),\n"
         + "        (2, 'yy')) AS \"t0\" (\"a\", \"b\") ON TRUE";
-    assertThat(f.toSql(root, CALCITE, c -> c.withIndentation(2)),
-        isLinux(expectedSql2));
-    f.done();
+    relFn(relFn)
+        .ok(expectedSql)
+        .withWriterConfig(c -> c.withIndentation(2)).ok(expectedSql2)
+        .done();
   }
 
   @Test void testTableScanHints() {
-    final RelBuilder builder = relBuilder();
-    builder.getCluster().setHintStrategies(HintStrategyTable.builder()
-        .hintStrategy("PLACEHOLDERS", HintPredicates.TABLE_SCAN)
-        .build());
-    final RelNode root = builder
-        .scan("orders")
-        .hints(RelHint.builder("PLACEHOLDERS")
-            .hintOption("a", "b")
-            .build())
-        .project(builder.field("PRODUCT"))
-        .build();
+    final UnaryOperator<RelBuilder> placeholders = b -> {
+      final HintStrategyTable hintStrategyTable =
+          HintStrategyTable.builder()
+              .hintStrategy("PLACEHOLDERS", HintPredicates.TABLE_SCAN)
+              .build();
+      b.getCluster().setHintStrategies(hintStrategyTable);
+      return b;
+    };
+    final Function<RelBuilder, RelNode> relFn = b ->
+        b.let(placeholders)
+            .scan("scott", "orders") // in the "SCOTT_WITH_TEMPORAL" schema
+            .hints(RelHint.builder("PLACEHOLDERS")
+                .hintOption("a", "b")
+                .build())
+            .project(b.field("PRODUCT"))
+            .build();
 
     final String expectedSql = "SELECT \"PRODUCT\"\n"
         + "FROM \"scott\".\"orders\"";
-    final RelToSqlFixture f = fixture();
-    assertThat(f.toSql(root, CALCITE), isLinux(expectedSql));
     final String expectedSql2 = "SELECT PRODUCT\n"
         + "FROM scott.orders\n"
         + "/*+ PLACEHOLDERS(a = 'b') */";
-    assertThat(f.toSql(root, ANSI), isLinux(expectedSql2));
-    f.done();
+    relFn(relFn)
+        .dialect(CALCITE).ok(expectedSql)
+        .dialect(ANSI).ok(expectedSql2)
+        .done();
   }
 
   /** Test case for
