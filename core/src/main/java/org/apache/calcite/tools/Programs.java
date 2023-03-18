@@ -32,6 +32,7 @@ import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
@@ -39,6 +40,11 @@ import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.calcite.rel.rules.MeasureRules;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -51,6 +57,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
@@ -139,6 +146,12 @@ public class Programs {
   /** Creates a program that executes a sequence of programs. */
   public static Program sequence(Program... programs) {
     return new SequenceProgram(ImmutableList.copyOf(programs));
+  }
+
+  /** Creates a program that executes if a predicate is true. */
+  public static Program conditional(Predicate<RelNode> predicate,
+      Program program) {
+    return new ConditionalProgram(predicate, program);
   }
 
   /** Creates a program that executes a list of rules in a HEP planner. */
@@ -243,6 +256,19 @@ public class Programs {
     return of(builder.build(), true, metadataProvider);
   }
 
+  public static Program measure(RelMetadataProvider metadataProvider) {
+    return conditional(Programs::containsAggM2v,
+        sequence(hep(MeasureRules.rules(), true, metadataProvider),
+            subQuery(metadataProvider),
+            new DecorrelateProgram()));
+  }
+
+  private static boolean containsAggM2v(RelNode rel) {
+    return RelNodes.contains(rel,
+        aggCall -> aggCall.getAggregation().kind == SqlKind.AGG_M2V,
+        RexUtil.find(SqlKind.AGG_M2V));
+  }
+
   @Deprecated
   public static Program getProgram() {
     return (planner, rel, requiredOutputTraits, materializations, lattices) ->
@@ -281,6 +307,7 @@ public class Programs {
 
     return sequence(subQuery(metadataProvider),
         new DecorrelateProgram(),
+        measure(metadataProvider),
         new TrimFieldsProgram(),
         program1,
 
@@ -333,9 +360,36 @@ public class Programs {
         RelTraitSet requiredOutputTraits,
         List<RelOptMaterialization> materializations,
         List<RelOptLattice> lattices) {
+      int i = 0;
       for (Program program : programs) {
         rel = program.run(
             planner, rel, requiredOutputTraits, materializations, lattices);
+
+        System.out.println(
+            RelOptUtil.dumpPlan("pass #" + i++, rel, SqlExplainFormat.TEXT,
+                SqlExplainLevel.DIGEST_ATTRIBUTES));
+      }
+      return rel;
+    }
+  }
+
+  /** Program that runs a sub-program only if a condition is true. */
+  private static class ConditionalProgram implements Program {
+    private final Predicate<RelNode> predicate;
+    private final Program program;
+
+    ConditionalProgram(Predicate<RelNode> predicate, Program program) {
+      this.predicate = predicate;
+      this.program = program;
+    }
+
+    @Override public RelNode run(RelOptPlanner planner, RelNode rel,
+        RelTraitSet requiredOutputTraits,
+        List<RelOptMaterialization> materializations,
+        List<RelOptLattice> lattices) {
+      if (predicate.test(rel)) {
+        return program.run(planner, rel, requiredOutputTraits, materializations,
+            lattices);
       }
       return rel;
     }
