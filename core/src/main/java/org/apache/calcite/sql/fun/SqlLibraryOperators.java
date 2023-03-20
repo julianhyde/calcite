@@ -258,7 +258,8 @@ public abstract class SqlLibraryOperators {
   /** The "SPLIT(string [, delimiter])" function. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlFunction SPLIT =
-      SqlBasicFunction.create("SPLIT", ReturnTypes.ARG0.andThen(SqlTypeTransforms.TO_ARRAY),
+      SqlBasicFunction.create("SPLIT",
+          ReturnTypes.ARG0.andThen(SqlTypeTransforms.TO_ARRAY),
           OperandTypes.STRING_OPTIONAL_STRING,
           SqlFunctionCategory.STRING);
 
