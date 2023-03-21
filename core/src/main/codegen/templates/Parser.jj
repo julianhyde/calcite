@@ -5999,9 +5999,10 @@ SqlNode BuiltinFunctionCall() :
 {
     //~ FUNCTIONS WITH SPECIAL SYNTAX ---------------------------------------
     (
-        (  <CAST> { s = span(); f = SqlStdOperatorTable.CAST; }
-        | <SAFE_CAST> { s = span(); f = SqlStdOperatorTable.SAFE_CAST; }
+        (  <CAST> { f = SqlStdOperatorTable.CAST; }
+        | <SAFE_CAST> { f = SqlStdOperatorTable.SAFE_CAST; }
         )
+        { s = span(); }
         <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <AS>
         (

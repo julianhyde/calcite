@@ -2194,6 +2194,7 @@ public class RexSimplify {
         return rexBuilder.makeCast(e.getType(), intExpr);
       }
     }
+    final boolean safe = e.getKind() == SqlKind.SAFE_CAST;
     switch (operand.getKind()) {
     case LITERAL:
       final RexLiteral literal = (RexLiteral) operand;
@@ -2223,10 +2224,7 @@ public class RexSimplify {
       }
       final List<RexNode> reducedValues = new ArrayList<>();
       final RexNode simplifiedExpr =
-          rexBuilder.makeCast(e.getType(),
-          operand,
-          e.getKind() == SqlKind.SAFE_CAST,
-          e.getKind() == SqlKind.SAFE_CAST);
+          rexBuilder.makeCast(e.getType(), operand, safe, safe);
       executor.reduce(rexBuilder, ImmutableList.of(simplifiedExpr), reducedValues);
       return requireNonNull(
           Iterables.getOnlyElement(reducedValues));
@@ -2234,11 +2232,7 @@ public class RexSimplify {
       if (operand == e.getOperands().get(0)) {
         return e;
       } else {
-        return rexBuilder.makeCast(
-            e.getType(),
-            operand,
-            e.getKind() == SqlKind.SAFE_CAST,
-            e.getKind() == SqlKind.SAFE_CAST);
+        return rexBuilder.makeCast(e.getType(), operand, safe, safe);
       }
     }
   }

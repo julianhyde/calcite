@@ -531,6 +531,7 @@ public class SqlOperatorTest {
       f.checkFails("safe_cast(false as varchar(4))", INVALID_CHAR_MESSAGE, true);
     }
   }
+
   @Test void testCastToString() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);

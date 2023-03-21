@@ -601,99 +601,78 @@ public interface SqlOperatorFixture extends AutoCloseable {
       String value,
       String targetType,
       boolean errorLoc,
-      boolean safeCast) {
-    return getCastOrSafeCastString(value, targetType, errorLoc, safeCast);
-  }
-
-  default String getCastOrSafeCastString(
-      String value,
-      String targetType,
-      boolean errorLoc,
-      boolean safeCast) {
+      boolean safe) {
     if (errorLoc) {
       value = "^" + value + "^";
     }
-    String function;
-    if (safeCast) {
-      function = "safe_cast(";
-    } else {
-      function = "cast(";
-    }
-    return  function + value + " as " + targetType + ")";
+    String function = safe ? "safe_cast" : "cast";
+    return  function + "(" + value + " as " + targetType + ")";
   }
 
 
   default void checkCastToApproxOkay(String value, String targetType,
-      Object expected, boolean safeCast) {
-    checkScalarApprox(getCastString(value, targetType, false, safeCast),
-        getTargetType(targetType, safeCast), expected);
+      Object expected, boolean safe) {
+    checkScalarApprox(getCastString(value, targetType, false, safe),
+        getTargetType(targetType, safe), expected);
   }
 
   default void checkCastToStringOkay(String value, String targetType,
-      String expected, boolean safeCast) {
-    checkString(getCastString(value, targetType, false, safeCast), expected,
-        getTargetType(targetType, safeCast));
+      String expected, boolean safe) {
+    final String castString = getCastString(value, targetType, false, safe);
+    checkString(castString, expected, getTargetType(targetType, safe));
   }
 
   default void checkCastToScalarOkay(String value, String targetType,
-      String expected, boolean safeCast) {
-    checkScalarExact(getCastString(value, targetType, false, safeCast),
-        getTargetType(targetType, safeCast),
-        expected);
+      String expected, boolean safe) {
+    final String castString = getCastString(value, targetType, false, safe);
+    checkScalarExact(castString, getTargetType(targetType, safe), expected);
   }
 
-  default String getTargetType(String targetType, boolean safeCast) {
-    String expectedType_;
-    if (safeCast) {
-      expectedType_ = targetType;
-    } else {
-      expectedType_ = targetType + NON_NULLABLE_SUFFIX;
-    }
-    return expectedType_;
+  default String getTargetType(String targetType, boolean safe) {
+    return safe ? targetType : targetType + NON_NULLABLE_SUFFIX;
   }
 
-  default void checkCastToScalarOkay(String value, String targetType, boolean safeCast) {
-    checkCastToScalarOkay(value, targetType, value, safeCast);
+  default void checkCastToScalarOkay(String value, String targetType,
+      boolean safe) {
+    checkCastToScalarOkay(value, targetType, value, safe);
   }
 
   default void checkCastFails(String value, String targetType,
-      String expectedError, boolean runtime, boolean safeCast) {
-    checkFails(getCastString(value, targetType, !runtime, safeCast), expectedError,
-        runtime);
+      String expectedError, boolean runtime, boolean safe) {
+    final String castString = getCastString(value, targetType, !runtime, safe);
+    checkFails(castString, expectedError, runtime);
   }
 
-  default void checkCastToString(String value, String type,
-      @Nullable String expected, boolean safeCast) {
+  default void checkCastToString(String value, @Nullable String type,
+      @Nullable String expected, boolean safe) {
     String spaces = "     ";
     if (expected == null) {
       expected = value.trim();
     }
     int len = expected.length();
     if (type != null) {
-      value = getCastString(value, type, false, safeCast);
+      value = getCastString(value, type, false, safe);
     }
 
     // currently no exception thrown for truncation
     if (Bug.DT239_FIXED) {
       checkCastFails(value,
           "VARCHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE,
-          true,
-          safeCast);
+          true, safe);
     }
 
-    checkCastToStringOkay(value, "VARCHAR(" + len + ")", expected, safeCast);
-    checkCastToStringOkay(value, "VARCHAR(" + (len + 5) + ")", expected, safeCast);
+    checkCastToStringOkay(value, "VARCHAR(" + len + ")", expected, safe);
+    checkCastToStringOkay(value, "VARCHAR(" + (len + 5) + ")", expected, safe);
 
     // currently no exception thrown for truncation
     if (Bug.DT239_FIXED) {
       checkCastFails(value,
           "CHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE,
-          true,
-          safeCast);
+          true, safe);
     }
 
-    checkCastToStringOkay(value, "CHAR(" + len + ")", expected, safeCast);
+    checkCastToStringOkay(value, "CHAR(" + len + ")", expected, safe);
     checkCastToStringOkay(value, "CHAR(" + (len + 5) + ")",
-        expected + spaces, safeCast);
+        expected + spaces, safe);
   }
 }

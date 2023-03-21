@@ -17,6 +17,7 @@
 package org.apache.calcite.sql.fun;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFamily;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
@@ -44,8 +45,9 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 
 import java.text.Collator;
-import java.util.Arrays;
 import java.util.Objects;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -96,7 +98,7 @@ public class SqlCastFunction extends SqlFunction {
         InferTypes.FIRST_KNOWN,
         null,
         SqlFunctionCategory.SYSTEM);
-    assert Arrays.asList(SqlKind.CAST, SqlKind.SAFE_CAST).contains(kind);
+    checkArgument(kind == SqlKind.CAST || kind == SqlKind.SAFE_CAST, kind);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -104,12 +106,9 @@ public class SqlCastFunction extends SqlFunction {
   @Override public RelDataType inferReturnType(
       SqlOperatorBinding opBinding) {
     assert opBinding.getOperandCount() == 2;
-    RelDataType ret = opBinding.getOperandType(1);
-    RelDataType firstType = opBinding.getOperandType(0);
-    ret =
-        opBinding.getTypeFactory().createTypeWithNullability(
-            ret,
-            firstType.isNullable() || this.kind == SqlKind.SAFE_CAST);
+    final RelDataType ret =
+        deriveType(opBinding.getTypeFactory(), opBinding.getOperandType(0),
+            opBinding.getOperandType(1), kind == SqlKind.SAFE_CAST);
     if (opBinding instanceof SqlCallBinding) {
       SqlCallBinding callBinding = (SqlCallBinding) opBinding;
       SqlNode operand0 = callBinding.operand(0);
@@ -124,6 +123,13 @@ public class SqlCastFunction extends SqlFunction {
       }
     }
     return ret;
+  }
+
+  /** Derives the type of "CAST(expression AS targetType)". */
+  public static RelDataType deriveType(RelDataTypeFactory typeFactory,
+      RelDataType expressionType, RelDataType targetType, boolean safe) {
+    return typeFactory.createTypeWithNullability(targetType,
+        expressionType.isNullable() || safe);
   }
 
   @Override public String getSignatureTemplate(final int operandsCount) {
