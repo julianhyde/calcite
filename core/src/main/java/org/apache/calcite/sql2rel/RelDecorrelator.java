@@ -1725,7 +1725,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       caseOperands[1] =
           lit == null
               ? rexBuilder.makeNullLiteral(rexNode.getType())
-              : rexBuilder.makeCast(rexNode.getType(), lit, false, false);
+              : rexBuilder.makeCast(rexNode.getType(), lit);
 
       // ELSE cast (newInput AS newInputTypeNullable) END
       caseOperands[2] =
@@ -1733,7 +1733,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
               typeFactory.createTypeWithNullability(
                   rexNode.getType(),
                   true),
-              rexNode, false, false);
+              rexNode);
 
       return rexBuilder.makeCall(
           SqlStdOperatorTable.CASE,
@@ -1932,7 +1932,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
       final RexNode oldProjectExp = projExprs.get(0);
       final RexNode newProjectExp = singleAggType.equals(oldProjectExp.getType())
               ? oldProjectExp
-              : relBuilder.getRexBuilder().makeCast(singleAggType, oldProjectExp, false, false);
+              : relBuilder.getRexBuilder().makeCast(singleAggType, oldProjectExp);
       relBuilder.push(aggregate).project(newProjectExp);
       call.transformTo(relBuilder.build());
     }
@@ -2536,7 +2536,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
               cluster.getTypeFactory().createTypeWithNullability(
                   newAggOutputProjects.getType(),
                   true),
-              newAggOutputProjects, false, false));
+              newAggOutputProjects));
 
       builder.project(newAggOutputProjectList);
       call.transformTo(builder.build());

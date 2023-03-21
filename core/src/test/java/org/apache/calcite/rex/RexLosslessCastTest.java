@@ -46,87 +46,85 @@ class RexLosslessCastTest extends RexProgramTestBase {
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                tinyIntType, rexBuilder.makeInputRef(smallIntType, 0),
-                false, false)), is(false));
+                tinyIntType, rexBuilder.makeInputRef(smallIntType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                smallIntType, rexBuilder.makeInputRef(intType, 0), false, false)), is(false));
+                smallIntType, rexBuilder.makeInputRef(intType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                intType, rexBuilder.makeInputRef(bigIntType, 0), false, false)), is(false));
+                intType, rexBuilder.makeInputRef(bigIntType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                bigIntType, rexBuilder.makeInputRef(floatType, 0), false, false)), is(false));
+                bigIntType, rexBuilder.makeInputRef(floatType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                booleanType, rexBuilder.makeInputRef(bigIntType, 0), false, false)), is(false));
+                booleanType, rexBuilder.makeInputRef(bigIntType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                intType, rexBuilder.makeInputRef(charType5, 0), false, false)), is(false));
+                intType, rexBuilder.makeInputRef(charType5, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                intType, rexBuilder.makeInputRef(varCharType10, 0), false, false)), is(false));
+                intType, rexBuilder.makeInputRef(varCharType10, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                varCharType10, rexBuilder.makeInputRef(varCharType11, 0),
-                false, false)), is(false));
+                varCharType10, rexBuilder.makeInputRef(varCharType11, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                charType5, rexBuilder.makeInputRef(bigIntType, 0), false, false)), is(false));
+                charType5, rexBuilder.makeInputRef(bigIntType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                charType5, rexBuilder.makeInputRef(smallIntType, 0), false, false)), is(false));
+                charType5, rexBuilder.makeInputRef(smallIntType, 0))), is(false));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                varCharType10, rexBuilder.makeInputRef(intType, 0), false, false)), is(false));
+                varCharType10, rexBuilder.makeInputRef(intType, 0))), is(false));
 
     // Positive
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                smallIntType, rexBuilder.makeInputRef(tinyIntType, 0), false, false)), is(true));
+                smallIntType, rexBuilder.makeInputRef(tinyIntType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                intType, rexBuilder.makeInputRef(smallIntType, 0), false, false)), is(true));
+                intType, rexBuilder.makeInputRef(smallIntType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                bigIntType, rexBuilder.makeInputRef(intType, 0), false, false)), is(true));
+                bigIntType, rexBuilder.makeInputRef(intType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                intType, rexBuilder.makeInputRef(intType, 0), false, false)), is(true));
+                intType, rexBuilder.makeInputRef(intType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                charType6, rexBuilder.makeInputRef(smallIntType, 0), false, false)), is(true));
+                charType6, rexBuilder.makeInputRef(smallIntType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                varCharType10, rexBuilder.makeInputRef(smallIntType, 0), false, false)), is(true));
+                varCharType10, rexBuilder.makeInputRef(smallIntType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                varCharType11, rexBuilder.makeInputRef(intType, 0), false, false)), is(true));
+                varCharType11, rexBuilder.makeInputRef(intType, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                varCharType11, rexBuilder.makeInputRef(charType6, 0), false, false)), is(true));
+                varCharType11, rexBuilder.makeInputRef(charType6, 0))), is(true));
     assertThat(
         RexUtil.isLosslessCast(
             rexBuilder.makeCast(
-                varCharType11, rexBuilder.makeInputRef(varCharType10, 0), false, false)), is(true));
+                varCharType11, rexBuilder.makeInputRef(varCharType10, 0))), is(true));
   }
 
   @Test void removeRedundantCast() {

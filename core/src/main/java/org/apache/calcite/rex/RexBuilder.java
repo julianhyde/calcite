@@ -525,18 +525,13 @@ public class RexBuilder {
    * @param exp  Expression being cast
    * @return Call to CAST operator
    */
-  @Deprecated
   public RexNode makeCast(
       RelDataType type,
       RexNode exp) {
     return makeCast(type, exp, false, false);
   }
 
-  /**
-   * Creates a call to the CAST operator, expanding if possible, and optionally
-   * also preserving nullability.
-   */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public RexNode makeCast(
       RelDataType type,
       RexNode exp,
@@ -545,7 +540,7 @@ public class RexBuilder {
   }
 
   /**
-   * Creates a call to the CAST operator, expanding if possible, optionally
+   * Creates a call to the CAST operator, expanding if possible, and optionally
    * also preserving nullability, and optionally in safe mode.
    *
    * <p>Tries to expand the cast, and therefore the result may be something
@@ -556,7 +551,7 @@ public class RexBuilder {
    * @param exp  Expression being cast
    * @param matchNullability Whether to ensure the result has the same
    * nullability as {@code type}
-   * @param safe Whether this is a regular or safe cast
+   * @param safe Whether to return NULL if cast fails
    * @return Call to CAST operator
    */
   public RexNode makeCast(
@@ -807,20 +802,9 @@ public class RexBuilder {
         matchNullability(bigintType, node), node, makeLiteral(false));
   }
 
-  /**
-   * Creates a call to the CAST operator.
-   *
-   * @param type Type to cast to
-   * @param exp  Expression being cast
-   * @return Call to CAST operator
-   */
-  public RexNode makeAbstractCast(
-      RelDataType type,
-      RexNode exp) {
-    return new RexCall(
-        type,
-        SqlStdOperatorTable.CAST,
-        ImmutableList.of(exp));
+  @Deprecated // to be removed before 2.0
+  public RexNode makeAbstractCast(RelDataType type, RexNode exp) {
+    return makeAbstractCast(type, exp, false);
   }
 
   /**
@@ -828,21 +812,14 @@ public class RexBuilder {
    *
    * @param type Type to cast to
    * @param exp  Expression being cast
-   * @param safe Whether this is a regular or safe cast
+   * @param safe Whether to return NULL if cast fails
    * @return Call to CAST operator
    */
-  public RexNode makeAbstractCast(
-      RelDataType type,
-      RexNode exp,
-      boolean safe) {
-    SqlOperator operator;
-    if (safe) {
-      operator = SqlStdOperatorTable.SAFE_CAST;
-    } else {
-      operator = SqlStdOperatorTable.CAST;
-    }
-    return new RexCall(
-        type, operator, ImmutableList.of(exp));
+  public RexNode makeAbstractCast(RelDataType type, RexNode exp, boolean safe) {
+    SqlOperator operator =
+        safe ? SqlStdOperatorTable.SAFE_CAST
+            : SqlStdOperatorTable.CAST;
+    return new RexCall(type, operator, ImmutableList.of(exp));
   }
 
   /**
@@ -880,7 +857,7 @@ public class RexBuilder {
     }
     final RelDataType notNullType =
         typeFactory.createTypeWithNullability(type, false);
-    return makeAbstractCast(notNullType, exp);
+    return makeAbstractCast(notNullType, exp, false);
   }
 
   /**
@@ -1622,7 +1599,7 @@ public class RexBuilder {
           typeFactory.createTypeWithNullability(type, false);
       if (allowCast) {
         RexNode literalNotNull = makeLiteral(value, typeNotNull, allowCast);
-        return makeAbstractCast(type, literalNotNull);
+        return makeAbstractCast(type, literalNotNull, false);
       }
       type = typeNotNull;
     }

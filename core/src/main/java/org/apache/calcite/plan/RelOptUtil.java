@@ -1383,12 +1383,12 @@ public abstract class RelOptUtil {
 
             if (leftKeyType != targetKeyType) {
               leftKey =
-                  rexBuilder.makeCast(targetKeyType, leftKey, false, false);
+                  rexBuilder.makeCast(targetKeyType, leftKey);
             }
 
             if (rightKeyType != targetKeyType) {
               rightKey =
-                  rexBuilder.makeCast(targetKeyType, rightKey, false, false);
+                  rexBuilder.makeCast(targetKeyType, rightKey);
             }
           }
         }

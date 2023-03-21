@@ -444,7 +444,7 @@ public class RexSimplify {
       // return the other operand.
       RexNode other = e.getOperands().get((zeroIndex + 1) % 2);
       return other.getType().equals(e.getType())
-          ? other : rexBuilder.makeCast(e.getType(), other, false, false);
+          ? other : rexBuilder.makeCast(e.getType(), other);
     }
     return simplifyGenericNode(e);
   }
@@ -454,7 +454,7 @@ public class RexSimplify {
     if (zeroIndex == 1) {
       RexNode leftOperand = e.getOperands().get(0);
       return leftOperand.getType().equals(e.getType())
-          ? leftOperand : rexBuilder.makeCast(e.getType(), leftOperand, false, false);
+          ? leftOperand : rexBuilder.makeCast(e.getType(), leftOperand);
     }
     return simplifyGenericNode(e);
   }
@@ -465,7 +465,7 @@ public class RexSimplify {
       // return the other operand.
       RexNode other = e.getOperands().get((oneIndex + 1) % 2);
       return other.getType().equals(e.getType())
-          ? other : rexBuilder.makeCast(e.getType(), other, false, false);
+          ? other : rexBuilder.makeCast(e.getType(), other);
     }
     return simplifyGenericNode(e);
   }
@@ -475,7 +475,7 @@ public class RexSimplify {
     if (oneIndex == 1) {
       RexNode leftOperand = e.getOperands().get(0);
       return leftOperand.getType().equals(e.getType())
-          ? leftOperand : rexBuilder.makeCast(e.getType(), leftOperand, false, false);
+          ? leftOperand : rexBuilder.makeCast(e.getType(), leftOperand);
     }
     return simplifyGenericNode(e);
   }
@@ -1198,7 +1198,7 @@ public class RexSimplify {
       if (sameTypeOrNarrowsNullability(caseType, value.getType())) {
         return value;
       } else {
-        return rexBuilder.makeAbstractCast(caseType, value);
+        return rexBuilder.makeAbstractCast(caseType, value, false);
       }
     }
 
@@ -1213,7 +1213,7 @@ public class RexSimplify {
           if (!simplified.getType().isNullable()) {
             return simplified;
           } else {
-            return rexBuilder.makeCast(call.getType(), simplified, false, false);
+            return rexBuilder.makeCast(call.getType(), simplified);
           }
         }
       }
@@ -1418,7 +1418,7 @@ public class RexSimplify {
       final RexNode cond = isTrue(branch.cond);
       final RexNode value;
       if (!branchType.equals(branch.value.getType())) {
-        value = rexBuilder.makeAbstractCast(branchType, branch.value);
+        value = rexBuilder.makeAbstractCast(branchType, branch.value, false);
       } else {
         value = branch.value;
       }
@@ -2191,7 +2191,7 @@ public class RexSimplify {
           || operand.getType().getSqlTypeName() != SqlTypeName.CHAR)
           && SqlTypeCoercionRule.instance()
           .canApplyFrom(intExpr.getType().getSqlTypeName(), e.getType().getSqlTypeName())) {
-        return rexBuilder.makeCast(e.getType(), intExpr, false, false);
+        return rexBuilder.makeCast(e.getType(), intExpr);
       }
     }
     switch (operand.getKind()) {
@@ -2204,7 +2204,7 @@ public class RexSimplify {
       // makeCast and canRemoveCastFromLiteral have the same logic, so we are
       // sure to be able to remove the cast.
       if (rexBuilder.canRemoveCastFromLiteral(e.getType(), value, typeName)) {
-        return rexBuilder.makeCast(e.getType(), operand, false, false);
+        return rexBuilder.makeCast(e.getType(), operand);
       }
 
       // Next, try to convert the value to a different type,

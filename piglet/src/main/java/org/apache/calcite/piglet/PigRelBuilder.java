@@ -358,8 +358,7 @@ public class PigRelBuilder extends RelBuilder {
         } else {
           // Different types, CAST is required
           projectionExprs.add(
-              getRexBuilder().makeCast(outputField.getType(),
-              fieldProject, false, false));
+              getRexBuilder().makeCast(outputField.getType(), fieldProject));
         }
       } else {
         final RelDataType columnType = outputField.getType();

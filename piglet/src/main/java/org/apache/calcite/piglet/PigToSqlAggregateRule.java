@@ -311,7 +311,7 @@ public class PigToSqlAggregateRule
       } else {
         pigCallToNewProjections.put(pigAgg,
             relBuilder.getRexBuilder().makeCast(oldFieldType,
-                relBuilder.field(colIndex), false, false));
+                relBuilder.field(colIndex)));
       }
     }
     // Now build all expression for the new top project

@@ -2368,7 +2368,7 @@ class RexProgramTest extends RexProgramTestBase {
         if (SqlTypeAssignmentRule.instance()
             .canApplyFrom(toType.getSqlTypeName(), fromType.getSqlTypeName())) {
           for (RexLiteral literal : map.get(fromType.getSqlTypeName())) {
-            final RexNode cast = rexBuilder.makeCast(toType, literal, false, false);
+            final RexNode cast = rexBuilder.makeCast(toType, literal);
             if (cast instanceof RexLiteral) {
               assertThat(cast.getType(), is(toType));
               continue; // makeCast already simplified

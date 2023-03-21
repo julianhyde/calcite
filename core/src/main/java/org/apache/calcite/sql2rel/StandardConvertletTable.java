@@ -165,7 +165,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
               (RexCall) StandardConvertletTable.this.convertCall(cx, call);
           if (e.getOperands().size() == 1
               && SqlTypeUtil.isString(e.getOperands().get(0).getType())) {
-            return cx.getRexBuilder().makeCast(e.type, e.getOperands().get(0), false, false);
+            return cx.getRexBuilder().makeCast(e.type, e.getOperands().get(0));
           }
           return e;
         });
@@ -367,11 +367,11 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             rexBuilder.makeCast(
                 cx.getTypeFactory()
                     .createTypeWithNullability(type, operand0.getType().isNullable()),
-                operand0, false, false),
+                operand0),
             rexBuilder.makeCast(
                 cx.getTypeFactory()
                     .createTypeWithNullability(type, operand1.getType().isNullable()),
-                operand1, false, false)));
+                operand1)));
   }
 
   /** Converts a call to the DECODE function. */
@@ -1381,7 +1381,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     if (e.getType() == type) {
       return e;
     }
-    return rexBuilder.makeCast(type, e, false, false);
+    return rexBuilder.makeCast(type, e);
   }
 
   /**
@@ -1957,7 +1957,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         // If the TIMESTAMPADD call has type TIMESTAMP and op2 has type DATE
         // (which can happen for sub-day time frames such as HOUR), cast op2 to
         // TIMESTAMP.
-        final RexNode op2b = rexBuilder.makeCast(type, op2, false, false);
+        final RexNode op2b = rexBuilder.makeCast(type, op2);
         return rexBuilder.makeCall(type, SqlStdOperatorTable.TIMESTAMP_ADD,
             ImmutableList.of(timeFrameName, op1, op2b));
       }
@@ -2142,7 +2142,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
           typeFactory.createTypeWithNullability(
               typeFactory.createSqlType(sqlTypeName),
               SqlTypeUtil.containsNullable(call2.getType()));
-      RexNode e = rexBuilder.makeCast(intType, call2, false, false);
+      RexNode e = rexBuilder.makeCast(intType, call2);
       return rexBuilder.multiplyDivide(e, multiplier, divider);
     }
   }
