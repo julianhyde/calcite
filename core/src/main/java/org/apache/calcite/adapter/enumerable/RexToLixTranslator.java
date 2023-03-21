@@ -264,15 +264,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   /**
    * Used for safe operators that return null if an exception is thrown.
    */
-  private Expression expressionHandlingSafe(Expression body, boolean safe) {
-    if (safe) {
-      return safeExpression(body);
-    } else {
-      return body;
-    }
+  private static Expression expressionHandlingSafe(Expression body, boolean safe) {
+    return safe ? safeExpression(body) : body;
   }
 
-  private Expression safeExpression(Expression body) {
+  private static Expression safeExpression(Expression body) {
     final ParameterExpression e_ =
         Expressions.parameter(Exception.class, new BlockBuilder().newName("e"));
 
@@ -588,8 +584,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return operand;
       }
 
-      // This position is unreachable, but we need to appease checkstyle:
-      // fall through
+      // Checkstyle thinks that the previous branch falls through, but it
+      // is mistaken.
+      // CHECKSTYLE: IGNORE 1
     case TIMESTAMP:
       int targetScale = targetType.getScale();
       if (targetScale == RelDataType.SCALE_NOT_SPECIFIED) {
