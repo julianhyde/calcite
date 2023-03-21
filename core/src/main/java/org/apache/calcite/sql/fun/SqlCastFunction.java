@@ -36,7 +36,9 @@ import org.apache.calcite.sql.type.SqlOperandCountRanges;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
@@ -171,6 +173,15 @@ public class SqlCastFunction extends SqlFunction {
       return false;
     }
     return true;
+  }
+
+  @Override public void validateCall(SqlCall call, SqlValidator validator,
+      SqlValidatorScope scope, SqlValidatorScope operandScope) {
+    super.validateCall(call, validator, scope, operandScope);
+    if (kind == SqlKind.SAFE_CAST
+        && !((SqlValidatorImpl) validator).getConformance().isSafeCastAllowed()) {
+      throw validator.newValidationError(call, RESOURCE.safeCastNotAllowed());
+    }
   }
 
   @Override public SqlSyntax getSyntax() {

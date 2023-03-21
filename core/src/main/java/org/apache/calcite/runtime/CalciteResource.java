@@ -37,7 +37,7 @@ public interface CalciteResource {
   ExInst<CalciteException> bangEqualNotAllowed();
 
   @BaseMessage("SAFE_CAST is not allowed under the current SQL conformance level")
-  ExInst<CalciteException> safeCastNotAllowed();
+  ExInst<SqlValidatorException> safeCastNotAllowed();
 
   @BaseMessage("Percent remainder ''%'' is not allowed under the current SQL conformance level")
   ExInst<CalciteException> percentRemainderNotAllowed();
