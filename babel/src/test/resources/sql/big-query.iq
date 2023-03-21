@@ -672,6 +672,29 @@ SELECT SPLIT("") as result;
 
 !ok
 
+WITH letters AS
+  (SELECT x'' as letter_group
+  UNION ALL
+  SELECT x'41' as letter_group
+  UNION ALL
+  SELECT x'42ff43ff44' as letter_group)
+SELECT SPLIT(letter_group, x'ff') as example
+FROM letters;
++-----------+
+| example   |
++-----------+
+| []        |
+| [A]       |
+| [B, C, D] |
++-----------+
+(3 rows)
+
+!ok
+
+SELECT SPLIT(x'abc2') as result;
+Call to function 'SPLIT' with operand of type 'BINARY(2)' requires delimiter argument
+!error
+
 #####################################################################
 # STRING
 #

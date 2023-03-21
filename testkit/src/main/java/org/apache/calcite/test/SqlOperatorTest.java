@@ -6085,6 +6085,19 @@ public class SqlOperatorTest {
         "CHAR(0) NOT NULL ARRAY NOT NULL");
     f.checkNull("SPLIT(null)");
     f.checkNull("SPLIT('hello', null)");
+
+    // In ASCII, x'41' = 'A', x'42' = 'B', x'43' = 'C'
+    f.checkScalar("SPLIT(x'414243', x'ff')", "[ABC]",
+        "BINARY(3) NOT NULL ARRAY NOT NULL");
+    f.checkScalar("SPLIT(x'414243', x'41')", "[, BC]",
+        "BINARY(3) NOT NULL ARRAY NOT NULL");
+    f.checkScalar("SPLIT(x'414243', x'42')", "[A, C]",
+        "BINARY(3) NOT NULL ARRAY NOT NULL");
+    f.checkScalar("SPLIT(x'414243', x'43')", "[AB, ]",
+        "BINARY(3) NOT NULL ARRAY NOT NULL");
+    f.checkFails("^SPLIT(x'aabbcc')^",
+        "Call to function 'SPLIT' with argument of type 'BINARY\\(3\\)' "
+            + "requires extra delimiter argument", false);
   }
 
   /** Tests the {@code SUBSTRING} operator. Many test cases that used to be
