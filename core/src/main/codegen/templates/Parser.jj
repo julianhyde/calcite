@@ -6000,7 +6000,7 @@ SqlNode BuiltinFunctionCall() :
     //~ FUNCTIONS WITH SPECIAL SYNTAX ---------------------------------------
     (
         (  <CAST> { f = SqlStdOperatorTable.CAST; }
-        | <SAFE_CAST> { f = SqlStdOperatorTable.SAFE_CAST; }
+        | <SAFE_CAST> { f = SqlLibraryOperators.SAFE_CAST; }
         )
         { s = span(); }
         <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
