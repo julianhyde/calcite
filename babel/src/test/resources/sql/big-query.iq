@@ -672,6 +672,17 @@ SELECT SPLIT("") as result;
 
 !ok
 
+# Careful to treat the delimiter as a string, not a regular expression
+SELECT SPLIT("abc.de.", ".") as result;
++-------------+
+| result      |
++-------------+
+| [abc, de, ] |
++-------------+
+(1 row)
+
+!ok
+
 WITH letters AS
   (SELECT x'' as letter_group
   UNION ALL
@@ -692,7 +703,7 @@ FROM letters;
 !ok
 
 SELECT SPLIT(x'abc2') as result;
-Call to function 'SPLIT' with operand of type 'BINARY(2)' requires delimiter argument
+Call to function 'SPLIT' with argument of type 'BINARY(2)' requires extra delimiter argument
 !error
 
 #####################################################################
