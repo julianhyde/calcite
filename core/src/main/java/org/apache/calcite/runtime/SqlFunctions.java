@@ -472,12 +472,12 @@ public class SqlFunctions {
     if (delimiter.isEmpty()) {
       return ImmutableList.of(s); // prevent mischief
     }
-    final List<String> list = new ArrayList<>();
+    final ImmutableList.Builder<String> list = ImmutableList.builder();
     for (int i = 0;;) {
       int j = s.indexOf(delimiter, i);
       if (j < 0) {
         list.add(s.substring(i));
-        return list;
+        return list.build();
       }
       list.add(s.substring(i, j));
       i = j + delimiter.length();
@@ -497,12 +497,12 @@ public class SqlFunctions {
     if (delimiter.length() == 0) {
       return ImmutableList.of(s); // prevent mischief
     }
-    final List<ByteString> list = new ArrayList<>();
+    final ImmutableList.Builder<ByteString> list = ImmutableList.builder();
     for (int i = 0;;) {
       int j = s.indexOf(delimiter, i);
       if (j < 0) {
         list.add(s.substring(i));
-        return list;
+        return list.build();
       }
       list.add(s.substring(i, j));
       i = j + delimiter.length();
