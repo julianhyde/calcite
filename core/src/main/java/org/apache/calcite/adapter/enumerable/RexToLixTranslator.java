@@ -537,7 +537,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
   }
 
-  private Expression checkExpressionPadTruncate(
+  private static Expression checkExpressionPadTruncate(
       Expression operand,
       RelDataType sourceType,
       RelDataType targetType) {
@@ -584,7 +584,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return operand;
       }
 
-      // Checkstyle thinks that the previous branch falls through, but it
+      // Checkstyle thinks that the previous branch should have a break, but it
       // is mistaken.
       // CHECKSTYLE: IGNORE 1
     case TIMESTAMP:
