@@ -2307,14 +2307,19 @@ public class RelBuilder {
   /** Creates an {@link Aggregate} with an array of
    * {@link AggregateCall}s. */
   public RelBuilder aggregate(GroupKey groupKey, List<AggregateCall> aggregateCalls) {
-    return aggregate(groupKey,
-        aggregateCalls.stream()
-            .map(aggregateCall ->
-                new AggCallImpl2(aggregateCall,
-                    aggregateCall.getArgList().stream()
-                        .map(this::field)
-                        .collect(Util.toImmutableList())))
-            .collect(Collectors.toList()));
+    final List<AggCall> aggCalls =
+        aggregateCalls.isEmpty()
+            && groupKey.groupKeyCount() == 0
+            && config.preventEmptyFieldList()
+            ? ImmutableList.of(literalAgg(true).as("dummy"))
+            : aggregateCalls.stream()
+                .map(aggregateCall ->
+                    new AggCallImpl2(aggregateCall,
+                        aggregateCall.getArgList().stream()
+                            .map(this::field)
+                            .collect(Util.toImmutableList())))
+                .collect(Collectors.toList());
+    return aggregate(groupKey, aggCalls);
   }
 
   /** Creates an {@link Aggregate} with multiple calls. */
@@ -2329,9 +2334,15 @@ public class RelBuilder {
       final RelMetadataQuery mq = peek().getCluster().getMetadataQuery();
       if (groupSet.isEmpty()) {
         final Double minRowCount = mq.getMinRowCount(peek());
-        if (minRowCount == null || minRowCount < 1D) {
+        if (minRowCount == null || minRowCount < 1d) {
           // We can't remove "GROUP BY ()" if there's a chance the rel could be
           // empty.
+
+          // We are about to create an Aggregate with zero fields.
+          // Add a dummy AggCall so that doesn't happen.
+          if (config.preventEmptyFieldList()) {
+            aggCalls = ImmutableList.of(literalAgg(true).as("dummy"));
+          }
           break label;
         }
       }
@@ -4731,6 +4742,15 @@ public class RelBuilder {
 
     /** Sets {@link #pruneInputOfAggregate}. */
     Config withPruneInputOfAggregate(boolean pruneInputOfAggregate);
+
+    /** Whether to ensure that relational operators always have at least one
+     * column. */
+    @Value.Default default boolean preventEmptyFieldList() {
+      return true;
+    }
+
+    /** Sets {@link #preventEmptyFieldList()}. */
+    Config withPreventEmptyFieldList(boolean preventEmptyFieldList);
 
     /** Whether to push down join conditions; default false (but
      * {@link SqlToRelConverter#config()} by default sets this to true). */

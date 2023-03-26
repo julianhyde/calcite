@@ -1938,19 +1938,35 @@ public class RelBuilderTest {
             .project()
             .distinct()
             .build();
-    final String expected = "LogicalAggregate(group=[{}])\n"
+    final String expected = ""
+        + "LogicalAggregate(group=[{}], dummy=[LITERAL_AGG(true)])\n"
         + "  LogicalFilter(condition=[IS NULL($6)])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n";
-    assertThat(f.apply(createBuilder()), hasTree(expected));
+    final RelNode r = f.apply(createBuilder());
+    assertThat(r, hasTree(expected));
 
-    // now without pruning
+    // Now without adding extra fields
+    final String expected2 = ""
+        + "LogicalAggregate(group=[{}])\n"
+        + "  LogicalFilter(condition=[IS NULL($6)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    final RelNode r2 =
+        f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)));
+    assertThat(r2, hasTree(expected2));
+
+    // Now without pruning
     // (The empty LogicalProject is dubious, but it's what we've always done)
-    final String expected2 = "LogicalAggregate(group=[{}])\n"
+    final String expected3 = ""
+        + "LogicalAggregate(group=[{}])\n"
         + "  LogicalProject\n"
         + "    LogicalFilter(condition=[IS NULL($6)])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n";
-    assertThat(f.apply(createBuilder(c -> c.withPruneInputOfAggregate(false))),
-        hasTree(expected2));
+    final RelNode r3 =
+        f.apply(
+            createBuilder(c ->
+                c.withPruneInputOfAggregate(false)
+                    .withPreventEmptyFieldList(false)));
+    assertThat(r3, hasTree(expected3));
   }
 
   @Test void testUnion() {
