@@ -120,7 +120,6 @@ import java.util.stream.Collectors;
 
 import static org.apache.calcite.test.Matchers.hasFieldNames;
 import static org.apache.calcite.test.Matchers.hasHints;
-import static org.apache.calcite.test.Matchers.hasRowType;
 import static org.apache.calcite.test.Matchers.hasTree;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -2961,17 +2960,17 @@ public class RelBuilderTest {
     Function<RelBuilder, RelNode> f = b ->
         b.scan("EMP")
             .aggregateRex(b.groupKey(b.field("DEPTNO")),
-                ImmutableList.of(b.field("DEPTNO"),
-                    b.alias(
-                        b.call(SqlStdOperatorTable.PLUS, b.field("DEPTNO"),
-                            b.literal(2)),
-                        "d2"),
-                    b.alias(
-                        b.call(SqlStdOperatorTable.PLUS, b.literal(3),
-                            b.call(SqlStdOperatorTable.SUM,
-                                b.call(SqlStdOperatorTable.PLUS, b.literal(4),
-                                    b.field("SAL")))),
-                        "s")))
+                b.field("DEPTNO"),
+                b.alias(
+                    b.call(SqlStdOperatorTable.PLUS, b.field("DEPTNO"),
+                        b.literal(2)),
+                    "d2"),
+                b.alias(
+                    b.call(SqlStdOperatorTable.PLUS, b.literal(3),
+                        b.call(SqlStdOperatorTable.SUM,
+                            b.call(SqlStdOperatorTable.PLUS, b.literal(4),
+                                b.field("SAL")))),
+                    "s"))
             .build();
     final String expected = ""
         + "LogicalProject(DEPTNO=[$0], d2=[+($0, 2)], s=[+(3, $1)])\n"
@@ -2983,6 +2982,45 @@ public class RelBuilderTest {
     final RelNode r = f.apply(createBuilder());
     assertThat(r, hasTree(expected));
     assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
+  }
+
+  /** Tests {@link RelBuilder#aggregateRex} with a literal expression;
+   * it needs to be evaluated post aggregation. */
+  @Test void testAggregateExtended2() {
+    // SELECT 2 AS two
+    // FROM emp
+    // GROUP BY ()
+    BiFunction<RelBuilder, Boolean, RelNode> f = (b, projectKey) ->
+        b.scan("EMP")
+            .aggregateRex(b.groupKey(), projectKey,
+                ImmutableList.of(
+                    b.alias(b.literal(2), "two")))
+            .build();
+    final String expected = ""
+        + "LogicalProject(two=[2])\n"
+        + "  LogicalAggregate(group=[{}], dummy=[LITERAL_AGG(true)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    final String expectedRowType =
+        "RecordType(INTEGER NOT NULL two) NOT NULL";
+    final RelNode r = f.apply(createBuilder(), false);
+    assertThat(r, hasTree(expected));
+    assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
+
+    // As above, with projectKey = true
+    final RelNode r2 = f.apply(createBuilder(), true);
+    assertThat(r2, hasTree(expected));
+    assertThat(r2.getRowType().getFullTypeString(), is(expectedRowType));
+
+    // As above, disabling extra fields
+    final String expected3 = ""
+        + "LogicalProject(two=[2])\n"
+        + "  LogicalAggregate(group=[{}])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    final RelNode r3 =
+        f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)),
+            false);
+    assertThat(r3, hasTree(expected3));
+    assertThat(r3.getRowType().getFullTypeString(), is(expectedRowType));
   }
 
   /** Tests that a projection retains field names after a join. */
