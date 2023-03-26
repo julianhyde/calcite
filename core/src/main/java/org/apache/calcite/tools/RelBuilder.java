@@ -2262,14 +2262,19 @@ public class RelBuilder {
   /** Creates an {@link Aggregate} with an array of
    * {@link AggregateCall}s. */
   public RelBuilder aggregate(GroupKey groupKey, List<AggregateCall> aggregateCalls) {
-    return aggregate(groupKey,
-        aggregateCalls.stream()
-            .map(aggregateCall ->
-                new AggCallImpl2(aggregateCall,
-                    aggregateCall.getArgList().stream()
-                        .map(this::field)
-                        .collect(Util.toImmutableList())))
-            .collect(Collectors.toList()));
+    final List<AggCall> aggCalls =
+        aggregateCalls.isEmpty()
+            && groupKey.groupKeyCount() == 0
+            && config.preventEmptyFieldList()
+            ? ImmutableList.of(count())
+            : aggregateCalls.stream()
+                .map(aggregateCall ->
+                    new AggCallImpl2(aggregateCall,
+                        aggregateCall.getArgList().stream()
+                            .map(this::field)
+                            .collect(Util.toImmutableList())))
+                .collect(Collectors.toList());
+    return aggregate(groupKey, aggCalls);
   }
 
   /** Creates an {@link Aggregate} with multiple calls. */
@@ -2287,6 +2292,12 @@ public class RelBuilder {
         if (minRowCount == null || minRowCount < 1D) {
           // We can't remove "GROUP BY ()" if there's a chance the rel could be
           // empty.
+
+          // We are about to create an Aggregate with zero fields.
+          // Add a dummy AggCall so that doesn't happen.
+          if (config.preventEmptyFieldList()) {
+            aggCalls = ImmutableList.of(count());
+          }
           break label;
         }
       }
@@ -2436,8 +2447,8 @@ public class RelBuilder {
   /** Creates an {@link Aggregate} with a set of hybrid expressions represented
    * as {@link RexNode}. */
   public RelBuilder aggregateRex(GroupKey groupKey,
-      Iterable<? extends RexNode> nodes) {
-    return aggregateRex(groupKey, false, nodes);
+      RexNode... nodes) {
+    return aggregateRex(groupKey, false, ImmutableList.copyOf(nodes));
   }
 
   /** Creates an {@link Aggregate} with a set of hybrid expressions represented
@@ -4667,6 +4678,15 @@ public class RelBuilder {
 
     /** Sets {@link #pruneInputOfAggregate}. */
     Config withPruneInputOfAggregate(boolean pruneInputOfAggregate);
+
+    /** Whether to ensure that relational operators always have at least one
+     * column. */
+    @Value.Default default boolean preventEmptyFieldList() {
+      return true;
+    }
+
+    /** Sets {@link #preventEmptyFieldList()}. */
+    Config withPreventEmptyFieldList(boolean preventEmptyFieldList);
 
     /** Whether to push down join conditions; default false (but
      * {@link SqlToRelConverter#config()} by default sets this to true). */

@@ -1929,19 +1929,35 @@ public class RelBuilderTest {
             .project()
             .distinct()
             .build();
-    final String expected = "LogicalAggregate(group=[{}])\n"
+    final String expected = ""
+        + "LogicalAggregate(group=[{}], agg#0=[COUNT()])\n"
         + "  LogicalFilter(condition=[IS NULL($6)])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n";
-    assertThat(f.apply(createBuilder()), hasTree(expected));
+    final RelNode r = f.apply(createBuilder());
+    assertThat(r, hasTree(expected));
 
-    // now without pruning
+    // Now without adding extra fields
+    final String expected2 = ""
+        + "LogicalAggregate(group=[{}])\n"
+        + "  LogicalFilter(condition=[IS NULL($6)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    final RelNode r2 =
+        f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)));
+    assertThat(r2, hasTree(expected2));
+
+    // Now without pruning
     // (The empty LogicalProject is dubious, but it's what we've always done)
-    final String expected2 = "LogicalAggregate(group=[{}])\n"
+    final String expected3 = ""
+        + "LogicalAggregate(group=[{}])\n"
         + "  LogicalProject\n"
         + "    LogicalFilter(condition=[IS NULL($6)])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n";
-    assertThat(f.apply(createBuilder(c -> c.withPruneInputOfAggregate(false))),
-        hasTree(expected2));
+    final RelNode r3 =
+        f.apply(
+            createBuilder(c ->
+                c.withPruneInputOfAggregate(false)
+                    .withPreventEmptyFieldList(false)));
+    assertThat(r3, hasTree(expected3));
   }
 
   @Test void testUnion() {
@@ -2968,6 +2984,45 @@ public class RelBuilderTest {
     final RelNode r2 = f.apply(createBuilder(), true);
     assertThat(r2, hasTree(expected2));
     assertThat(r2.getRowType().getFullTypeString(), is(expectedRowType2));
+  }
+
+  /** Tests {@link RelBuilder#aggregateRex} with a literal expression;
+   * it needs to be evaluated post aggregation. */
+  @Test void testAggregateExtended2() {
+    // SELECT 2 AS two
+    // FROM emp
+    // GROUP BY ()
+    BiFunction<RelBuilder, Boolean, RelNode> f = (b, projectKey) ->
+        b.scan("EMP")
+            .aggregateRex(b.groupKey(), projectKey,
+                ImmutableList.of(
+                    b.alias(b.literal(2), "two")))
+            .build();
+    final String expected = ""
+        + "LogicalProject(two=[2])\n"
+        + "  LogicalAggregate(group=[{}], agg#0=[COUNT()])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    final String expectedRowType =
+        "RecordType(INTEGER NOT NULL two) NOT NULL";
+    final RelNode r = f.apply(createBuilder(), false);
+    assertThat(r, hasTree(expected));
+    assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
+
+    // As above, with projectKey = true
+    final RelNode r2 = f.apply(createBuilder(), true);
+    assertThat(r2, hasTree(expected));
+    assertThat(r2.getRowType().getFullTypeString(), is(expectedRowType));
+
+    // As above, disabling extra fields
+    final String expected3 = ""
+        + "LogicalProject(two=[2])\n"
+        + "  LogicalAggregate(group=[{}])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+    final RelNode r3 =
+        f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)),
+            false);
+    assertThat(r3, hasTree(expected3));
+    assertThat(r3.getRowType().getFullTypeString(), is(expectedRowType));
   }
 
   /** Tests that a projection retains field names after a join. */
