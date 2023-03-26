@@ -997,7 +997,6 @@ group by grouping sets (deptno, (), ());
 !ok
 
 # Degenerate case: GROUP_ID() without GROUPING SETS
-!if (false) {
 select group_id() as g
 from "scott".emp
 group by ();
@@ -1009,7 +1008,6 @@ group by ();
 (1 row)
 
 !ok
-!}
 
 # GROUP_ID() does not make a query into an aggregate query
 # (maybe it should)
@@ -1044,7 +1042,6 @@ where empno < 0;
 !ok
 
 # As above, explicit empty GROUP BY
-!if (false) {
 select group_id() as g
 from "scott".emp
 where empno < 0
@@ -1057,7 +1054,6 @@ group by ();
 (1 row)
 
 !ok
-!}
 
 # As above, non-empty GROUP BY
 select group_id() as g
@@ -2424,6 +2420,49 @@ EnumerableCalc(expr#0..2=[{inputs}], JOB=[$t0], SUM_SAL=[$t2], DEPTNO=[$t1])
       EnumerableTableScan(table=[[scott, EMP]])
 !plan
 !}
+
+# Aggregate query that uses no columns throws AssertionError in
+# RelFieldTrimmer.trimFields
+select 2 as two
+from emp
+group by ();
++-----+
+| TWO |
++-----+
+|   2 |
++-----+
+(1 row)
+
+!ok
+
+# As previous, as a scalar sub-query
+select deptno,
+  (select 2 as two from emp group by ()) as two
+from emp
+group by deptno;
++--------+-----+
+| DEPTNO | TWO |
++--------+-----+
+|     10 |   2 |
+|     20 |   2 |
+|     30 |   2 |
++--------+-----+
+(3 rows)
+
+!ok
+
+# As previous, grand total
+select (select 2 from emp group by ()) as two
+from emp
+group by ();
++-----+
+| TWO |
++-----+
+|   2 |
++-----+
+(1 row)
+
+!ok
 
 !use orinoco
 
