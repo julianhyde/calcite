@@ -2477,8 +2477,8 @@ public class RelBuilder {
   /** Creates an {@link Aggregate} with a set of hybrid expressions represented
    * as {@link RexNode}. */
   public RelBuilder aggregateRex(GroupKey groupKey,
-      Iterable<? extends RexNode> nodes) {
-    return aggregateRex(groupKey, false, nodes);
+      RexNode... nodes) {
+    return aggregateRex(groupKey, false, ImmutableList.copyOf(nodes));
   }
 
   /** Creates an {@link Aggregate} with a set of hybrid expressions represented
