@@ -20,7 +20,7 @@
 
 # View with one measure
 create view empm as
-select *, 1 as measure avg_sal
+select *, avg(sal) as measure avg_sal
 from emp;
 (0 rows modified)
 
@@ -36,7 +36,7 @@ group by job;
 # Same query using subquery
 select job, avg_sal as a
 from (
- select *, 1 as measure avg_sal
+ select *, avg(sal) as measure avg_sal
  from "scott".emp
 ) as empm
 group by job;
@@ -44,7 +44,7 @@ group by job;
 
 # Same query using CTE
 with empm as (
-  select *, 1 as measure avg_sal
+  select *, avg(sal) as measure avg_sal
   from emp
 )
 select job, avg_sal as a
@@ -58,6 +58,81 @@ from empm
 group by job;
 !ok
 !}
+
+# Similar to previous, grand total
+select avg_sal as a
+from empm
+group by ();
++-------------------+
+| A                 |
++-------------------+
+| 2073.214285714286 |
++-------------------+
+(1 row)
+
+!ok
+
+# Same as previous; 'group by ()' is implicit when we use AGGREGATE.
+select AGGREGATE(avg_sal) as a
+from empm;
++-------------------+
+| A                 |
++-------------------+
+| 2073.214285714286 |
++-------------------+
+(1 row)
+
+!ok
+
+# Similar to previous; 'group by ()' is implicit when we use COUNT.
+select AGGREGATE(avg_sal) as a, COUNT(*) AS c
+from empm;
++-------------------+----+
+| A                 | C  |
++-------------------+----+
+| 2073.214285714286 | 14 |
++-------------------+----+
+(1 row)
+
+!ok
+
+# CTE with literal measure
+with emp2 as (
+  select *, 2 as measure two
+  from emp
+)
+select job, two
+from emp2
+group by job;
++-----------+-----+
+| JOB       | TWO |
++-----------+-----+
+| ANALYST   |   2 |
+| CLERK     |   2 |
+| MANAGER   |   2 |
+| PRESIDENT |   2 |
+| SALESMAN  |   2 |
++-----------+-----+
+(5 rows)
+
+!ok
+
+# As previous, grand total
+with emp2 as (
+  select *, 2 as measure two
+  from emp
+)
+select two
+from emp2
+group by ();
++-----+
+| TWO |
++-----+
+|   2 |
++-----+
+(1 row)
+
+!ok
 
 # AGGREGATE may not be applied to non-measure
 select aggregate(deptno)
