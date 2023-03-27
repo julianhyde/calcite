@@ -81,8 +81,8 @@ public class RelMdMeasure
     final RexCall call = (RexCall) e;
     final RexSubQuery scalarQuery =
         context.getRelBuilder().scalarQuery(b ->
-            b.push(project.getInput())
-                .project(call.operands.get(0))
+            b.push(project.getInput().stripped())
+                .aggregateRex(b.groupKey(), call.operands.get(0))
                 .build());
     final RelDataType measureType =
         SqlTypeUtil.fromMeasure(context.getTypeFactory(), call.type);
