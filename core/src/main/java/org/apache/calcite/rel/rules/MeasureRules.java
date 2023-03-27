@@ -288,10 +288,10 @@ public abstract class MeasureRules {
                   });
           projects.add(e);
         } else {
+          final int i =
+              aggregate.getGroupSet().cardinality() + aggCallList.size();
           aggCallList.add(b2 -> b2.aggregateCall(c));
-          projects.add(
-              b.getRexBuilder().makeInputRef(c.type,
-                  aggregate.getGroupSet().cardinality() + aggCallList.size()));
+          projects.add(b.getRexBuilder().makeInputRef(c.type, i));
         }
       });
       b.aggregate(
