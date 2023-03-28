@@ -2372,7 +2372,7 @@ public class RelBuilderTest {
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     try {
       builder.scan("EMP")
-          .variable(v)
+          .variable(v::set)
           .filter(builder.equals(builder.field(0), v.get()))
           .scan("DEPT")
           .join(JoinRelType.INNER, builder.literal(true),
@@ -2388,7 +2388,7 @@ public class RelBuilderTest {
     final RelBuilder builder = RelBuilder.create(config().build());
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     RelNode root = builder.scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .filter(
             builder.equals(builder.field(0),
@@ -2413,7 +2413,7 @@ public class RelBuilderTest {
     final RelBuilder builder = RelBuilder.create(config().build());
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     RelNode root = builder.scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .join(JoinRelType.LEFT,
             builder.equals(builder.field(2, 0, "SAL"),
@@ -2516,7 +2516,7 @@ public class RelBuilderTest {
     final Function<RelBuilder, RelNode> f = b -> {
       final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
       return b.scan("EMP")
-          .variable(v)
+          .variable(v::set)
           .filter(ImmutableList.of(v.get().id),
               b.exists(b2 ->
                   b2.scan("DEPT")
@@ -3990,7 +3990,7 @@ public class RelBuilderTest {
     final RelBuilder builder = RelBuilder.create(config().build());
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     RelNode root = builder.scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .filter(Collections.singletonList(v.get().id),
             builder.or(
@@ -4175,7 +4175,7 @@ public class RelBuilderTest {
     final RelBuilder builder = RelBuilder.create(config().build());
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     RelNode root = builder.scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .filter(
             builder.equals(builder.field(0),
@@ -4314,7 +4314,7 @@ public class RelBuilderTest {
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     return builder
         .scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .join(type,
             builder.equals(
@@ -4329,7 +4329,7 @@ public class RelBuilderTest {
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     return builder
         .scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .filter(
             builder.equals(
@@ -4346,7 +4346,7 @@ public class RelBuilderTest {
     final RelBuilder builder = RelBuilder.create(config().build());
     final Holder<@Nullable RexCorrelVariable> v = Holder.empty();
     RelNode root = builder.scan("EMP")
-        .variable(v)
+        .variable(v::set)
         .scan("DEPT")
         .filter(
             builder.equals(builder.field(0),
