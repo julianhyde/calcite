@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -55,6 +56,14 @@ class ImmutableBitSetTest {
     assertToIterBitSet("0", ImmutableBitSet.of(0));
     assertToIterBitSet("0, 1", ImmutableBitSet.of(0, 1));
     assertToIterBitSet("10", ImmutableBitSet.of(10));
+
+    check((bitSet, list) -> {
+      final List<Integer> list2 = new ArrayList<>();
+      for (Integer integer : bitSet) {
+        list2.add(integer);
+      }
+      assertThat(list2, equalTo(list));
+    });
   }
 
   /**
@@ -80,18 +89,42 @@ class ImmutableBitSetTest {
    * {@link org.apache.calcite.util.ImmutableBitSet#toList()}.
    */
   @Test void testToList() {
-    assertThat(ImmutableBitSet.of().toList(),
-        equalTo(Collections.<Integer>emptyList()));
-    assertThat(ImmutableBitSet.of(5).toList(), equalTo(Arrays.asList(5)));
-    assertThat(ImmutableBitSet.of(3, 5).toList(), equalTo(Arrays.asList(3, 5)));
-    assertThat(ImmutableBitSet.of(63).toList(), equalTo(Arrays.asList(63)));
-    assertThat(ImmutableBitSet.of(64).toList(), equalTo(Arrays.asList(64)));
-    assertThat(ImmutableBitSet.of(3, 63).toList(),
-        equalTo(Arrays.asList(3, 63)));
-    assertThat(ImmutableBitSet.of(3, 64).toList(),
-        equalTo(Arrays.asList(3, 64)));
-    assertThat(ImmutableBitSet.of(0, 4, 2).toList(),
-        equalTo(Arrays.asList(0, 2, 4)));
+    check((bitSet, list) -> assertThat(bitSet.toList(), equalTo(list)));
+  }
+
+  /**
+   * Tests the method
+   * {@link org.apache.calcite.util.ImmutableBitSet#forEachInt}.
+   */
+  @Test void testForEachInt() {
+    check((bitSet, list) -> {
+      final List<Integer> list2 = new ArrayList<>();
+      bitSet.forEachInt(list2::add);
+      assertThat(list2, equalTo(list));
+    });
+  }
+
+  /**
+   * Tests the method
+   * {@link org.apache.calcite.util.ImmutableBitSet#forEach}.
+   */
+  @Test void testForEachInteger() {
+    check((bitSet, list) -> {
+      final List<Integer> list2 = new ArrayList<>();
+      bitSet.forEach(list2::add);
+      assertThat(list2, equalTo(list));
+    });
+  }
+
+  private void check(BiConsumer<ImmutableBitSet, List<Integer>> consumer) {
+    consumer.accept(ImmutableBitSet.of(), Collections.emptyList());
+    consumer.accept(ImmutableBitSet.of(5), Collections.singletonList(5));
+    consumer.accept(ImmutableBitSet.of(3, 5), Arrays.asList(3, 5));
+    consumer.accept(ImmutableBitSet.of(63), Collections.singletonList(63));
+    consumer.accept(ImmutableBitSet.of(64), Collections.singletonList(64));
+    consumer.accept(ImmutableBitSet.of(3, 63), Arrays.asList(3, 63));
+    consumer.accept(ImmutableBitSet.of(3, 64), Arrays.asList(3, 64));
+    consumer.accept(ImmutableBitSet.of(0, 4, 2), Arrays.asList(0, 2, 4));
   }
 
   /**

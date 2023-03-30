@@ -44,6 +44,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Collector;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
@@ -619,6 +621,17 @@ public class ImmutableBitSet
       list.add(i);
     }
     return list;
+  }
+
+  @Override public void forEach(Consumer<? super Integer> action) {
+    forEachInt(action::accept);
+  }
+
+  /** As {@link #forEach(Consumer)} but on primitive {@code int} values. */
+  public void forEachInt(IntConsumer action) {
+    for (int i = nextSetBit(0); i >= 0; i = nextSetBit(i + 1)) {
+      action.accept(i);
+    }
   }
 
   /** Creates a view onto this bit set as a list of integers.

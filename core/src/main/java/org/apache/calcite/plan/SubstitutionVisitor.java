@@ -1943,7 +1943,7 @@ public class SubstitutionVisitor {
     } else if (target.getGroupType() == Aggregate.Group.SIMPLE) {
       // Query is coarser level of aggregation. Generate an aggregate.
       final Map<Integer, Integer> map = new HashMap<>();
-      target.groupSet.forEach(k -> map.put(k, map.size()));
+      target.groupSet.forEachInt(k -> map.put(k, map.size()));
       for (int c : query.groupSet) {
         if (!map.containsKey(c)) {
           return null;
