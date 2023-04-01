@@ -185,6 +185,16 @@ class RexBuilderTest {
     assertThat(literal2.getValueAs(TimestampString.class).toString(),
         is("1969-07-21 02:56:15.056"));
 
+    // Now with milliseconds ending in zero.
+    final TimestampString ts2b = ts.withMillis(10);
+    assertThat(ts2b.toString(), is("1969-07-21 02:56:15.01"));
+    final RexLiteral literal2b = builder.makeLiteral(ts2, timestampType3);
+    assertThat(literal2b.getValueAs(TimestampString.class).toString(),
+        is("1969-07-21 02:56:15.056"));
+
+    final TimestampString ts2c = new TimestampString("1969-07-21 02:56:15.010");
+    assertThat(ts2b, is(ts2c));
+
     // Now with nanoseconds
     final TimestampString ts3 = ts.withNanos(56);
     final RexLiteral literal3 = builder.makeLiteral(ts3, timestampType9);
