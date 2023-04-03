@@ -87,4 +87,7 @@ public class SqlDelegatingConformance extends SqlAbstractConformance {
     return delegate.semantics();
   }
 
+  @Override public boolean allowArrayFunction() {
+    return delegate.allowArrayFunction();
+  }
 }
