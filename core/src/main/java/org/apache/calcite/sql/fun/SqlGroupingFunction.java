@@ -59,10 +59,29 @@ class SqlGroupingFunction extends SqlAbstractGroupFunction {
   }
 
   /** Implements {@link SqlStaticAggFunction}. */
-  private static RexNode constant(RexBuilder rexBuilder,
+  private static @Nullable RexNode constant(RexBuilder rexBuilder,
       ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets,
       AggregateCall aggregateCall) {
-    return rexBuilder.makeExactLiteral(BigDecimal.ZERO);
+    // GROUPING(c1, ..., cN) evaluates to zero if every grouping set contains
+    // all of c1, ..., cN. For example,
+    //
+    //   SELECT GROUPING(deptno) AS gd, GROUPING(job) AS gj
+    //   FROM Emp
+    //   GROUP BY GROUPING SETS (deptno), (deptno, job);
+    //
+    // "gd" is zero for all rows, because both grouping sets contain "deptno";
+    // "gj" is 0 for some rows and 1 for others.
+    //
+    // Internally we allow GROUPING() with no arguments; it always
+    // evaluates to zero.
+    final ImmutableBitSet argSet =
+        ImmutableBitSet.of(aggregateCall.getArgList());
+    if (groupSets.stream().allMatch(set -> set.contains(argSet))) {
+      return rexBuilder.makeExactLiteral(BigDecimal.ZERO);
+    }
+
+    // GROUPING with one or more arguments
+    return null;
   }
 
   @Override public <T> @Nullable T unwrap(Class<T> clazz) {
