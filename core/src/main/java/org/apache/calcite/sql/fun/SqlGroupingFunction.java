@@ -59,7 +59,7 @@ class SqlGroupingFunction extends SqlAbstractGroupFunction {
   }
 
   /** Implements {@link SqlStaticAggFunction}. */
-  private static @Nullable RexNode constant(RexBuilder rexBuilder,
+  private static RexNode constant(RexBuilder rexBuilder,
       ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets,
       AggregateCall aggregateCall) {
     return rexBuilder.makeExactLiteral(BigDecimal.ZERO);
