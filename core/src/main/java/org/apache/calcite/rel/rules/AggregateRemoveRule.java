@@ -30,18 +30,15 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlSingletonAggFunction;
-import org.apache.calcite.sql.SqlSplittableAggFunction;
 import org.apache.calcite.sql.SqlStaticAggFunction;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Planner rule that removes
