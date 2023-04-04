@@ -17,6 +17,7 @@
 package org.apache.calcite.sql.fun;
 
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlInternalOperator;
 import org.apache.calcite.sql.SqlKind;
@@ -114,5 +115,9 @@ public abstract class SqlInternalOperators {
   public static final SqlOperator SEPARATOR =
       new SqlInternalOperator("SEPARATOR", SqlKind.SEPARATOR, 20, false,
           ReturnTypes.ARG0, InferTypes.RETURN_TYPE, OperandTypes.ANY);
+
+  /** Aggregate function that always returns a literal. */
+  public static final SqlAggFunction LITERAL_AGG = null;
+    //  SqlBasicAggFunction.create(SqlKind.LITERAL_AGG, );
 
 }
