@@ -2643,6 +2643,7 @@ BigQuery's type system uses confusingly different names for types and functions:
 |:- |:-----------------------------------------------|:-----------
 | p | expr :: type                                   | Casts *expr* to *type*
 | m | expr1 <=> expr2                                | Whether two values are equal, treating null values as the same, and it's similar to `IS NOT DISTINCT FROM`
+| s | ARRAY(expr [, expr ]*)                         | Construct an array in Apache Spark
 | b | ARRAY_CONCAT(array [, array ]*)                | Concatenates one or more arrays. If any input argument is `NULL` the function returns `NULL`
 | b | ARRAY_LENGTH(array)                            | Synonym for `CARDINALITY`
 | b | ARRAY_REVERSE(array)                           | Reverses elements of *array*
