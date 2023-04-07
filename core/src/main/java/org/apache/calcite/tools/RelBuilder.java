@@ -4008,7 +4008,8 @@ public class RelBuilder {
       final RelDataType type =
           getTypeFactory().createSqlType(SqlTypeName.BOOLEAN);
       return AggregateCall.create(aggFunction, distinct, approximate,
-          ignoreNulls, ImmutableList.of(), -1, null, collation, type, alias);
+          ignoreNulls, ImmutableList.of(), ImmutableList.of(), -1,
+          null, collation, type, alias);
     }
 
     @Override public AggregateCall aggregateCall(Registrar registrar,
@@ -4040,9 +4041,10 @@ public class RelBuilder {
             .filter(r::fieldIsNullable)
             .collect(Util.toImmutableList());
       }
+
       return AggregateCall.create(aggFunction, distinct, approximate,
-          ignoreNulls, args, filterArg, distinctKeys, collation,
-          groupSet.cardinality(), r, null, alias);
+          ignoreNulls, ImmutableList.of(), args, filterArg, distinctKeys,
+          collation, groupSet.cardinality(), r, null, alias);
     }
 
     @Override public void register(Registrar registrar) {
