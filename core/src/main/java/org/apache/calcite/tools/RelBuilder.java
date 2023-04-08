@@ -91,6 +91,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlLikeOperator;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -1531,6 +1532,14 @@ public class RelBuilder {
     return aggregateCall(SqlStdOperatorTable.MAX, false, false, false, null,
         null, ImmutableList.of(), alias, ImmutableList.of(),
         ImmutableList.of(operand));
+  }
+
+  /** Creates a call to the {@code LITERAL_AGG} aggregate function. */
+  public AggCall literalAgg(Object value) {
+    final RexLiteral literal = literal(value);
+    return aggregateCall(SqlInternalOperators.LITERAL_AGG, false, false, false,
+        null, null, ImmutableList.of(), null, ImmutableList.of(literal),
+        ImmutableList.of());
   }
 
   // Methods for patterns

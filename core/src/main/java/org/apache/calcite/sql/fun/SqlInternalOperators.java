@@ -138,7 +138,7 @@ public abstract class SqlInternalOperators {
       SqlBasicOperator.create("OFFSET")
           .withPrecedence(SqlStdOperatorTable.UNION.getLeftPrec() - 2, true);
 
-  /** Aggregate function that always returns a literal. */
+  /** Aggregate function that always returns a given literal. */
   public static final SqlAggFunction LITERAL_AGG =
       SqlLiteralAggFunction.INSTANCE;
 
