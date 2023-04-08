@@ -838,8 +838,8 @@ public abstract class BuiltInMetadata {
   /** Metadata about whether a column is a measure and, if so, what is the
    * expression to evaluate that measure in the current context. */
   public interface Measure extends Metadata {
-    MetadataDef<Measure> DEF = MetadataDef.of(Measure.class,
-        Measure.Handler.class, BuiltInMethod.MEASURE_EXPAND.method,
+    MetadataDef<Measure> DEF =
+        MetadataDef.of(Measure.class, Measure.Handler.class, BuiltInMethod.MEASURE_EXPAND.method,
         BuiltInMethod.IS_MEASURE.method);
 
     /** Returns whether a given column is a measure. */
@@ -871,6 +871,19 @@ public abstract class BuiltInMetadata {
       default RelDataTypeFactory getTypeFactory() {
         return getRelBuilder().getTypeFactory();
       }
+
+      /** Returns a (conjunctive) list of filters.
+       *
+       * <p>The filters represent the "filter context"
+       * and will become the {@code WHERE} clause of the subquery.
+       *
+       * <p>If the relation defining the measure has {@code N} dimensions then
+       * the dimensions can be referenced using
+       * {@link org.apache.calcite.rex.RexInputRef} 0 through N-1. */
+      List<RexNode> getFilters(RelBuilder b);
+
+      /** Returns the number of dimension columns. */
+      int getDimensionCount();
     }
   }
 

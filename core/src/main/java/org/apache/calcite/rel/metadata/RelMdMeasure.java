@@ -18,6 +18,8 @@ package org.apache.calcite.rel.metadata;
 
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
@@ -25,6 +27,11 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.util.ImmutableBitSet;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static com.google.common.collect.Iterables.getOnlyElement;
 
 /**
  * Default implementations of the
@@ -81,10 +88,13 @@ public class RelMdMeasure
       throw new AssertionError(e);
     }
     final RexCall call = (RexCall) e;
+    final int dimensionCount = context.getDimensionCount();
     final RexSubQuery scalarQuery =
         context.getRelBuilder().scalarQuery(b ->
             b.push(project.getInput().stripped())
-                .aggregateRex(b.groupKey(), call.operands.get(0))
+                .filter(context.getFilters(b))
+                .aggregateRex(b.groupKey(ImmutableBitSet.range(dimensionCount)),
+                    call.operands.get(0))
                 .build());
     final RelDataType measureType =
         SqlTypeUtil.fromMeasure(context.getTypeFactory(), call.type);
@@ -95,6 +105,18 @@ public class RelMdMeasure
       return context.getRexBuilder().makeNotNull(scalarQuery);
     }
     return scalarQuery;
+  }
+
+  /** Refines {@code expand} for {@link Aggregate}; called via reflection. */
+  public @Nullable RexNode expand(Aggregate aggregate, RelMetadataQuery mq,
+      int column, BuiltInMetadata.Measure.Context context) {
+    final AggregateCall e =
+        aggregate.getAggCallList().get(column - aggregate.getGroupCount());
+    if (e.getAggregation().getKind() != SqlKind.AGG_M2M) {
+      throw new AssertionError(e);
+    }
+    int arg = getOnlyElement(e.getArgList());
+    return mq.expand(aggregate.getInput().stripped(), arg, context);
   }
 
 }
