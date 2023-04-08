@@ -38,7 +38,6 @@ import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.RelDecorrelator;
@@ -722,8 +721,7 @@ public class SubQueryRemoveRule
         // fall through
       default:
         builder.aggregate(builder.groupKey(fields),
-            builder.aggregateCall(SqlInternalOperators.LITERAL_AGG)
-                .preOperands(trueLiteral).as("i"));
+            builder.literalAgg(true).as("i"));
       }
     }
 
