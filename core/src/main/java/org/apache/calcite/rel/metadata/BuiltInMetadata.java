@@ -850,6 +850,19 @@ public abstract class BuiltInMetadata {
       default RelDataTypeFactory getTypeFactory() {
         return getRelBuilder().getTypeFactory();
       }
+
+      /** Returns a (conjunctive) list of filters.
+       *
+       * <p>The filters represent the "filter context"
+       * and will become the {@code WHERE} clause of the subquery.
+       *
+       * <p>If the relation defining the measure has {@code N} dimensions then
+       * the dimensions can be referenced using
+       * {@link org.apache.calcite.rex.RexInputRef} 0 through N-1. */
+      List<RexNode> getFilters(RelBuilder b);
+
+      /** Returns the number of dimension columns. */
+      int getDimensionCount();
     }
   }
 
