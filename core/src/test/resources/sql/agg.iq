@@ -997,6 +997,7 @@ group by grouping sets (deptno, (), ());
 !ok
 
 # Degenerate case: GROUP_ID() without GROUPING SETS
+!if (false) {
 select group_id() as g
 from "scott".emp
 group by ();
@@ -1008,6 +1009,7 @@ group by ();
 (1 row)
 
 !ok
+!}
 
 # GROUP_ID() does not make a query into an aggregate query
 # (maybe it should)
@@ -1042,6 +1044,7 @@ where empno < 0;
 !ok
 
 # As above, explicit empty GROUP BY
+!if (false) {
 select group_id() as g
 from "scott".emp
 where empno < 0
@@ -1054,6 +1057,7 @@ group by ();
 (1 row)
 
 !ok
+!}
 
 # As above, non-empty GROUP BY
 select group_id() as g

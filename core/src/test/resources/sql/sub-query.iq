@@ -38,7 +38,7 @@ EnumerableCalc(expr#0..4=[{inputs}], expr#5=[0], expr#6=[=($t1, $t5)], expr#7=[I
       EnumerableValues(tuples=[[{ 1 }, { 2 }, { null }]])
       EnumerableAggregate(group=[{}], c=[COUNT()], ck=[COUNT($0)])
         EnumerableValues(tuples=[[{ 1 }, { null }]])
-    EnumerableCalc(expr#0=[{inputs}], expr#1=[0:BIGINT], proj#0..1=[{exprs}])
+    EnumerableCalc(expr#0=[{inputs}], expr#1=[true], proj#0..1=[{exprs}])
       EnumerableValues(tuples=[[{ 1 }, { null }]])
 !plan
 
@@ -389,7 +389,7 @@ EnumerableCalc(expr#0..9=[{inputs}], expr#10=[0], expr#11=[=($t5, $t10)], expr#1
                   EnumerableTableScan(table=[[scott, DEPT]])
     EnumerableSort(sort0=[$0], sort1=[$1], dir0=[ASC], dir1=[ASC])
       EnumerableCalc(expr#0..2=[{inputs}], expr#3=[IS NOT NULL($t0)], proj#0..2=[{exprs}], $condition=[$t3])
-        EnumerableAggregate(group=[{1, 3}], i=[GROUPING()])
+        EnumerableAggregate(group=[{1, 3}], i=[LITERAL_AGG(true)])
           EnumerableNestedLoopJoin(condition=[>($2, $3)], joinType=[inner])
             EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], JOB=[$t2], DEPTNO=[$t7])
               EnumerableTableScan(table=[[scott, EMP]])
@@ -2134,7 +2134,7 @@ EnumerableAggregate(group=[{}], C=[COUNT()])
               EnumerableCalc(expr#0..2=[{inputs}], expr#3=[1:BIGINT], expr#4=[IS NOT NULL($t1)], c=[$t3], ck=[$t3], DNAME=[$t1], $condition=[$t4])
                 EnumerableTableScan(table=[[scott, DEPT]])
       EnumerableSort(sort0=[$0], sort1=[$1], dir0=[ASC], dir1=[ASC])
-        EnumerableCalc(expr#0..2=[{inputs}], expr#3=[0:BIGINT], expr#4=[IS NOT NULL($t1)], proj#0..1=[{exprs}], $f2=[$t3], $condition=[$t4])
+        EnumerableCalc(expr#0..2=[{inputs}], expr#3=[true], expr#4=[IS NOT NULL($t1)], proj#0..1=[{exprs}], $f2=[$t3], $condition=[$t4])
           EnumerableTableScan(table=[[scott, DEPT]])
 !plan
 

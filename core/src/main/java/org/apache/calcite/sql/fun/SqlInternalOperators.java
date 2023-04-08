@@ -139,8 +139,8 @@ public abstract class SqlInternalOperators {
           .withPrecedence(SqlStdOperatorTable.UNION.getLeftPrec() - 2, true);
 
   /** Aggregate function that always returns a literal. */
-  public static final SqlAggFunction LITERAL_AGG = null;
-  //  SqlBasicAggFunction.create(SqlKind.LITERAL_AGG, );
+  public static final SqlAggFunction LITERAL_AGG =
+      SqlLiteralAggFunction.INSTANCE;
 
   /** Subject to change. */
   private static class SqlBasicOperator extends SqlOperator {
