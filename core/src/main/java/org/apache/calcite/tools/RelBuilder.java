@@ -1542,11 +1542,9 @@ public class RelBuilder {
   }
 
   /** Creates a call to the {@code LITERAL_AGG} aggregate function. */
-  public AggCall literalAgg(Object value) {
-    final RexLiteral literal = literal(value);
-    return aggregateCall(SqlInternalOperators.LITERAL_AGG, false, false, false,
-        null, null, ImmutableList.of(), null, ImmutableList.of(literal),
-        ImmutableList.of());
+  public AggCall literalAgg(@Nullable Object value) {
+    return aggregateCall(SqlInternalOperators.LITERAL_AGG)
+        .preOperands(literal(value));
   }
 
   // Methods for patterns
