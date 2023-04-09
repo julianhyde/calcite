@@ -1886,7 +1886,7 @@ public class RelBuilderTest {
    * GROUP_ID()</a>. */
   @Test void testAggregateGroupingSetsGroupId() {
     final String plan = ""
-        + "LogicalProject(JOB=[$0], DEPTNO=[$1], $f2=[0:BIGINT])\n"
+        + "LogicalProject(JOB=[$0], DEPTNO=[$1], g=[0:BIGINT])\n"
         + "  LogicalAggregate(group=[{2, 7}], groups=[[{2, 7}, {2}, {7}]])\n"
         + "    LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(groupIdRel(createBuilder(), false), hasTree(plan));
@@ -1897,10 +1897,10 @@ public class RelBuilderTest {
     // If any group occurs more than once, we need a UNION ALL.
     final String plan2 = ""
         + "LogicalUnion(all=[true])\n"
-        + "  LogicalProject(JOB=[$0], DEPTNO=[$1], $f2=[0:BIGINT])\n"
+        + "  LogicalProject(JOB=[$0], DEPTNO=[$1], g=[0:BIGINT])\n"
         + "    LogicalAggregate(group=[{2, 7}], groups=[[{2, 7}, {2}, {7}]])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n"
-        + "  LogicalProject(JOB=[$0], DEPTNO=[$1], $f2=[1:BIGINT])\n"
+        + "  LogicalProject(JOB=[$0], DEPTNO=[$1], g=[1:BIGINT])\n"
         + "    LogicalAggregate(group=[{2, 7}])\n"
         + "      LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(groupIdRel(createBuilder(), true), hasTree(plan2));
@@ -1920,7 +1920,7 @@ public class RelBuilderTest {
                     .addAll(extra ? ImmutableList.of(builder.fields(djList))
                         : ImmutableList.of())
                     .build()),
-            builder.aggregateCall(SqlStdOperatorTable.GROUP_ID))
+            builder.aggregateCall(SqlStdOperatorTable.GROUP_ID).as("g"))
         .build();
   }
 
@@ -3036,24 +3036,22 @@ public class RelBuilderTest {
     assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
   }
 
-  /** Tests {@link RelBuilder#aggregateRex} with a literal expression;
+  /** Tests {@link RelBuilder#aggregateRex} with an expression;
    * it needs to be evaluated post aggregation. */
   @Test void testAggregateExtended2() {
-    // SELECT 2 AS two
+    // SELECT CURRENT_DATE AS d
     // FROM emp
     // GROUP BY ()
     BiFunction<RelBuilder, Boolean, RelNode> f = (b, projectKey) ->
         b.scan("EMP")
             .aggregateRex(b.groupKey(), projectKey,
                 ImmutableList.of(
-                    b.alias(b.literal(2), "two")))
+                    b.alias(b.call(SqlStdOperatorTable.CURRENT_DATE), "d")))
             .build();
     final String expected = ""
-        + "LogicalProject(two=[2])\n"
-        + "  LogicalAggregate(group=[{}], dummy=[LITERAL_AGG(true)])\n"
-        + "    LogicalTableScan(table=[[scott, EMP]])\n";
-    final String expectedRowType =
-        "RecordType(INTEGER NOT NULL two) NOT NULL";
+        + "LogicalProject(d=[CURRENT_DATE])\n"
+        + "  LogicalValues(tuples=[[{ true }]])\n";
+    final String expectedRowType = "RecordType(DATE NOT NULL d) NOT NULL";
     final RelNode r = f.apply(createBuilder(), false);
     assertThat(r, hasTree(expected));
     assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
@@ -3065,9 +3063,43 @@ public class RelBuilderTest {
 
     // As above, disabling extra fields
     final String expected3 = ""
-        + "LogicalProject(two=[2])\n"
-        + "  LogicalAggregate(group=[{}])\n"
-        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+        + "LogicalProject(d=[CURRENT_DATE])\n"
+        + "  LogicalValues(tuples=[[{  }]])\n";
+    final RelNode r3 =
+        f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)),
+            false);
+    assertThat(r3, hasTree(expected3));
+    assertThat(r3.getRowType().getFullTypeString(), is(expectedRowType));
+  }
+
+  /** Tests {@link RelBuilder#aggregateRex} with a literal expression;
+   * it needs to be evaluated post aggregation. */
+  @Test void testAggregateExtended3() {
+    // SELECT 2 AS two, false AS f
+    // FROM emp
+    // GROUP BY ()
+    BiFunction<RelBuilder, Boolean, RelNode> f = (b, projectKey) ->
+        b.scan("EMP")
+            .aggregateRex(b.groupKey(), projectKey,
+                ImmutableList.of(b.alias(b.literal(2), "two"),
+                    b.alias(b.literal(false), "f")))
+            .build();
+    final String expected =
+        "LogicalValues(tuples=[[{ 2, false }]])\n";
+    final String expectedRowType =
+        "RecordType(INTEGER NOT NULL two, BOOLEAN NOT NULL f) NOT NULL";
+    final RelNode r = f.apply(createBuilder(), false);
+    assertThat(r, hasTree(expected));
+    assertThat(r.getRowType().getFullTypeString(), is(expectedRowType));
+
+    // As above, with projectKey = true
+    final RelNode r2 = f.apply(createBuilder(), true);
+    assertThat(r2, hasTree(expected));
+    assertThat(r2.getRowType().getFullTypeString(), is(expectedRowType));
+
+    // As above, disabling extra fields
+    final String expected3 =
+        "LogicalValues(tuples=[[{ 2, false }]])\n";
     final RelNode r3 =
         f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)),
             false);
