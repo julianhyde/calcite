@@ -36,6 +36,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -43,6 +44,7 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -64,6 +66,41 @@ class ImmutableBitSetTest {
       }
       assertThat(list2, equalTo(list));
     });
+  }
+
+  /** Tests the method {@link ImmutableBitSet#of(int)}. */
+  @Test void testSingletonConstructor() {
+    IntConsumer c = i -> {
+      final ImmutableBitSet s0 = ImmutableBitSet.of(i);
+      final ImmutableBitSet s1 = ImmutableBitSet.of(ImmutableIntList.of(i));
+      final ImmutableBitSet s2 = ImmutableBitSet.of(Collections.singleton(i));
+      final ImmutableBitSet s3 =
+          ImmutableBitSet.of(99, 100).set(i).clear(100).clear(99);
+      assertThat(s0.cardinality(), is(1));
+      assertThat(s0, is(s1));
+      assertThat(s0, is(s2));
+      assertThat(s0, is(s3));
+      assertThat(s1, is(s2));
+      assertThat(s1, is(s3));
+      assertThat(s2, is(s3));
+    };
+    c.accept(0);
+    c.accept(1);
+    c.accept(63);
+    c.accept(64);
+  }
+
+  @Test void testNegative() {
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> ImmutableBitSet.of(-1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> ImmutableBitSet.of(-2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> ImmutableBitSet.of(1, 10, -1, 63));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> ImmutableBitSet.of(-1, 10));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> ImmutableBitSet.of(Collections.singleton(-2)));
   }
 
   /**
