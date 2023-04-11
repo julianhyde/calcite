@@ -19,7 +19,6 @@ package org.apache.calcite.rel.rules;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
@@ -281,9 +280,8 @@ public abstract class MeasureRules {
       final List<Function<RelBuilder, RexNode>> projects = new ArrayList<>();
       b.variable(holder)
           .let(b2 -> {
-            aggregate.getGroupSet().forEachInt(i -> {
-              projects.add(b4 -> b4.field(i));
-            });
+            aggregate.getGroupSet().forEachInt(i ->
+                projects.add(b4 -> b4.field(i)));
             final BuiltInMetadata.Measure.Context context =
                 new BuiltInMetadata.Measure.Context() {
                   // Memoize the RelBuilder so we don't create more than one.
@@ -322,16 +320,12 @@ public abstract class MeasureRules {
               }
             });
             return b2;
-          })
-          .aggregate(
-              b.groupKey(aggregate.getGroupSet(), aggregate.groupSets),
-              bind(aggCallList).apply(b))
-          .project(bind(projects).apply(b),
-              aggregate.getRowType().getFieldNames(), false,
-              ImmutableSet.of(holder.get().id));
-      final RelNode r = b.build();
-      System.out.println(r.explain());
-      call.transformTo(r);
+          });
+      b.aggregate(b.groupKey(aggregate.getGroupSet(), aggregate.groupSets),
+          bind(aggCallList).apply(b));
+      b.project(bind(projects).apply(b), aggregate.getRowType().getFieldNames(),
+          false, ImmutableSet.of(holder.get().id));
+      call.transformTo(b.build());
     }
 
     /** Converts a list of functions into a function that returns a list.
