@@ -23,13 +23,17 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeUtil;
-import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.tools.RelBuilder;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.List;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 
@@ -87,14 +91,33 @@ public class RelMdMeasure
     if (e.getKind() != SqlKind.V2M) {
       throw new AssertionError(e);
     }
+    final BuiltInMetadata.Measure.Context context2 =
+        new BuiltInMetadata.Measure.Context() {
+          @Override public RelBuilder getRelBuilder() {
+            return context.getRelBuilder();
+          }
+
+          @Override public List<RexNode> getFilters(RelBuilder b) {
+            List<RexNode> filters = context.getFilters(b);
+            return new RexShuttle() {
+              @Override public RexNode visitInputRef(RexInputRef inputRef) {
+                return project.getProjects().get(inputRef.getIndex());
+              }
+            }.apply(filters);
+          }
+
+          @Override public int getDimensionCount() {
+            return (int) project.getInput().getRowType().getFieldList().stream()
+                .filter(f -> !f.getType().isMeasure()).count();
+          }
+        };
     final RexCall call = (RexCall) e;
     final int dimensionCount = context.getDimensionCount();
     final RexSubQuery scalarQuery =
         context.getRelBuilder().scalarQuery(b ->
             b.push(project.getInput().stripped())
-                .filter(context.getFilters(b))
-                .aggregateRex(b.groupKey(ImmutableBitSet.range(dimensionCount)),
-                    call.operands.get(0))
+                .filter(context2.getFilters(b))
+                .aggregateRex(b.groupKey(), call.operands.get(0))
                 .build());
     final RelDataType measureType =
         SqlTypeUtil.fromMeasure(context.getTypeFactory(), call.type);
