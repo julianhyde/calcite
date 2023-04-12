@@ -25,6 +25,7 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.RelMdMeasure;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
@@ -281,40 +282,38 @@ public abstract class MeasureRules {
           .let(b2 -> {
             aggregate.getGroupSet().forEachInt(i ->
                 projects.add(b4 -> b4.field(i)));
+            // Memoize the RelBuilder so we don't create more than one.
+            @SuppressWarnings("FunctionalExpressionCanBeFolded")
+            final Supplier<RelBuilder> builderSupplier =
+                Suppliers.memoize(call::builder)::get;
             final BuiltInMetadata.Measure.Context context =
-                new BuiltInMetadata.Measure.Context() {
-                  // Memoize the RelBuilder so we don't create more than one.
-                  @SuppressWarnings("FunctionalExpressionCanBeFolded")
-                  private final Supplier<RelBuilder> builderSupplier =
-                      Suppliers.memoize(call::builder)::get;
-
-                  @Override public RelBuilder getRelBuilder() {
-                    return builderSupplier.get();
-                  }
-
-                  @Override public int getDimensionCount() {
-                    return aggregate.getGroupCount();
-                  }
-
-                  @Override public List<RexNode> getFilters(RelBuilder b) {
-                    RexCorrelVariable v = holder.get();
-                    final List<RexNode> filters = new ArrayList<>();
-                    aggregate.getGroupSet().forEachInt(i ->
-                        filters.add(b.equals(b.field(i), b.field(v, filters.size()))));
-                    return filters;
-                  }
-                };
+                RelMdMeasure.Contexts.forAggregate(aggregate, builderSupplier, holder.get());
             aggregate.getAggCallList().forEach(c -> {
               if (c.getAggregation().kind == SqlKind.AGG_M2V) {
                 final int arg = getOnlyElement(c.getArgList());
                 aggCallList.add(b3 ->
                     b3.aggregateCall(SqlInternalOperators.AGG_M2M,
-                        b3.fields(c.getArgList())));
-                projects.add(b4 -> mq.expand(b4.peek(), arg, context));
+                        b3.fields(c.getArgList()))
+                        .filter(c.filterArg < 0 ? null : b3.field(c.filterArg)));
+                final BuiltInMetadata.Measure.Context context2 =
+                    new RelMdMeasure.DelegatingContext(context) {
+                      @Override public List<RexNode> getFilters(RelBuilder b) {
+                        final ImmutableList.Builder<RexNode> builder =
+                            ImmutableList.builder();
+                        builder.addAll(super.getFilters(b));
+                        if (c.filterArg >= 0) {
+                          builder.add(b.field(c.filterArg));
+                        }
+                        return builder.build();
+                      }
+                    };
+                projects.add(b4 -> mq.expand(b4.peek(), arg, context2));
               } else {
                 final int i =
                     aggregate.getGroupSet().cardinality() + aggCallList.size();
-                aggCallList.add(b3 -> b3.aggregateCall(c));
+                aggCallList.add(b3 ->
+                    b3.aggregateCall(c)
+                        .filter(c.filterArg < 0 ? null : b3.field(c.filterArg)));
                 projects.add(b4 -> b4.field(i));
               }
             });
