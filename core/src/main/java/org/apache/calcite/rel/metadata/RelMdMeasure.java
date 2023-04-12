@@ -20,9 +20,11 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
@@ -33,7 +35,9 @@ import org.apache.calcite.tools.RelBuilder;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 
@@ -84,50 +88,43 @@ public class RelMdMeasure
     return expand((RelNode) subset, mq, column, context);
   }
 
+  /** Refines {@code expand} for {@link Filter}; called via reflection. */
+  public @Nullable RexNode expand(Filter filter, RelMetadataQuery mq,
+      int column, BuiltInMetadata.Measure.Context context) {
+    return mq.expand(filter.getInput().stripped(), column, context);
+  }
+
   /** Refines {@code expand} for {@link Project}; called via reflection. */
-  public RexNode expand(Project project, RelMetadataQuery mq, int column,
-      BuiltInMetadata.Measure.Context context) {
+  public @Nullable RexNode expand(Project project, RelMetadataQuery mq,
+      int column, BuiltInMetadata.Measure.Context context) {
     final RexNode e = project.getProjects().get(column);
-    if (e.getKind() != SqlKind.V2M) {
-      throw new AssertionError(e);
-    }
     final BuiltInMetadata.Measure.Context context2 =
-        new BuiltInMetadata.Measure.Context() {
-          @Override public RelBuilder getRelBuilder() {
-            return context.getRelBuilder();
-          }
-
-          @Override public List<RexNode> getFilters(RelBuilder b) {
-            List<RexNode> filters = context.getFilters(b);
-            return new RexShuttle() {
-              @Override public RexNode visitInputRef(RexInputRef inputRef) {
-                return project.getProjects().get(inputRef.getIndex());
-              }
-            }.apply(filters);
-          }
-
-          @Override public int getDimensionCount() {
-            return (int) project.getInput().getRowType().getFieldList().stream()
-                .filter(f -> !f.getType().isMeasure()).count();
-          }
-        };
-    final RexCall call = (RexCall) e;
-    final int dimensionCount = context.getDimensionCount();
-    final RexSubQuery scalarQuery =
-        context.getRelBuilder().scalarQuery(b ->
-            b.push(project.getInput().stripped())
-                .filter(context2.getFilters(b))
-                .aggregateRex(b.groupKey(), call.operands.get(0))
-                .build());
-    final RelDataType measureType =
-        SqlTypeUtil.fromMeasure(context.getTypeFactory(), call.type);
-    if (!measureType.isNullable()) {
-      // If the measure is 'MEASURE<INTEGER NOT NULL>' the scalar query
-      // '(SELECT SUM(x) FROM t WHERE a = context.a)' that implements it looks
-      // nullable but isn't really.
-      return context.getRexBuilder().makeNotNull(scalarQuery);
+        Contexts.forProject(project, context);
+    switch (e.getKind()) {
+    default:
+      throw new AssertionError("unexpected expression [" + e
+          + "], kind [" + e.getKind() + "]");
+    case INPUT_REF:
+      final RexInputRef ref = (RexInputRef) e;
+      return mq.expand(project.getInput().stripped(), ref.getIndex(), context2);
+    case V2M:
+      final RexCall call = (RexCall) e;
+      final RexSubQuery scalarQuery =
+          context.getRelBuilder().scalarQuery(b ->
+              b.push(project.getInput().stripped())
+                  .filter(context2.getFilters(b))
+                  .aggregateRex(b.groupKey(), call.operands.get(0))
+                  .build());
+      final RelDataType measureType =
+          SqlTypeUtil.fromMeasure(context.getTypeFactory(), call.type);
+      if (!measureType.isNullable()) {
+        // If the measure is 'MEASURE<INTEGER NOT NULL>' the scalar query
+        // '(SELECT SUM(x) FROM t WHERE a = context.a)' that implements it looks
+        // nullable but isn't really.
+        return context.getRexBuilder().makeNotNull(scalarQuery);
+      }
+      return scalarQuery;
     }
-    return scalarQuery;
   }
 
   /** Refines {@code expand} for {@link Aggregate}; called via reflection. */
@@ -142,4 +139,74 @@ public class RelMdMeasure
     return mq.expand(aggregate.getInput().stripped(), arg, context);
   }
 
+  /** Helpers for {@link BuiltInMetadata.Measure.Context}. */
+  public static class Contexts {
+    /** Creates a context for a {@link Project}. */
+    private static BuiltInMetadata.Measure.Context forProject(Project project,
+        BuiltInMetadata.Measure.Context context) {
+      return new DelegatingContext(context) {
+        @Override public List<RexNode> getFilters(RelBuilder b) {
+          List<RexNode> filters = context.getFilters(b);
+          return new RexShuttle() {
+            @Override public RexNode visitInputRef(RexInputRef inputRef) {
+              return project.getProjects().get(inputRef.getIndex());
+            }
+          }.apply(filters);
+        }
+
+        @Override public int getDimensionCount() {
+          return (int) project.getInput()
+              .getRowType()
+              .getFieldList()
+              .stream()
+              .filter(f -> !f.getType().isMeasure())
+              .count();
+        }
+      };
+    }
+
+    /** Creates a context for an {@link Aggregate}. */
+    public static BuiltInMetadata.Measure.Context forAggregate(
+        Aggregate aggregate, final Supplier<RelBuilder> builderSupplier,
+        final RexCorrelVariable v) {
+      return new BuiltInMetadata.Measure.Context() {
+        @Override public RelBuilder getRelBuilder() {
+          return builderSupplier.get();
+        }
+
+        @Override public int getDimensionCount() {
+          return aggregate.getGroupCount();
+        }
+
+        @Override public List<RexNode> getFilters(RelBuilder b) {
+          final List<RexNode> filters = new ArrayList<>();
+          aggregate.getGroupSet().forEachInt(i ->
+              filters.add(b.equals(b.field(i), b.field(v, filters.size()))));
+          return filters;
+        }
+      };
+    }
+  }
+
+  /** Implementation of Context that delegates to another Context. */
+  public abstract static class DelegatingContext
+      implements BuiltInMetadata.Measure.Context {
+    protected final BuiltInMetadata.Measure.Context context;
+
+    protected DelegatingContext(BuiltInMetadata.Measure.Context context) {
+      this.context = context;
+    }
+
+    @Override public RelBuilder getRelBuilder() {
+      return context.getRelBuilder();
+    }
+
+    @Override public List<RexNode> getFilters(RelBuilder b) {
+      return context.getFilters(b);
+    }
+
+    @Override public int getDimensionCount() {
+      return context.getDimensionCount();
+    }
+  }
 }

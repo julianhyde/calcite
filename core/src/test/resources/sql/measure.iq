@@ -440,7 +440,7 @@ group by deptno;
 
 !ok
 
-# To validate the previous query
+# Data to verify the previous query result.
 select deptno,
     count(*) as c,
     avg(sal) as avg_sal,
@@ -459,18 +459,55 @@ group by deptno;
 
 !ok
 
-!if (false) {
+# Measures defined in a strange order;
+# same measure used several times.
+select deptno,
+    avg_sal as avg_sal,
+    aggregate(avg_sal) as avg_sal2,
+    avg_sal as avg_sal3,
+    c,
+    deptno2 + 1 as d2
+from (
+  select avg(sal) as measure avg_sal,
+    empno,
+    job,
+    deptno as deptno2,
+    count(*) as measure c,
+    deptno
+  from "scott".emp
+  where job in ('ANALYST', 'SALESMAN'))
+where job = 'SALESMAN'
+group by deptno, deptno2;
++--------+---------+----------+----------+---+----+
+| DEPTNO | AVG_SAL | AVG_SAL2 | AVG_SAL3 | C | D2 |
++--------+---------+----------+----------+---+----+
+|     30 | 1400.00 |  1400.00 |  1400.00 | 4 | 31 |
++--------+---------+----------+----------+---+----+
+(1 row)
+
+!ok
+
 # Measure with FILTER
-select deptno, c,
+select job,
+    c,
     aggregate(avg_sal) as avg_sal,
-    aggregate(avg_sal) filter (where job = 'ANALYST') as avg_sal2
+    aggregate(c) filter (where deptno = 20) as c2,
+    aggregate(avg_sal) filter (where deptno = 20) as avg_sal2
 from (
   select *, count(*) as measure c, avg(sal) as measure avg_sal
   from "scott".emp
-  where job in ('ANALYST', 'SALESMAN'))
-group by deptno;
-!ok
-!}
+  where job <> 'PRESIDENT')
+where deptno < 25
+group by job;
++---------+---+-------------------+----+----------+
+| JOB     | C | AVG_SAL           | C2 | AVG_SAL2 |
++---------+---+-------------------+----+----------+
+| ANALYST | 2 |           3000.00 |  2 |  3000.00 |
+| CLERK   | 4 |           1037.50 |  2 |   950.00 |
+| MANAGER | 3 | 2758.333333333333 |  1 |  2975.00 |
++---------+---+-------------------+----+----------+
+(3 rows)
 
+!ok
 
 # End measure.iq
