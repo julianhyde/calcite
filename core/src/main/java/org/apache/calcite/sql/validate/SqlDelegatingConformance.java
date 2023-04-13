@@ -86,4 +86,5 @@ public class SqlDelegatingConformance extends SqlAbstractConformance {
   @Override public SqlLibrary semantics() {
     return delegate.semantics();
   }
+
 }
