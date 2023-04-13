@@ -510,4 +510,94 @@ group by job;
 
 !ok
 
+!if (false) {
+# Null values in GROUP BY
+with emp1 as (
+  select empno, ename, job, sal,
+      case when job = 'ANALYST' or job = 'PRESIDENT' then null
+           else deptno
+      end as deptno
+  from emp),
+empm as (
+  select *, avg(sal) as measure avg_sal
+  from emp1)
+select deptno, avg_sal
+from empm
+group by deptno;
+!ok
+!}
+
+!if (false) {
+# Rollup
+# TODO: number is wrong for 'all' row
+with empm as (
+  select *, avg(sal) as measure avg_sal
+  from emp)
+select deptno, avg_sal
+from empm
+group by rollup(deptno);
++---------+
+| AVG_SAL |
++---------+
+| 2916.67 |
+| 2175.00 |
+| 1566.67 |
+| 2073.21 |
++---------+
+(4 rows)
+
+!ok
+!}
+
+!if (false) {
+# Measure defined in terms of measure
+with empm as (
+  select *,
+      avg(remun) as measure avg_remun,
+      sum(sal + comm) as measure remun
+  from emp)
+select deptno, avg_remun
+from empm
+group by deptno;
+!ok
+!}
+
+!if (false) {
+# Measure used in join query
+with deptm as (
+  select *,
+      sum(deptno) as measure sum_deptno
+  from dept)
+select *
+from deptm as d
+join emp as e using (deptno);
+!ok
+!}
+
+!if (false) {
+# Measure used in join query; note that measure is 'grain-locked'
+with deptm as (
+  select *,
+      sum(deptno) as measure sum_deptno
+  from dept)
+select e.ename, d.dname, d.sum_deptno, count(*) as c
+from deptm as d
+join emp as e using (deptno)
+group by deptno;
+!ok
+!}
+
+!if (false) {
+# Similar, but left join
+with deptm as (
+  select *,
+      sum(deptno) as measure sum_deptno
+  from dept)
+select e.ename, d.dname, d.sum_deptno, count(*) as c
+from deptm as d
+left join emp as e using (deptno)
+group by deptno;
+!ok
+!}
+
 # End measure.iq
