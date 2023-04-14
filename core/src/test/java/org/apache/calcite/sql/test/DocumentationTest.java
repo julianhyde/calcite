@@ -18,6 +18,7 @@ package org.apache.calcite.sql.test;
 
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
@@ -103,19 +104,25 @@ class DocumentationTest {
   @Test void testAllFunctionsAreDocumented() throws IOException {
     final FileFixture f = new FileFixture();
     final Map<String, PatternOp> map = new TreeMap<>();
-    addOperators(map, "", SqlStdOperatorTable.instance().getOperatorList());
-    addOperators(map, "\\| \\* ", SqlLibraryOperatorTableFactory.INSTANCE
-        .getOperatorTable(SqlLibrary.ALL).getOperatorList());
+
+    final SqlStdOperatorTable standard = SqlStdOperatorTable.instance();
+    addOperators(map, "", standard.getOperatorList());
+
     for (SqlLibrary library : SqlLibrary.values()) {
+      final SqlOperatorTable libraryTable =
+          SqlLibraryOperatorTableFactory.INSTANCE
+              .getOperatorTable(EnumSet.of(library), false);
       switch (library) {
       case STANDARD:
       case SPATIAL:
-      case ALL:
         continue;
+      case ALL:
+        addOperators(map, "\\| \\* ", libraryTable.getOperatorList());
+        continue;
+      default:
+        addOperators(map, "\\| [^|]*" + library.abbrev + "[^|]* ",
+            libraryTable.getOperatorList());
       }
-      addOperators(map, "\\| [^|]*" + library.abbrev + "[^|]* ",
-          SqlLibraryOperatorTableFactory.INSTANCE
-              .getOperatorTable(EnumSet.of(library), false).getOperatorList());
     }
     final Set<String> regexSeen = new HashSet<>();
     try (LineNumberReader r = new LineNumberReader(Util.reader(f.inFile))) {

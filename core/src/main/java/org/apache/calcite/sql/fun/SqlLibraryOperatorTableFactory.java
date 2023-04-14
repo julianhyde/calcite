@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -71,44 +70,18 @@ public class SqlLibraryOperatorTableFactory {
   /** A cache that returns an operator table for a given library (or set of
    * libraries). */
   @SuppressWarnings("methodref.receiver.bound.invalid")
-  private final LoadingCache<CacheKey, SqlOperatorTable> cache =
+  private final LoadingCache<ImmutableSet<SqlLibrary>, SqlOperatorTable> cache =
       CacheBuilder.newBuilder().build(CacheLoader.from(this::create));
-
-  /**
-   * Cache key that contains library set and a flag indicate whether include operators under
-   * SqlLibrary.ALL.
-   * */
-  private static class CacheKey {
-
-    private final ImmutableSet<SqlLibrary> librarySet;
-    private final boolean includeOperatorsInAllLib;
-
-    private CacheKey(ImmutableSet<SqlLibrary> librarySet, boolean includeOperatorsUnderAllLib) {
-      this.librarySet = Objects.requireNonNull(librarySet, "librarySet cannot be null");
-      this.includeOperatorsInAllLib = includeOperatorsUnderAllLib;
-    }
-
-    @Override public boolean equals(Object o) {
-      return o == this
-          || o instanceof CacheKey
-          && ((CacheKey) o).includeOperatorsInAllLib == includeOperatorsInAllLib
-          && Objects.equals(((CacheKey) o).librarySet, librarySet);
-    }
-
-    @Override public int hashCode() {
-      return Objects.hash(librarySet, includeOperatorsInAllLib);
-    }
-  }
 
   //~ Methods ----------------------------------------------------------------
 
   /** Creates an operator table that contains operators in the given set of
    * libraries. */
-  private SqlOperatorTable create(CacheKey cacheKey) {
+  private SqlOperatorTable create(ImmutableSet<SqlLibrary> librarySet) {
     final List<SqlOperator> list = new ArrayList<>();
     boolean custom = false;
     boolean standard = false;
-    for (SqlLibrary library : cacheKey.librarySet) {
+    for (SqlLibrary library : librarySet) {
       switch (library) {
       case STANDARD:
         standard = true;
@@ -131,8 +104,7 @@ public class SqlLibraryOperatorTableFactory {
               final SqlOperator op =
                   (SqlOperator) requireNonNull(field.get(this),
                       () -> "null value of " + field + " for " + this);
-              if (operatorIsInLibrary(op.getName(), field, cacheKey.librarySet,
-                  cacheKey.includeOperatorsInAllLib)) {
+              if (operatorIsInLibrary(op.getName(), field, librarySet)) {
                 list.add(op);
               }
             }
@@ -153,7 +125,7 @@ public class SqlLibraryOperatorTableFactory {
 
   /** Returns whether an operator is in one or more of the given libraries. */
   private static boolean operatorIsInLibrary(String operatorName, Field field,
-      Set<SqlLibrary> seekLibrarySet, boolean includeOperatorsInAllLib) {
+      Set<SqlLibrary> seekLibrarySet) {
     LibraryOperator libraryOperator =
         field.getAnnotation(LibraryOperator.class);
     if (libraryOperator == null) {
@@ -166,11 +138,6 @@ public class SqlLibraryOperatorTableFactory {
           + operatorName);
     }
     for (SqlLibrary library : librarySet) {
-      // If the librarySet of an operator contains SqlLibrary.ALL, we think this operator belong
-      // to the all SqlLibrary.
-      if (includeOperatorsInAllLib && library == SqlLibrary.ALL) {
-        return true;
-      }
       if (seekLibrarySet.contains(library)) {
         return true;
       }
@@ -181,19 +148,27 @@ public class SqlLibraryOperatorTableFactory {
   /** Returns a SQL operator table that contains operators in the given library
    * or libraries. */
   public SqlOperatorTable getOperatorTable(SqlLibrary... libraries) {
-    return getOperatorTable(ImmutableSet.copyOf(libraries), true);
+    return getOperatorTable(ImmutableSet.copyOf(libraries));
   }
 
   /** Returns a SQL operator table that contains operators in the given set of
-   * libraries.
-   *
-   * @param librarySet library set.
-   * @param includeOperatorsUnderAllLib whether include operators under SqlLibrary.ALL.
-   * */
+   * libraries. */
+  public SqlOperatorTable getOperatorTable(Iterable<SqlLibrary> librarySet) {
+    return getOperatorTable(librarySet, true);
+  }
+
+  /** Returns a SQL operator table that contains operators in the given set of
+   * libraries, optionally inheriting in operators in {@link SqlLibrary#ALL}. */
   public SqlOperatorTable getOperatorTable(Iterable<SqlLibrary> librarySet,
-      boolean includeOperatorsUnderAllLib) {
+      boolean includeAll) {
     try {
-      return cache.get(new CacheKey(ImmutableSet.copyOf(librarySet), includeOperatorsUnderAllLib));
+      // Expand so that 'hive' becomes 'all,hive';
+      // ensures that operators with library=all get loaded.
+      final List<SqlLibrary> expandedLibrarySet =
+          includeAll
+              ? SqlLibrary.expandUp(librarySet)
+              : ImmutableList.copyOf(librarySet);
+      return cache.get(ImmutableSet.copyOf(expandedLibrarySet));
     } catch (ExecutionException e) {
       throw Util.throwAsRuntime("populating SqlOperatorTable for library "
           + librarySet, Util.causeOrSelf(e));

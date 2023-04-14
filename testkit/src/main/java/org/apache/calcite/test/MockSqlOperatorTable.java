@@ -106,7 +106,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
     return new MockSqlOperatorTable(
         SqlOperatorTables.chain(parentTable,
             SqlLibraryOperatorTableFactory.INSTANCE
-                .getOperatorTable(librarySet, true)));
+                .getOperatorTable(librarySet)));
   }
 
   /** "RAMP" user-defined table function. */

@@ -877,7 +877,7 @@ class LatticeSuggesterTest {
 
     Tester withLibrary(SqlLibrary library) {
       SqlOperatorTable opTab = SqlLibraryOperatorTableFactory.INSTANCE
-          .getOperatorTable(EnumSet.of(SqlLibrary.STANDARD, library), true);
+          .getOperatorTable(EnumSet.of(SqlLibrary.STANDARD, library));
       return withConfig(builder().operatorTable(opTab).build());
     }
   }
