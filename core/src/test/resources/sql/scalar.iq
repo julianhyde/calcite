@@ -239,4 +239,78 @@ select deptno, (select empno from "scott".emp order by empno limit 1) as x from 
 
 !ok
 
+# [CALCITE-5645] Correlated scalar sub-query returns incorrect results
+# when the correlating variable is NULL
+create view emp1 as
+  select empno, ename, job, sal,
+      case when job = 'ANALYST' then null
+           else deptno
+      end as deptno
+  from emp;
+(0 rows modified)
+
+!update
+
+select ename, deptno,
+    (select count(*) as c
+     from emp1 as e2
+     where e2.deptno is not distinct from e1.deptno) as c
+from emp1 as e1;
++--------+--------+---+
+| ENAME  | DEPTNO | C |
++--------+--------+---+
+| ADAMS  |     20 | 3 |
+| ALLEN  |     30 | 6 |
+| BLAKE  |     30 | 6 |
+| CLARK  |     10 | 3 |
+| FORD   |        | 2 |
+| JAMES  |     30 | 6 |
+| JONES  |     20 | 3 |
+| KING   |     10 | 3 |
+| MARTIN |     30 | 6 |
+| MILLER |     10 | 3 |
+| SCOTT  |        | 2 |
+| SMITH  |     20 | 3 |
+| TURNER |     30 | 6 |
+| WARD   |     30 | 6 |
++--------+--------+---+
+(14 rows)
+
+!ok
+
+# This query should return the same result as the previous query.
+select ename, deptno,
+    count(*) over (partition by deptno) as c
+from emp1 as e1;
++--------+--------+---+
+| ENAME  | DEPTNO | C |
++--------+--------+---+
+| ADAMS  |     20 | 3 |
+| ALLEN  |     30 | 6 |
+| BLAKE  |     30 | 6 |
+| CLARK  |     10 | 3 |
+| FORD   |        | 2 |
+| JAMES  |     30 | 6 |
+| JONES  |     20 | 3 |
+| KING   |     10 | 3 |
+| MARTIN |     30 | 6 |
+| MILLER |     10 | 3 |
+| SCOTT  |        | 2 |
+| SMITH  |     20 | 3 |
+| TURNER |     30 | 6 |
+| WARD   |     30 | 6 |
++--------+--------+---+
+(14 rows)
+
+!ok
+
+# Another case of [CALCITE-5645]. As before, the condition on the
+# correlating variable is not '='; this time it is 'IS NOT NULL'.
+select ename, deptno,
+    (select count(*)
+     from emp1 as e2
+     where e1.deptno is null) as c
+from emp1 as e1;
+!ok
+
 # End scalar.iq

@@ -15,9 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-!use post
-values 1;
-EXPR$0
-1
+!use scott
+with emp1 as (select ename, case when job = 'ANALYST' then 0 else deptno end as deptno from emp)
+select ename, deptno,
+    (select count(*)
+     from emp1 as e2
+     where e1.deptno is null) as c
+from emp1 as e1;
+!plan
 !ok
 # End dummy.iq
