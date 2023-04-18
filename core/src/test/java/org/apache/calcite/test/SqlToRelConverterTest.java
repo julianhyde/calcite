@@ -1377,6 +1377,21 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "FROM emp AS a");
   }
 
+  @Test void testCorrelatedScalarNonEqui() {
+    final String sql = "with emp1 as (\n"
+        + "  select ename,\n"
+        + "      case job when 'ANALYST' then null else deptno end as deptno\n"
+        + "  from emp)\n"
+        + "select ename, deptno,\n"
+        + "    (select count(*)\n"
+        + "     from emp1 as e2\n"
+        + "     where e1.deptno is null) as c\n"
+        + "from emp1 as e1";
+    final SqlToRelFixture f = fixture().withSql(sql).withDecorrelate(false);
+    f.withExpand(false).convertsTo("${planNotExpanded}");
+    f.withExpand(true).convertsTo("${planExpanded}");
+  }
+
   @Test void testCorrelationLateralSubQuery() {
     String sql = "SELECT deptno, ename\n"
         + "FROM\n"

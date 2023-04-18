@@ -4591,7 +4591,7 @@ public class SqlToRelConverter {
       // correlation variables have been normalized in p.r, we should use expressions
       // in p.r instead of the original exprs
       Project project1 = (Project) p.r;
-      r = relBuilder.push(bb.root())
+      r = relBuilder.push(project1.getInput())
           .projectNamed(project1.getProjects(), fieldNames, true, ImmutableSet.of(p.id))
           .build();
     } else {

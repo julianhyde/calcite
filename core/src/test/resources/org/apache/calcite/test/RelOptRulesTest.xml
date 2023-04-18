@@ -1938,6 +1938,107 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
 ]]>
     </Resource>
   </TestCase>
+  <TestCase name="testDecorrelateNonEqui">
+    <Resource name="sql">
+      <![CDATA[select ename, deptno,
+    (select count(*)
+     from emp as e2
+     where e1.comm is null) as c
+from emp as e1]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(variablesSet=[[$cor0]], ENAME=[$1], DEPTNO=[$7], C=[$SCALAR_QUERY({
+LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalProject($f0=[0])
+    LogicalFilter(condition=[IS NULL($cor0.COMM)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+})])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planMid">
+      <![CDATA[
+LogicalProject(ENAME=[$1], DEPTNO=[$7], C=[$9])
+  LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{6}])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+      LogicalProject($f0=[0])
+        LogicalFilter(condition=[IS NULL($cor0.COMM)])
+          LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(ENAME=[$1], DEPTNO=[$7], C=[CASE(IS NULL($11), 0:BIGINT, $11)])
+  LogicalJoin(condition=[=($9, $10)], joinType=[left])
+    LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], $f9=[false])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalAggregate(group=[{0}], EXPR$0=[COUNT()])
+      LogicalProject($f9=[$9])
+        LogicalJoin(condition=[true], joinType=[inner])
+          LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+          LogicalFilter(condition=[$0])
+            LogicalAggregate(group=[{0}])
+              LogicalProject($f9=[false])
+                LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
+  <TestCase name="testDecorrelateNonEqui2">
+    <Resource name="sql">
+      <![CDATA[with emp1 as (
+  select ename,
+      case job when 'ANALYST' then null else deptno end as deptno
+  from emp)
+select ename, deptno,
+    (select count(*)
+     from emp1 as e2
+     where e1.deptno is null) as c
+from emp1 as e1]]>
+    </Resource>
+    <Resource name="planBefore">
+      <![CDATA[
+LogicalProject(variablesSet=[[$cor0]], ENAME=[$1], DEPTNO=[CASE(=($2, 'ANALYST'), null:INTEGER, $7)], C=[$SCALAR_QUERY({
+LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+  LogicalProject($f0=[0])
+    LogicalFilter(condition=[IS NULL($cor0.DEPTNO)])
+      LogicalProject(ENAME=[$1], DEPTNO=[CASE(=($2, 'ANALYST'), null:INTEGER, $7)])
+        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+})])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planMid">
+      <![CDATA[
+LogicalProject(ENAME=[$1], DEPTNO=[CASE(=($2, 'ANALYST'), null:INTEGER, $7)], C=[$9])
+  LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{1}])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
+      LogicalProject($f0=[0])
+        LogicalFilter(condition=[IS NULL($cor0.DEPTNO)])
+          LogicalProject(ENAME=[$1], DEPTNO=[CASE(=($2, 'ANALYST'), null:INTEGER, $7)])
+            LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(ENAME=[$1], DEPTNO=[CASE(=($2, 'ANALYST'), null:INTEGER, $7)], C=[CASE(IS NULL($11), 0:BIGINT, $11)])
+  LogicalJoin(condition=[=($9, $10)], joinType=[left])
+    LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], $f9=[false])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalAggregate(group=[{0}], EXPR$0=[COUNT()])
+      LogicalProject($f9=[$2])
+        LogicalJoin(condition=[true], joinType=[inner])
+          LogicalProject(ENAME=[$1], DEPTNO=[CASE(=($2, 'ANALYST'), null:INTEGER, $7)])
+            LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+          LogicalFilter(condition=[$0])
+            LogicalAggregate(group=[{0}])
+              LogicalProject($f9=[false])
+                LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testDecorrelateTwoExists">
     <Resource name="sql">
       <![CDATA[select * from sales.emp
@@ -2060,7 +2161,7 @@ from dept as d]]>
     </Resource>
     <Resource name="planBefore">
       <![CDATA[
-LogicalProject(DEPTNO=[$0], I0=[$SCALAR_QUERY({
+LogicalProject(variablesSet=[[$cor0]], DEPTNO=[$0], I0=[$SCALAR_QUERY({
 LogicalAggregate(group=[{}], EXPR$0=[MIN($0)])
   LogicalProject($f0=[1])
     LogicalFilter(condition=[>($0, $cor0.DEPTNO)])
@@ -2068,7 +2169,7 @@ LogicalAggregate(group=[{}], EXPR$0=[MIN($0)])
 })], I1=[$SCALAR_QUERY({
 LogicalAggregate(group=[{}], EXPR$0=[MIN($0)])
   LogicalProject($f0=[0])
-    LogicalFilter(condition=[AND(=($7, $cor1.DEPTNO), =($1, 'SMITH'))])
+    LogicalFilter(condition=[AND(=($7, $cor0.DEPTNO), =($1, 'SMITH'))])
       LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 })])
   LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
@@ -2077,8 +2178,8 @@ LogicalAggregate(group=[{}], EXPR$0=[MIN($0)])
     <Resource name="planMid">
       <![CDATA[
 LogicalProject(DEPTNO=[$0], I0=[$2], I1=[$3])
-  LogicalJoin(condition=[true], joinType=[left])
-    LogicalJoin(condition=[true], joinType=[left])
+  LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{0}])
+    LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{0}])
       LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
       LogicalAggregate(group=[{}], EXPR$0=[MIN($0)])
         LogicalProject($f0=[1])
@@ -2086,7 +2187,26 @@ LogicalProject(DEPTNO=[$0], I0=[$2], I1=[$3])
             LogicalTableScan(table=[[CATALOG, SALES, EMP]])
     LogicalAggregate(group=[{}], EXPR$0=[MIN($0)])
       LogicalProject($f0=[0])
-        LogicalFilter(condition=[AND(=($7, $cor1.DEPTNO), =($1, 'SMITH'))])
+        LogicalFilter(condition=[AND(=($7, $cor0.DEPTNO), =($1, 'SMITH'))])
+          LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planAfter">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], I0=[$2], I1=[$4])
+  LogicalJoin(condition=[=($0, $3)], joinType=[left])
+    LogicalProject(DEPTNO=[$0], NAME=[$1], EXPR$0=[$3])
+      LogicalJoin(condition=[=($0, $2)], joinType=[left])
+        LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+        LogicalAggregate(group=[{0}], EXPR$0=[MIN($1)])
+          LogicalProject(DEPTNO0=[$9], $f0=[1])
+            LogicalJoin(condition=[>($0, $9)], joinType=[inner])
+              LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+              LogicalProject(DEPTNO=[$0])
+                LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
+    LogicalAggregate(group=[{0}], EXPR$0=[MIN($1)])
+      LogicalProject(DEPTNO=[$7], $f0=[0])
+        LogicalFilter(condition=[=($1, 'SMITH')])
           LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>

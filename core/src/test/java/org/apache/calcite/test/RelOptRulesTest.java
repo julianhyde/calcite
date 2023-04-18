@@ -6626,13 +6626,40 @@ class RelOptRulesTest extends RelOptTestBase {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-1045">[CALCITE-1045]
    * Decorrelate sub-queries in Project and Join</a>, with the added
    * complication that there are two sub-queries. */
-  @Disabled("[CALCITE-1045]")
   @Test void testDecorrelateTwoScalar() {
     final String sql = "select deptno,\n"
         + "  (select min(1) from emp where empno > d.deptno) as i0,\n"
         + "  (select min(0) from emp\n"
         + "    where deptno = d.deptno and ename = 'SMITH') as i1\n"
         + "from dept as d";
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5645">[CALCITE-5645]
+   * Correlated scalar sub-query returns incorrect results when the correlating
+   * variable is NULL</a>. */
+  @Test void testDecorrelateNonEqui() {
+    final String sql = "select ename, deptno,\n"
+        + "    (select count(*)\n"
+        + "     from emp as e2\n"
+        + "     where e1.comm is null) as c\n"
+        + "from emp as e1";
+    sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
+  }
+
+  /** Similar to {@link #testDecorrelateNonEqui} but the nullable column is
+   * defined using an expression. */
+  @Test void testDecorrelateNonEqui2() {
+    final String sql = "with emp1 as (\n"
+        + "  select ename,\n"
+        + "      case job when 'ANALYST' then null else deptno end as deptno\n"
+        + "  from emp)\n"
+        + "select ename, deptno,\n"
+        + "    (select count(*)\n"
+        + "     from emp1 as e2\n"
+        + "     where e1.deptno is null) as c\n"
+        + "from emp1 as e1";
     sql(sql).withSubQueryRules().withLateDecorrelate(true).check();
   }
 
