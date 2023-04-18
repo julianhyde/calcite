@@ -401,6 +401,109 @@ EnumerableCalc(expr#0..9=[{inputs}], expr#10=[0], expr#11=[=($t5, $t10)], expr#1
                   EnumerableTableScan(table=[[scott, DEPT]])
 !plan
 
+!if (false) {
+# [CALCITE-5360] Correlated NOT IN sub-query with non-equi condition
+# Throws: java.lang.NullPointerException
+#   at java.base/java.util.Objects.requireNonNull(Objects.java:208)
+#   at org.apache.calcite.sql2rel.RelDecorrelator.createValueGenerator(RelDecorrelator.java:833)
+SELECT
+  (SELECT 1 FROM "scott".emp AS d WHERE d.job = a.job LIMIT 1) AS t1,
+  (SELECT a.job = 'PRESIDENT' FROM "scott".emp AS s LIMIT 1) as t2
+FROM "scott".emp AS a;
+!ok
+!}
+
+# Similar to previous query
+SELECT ename,
+    (SELECT 1
+     FROM emp AS d
+     WHERE d.job = a.job AND d.empno <> a.empno
+     LIMIT 1) AS t1
+FROM emp AS a;
++--------+----+
+| ENAME  | T1 |
++--------+----+
+| ADAMS  |  1 |
+| ALLEN  |  1 |
+| BLAKE  |  1 |
+| CLARK  |  1 |
+| FORD   |  1 |
+| JAMES  |  1 |
+| JONES  |  1 |
+| KING   |    |
+| MARTIN |  1 |
+| MILLER |  1 |
+| SCOTT  |  1 |
+| SMITH  |  1 |
+| TURNER |  1 |
+| WARD   |  1 |
++--------+----+
+(14 rows)
+
+!ok
+
+# Also similar to previous query
+SELECT ename,
+  (SELECT a.job = 'PRESIDENT' FROM emp AS s LIMIT 1) as t2
+FROM emp AS a;
++--------+-------+
+| ENAME  | T2    |
++--------+-------+
+| ADAMS  | false |
+| ALLEN  | false |
+| BLAKE  | false |
+| CLARK  | false |
+| FORD   | false |
+| JAMES  | false |
+| JONES  | false |
+| KING   | true  |
+| MARTIN | false |
+| MILLER | false |
+| SCOTT  | false |
+| SMITH  | false |
+| TURNER | false |
+| WARD   | false |
++--------+-------+
+(14 rows)
+
+!ok
+
+!if (false) {
+# [CALCITE-5360] Correlated NOT IN sub-query with non-equi condition
+# Throws: java.lang.NullPointerException
+#   at java.base/java.util.Objects.requireNonNull(Objects.java:208)
+#   at org.apache.calcite.sql2rel.RelDecorrelator.createValueGenerator(RelDecorrelator.java:833)
+SELECT *
+FROM emp AS e
+WHERE e.ename NOT IN (
+  SELECT d.dname
+  FROM dept AS d
+  WHERE e.deptno = d.deptno OR e.job = 'ANALYST');
+!ok
+!}
+
+!if (false) {
+# Also from [CALCITE-5360], two scalar sub-queries
+# Throws:
+# java.lang.AssertionError: Required columns {3} not subset of left columns {0, 1}
+# 	at org.apache.calcite.util.Litmus$1.fail(Litmus.java:32)
+# 	at org.apache.calcite.util.Litmus$1.check(Litmus.java:44)
+# 	at org.apache.calcite.rel.core.Correlate.isValid(Correlate.java:145)
+# 	at org.apache.calcite.rel.core.Correlate.<init>(Correlate.java:109)
+# 	at org.apache.calcite.rel.logical.LogicalCorrelate.<init>(LogicalCorrelate.java:72)
+# 	at org.apache.calcite.rel.logical.LogicalCorrelate.create(LogicalCorrelate.java:115)
+# 	at org.apache.calcite.rel.core.RelFactories$CorrelateFactoryImpl.createCorrelate(RelFactories.java:440)
+# 	at org.apache.calcite.tools.RelBuilder.join(RelBuilder.java:2861)
+# 	at org.apache.calcite.rel.rules.SubQueryRemoveRule.rewriteIn(SubQueryRemoveRule.java:698)
+SELECT job
+FROM emp AS e
+WHERE ((CASE WHEN ename NOT IN (SELECT dname FROM dept AS s WHERE s.deptno = e.deptno)
+        THEN '1'
+        ELSE  '2' END)
+   NOT IN (SELECT dname FROM dept AS d WHERE e.deptno = d.deptno));
+!ok
+!}
+
 # Condition that returns a NULL key.
 # Tested on Oracle.
 select count(*) as c

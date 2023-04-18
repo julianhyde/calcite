@@ -816,6 +816,44 @@ LogicalProject(EMPNO=[$0], JOB=[$2])
 ]]>
     </Resource>
   </TestCase>
+  <TestCase name="testCorrelatedScalarLimitSubQuery">
+    <Resource name="sql">
+      <![CDATA[SELECT
+  (SELECT 1 FROM emp d WHERE d.job = a.job LIMIT 1) AS t1,
+  (SELECT a.job = 'PRESIDENT' FROM emp s LIMIT 1) as t2
+FROM emp AS a]]>
+    </Resource>
+    <Resource name="planExpanded">
+      <![CDATA[
+LogicalProject(T1=[$9], T2=[$10])
+  LogicalCorrelate(correlation=[$cor1], joinType=[left], requiredColumns=[{2}])
+    LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{2}])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+      LogicalSort(fetch=[1])
+        LogicalProject(EXPR$0=[1])
+          LogicalFilter(condition=[=($2, $cor0.JOB)])
+            LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+    LogicalSort(fetch=[1])
+      LogicalProject(EXPR$0=[=($cor1.JOB, 'PRESIDENT')])
+        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+    <Resource name="planNotExpanded">
+      <![CDATA[
+LogicalProject(variablesSet=[[$cor0]], T1=[$SCALAR_QUERY({
+LogicalSort(fetch=[1])
+  LogicalProject(EXPR$0=[1])
+    LogicalFilter(condition=[=($2, $cor0.JOB)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+})], T2=[$SCALAR_QUERY({
+LogicalSort(fetch=[1])
+  LogicalProject(EXPR$0=[=($cor0.JOB, 'PRESIDENT')])
+    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+})])
+  LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testCorrelatedScalarSubQueryInSelectList">
     <Resource name="planNotExpanded">
       <![CDATA[

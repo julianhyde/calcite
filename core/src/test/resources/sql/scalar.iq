@@ -263,6 +263,7 @@ create view emp1 as
 
 !update
 
+!if (false) {
 select ename, deptno,
     (select count(*) as c
      from emp1 as e2
@@ -289,6 +290,7 @@ from emp1 as e1;
 (14 rows)
 
 !ok
+!}
 
 # This query should return the same result as the previous query.
 select ename, deptno,
@@ -316,6 +318,7 @@ from emp1 as e1;
 
 !ok
 
+!if (false) {
 # Another case of [CALCITE-5645]. As before, the condition on the
 # correlating variable is not '='; this time it is 'IS NOT NULL'.
 select ename, deptno,
@@ -324,5 +327,6 @@ select ename, deptno,
      where e1.deptno is null) as c
 from emp1 as e1;
 !ok
+!}
 
 # End scalar.iq

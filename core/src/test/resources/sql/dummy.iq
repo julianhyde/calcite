@@ -16,6 +16,20 @@
 # limitations under the License.
 #
 !use scott
+
+!if (false) {
+# [CALCITE-5360] Correlated NOT IN sub-query with non-equi condition
+# Throws: java.lang.NullPointerException
+#   at java.base/java.util.Objects.requireNonNull(Objects.java:208)
+#   at org.apache.calcite.sql2rel.RelDecorrelator.createValueGenerator(RelDecorrelator.java:833)
+SELECT
+  (SELECT 1 FROM emp AS d WHERE d.job = a.job LIMIT 1) AS t1,
+  (SELECT a.job = 'PRESIDENT' FROM emp AS s LIMIT 1) as t2
+FROM emp AS a;
+!ok
+!}
+
+!if (false) {
 with emp1 as (select ename, case when job = 'ANALYST' then 0 else deptno end as deptno from emp)
 select ename, deptno,
     (select count(*)
@@ -24,4 +38,6 @@ select ename, deptno,
 from emp1 as e1;
 !plan
 !ok
+!}
+
 # End dummy.iq

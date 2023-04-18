@@ -1364,6 +1364,19 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "from dept as d");
   }
 
+  @Test void testCorrelatedScalarLimitSubQuery() {
+    Consumer<String> fn = sql -> {
+      sql(sql).withExpand(true).withDecorrelate(false)
+          .convertsTo("${planExpanded}");
+      sql(sql).withExpand(false).withDecorrelate(false)
+          .convertsTo("${planNotExpanded}");
+    };
+    fn.accept("SELECT\n"
+        + "  (SELECT 1 FROM emp d WHERE d.job = a.job LIMIT 1) AS t1,\n"
+        + "  (SELECT a.job = 'PRESIDENT' FROM emp s LIMIT 1) as t2\n"
+        + "FROM emp AS a");
+  }
+
   @Test void testCorrelationLateralSubQuery() {
     String sql = "SELECT deptno, ename\n"
         + "FROM\n"
