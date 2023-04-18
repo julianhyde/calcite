@@ -1350,31 +1350,25 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test void testCorrelatedScalarSubQueryInSelectList() {
-    Consumer<String> fn = sql -> {
-      sql(sql).withExpand(true).withDecorrelate(false)
-          .convertsTo("${planExpanded}");
-      sql(sql).withExpand(false).withDecorrelate(false)
-          .convertsTo("${planNotExpanded}");
-    };
-    fn.accept("select deptno,\n"
+    final String sql = "select deptno,\n"
         + "  (select min(1) from emp where empno > d.deptno) as i0,\n"
         + "  (select min(0) from emp where deptno = d.deptno "
         + "                            and ename = 'SMITH'"
         + "                            and d.deptno > 0) as i1\n"
-        + "from dept as d");
+        + "from dept as d";
+    final SqlToRelFixture f = sql(sql).withDecorrelate(false);
+    f.withExpand(false).convertsTo("${planNotExpanded}");
+    f.withExpand(true).convertsTo("${planExpanded}");
   }
 
   @Test void testCorrelatedScalarLimitSubQuery() {
-    Consumer<String> fn = sql -> {
-      sql(sql).withExpand(true).withDecorrelate(false)
-          .convertsTo("${planExpanded}");
-      sql(sql).withExpand(false).withDecorrelate(false)
-          .convertsTo("${planNotExpanded}");
-    };
-    fn.accept("SELECT\n"
+    final String sql = "SELECT\n"
         + "  (SELECT 1 FROM emp d WHERE d.job = a.job LIMIT 1) AS t1,\n"
         + "  (SELECT a.job = 'PRESIDENT' FROM emp s LIMIT 1) as t2\n"
-        + "FROM emp AS a");
+        + "FROM emp AS a";
+    final SqlToRelFixture f = sql(sql).withDecorrelate(false);
+    f.withExpand(false).convertsTo("${planNotExpanded}");
+    f.withExpand(true).convertsTo("${planExpanded}");
   }
 
   @Test void testCorrelatedScalarNonEqui() {
@@ -1387,7 +1381,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "     from emp1 as e2\n"
         + "     where e1.deptno is null) as c\n"
         + "from emp1 as e1";
-    final SqlToRelFixture f = fixture().withSql(sql).withDecorrelate(false);
+    final SqlToRelFixture f = sql(sql).withDecorrelate(false);
     f.withExpand(false).convertsTo("${planNotExpanded}");
     f.withExpand(true).convertsTo("${planExpanded}");
   }
@@ -4835,15 +4829,9 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         + "  FROM emp\n"
         + "  WHERE  emp.deptno = dept.deptno\n"
         + ")";
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(true)
-            .withDecorrelationEnabled(true))
+    sql(sql).withExpand(true).withDecorrelate(true)
         .convertsTo("${planExpanded}");
-    sql(sql)
-        .withConfig(configBuilder -> configBuilder
-            .withExpand(false)
-            .withDecorrelationEnabled(false))
+    sql(sql).withExpand(false).withDecorrelate(false)
         .convertsTo("${planNotExpanded}");
   }
 
