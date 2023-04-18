@@ -52,7 +52,6 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.test.AbstractSqlTester;
 import org.apache.calcite.sql.test.SqlOperatorFixture;
-import org.apache.calcite.sql.test.SqlOperatorFixture.CastType;
 import org.apache.calcite.sql.test.SqlOperatorFixture.VmName;
 import org.apache.calcite.sql.test.SqlTestFactory;
 import org.apache.calcite.sql.test.SqlTester;
@@ -432,53 +431,51 @@ public class SqlOperatorTest {
         true);
   }
 
+  /** Tests that CAST and SAFE_CAST are basically equivalent but SAFE_CAST is
+   * only available in BigQuery library. */
+  @Test void testCastVsSafeCast() {
+    // SAFE_CAST is available in BigQuery library but not by default
+    final SqlOperatorFixture f0 = fixture();
+    f0.checkScalar("cast(12 + 3 as varchar(10))", "15", "VARCHAR(10) NOT NULL");
+    f0.checkFails("^safe_cast(12 + 3 as varchar(10))^",
+        "No match found for function signature SAFE_CAST\\(<NUMERIC>, <CHARACTER>\\)",
+        false);
+
+    final SqlOperatorFixture f = f0.withLibrary(SqlLibrary.BIG_QUERY);
+    f.checkScalar("cast(12 + 3 as varchar(10))", "15", "VARCHAR(10) NOT NULL");
+    f.checkScalar("safe_cast(12 + 3 as varchar(10))", "15", "VARCHAR(10)");
+  }
+
   /** Generates parameters to test both regular and safe cast. */
   static Stream<Arguments> safeParameters() {
     SqlOperatorFixture f = SqlOperatorFixtureImpl.DEFAULT;
     SqlOperatorFixture f2 =
-        SqlOperatorFixtures.safeCastWrapper(f.withLibrary(SqlLibrary.BIG_QUERY), "SAFE_CAST");
+        f.withLibrary(SqlLibrary.BIG_QUERY).withSafeCastWrapper();
     SqlOperatorFixture f3 =
-        SqlOperatorFixtures.safeCastWrapper(f.withLibrary(SqlLibrary.MSSQL), "TRY_CAST");
+        f.withLibrary(SqlLibrary.MSSQL).withSafeCastWrapper();
     return Stream.of(
-        () -> new Object[] {CastType.CAST, f},
-        () -> new Object[] {CastType.SAFE_CAST, f2},
-        () -> new Object[] {CastType.TRY_CAST, f3});
-  }
-
-  /** Tests that CAST, SAFE_CAST and TRY_CAST are basically equivalent but SAFE_CAST is
-   * only available in BigQuery library and TRY_CAST is only available in MSSQL library. */
-  @ParameterizedTest
-  @MethodSource("safeParameters")
-  void testCast(CastType castType, SqlOperatorFixture f) {
-    // SAFE_CAST is available in BigQuery library but not by default.
-    // TRY_CAST is available in MSSQL library but not by default.
-    final SqlOperatorFixture f0 = fixture();
-    if (castType != CastType.CAST) {
-      f0.checkFails("^" + castType.name() + "(12 + 3 as varchar(10))^",
-          "No match found for function signature " + castType.name().toUpperCase(Locale.ROOT)
-              + "\\(<NUMERIC>, <CHARACTER>\\)", false);
-    }
-
-    f.checkScalar(castType.name() + "(12 + 3 as varchar(10))", "15", "VARCHAR(10) NOT NULL");
+        () -> new Object[] {false, f},
+        () -> new Object[] {true, f2},
+        () -> new Object[] {true, f3});
   }
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastToString(CastType castType, SqlOperatorFixture f) {
+  void testCastToString(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     f.checkCastToString("cast(cast('abc' as char(4)) as varchar(6))", null,
-        "abc ", castType);
+        "abc ", safe);
 
     // integer
-    f.checkCastToString("123", "CHAR(3)", "123", castType);
+    f.checkCastToString("123", "CHAR(3)", "123", safe);
 
-    f.checkCastToString("0", "CHAR", "0", castType);
-    f.checkCastToString("-123", "CHAR(4)", "-123", castType);
+    f.checkCastToString("0", "CHAR", "0", safe);
+    f.checkCastToString("-123", "CHAR(4)", "-123", safe);
 
     // decimal
-    f.checkCastToString("123.4", "CHAR(5)", "123.4", castType);
-    f.checkCastToString("-0.0", "CHAR(2)", ".0", castType);
-    f.checkCastToString("-123.4", "CHAR(6)", "-123.4", castType);
+    f.checkCastToString("123.4", "CHAR(5)", "123.4", safe);
+    f.checkCastToString("-0.0", "CHAR(2)", ".0", safe);
+    f.checkCastToString("-123.4", "CHAR(6)", "-123.4", safe);
 
     f.checkString("cast(1.29 as varchar(10))", "1.29", "VARCHAR(10) NOT NULL");
     f.checkString("cast(.48 as varchar(10))", ".48", "VARCHAR(10) NOT NULL");
@@ -490,33 +487,33 @@ public class SqlOperatorTest {
         "-1.29", "VARCHAR(10) NOT NULL");
 
     // approximate
-    f.checkCastToString("1.23E45", "CHAR(7)", "1.23E45", castType);
-    f.checkCastToString("CAST(0 AS DOUBLE)", "CHAR(3)", "0E0", castType);
-    f.checkCastToString("-1.20e-07", "CHAR(7)", "-1.2E-7", castType);
-    f.checkCastToString("cast(0e0 as varchar(5))", "CHAR(3)", "0E0", castType);
+    f.checkCastToString("1.23E45", "CHAR(7)", "1.23E45", safe);
+    f.checkCastToString("CAST(0 AS DOUBLE)", "CHAR(3)", "0E0", safe);
+    f.checkCastToString("-1.20e-07", "CHAR(7)", "-1.2E-7", safe);
+    f.checkCastToString("cast(0e0 as varchar(5))", "CHAR(3)", "0E0", safe);
     if (TODO) {
       f.checkCastToString("cast(-45e-2 as varchar(17))", "CHAR(7)",
-          "-4.5E-1", castType);
+          "-4.5E-1", safe);
     }
     if (TODO) {
       f.checkCastToString("cast(4683442.3432498375e0 as varchar(20))",
           "CHAR(19)",
-          "4.683442343249838E6", castType);
+          "4.683442343249838E6", safe);
     }
     if (TODO) {
-      f.checkCastToString("cast(-0.1 as real)", "CHAR(5)", "-1E-1", castType);
+      f.checkCastToString("cast(-0.1 as real)", "CHAR(5)", "-1E-1", safe);
     }
     f.checkString("cast(1.3243232e0 as varchar(4))", "1.32",
         "VARCHAR(4) NOT NULL");
     f.checkString("cast(1.9e5 as char(4))", "1.9E", "CHAR(4) NOT NULL");
 
     // string
-    f.checkCastToString("'abc'", "CHAR(1)", "a", castType);
-    f.checkCastToString("'abc'", "CHAR(3)", "abc", castType);
-    f.checkCastToString("cast('abc' as varchar(6))", "CHAR(3)", "abc", castType);
-    f.checkCastToString("cast(' abc  ' as varchar(10))", null, " abc  ", castType);
+    f.checkCastToString("'abc'", "CHAR(1)", "a", safe);
+    f.checkCastToString("'abc'", "CHAR(3)", "abc", safe);
+    f.checkCastToString("cast('abc' as varchar(6))", "CHAR(3)", "abc", safe);
+    f.checkCastToString("cast(' abc  ' as varchar(10))", null, " abc  ", safe);
     f.checkCastToString("cast(cast('abc' as char(4)) as varchar(6))", null,
-        "abc ", castType);
+        "abc ", safe);
     f.checkString("cast(cast('a' as char(2)) as varchar(3)) || 'x' ",
         "a x", "VARCHAR(4) NOT NULL");
     f.checkString("cast(cast('a' as char(3)) as varchar(5)) || 'x' ",
@@ -536,26 +533,26 @@ public class SqlOperatorTest {
         "INTEGER NOT NULL");
 
     // date & time
-    f.checkCastToString("date '2008-01-01'", "CHAR(10)", "2008-01-01", castType);
-    f.checkCastToString("time '1:2:3'", "CHAR(8)", "01:02:03", castType);
+    f.checkCastToString("date '2008-01-01'", "CHAR(10)", "2008-01-01", safe);
+    f.checkCastToString("time '1:2:3'", "CHAR(8)", "01:02:03", safe);
     f.checkCastToString("timestamp '2008-1-1 1:2:3'", "CHAR(19)",
-        "2008-01-01 01:02:03", castType);
+        "2008-01-01 01:02:03", safe);
     f.checkCastToString("timestamp '2008-1-1 1:2:3'", "VARCHAR(30)",
-        "2008-01-01 01:02:03", castType);
+        "2008-01-01 01:02:03", safe);
 
-    f.checkCastToString("interval '3-2' year to month", "CHAR(5)", "+3-02", castType);
-    f.checkCastToString("interval '32' month", "CHAR(3)", "+32", castType);
+    f.checkCastToString("interval '3-2' year to month", "CHAR(5)", "+3-02", safe);
+    f.checkCastToString("interval '32' month", "CHAR(3)", "+32", safe);
     f.checkCastToString("interval '1 2:3:4' day to second", "CHAR(11)",
-        "+1 02:03:04", castType);
+        "+1 02:03:04", safe);
     f.checkCastToString("interval '1234.56' second(4,2)", "CHAR(8)",
-        "+1234.56", castType);
-    f.checkCastToString("interval '60' day", "CHAR(8)", "+60     ", castType);
+        "+1234.56", safe);
+    f.checkCastToString("interval '60' day", "CHAR(8)", "+60     ", safe);
 
     // boolean
-    f.checkCastToString("True", "CHAR(4)", "TRUE", castType);
-    f.checkCastToString("True", "CHAR(6)", "TRUE  ", castType);
-    f.checkCastToString("True", "VARCHAR(6)", "TRUE", castType);
-    f.checkCastToString("False", "CHAR(5)", "FALSE", castType);
+    f.checkCastToString("True", "CHAR(4)", "TRUE", safe);
+    f.checkCastToString("True", "CHAR(6)", "TRUE  ", safe);
+    f.checkCastToString("True", "VARCHAR(6)", "TRUE", safe);
+    f.checkCastToString("False", "CHAR(5)", "FALSE", safe);
 
     f.checkString("cast(true as char(3))", "TRU", "CHAR(3) NOT NULL");
     f.checkString("cast(false as char(4))", "FALS", "CHAR(4) NOT NULL");
@@ -565,7 +562,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastExactNumericLimits(CastType castType, SqlOperatorFixture f) {
+  void testCastExactNumericLimits(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     // Test casting for min,max, out of range for exact numeric types
@@ -582,74 +579,74 @@ public class SqlOperatorTest {
       }
 
       // Convert from literal to type
-      f.checkCastToScalarOkay(numeric.maxNumericString, type, castType);
-      f.checkCastToScalarOkay(numeric.minNumericString, type, castType);
+      f.checkCastToScalarOkay(numeric.maxNumericString, type, safe);
+      f.checkCastToScalarOkay(numeric.minNumericString, type, safe);
 
       // Overflow test
       if (numeric == Numeric.BIGINT) {
         // Literal of range
         f.checkCastFails(numeric.maxOverflowNumericString,
-            type, LITERAL_OUT_OF_RANGE_MESSAGE, false, castType);
+            type, LITERAL_OUT_OF_RANGE_MESSAGE, false, safe);
         f.checkCastFails(numeric.minOverflowNumericString,
-            type, LITERAL_OUT_OF_RANGE_MESSAGE, false, castType);
+            type, LITERAL_OUT_OF_RANGE_MESSAGE, false, safe);
       } else {
         if (Bug.CALCITE_2539_FIXED) {
           f.checkCastFails(numeric.maxOverflowNumericString,
-              type, OUT_OF_RANGE_MESSAGE, true, castType);
+              type, OUT_OF_RANGE_MESSAGE, true, safe);
           f.checkCastFails(numeric.minOverflowNumericString,
-              type, OUT_OF_RANGE_MESSAGE, true, castType);
+              type, OUT_OF_RANGE_MESSAGE, true, safe);
         }
       }
 
       // Convert from string to type
       f.checkCastToScalarOkay("'" + numeric.maxNumericString + "'",
-          type, numeric.maxNumericString, castType);
+          type, numeric.maxNumericString, safe);
       f.checkCastToScalarOkay("'" + numeric.minNumericString + "'",
-          type, numeric.minNumericString, castType);
+          type, numeric.minNumericString, safe);
 
       if (Bug.CALCITE_2539_FIXED) {
         f.checkCastFails("'" + numeric.maxOverflowNumericString + "'",
-            type, OUT_OF_RANGE_MESSAGE, true, castType);
+            type, OUT_OF_RANGE_MESSAGE, true, safe);
         f.checkCastFails("'" + numeric.minOverflowNumericString + "'",
-            type, OUT_OF_RANGE_MESSAGE, true, castType);
+            type, OUT_OF_RANGE_MESSAGE, true, safe);
       }
 
       // Convert from type to string
-      f.checkCastToString(numeric.maxNumericString, null, null, castType);
-      f.checkCastToString(numeric.maxNumericString, type, null, castType);
+      f.checkCastToString(numeric.maxNumericString, null, null, safe);
+      f.checkCastToString(numeric.maxNumericString, type, null, safe);
 
-      f.checkCastToString(numeric.minNumericString, null, null, castType);
-      f.checkCastToString(numeric.minNumericString, type, null, castType);
+      f.checkCastToString(numeric.minNumericString, null, null, safe);
+      f.checkCastToString(numeric.minNumericString, type, null, safe);
 
       if (Bug.CALCITE_2539_FIXED) {
         f.checkCastFails("'notnumeric'", type, INVALID_CHAR_MESSAGE, true,
-            castType);
+            safe);
       }
     });
   }
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastToExactNumeric(CastType castType, SqlOperatorFixture f) {
+  void testCastToExactNumeric(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
-    f.checkCastToScalarOkay("1", "BIGINT", castType);
-    f.checkCastToScalarOkay("1", "INTEGER", castType);
-    f.checkCastToScalarOkay("1", "SMALLINT", castType);
-    f.checkCastToScalarOkay("1", "TINYINT", castType);
-    f.checkCastToScalarOkay("1", "DECIMAL(4, 0)", castType);
-    f.checkCastToScalarOkay("-1", "BIGINT", castType);
-    f.checkCastToScalarOkay("-1", "INTEGER", castType);
-    f.checkCastToScalarOkay("-1", "SMALLINT", castType);
-    f.checkCastToScalarOkay("-1", "TINYINT", castType);
-    f.checkCastToScalarOkay("-1", "DECIMAL(4, 0)", castType);
+    f.checkCastToScalarOkay("1", "BIGINT", safe);
+    f.checkCastToScalarOkay("1", "INTEGER", safe);
+    f.checkCastToScalarOkay("1", "SMALLINT", safe);
+    f.checkCastToScalarOkay("1", "TINYINT", safe);
+    f.checkCastToScalarOkay("1", "DECIMAL(4, 0)", safe);
+    f.checkCastToScalarOkay("-1", "BIGINT", safe);
+    f.checkCastToScalarOkay("-1", "INTEGER", safe);
+    f.checkCastToScalarOkay("-1", "SMALLINT", safe);
+    f.checkCastToScalarOkay("-1", "TINYINT", safe);
+    f.checkCastToScalarOkay("-1", "DECIMAL(4, 0)", safe);
 
-    f.checkCastToScalarOkay("1.234E3", "INTEGER", "1234", castType);
-    f.checkCastToScalarOkay("-9.99E2", "INTEGER", "-999", castType);
-    f.checkCastToScalarOkay("'1'", "INTEGER", "1", castType);
-    f.checkCastToScalarOkay("' 01 '", "INTEGER", "1", castType);
-    f.checkCastToScalarOkay("'-1'", "INTEGER", "-1", castType);
-    f.checkCastToScalarOkay("' -00 '", "INTEGER", "0", castType);
+    f.checkCastToScalarOkay("1.234E3", "INTEGER", "1234", safe);
+    f.checkCastToScalarOkay("-9.99E2", "INTEGER", "-999", safe);
+    f.checkCastToScalarOkay("'1'", "INTEGER", "1", safe);
+    f.checkCastToScalarOkay("' 01 '", "INTEGER", "1", safe);
+    f.checkCastToScalarOkay("'-1'", "INTEGER", "-1", safe);
+    f.checkCastToScalarOkay("' -00 '", "INTEGER", "0", safe);
 
     // string to integer
     f.checkScalarExact("cast('6543' as integer)", 6543);
@@ -661,7 +658,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastStringToDecimal(CastType castType, SqlOperatorFixture f) {
+  void testCastStringToDecimal(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     if (!DECIMAL) {
       return;
@@ -691,7 +688,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastIntervalToNumeric(CastType castType, SqlOperatorFixture f) {
+  void testCastIntervalToNumeric(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     // interval to decimal
@@ -799,7 +796,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastToInterval(CastType castType, SqlOperatorFixture f) {
+  void testCastToInterval(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     f.checkScalar(
         "cast(5 as interval second)",
@@ -854,7 +851,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastIntervalToInterval(CastType castType, SqlOperatorFixture f) {
+  void testCastIntervalToInterval(boolean safe, SqlOperatorFixture f) {
     f.checkScalar("cast(interval '2 5' day to hour as interval hour to minute)",
         "+53:00",
         "INTERVAL HOUR TO MINUTE NOT NULL");
@@ -874,7 +871,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastWithRoundingToScalar(CastType castType, SqlOperatorFixture f) {
+  void testCastWithRoundingToScalar(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     f.checkFails("cast(1.25 as int)", "INTEGER", true);
@@ -915,7 +912,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastDecimalToDoubleToInteger(CastType castType, SqlOperatorFixture f) {
+  void testCastDecimalToDoubleToInteger(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     f.checkFails("cast( cast(1.25 as double) as integer)", OUT_OF_RANGE_MESSAGE, true);
@@ -931,7 +928,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastApproxNumericLimits(CastType castType, SqlOperatorFixture f) {
+  void testCastApproxNumericLimits(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     // Test casting for min, max, out of range for approx numeric types
@@ -960,43 +957,43 @@ public class SqlOperatorTest {
       f.checkCastToApproxOkay(numeric.maxNumericString, type,
           isFloat
               ? isWithin(numeric.maxNumericAsDouble(), 1E32)
-              : isExactly(numeric.maxNumericAsDouble()), castType);
+              : isExactly(numeric.maxNumericAsDouble()), safe);
       f.checkCastToApproxOkay(numeric.minNumericString, type,
-          isExactly(numeric.minNumericString), castType);
+          isExactly(numeric.minNumericString), safe);
 
       if (isFloat) {
         f.checkCastFails(numeric.maxOverflowNumericString, type,
-            OUT_OF_RANGE_MESSAGE, true, castType);
+            OUT_OF_RANGE_MESSAGE, true, safe);
       } else {
         // Double: Literal out of range
         f.checkCastFails(numeric.maxOverflowNumericString, type,
-            LITERAL_OUT_OF_RANGE_MESSAGE, false, castType);
+            LITERAL_OUT_OF_RANGE_MESSAGE, false, safe);
       }
 
       // Underflow: goes to 0
       f.checkCastToApproxOkay(numeric.minOverflowNumericString, type,
-          isExactly(0), castType);
+          isExactly(0), safe);
 
       // Convert from string to type
       f.checkCastToApproxOkay("'" + numeric.maxNumericString + "'", type,
           isFloat
               ? isWithin(numeric.maxNumericAsDouble(), 1E32)
-              : isExactly(numeric.maxNumericAsDouble()), castType);
+              : isExactly(numeric.maxNumericAsDouble()), safe);
       f.checkCastToApproxOkay("'" + numeric.minNumericString + "'", type,
-          isExactly(numeric.minNumericAsDouble()), castType);
+          isExactly(numeric.minNumericAsDouble()), safe);
 
       f.checkCastFails("'" + numeric.maxOverflowNumericString + "'", type,
-          OUT_OF_RANGE_MESSAGE, true, castType);
+          OUT_OF_RANGE_MESSAGE, true, safe);
 
       // Underflow: goes to 0
       f.checkCastToApproxOkay("'" + numeric.minOverflowNumericString + "'",
-          type, isExactly(0), castType);
+          type, isExactly(0), safe);
 
       // Convert from type to string
 
       // Treated as DOUBLE
       f.checkCastToString(numeric.maxNumericString, null,
-          isFloat ? null : "1.79769313486231E308", castType);
+          isFloat ? null : "1.79769313486231E308", safe);
 
       // TODO: The following tests are slightly different depending on
       // whether the java or fennel calc are used.
@@ -1004,45 +1001,45 @@ public class SqlOperatorTest {
       if (false /* fennel calc*/) { // Treated as FLOAT or DOUBLE
         f.checkCastToString(numeric.maxNumericString, type,
             // Treated as DOUBLE
-            isFloat ? "3.402824E38" : "1.797693134862316E308", castType);
+            isFloat ? "3.402824E38" : "1.797693134862316E308", safe);
         f.checkCastToString(numeric.minNumericString, null,
             // Treated as FLOAT or DOUBLE
-            isFloat ? null : "4.940656458412465E-324", castType);
+            isFloat ? null : "4.940656458412465E-324", safe);
         f.checkCastToString(numeric.minNumericString, type,
-            isFloat ? "1.401299E-45" : "4.940656458412465E-324", castType);
+            isFloat ? "1.401299E-45" : "4.940656458412465E-324", safe);
       } else if (false /* JavaCalc */) {
         // Treated as FLOAT or DOUBLE
         f.checkCastToString(numeric.maxNumericString, type,
             // Treated as DOUBLE
-            isFloat ? "3.402823E38" : "1.797693134862316E308", castType);
+            isFloat ? "3.402823E38" : "1.797693134862316E308", safe);
         f.checkCastToString(numeric.minNumericString, null,
-            isFloat ? null : null, castType); // Treated as FLOAT or DOUBLE
+            isFloat ? null : null, safe); // Treated as FLOAT or DOUBLE
         f.checkCastToString(numeric.minNumericString, type,
-            isFloat ? "1.401298E-45" : null, castType);
+            isFloat ? "1.401298E-45" : null, safe);
       }
 
-      f.checkCastFails("'notnumeric'", type, INVALID_CHAR_MESSAGE, true, castType);
+      f.checkCastFails("'notnumeric'", type, INVALID_CHAR_MESSAGE, true, safe);
     });
   }
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastToApproxNumeric(CastType castType, SqlOperatorFixture f) {
+  void testCastToApproxNumeric(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
-    f.checkCastToApproxOkay("1", "DOUBLE", isExactly(1), castType);
-    f.checkCastToApproxOkay("1.0", "DOUBLE", isExactly(1), castType);
-    f.checkCastToApproxOkay("-2.3", "FLOAT", isWithin(-2.3, 0.000001), castType);
-    f.checkCastToApproxOkay("'1'", "DOUBLE", isExactly(1), castType);
+    f.checkCastToApproxOkay("1", "DOUBLE", isExactly(1), safe);
+    f.checkCastToApproxOkay("1.0", "DOUBLE", isExactly(1), safe);
+    f.checkCastToApproxOkay("-2.3", "FLOAT", isWithin(-2.3, 0.000001), safe);
+    f.checkCastToApproxOkay("'1'", "DOUBLE", isExactly(1), safe);
     f.checkCastToApproxOkay("'  -1e-37  '", "DOUBLE", isExactly("-1.0E-37"),
-        castType);
-    f.checkCastToApproxOkay("1e0", "DOUBLE", isExactly(1), castType);
-    f.checkCastToApproxOkay("0e0", "REAL", isExactly(0), castType);
+        safe);
+    f.checkCastToApproxOkay("1e0", "DOUBLE", isExactly(1), safe);
+    f.checkCastToApproxOkay("0e0", "REAL", isExactly(0), safe);
   }
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastNull(CastType castType, SqlOperatorFixture f) {
+  void testCastNull(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     // null
@@ -1060,8 +1057,8 @@ public class SqlOperatorTest {
     f.checkNull("cast(null as interval day to second(3))");
     f.checkNull("cast(null as boolean)");
 
-    if (castType != CastType.CAST) {
-      // In the following, 'cast' becomes 'safe_cast' or 'try_cast'
+    if (safe) {
+      // In the following, 'cast' becomes 'safe_cast'
       f.checkNull("cast('a' as time)");
       f.checkNull("cast('a' as int)");
       f.checkNull("cast('2023-03-17a' as date)");
@@ -1077,7 +1074,7 @@ public class SqlOperatorTest {
    * Handling errors during constant reduction</a>. */
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastInvalid(CastType castType, SqlOperatorFixture f) {
+  void testCastInvalid(boolean safe, SqlOperatorFixture f) {
     // Before CALCITE-1439 was fixed, constant reduction would kick in and
     // generate Java constants that throw when the class is loaded, thus
     // ExceptionInInitializerError.
@@ -1097,7 +1094,7 @@ public class SqlOperatorTest {
   /** Test cast for DATE, TIME, TIMESTAMP types. */
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastDateTime(CastType castType, SqlOperatorFixture f) {
+  void testCastDateTime(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     f.checkScalar("cast(TIMESTAMP '1945-02-24 12:42:25.34' as TIMESTAMP)",
@@ -1126,9 +1123,9 @@ public class SqlOperatorTest {
         "12:42:25", "TIME(0) NOT NULL");
 
     // time <-> string
-    f.checkCastToString("TIME '12:42:25'", null, "12:42:25", castType);
+    f.checkCastToString("TIME '12:42:25'", null, "12:42:25", safe);
     if (TODO) {
-      f.checkCastToString("TIME '12:42:25.34'", null, "12:42:25.34", castType);
+      f.checkCastToString("TIME '12:42:25.34'", null, "12:42:25.34", safe);
     }
 
     // Generate the current date as a string, e.g. "2007-04-18". The value
@@ -1163,7 +1160,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastStringToDateTime(CastType castType, SqlOperatorFixture f) {
+  void testCastStringToDateTime(boolean safe, SqlOperatorFixture f) {
     f.checkScalar("cast('12:42:25' as TIME)",
         "12:42:25", "TIME(0) NOT NULL");
     f.checkScalar("cast('1:42:25' as TIME)",
@@ -1189,12 +1186,12 @@ public class SqlOperatorTest {
 
     // timestamp <-> string
     f.checkCastToString("TIMESTAMP '1945-02-24 12:42:25'", null,
-        "1945-02-24 12:42:25", castType);
+        "1945-02-24 12:42:25", safe);
 
     if (TODO) {
       // TODO: casting allows one to discard precision without error
       f.checkCastToString("TIMESTAMP '1945-02-24 12:42:25.34'",
-          null, "1945-02-24 12:42:25.34", castType);
+          null, "1945-02-24 12:42:25.34", safe);
     }
 
     f.checkScalar("cast('1945-02-24 12:42:25' as TIMESTAMP)",
@@ -1225,8 +1222,8 @@ public class SqlOperatorTest {
         "1945-01-24 12:23:34", "TIMESTAMP(0) NOT NULL");
 
     // date <-> string
-    f.checkCastToString("DATE '1945-02-24'", null, "1945-02-24", castType);
-    f.checkCastToString("DATE '1945-2-24'", null, "1945-02-24", castType);
+    f.checkCastToString("DATE '1945-02-24'", null, "1945-02-24", safe);
+    f.checkCastToString("DATE '1945-2-24'", null, "1945-02-24", safe);
 
     f.checkScalar("cast('1945-02-24' as DATE)", "1945-02-24", "DATE NOT NULL");
     f.checkScalar("cast(' 1945-2-4 ' as DATE)", "1945-02-04", "DATE NOT NULL");
@@ -1333,7 +1330,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastToBoolean(CastType castType, SqlOperatorFixture f) {
+  void testCastToBoolean(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
 
     // string to boolean
@@ -10133,7 +10130,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastTruncates(CastType castType, SqlOperatorFixture f) {
+  void testCastTruncates(boolean safe, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     f.checkScalar("CAST('ABCD' AS CHAR(2))", "AB", "CHAR(2) NOT NULL");
     f.checkScalar("CAST('ABCD' AS VARCHAR(2))", "AB",

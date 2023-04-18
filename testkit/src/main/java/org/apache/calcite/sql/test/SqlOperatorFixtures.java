@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.test;
+package org.apache.calcite.sql.test;
 
-import org.apache.calcite.sql.test.SqlOperatorFixture;
+import org.apache.calcite.test.SqlOperatorTest;
 import org.apache.calcite.util.DelegatingInvocationHandler;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -31,14 +31,14 @@ class SqlOperatorFixtures {
 
   /** Returns a fixture that converts each CAST test into a test for
    * SAFE_CAST or TRY_CAST. */
-  static SqlOperatorFixture safeCastWrapper(SqlOperatorFixture fixture, String functionName) {
+  static SqlOperatorFixture safeCastWrapper(SqlOperatorFixture fixture) {
     return (SqlOperatorFixture) Proxy.newProxyInstance(
         SqlOperatorTest.class.getClassLoader(),
         new Class[]{SqlOperatorFixture.class},
-        new SqlOperatorFixtureInvocationHandler(fixture, functionName));
+        new SqlOperatorFixtureInvocationHandler(fixture));
   }
 
-  /** A helper for {@link #safeCastWrapper(SqlOperatorFixture, String)} that provides
+  /** A helper for {@link #safeCastWrapper(SqlOperatorFixture)} that provides
    * alternative implementations of methods in {@link SqlOperatorFixture}.
    *
    * <p>Must be public, so that its methods can be seen via reflection. */
@@ -51,9 +51,9 @@ class SqlOperatorFixtures {
     final SqlOperatorFixture f;
     final String functionName;
 
-    SqlOperatorFixtureInvocationHandler(SqlOperatorFixture f, String functionName) {
+    SqlOperatorFixtureInvocationHandler(SqlOperatorFixture f) {
       this.f = f;
-      this.functionName = functionName;
+      this.functionName = f.getCastOperator(true);
     }
 
     @Override protected Object getTarget() {
@@ -69,11 +69,11 @@ class SqlOperatorFixtures {
     }
 
     /** Proxy for
-     * {@link SqlOperatorFixture#checkCastToString(String, String, String, SqlOperatorFixture.CastType)}. */
+     * {@link SqlOperatorFixture#checkCastToString(String, String, String, boolean)}. */
     public void checkCastToString(String value, @Nullable String type,
-        @Nullable String expected, SqlOperatorFixture.CastType castType) {
+        @Nullable String expected, boolean safe) {
       f.checkCastToString(addSafe(value),
-          type == null ? null : removeNotNull(type), expected, castType);
+          type == null ? null : removeNotNull(type), expected, safe);
     }
 
     /** Proxy for {@link SqlOperatorFixture#checkBoolean(String, Boolean)}. */

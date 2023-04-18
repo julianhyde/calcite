@@ -24,6 +24,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.StringAndPos;
 import org.apache.calcite.sql.test.SqlTester.ResultChecker;
@@ -36,6 +37,7 @@ import org.apache.calcite.test.ConnectionFactories;
 import org.apache.calcite.test.ConnectionFactory;
 import org.apache.calcite.test.Matchers;
 import org.apache.calcite.util.Bug;
+import org.apache.calcite.util.Holder;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -117,6 +119,12 @@ public interface SqlOperatorFixture extends AutoCloseable {
   }
 
   //~ Methods ----------------------------------------------------------------
+
+  /** Returns a copy of this fixture that converts each CAST test into a test
+   * for {@code SAFE_CAST} or {@code TRY_CAST}. */
+  default SqlOperatorFixture withSafeCastWrapper() {
+    return SqlOperatorFixtures.safeCastWrapper(this);
+  }
 
   /** Returns the test factory. */
   SqlTestFactory getFactory();
@@ -597,96 +605,99 @@ public interface SqlOperatorFixture extends AutoCloseable {
                 .with("fun", "oracle"));
   }
 
-  /**
-   * Types for cast.
-   */
-  enum CastType {
-    CAST("cast"),
-    SAFE_CAST("safe_cast"),
-    TRY_CAST("try_cast");
-
-    CastType(String name) {
-      this.name = name;
-    }
-
-    final String name;
-  }
-
   default String getCastString(
       String value,
       String targetType,
       boolean errorLoc,
-      CastType castType) {
+      boolean safe) {
     if (errorLoc) {
       value = "^" + value + "^";
     }
-    String function = castType.name;
-    return function + "(" + value + " as " + targetType + ")";
+    return getCastOperator(safe) + "(" + value + " as " + targetType + ")";
+  }
+
+  default String getCastOperator(boolean safe) {
+    if (!safe) {
+      return "cast";
+    }
+    // Sniff the operator table to see whether we should use SAFE_CAST or
+    // TRY_CAST. A bit unorthodox to invoke a 'with' method for the sake of
+    // side effects, but should be harmless.
+    Holder<String> result = Holder.empty();
+    getFactory().withOperatorTable(t -> {
+      if (t.getOperatorList().contains(SqlLibraryOperators.SAFE_CAST)) {
+        result.set("safe_cast");
+      } else {
+        result.set("try_cast");
+      }
+      return t;
+    });
+    return result.get();
   }
 
   default void checkCastToApproxOkay(String value, String targetType,
-      Object expected, CastType castType) {
-    checkScalarApprox(getCastString(value, targetType, false, castType),
-        getTargetType(targetType, castType), expected);
+      Object expected, boolean safe) {
+    checkScalarApprox(getCastString(value, targetType, false, safe),
+        getTargetType(targetType, safe), expected);
   }
 
   default void checkCastToStringOkay(String value, String targetType,
-      String expected, CastType castType) {
-    final String castString = getCastString(value, targetType, false, castType);
-    checkString(castString, expected, getTargetType(targetType, castType));
+      String expected, boolean safe) {
+    final String castString = getCastString(value, targetType, false, safe);
+    checkString(castString, expected, getTargetType(targetType, safe));
   }
 
   default void checkCastToScalarOkay(String value, String targetType,
-      String expected, CastType castType) {
-    final String castString = getCastString(value, targetType, false, castType);
-    checkScalarExact(castString, getTargetType(targetType, castType), expected);
+      String expected, boolean safe) {
+    final String castString = getCastString(value, targetType, false, safe);
+    checkScalarExact(castString, getTargetType(targetType, safe), expected);
   }
 
-  default String getTargetType(String targetType, CastType castType) {
-    return castType == CastType.CAST ? targetType + NON_NULLABLE_SUFFIX : targetType;
+  default String getTargetType(String targetType, boolean safe) {
+    return safe ? targetType : targetType + NON_NULLABLE_SUFFIX;
   }
 
   default void checkCastToScalarOkay(String value, String targetType,
-      CastType castType) {
-    checkCastToScalarOkay(value, targetType, value, castType);
+      boolean safe) {
+    checkCastToScalarOkay(value, targetType, value, safe);
   }
 
   default void checkCastFails(String value, String targetType,
-      String expectedError, boolean runtime, CastType castType) {
-    final String castString = getCastString(value, targetType, !runtime, castType);
+      String expectedError, boolean runtime, boolean safe) {
+    final String castString = getCastString(value, targetType, !runtime, safe);
     checkFails(castString, expectedError, runtime);
   }
 
   default void checkCastToString(String value, @Nullable String type,
-      @Nullable String expected, CastType castType) {
+      @Nullable String expected, boolean safe) {
     String spaces = "     ";
     if (expected == null) {
       expected = value.trim();
     }
     int len = expected.length();
     if (type != null) {
-      value = getCastString(value, type, false, castType);
+      value = getCastString(value, type, false, safe);
     }
 
     // currently no exception thrown for truncation
     if (Bug.DT239_FIXED) {
       checkCastFails(value,
           "VARCHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE,
-          true, castType);
+          true, safe);
     }
 
-    checkCastToStringOkay(value, "VARCHAR(" + len + ")", expected, castType);
-    checkCastToStringOkay(value, "VARCHAR(" + (len + 5) + ")", expected, castType);
+    checkCastToStringOkay(value, "VARCHAR(" + len + ")", expected, safe);
+    checkCastToStringOkay(value, "VARCHAR(" + (len + 5) + ")", expected, safe);
 
     // currently no exception thrown for truncation
     if (Bug.DT239_FIXED) {
       checkCastFails(value,
           "CHAR(" + (len - 1) + ")", STRING_TRUNC_MESSAGE,
-          true, castType);
+          true, safe);
     }
 
-    checkCastToStringOkay(value, "CHAR(" + len + ")", expected, castType);
+    checkCastToStringOkay(value, "CHAR(" + len + ")", expected, safe);
     checkCastToStringOkay(value, "CHAR(" + (len + 5) + ")",
-        expected + spaces, castType);
+        expected + spaces, safe);
   }
 }
