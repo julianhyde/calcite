@@ -867,8 +867,8 @@ class RelWriterTest {
 
     // Test Calcite DateString class works in a Range
     final DateString d1 =
-        DateString.fromCalendarFields(new TimestampString(1970, 2, 1, 1, 1, 0)
-            .toCalendar());
+        DateString.fromCalendarFields(
+            new TimestampString(1970, 2, 1, 1, 1, 0).toCalendar());
     final DateString d2 = DateString.fromDaysSinceEpoch(100);
     final DateString d3 = DateString.fromDaysSinceEpoch(1000);
     RexNode dateNode =

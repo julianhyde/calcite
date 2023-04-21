@@ -47,9 +47,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @SuppressWarnings("UnstableApiUsage")
 class RangeSetTest {
 
-  /** Tests {@link org.apache.calcite.rel.externalize.RelJson#toJson(Range)} and
-   *  {@link RangeSets#rangeFromJson(Object)}.
-   */
+  /** Tests {@link org.apache.calcite.rel.externalize.RelJson#toJson(Range)}
+   * and {@link RangeSets#rangeFromJson(Object)}. */
   @Test void testRangeSetSerializeDeserialize() {
     RelJson relJson = RelJson.create();
     final Range<BigDecimal> point = Range.singleton(BigDecimal.valueOf(0));

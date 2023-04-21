@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
+
 import org.apache.calcite.avatica.util.ByteString;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -291,13 +292,15 @@ public class RangeSets {
     }
     return builder.addAll(rangeList).build();
   }
+
   /** Creates a {@link Range} from the string representation of a {@link Range}
-   * serialized using {@link org.apache.calcite.rel.externalize.RelJson#toJson(Range)}. */
+   * serialized using
+   * {@link org.apache.calcite.rel.externalize.RelJson#toJson(Range)}. */
   public static <C extends Comparable<C>> Range<C> rangeFromJson(Object rangeJson) {
     List list = (List) rangeJson;
     if (list.size() != 4) {
-      throw new
-          IllegalArgumentException("Serialized Range object should be a list with 4 entries.");
+      throw new IllegalArgumentException(
+          "Serialized Range object should be a list with 4 entries.");
     }
     BoundType lowerType = list.get(0).equals("(") ? BoundType.OPEN : BoundType.CLOSED;
     Object lower = deserializeRangeEndpoint(list.get(1));
@@ -344,11 +347,13 @@ public class RangeSets {
         e = ex;
       }
     }
-    throw new
-        RuntimeException("Error deserializing range endpoint (did not find compatible type): ", e);
+    throw new RuntimeException(
+        "Error deserializing range endpoint (did not find compatible type): ",
+        e);
   }
 
-  /** Used when serializing {@link Range} if it does not contain a lower or upper endpoint.*/
+  /** Used when serializing {@link Range} if it does not contain a lower or
+   * upper endpoint.*/
   public static final String RANGE_UNBOUNDED = "_";
 
   /** Creates a consumer that prints values to a {@link StringBuilder}. */

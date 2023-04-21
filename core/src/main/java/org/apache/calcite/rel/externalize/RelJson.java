@@ -501,17 +501,25 @@ public class RelJson {
 
   /** Serializes a {@link Range} that can be deserialized using
    * {@link org.apache.calcite.util.RangeSets#rangeFromJson(Object)}. */
-  private <C extends Comparable<C>> Object toJson(Range<C> range) {
-    String lowerBoundType = !range.hasLowerBound() || range.lowerBoundType() == BoundType.OPEN
-        ? "(" : "[";
-    String upperBoundType = !range.hasUpperBound() || range.upperBoundType() == BoundType.OPEN
-        ? ")" : "]";
-    String lowerEndpoint = range.hasLowerBound() ? rexLiteralObjectToString(range.lowerEndpoint())
-        : RangeSets.RANGE_UNBOUNDED;
-    String upperEndpoint = range.hasUpperBound() ? rexLiteralObjectToString(range.upperEndpoint())
-        : RangeSets.RANGE_UNBOUNDED;
-
-    return Arrays.asList(lowerBoundType, lowerEndpoint, upperEndpoint, upperBoundType);
+  public <C extends Comparable<C>> Object toJson(Range<C> range) {
+    String lowerBoundType =
+        !range.hasLowerBound() || range.lowerBoundType() == BoundType.OPEN
+            ? "("
+            : "[";
+    String upperBoundType =
+        !range.hasUpperBound() || range.upperBoundType() == BoundType.OPEN
+            ? ")"
+            : "]";
+    String lowerEndpoint =
+        range.hasLowerBound()
+            ? rexLiteralObjectToString(range.lowerEndpoint())
+            : RangeSets.RANGE_UNBOUNDED;
+    String upperEndpoint =
+        range.hasUpperBound()
+            ? rexLiteralObjectToString(range.upperEndpoint())
+            : RangeSets.RANGE_UNBOUNDED;
+    return Arrays.asList(lowerBoundType, lowerEndpoint, upperEndpoint,
+        upperBoundType);
   }
 
   private <C extends Comparable<C>> String rexLiteralObjectToString(C endpoint) {
@@ -694,8 +702,8 @@ public class RelJson {
     } else {
       map.put("type", windowBound.isPreceding() ? "PRECEDING" : "FOLLOWING");
       RexNode offset =
-          requireNonNull(windowBound.getOffset(), () -> "getOffset for window bound "
-              + windowBound);
+          requireNonNull(windowBound.getOffset(),
+              () -> "getOffset for window bound " + windowBound);
       map.put("offset", toJson(offset));
     }
     return map;
