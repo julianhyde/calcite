@@ -48,7 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class RangeSetTest {
 
   /** Tests {@link org.apache.calcite.rel.externalize.RelJson#toJson(Range)}
-   * and {@link RangeSets#rangeFromJson(Object)}. */
+   * and {@link RelJson#rangeFromJson(List)}. */
   @Test void testRangeSetSerializeDeserialize() {
     RelJson relJson = RelJson.create();
     final Range<BigDecimal> point = Range.singleton(BigDecimal.valueOf(0));
@@ -64,36 +64,41 @@ class RangeSetTest {
 
     // Test serialize/deserialize Range
     //    Point
-    assertThat(RangeSets.rangeFromJson(relJson.toJson(point)), is(point));
+    assertThat(RelJson.rangeFromJson(relJson.toJson(point)), is(point));
     //    Closed Range
-    assertThat(RangeSets.rangeFromJson(relJson.toJson(closedRange1)), is(closedRange1));
+    assertThat(RelJson.rangeFromJson(relJson.toJson(closedRange1)),
+        is(closedRange1));
     //    Open Range
-    assertThat(RangeSets.rangeFromJson(relJson.toJson(gt1)), is(gt1));
-    assertThat(RangeSets.rangeFromJson(relJson.toJson(al1)), is(al1));
-    assertThat(RangeSets.rangeFromJson(relJson.toJson(lt1)), is(lt1));
-    assertThat(RangeSets.rangeFromJson(relJson.toJson(am1)), is(am1));
+    assertThat(RelJson.rangeFromJson(relJson.toJson(gt1)), is(gt1));
+    assertThat(RelJson.rangeFromJson(relJson.toJson(al1)), is(al1));
+    assertThat(RelJson.rangeFromJson(relJson.toJson(lt1)), is(lt1));
+    assertThat(RelJson.rangeFromJson(relJson.toJson(am1)), is(am1));
     // Test closed single RangeSet
     final RangeSet<BigDecimal> closedRangeSet = ImmutableRangeSet.of(closedRange1);
-    assertThat(RangeSets.fromJson(relJson.toJson(closedRangeSet)), is(closedRangeSet));
+    assertThat(RelJson.rangeSetFromJson(relJson.toJson(closedRangeSet)),
+        is(closedRangeSet));
     // Test complex RangeSets
-    final RangeSet<BigDecimal> complexClosedRangeSet1 = ImmutableRangeSet.<BigDecimal>builder()
-        .add(closedRange1)
-        .add(closedRange2)
-        .build();
-    assertThat(RangeSets.fromJson(relJson.toJson(complexClosedRangeSet1)),
+    final RangeSet<BigDecimal> complexClosedRangeSet1 =
+        ImmutableRangeSet.<BigDecimal>builder()
+            .add(closedRange1)
+            .add(closedRange2)
+            .build();
+    assertThat(
+        RelJson.rangeSetFromJson(relJson.toJson(complexClosedRangeSet1)),
         is(complexClosedRangeSet1));
-    final RangeSet<BigDecimal> complexClosedRangeSet2 = ImmutableRangeSet.<BigDecimal>builder()
-        .add(gt1)
-        .add(am1)
-        .build();
-    assertThat(RangeSets.fromJson(relJson.toJson(complexClosedRangeSet2)),
+    final RangeSet<BigDecimal> complexClosedRangeSet2 =
+        ImmutableRangeSet.<BigDecimal>builder()
+            .add(gt1)
+            .add(am1)
+            .build();
+    assertThat(RelJson.rangeSetFromJson(relJson.toJson(complexClosedRangeSet2)),
         is(complexClosedRangeSet2));
 
     // Test None and All
     final RangeSet<BigDecimal> setNone = ImmutableRangeSet.of();
     final RangeSet<BigDecimal> setAll = setNone.complement();
-    assertThat(RangeSets.fromJson(relJson.toJson(setNone)), is(setNone));
-    assertThat(RangeSets.fromJson(relJson.toJson(setAll)), is(setAll));
+    assertThat(RelJson.rangeSetFromJson(relJson.toJson(setNone)), is(setNone));
+    assertThat(RelJson.rangeSetFromJson(relJson.toJson(setAll)), is(setAll));
   }
 
   /** Tests {@link RangeSets#minus(RangeSet, Range)}. */

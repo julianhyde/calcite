@@ -44,6 +44,8 @@ import java.util.Objects;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A string, optionally with {@link Charset character set} and
  * {@link SqlCollation}. It is immutable.
@@ -97,8 +99,8 @@ public class NlsString implements Comparable<NlsString>, Cloneable {
    */
   public NlsString(ByteString bytesValue, String charsetName,
       @Nullable SqlCollation collation) {
-    this(null, Objects.requireNonNull(bytesValue, "bytesValue"),
-        Objects.requireNonNull(charsetName, "charsetName"), collation);
+    this(null, requireNonNull(bytesValue, "bytesValue"),
+        requireNonNull(charsetName, "charsetName"), collation);
   }
 
   /**
@@ -118,7 +120,8 @@ public class NlsString implements Comparable<NlsString>, Cloneable {
   public NlsString(@JsonProperty("value") String stringValue,
       @JsonProperty("charsetName") @Nullable String charsetName,
       @JsonProperty("collation") @Nullable SqlCollation collation) {
-    this(Objects.requireNonNull(stringValue, "stringValue"), null, charsetName, collation);
+    this(requireNonNull(stringValue, "stringValue"), null, charsetName,
+        collation);
   }
 
   /** Internal constructor; other constructors must call it. */

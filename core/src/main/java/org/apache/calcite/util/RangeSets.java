@@ -16,21 +16,13 @@
  */
 package org.apache.calcite.util;
 
-import org.apache.calcite.avatica.util.ByteString;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BoundType;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -278,83 +270,6 @@ public class RangeSets {
       consumer.all();
     }
   }
-
-  public static <C extends Comparable<C>> RangeSet<C> fromJson(Object rangeSetsJson) {
-    final ImmutableRangeSet.Builder<C> builder = ImmutableRangeSet.builder();
-    List<Range<C>> rangeList = new ArrayList<>();
-    try {
-      for (Object o : (ArrayList) rangeSetsJson) {
-        Range range = rangeFromJson(o);
-        rangeList.add(range);
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Error creating RangeSet from JSON: ", e);
-    }
-    return builder.addAll(rangeList).build();
-  }
-
-  /** Creates a {@link Range} from the string representation of a {@link Range}
-   * serialized using
-   * {@link org.apache.calcite.rel.externalize.RelJson#toJson(Range)}. */
-  public static <C extends Comparable<C>> Range<C> rangeFromJson(Object rangeJson) {
-    List list = (List) rangeJson;
-    if (list.size() != 4) {
-      throw new IllegalArgumentException(
-          "Serialized Range object should be a list with 4 entries.");
-    }
-    BoundType lowerType = list.get(0).equals("(") ? BoundType.OPEN : BoundType.CLOSED;
-    Object lower = deserializeRangeEndpoint(list.get(1));
-    Object upper = deserializeRangeEndpoint(list.get(2));
-    BoundType upperType = list.get(3).equals(")") ? BoundType.OPEN : BoundType.CLOSED;
-
-    if (lower.equals(RANGE_UNBOUNDED) && upper.equals(RANGE_UNBOUNDED)) {
-      return Range.all();
-    } else if (lower.equals(RANGE_UNBOUNDED)) {
-      if (upperType == BoundType.OPEN) {
-        return Range.lessThan((C) upper);
-      } else {
-        return Range.atMost((C) upper);
-      }
-    } else if (upper.equals(RANGE_UNBOUNDED)) {
-      if (lowerType == BoundType.OPEN) {
-        return Range.greaterThan((C) lower);
-      } else {
-        return Range.atLeast((C) lower);
-      }
-    } else {
-      return Range.range((C) lower, lowerType, (C) upper, upperType);
-    }
-  }
-
-  private static Comparable deserializeRangeEndpoint(Object endpoint) {
-    if (endpoint.equals(RANGE_UNBOUNDED)) {
-      return (Comparable) endpoint;
-    }
-    ObjectMapper mapper = new ObjectMapper()
-        .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
-    Exception e = null;
-    List<Class> clsTypes =
-        ImmutableList.of(NlsString.class,
-        BigDecimal.class,
-        ByteString.class,
-        Boolean.class,
-        DateString.class,
-        TimeString.class);
-    for (Class clsType: clsTypes) {
-      try {
-        return (Comparable) mapper.readValue((String) endpoint, clsType);
-      } catch (Exception ex) {
-        e = ex;
-      }
-    }
-    throw new RuntimeException(
-        "Error deserializing range endpoint (did not find compatible type): ",
-        e);
-  }
-
-  /** Used when serializing {@link Range} if it does not contain a lower or
-   * upper endpoint.*/
-  public static final String RANGE_UNBOUNDED = "_";
 
   /** Creates a consumer that prints values to a {@link StringBuilder}. */
   public static <C extends Comparable<C>> Consumer<C> printer(StringBuilder sb,

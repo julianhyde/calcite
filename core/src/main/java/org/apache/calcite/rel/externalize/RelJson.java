@@ -17,6 +17,7 @@
 package org.apache.calcite.rel.externalize;
 
 import org.apache.calcite.avatica.AvaticaUtils;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -45,6 +46,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexSlot;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.rex.RexWindowBounds;
@@ -62,17 +64,21 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
+import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.JsonBuilder;
-import org.apache.calcite.util.RangeSets;
+import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Sarg;
+import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.Util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 
@@ -101,6 +107,9 @@ import static java.util.Objects.requireNonNull;
  * into JSON format.
  */
 public class RelJson {
+  /** Used when serializing {@link Range} if it does not contain a lower or
+   * upper endpoint.*/
+  public static final String RANGE_UNBOUNDED = "_";
   private final Map<String, Constructor> constructorMap = new HashMap<>();
   private final @Nullable JsonBuilder jsonBuilder;
   private final InputTranslator inputTranslator;
@@ -430,6 +439,7 @@ public class RelJson {
     return map;
   }
 
+  @SuppressWarnings("UnstableApiUsage") // RangeSet approved as of Guava 32.0
   public @Nullable Object toJson(@Nullable Object value) {
     if (value == null
         || value instanceof Number
@@ -469,10 +479,13 @@ public class RelJson {
     } else if (value instanceof RelDistribution) {
       return toJson((RelDistribution) value);
     } else if (value instanceof Sarg) {
+      //noinspection unchecked,rawtypes
       return toJson((Sarg) value);
     } else if (value instanceof RangeSet) {
+      //noinspection unchecked,rawtypes
       return toJson((RangeSet) value);
     } else if (value instanceof Range) {
+      //noinspection rawtypes,unchecked
       return toJson((Range) value);
     } else {
       throw new UnsupportedOperationException("type not serializable: "
@@ -480,15 +493,17 @@ public class RelJson {
     }
   }
 
-  private Object toJson(Sarg node) {
+  public <C extends Comparable<C>> Object toJson(Sarg<C> node) {
     final Map<String, @Nullable Object> map = jsonBuilder().map();
     map.put("rangeSet", toJson(node.rangeSet));
-    map.put("nullAs", node.nullAs);
+    map.put("nullAs", RelEnumTypes.fromEnum(node.nullAs));
     return map;
   }
 
-  private <C extends Comparable<C>> Object toJson(RangeSet<C> rangeSet) {
-    final List<Object> list = new ArrayList<>();
+  @SuppressWarnings("UnstableApiUsage")
+  public <C extends Comparable<C>> List<List<String>> toJson(
+      RangeSet<C> rangeSet) {
+    final List<List<String>> list = new ArrayList<>();
     try {
       for (Range<C> range : rangeSet.asRanges()) {
         list.add(toJson(range));
@@ -500,8 +515,8 @@ public class RelJson {
   }
 
   /** Serializes a {@link Range} that can be deserialized using
-   * {@link org.apache.calcite.util.RangeSets#rangeFromJson(Object)}. */
-  public <C extends Comparable<C>> Object toJson(Range<C> range) {
+   * {@link RelJson#rangeFromJson(List)}. */
+  public <C extends Comparable<C>> List<String> toJson(Range<C> range) {
     String lowerBoundType =
         !range.hasLowerBound() || range.lowerBoundType() == BoundType.OPEN
             ? "("
@@ -513,11 +528,11 @@ public class RelJson {
     String lowerEndpoint =
         range.hasLowerBound()
             ? rexLiteralObjectToString(range.lowerEndpoint())
-            : RangeSets.RANGE_UNBOUNDED;
+            : RANGE_UNBOUNDED;
     String upperEndpoint =
         range.hasUpperBound()
             ? rexLiteralObjectToString(range.upperEndpoint())
-            : RangeSets.RANGE_UNBOUNDED;
+            : RANGE_UNBOUNDED;
     return Arrays.asList(lowerBoundType, lowerEndpoint, upperEndpoint,
         upperBoundType);
   }
@@ -582,7 +597,7 @@ public class RelJson {
     return node.getId();
   }
 
-  private Object toJson(RexNode node) {
+  public Object toJson(RexNode node) {
     final Map<String, @Nullable Object> map;
     switch (node.getKind()) {
     case FIELD_ACCESS:
@@ -595,12 +610,11 @@ public class RelJson {
       final RexLiteral literal = (RexLiteral) node;
       final Object value = literal.getValue3();
       map = jsonBuilder().map();
-      if (((RexLiteral) node).getTypeName().getName()
-          .equalsIgnoreCase(Sarg.class.getSimpleName())) {
-        map.put("sargLiteral", toJson(value));
-      } else {
-        map.put("literal", RelEnumTypes.fromEnum(value));
-      }
+      //noinspection rawtypes
+      map.put("literal",
+          value instanceof Enum
+              ? RelEnumTypes.fromEnum((Enum) value)
+              : toJson(value));
       map.put("type", toJson(node.getType()));
       return map;
     case INPUT_REF:
@@ -817,6 +831,11 @@ public class RelJson {
           return toRex(relInput, literal);
         }
         final RelDataType type = toType(typeFactory, get(map, "type"));
+        if (literal instanceof Map
+            && ((Map<?, ?>) literal).containsKey("rangeSet")) {
+          Sarg sarg = sargFromJson((Map) literal);
+          return rexBuilder.makeSearchArgumentLiteral(sarg, type);
+        }
         if (type.getSqlTypeName() == SqlTypeName.SYMBOL) {
           literal = RelEnumTypes.toEnum((String) literal);
         }
@@ -829,7 +848,7 @@ public class RelJson {
           return rexBuilder.makeNullLiteral(type);
         }
         final RelDataType type = toType(typeFactory, get(map, "type"));
-        Sarg sarg = Sarg.fromJson((Map) sargObject);
+        Sarg sarg = sargFromJson((Map) sargObject);
         return rexBuilder.makeSearchArgumentLiteral(sarg, type);
       }
       throw new UnsupportedOperationException("cannot convert to rex " + o);
@@ -849,6 +868,101 @@ public class RelJson {
     } else {
       throw new UnsupportedOperationException("cannot convert to rex " + o);
     }
+  }
+
+  /** Converts a JSON object to a {@code Sarg}.
+   *
+   * <p>For example,
+   * {@code {rangeSet: [["[", 0, 5, "]"], ["[", 10, "-", ")"]],
+   * nullAs: "UNKNOWN"}} represents the range x &ge; 0 and x &le; 5 or
+   * x &gt; 10.
+   */
+  @SuppressWarnings("UnstableApiUsage")
+  public static <C extends Comparable<C>> Sarg<C> sargFromJson(
+      Map<String, Object> map) {
+    RexUnknownAs unknownAs = RelEnumTypes.toEnum((String) map.get("nullAs"));
+    @SuppressWarnings({"unchecked"}) RangeSet<C> rangeSet =
+        rangeSetFromJson((List<List<String>>) map.get("rangeSet"));
+    return Sarg.of(unknownAs, rangeSet);
+  }
+
+  /** Converts a JSON list to a {@link RangeSet}. */
+  @SuppressWarnings("UnstableApiUsage")
+  public static <C extends Comparable<C>> RangeSet<C> rangeSetFromJson(
+      List<List<String>> rangeSetsJson) {
+    final ImmutableRangeSet.Builder<C> builder = ImmutableRangeSet.builder();
+    try {
+      for (List<String> o : rangeSetsJson) {
+        Range<C> range = rangeFromJson(o);
+        builder.add(range);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Error creating RangeSet from JSON: ", e);
+    }
+    return builder.build();
+  }
+
+  /** Creates a {@link Range} from a JSON object.
+   *
+   * <p>The JSON object is as serialized using {@link RelJson#toJson(Range)},
+   * e.g. {@code ["[", ")", 10, "-"]}. */
+  public static <C extends Comparable<C>> Range<C> rangeFromJson(List<String> list) {
+    if (list.size() != 4) {
+      throw new IllegalArgumentException(
+          "Serialized Range object should be a list with 4 entries.");
+    }
+    BoundType lowerType =
+        list.get(0).equals("(") ? BoundType.OPEN : BoundType.CLOSED;
+    Object lower = rangeEndPointFromJson(list.get(1));
+    Object upper = rangeEndPointFromJson(list.get(2));
+    BoundType upperType =
+        list.get(3).equals(")") ? BoundType.OPEN : BoundType.CLOSED;
+
+    if (lower.equals(RANGE_UNBOUNDED) && upper.equals(RANGE_UNBOUNDED)) {
+      return Range.all();
+    } else if (lower.equals(RANGE_UNBOUNDED)) {
+      if (upperType == BoundType.OPEN) {
+        return Range.lessThan((C) upper);
+      } else {
+        return Range.atMost((C) upper);
+      }
+    } else if (upper.equals(RANGE_UNBOUNDED)) {
+      if (lowerType == BoundType.OPEN) {
+        return Range.greaterThan((C) lower);
+      } else {
+        return Range.atLeast((C) lower);
+      }
+    } else {
+      return Range.range((C) lower, lowerType, (C) upper, upperType);
+    }
+  }
+
+  @SuppressWarnings("rawtypes")
+  private static Comparable rangeEndPointFromJson(Object o) {
+    if (o.equals(RANGE_UNBOUNDED)) {
+      return (Comparable) o;
+    }
+    ObjectMapper mapper = new ObjectMapper()
+        .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+    Exception e = null;
+    List<Class> clsTypes =
+        ImmutableList.of(
+            NlsString.class,
+            BigDecimal.class,
+            ByteString.class,
+            Boolean.class,
+            DateString.class,
+            TimeString.class);
+    for (Class clsType : clsTypes) {
+      try {
+        return (Comparable) mapper.readValue((String) o, clsType);
+      } catch (JsonProcessingException ex) {
+        e = ex;
+      }
+    }
+    throw new RuntimeException(
+        "Error deserializing range endpoint (did not find compatible type): ",
+        e);
   }
 
   private void addRexFieldCollationList(

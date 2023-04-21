@@ -103,7 +103,6 @@ import java.util.stream.Stream;
 
 import static org.apache.calcite.test.Matchers.isLinux;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -838,13 +837,25 @@ class RelWriterTest {
     final RexBuilder rexBuilder = b.getRexBuilder();
 
     // Test toJson -> toRex -> toJson is the same.
-    final RelJson relJson = RelJson.create().withJsonBuilder(new JsonBuilder());
+    final JsonBuilder jsonBuilder = new JsonBuilder();
+    final RelJson relJson = RelJson.create().withJsonBuilder(jsonBuilder);
     final Consumer<RexNode> consumer = node -> {
       Object jsonRepresentation = relJson.toJson(node);
       assertThat(jsonRepresentation, notNullValue());
+
       RexNode deserialized = relJson.toRex(b.getCluster(), jsonRepresentation);
       assertThat(node, is(deserialized));
       assertThat(jsonRepresentation, is(relJson.toJson(deserialized)));
+
+      // Test that toRex is the same as toJsonString -> readRex
+      final String s = jsonBuilder.toJsonString(jsonRepresentation);
+      RexNode deserialized2;
+      try {
+        deserialized2 = RelJsonReader.readRex(b.getCluster(), s);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      assertThat(deserialized2, is(deserialized));
     };
 
     // Commented out but we should also get this passing! SEARCH in a RelNode

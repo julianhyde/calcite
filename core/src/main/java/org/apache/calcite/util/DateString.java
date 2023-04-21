@@ -124,7 +124,8 @@ public class DateString implements Comparable<DateString> {
 
   /** Creates a DateString that is a given number of days since the epoch. */
   @JsonCreator
-  public static DateString fromDaysSinceEpoch(@JsonProperty("daysSinceEpoch") int days) {
+  public static DateString fromDaysSinceEpoch(
+      @JsonProperty("daysSinceEpoch") int days) {
     return new DateString(DateTimeUtils.unixDateToString(days));
   }
 

@@ -120,17 +120,4 @@ public enum RexUnknownAs {
       return other;
     }
   }
-
-  public static RexUnknownAs toEnum(String name) {
-    switch (name) {
-    case "TRUE":
-      return RexUnknownAs.TRUE;
-    case "FALSE":
-      return RexUnknownAs.FALSE;
-    case "UNKNOWN":
-      return RexUnknownAs.UNKNOWN;
-    default:
-      throw new IllegalArgumentException("unknown");
-    }
-  }
 }
