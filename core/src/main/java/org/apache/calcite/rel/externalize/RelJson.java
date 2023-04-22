@@ -69,6 +69,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.JsonBuilder;
 import org.apache.calcite.util.NlsString;
+import org.apache.calcite.util.RangeSets;
 import org.apache.calcite.util.Sarg;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.Util;
@@ -76,7 +77,6 @@ import org.apache.calcite.util.Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
@@ -89,7 +89,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -107,9 +106,14 @@ import static java.util.Objects.requireNonNull;
  * into JSON format.
  */
 public class RelJson {
-  /** Used when serializing {@link Range} if it does not contain a lower or
-   * upper endpoint.*/
-  public static final String RANGE_UNBOUNDED = "_";
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper()
+          .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+
+  private static final List<Class> VALUE_CLASSES =
+      ImmutableList.of(NlsString.class, BigDecimal.class, ByteString.class,
+      Boolean.class, DateString.class, TimeString.class);
+
   private final Map<String, Constructor> constructorMap = new HashMap<>();
   private final @Nullable JsonBuilder jsonBuilder;
   private final InputTranslator inputTranslator;
@@ -439,7 +443,7 @@ public class RelJson {
     return map;
   }
 
-  @SuppressWarnings("UnstableApiUsage") // RangeSet approved as of Guava 32.0
+  @SuppressWarnings({"BetaApi", "UnstableApiUsage"}) // RangeSet GA in Guava 32
   public @Nullable Object toJson(@Nullable Object value) {
     if (value == null
         || value instanceof Number
@@ -500,14 +504,13 @@ public class RelJson {
     return map;
   }
 
-  @SuppressWarnings("UnstableApiUsage")
+  @SuppressWarnings({"BetaApi", "UnstableApiUsage"}) // RangeSet GA in Guava 32
   public <C extends Comparable<C>> List<List<String>> toJson(
       RangeSet<C> rangeSet) {
     final List<List<String>> list = new ArrayList<>();
     try {
-      for (Range<C> range : rangeSet.asRanges()) {
-        list.add(toJson(range));
-      }
+      RangeSets.forEach(rangeSet,
+          RangeToJsonConverter.<C>instance().andThen(list::add));
     } catch (Exception e) {
       throw new RuntimeException("Failed to serialize RangeSet: ", e);
     }
@@ -517,33 +520,7 @@ public class RelJson {
   /** Serializes a {@link Range} that can be deserialized using
    * {@link RelJson#rangeFromJson(List)}. */
   public <C extends Comparable<C>> List<String> toJson(Range<C> range) {
-    String lowerBoundType =
-        !range.hasLowerBound() || range.lowerBoundType() == BoundType.OPEN
-            ? "("
-            : "[";
-    String upperBoundType =
-        !range.hasUpperBound() || range.upperBoundType() == BoundType.OPEN
-            ? ")"
-            : "]";
-    String lowerEndpoint =
-        range.hasLowerBound()
-            ? rexLiteralObjectToString(range.lowerEndpoint())
-            : RANGE_UNBOUNDED;
-    String upperEndpoint =
-        range.hasUpperBound()
-            ? rexLiteralObjectToString(range.upperEndpoint())
-            : RANGE_UNBOUNDED;
-    return Arrays.asList(lowerBoundType, lowerEndpoint, upperEndpoint,
-        upperBoundType);
-  }
-
-  private <C extends Comparable<C>> String rexLiteralObjectToString(C endpoint) {
-    try {
-      ObjectMapper mapper = new ObjectMapper();
-      return mapper.writeValueAsString(endpoint);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException("Failed to serialize Range endpoint: ", e);
-    }
+    return RangeSets.map(range, RangeToJsonConverter.instance());
   }
 
   private Object toJson(RelDataType node) {
@@ -877,7 +854,7 @@ public class RelJson {
    * nullAs: "UNKNOWN"}} represents the range x &ge; 0 and x &le; 5 or
    * x &gt; 10.
    */
-  @SuppressWarnings("UnstableApiUsage")
+  @SuppressWarnings({"BetaApi", "UnstableApiUsage"}) // RangeSet GA in Guava 32
   public static <C extends Comparable<C>> Sarg<C> sargFromJson(
       Map<String, Object> map) {
     RexUnknownAs unknownAs = RelEnumTypes.toEnum((String) map.get("nullAs"));
@@ -887,15 +864,12 @@ public class RelJson {
   }
 
   /** Converts a JSON list to a {@link RangeSet}. */
-  @SuppressWarnings("UnstableApiUsage")
+  @SuppressWarnings({"BetaApi", "UnstableApiUsage"}) // RangeSet GA in Guava 32
   public static <C extends Comparable<C>> RangeSet<C> rangeSetFromJson(
       List<List<String>> rangeSetsJson) {
     final ImmutableRangeSet.Builder<C> builder = ImmutableRangeSet.builder();
     try {
-      for (List<String> o : rangeSetsJson) {
-        Range<C> range = rangeFromJson(o);
-        builder.add(range);
-      }
+      rangeSetsJson.forEach(list -> builder.add(rangeFromJson(list)));
     } catch (Exception e) {
       throw new RuntimeException("Error creating RangeSet from JSON: ", e);
     }
@@ -905,57 +879,47 @@ public class RelJson {
   /** Creates a {@link Range} from a JSON object.
    *
    * <p>The JSON object is as serialized using {@link RelJson#toJson(Range)},
-   * e.g. {@code ["[", ")", 10, "-"]}. */
-  public static <C extends Comparable<C>> Range<C> rangeFromJson(List<String> list) {
-    if (list.size() != 4) {
-      throw new IllegalArgumentException(
-          "Serialized Range object should be a list with 4 entries.");
-    }
-    BoundType lowerType =
-        list.get(0).equals("(") ? BoundType.OPEN : BoundType.CLOSED;
-    Object lower = rangeEndPointFromJson(list.get(1));
-    Object upper = rangeEndPointFromJson(list.get(2));
-    BoundType upperType =
-        list.get(3).equals(")") ? BoundType.OPEN : BoundType.CLOSED;
-
-    if (lower.equals(RANGE_UNBOUNDED) && upper.equals(RANGE_UNBOUNDED)) {
+   * e.g. {@code ["[", ")", 10, "-"]}.
+   *
+   * @see RangeToJsonConverter */
+  public static <C extends Comparable<C>> Range<C> rangeFromJson(
+      List<String> list) {
+    switch (list.get(0)) {
+    case "all":
       return Range.all();
-    } else if (lower.equals(RANGE_UNBOUNDED)) {
-      if (upperType == BoundType.OPEN) {
-        return Range.lessThan((C) upper);
-      } else {
-        return Range.atMost((C) upper);
-      }
-    } else if (upper.equals(RANGE_UNBOUNDED)) {
-      if (lowerType == BoundType.OPEN) {
-        return Range.greaterThan((C) lower);
-      } else {
-        return Range.atLeast((C) lower);
-      }
-    } else {
-      return Range.range((C) lower, lowerType, (C) upper, upperType);
+    case "atLeast":
+      return Range.atLeast(rangeEndPointFromJson(list.get(1)));
+    case "atMost":
+      return Range.atMost(rangeEndPointFromJson(list.get(1)));
+    case "greaterThan":
+      return Range.greaterThan(rangeEndPointFromJson(list.get(1)));
+    case "lessThan":
+      return Range.lessThan(rangeEndPointFromJson(list.get(1)));
+    case "singleton":
+      return Range.singleton(rangeEndPointFromJson(list.get(1)));
+    case "closed":
+      return Range.closed(rangeEndPointFromJson(list.get(1)),
+          rangeEndPointFromJson(list.get(2)));
+    case "closedOpen":
+      return Range.closedOpen(rangeEndPointFromJson(list.get(1)),
+          rangeEndPointFromJson(list.get(2)));
+    case "openClosed":
+      return Range.openClosed(rangeEndPointFromJson(list.get(1)),
+          rangeEndPointFromJson(list.get(2)));
+    case "open":
+      return Range.open(rangeEndPointFromJson(list.get(1)),
+          rangeEndPointFromJson(list.get(2)));
+    default:
+      throw new AssertionError("unknown range type " + list.get(0));
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private static Comparable rangeEndPointFromJson(Object o) {
-    if (o.equals(RANGE_UNBOUNDED)) {
-      return (Comparable) o;
-    }
-    ObjectMapper mapper = new ObjectMapper()
-        .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static <C extends Comparable<C>> C rangeEndPointFromJson(Object o) {
     Exception e = null;
-    List<Class> clsTypes =
-        ImmutableList.of(
-            NlsString.class,
-            BigDecimal.class,
-            ByteString.class,
-            Boolean.class,
-            DateString.class,
-            TimeString.class);
-    for (Class clsType : clsTypes) {
+    for (Class clsType : VALUE_CLASSES) {
       try {
-        return (Comparable) mapper.readValue((String) o, clsType);
+        return (C) OBJECT_MAPPER.readValue((String) o, clsType);
       } catch (JsonProcessingException ex) {
         e = ex;
       }
@@ -965,8 +929,7 @@ public class RelJson {
         e);
   }
 
-  private void addRexFieldCollationList(
-      List<RexFieldCollation> list,
+  private void addRexFieldCollationList(List<RexFieldCollation> list,
       RelInput relInput, @Nullable List<Map<String, Object>> order) {
     if (order == null) {
       return;
@@ -1199,5 +1162,70 @@ public class RelJson {
      */
     RexNode translateInput(RelJson relJson, int input,
         Map<String, @Nullable Object> map, RelInput relInput);
+  }
+
+  /** Implementation of {@link RangeSets.Handler} that converts a {@link Range}
+   * event to a list of strings.
+   *
+   * @param <V> Range value type
+   */
+  private static class RangeToJsonConverter<V>
+      implements RangeSets.Handler<V, List<String>> {
+    @SuppressWarnings("rawtypes")
+    private static final RangeToJsonConverter INSTANCE =
+        new RangeToJsonConverter<>();
+
+    private static <C extends Comparable<C>> RangeToJsonConverter<C> instance() {
+      //noinspection unchecked
+      return INSTANCE;
+    }
+
+    @Override public List<String> all() {
+      return ImmutableList.of("all");
+    }
+
+    @Override public List<String> atLeast(V lower) {
+      return ImmutableList.of("atLeast", toJson(lower));
+    }
+
+    @Override public List<String> atMost(V upper) {
+      return ImmutableList.of("atMost", toJson(upper));
+    }
+
+    @Override public List<String> greaterThan(V lower) {
+      return ImmutableList.of("greaterThan", toJson(lower));
+    }
+
+    @Override public List<String> lessThan(V upper) {
+      return ImmutableList.of("lessThan", toJson(upper));
+    }
+
+    @Override public List<String> singleton(V value) {
+      return ImmutableList.of("singleton", toJson(value));
+    }
+
+    @Override public List<String> closed(V lower, V upper) {
+      return ImmutableList.of("closed", toJson(lower), toJson(upper));
+    }
+
+    @Override public List<String> closedOpen(V lower, V upper) {
+      return ImmutableList.of("closedOpen", toJson(lower), toJson(upper));
+    }
+
+    @Override public List<String> openClosed(V lower, V upper) {
+      return ImmutableList.of("openClosed", toJson(lower), toJson(upper));
+    }
+
+    @Override public List<String> open(V lower, V upper) {
+      return ImmutableList.of("open", toJson(lower), toJson(upper));
+    }
+
+    private static String toJson(Object o) {
+      try {
+        return OBJECT_MAPPER.writeValueAsString(o);
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException("Failed to serialize Range endpoint: ", e);
+      }
+    }
   }
 }
