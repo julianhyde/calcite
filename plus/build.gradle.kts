@@ -18,6 +18,7 @@ dependencies {
     api(project(":core"))
     api(project(":linq4j"))
     api("net.hydromatic:quidem")
+    api("net.hydromatic:sql-logic-test")
     api("org.apache.calcite.avatica:avatica-core")
     api("org.checkerframework:checker-qual")
 
