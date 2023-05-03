@@ -6232,7 +6232,7 @@ public class SqlOperatorTest {
             + " <NUMERIC>, <NUMERIC>\\)", false);
 
     final Consumer<SqlOperatorFixture> consumer = f -> {
-
+      // test for CHAR
       f.checkScalar("INSTR('abc', 'a', 1, 1)", "1", "INTEGER NOT NULL");
       f.checkScalar("INSTR('abcabc', 'bc', 1, 2)", "5", "INTEGER NOT NULL");
       f.checkScalar("INSTR('abcabc', 'd', 1, 1)", "0", "INTEGER NOT NULL");

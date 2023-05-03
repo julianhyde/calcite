@@ -1080,25 +1080,28 @@ class SqlFunctionsTest {
       assertThat(e.getMessage(),
           is("Invalid input for POSITION function: occurrence operand value must be positive"));
     }
-    final ByteString abc = ByteString.of("aabbccddeecc", 16);
-    assertThat(position(ByteString.of("cc", 16), abc), is(3));
-    assertThat(position(ByteString.of("cc", 16), abc, 2), is(3));
-    assertThat(position(ByteString.of("cc", 16), abc, -2), is(3));
-    assertThat(position(ByteString.of("cc", 16), abc, 4), is(6));
-    assertThat(position(ByteString.of("ddeecc", 16), abc, -2), is(4));
-    assertThat(position(ByteString.of("cc", 16), abc, 1, 2), is(6));
-    assertThat(position(ByteString.of("cc", 16), abc, -1, 2), is(3));
-    assertThat(position(ByteString.of("ff", 16), abc, 1, 1), is(0));
-    assertThat(position(ByteString.of("cc", 16), abc, 1, 3), is(0));
+    final ByteString abcdec = ByteString.of("aabbccddeecc", 16);
+    final ByteString c = ByteString.of("cc", 16);
+    final ByteString dec = ByteString.of("ddeecc", 16);
+    final ByteString f = ByteString.of("ff", 16);
+    assertThat(position(c, abcdec), is(3));
+    assertThat(position(c, abcdec, 2), is(3));
+    assertThat(position(c, abcdec, -2), is(3));
+    assertThat(position(c, abcdec, 4), is(6));
+    assertThat(position(dec, abcdec, -2), is(4));
+    assertThat(position(c, abcdec, 1, 2), is(6));
+    assertThat(position(c, abcdec, -1, 2), is(3));
+    assertThat(position(f, abcdec, 1, 1), is(0));
+    assertThat(position(c, abcdec, 1, 3), is(0));
     try {
-      int i = position(ByteString.of("cc", 16), abc, 0, 1);
+      int i = position(c, abcdec, 0, 1);
       fail("expected error, got: " + i);
     } catch (CalciteException e) {
       assertThat(e.getMessage(),
           is("Invalid input for POSITION function: from operand value must not be zero"));
     }
     try {
-      int i = position(ByteString.of("cc", 16), abc, 1, 0);
+      int i = position(c, abcdec, 1, 0);
       fail("expected error, got: " + i);
     } catch (CalciteException e) {
       assertThat(e.getMessage(),

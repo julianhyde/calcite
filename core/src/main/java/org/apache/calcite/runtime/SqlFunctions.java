@@ -3107,17 +3107,54 @@ public class SqlFunctions {
     if (from == 0) {
       throw RESOURCE.fromNotZero().ex();
     }
-    // Case when from is positive
     if (from > 0) {
-      final int from0 = from - 1; // 0-based
-      if (from0 >= s.length() || from0 < 0) {
-        return 0;
-      } else {
-        return s.indexOf(seek, from0) + 1;
-      }
+      return positionForwards(seek, s, from);
+    } else {
+      from += s.length(); // convert negative position to positive index
+      return positionBackwards(seek, s, from);
     }
-    // Case when from is negative
-    final int rightIndex = from + s.length(); // negative position to positive index
+  }
+
+  /** SQL {@code POSITION(seek IN string FROM integer)} function for byte
+   * strings. */
+  public static int position(ByteString seek, ByteString s, int from) {
+    if (from == 0) {
+      throw RESOURCE.fromNotZero().ex();
+    }
+    if (from > 0) {
+      return positionForwards(seek, s, from);
+    } else {
+      from += s.length(); // convert negative position to 0-based index
+      return positionBackwards(seek, s, from);
+    }
+  }
+
+  /** Returns the position (1-based) of {@code seek} in string {@code s}
+   * seeking forwards from {@code from} (1-based). */
+  private static int positionForwards(String seek, String s, int from) {
+    final int from0 = from - 1; // 0-based
+    if (from0 >= s.length()) {
+      return 0;
+    } else {
+      return s.indexOf(seek, from0) + 1;
+    }
+  }
+
+  /** Returns the position (1-based) of {@code seek} in byte string {@code s}
+   * seeking forwards from {@code from} (1-based). */
+  private static int positionForwards(ByteString seek, ByteString s,
+      int from) {
+    final int from0 = from - 1; // 0-based
+    if (from0 >= s.length()) {
+      return 0;
+    } else {
+      return s.indexOf(seek, from0) + 1;
+    }
+  }
+
+  /** Returns the position (1-based) of {@code seek} in string {@code s}
+   * seeking backwards from {@code rightIndex} (0-based). */
+  private static int positionBackwards(String seek, String s, int rightIndex) {
     if (rightIndex <= 0) {
       return 0;
     }
@@ -3131,28 +3168,16 @@ public class SqlFunctions {
     return lastIndex;
   }
 
-  /** SQL {@code POSITION(seek IN string FROM integer)} function for byte
-   * strings. */
-  public static int position(ByteString seek, ByteString s, int from) {
-    if (from == 0) {
-      throw RESOURCE.fromNotZero().ex();
-    }
-    // Case when from is positive
-    if (from > 0) {
-      final int from0 = from - 1; // 0-based
-      if (from0 >= s.length() || from0 < 0) {
-        return 0;
-      } else {
-        return s.indexOf(seek, from0) + 1;
-      }
-    }
-    // Case when from is negative
-    final int rightIndex = from + s.length(); // negative position to positive index
+  /** Returns the position (1-based) of {@code seek} in byte string {@code s}
+   * seeking backwards from {@code rightIndex} (0-based). */
+  private static int positionBackwards(ByteString seek, ByteString s,
+      int rightIndex) {
     if (rightIndex <= 0) {
       return 0;
     }
     int lastIndex = 0;
     while (lastIndex < rightIndex) {
+      // NOTE: When [CALCITE-5682] is fixed, use ByteString.lastIndexOf
       int indexOf = s.substring(lastIndex).indexOf(seek) + 1;
       if (indexOf == 0 || lastIndex + indexOf > rightIndex + 1) {
         break;
@@ -3164,55 +3189,62 @@ public class SqlFunctions {
 
   /** SQL {@code POSITION(seek, string, from, occurrence)} function. */
   public static int position(String seek, String s, int from, int occurrence) {
+    if (from == 0) {
+      throw RESOURCE.fromNotZero().ex();
+    }
     if (occurrence == 0) {
       throw RESOURCE.occurrenceNotZero().ex();
     }
     if (from > 0) {
+      --from; // compensate for the '+ 1' 2 lines down
       for (int i = 0; i < occurrence; i++) {
-        from = position(seek, s, from + (i == 0 ? 0 : 1));
+        from = positionForwards(seek, s, from + 1);
         if (from == 0) {
           return 0;
         }
       }
     } else {
+      from += s.length() + 1; // convert negative position to positive index
+      ++from; // compensate for the '--from' 2 lines down
       for (int i = 0; i < occurrence; i++) {
-        from = position(seek, s, from);
+        --from; // move on to next occurrence
+        from = positionBackwards(seek, s, from - 1);
         if (from == 0) {
           return 0;
         }
-        from -= s.length() + 2;
       }
-    }
-    if (from < 0) {
-      from += s.length() + 2;
     }
     return from;
   }
 
   /** SQL {@code POSITION(seek, string, from, occurrence)} function for byte
    * strings. */
-  public static int position(ByteString seek, ByteString s, int from, int occurrence) {
+  public static int position(ByteString seek, ByteString s, int from,
+      int occurrence) {
+    if (from == 0) {
+      throw RESOURCE.fromNotZero().ex();
+    }
     if (occurrence == 0) {
       throw RESOURCE.occurrenceNotZero().ex();
     }
     if (from > 0) {
+      --from; // compensate for the '+ 1' 2 lines down
       for (int i = 0; i < occurrence; i++) {
-        from = position(seek, s, from + (i == 0 ? 0 : 1));
+        from = positionForwards(seek, s, from + 1);
         if (from == 0) {
           return 0;
         }
       }
     } else {
+      from += s.length() + 1; // convert negative position to positive index
+      ++from; // compensate for the '--from' 2 lines down
       for (int i = 0; i < occurrence; i++) {
-        from = position(seek, s, from);
+        --from; // move on to next occurrence
+        from = positionBackwards(seek, s, from - 1);
         if (from == 0) {
           return 0;
         }
-        from -= s.length() + 2;
       }
-    }
-    if (from < 0) {
-      from += s.length() + 2;
     }
     return from;
   }
