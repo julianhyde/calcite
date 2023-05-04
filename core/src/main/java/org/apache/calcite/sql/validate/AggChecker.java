@@ -140,7 +140,8 @@ class AggChecker extends SqlBasicVisitor<Void> {
   }
 
   @Override public Void visit(SqlCall call) {
-    final SqlValidatorScope scope = scopes.peek();
+    final SqlValidatorScope scope =
+        requireNonNull(scopes.peek(), () -> "scope for " + call);
     if (call.getOperator().isAggregator()) {
       if (distinct) {
         if (scope instanceof AggregatingSelectScope) {
@@ -199,8 +200,7 @@ class AggChecker extends SqlBasicVisitor<Void> {
       } else if (over instanceof SqlIdentifier) {
         // Check the corresponding SqlWindow in WINDOW clause
         final SqlWindow window =
-            requireNonNull(scope, () -> "scope for " + call)
-                .lookupWindow(((SqlIdentifier) over).getSimple());
+            scope.lookupWindow(((SqlIdentifier) over).getSimple());
         requireNonNull(window, () -> "window for " + call);
         window.getPartitionList().accept(this);
         window.getOrderList().accept(this);
@@ -237,8 +237,7 @@ class AggChecker extends SqlBasicVisitor<Void> {
     }
 
     // Switch to new scope.
-    SqlValidatorScope newScope = requireNonNull(scope, () -> "scope for " + call)
-        .getOperandScope(call);
+    SqlValidatorScope newScope = scope.getOperandScope(call);
     scopes.push(newScope);
 
     // Visit the operands (only expressions).
