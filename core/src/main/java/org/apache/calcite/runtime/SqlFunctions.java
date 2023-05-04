@@ -3196,14 +3196,17 @@ public class SqlFunctions {
       throw RESOURCE.occurrenceNotZero().ex();
     }
     if (from > 0) {
-      --from; // compensate for the '+ 1' 2 lines down
+      // Forwards
+      --from; // compensate for the '++from' 2 lines down
       for (int i = 0; i < occurrence; i++) {
-        from = positionForwards(seek, s, from + 1);
+        ++from; // move on to next occurrence
+        from = positionForwards(seek, s, from);
         if (from == 0) {
           return 0;
         }
       }
     } else {
+      // Backwards
       from += s.length() + 1; // convert negative position to positive index
       ++from; // compensate for the '--from' 2 lines down
       for (int i = 0; i < occurrence; i++) {
@@ -3228,14 +3231,17 @@ public class SqlFunctions {
       throw RESOURCE.occurrenceNotZero().ex();
     }
     if (from > 0) {
-      --from; // compensate for the '+ 1' 2 lines down
+      // Forwards
+      --from; // compensate for the '++from' 2 lines down
       for (int i = 0; i < occurrence; i++) {
-        from = positionForwards(seek, s, from + 1);
+        ++from; // move on to next occurrence
+        from = positionForwards(seek, s, from);
         if (from == 0) {
           return 0;
         }
       }
     } else {
+      // Backwards
       from += s.length() + 1; // convert negative position to positive index
       ++from; // compensate for the '--from' 2 lines down
       for (int i = 0; i < occurrence; i++) {
