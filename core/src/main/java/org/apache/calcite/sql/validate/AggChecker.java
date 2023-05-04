@@ -147,8 +147,9 @@ class AggChecker extends SqlBasicVisitor<Void> {
     if (call.getOperator().isAggregator()) {
       if (distinct) {
         if (scope instanceof AggregatingSelectScope) {
+          final SqlSelect select = (SqlSelect) scope.getNode();
           SelectScope selectScope =
-              requireNonNull(validator.getRawSelectScope((SqlSelect) scope.getNode()),
+              requireNonNull(validator.getRawSelectScope(select),
                   () -> "rawSelectScope for " + scope.getNode());
           SqlNodeList selectList =
               SqlNodeList.of(SqlParserPos.ZERO,
