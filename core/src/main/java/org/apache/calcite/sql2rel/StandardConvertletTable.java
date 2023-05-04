@@ -435,8 +435,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       exprs.add(operands.get(3)); // Occurrence
       break;
     default:
-      throw new UnsupportedOperationException("Position does not accept " + call.operandCount()
-          + " operands");
+      throw new UnsupportedOperationException("Position does not accept "
+          + call.operandCount() + " operands");
     }
     return rexBuilder.makeCall(type, SqlStdOperatorTable.POSITION, exprs);
   }
