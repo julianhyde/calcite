@@ -30,6 +30,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.tools.RelBuilder;
 
@@ -181,7 +182,10 @@ public class RelMdMeasure
         @Override public List<RexNode> getFilters(RelBuilder b) {
           final List<RexNode> filters = new ArrayList<>();
           aggregate.getGroupSet().forEachInt(i ->
-              filters.add(b.equals(b.field(i), b.field(v, filters.size()))));
+              filters.add(true
+                  ? b.equals(b.field(i), b.field(v, filters.size()))
+                  : b.call(SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, b.field(i),
+                      b.field(v, filters.size()))));
           return filters;
         }
       };
