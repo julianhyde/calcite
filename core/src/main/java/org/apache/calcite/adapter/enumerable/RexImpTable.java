@@ -3093,7 +3093,9 @@ public class RexImpTable {
    * and the {@code OFFSET}, {@code ORDINAL}, {@code SAFE_OFFSET}, and
    * {@code SAFE_ORDINAL} BigQuery operators. */
   private static class ArrayItemImplementor extends AbstractRexCallImplementor {
-    ArrayItemImplementor() { super("array_item", NullPolicy.STRICT, false); }
+    ArrayItemImplementor() {
+      super("array_item", NullPolicy.STRICT, false);
+    }
 
     @Override Expression implementSafe(final RexToLixTranslator translator,
         final RexCall call, final List<Expression> argValueList) {

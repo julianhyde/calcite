@@ -757,11 +757,11 @@ SELECT
 !ok
 
 SELECT SPLIT('h,e,l,l,o')[OFFSET(-1)] as offset_idx;
-Array index -1 is out of bounds.
+Array index -1 is out of bounds
 !error
 
 SELECT SPLIT('h,e,l,l,o')[ORDINAL(7)] as ordinal_idx;
-Array index 7 is out of bounds.
+Array index 7 is out of bounds
 !error
 
 SELECT SPLIT('h,e,l,l,o')[SAFE_OFFSET(-1)] as safe_offset_idx;
