@@ -48,15 +48,13 @@ import static java.util.Objects.requireNonNull;
  * {@code myStruct[2]} or {@code myStruct['fieldName']}.
  */
 public class SqlItemOperator extends SqlSpecialOperator {
-
-  private SqlSingleOperandTypeChecker operandTypeChecker;
   public final int offset;
   public final boolean safe;
 
-  public SqlItemOperator(String name, SqlSingleOperandTypeChecker operandTypeChecker,
+  public SqlItemOperator(String name,
+      SqlSingleOperandTypeChecker operandTypeChecker,
       int offset, boolean safe) {
-    super(name, SqlKind.ITEM, 100, true, null, null, null);
-    this.operandTypeChecker = operandTypeChecker;
+    super(name, SqlKind.ITEM, 100, true, null, null, operandTypeChecker);
     this.offset = offset;
     this.safe = safe;
   }
@@ -88,18 +86,22 @@ public class SqlItemOperator extends SqlSpecialOperator {
     return SqlOperandCountRanges.of(2);
   }
 
-  @Override public boolean checkOperandTypes(
-      SqlCallBinding callBinding,
+  @Override public boolean checkOperandTypes(SqlCallBinding callBinding,
       boolean throwOnFailure) {
     final SqlNode left = callBinding.operand(0);
     final SqlNode right = callBinding.operand(1);
-    if (!operandTypeChecker.checkSingleOperandType(callBinding, left, 0,
+    if (!getOperandTypeChecker().checkSingleOperandType(callBinding, left, 0,
         throwOnFailure)) {
       return false;
     }
     final SqlSingleOperandTypeChecker checker = getChecker(callBinding);
     return checker.checkSingleOperandType(callBinding, right, 0,
         throwOnFailure);
+  }
+
+  @Override public SqlSingleOperandTypeChecker getOperandTypeChecker() {
+    return (SqlSingleOperandTypeChecker)
+        requireNonNull(super.getOperandTypeChecker(), "operandTypeChecker");
   }
 
   private static SqlSingleOperandTypeChecker getChecker(SqlCallBinding callBinding) {
@@ -171,7 +173,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
         throw new AssertionError("Unsupported field identifier type: '"
             + indexType + "'");
       }
-      if (fieldType != null && operandType.isNullable()) {
+      if (operandType.isNullable()) {
         fieldType = typeFactory.createTypeWithNullability(fieldType, true);
       }
       return fieldType;

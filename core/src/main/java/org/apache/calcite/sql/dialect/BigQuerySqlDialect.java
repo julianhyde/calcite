@@ -283,11 +283,10 @@ public class BigQuerySqlDialect extends SqlDialect {
     writer.endFunCall(trimFrame);
   }
 
-  /**
-   * When indexing an array in BigQuery, an array subscript operator must surround the
-   * desired index. For the standard ITEM operator used by other dialects in Calcite,
-   * ITEM is not included in the unparsing. This helper ensures that the operator is
-   * preserved when being unparsed. */
+  /** When indexing an array in BigQuery, an array subscript operator must
+   * surround the desired index. For the standard ITEM operator used by other
+   * dialects in Calcite, ITEM is not included in the unparsing. This helper
+   * ensures that the operator is preserved when being unparsed. */
   private static void unparseItem(SqlWriter writer, SqlCall call, int leftPrec,
       int rightPrec) {
     String operatorName = call.getOperator().getName();

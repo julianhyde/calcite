@@ -3625,12 +3625,17 @@ public class SqlFunctions {
   }
 
   /** Helper for "array element reference". Caller has already ensured that
-   * array and index are not null. Index may be 0- or 1-based depending on
-   * which array subscript operator is being used. ITEM, ORDINAL, and SAFE_ORDINAL
-   * are 1-based while OFFSET and SAFE_OFFSET are 0-based. The ITEM, SAFE_OFFSET, and
-   * SAFE_OPERATORS return null if the index is out of bounds while the others
+   * array and index are not null.
+   *
+   * <p>Index may be 0- or 1-based depending on which array subscript operator
+   * is being used. {@code ITEM}, {@code ORDINAL}, and {@code SAFE_ORDINAL}
+   * are 1-based, while {@code OFFSET} and {@code SAFE_OFFSET} are 0-based.
+   *
+   * <p>The {@code ITEM}, {@code SAFE_OFFSET}, and {@code SAFE_ORDINAL}
+   * operators return null if the index is out of bounds, while the others
    * throw an error. */
-  public static @Nullable Object arrayItem(List list, int item, int offset, boolean safe) {
+  public static @Nullable Object arrayItem(List list, int item, int offset,
+      boolean safe) {
     if (item < offset || item > list.size() + 1 - offset) {
       if (safe) {
         return null;
@@ -3668,8 +3673,8 @@ public class SqlFunctions {
   }
 
   /** As {@link #arrayItem} method, but allows array to be nullable. */
-  public static @Nullable Object arrayItemOptional(@Nullable List list, int item, int offset,
-      boolean safe) {
+  public static @Nullable Object arrayItemOptional(@Nullable List list,
+      int item, int offset, boolean safe) {
     if (list == null) {
       return null;
     }
@@ -3677,7 +3682,8 @@ public class SqlFunctions {
   }
 
   /** As {@link #mapItem} method, but allows map to be nullable. */
-  public static @Nullable Object mapItemOptional(@Nullable Map map, Object item) {
+  public static @Nullable Object mapItemOptional(@Nullable Map map,
+      Object item) {
     if (map == null) {
       return null;
     }
@@ -3685,7 +3691,8 @@ public class SqlFunctions {
   }
 
   /** As {@link #item} method, but allows object to be nullable. */
-  public static @Nullable Object itemOptional(@Nullable Object object, Object index) {
+  public static @Nullable Object itemOptional(@Nullable Object object,
+      Object index) {
     if (object == null) {
       return null;
     }

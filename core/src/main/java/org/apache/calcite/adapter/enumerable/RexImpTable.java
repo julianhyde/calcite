@@ -3089,17 +3089,19 @@ public class RexImpTable {
     }
   }
 
-  /** Implementor for indexing an array using the {@code ITEM} SQL operator and the {@code OFFSET},
-   * {@code ORDINAL}, {@code SAFE_OFFSET}, and {@code SAFE_ORDINAL} BigQuery operators. */
+  /** Implementor for indexing an array using the {@code ITEM} SQL operator
+   * and the {@code OFFSET}, {@code ORDINAL}, {@code SAFE_OFFSET}, and
+   * {@code SAFE_ORDINAL} BigQuery operators. */
   private static class ArrayItemImplementor extends AbstractRexCallImplementor {
     ArrayItemImplementor() { super("array_item", NullPolicy.STRICT, false); }
 
     @Override Expression implementSafe(final RexToLixTranslator translator,
         final RexCall call, final List<Expression> argValueList) {
       final SqlItemOperator itemOperator = (SqlItemOperator) call.getOperator();
-      argValueList.add(Expressions.constant(itemOperator.offset));
-      argValueList.add(Expressions.constant(itemOperator.safe));
-      return Expressions.call(BuiltInMethod.ARRAY_ITEM.method, argValueList);
+      return Expressions.call(BuiltInMethod.ARRAY_ITEM.method,
+          Expressions.list(argValueList)
+              .append(Expressions.constant(itemOperator.offset))
+              .append(Expressions.constant(itemOperator.safe)));
     }
   }
 
