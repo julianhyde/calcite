@@ -212,7 +212,7 @@ public class BigQuerySqlDialect extends SqlDialect {
         throw new RuntimeException("BigQuery requires an array subscript operator"
             + " to index an array");
       }
-      unparseItem(writer, call, leftPrec, rightPrec);
+      unparseItem(writer, call, leftPrec);
       break;
     default:
       super.unparseCall(writer, call, leftPrec, rightPrec);
@@ -287,8 +287,7 @@ public class BigQuerySqlDialect extends SqlDialect {
    * surround the desired index. For the standard ITEM operator used by other
    * dialects in Calcite, ITEM is not included in the unparsing. This helper
    * ensures that the operator is preserved when being unparsed. */
-  private static void unparseItem(SqlWriter writer, SqlCall call, int leftPrec,
-      int rightPrec) {
+  private static void unparseItem(SqlWriter writer, SqlCall call, int leftPrec) {
     String operatorName = call.getOperator().getName();
     call.operand(0).unparse(writer, leftPrec, 0);
     final SqlWriter.Frame frame = writer.startList("[", "]");
