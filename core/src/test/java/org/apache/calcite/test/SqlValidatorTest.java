@@ -4091,6 +4091,14 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .isAggregate(is(false));
   }
 
+  @Test void testAt() {
+    sql("with e2 as (select *, avg(sal) as measure avg_sal)\n"
+        + "select deptno, job,\n"
+        + " avg_sal at (clear deptno) as avg_sal_all_depts\n"
+        + "from e2")
+        .type("xx");
+  }
+
   @Test void testAmbiguousColumnInIn() {
     // ok: cyclic reference
     sql("select * from emp as e\n"
