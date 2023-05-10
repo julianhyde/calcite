@@ -28,11 +28,13 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.util.Litmus;
+import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -166,8 +168,34 @@ public abstract class SqlInternalOperators {
    * <p>But we prefer to leave it intact for easier matching and eventual
    * elimination in transformation rules. */
   public static final SqlOperator SAME_PARTITION =
-      new SqlInternalOperator("SAME_PARTITION", SqlKind.SAME_PARTITION, 2, true,
-          ReturnTypes.BOOLEAN, InferTypes.ANY_NULLABLE, OperandTypes.VARIADIC);
+      SqlBasicOperator.create(SqlKind.SAME_PARTITION);
+
+  /** <code>AT</code> operator modifies the evaluation context. */
+  public static final SqlOperator AT =
+      SqlBasicOperator.create(SqlKind.AT)
+          .withPrecedence(20, true)
+          .withUnparser((writer, call, leftPrec, rightPrec) -> {
+            final SqlOperator operator = call.getOperator();
+            call.operand(0).unparse(writer, leftPrec, operator.getLeftPrec());
+            writer.sep("AT");
+            new SqlNodeList(Util.skip(call.getOperandList()), SqlParserPos.ZERO)
+                .unparse(writer, operator.getRightPrec(), rightPrec);
+          });
+
+  /** {@code VISIBLE} clause inside {@link #AT}. */
+  public static final SqlOperator VISIBLE =
+      SqlBasicOperator.create(SqlKind.AT_VISIBLE, "VISIBLE")
+          .withSyntax(SqlSyntax.FUNCTION_ID);
+
+  /** {@code SET} clause inside {@link #AT}. */
+  public static final SqlOperator SET =
+      SqlBasicOperator.create(SqlKind.AT_SET, "SET")
+          .withSyntax(SqlSyntax.FUNCTION_ID);
+
+  /** {@code WHERE} clause inside {@link #AT}. */
+  public static final SqlOperator AT_WHERE =
+      SqlBasicOperator.create(SqlKind.AT_WHERE, "WHERE")
+          .withSyntax(SqlSyntax.FUNCTION_ID);
 
   /** An IN operator for Druid.
    *
@@ -226,23 +254,59 @@ public abstract class SqlInternalOperators {
 
   /** Subject to change. */
   private static class SqlBasicOperator extends SqlOperator {
-    @Override public SqlSyntax getSyntax() {
-      return SqlSyntax.SPECIAL;
-    }
+    private final Unparser unparser;
+    private final SqlSyntax syntax;
 
     /** Private constructor. Use {@link #create}. */
-    private SqlBasicOperator(String name, int leftPrecedence, int rightPrecedence) {
-      super(name, SqlKind.OTHER, leftPrecedence, rightPrecedence,
-          ReturnTypes.BOOLEAN, InferTypes.RETURN_TYPE, OperandTypes.ANY);
+    private SqlBasicOperator(String name, SqlKind kind, SqlSyntax syntax, int leftPrecedence,
+        int rightPrecedence, Unparser unparser) {
+      super(name, kind, leftPrecedence, rightPrecedence, ReturnTypes.BOOLEAN,
+          InferTypes.RETURN_TYPE, OperandTypes.ANY);
+      this.unparser = unparser;
+      this.syntax = syntax;
+    }
+
+    static SqlBasicOperator create(SqlKind kind) {
+      return create(kind, kind.name());
     }
 
     static SqlBasicOperator create(String name) {
-      return new SqlBasicOperator(name, 0, 0);
+      return create(SqlKind.OTHER, name);
+    }
+
+    static SqlBasicOperator create(SqlKind kind, String name) {
+      return new SqlBasicOperator(name, kind, SqlSyntax.FUNCTION, 0, 0,
+          (writer, call, leftPrec, rightPrec) ->
+              call.getOperator().getSyntax().unparse(writer, call.getOperator(),
+                  call, leftPrec, rightPrec));
+    }
+
+    @Override public SqlSyntax getSyntax() {
+      return syntax;
+    }
+
+    SqlBasicOperator withSyntax(SqlSyntax syntax) {
+      return new SqlBasicOperator(getName(), getKind(), syntax,
+          getLeftPrec(), getRightPrec(), unparser);
     }
 
     SqlBasicOperator withPrecedence(int prec, boolean leftAssoc) {
-      return new SqlBasicOperator(getName(), leftPrec(prec, leftAssoc),
-          rightPrec(prec, leftAssoc));
+      return new SqlBasicOperator(getName(), getKind(), syntax,
+          leftPrec(prec, leftAssoc), rightPrec(prec, leftAssoc), unparser);
     }
+
+    SqlBasicOperator withUnparser(Unparser unparser) {
+      return new SqlBasicOperator(getName(), getKind(), syntax,
+          getLeftPrec(), getRightPrec(), unparser);
+    }
+
+    @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
+        int rightPrec) {
+      unparser.unparse(writer, call, leftPrec, rightPrec);
+    }
+  }
+
+  interface Unparser {
+    void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec);
   }
 }
