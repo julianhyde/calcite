@@ -1852,7 +1852,16 @@ aggregateCall:
       [ WITHIN DISTINCT '(' expression [, expression ]* ')' ]
       [ WITHIN GROUP '(' ORDER BY orderItem [, orderItem ]* ')' ]
       [ FILTER '(' WHERE condition ')' ]
+      [ AT '(' contextModifier* ')' ]
   |   agg '(' '*' ')' [ FILTER (WHERE condition) ]
+
+contextModifier:
+      CLEAR dimension
+  |   CLEAR GROUP
+  |   CLEAR WHERE
+  |   SET dimension = expression
+  |   WHERE condition
+  |   VISIBLE
 {% endhighlight %}
 
 where *agg* is one of the operators in the following table, or a user-defined

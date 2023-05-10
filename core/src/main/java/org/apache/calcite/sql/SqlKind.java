@@ -258,6 +258,18 @@ public enum SqlKind {
   /** {@code WITHIN DISTINCT} operator. */
   WITHIN_DISTINCT,
 
+  /** {@code AT} operator. */
+  AT,
+
+  /** {@code VISIBLE} clause of {@code AT} operator. */
+  AT_VISIBLE,
+
+  /** {@code SET} clause of {@code AT} operator. */
+  AT_SET,
+
+  /** {@code WHERE} clause of {@code AT} operator. */
+  AT_WHERE,
+
   /** Window specification. */
   WINDOW,
 
@@ -1326,6 +1338,7 @@ public enum SqlKind {
           concat(
               EnumSet.of(AS, ARGUMENT_ASSIGNMENT, CONVERT, TRANSLATE, DEFAULT,
                   RUNNING, FINAL, LAST, FIRST, PREV, NEXT,
+                  AT, AT_VISIBLE, AT_SET, AT_WHERE,
                   FILTER, WITHIN_GROUP, IGNORE_NULLS, RESPECT_NULLS, SEPARATOR,
                   DESCENDING, CUBE, ROLLUP, GROUPING_SETS, EXTEND, LATERAL,
                   SELECT, JOIN, OTHER_FUNCTION, POSITION, CAST, TRIM, FLOOR, CEIL,

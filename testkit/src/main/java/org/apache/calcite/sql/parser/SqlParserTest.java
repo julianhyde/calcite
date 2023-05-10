@@ -8489,6 +8489,25 @@ public class SqlParserTest {
     sql(sql).ok(expected);
   }
 
+  @Test void testAt() {
+    final String sql = "select deptno,\n"
+        + "  avg(sal) as avg_sal,\n"
+//        + "  avg_sal_measure at (set deptno = 30) as avg_sal_d30,\n"
+//        + "  (sum(sal + 3) / count(*)) at (set deptno = 10) as avg_sal_d10,\n"
+        + "  avg(sal) at (visible) as visible_avg_sal,\n"
+        + "  avg(sal) at (set deptno = 20) as avg_sal_d20\n"
+        + "from emp\n"
+        + "group by deptno";
+    final String expected = ""
+        + "SELECT `DEPTNO`,"
+        + " AVG(`SAL`) AS `AVG_SAL`,"
+        + " AVG(`SAL`) AT ((VISIBLE)) AS `VISIBLE_AVG_SAL`,"
+        + " AVG(`SAL`) AT ((SET(`DEPTNO`, 20))) AS `AVG_SAL_D20`\n"
+        + "FROM `EMP`\n"
+        + "GROUP BY `DEPTNO`";
+    sql(sql).ok(expected);
+  }
+
   @Test void testJsonValueExpressionOperator() {
     expr("foo format json")
         .ok("`FOO` FORMAT JSON");
