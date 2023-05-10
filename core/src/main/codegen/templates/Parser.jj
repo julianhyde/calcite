@@ -7192,6 +7192,45 @@ SqlCall withinGroup(SqlNode arg) :
     }
 }
 
+SqlCall at(SqlNode arg) :
+{
+    final Span s;
+    final List<SqlNode> args = new ArrayList<SqlNode>();
+    SqlNode node;
+}
+{
+    <AT> { s = span(); }
+    <LPAREN>
+    ( node = atClause() { args.add(node); } )*
+    <RPAREN> {
+        args.add(0, arg);
+        return SqlInternalOperators.AT.createCall(
+            new SqlNodeList(args, s.end(this)));
+    }
+}
+
+SqlNode atClause() :
+{
+    final SqlNode filter;
+    final SqlIdentifier dimension;
+    final SqlNode expression;
+}
+{
+    <WHERE> filter = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+        return SqlInternalOperators.AT_WHERE.createCall(getPos(), filter);
+    }
+|
+    <SET> dimension = SimpleIdentifier()
+    <EQ> expression = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+        return SqlInternalOperators.SET.createCall(getPos(), dimension,
+            expression);
+    }
+|
+    <VISIBLE> {
+        return SqlInternalOperators.VISIBLE.createCall(getPos());
+    }
+}
+
 Pair<SqlParserPos, SqlOperator> NullTreatment() :
 {
     final Span span;
@@ -7266,6 +7305,9 @@ SqlNode NamedFunctionCall() :
             call = SqlStdOperatorTable.FILTER.createCall(
                 filterSpan.end(this), call, filter);
         }
+    ]
+    [
+        call = at(call)
     ]
     [
         <OVER> { overSpan = span(); }
@@ -8492,6 +8534,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >
 |   < VIEW: "VIEW" >
+|   < VISIBLE: "VISIBLE" >
 |   < WEDNESDAY: "WEDNESDAY" >
 |   < WEEK: "WEEK" >
 |   < WEEKS: "WEEKS" >
