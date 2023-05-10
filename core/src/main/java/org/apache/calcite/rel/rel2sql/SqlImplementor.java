@@ -1834,15 +1834,15 @@ public abstract class SqlImplementor {
       if (rel instanceof Project) {
         Project project = (Project) rel;
         RelNode input = project.getInput();
-        // Cannot merge because "select 1 from t"
-        // is different from "select 1 from (select count(1) from t)"
-        final boolean hasInputRef = project.getProjects()
-            .stream()
-            .anyMatch(rex -> RexUtil.containsInputRef(rex));
-        final boolean hasAggregate =
-            input instanceof Aggregate && input.getRowType().getFieldCount() > 0;
-        if (!hasInputRef && hasAggregate) {
-          return true;
+        if (input instanceof Aggregate) {
+          // Cannot merge because "select 1 from t"
+          // is different from "select 1 from (select count(1) from t)"
+          final Aggregate aggregate = (Aggregate) input;
+          final boolean hasInputRef = !aggregate.getGroupSet().isEmpty();
+          final boolean hasAggregate = !aggregate.getAggCallList().isEmpty();
+          if (!hasInputRef && hasAggregate) {
+            return true;
+          }
         }
       }
 

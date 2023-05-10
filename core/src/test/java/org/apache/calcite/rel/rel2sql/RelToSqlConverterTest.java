@@ -91,6 +91,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -686,6 +687,52 @@ class RelToSqlConverterTest {
         + "FROM (SELECT COUNT(\"ENAME\") AS \"DUMMY\"\n"
         + "FROM \"scott\".\"EMP\") AS \"t0\") AS \"t1\" "
         + "ON \"t\".\"K\" = \"t1\".\"K\"");
+  }
+
+  /** When a subquery is an aggregate query with no group keys,
+   * it always returns one row, even if the table is empty. */
+  @Test void testAggregateAllSubquery() {
+    // Before [CALCITE-5506] was fixed, Calcite wrongly generated
+    //   SELECT 1
+    //   FROM "foodmart"."product"
+    sql("select 1 from (select count(1) from \"product\")")
+        .ok("SELECT 1\n"
+            + "FROM (SELECT COUNT(*) AS \"EXPR$0\"\n"
+            + "FROM \"foodmart\".\"product\") AS \"t\"");
+  }
+
+  /** As previous, with WHERE. */
+  @Test void testAggregateAllSubqueryWhere() {
+    sql("select 1 from (\n"
+        + "  select count(1)"
+        + "  from \"product\""
+        + "  where \"product_id\" > 0)")
+        .ok("SELECT 1\n"
+            + "FROM (SELECT COUNT(*) AS \"EXPR$0\"\n"
+            + "WHERE \"product_id\" > 0\n"
+            + "FROM \"foodmart\".\"product\") AS \"t\"");
+  }
+
+  @Test void testAggregateSubquery() {
+    sql("select 1 from (\n"
+        + "  select count(1)"
+        + "  from \"product\""
+        + "  group by \"product_id\")")
+        .ok("SELECT 1\n"
+            + "FROM \"foodmart\".\"product\"\n"
+            + "GROUP BY \"product_id\"");
+  }
+
+  /** As previous, projecting the GROUP BY key from the subquery
+   * (which is ignored by the enclosing query). */
+  @Test void testMissingAggregateNew2() {
+    sql("select 1 from (\n"
+        + "  select \"product_id\", count(1)"
+        + "  from \"product\""
+        + "  group by \"product_id\")")
+        .ok("SELECT 1\n"
+            + "FROM \"foodmart\".\"product\"\n"
+            + "GROUP BY \"product_id\"");
   }
 
   /** Tests GROUP BY ROLLUP of two columns. The SQL for MySQL has
