@@ -2327,6 +2327,16 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
 ]]>
     </Resource>
   </TestCase>
+  <TestCase name="testGroupEmptyYieldLiteral">
+    <Resource name="sql">
+      <![CDATA[select 42 from emp group by ()]]>
+    </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalValues(tuples=[[{ 42 }]])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testGroupExpressionsInsideAndOut">
     <Resource name="plan">
       <![CDATA[

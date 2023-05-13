@@ -1964,9 +1964,7 @@ public class RelBuilderTest {
             .distinct()
             .build();
     final String expected = ""
-        + "LogicalAggregate(group=[{}], dummy=[LITERAL_AGG(true)])\n"
-        + "  LogicalFilter(condition=[IS NULL($6)])\n"
-        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+        + "LogicalValues(tuples=[[{ true }]])\n";
     final RelNode r = f.apply(createBuilder());
     assertThat(r, hasTree(expected));
 

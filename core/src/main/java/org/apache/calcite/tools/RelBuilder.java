@@ -2032,9 +2032,7 @@ public class RelBuilder {
 
     // Simplify expressions.
     if (config.simplify()) {
-      for (int i = 0; i < nodeList.size(); i++) {
-        nodeList.set(i, simplifier.simplifyPreservingType(nodeList.get(i)));
-      }
+      nodeList.replaceAll(e -> simplifier.simplifyPreservingType(e));
     }
 
     // Replace null names with generated aliases.
@@ -2306,24 +2304,30 @@ public class RelBuilder {
 
   /** Creates an {@link Aggregate} with an array of
    * {@link AggregateCall}s. */
-  public RelBuilder aggregate(GroupKey groupKey, List<AggregateCall> aggregateCalls) {
-    final List<AggCall> aggCalls =
-        aggregateCalls.isEmpty()
-            && groupKey.groupKeyCount() == 0
-            && config.preventEmptyFieldList()
-            ? ImmutableList.of(literalAgg(true).as("dummy"))
-            : aggregateCalls.stream()
-                .map(aggregateCall ->
-                    new AggCallImpl2(aggregateCall,
-                        aggregateCall.getArgList().stream()
-                            .map(this::field)
-                            .collect(Util.toImmutableList())))
-                .collect(Collectors.toList());
+  public RelBuilder aggregate(GroupKey groupKey,
+      List<AggregateCall> aggregateCalls) {
+    final List<AggCall> aggCalls = aggregateCalls.stream()
+        .map(aggregateCall ->
+            new AggCallImpl2(aggregateCall,
+                aggregateCall.getArgList().stream()
+                    .map(this::field)
+                    .collect(Util.toImmutableList())))
+        .collect(Collectors.toList());
     return aggregate(groupKey, aggCalls);
   }
 
   /** Creates an {@link Aggregate} with multiple calls. */
   public RelBuilder aggregate(GroupKey groupKey, Iterable<AggCall> aggCalls) {
+    if (Iterables.isEmpty(aggCalls)
+        && groupKey.groupKeyCount() == 0
+        && config.preventEmptyFieldList()) {
+      // Convert to
+      //   VALUES true
+      // which is equivalent to
+      //  SELECT true FROM t GROUP BY ()
+      // for all tables t, including empty ones
+      return values(new String[] {"dummy"}, true);
+    }
     final Registrar registrar =
         new Registrar(fields(), peek().getRowType().getFieldNames());
     final GroupKeyImpl groupKey_ = (GroupKeyImpl) groupKey;
