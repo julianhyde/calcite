@@ -73,6 +73,7 @@ public class AggResultContextImpl extends AggResetContextImpl
   }
 
   @Override public RexToLixTranslator resultTranslator() {
+    requireNonNull(keyPhysType, "keyPhysType");
     return RexToLixTranslator.forAggregation(keyPhysType.getTypeFactory(),
         currentBlock(), null, SqlConformanceEnum.DEFAULT);
   }

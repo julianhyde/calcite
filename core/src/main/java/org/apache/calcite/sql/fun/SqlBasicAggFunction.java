@@ -100,7 +100,7 @@ public final class SqlBasicAggFunction extends SqlAggFunction {
 
   //~ Methods ----------------------------------------------------------------
 
-  @Override public <T> @Nullable T unwrap(Class<T> clazz) {
+  @Override public <T extends Object> @Nullable T unwrap(Class<T> clazz) {
     if (clazz.isInstance(staticFun)) {
       return clazz.cast(staticFun);
     }

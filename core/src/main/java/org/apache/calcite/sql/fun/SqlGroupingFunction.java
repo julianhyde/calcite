@@ -84,7 +84,7 @@ class SqlGroupingFunction extends SqlAbstractGroupFunction {
     return null;
   }
 
-  @Override public <T> @Nullable T unwrap(Class<T> clazz) {
+  @Override public <T extends Object> @Nullable T unwrap(Class<T> clazz) {
     if (clazz.isInstance(STATIC)) {
       return clazz.cast(STATIC);
     }
