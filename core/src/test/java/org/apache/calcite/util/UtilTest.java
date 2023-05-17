@@ -26,7 +26,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Parameter;
 import org.apache.calcite.runtime.ConsList;
 import org.apache.calcite.runtime.FlatLists;
-import org.apache.calcite.runtime.PairList;
 import org.apache.calcite.runtime.Resources;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.runtime.Utilities;
@@ -1295,57 +1294,6 @@ class UtilTest {
     c.accept(list);
     c.accept(list2);
     c.accept(ImmutableIntList.of(-2, 10, 1, -2));
-  }
-
-  @Test void testPairList() {
-    final PairList<Integer, String> pairList = PairList.of();
-    final List<Pair<Integer, String>> list = new ArrayList<>();
-
-    final Runnable validator = () -> {
-      assertThat(pairList.isEmpty(), is(list.isEmpty()));
-      assertThat(pairList.size(), is(list.size()));
-      assertThat(pairList.leftList().size(), is(list.size()));
-      assertThat(pairList.rightList().size(), is(list.size()));
-      assertThat(pairList.leftList(), is(Pair.left(list)));
-      assertThat(pairList.rightList(), is(Pair.right(list)));
-
-      final List<Map.Entry<Integer, String>> list2 = new ArrayList<>(pairList);
-      assertThat(list2, is(list));
-
-      // Check PairList.forEach(Consumer)
-      list2.clear();
-      //noinspection UseBulkOperation
-      pairList.forEach(p -> list2.add(p));
-      assertThat(list2, is(list));
-
-      // Check PairList.forEach(BiConsumer)
-      list2.clear();
-      pairList.forEach((k, v) -> list2.add(Pair.of(k, v)));
-      assertThat(list2, is(list));
-    };
-
-    validator.run();
-
-    pairList.add(1, "a");
-    list.add(Pair.of(1, "a"));
-    validator.run();
-
-    pairList.add(Pair.of(2, "b"));
-    list.add(Pair.of(2, "b"));
-    validator.run();
-
-    pairList.add(0, Pair.of(3, "c"));
-    list.add(0, Pair.of(3, "c"));
-    validator.run();
-
-    Map.Entry<Integer, String> x = pairList.remove(1);
-    Pair<Integer, String> y = list.remove(1);
-    assertThat(x, is(y));
-    validator.run();
-
-    pairList.clear();
-    list.clear();
-    validator.run();
   }
 
   /** Unit test for {@link IdPair}. */
