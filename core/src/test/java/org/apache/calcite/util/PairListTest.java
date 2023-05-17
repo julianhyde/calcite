@@ -18,6 +18,8 @@ package org.apache.calcite.util;
 
 import org.apache.calcite.runtime.PairList;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -79,5 +81,27 @@ class PairListTest {
     pairList.clear();
     list.clear();
     validator.run();
+  }
+
+  /** Tests {@link PairList#of(Map)} and {@link PairList#toImmutableMap()}. */
+  @Test void testPairListOfMap() {
+    final ImmutableMap<String, Integer> map = ImmutableMap.of("a", 1, "b", 2);
+    final PairList<String, Integer> list = PairList.of(map);
+    assertThat(list.size(), is(2));
+    assertThat(list.toString(), is("[<a, 1>, <b, 2>]"));
+
+    final ImmutableMap<String, Integer> map2 = list.toImmutableMap();
+    assertThat(map2, is(map));
+
+    // After calling toImmutableMap, you can modify the list and call
+    // toImmutableMap again.
+    list.add("c", 3);
+    assertThat(list.toString(), is("[<a, 1>, <b, 2>, <c, 3>]"));
+    final ImmutableMap<String, Integer> map3 = list.toImmutableMap();
+    assertThat(map3.toString(), is("{a=1, b=2, c=3}"));
+
+    final Map<String, Integer> emptyMap = ImmutableMap.of();
+    final PairList<String, Integer> emptyList = PairList.of(emptyMap);
+    assertThat(emptyList.isEmpty(), is(true));
   }
 }

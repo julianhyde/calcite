@@ -19,11 +19,12 @@ package org.apache.calcite.runtime;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import static java.util.Objects.requireNonNull;
@@ -48,10 +49,14 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   /** Creates a PairList from a Map. */
   public static <T, U> PairList<T, U> of(Map<T, U> map) {
     final List<Object> list = new ArrayList<>(map.size() * 2);
-    map.forEach((t, u) -> list.add(Pair.of(t, u)));
+    map.forEach((t, u) -> {
+      list.add(t);
+      list.add(u);
+    });
     return new PairList<>(list);
   }
 
+  @SuppressWarnings("unchecked")
   @Override public Map.Entry<T, U> get(int index) {
     int x = index * 2;
     return Pair.of((T) list.get(x), (U) list.get(x + 1));
@@ -107,5 +112,36 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
       U u = (U) list.get(i++);
       consumer.accept(t, u);
     }
+  }
+
+  /** Calls a BiConsumer with each pair in this list. */
+  @SuppressWarnings("unchecked")
+  public void forEachIndexed(IndexedBiConsumer<T, U> consumer) {
+    requireNonNull(consumer, "consumer");
+    for (int i = 0, j = 0; i < list.size();) {
+      T t = (T) list.get(i++);
+      U u = (U) list.get(i++);
+      consumer.accept(j++, t, u);
+    }
+  }
+
+  /** Creates an {@link ImmutableMap} whose entries are the pairs in this list.
+   * Throws if keys are not unique. */
+  public ImmutableMap<T, U> toImmutableMap() {
+    final ImmutableMap.Builder<T, U> b = ImmutableMap.builder();
+    forEach((t, u) -> b.put(t, u));
+    return b.build();
+  }
+
+  /** Action to be taken each step of an indexed iteration over a PairList. */
+  interface IndexedBiConsumer<T, U> {
+    /**
+     * Performs this operation on the given arguments.
+     *
+     * @param index Index
+     * @param t First input argument
+     * @param u Second input argument
+     */
+    void accept(int index, T t, U u);
   }
 }
