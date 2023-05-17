@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
 /** A list of pairs, stored as a quotient list.
  *
  * @param <T> First type
- * @param <U> second type
+ * @param <U> Second type
  */
 public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   final List<Object> list;
@@ -133,7 +133,13 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return b.build();
   }
 
-  /** Action to be taken each step of an indexed iteration over a PairList. */
+  /** Action to be taken each step of an indexed iteration over a PairList.
+   *
+   * @param <T> First type
+   * @param <U> Second type
+   *
+   * @see PairList#forEachIndexed(IndexedBiConsumer)
+   */
   interface IndexedBiConsumer<T, U> {
     /**
      * Performs this operation on the given arguments.
