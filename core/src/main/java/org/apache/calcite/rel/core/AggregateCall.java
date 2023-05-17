@@ -23,6 +23,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -188,11 +189,12 @@ public class AggregateCall {
     if (type == null) {
       final RelDataTypeFactory typeFactory =
           input.getCluster().getTypeFactory();
+      final List<RelDataType> preTypes = RexUtil.types(rexList);
       final List<RelDataType> types =
           SqlTypeUtil.projectTypes(input.getRowType(), argList);
       final Aggregate.AggCallBinding callBinding =
-          new Aggregate.AggCallBinding(typeFactory, aggFunction, types,
-              groupCount, filterArg >= 0);
+          new Aggregate.AggCallBinding(typeFactory, aggFunction, preTypes,
+              types, groupCount, filterArg >= 0);
       type = aggFunction.inferReturnType(callBinding);
     }
     return create(aggFunction, distinct, approximate, ignoreNulls,
@@ -390,6 +392,12 @@ public class AggregateCall {
       buf.append((argList.size() == 0) ? "DISTINCT" : "DISTINCT ");
     }
     int i = -1;
+    for (RexNode rexNode : rexList) {
+      if (++i > 0) {
+        buf.append(", ");
+      }
+      buf.append(rexNode);
+    }
     for (Integer arg : argList) {
       if (++i > 0) {
         buf.append(", ");
@@ -456,19 +464,19 @@ public class AggregateCall {
   public Aggregate.AggCallBinding createBinding(
       Aggregate aggregateRelBase) {
     final RelDataType rowType = aggregateRelBase.getInput().getRowType();
+    final RelDataTypeFactory typeFactory =
+        aggregateRelBase.getCluster().getTypeFactory();
 
     if (aggFunction.getKind() == SqlKind.PERCENTILE_DISC
         || aggFunction.getKind() == SqlKind.PERCENTILE_CONT) {
       assert collation.getKeys().size() == 1;
-      return new Aggregate.PercentileDiscAggCallBinding(
-          aggregateRelBase.getCluster().getTypeFactory(), aggFunction,
-          SqlTypeUtil.projectTypes(rowType, argList),
+      return new Aggregate.PercentileDiscAggCallBinding(typeFactory,
+          aggFunction, SqlTypeUtil.projectTypes(rowType, argList),
           SqlTypeUtil.projectTypes(rowType, collation.getKeys()).get(0),
           aggregateRelBase.getGroupCount(), hasFilter());
     }
-    return new Aggregate.AggCallBinding(
-        aggregateRelBase.getCluster().getTypeFactory(), aggFunction,
-        SqlTypeUtil.projectTypes(rowType, argList),
+    return new Aggregate.AggCallBinding(typeFactory, aggFunction,
+        RexUtil.types(rexList), SqlTypeUtil.projectTypes(rowType, argList),
         aggregateRelBase.getGroupCount(), hasFilter());
   }
 
