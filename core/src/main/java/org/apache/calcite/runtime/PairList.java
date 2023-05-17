@@ -23,6 +23,10 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+
+import static java.util.Objects.requireNonNull;
 
 /** A list of pairs, stored as a quotient list.
  *
@@ -62,13 +66,46 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return list.add(tuEntry.getValue());
   }
 
+  @Override public void add(int index, Map.Entry<T, U> tuEntry) {
+    list.add(index * 2, tuEntry.getKey());
+    list.add(index * 2 + 1, tuEntry.getValue());
+  }
+
+  /** Adds a pair to this list. */
+  public void add(T t, U u) {
+    list.add(t);
+    list.add(u);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override public Map.Entry<T, U> remove(int index) {
+    T t = (T) list.remove(index * 2);
+    U u = (U) list.remove(index * 2);
+    return Pair.of(t, u);
+  }
+
+  /** Returns an unmodifiable list view consisting of the left entry of each
+   * pair. */
   @SuppressWarnings("unchecked")
   public List<T> leftList() {
     return Util.quotientList((List<T>) list, 2, 0);
   }
 
+  /** Returns an unmodifiable list view consisting of the right entry of each
+   * pair. */
   @SuppressWarnings("unchecked")
   public List<U> rightList() {
     return Util.quotientList((List<U>) list, 2, 1);
+  }
+
+  /** Calls a BiConsumer with each pair in this list. */
+  @SuppressWarnings("unchecked")
+  public void forEach(BiConsumer<T, U> consumer) {
+    requireNonNull(consumer, "consumer");
+    for (int i = 0; i < list.size();) {
+      T t = (T) list.get(i++);
+      U u = (U) list.get(i++);
+      consumer.accept(t, u);
+    }
   }
 }
