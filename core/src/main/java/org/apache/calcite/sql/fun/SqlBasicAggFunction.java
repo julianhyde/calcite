@@ -231,6 +231,8 @@ public final class SqlBasicAggFunction extends SqlAggFunction {
         allowsNullTreatment, allowsSeparator, percentile);
   }
 
+  /** Sets that value to be returned when {@link #unwrap} is applied to
+   * {@link SqlStaticAggFunction}{@code .class}. */
   public SqlBasicAggFunction withStatic(SqlStaticAggFunction staticFun) {
     return new SqlBasicAggFunction(getName(), getSqlIdentifier(), kind,
         getReturnTypeInference(), getOperandTypeInference(),

@@ -2333,7 +2333,10 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalValues(tuples=[[{ 42 }]])
+LogicalProject(EXPR$0=[42])
+  LogicalAggregate(group=[{}])
+    LogicalProject($f0=[0])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>
   </TestCase>

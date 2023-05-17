@@ -80,19 +80,31 @@ public class AggregateRemoveRule
       return false;
     }
     // If any aggregate functions do not support splitting, bail out.
-    for (AggregateCall aggregateCall : aggregate.getAggCallList()) {
-      if (aggregateCall.filterArg >= 0
-          || !aggregateCall.getAggregation()
-                  .maybeUnwrap(SqlSingletonAggFunction.class).isPresent()
-              && !aggregateCall.getAggregation()
-                  .maybeUnwrap(SqlStaticAggFunction.class).isPresent()) {
-        return false;
-      }
-    }
-    return true;
+    return aggregate.getAggCallList().stream()
+        .allMatch(AggregateRemoveRule::canFlatten);
   }
 
   //~ Methods ----------------------------------------------------------------
+
+  /** Returns whether an aggregate call can be converted to a single-row
+   * expression.
+   *
+   * <p>For example, 'SUM(x)' can be converted to 'x' if we know that each
+   * group contains only one row. */
+  static boolean canFlatten(AggregateCall aggregateCall) {
+    return aggregateCall.filterArg < 0
+        && (aggregateCall.getAggregation()
+                .maybeUnwrap(SqlSingletonAggFunction.class).isPresent()
+            || aggregateCall.getAggregation()
+                .maybeUnwrap(SqlStaticAggFunction.class).isPresent());
+  }
+
+  /** As {@link #canFlatten}, but only allows static aggregate functions. */
+  public static boolean canFlattenStatic(AggregateCall aggregateCall) {
+    return aggregateCall.filterArg < 0
+        && aggregateCall.getAggregation()
+            .maybeUnwrap(SqlStaticAggFunction.class).isPresent();
+  }
 
   @Override public void onMatch(RelOptRuleCall call) {
     final Aggregate aggregate = call.rel(0);

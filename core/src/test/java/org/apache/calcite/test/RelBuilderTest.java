@@ -94,7 +94,6 @@ import com.google.common.collect.Lists;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1966,17 +1965,13 @@ public class RelBuilderTest {
             .distinct()
             .build();
     final String expected = ""
-        + "LogicalAggregate(group=[{}])\n"
-        + "  LogicalFilter(condition=[IS NULL($6)])\n"
-        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+        + "LogicalValues(tuples=[[{ true }]])\n";
     final RelNode r = f.apply(createBuilder());
     assertThat(r, hasTree(expected));
 
     // Now without adding extra fields
     final String expected2 = ""
-        + "LogicalAggregate(group=[{}])\n"
-        + "  LogicalFilter(condition=[IS NULL($6)])\n"
-        + "    LogicalTableScan(table=[[scott, EMP]])\n";
+        + "LogicalValues(tuples=[[{  }]])\n";
     final RelNode r2 =
         f.apply(createBuilder(c -> c.withPreventEmptyFieldList(false)));
     assertThat(r2, hasTree(expected2));
