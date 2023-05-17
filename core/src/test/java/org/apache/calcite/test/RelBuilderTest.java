@@ -94,6 +94,7 @@ import com.google.common.collect.Lists;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,6 +125,7 @@ import static org.apache.calcite.test.Matchers.hasTree;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1964,7 +1966,9 @@ public class RelBuilderTest {
             .distinct()
             .build();
     final String expected = ""
-        + "LogicalValues(tuples=[[{ true }]])\n";
+        + "LogicalAggregate(group=[{}])\n"
+        + "  LogicalFilter(condition=[IS NULL($6)])\n"
+        + "    LogicalTableScan(table=[[scott, EMP]])\n";
     final RelNode r = f.apply(createBuilder());
     assertThat(r, hasTree(expected));
 
@@ -3369,14 +3373,21 @@ public class RelBuilderTest {
   }
 
   @Test void testValuesBadNullFieldNames() {
-    try {
-      final RelBuilder builder = RelBuilder.create(config().build());
-      RelBuilder root = builder.values((String[]) null, "a", "b");
-      fail("expected error, got " + root);
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(),
-          is("Value count must be a positive multiple of field count"));
-    }
+    final RelBuilder builder = RelBuilder.create(config().build());
+    assertThrows(NullPointerException.class,
+        () -> builder.values((String[]) null, "a", "b"),
+        "fieldNames");
+
+    final String[] f1 = {"x"};
+    assertThat(builder.values(f1, "a", "b", "c", "d"), notNullValue());
+
+    final String[] f2 = {"x", "y"};
+    assertThat(builder.values(f2, "a", "b", "c", "d"), notNullValue());
+
+    final String[] f3 = {"x", "y", "z"};
+    assertThrows(IllegalArgumentException.class,
+        () -> builder.values(f3, "a", "b", "c", "d"),
+        "Value count must be a positive multiple of field count");
   }
 
   @Test void testValuesBadNoFields() {

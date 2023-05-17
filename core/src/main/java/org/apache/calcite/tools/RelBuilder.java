@@ -153,6 +153,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.sql.SqlKind.LITERAL_AGG;
 import static org.apache.calcite.sql.SqlKind.UNION;
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -2306,47 +2307,34 @@ public class RelBuilder {
    * {@link AggregateCall}s. */
   public RelBuilder aggregate(GroupKey groupKey,
       List<AggregateCall> aggregateCalls) {
-    final List<AggCall> aggCalls = aggregateCalls.stream()
-        .map(aggregateCall ->
-            new AggCallImpl2(aggregateCall,
-                aggregateCall.getArgList().stream()
-                    .map(this::field)
-                    .collect(Util.toImmutableList())))
-        .collect(Collectors.toList());
-    return aggregate(groupKey, aggCalls);
+    return aggregate(groupKey,
+        aggregateCalls.stream()
+            .map(aggregateCall ->
+                new AggCallImpl2(aggregateCall,
+                    aggregateCall.getArgList().stream()
+                        .map(this::field)
+                        .collect(Util.toImmutableList())))
+            .collect(Collectors.toList()));
   }
 
   /** Creates an {@link Aggregate} with multiple calls. */
-  public RelBuilder aggregate(GroupKey groupKey, Iterable<AggCall> aggCalls) {
-    if (Iterables.isEmpty(aggCalls)
-        && groupKey.groupKeyCount() == 0
-        && config.preventEmptyFieldList()) {
-      // Convert to
-      //   VALUES true
-      // which is equivalent to
-      //  SELECT true FROM t GROUP BY ()
-      // for all tables t, including empty ones
-      return values(new String[] {"dummy"}, true);
-    }
+  public RelBuilder aggregate(GroupKey groupKey, final Iterable<AggCall> aggCalls) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    List<AggCallPlus> aggCallList = ImmutableList.copyOf((Iterable) aggCalls);
+
     final Registrar registrar =
         new Registrar(fields(), peek().getRowType().getFieldNames());
     final GroupKeyImpl groupKey_ = (GroupKeyImpl) groupKey;
     ImmutableBitSet groupSet =
         ImmutableBitSet.of(registrar.registerExpressions(groupKey_.nodes));
   label:
-    if (Iterables.isEmpty(aggCalls)) {
+    if (aggCallList.isEmpty()) {
       final RelMetadataQuery mq = peek().getCluster().getMetadataQuery();
       if (groupSet.isEmpty()) {
         final Double minRowCount = mq.getMinRowCount(peek());
         if (minRowCount == null || minRowCount < 1d) {
           // We can't remove "GROUP BY ()" if there's a chance the rel could be
           // empty.
-
-          // We are about to create an Aggregate with zero fields.
-          // Add a dummy AggCall so that doesn't happen.
-          if (config.preventEmptyFieldList()) {
-            aggCalls = ImmutableList.of(literalAgg(true).as("dummy"));
-          }
           break label;
         }
       }
@@ -2384,10 +2372,10 @@ public class RelBuilder {
       final ImmutableSortedMultiset<ImmutableBitSet> groupSetMultiset =
           ImmutableSortedMultiset.copyOf(ImmutableBitSet.COMPARATOR,
               groupSetList);
-      if (Iterables.any(aggCalls, RelBuilder::isGroupId)
+      if (aggCallList.stream().anyMatch(RelBuilder::isGroupId)
           || !ImmutableBitSet.ORDERING.isStrictlyOrdered(groupSetMultiset)) {
         return rewriteAggregateWithDuplicateGroupSets(groupSet, groupSetMultiset,
-            ImmutableList.copyOf(aggCalls));
+            aggCallList);
       }
       groupSets = ImmutableList.copyOf(groupSetMultiset.elementSet());
       if (registrar.extraNodes.size() > sizeBefore) {
@@ -2399,17 +2387,14 @@ public class RelBuilder {
       groupSets = ImmutableList.of(groupSet);
     }
 
-    for (AggCall aggCall : aggCalls) {
-      ((AggCallPlus) aggCall).register(registrar);
-    }
+    aggCallList.forEach(aggCall -> aggCall.register(registrar));
     project(registrar.extraNodes);
     rename(registrar.names);
     final Frame frame = stack.pop();
     RelNode r = frame.rel;
     final List<AggregateCall> aggregateCalls = new ArrayList<>();
-    for (AggCall aggCall : aggCalls) {
-      aggregateCalls.add(
-          ((AggCallPlus) aggCall).aggregateCall(registrar, groupSet, r));
+    for (AggCallPlus aggCall : aggCallList) {
+      aggregateCalls.add(aggCall.aggregateCall(registrar, groupSet, r));
     }
 
     assert ImmutableBitSet.ORDERING.isStrictlyOrdered(groupSets) : groupSets;
@@ -2564,11 +2549,11 @@ public class RelBuilder {
   private RelBuilder rewriteAggregateWithDuplicateGroupSets(
       ImmutableBitSet groupSet,
       ImmutableSortedMultiset<ImmutableBitSet> groupSets,
-      List<AggCall> aggregateCalls) {
+      List<AggCallPlus> aggregateCalls) {
     final List<String> fieldNamesIfNoRewrite =
         Aggregate.deriveRowType(getTypeFactory(), peek().getRowType(), false,
             groupSet, groupSets.asList(),
-            aggregateCalls.stream().map(c -> ((AggCallPlus) c).aggregateCall())
+            aggregateCalls.stream().map(AggCallPlus::aggregateCall)
                 .collect(Util.toImmutableList())).getFieldNames();
 
     // If n duplicates exist for a particular grouping, the {@code GROUP_ID()}
@@ -3085,7 +3070,10 @@ public class RelBuilder {
    * {@code fieldNames}, or an integer multiple if you wish to create multiple
    * rows.
    *
-   * <p>If there are zero rows, or if all values of a any column are
+   * <p>The {@code fieldNames} array must not be null or empty, but may contain
+   * null values.
+   *
+   * <p>If there are zero rows, or if all values of any column are
    * null, this method cannot deduce the type of columns. For these cases,
    * call {@link #values(Iterable, RelDataType)}.
    *
@@ -3093,8 +3081,8 @@ public class RelBuilder {
    * @param values Values
    */
   public RelBuilder values(@Nullable String[] fieldNames, @Nullable Object... values) {
-    if (fieldNames == null
-        || fieldNames.length == 0
+    requireNonNull(fieldNames, "fieldNames");
+    if (fieldNames.length == 0
         || values.length % fieldNames.length != 0
         || values.length < fieldNames.length) {
       throw new IllegalArgumentException(
@@ -4075,7 +4063,7 @@ public class RelBuilder {
       final RelDataType type =
           getTypeFactory().createSqlType(SqlTypeName.BOOLEAN);
       return AggregateCall.create(aggFunction, distinct, approximate,
-          ignoreNulls, ImmutableList.of(), ImmutableList.of(), -1,
+          ignoreNulls, preOperands, ImmutableList.of(), -1,
           null, collation, type, alias);
     }
 
