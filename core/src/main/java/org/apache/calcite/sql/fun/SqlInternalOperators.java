@@ -306,6 +306,7 @@ public abstract class SqlInternalOperators {
     }
   }
 
+  /** Converts a call to an internal operator into a SQL string. */
   interface Unparser {
     void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec);
   }
