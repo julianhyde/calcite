@@ -21,6 +21,8 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +37,9 @@ import static java.util.Objects.requireNonNull;
  * @param <U> Second type
  */
 public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
-  final List<Object> list;
+  final List<@Nullable Object> list;
 
-  private PairList(List<Object> list) {
+  private PairList(List<@Nullable Object> list) {
     this.list = list;
   }
 
@@ -48,10 +50,10 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
 
   /** Creates a PairList from a Map. */
   public static <T, U> PairList<T, U> of(Map<T, U> map) {
-    final List<Object> list = new ArrayList<>(map.size() * 2);
+    final List<@Nullable Object> list = new ArrayList<>(map.size() * 2);
     map.forEach((t, u) -> {
-      list.add(t);
-      list.add(u);
+      list.add((Object) t);
+      list.add((Object) u);
     });
     return new PairList<>(list);
   }
@@ -66,26 +68,29 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return list.size() / 2;
   }
 
-  @Override public boolean add(Map.Entry<T, U> tuEntry) {
-    list.add(tuEntry.getKey());
-    return list.add(tuEntry.getValue());
+  @Override public boolean add(Map.Entry<T, U> entry) {
+    list.add((Object) entry.getKey());
+    list.add((Object) entry.getValue());
+    return true;
   }
 
-  @Override public void add(int index, Map.Entry<T, U> tuEntry) {
-    list.add(index * 2, tuEntry.getKey());
-    list.add(index * 2 + 1, tuEntry.getValue());
+  @Override public void add(int index, Map.Entry<T, U> entry) {
+    int x = index * 2;
+    list.add(x, (Object) entry.getKey());
+    list.add(x + 1, (Object) entry.getValue());
   }
 
   /** Adds a pair to this list. */
   public void add(T t, U u) {
-    list.add(t);
-    list.add(u);
+    list.add((Object) t);
+    list.add((Object) u);
   }
 
   @SuppressWarnings("unchecked")
   @Override public Map.Entry<T, U> remove(int index) {
-    T t = (T) list.remove(index * 2);
-    U u = (U) list.remove(index * 2);
+    final int x = index * 2;
+    T t = (T) list.remove(x);
+    U u = (U) list.remove(x);
     return Pair.of(t, u);
   }
 
