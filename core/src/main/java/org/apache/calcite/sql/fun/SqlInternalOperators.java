@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql.fun;
 
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
@@ -26,6 +27,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -33,12 +35,15 @@ import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.util.Litmus;
-import org.apache.calcite.util.Util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Contains internal operators.
@@ -170,21 +175,83 @@ public abstract class SqlInternalOperators {
   public static final SqlOperator SAME_PARTITION =
       SqlBasicOperator.create(SqlKind.SAME_PARTITION);
 
-  /** <code>AT</code> operator modifies the evaluation context. */
+  /** <code>AT</code> operator modifies the evaluation context.
+   *
+   * <p>Its precedence (98) is just less than {@link SqlItemOperator} (100). */
   public static final SqlOperator AT =
-      SqlBasicOperator.create(SqlKind.AT)
-          .withPrecedence(20, true)
-          .withUnparser((writer, call, leftPrec, rightPrec) -> {
-            final SqlOperator operator = call.getOperator();
-            call.operand(0).unparse(writer, leftPrec, operator.getLeftPrec());
-            writer.sep("AT");
-            new SqlNodeList(Util.skip(call.getOperandList()), SqlParserPos.ZERO)
-                .unparse(writer, operator.getRightPrec(), rightPrec);
-          });
+      new SqlSpecialOperator("AT", SqlKind.AT, 98, true, ReturnTypes.ARG0,
+          null, OperandTypes.ANY) {
+        @Override public ReduceResult reduceExpr(int ordinal,
+            TokenSequence list) {
+          SqlNode left = requireNonNull(list.node(ordinal - 1), "left");
+          SqlNode right = requireNonNull(list.node(ordinal + 1), "right");
+          final SqlParserPos pos =
+              left.getParserPosition().plus(right.getParserPosition());
+          return new ReduceResult(ordinal - 1, ordinal + 2,
+              createCall(pos, left, right));
+        }
+
+        @Override public void unparse(SqlWriter writer, SqlCall call,
+            int leftPrec, int rightPrec) {
+          final SqlWriter.Frame frame =
+              writer.startList(SqlWriter.FrameTypeEnum.SIMPLE);
+          call.operand(0).unparse(writer, leftPrec, getLeftPrec());
+          writer.sep(getName());
+          final SqlWriter.Frame frame2 =
+              writer.startList(SqlWriter.FrameTypeEnum.PARENTHESES);
+          final SqlNodeList clauseList = call.operand(1);
+          for (SqlNode clause : clauseList) {
+            switch (clause.getKind()) {
+            case AT_CLEAR:
+              writer.sep("CLEAR");
+              ((SqlCall) clause).operand(0).unparse(writer, 0, 0);
+              break;
+            case AT_SET:
+              writer.sep("SET");
+              ((SqlCall) clause).operand(0).unparse(writer, 0, 0);
+              writer.sep("=");
+              ((SqlCall) clause).operand(1).unparse(writer, 0, 0);
+              break;
+            case AT_WHERE:
+              writer.sep("WHERE");
+              ((SqlCall) clause).operand(0).unparse(writer, 0, 0);
+              break;
+            case AT_VISIBLE:
+              writer.sep("VISIBLE");
+              break;
+            default:
+              throw new AssertionError("unknown clause " + clause.getKind());
+            }
+          }
+          writer.endList(frame2);
+          writer.endList(frame);
+        }
+
+        @Override public void validateCall(SqlCall call, SqlValidator validator,
+            SqlValidatorScope scope, SqlValidatorScope operandScope) {
+          // The base method validates all operands. We override because
+          // we don't want to validate the AT clause.
+          final List<SqlNode> operands = call.getOperandList();
+          assert operands.size() == 2;
+          operands.get(0).validateExpr(validator, scope);
+          // TODO: validate AT clause
+        }
+
+        @Override public RelDataType deriveType(SqlValidator validator,
+            SqlValidatorScope scope, SqlCall call) {
+          // Like AS, don't validate operand #1 as an expression.
+          return validator.deriveType(scope, call.operand(0));
+        }
+      };
 
   /** {@code VISIBLE} clause inside {@link #AT}. */
   public static final SqlOperator VISIBLE =
       SqlBasicOperator.create(SqlKind.AT_VISIBLE, "VISIBLE")
+          .withSyntax(SqlSyntax.FUNCTION_ID);
+
+  /** {@code CLEAR} clause inside {@link #AT}. */
+  public static final SqlOperator CLEAR =
+      SqlBasicOperator.create(SqlKind.AT_CLEAR, "CLEAR")
           .withSyntax(SqlSyntax.FUNCTION_ID);
 
   /** {@code SET} clause inside {@link #AT}. */

@@ -4093,11 +4093,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testAt() {
-    sql("with e2 as (select *, avg(sal) as measure avg_sal)\n"
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
         + "select deptno, job,\n"
         + " avg_sal at (clear deptno) as avg_sal_all_depts\n"
         + "from e2")
-        .type("xx");
+        .type("RecordType(INTEGER NOT NULL DEPTNO, "
+            + "VARCHAR(10) NOT NULL JOB, "
+            + "INTEGER NOT NULL AVG_SAL_ALL_DEPTS) NOT NULL");
   }
 
   @Test void testAmbiguousColumnInIn() {
