@@ -2461,7 +2461,7 @@ public class SqlParserTest {
         .fails("(?s).*Encountered.*");
 
     expr("myMap[field] + myArray[1 + 2]")
-        .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
+        .ok("((`MYMAP`[`FIELD`]) + (`MYARRAY`[(1 + 2)]))");
 
     sql("VALUES a").node(isQuoted(0, false));
     sql("VALUES \"a\"").node(isQuoted(0, true));
@@ -2483,7 +2483,7 @@ public class SqlParserTest {
     f.sql("`x\\`^y^\\`z`").fails("(?s).*Encountered.*");
 
     f.sql("myMap[field] + myArray[1 + 2]")
-        .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
+        .ok("((`MYMAP`[`FIELD`]) + (`MYARRAY`[(1 + 2)]))");
 
     f = f.expression(false);
     f.sql("VALUES a").node(isQuoted(0, false));
@@ -2507,7 +2507,7 @@ public class SqlParserTest {
     f.sql("`x\\`y\\`z`").ok("`x``y``z`");
 
     f.sql("myMap[field] + myArray[1 + 2]")
-        .ok("(`MYMAP`[`FIELD`] + `MYARRAY`[(1 + 2)])");
+        .ok("((`MYMAP`[`FIELD`]) + (`MYARRAY`[(1 + 2)]))");
 
     f = f.expression(false);
     f.sql("VALUES a").node(isQuoted(0, false));
@@ -5834,40 +5834,40 @@ public class SqlParserTest {
 
   @Test void testMapItem() {
     expr("a['foo']")
-        .ok("`A`['foo']");
+        .ok("(`A`['foo'])");
     expr("a['x' || 'y']")
-        .ok("`A`[('x' || 'y')]");
+        .ok("(`A`[('x' || 'y')])");
     expr("a['foo'] ['bar']")
-        .ok("`A`['foo']['bar']");
+        .ok("((`A`['foo'])['bar'])");
     expr("a['foo']['bar']")
-        .ok("`A`['foo']['bar']");
+        .ok("((`A`['foo'])['bar'])");
   }
 
   @Test void testMapItemPrecedence() {
     expr("1 + a['foo'] * 3")
-        .ok("(1 + (`A`['foo'] * 3))");
+        .ok("(1 + ((`A`['foo']) * 3))");
     expr("1 * a['foo'] + 3")
-        .ok("((1 * `A`['foo']) + 3)");
+        .ok("((1 * (`A`['foo'])) + 3)");
     expr("a['foo']['bar']")
-        .ok("`A`['foo']['bar']");
+        .ok("((`A`['foo'])['bar'])");
     expr("a[b['foo' || 'bar']]")
-        .ok("`A`[`B`[('foo' || 'bar')]]");
+        .ok("(`A`[(`B`[('foo' || 'bar')])])");
   }
 
   @Test void testArrayElement() {
     expr("a[1]")
-        .ok("`A`[1]");
+        .ok("(`A`[1])");
     expr("a[b[1]]")
-        .ok("`A`[`B`[1]]");
+        .ok("(`A`[(`B`[1])])");
     expr("a[b[1 + 2] + 3]")
-        .ok("`A`[(`B`[(1 + 2)] + 3)]");
+        .ok("(`A`[((`B`[(1 + 2)]) + 3)])");
   }
 
   @Test void testArrayElementWithDot() {
     expr("a[1+2].b.c[2].d")
-        .ok("(((`A`[(1 + 2)].`B`).`C`)[2].`D`)");
+        .ok("(((((`A`[(1 + 2)]).`B`).`C`)[2]).`D`)");
     expr("a[b[1]].c.f0[d[1]]")
-        .ok("((`A`[`B`[1]].`C`).`F0`)[`D`[1]]");
+        .ok("((((`A`[(`B`[1])]).`C`).`F0`)[(`D`[1])])");
   }
 
   @Test void testArrayValueConstructor() {
@@ -8453,19 +8453,62 @@ public class SqlParserTest {
   @Test void testAt() {
     final String sql = "select deptno,\n"
         + "  avg(sal) as avg_sal,\n"
-//        + "  avg_sal_measure at (set deptno = 30) as avg_sal_d30,\n"
-//        + "  (sum(sal + 3) / count(*)) at (set deptno = 10) as avg_sal_d10,\n"
+        + "  avg_sal_measure at (set deptno = 30) as avg_sal_d30,\n"
+        + "  (sum(sal + 3) / count(*)) at (set deptno = 10) as avg_sal_d10,\n"
         + "  avg(sal) at (visible) as visible_avg_sal,\n"
-        + "  avg(sal) at (set deptno = 20) as avg_sal_d20\n"
+        + "  avg(sal) at (set deptno = 20) as avg_sal_d20,\n"
+        + "  avg(sal) at (clear job) as avg_sal_all_jobs\n"
         + "from emp\n"
         + "group by deptno";
     final String expected = ""
         + "SELECT `DEPTNO`,"
         + " AVG(`SAL`) AS `AVG_SAL`,"
-        + " AVG(`SAL`) AT ((VISIBLE)) AS `VISIBLE_AVG_SAL`,"
-        + " AVG(`SAL`) AT ((SET(`DEPTNO`, 20))) AS `AVG_SAL_D20`\n"
+        + " (`AVG_SAL_MEASURE` AT (SET `DEPTNO` = 30)) AS `AVG_SAL_D30`,"
+        + " ((SUM((`SAL` + 3)) / COUNT(*)) AT (SET `DEPTNO` = 10)) "
+        + "AS `AVG_SAL_D10`,"
+        + " (AVG(`SAL`) AT (VISIBLE)) AS `VISIBLE_AVG_SAL`,"
+        + " (AVG(`SAL`) AT (SET `DEPTNO` = 20)) AS `AVG_SAL_D20`,"
+        + " (AVG(`SAL`) AT (CLEAR `JOB`)) AS `AVG_SAL_ALL_JOBS`\n"
         + "FROM `EMP`\n"
         + "GROUP BY `DEPTNO`";
+    sql(sql).ok(expected);
+
+    final String sql2 = "select m at (set x ^clear^)";
+    sql(sql2).fails("(?s).*Encountered \"clear\".*Was expecting:.*\"=\".*");
+
+    final String sql3 = "select m at (set x = 5 clear^)^";
+    sql(sql3).fails("(?s).*Encountered \"\\)\".*");
+
+    final String sql4 = "select m at (set x = 5 clear y"
+        + " visible visible set z = x + 2) as measure m2";
+    final String expected4 = "SELECT (`M` AT (SET `X` = 5 CLEAR `Y`"
+        + " VISIBLE VISIBLE SET `Z` = (`X` + 2))) AS MEASURE `M2`";
+    sql(sql4).ok(expected4);
+
+    final String sql5 = "select sum(x) over () at (visible)";
+    sql(sql5).ok("SELECT ((SUM(`X`) OVER ()) AT (VISIBLE))");
+
+    final String sql6 = "select sum(x) filter (where x < 10) at (visible)";
+    final String expected6 = "SELECT ((SUM(`X`) FILTER (WHERE (`X` < 10)))"
+        + " AT (VISIBLE))";
+    sql(sql6).ok(expected6);
+  }
+
+  @Disabled // TODO
+  @Test void testAtPrecedence() {
+    // AT has higher precedence than '+' or '*';
+    // AT has lower precedence than '[]';
+    // AT is left-associative
+    final String sql = "select 1 + 2 * m at () + 3,\n"
+        + "  m[1] at ()[2],\n"
+        + "  m at () at ()\n"
+        + "from emp";
+    final String expected = ""
+        + "SELECT"
+        + " ((1 + (2 * (`M` AT ()))) + 3),"
+        + " ((`M`[1]) AT ([2])),"
+        + " ((`M` AT ()) AT ())\n"
+        + "FROM `EMP`";
     sql(sql).ok(expected);
   }
 
