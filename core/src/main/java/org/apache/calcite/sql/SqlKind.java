@@ -261,11 +261,14 @@ public enum SqlKind {
   /** {@code AT} operator. */
   AT,
 
-  /** {@code VISIBLE} clause of {@code AT} operator. */
-  AT_VISIBLE,
+  /** {@code CLEAR} clause of {@code AT} operator. */
+  AT_CLEAR,
 
   /** {@code SET} clause of {@code AT} operator. */
   AT_SET,
+
+  /** {@code VISIBLE} clause of {@code AT} operator. */
+  AT_VISIBLE,
 
   /** {@code WHERE} clause of {@code AT} operator. */
   AT_WHERE,
@@ -1323,7 +1326,7 @@ public enum SqlKind {
           concat(
               EnumSet.of(AS, ARGUMENT_ASSIGNMENT, CONVERT, TRANSLATE, DEFAULT,
                   RUNNING, FINAL, LAST, FIRST, PREV, NEXT,
-                  AT, AT_VISIBLE, AT_SET, AT_WHERE,
+                  AT_VISIBLE, AT_SET, AT_WHERE,
                   FILTER, WITHIN_GROUP, IGNORE_NULLS, RESPECT_NULLS, SEPARATOR,
                   DESCENDING, CUBE, ROLLUP, GROUPING_SETS, EXTEND, LATERAL,
                   SELECT, JOIN, OTHER_FUNCTION, POSITION, CAST, TRIM, FLOOR, CEIL,
@@ -1332,7 +1335,7 @@ public enum SqlKind {
                   EXTRACT, INTERVAL,
                   LITERAL_CHAIN, JDBC_FN, PRECEDING, FOLLOWING, ORDER_BY,
                   NULLS_FIRST, NULLS_LAST, COLLECTION_TABLE, TABLESAMPLE,
-                  VALUES, WITH, WITH_ITEM, ITEM, SKIP_TO_FIRST, SKIP_TO_LAST,
+                  VALUES, WITH, WITH_ITEM, SKIP_TO_FIRST, SKIP_TO_LAST,
                   JSON_VALUE_EXPRESSION, UNNEST),
               SET_QUERY, AGGREGATE, DML, DDL));
 
