@@ -3600,6 +3600,7 @@ List<Object> Expression2(ExprContext exprContext) :
     SqlOperator op;
     SqlIdentifier p;
     final Span s = span();
+    final Span s2;
 }
 {
     AddExpression2b(list, exprContext)
@@ -3735,6 +3736,13 @@ List<Object> Expression2(ExprContext exprContext) :
                     list.add(new SqlParserUtil.ToTreeListItem(op, getPos()));
                 }
                 AddExpression2b(list, ExprContext.ACCEPT_SUB_QUERY)
+            |
+                e = AtArgs() {
+                    list.add(
+                        new SqlParserUtil.ToTreeListItem(
+                            SqlInternalOperators.AT, getPos()));
+                    list.add(e);
+                }
             |
                 <LBRACKET>
                 itemOp = getItemOp()
@@ -7193,7 +7201,7 @@ SqlCall withinGroup(SqlNode arg) :
     }
 }
 
-SqlCall at(SqlNode arg) :
+SqlNodeList AtArgs() :
 {
     final Span s;
     final List<SqlNode> args = new ArrayList<SqlNode>();
@@ -7202,28 +7210,31 @@ SqlCall at(SqlNode arg) :
 {
     <AT> { s = span(); }
     <LPAREN>
-    ( node = atClause() { args.add(node); } )*
+    ( node = AtClause() { args.add(node); } )*
     <RPAREN> {
-        args.add(0, arg);
-        return SqlInternalOperators.AT.createCall(
-            new SqlNodeList(args, s.end(this)));
+        return new SqlNodeList(args, s.end(this));
     }
 }
 
-SqlNode atClause() :
+SqlNode AtClause() :
 {
+    final Span s;
     final SqlNode filter;
     final SqlIdentifier dimension;
     final SqlNode expression;
 }
 {
-    <WHERE> filter = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        return SqlInternalOperators.AT_WHERE.createCall(getPos(), filter);
+    <WHERE> { s = span(); } filter = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+        return SqlInternalOperators.AT_WHERE.createCall(s.end(this), filter);
     }
 |
-    <SET> dimension = SimpleIdentifier()
+    <CLEAR> { s = span(); } dimension = SimpleIdentifier() {
+        return SqlInternalOperators.CLEAR.createCall(s.end(this), dimension);
+    }
+|
+    <SET> { s = span(); } dimension = SimpleIdentifier()
     <EQ> expression = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        return SqlInternalOperators.SET.createCall(getPos(), dimension,
+        return SqlInternalOperators.SET.createCall(s.end(this), dimension,
             expression);
     }
 |
@@ -7306,9 +7317,6 @@ SqlNode NamedFunctionCall() :
             call = SqlStdOperatorTable.FILTER.createCall(
                 filterSpan.end(this), call, filter);
         }
-    ]
-    [
-        call = at(call)
     ]
     [
         <OVER> { overSpan = span(); }
@@ -7914,6 +7922,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < CHECK: "CHECK" >
 |   < CLASSIFIER: "CLASSIFIER" >
 |   < CLASS_ORIGIN: "CLASS_ORIGIN" >
+|   < CLEAR: "CLEAR" >
 |   < CLOB: "CLOB" >
 |   < CLOSE: "CLOSE" >
 |   < COALESCE: "COALESCE" >
