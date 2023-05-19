@@ -181,6 +181,15 @@ public abstract class SqlInternalOperators {
   public static final SqlOperator AT =
       new SqlSpecialOperator("AT", SqlKind.AT, 98, true, ReturnTypes.ARG0,
           null, OperandTypes.ANY) {
+        @Override public int getRightPrec() {
+          // Very high right preference because it's basically a postfix operator.
+          // We want "m AT (CLEAR x)[2]"
+          // to parse as "(m AT (CLEAR x))[2]"
+          // not "m AT ((CLEAR x)[2])"
+          // even though [] has higher left-precedence.
+          return 1000;
+        }
+
         @Override public ReduceResult reduceExpr(int ordinal,
             TokenSequence list) {
           SqlNode left = requireNonNull(list.node(ordinal - 1), "left");
