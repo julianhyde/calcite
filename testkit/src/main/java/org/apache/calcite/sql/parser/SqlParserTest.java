@@ -400,7 +400,6 @@ public class SqlParserTest {
       "OPTION",                        "92", "99",
       "OR",                            "92", "99", "2003", "2011", "2014", "c",
       "ORDER",                         "92", "99", "2003", "2011", "2014", "c",
-      "ORDINAL",                                                           "c", // ?d
       "ORDINALITY",                          "99",
       "OUT",                           "92", "99", "2003", "2011", "2014", "c",
       "OUTER",                         "92", "99", "2003", "2011", "2014", "c",
@@ -435,7 +434,6 @@ public class SqlParserTest {
       "PRIVILEGES",                    "92", "99",
       "PROCEDURE",                     "92", "99", "2003", "2011", "2014", "c",
       "PUBLIC",                        "92", "99",
-      "QUALIFY",                                                           "c", // ?
       "RANGE",                               "99", "2003", "2011", "2014", "c",
       "RANK",                                              "2011", "2014", "c",
       "READ",                          "92", "99",
@@ -474,9 +472,6 @@ public class SqlParserTest {
       "ROWS",                          "92", "99", "2003", "2011", "2014", "c",
       "ROW_NUMBER",                                        "2011", "2014", "c",
       "RUNNING",                                                   "2014", "c",
-      "SAFE_CAST",                                                         "c", // ?d
-      "SAFE_OFFSET",                                                       "c", // ?d
-      "SAFE_ORDINAL",                                                      "c", // ?d
       "SATURDAY",                                                          "c",
       "SAVEPOINT",                           "99", "2003", "2011", "2014", "c",
       "SCHEMA",                        "92", "99",
@@ -549,7 +544,6 @@ public class SqlParserTest {
       "TRIM_ARRAY",                                        "2011", "2014", "c",
       "TRUE",                          "92", "99", "2003", "2011", "2014", "c",
       "TRUNCATE",                                          "2011", "2014", "c",
-      "TRY_CAST",                                                          "c", // ?d
       "TUESDAY",                                                           "c",
       "UESCAPE",                                           "2011", "2014", "c",
       "UNDER",                               "99",
