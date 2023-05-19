@@ -8488,22 +8488,29 @@ public class SqlParserTest {
     sql(sql6).ok(expected6);
   }
 
-  @Disabled // TODO
   @Test void testAtPrecedence() {
-    // AT has higher precedence than '+' or '*';
-    // AT has lower precedence than '[]';
-    // AT is left-associative
-    final String sql = "select 1 + 2 * m at () + 3,\n"
+    // Although AT has lower left-precedence than [],
+    // its right-precedence is higher than []'s left-precedence.
+    final String sql = "select m at (clear x)[2]";
+    final String expected = "SELECT ((`M` AT (CLEAR `X`))[2])";
+    sql(sql).ok(expected);
+
+    // AT has higher precedence than + or *;
+    // AT has lower precedence than [];
+    // AT and [] are both left-associative.
+    final String sql2 = "select 1 + 2 * m at () + 3,\n"
         + "  m[1] at ()[2],\n"
-        + "  m at () at ()\n"
+        + "  m[3][4] at ()[5] at (),\n"
+        + "  m at (visible) at (clear x)\n"
         + "from emp";
-    final String expected = ""
+    final String expected2 = ""
         + "SELECT"
         + " ((1 + (2 * (`M` AT ()))) + 3),"
-        + " ((`M`[1]) AT ([2])),"
-        + " ((`M` AT ()) AT ())\n"
+        + " (((`M`[1]) AT ())[2]),"
+        + " (((((`M`[3])[4]) AT ())[5]) AT ()),"
+        + " ((`M` AT (VISIBLE)) AT (CLEAR `X`))\n"
         + "FROM `EMP`";
-    sql(sql).ok(expected);
+    sql(sql2).ok(expected2);
   }
 
   @Test void testJsonValueExpressionOperator() {
