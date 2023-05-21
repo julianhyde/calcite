@@ -7175,17 +7175,18 @@ SqlNode AtClause() :
     }
 |
     <CLEAR> { s = span(); } dimension = SimpleIdentifier() {
-        return SqlInternalOperators.CLEAR.createCall(s.end(this), dimension);
+        return SqlInternalOperators.AT_CLEAR.createCall(s.end(this),
+            dimension);
     }
 |
     <SET> { s = span(); } dimension = SimpleIdentifier()
     <EQ> expression = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        return SqlInternalOperators.SET.createCall(s.end(this), dimension,
+        return SqlInternalOperators.AT_SET.createCall(s.end(this), dimension,
             expression);
     }
 |
     <VISIBLE> {
-        return SqlInternalOperators.VISIBLE.createCall(getPos());
+        return SqlInternalOperators.AT_VISIBLE.createCall(getPos());
     }
 }
 
