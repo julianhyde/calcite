@@ -563,20 +563,18 @@ public interface SqlConformance {
   SqlLibrary semantics();
 
   /**
-   * Whether to allow the following coercions:
+   * Whether to allow lenient type coercions.
    *
-   * <p>- Coercion string literal to array literal
-   * <p>For example:
-   * <blockquote><pre>SELECT ARRAY[0,1,2] == '{0,1,2}'
-   * </pre></blockquote>
-   * <p>- Casting
-   *  {@link org.apache.calcite.sql.type.SqlTypeName#BOOLEAN}
-   *  to NUMERIC_TYPE, where NUMERIC_TYPE is one of
-   *  {@link org.apache.calcite.sql.type.SqlTypeName#TINYINT}
-   *  {@link org.apache.calcite.sql.type.SqlTypeName#SMALLINT}
-   *  {@link org.apache.calcite.sql.type.SqlTypeName#INTEGER}
-   *  {@link org.apache.calcite.sql.type.SqlTypeName#BIGINT}
-   * </p>
+   * <p>Coercions include:
+   * <ul>
+   *
+   * <li>Coercion string literal to array literal. For example,
+   * {@code SELECT ARRAY[0,1,2] == '{0,1,2}'}
+   *
+   * <li>Casting {@code BOOLEAN} values to one of the following numeric types:
+   * {@code TINYINT}, {@code SMALLINT}, {@code INTEGER}, {@code BIGINT}.
+   *
+   * </ul>
    *
    * <p>Among the built-in conformance levels, true in
    * {@link SqlConformanceEnum#BABEL},

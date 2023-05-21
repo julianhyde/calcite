@@ -39,7 +39,6 @@ import org.apache.calcite.sql.type.SqlOperandMetadata;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeMappingRule;
 import org.apache.calcite.sql.type.SqlTypeUtil;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.util.Util;
@@ -632,8 +631,7 @@ public class TypeCoercionImpl extends AbstractTypeCoercion {
     final List<RelDataTypeField> sourceFields = sourceRowType.getFieldList();
     final List<RelDataTypeField> targetFields = targetRowType.getFieldList();
     final int sourceCount = sourceFields.size();
-    SqlConformance conformance = this.validator.config().conformance();
-    SqlTypeMappingRule mappingRule = SqlTypeUtil.getSqlTypeCoercionRule(conformance);
+    SqlTypeMappingRule mappingRule = validator.getTypeMappingRule();
     for (int i = 0; i < sourceCount; i++) {
       RelDataType sourceType = sourceFields.get(i).getType();
       RelDataType targetType = targetFields.get(i).getType();

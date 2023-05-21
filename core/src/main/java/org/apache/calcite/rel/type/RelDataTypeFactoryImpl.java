@@ -25,7 +25,6 @@ import org.apache.calcite.sql.type.MapSqlType;
 import org.apache.calcite.sql.type.MultisetSqlType;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeMappingRule;
-import org.apache.calcite.sql.type.SqlTypeMappingRules;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.Util;
@@ -50,6 +49,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 import static java.util.Objects.requireNonNull;
 
@@ -217,14 +218,11 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         }, nullable);
   }
 
-  @Override public @Nullable RelDataType leastRestrictive(List<RelDataType> types) {
-    return leastRestrictive(types, SqlTypeMappingRules.instance(false));
-  }
-
-  @Override public @Nullable RelDataType leastRestrictive(List<RelDataType> types,
-      SqlTypeMappingRule mappingRule) {
-    assert types != null;
-    assert types.size() >= 1;
+  @Override public @Nullable RelDataType leastRestrictive(
+      List<RelDataType> types, SqlTypeMappingRule mappingRule) {
+    requireNonNull(types, "types");
+    requireNonNull(mappingRule, "mappingRule");
+    checkArgument(types.size() >= 1, "types.size >= 1");
     RelDataType type0 = types.get(0);
     if (type0.isStruct()) {
       return leastRestrictiveStructuredType(types);

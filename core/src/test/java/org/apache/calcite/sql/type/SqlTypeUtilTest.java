@@ -257,14 +257,17 @@ class SqlTypeUtilTest {
     }
   }
 
-  @Test void testCastingBooleanToInteger() {
-    // Casting BOOLEAN to INTEGER is not allowed for the default SqlTypeMapperRule,
-    // but is allowed when conformance is set to lenient mode.
-    RelDataType boolType = f.sqlBoolean;
+  /** Tests that casting BOOLEAN to INTEGER is not allowed for the default
+   * {@link SqlTypeCoercionRule}, but is allowed in lenient mode. */
+  @Test void testCastBooleanToInteger() {
+    RelDataType booleanType = f.sqlBoolean;
     RelDataType intType = f.sqlInt;
-    assertThat(SqlTypeUtil.canCastFrom(intType, boolType, SqlTypeCoercionRule.instance()),
+    final SqlTypeCoercionRule rule = SqlTypeCoercionRule.instance();
+    final SqlTypeCoercionRule lenientRule =
+        SqlTypeCoercionRule.lenientInstance();
+    assertThat(SqlTypeUtil.canCastFrom(intType, booleanType, rule),
         is(false));
-    assertThat(SqlTypeUtil.canCastFrom(intType, boolType, SqlTypeCoercionRule.lenientInstance()),
+    assertThat(SqlTypeUtil.canCastFrom(intType, booleanType, lenientRule),
         is(true));
   }
 

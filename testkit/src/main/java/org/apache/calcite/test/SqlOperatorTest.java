@@ -572,7 +572,7 @@ public class SqlOperatorTest {
 
   @ParameterizedTest
   @MethodSource("safeParameters")
-  void testCastBoolToString(CastType castType, SqlOperatorFixture f) {
+  void testCastBooleanToNumeric(CastType castType, SqlOperatorFixture f) {
     f.setFor(SqlStdOperatorTable.CAST, VmName.EXPAND);
     SqlOperatorFixture f0 = f.withConformance(SqlConformanceEnum.DEFAULT);
     f0.checkFails("^" + castType.name() + "(true as integer)^",

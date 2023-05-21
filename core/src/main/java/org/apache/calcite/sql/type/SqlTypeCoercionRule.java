@@ -275,7 +275,7 @@ public class SqlTypeCoercionRule implements SqlTypeMappingRule {
 
     INSTANCE = new SqlTypeCoercionRule(coerceRules.map);
 
-    // Lenient casting allowing BOOLEAN to be casted to/from numbers.
+    // Lenient casting allowing casting between BOOLEAN and numbers.
     rule.clear();
 
     rule.add(SqlTypeName.TINYINT);
@@ -298,7 +298,6 @@ public class SqlTypeCoercionRule implements SqlTypeMappingRule {
     coerceRules.add(SqlTypeName.INTEGER, rule);
     coerceRules.add(SqlTypeName.BIGINT, rule);
 
-
     // Lenient casting allowing ARRAY to be casted from CHAR and VARCHAR.
     coerceRules.add(SqlTypeName.ARRAY,
         coerceRules.copyValues(SqlTypeName.ARRAY)
@@ -307,7 +306,6 @@ public class SqlTypeCoercionRule implements SqlTypeMappingRule {
             .build());
 
     LENIENT_INSTANCE = new SqlTypeCoercionRule(coerceRules.map);
-
   }
 
   //~ Methods ----------------------------------------------------------------

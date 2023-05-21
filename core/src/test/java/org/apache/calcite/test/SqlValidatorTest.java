@@ -10508,8 +10508,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final String sql4 = "insert into EMP_MODIFIABLEVIEW2(\"extra\" INTEGER)"
         + " (empno, ename, job, \"extra\")\n"
         + "values (1, 'Arthur', 'clown', true)";
-    s.withConformance(SqlConformanceEnum.BIG_QUERY).withTypeCoercion(true).withSql(sql4).ok();
-
+    s.withConformance(SqlConformanceEnum.BIG_QUERY).withTypeCoercion(true)
+        .withSql(sql4).ok();
   }
 
   @Test void testInsertExtendedColumnModifiableViewFailUnderlyingCollision() {

@@ -34,7 +34,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlRowTypeNameSpec;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -847,7 +846,8 @@ public abstract class SqlTypeUtil {
   }
 
   /**
-   * Compares two types and returns true if fromType can be cast to toType.
+   * Compares two types and returns whether {@code fromType} can be cast to
+   * {@code toType}, using either coercion or assignment.
    *
    * <p>REVIEW jvs 17-Dec-2004: the coerce param below shouldn't really be
    * necessary. We're using it as a hack because
@@ -860,31 +860,30 @@ public abstract class SqlTypeUtil {
    * @param coerce   if true, the SQL rules for CAST are used; if false, the
    *                 rules are similar to Java; e.g. you can't assign short x =
    *                 (int) y, and you can't assign int x = (String) z.
-   * @return true iff cast is legal
+   * @return whether cast is legal
    */
   public static boolean canCastFrom(
       RelDataType toType,
       RelDataType fromType,
       boolean coerce) {
-    SqlTypeMappingRule mappingRule;
-    if (coerce) {
-      mappingRule = SqlTypeCoercionRule.instance();
-    } else {
-      mappingRule = SqlTypeAssignmentRule.instance();
-    }
-    return canCastFrom(toType, fromType, mappingRule);
+    return canCastFrom(toType, fromType,
+        coerce ? SqlTypeCoercionRule.instance()
+            : SqlTypeAssignmentRule.instance());
   }
 
   /**
-   * Compares two types and returns true if fromType can be cast to toType.
-   * Uses SqlTypeMappingRule(i.e. SqlTypeCoercionRule, SqlTypeAssignmentRule)
-   * to control what types are allowed to be cast from/to.
+   * Compares two types and returns whether {@code fromType} can be cast to
+   * {@code toType}.
+   *
+   * <p>A type mapping rule (i.e. {@link SqlTypeCoercionRule}
+   * or {@link SqlTypeAssignmentRule}) controls what types are allowed to be
+   * cast from/to.
    *
    * @param toType   target of assignment
    * @param fromType source of assignment
    * @param typeMappingRule  SqlTypeMappingRule
    *
-   * @return true iff cast is legal
+   * @return whether cast is legal
    */
   public static boolean canCastFrom(
       RelDataType toType,
@@ -970,14 +969,6 @@ public abstract class SqlTypeUtil {
       return false;
     }
     return typeMappingRule.canApplyFrom(toTypeName, fromTypeName);
-  }
-
-  public static SqlTypeMappingRule getSqlTypeCoercionRule(SqlConformance conformance) {
-    if (conformance.allowLenientCoercion()) {
-      return SqlTypeCoercionRule.lenientInstance();
-    } else {
-      return SqlTypeCoercionRule.instance();
-    }
   }
 
   /**

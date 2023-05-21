@@ -38,8 +38,8 @@ import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeMappingRule;
 import org.apache.calcite.sql.type.SqlTypeUtil;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
+import org.apache.calcite.sql.validate.SqlValidator;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
@@ -151,11 +151,11 @@ public class SqlCastFunction extends SqlFunction {
         || left instanceof SqlDynamicParam) {
       return true;
     }
-    RelDataType validatedNodeType =
-        callBinding.getValidator().getValidatedNodeType(left);
-    RelDataType returnType = SqlTypeUtil.deriveType(callBinding, right);
-    SqlConformance conformance =  callBinding.getValidator().config().conformance();
-    SqlTypeMappingRule mappingRule = SqlTypeUtil.getSqlTypeCoercionRule(conformance);
+    final SqlValidator validator = callBinding.getValidator();
+    final RelDataType validatedNodeType =
+        validator.getValidatedNodeType(left);
+    final RelDataType returnType = SqlTypeUtil.deriveType(callBinding, right);
+    final SqlTypeMappingRule mappingRule = validator.getTypeMappingRule();
 
     if (!SqlTypeUtil.canCastFrom(returnType, validatedNodeType, mappingRule)) {
       if (throwOnFailure) {

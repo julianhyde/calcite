@@ -279,7 +279,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       new SqlValidatorImpl.ValidationErrorFunction();
 
   // TypeCoercion instance used for implicit type coercion.
-  private TypeCoercion typeCoercion;
+  private final TypeCoercion typeCoercion;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -323,20 +323,27 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     this.typeCoercion = typeCoercion;
 
     if (config.conformance().allowLenientCoercion()) {
-      SqlTypeCoercionRule rules = requireNonNull(config.typeCoercionRules() != null
-          ? config.typeCoercionRules() : SqlTypeCoercionRule.THREAD_PROVIDERS.get());
+      final SqlTypeCoercionRule rules =
+          requireNonNull(
+              config.typeCoercionRules() != null
+                  ? config.typeCoercionRules()
+                  : SqlTypeCoercionRule.THREAD_PROVIDERS.get(),
+              "rules");
 
-      ImmutableSet<SqlTypeName> arrayMapping = ImmutableSet.<SqlTypeName>builder()
-          .addAll(rules.getTypeMapping().getOrDefault(SqlTypeName.ARRAY, ImmutableSet.of()))
-          .add(SqlTypeName.VARCHAR)
-          .add(SqlTypeName.CHAR)
-          .build();
+      final ImmutableSet<SqlTypeName> arrayMapping =
+          ImmutableSet.<SqlTypeName>builder()
+              .addAll(rules.getTypeMapping()
+                  .getOrDefault(SqlTypeName.ARRAY, ImmutableSet.of()))
+              .add(SqlTypeName.VARCHAR)
+              .add(SqlTypeName.CHAR)
+              .build();
 
-      Map<SqlTypeName, ImmutableSet<SqlTypeName>> mapping = new HashMap(rules.getTypeMapping());
+      Map<SqlTypeName, ImmutableSet<SqlTypeName>> mapping =
+          new HashMap<>(rules.getTypeMapping());
       mapping.replace(SqlTypeName.ARRAY, arrayMapping);
-      rules = SqlTypeCoercionRule.instance(mapping);
+      SqlTypeCoercionRule rules2 = SqlTypeCoercionRule.instance(mapping);
 
-      SqlTypeCoercionRule.THREAD_PROVIDERS.set(rules);
+      SqlTypeCoercionRule.THREAD_PROVIDERS.set(rules2);
     } else if (config.typeCoercionRules() != null) {
       SqlTypeCoercionRule.THREAD_PROVIDERS.set(config.typeCoercionRules());
     }
