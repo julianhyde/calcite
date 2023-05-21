@@ -254,17 +254,17 @@ public abstract class SqlInternalOperators {
       };
 
   /** {@code VISIBLE} clause inside {@link #AT}. */
-  public static final SqlOperator VISIBLE =
+  public static final SqlOperator AT_VISIBLE =
       SqlBasicOperator.create(SqlKind.AT_VISIBLE, "VISIBLE")
           .withSyntax(SqlSyntax.FUNCTION_ID);
 
   /** {@code CLEAR} clause inside {@link #AT}. */
-  public static final SqlOperator CLEAR =
+  public static final SqlOperator AT_CLEAR =
       SqlBasicOperator.create(SqlKind.AT_CLEAR, "CLEAR")
           .withSyntax(SqlSyntax.FUNCTION_ID);
 
   /** {@code SET} clause inside {@link #AT}. */
-  public static final SqlOperator SET =
+  public static final SqlOperator AT_SET =
       SqlBasicOperator.create(SqlKind.AT_SET, "SET")
           .withSyntax(SqlSyntax.FUNCTION_ID);
 
