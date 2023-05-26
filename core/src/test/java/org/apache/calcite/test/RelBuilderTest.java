@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.java.ReflectiveSchema;
@@ -93,6 +92,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -2254,7 +2254,7 @@ public class RelBuilderTest {
                     builder.field(2, 1, "DEPTNO")))
             .let(b -> assertSize(b, is(1)))
             .build();
-    assertThat(builder.size(), is(0));
+    assertThat(builder, isRelBuilderWithSize(is(0)));
     final String expected = ""
         + "LogicalJoin(condition=[=($7, $8)], joinType=[inner])\n"
         + "  LogicalFilter(condition=[IS NULL($6)])\n"
@@ -2263,9 +2263,20 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
+  /** Returns a Matcher that checks {@link RelBuilder#size()}. */
+  private static Matcher<RelBuilder> isRelBuilderWithSize(
+      final Matcher<Integer> matcher) {
+    return new FeatureMatcher<RelBuilder, Integer>(matcher,
+        "RelBuilder", "size") {
+      @Override protected Integer featureValueOf(RelBuilder actual) {
+        return actual.size();
+      }
+    };
+  }
+
   private static RelBuilder assertSize(RelBuilder b,
       Matcher<Integer> sizeMatcher) {
-    assertThat(b.size(), sizeMatcher);
+    assertThat(b, isRelBuilderWithSize(is(sizeMatcher)));
     return b;
   }
 
@@ -3432,8 +3443,8 @@ public class RelBuilderTest {
         "LogicalValues(tuples=[[{ 1, true }, { 2, false }]])\n";
     final String expectedRowType = "RecordType(INTEGER x, BOOLEAN y)";
     assertThat(f.apply(createBuilder()), hasTree(expected));
-    assertThat(f.apply(createBuilder()).getRowType().toString(),
-        is(expectedRowType));
+    assertThat(f.apply(createBuilder()).getRowType(),
+        hasToString(expectedRowType));
   }
 
   /** Tests that {@code Union(Project(Values), ... Project(Values))} is

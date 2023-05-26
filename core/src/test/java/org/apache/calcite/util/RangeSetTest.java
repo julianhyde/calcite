@@ -397,8 +397,8 @@ class RangeSetTest {
     final String expectedGuava29 = "[(-\u221e..+\u221e), (-\u221e..3], "
         + "[4..+\u221e), (-\u221e..5), (6..+\u221e), [7..7], "
         + "(8..9), (10..11], [12..13], [14..15)]";
-    assertThat(list.toString(),
-        anyOf(is(expectedGuava28), is(expectedGuava29)));
+    assertThat(list,
+        hasToString(anyOf(is(expectedGuava28), is(expectedGuava29))));
     list.clear();
 
     final StringBuilder sb = new StringBuilder();

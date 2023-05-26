@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.sql;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.Util;
 
@@ -29,6 +27,7 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 /**
  * Test of {@link SqlNode} and other SQL AST classes.

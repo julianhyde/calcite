@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 package org.apache.calcite.runtime;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 
 /** Tests for the {@link DeterministicAutomaton}. */

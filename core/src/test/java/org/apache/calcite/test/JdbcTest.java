@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.adapter.clone.CloneSchema;
 import org.apache.calcite.adapter.generate.RangeTable;
@@ -161,6 +159,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

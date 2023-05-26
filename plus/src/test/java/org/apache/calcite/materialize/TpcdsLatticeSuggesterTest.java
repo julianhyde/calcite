@@ -45,6 +45,9 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit tests for {@link LatticeSuggester}.
@@ -116,13 +119,13 @@ class TpcdsLatticeSuggesterTest {
         + " Step([tpcds, WEB_SALES], [tpcds, DATE_DIM], WS_SOLD_DATE_SK:D_DATE_SK)])";
     assertThat(t.suggester.space.g, hasToString(expected));
     if (evolve) {
-      assertThat(t.suggester.space.nodeMap, hasSize(5));
-      assertThat(t.suggester.latticeMap, hasSize(3));
-      assertThat(t.suggester.space.pathMap, hasSize(10));
+      assertThat(t.suggester.space.nodeMap, aMapWithSize(5));
+      assertThat(t.suggester.latticeMap, aMapWithSize(3));
+      assertThat(t.suggester.space.pathMap, aMapWithSize(10));
     } else {
-      assertThat(t.suggester.space.nodeMap, hasSize(5));
-      assertThat(t.suggester.latticeMap, hasSize(4));
-      assertThat(t.suggester.space.pathMap, hasSize(10));
+      assertThat(t.suggester.space.nodeMap, aMapWithSize(5));
+      assertThat(t.suggester.latticeMap, aMapWithSize(4));
+      assertThat(t.suggester.space.pathMap, aMapWithSize(10));
     }
   }
 

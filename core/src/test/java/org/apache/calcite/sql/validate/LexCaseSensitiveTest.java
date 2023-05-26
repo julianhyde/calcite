@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.sql.validate;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableProject;
 import org.apache.calcite.config.Lex;
@@ -42,6 +40,7 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

@@ -42,6 +42,7 @@ import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -369,7 +370,8 @@ public class DruidAdapterIT {
             // 1 timestamp, 2 float measure, 1 int measure, 88 dimensions
             assertThat(map.keySet(), hasSize(4));
             assertThat(map.values(), hasSize(92));
-            assertThat(map.get("TIMESTAMP_WITH_LOCAL_TIME_ZONE(0) NOT NULL"), hasSize(1));
+            assertThat(map.get("TIMESTAMP_WITH_LOCAL_TIME_ZONE(0) NOT NULL"),
+                hasSize(1));
             assertThat(map.get("DOUBLE"), hasSize(2));
             assertThat(map.get("BIGINT"), hasSize(1));
             assertThat(map.get(VARCHAR_TYPE), hasSize(88));

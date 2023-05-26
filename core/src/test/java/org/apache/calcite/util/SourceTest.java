@@ -162,15 +162,15 @@ class SourceTest {
 
   private void assertAppend(Source parent, Source child, String expected) {
     assertThat(parent + ".append(" + child + ")",
-        parent.append(child).file().toString(),
+        parent.append(child).file(),
         // This should transparently support various OS
-        is(new File(expected).toString()));
+        hasToString(new File(expected).toString()));
   }
 
   private void assertAppendUrl(Source parent, Source child, String expected) {
     assertThat(parent + ".append(" + child + ")",
-        parent.append(child).url().toString(),
-        is(expected));
+        parent.append(child).url(),
+        hasToString(expected));
   }
 
   @Test void testSpaceInUrl() {

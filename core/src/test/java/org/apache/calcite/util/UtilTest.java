@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
-import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.examples.RelBuilderExample;
@@ -51,6 +49,7 @@ import com.google.common.primitives.Ints;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Description;
+import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 import org.hamcrest.TypeSafeMatcher;
@@ -115,6 +114,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
 import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -355,14 +356,14 @@ class UtilTest {
 
     // from bytes
     final byte[] b255 = {(byte) 0xFF};
-    assertThat(BitString.createFromBytes(b255).toString(),
-        is("11111111"));
+    assertThat(BitString.createFromBytes(b255),
+        hasToString("11111111"));
     final byte[] b11 = {(byte) 0x0B};
-    assertThat(BitString.createFromBytes(b11).toString(),
-        is("00001011"));
+    assertThat(BitString.createFromBytes(b11),
+        hasToString("00001011"));
     final byte[] b011 = {(byte) 0x00, 0x0B};
-    assertThat(BitString.createFromBytes(b011).toString(),
-        is("0000000000001011"));
+    assertThat(BitString.createFromBytes(b011),
+        hasToString("0000000000001011"));
   }
 
   private static void assertReversible(String s) {
@@ -490,7 +491,7 @@ class UtilTest {
     final int start = 10;
     List<Integer> list = makeConsList(start, n + start);
     assertThat(list, hasSize(n));
-    assertThat(list.toString(), startsWith("[10, 11, 12, "));
+    assertThat(list, hasToString(startsWith("[10, 11, 12, ")));
     assertThat(list.contains(n / 2 + start), is(true));
     assertThat(list.contains(n * 2 + start), is(false));
     assertThat(list.indexOf(n / 2 + start), is(n / 2));
@@ -945,37 +946,37 @@ class UtilTest {
     assertThrows(IllegalArgumentException.class,
         () -> SqlLibrary.parse("oracle,calcite,,oracle"));
 
-    assertThat(SqlLibrary.expand(ImmutableList.of(a)).toString(),
-        is("[ALL, BIG_QUERY, CALCITE, HIVE, MSSQL, MYSQL, ORACLE, POSTGRESQL, "
-            + "SPARK]"));
-    assertThat(SqlLibrary.expand(ImmutableList.of(a, c)).toString(),
-        is("[ALL, BIG_QUERY, CALCITE, HIVE, MSSQL, MYSQL, ORACLE, POSTGRESQL, "
-            + "SPARK]"));
-    assertThat(SqlLibrary.expand(ImmutableList.of(c, a)).toString(),
-        is("[CALCITE, ALL, BIG_QUERY, HIVE, MSSQL, MYSQL, ORACLE, POSTGRESQL, "
-            + "SPARK]"));
-    assertThat(SqlLibrary.expand(ImmutableList.of(c, o, a)).toString(),
-        is("[CALCITE, ORACLE, ALL, BIG_QUERY, HIVE, MSSQL, MYSQL, POSTGRESQL, "
-            + "SPARK]"));
-    assertThat(SqlLibrary.expand(ImmutableList.of(o, c, o)).toString(),
-        is("[ORACLE, CALCITE]"));
+    assertThat(SqlLibrary.expand(ImmutableList.of(a)),
+        hasToString("[ALL, BIG_QUERY, CALCITE, HIVE, MSSQL, MYSQL, ORACLE, "
+            + "POSTGRESQL, SPARK]"));
+    assertThat(SqlLibrary.expand(ImmutableList.of(a, c)),
+        hasToString("[ALL, BIG_QUERY, CALCITE, HIVE, MSSQL, MYSQL, ORACLE, "
+            + "POSTGRESQL, SPARK]"));
+    assertThat(SqlLibrary.expand(ImmutableList.of(c, a)),
+        hasToString("[CALCITE, ALL, BIG_QUERY, HIVE, MSSQL, MYSQL, ORACLE, "
+            + "POSTGRESQL, SPARK]"));
+    assertThat(SqlLibrary.expand(ImmutableList.of(c, o, a)),
+        hasToString("[CALCITE, ORACLE, ALL, BIG_QUERY, HIVE, MSSQL, MYSQL, "
+            + "POSTGRESQL, SPARK]"));
+    assertThat(SqlLibrary.expand(ImmutableList.of(o, c, o)),
+        hasToString("[ORACLE, CALCITE]"));
 
     assertThat("all + spatial + standard covers everything",
         ImmutableSet.copyOf(SqlLibrary.expand(ImmutableList.of(a, sp, st))),
         is(ImmutableSet.copyOf(SqlLibrary.values())));
 
-    assertThat(SqlLibrary.expandUp(ImmutableList.of(c)).toString(),
-        is("[ALL, CALCITE]"));
-    assertThat(SqlLibrary.expandUp(ImmutableList.of(c, o)).toString(),
-        is("[ALL, CALCITE, ORACLE]"));
-    assertThat(SqlLibrary.expandUp(ImmutableList.of(st, c, o)).toString(),
-        is("[STANDARD, ALL, CALCITE, ORACLE]"));
-    assertThat(SqlLibrary.expandUp(ImmutableList.of(st, sp)).toString(),
-        is("[STANDARD, SPATIAL]"));
-    assertThat(SqlLibrary.expandUp(ImmutableList.of(st, a, sp)).toString(),
-        is("[STANDARD, ALL, SPATIAL]"));
-    assertThat(SqlLibrary.expandUp(ImmutableList.of(a)).toString(),
-        is("[ALL]"));
+    assertThat(SqlLibrary.expandUp(ImmutableList.of(c)),
+        hasToString("[ALL, CALCITE]"));
+    assertThat(SqlLibrary.expandUp(ImmutableList.of(c, o)),
+        hasToString("[ALL, CALCITE, ORACLE]"));
+    assertThat(SqlLibrary.expandUp(ImmutableList.of(st, c, o)),
+        hasToString("[STANDARD, ALL, CALCITE, ORACLE]"));
+    assertThat(SqlLibrary.expandUp(ImmutableList.of(st, sp)),
+        hasToString("[STANDARD, SPATIAL]"));
+    assertThat(SqlLibrary.expandUp(ImmutableList.of(st, a, sp)),
+        hasToString("[STANDARD, ALL, SPATIAL]"));
+    assertThat(SqlLibrary.expandUp(ImmutableList.of(a)),
+        hasToString("[ALL]"));
   }
 
   @Test void testSpaces() {
@@ -988,10 +989,10 @@ class UtilTest {
   }
 
   @Test void testSpaceString() {
-    assertThat(Spaces.sequence(0).toString(), equalTo(""));
-    assertThat(Spaces.sequence(1).toString(), equalTo(" "));
-    assertThat(Spaces.sequence(9).toString(), equalTo("         "));
-    assertThat(Spaces.sequence(5).toString(), equalTo("     "));
+    assertThat(Spaces.sequence(0), hasToString(""));
+    assertThat(Spaces.sequence(1), hasToString(" "));
+    assertThat(Spaces.sequence(9), hasToString("         "));
+    assertThat(Spaces.sequence(5), hasToString("     "));
     String s =
         new StringBuilder().append("xx").append(Spaces.MAX, 0, 100)
             .toString();
@@ -1003,11 +1004,11 @@ class UtilTest {
 
     final StringWriter sw = new StringWriter();
     Spaces.append(sw, 4);
-    assertThat(sw.toString(), equalTo("    "));
+    assertThat(sw, hasToString("    "));
 
     final StringBuilder buf = new StringBuilder();
     Spaces.append(buf, 4);
-    assertThat(buf.toString(), equalTo("    "));
+    assertThat(buf, hasToString("    "));
 
     assertThat(Spaces.padLeft("xy", 5), equalTo("   xy"));
     assertThat(Spaces.padLeft("abcde", 5), equalTo("abcde"));
@@ -1131,7 +1132,7 @@ class UtilTest {
     for (Pair<String, String> pair : Pair.adjacents(strings)) {
       result.add(pair.toString());
     }
-    assertThat(result.toString(), equalTo("[<a, b>, <b, c>]"));
+    assertThat(result, hasToString("[<a, b>, <b, c>]"));
 
     // empty source yields empty result
     assertThat(Pair.adjacents(ImmutableList.of()).iterator().hasNext(),
@@ -1156,7 +1157,7 @@ class UtilTest {
     for (Pair<String, String> pair : Pair.firstAnd(strings)) {
       result.add(pair.toString());
     }
-    assertThat(result.toString(), equalTo("[<a, b>, <a, c>]"));
+    assertThat(result, hasToString("[<a, b>, <a, c>]"));
 
     // empty source yields empty result
     assertThat(Pair.firstAnd(ImmutableList.of()).iterator().hasNext(),
@@ -1238,7 +1239,7 @@ class UtilTest {
     final ImmutableIntList list = ImmutableIntList.of();
     assertEquals(0, list.size());
     assertEquals(list, Collections.<Integer>emptyList());
-    assertThat(list.toString(), equalTo("[]"));
+    assertThat(list, hasToString("[]"));
     assertThat(BitSets.of(list), equalTo(new BitSet()));
 
     final ImmutableIntList list2 = ImmutableIntList.of(1, 3, 5);
@@ -1562,8 +1563,7 @@ class UtilTest {
           System.out.println(1);
         }
         boolean strEq = outer.toString().equals(inner.toString());
-        assertThat(outer.toString() + "=" + inner.toString(),
-            outer.equals(inner), is(strEq));
+        assertThat(outer + "=" + inner, outer.equals(inner), is(strEq));
       }
     }
   }
@@ -1935,7 +1935,7 @@ class UtilTest {
     assertThat(list, hasSize(arrayList.size()));
     assertThat(list, equalTo(arrayList));
     assertThat(list.hashCode(), equalTo(arrayList.hashCode()));
-    assertThat(list.toString(), equalTo(arrayList.toString()));
+    assertThat(list, hasToString(arrayList.toString()));
     String z = "";
     for (String s : list) {
       z += s;
@@ -1991,7 +1991,7 @@ class UtilTest {
     assertThat(list, hasSize(arrayList.size()));
     assertThat(list, equalTo(arrayList));
     assertThat(list.hashCode(), equalTo(arrayList.hashCode()));
-    assertThat(list.toString(), equalTo(arrayList.toString()));
+    assertThat(list, hasToString(arrayList.toString()));
     String z = "";
     for (String s : list) {
       z += s;
@@ -2037,12 +2037,12 @@ class UtilTest {
     assertThat(set, hasSize(set2.size()));
     assertThat(set, equalTo(set2));
     assertThat(set.hashCode(), equalTo(set2.hashCode()));
-    assertThat(set.toString(), equalTo(set2.toString()));
+    assertThat(set, hasToString(set2.toString()));
     StringBuilder z = new StringBuilder();
     for (String s : set) {
       z.append(s);
     }
-    assertThat(z.toString(), equalTo("anullc"));
+    assertThat(z, hasToString("anullc"));
 
     // changes to array list do not affect copy
     arrayList.set(0, "z");
@@ -2710,8 +2710,8 @@ class UtilTest {
     map.put("Abcde", 2);
     map.put("WOMBAT", 4);
     map.put("Zymurgy", 3);
-    assertThat(map.toString(),
-        is("{Abcde=2, Baz=1, baz=0, WOMBAT=4, Zymurgy=3}"));
+    assertThat(map,
+        hasToString("{Abcde=2, Baz=1, baz=0, WOMBAT=4, Zymurgy=3}"));
     assertThat(map.map(), aMapWithSize(5));
     assertThat(map.map().entrySet(), hasSize(5));
     assertThat(map.map().keySet(), hasSize(5));
@@ -2973,8 +2973,8 @@ class UtilTest {
     final Predicate<Integer> isEven = i -> i % 2 == 0;
     assertThat(Util.moveToHead(primes, isEven), hasToString("[2, 3, 5, 7]"));
     assertThat(Util.moveToHead(primes, isEven), sameInstance(primes));
-    assertThat(Util.moveToHead(evenInMiddle, isEven).toString(),
-        is("[2, 1, 3]"));
+    assertThat(Util.moveToHead(evenInMiddle, isEven),
+        hasToString("[2, 1, 3]"));
     assertThat(Util.moveToHead(evenAtEnd, isEven), hasToString("[8, 1, 3]"));
     assertThat(Util.moveToHead(empty, isEven), hasToString("[]"));
     assertThat(Util.moveToHead(empty, isEven), sameInstance(empty));
@@ -3001,58 +3001,76 @@ class UtilTest {
 
     final List<Integer> ordinal20 = Arrays.asList(2, 0);
     assertThat(Util.select(beatles, ordinal20).isEmpty(), is(false));
-    assertThat(Util.select(beatles, ordinal20).toString(),
-        is("[George, John]"));
+    assertThat(Util.select(beatles, ordinal20),
+        hasToString("[George, John]"));
 
     final List<Integer> ordinal232 = Arrays.asList(2, 3, 2);
     assertThat(Util.select(beatles, ordinal232).isEmpty(), is(false));
-    assertThat(Util.select(beatles, ordinal232).toString(),
-        is("[George, Ringo, George]"));
+    assertThat(Util.select(beatles, ordinal232),
+        hasToString("[George, Ringo, George]"));
     assertThat(Util.select(beatles, ordinal232),
         isIterable(Arrays.asList("George", "Ringo", "George")));
 
     assertThat(Util.select(nullBeatles, ordinal232).isEmpty(), is(false));
-    assertThat(Util.select(nullBeatles, ordinal232).toString(),
-        is("[null, Ringo, null]"));
+    assertThat(Util.select(nullBeatles, ordinal232),
+        hasToString("[null, Ringo, null]"));
     assertThat(Util.select(nullBeatles, ordinal232),
         isIterable(Arrays.asList(null, "Ringo", null)));
   }
 
+  /** Returns a Matcher that checks {@link EquivalenceSet#size()}. */
+  private static <E extends Comparable<E>> Matcher<EquivalenceSet<E>>
+      isEquivalenceSetWithSize(int n) {
+    return isEquivalenceSetWithSize(is(n));
+  }
+
+  /** Returns a Matcher that checks {@link EquivalenceSet#size()}
+   * against a Matcher. */
+  private static <E extends Comparable<E>> Matcher<EquivalenceSet<E>>
+      isEquivalenceSetWithSize(Matcher<Integer> matcher) {
+    return new FeatureMatcher<EquivalenceSet<E>, Integer>(matcher,
+        "EquivalenceSet", "size") {
+      @Override protected Integer featureValueOf(EquivalenceSet<E> actual) {
+        return actual.size();
+      }
+    };
+  }
+
   @Test void testEquivalenceSet() {
     final EquivalenceSet<String> c = new EquivalenceSet<>();
-    assertThat(c.size(), is(0));
+    assertThat(c, isEquivalenceSetWithSize(0));
     assertThat(c.classCount(), is(0));
     c.add("abc");
-    assertThat(c.size(), is(1));
+    assertThat(c, isEquivalenceSetWithSize(1));
     assertThat(c.classCount(), is(1));
     c.add("Abc");
-    assertThat(c.size(), is(2));
+    assertThat(c, isEquivalenceSetWithSize(2));
     assertThat(c.classCount(), is(2));
     assertThat(c.areEquivalent("abc", "Abc"), is(false));
     assertThat(c.areEquivalent("abc", "abc"), is(true));
     assertThat(c.areEquivalent("abc", "ABC"), is(false));
     c.equiv("abc", "ABC");
-    assertThat(c.size(), is(3));
+    assertThat(c, isEquivalenceSetWithSize(3));
     assertThat(c.classCount(), is(2));
     assertThat(c.areEquivalent("abc", "ABC"), is(true));
     assertThat(c.areEquivalent("ABC", "abc"), is(true));
     assertThat(c.areEquivalent("abc", "abc"), is(true));
     assertThat(c.areEquivalent("abc", "Abc"), is(false));
     c.equiv("Abc", "ABC");
-    assertThat(c.size(), is(3));
+    assertThat(c, isEquivalenceSetWithSize(3));
     assertThat(c.classCount(), is(1));
     assertThat(c.areEquivalent("abc", "Abc"), is(true));
 
     c.add("de");
     c.equiv("fg", "fG");
-    assertThat(c.size(), is(6));
+    assertThat(c, isEquivalenceSetWithSize(6));
     assertThat(c.classCount(), is(3));
     final NavigableMap<String, SortedSet<String>> map = c.map();
-    assertThat(map.toString(),
-        is("{ABC=[ABC, Abc, abc], de=[de], fG=[fG, fg]}"));
+    assertThat(map,
+        hasToString("{ABC=[ABC, Abc, abc], de=[de], fG=[fG, fg]}"));
 
     c.clear();
-    assertThat(c.size(), is(0));
+    assertThat(c, isEquivalenceSetWithSize(0));
     assertThat(c.classCount(), is(0));
   }
 
@@ -3061,7 +3079,7 @@ class UtilTest {
 
     for (int i = 0; i < 100; i++) {
       assertThat(map.put(i, i * i), is(nullValue()));
-      assertThat(map.size(), is(0));
+      assertThat(map, aMapWithSize(0));
       assertThat(map.entrySet().add(new SimpleEntry<>(i, i * i)), is(true));
       assertThat(map.entrySet(), hasSize(0));
       assertThat(map.keySet(), hasSize(0));

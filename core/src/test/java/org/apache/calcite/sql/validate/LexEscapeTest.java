@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.sql.validate;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
@@ -48,6 +46,7 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 
 /**

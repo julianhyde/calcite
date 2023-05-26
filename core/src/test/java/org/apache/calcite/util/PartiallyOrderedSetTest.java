@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +31,7 @@ import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

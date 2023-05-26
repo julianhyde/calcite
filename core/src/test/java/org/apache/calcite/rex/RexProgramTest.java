@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.rex;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptUtil;
@@ -73,6 +72,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -150,16 +150,16 @@ class RexProgramTest extends RexProgramTestBase {
    */
   @Test void testSimplifyCondition() {
     final RexProgram program = createProg(3).getProgram(false);
-    assertThat(program.toString(),
-        is("(expr#0..1=[{inputs}], expr#2=[+($0, 1)], expr#3=[77], "
+    assertThat(program,
+        hasToString("(expr#0..1=[{inputs}], expr#2=[+($0, 1)], expr#3=[77], "
             + "expr#4=[+($0, $1)], expr#5=[+($0, 1)], expr#6=[+($0, $t5)], "
             + "expr#7=[+($t4, $t2)], expr#8=[5], expr#9=[>($t2, $t8)], "
             + "expr#10=[true], expr#11=[IS NOT NULL($t5)], expr#12=[false], "
             + "expr#13=[null:BOOLEAN], expr#14=[CASE($t9, $t10, $t11, $t12, $t13)], "
             + "expr#15=[NOT($t14)], a=[$t7], b=[$t6], $condition=[$t15])"));
 
-    assertThat(program.normalize(rexBuilder, simplify).toString(),
-        is("(expr#0..1=[{inputs}], expr#2=[+($t0, $t1)], expr#3=[1], "
+    assertThat(program.normalize(rexBuilder, simplify),
+        hasToString("(expr#0..1=[{inputs}], expr#2=[+($t0, $t1)], expr#3=[1], "
             + "expr#4=[+($t0, $t3)], expr#5=[+($t2, $t4)], "
             + "expr#6=[+($t0, $t4)], expr#7=[5], expr#8=[<=($t4, $t7)], "
             + "a=[$t5], b=[$t6], $condition=[$t8])"));
@@ -170,8 +170,8 @@ class RexProgramTest extends RexProgramTestBase {
    */
   @Test void testSimplifyCondition2() {
     final RexProgram program = createProg(4).getProgram(false);
-    assertThat(program.toString(),
-        is("(expr#0..1=[{inputs}], expr#2=[+($0, 1)], expr#3=[77], "
+    assertThat(program,
+        hasToString("(expr#0..1=[{inputs}], expr#2=[+($0, 1)], expr#3=[77], "
             + "expr#4=[+($0, $1)], expr#5=[+($0, 1)], expr#6=[+($0, $t5)], "
             + "expr#7=[+($t4, $t2)], expr#8=[5], expr#9=[>($t2, $t8)], "
             + "expr#10=[true], expr#11=[IS NOT NULL($t5)], expr#12=[false], "
@@ -179,8 +179,8 @@ class RexProgramTest extends RexProgramTestBase {
             + "expr#15=[NOT($t14)], expr#16=[IS TRUE($t15)], a=[$t7], b=[$t6], "
             + "$condition=[$t16])"));
 
-    assertThat(program.normalize(rexBuilder, simplify).toString(),
-        is("(expr#0..1=[{inputs}], expr#2=[+($t0, $t1)], expr#3=[1], "
+    assertThat(program.normalize(rexBuilder, simplify),
+        hasToString("(expr#0..1=[{inputs}], expr#2=[+($t0, $t1)], expr#3=[1], "
             + "expr#4=[+($t0, $t3)], expr#5=[+($t2, $t4)], "
             + "expr#6=[+($t0, $t4)], expr#7=[5], expr#8=[<=($t4, $t7)], "
             + "a=[$t5], b=[$t6], $condition=[$t8])"));
@@ -725,8 +725,8 @@ class RexProgramTest extends RexProgramTestBase {
     final int nodeCount = cnf.nodeCount();
     assertThat((n + 1) * (int) Math.pow(2, n) + 1, equalTo(nodeCount));
     if (n == 3) {
-      assertThat(cnf.toString(),
-          equalTo("AND(OR(?0.x0, ?0.x1, ?0.x2), OR(?0.x0, ?0.x1, ?0.y2),"
+      assertThat(cnf,
+          hasToString("AND(OR(?0.x0, ?0.x1, ?0.x2), OR(?0.x0, ?0.x1, ?0.y2),"
               + " OR(?0.x0, ?0.y1, ?0.x2), OR(?0.x0, ?0.y1, ?0.y2),"
               + " OR(?0.y0, ?0.x1, ?0.x2), OR(?0.y0, ?0.x1, ?0.y2),"
               + " OR(?0.y0, ?0.y1, ?0.x2), OR(?0.y0, ?0.y1, ?0.y2))"));
@@ -1090,9 +1090,8 @@ class RexProgramTest extends RexProgramTestBase {
 
     // as previous, using simplifyFilterPredicates
     assertThat(simplify
-            .simplifyFilterPredicates(args)
-            .toString(),
-        equalTo("AND(=(?0.a, 1), =(?0.b, 1))"));
+            .simplifyFilterPredicates(args),
+        hasToString("AND(=(?0.a, 1), =(?0.b, 1))"));
 
     // "a = 1 and a = 10" is always false
     final ImmutableList<RexNode> args2 =
@@ -1522,8 +1521,8 @@ class RexProgramTest extends RexProgramTestBase {
     // TODO: "b = b" would be the best simplification.
     final RexNode simplified =
         this.simplify.simplifyUnknownAs(neOrEq, RexUnknownAs.UNKNOWN);
-    assertThat(simplified.toString(),
-        equalTo("OR(IS NOT NULL(?0.b), null)"));
+    assertThat(simplified,
+        hasToString("OR(IS NOT NULL(?0.b), null)"));
 
     // "a is null or a is not null" ==> "true"
     checkSimplifyFilter(
@@ -2960,7 +2959,7 @@ class RexProgramTest extends RexProgramTestBase {
   private void checkSarg(String message, Sarg sarg,
       Matcher<Integer> complexityMatcher, Matcher<String> stringMatcher) {
     assertThat(message, sarg.complexity(), complexityMatcher);
-    assertThat(message, sarg.toString(), stringMatcher);
+    assertThat(message, sarg, hasToString(stringMatcher));
   }
 
   /** Tests {@link Sarg#complexity()}. */
@@ -3154,8 +3153,8 @@ class RexProgramTest extends RexProgramTestBase {
    * are not literals. */
   @Test void testInDigest2() {
     RexNode e = in(vInt(0), literal(1), plus(literal(2), vInt(1)));
-    assertThat(e.toString(),
-        is("OR(=(?0.int0, 1), =(?0.int0, +(2, ?0.int1)))"));
+    assertThat(e,
+        hasToString("OR(=(?0.int0, 1), =(?0.int0, +(2, ?0.int1)))"));
   }
 
   /** Unit test for

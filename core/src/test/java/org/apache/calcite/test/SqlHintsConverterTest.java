@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
@@ -93,6 +91,7 @@ import static org.apache.calcite.test.Matchers.relIsValid;
 import static org.apache.calcite.test.SqlToRelTestBase.NL;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.collection.IsIn.in;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

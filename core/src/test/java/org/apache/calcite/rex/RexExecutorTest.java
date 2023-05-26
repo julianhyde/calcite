@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.rex;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.DataContext;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.avatica.util.ByteString;
@@ -53,6 +51,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -273,11 +273,11 @@ class RexExecutorTest {
           reducedValues);
       assertThat(reducedValues, hasSize(2));
       assertThat(reducedValues.get(0), instanceOf(RexLiteral.class));
-      assertThat(((RexLiteral) reducedValues.get(0)).getValue2().toString(),
-          equalTo((Object) "656c6c6f")); // substring('Hello world!, 2, 4)
+      assertThat(((RexLiteral) reducedValues.get(0)).getValue2(),
+          hasToString("656c6c6f")); // substring('Hello world!, 2, 4)
       assertThat(reducedValues.get(1), instanceOf(RexLiteral.class));
       assertThat(((RexLiteral) reducedValues.get(1)).getValue2(),
-          equalTo((Object) 2L));
+          equalTo(2L));
     });
   }
 

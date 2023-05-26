@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.object.HasToString.hasToString;
 
 /** Unit tests for {@link Automaton}. */
@@ -228,8 +227,8 @@ class AutomatonTest {
       builder.addAll(
           matcher.matchOneWithSymbols(memoryFactory.create(), partitionState));
     }
-    assertThat(builder.build().toString(),
-        is("[[(A, a), (B, ab)], [(A, a), (B, b)]]"));
+    assertThat(builder.build(),
+        hasToString("[[(A, a), (B, ab)], [(A, a), (B, b)]]"));
   }
 
   /** Converts a string into an iterable collection of its characters. */

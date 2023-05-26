@@ -4158,34 +4158,30 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   /** Unit test for
    * {@link org.apache.calcite.sql.validate.SqlValidatorUtil#rollup}. */
   @Test void testRollupBitSets() {
-    assertThat(rollup(ImmutableBitSet.of(1), ImmutableBitSet.of(3)).toString(),
-        equalTo("[{1, 3}, {1}, {}]"));
-    assertThat(rollup(ImmutableBitSet.of(1), ImmutableBitSet.of(3, 4))
-            .toString(),
-        equalTo("[{1, 3, 4}, {1}, {}]"));
-    assertThat(rollup(ImmutableBitSet.of(1, 3), ImmutableBitSet.of(4))
-            .toString(),
-        equalTo("[{1, 3, 4}, {1, 3}, {}]"));
-    assertThat(rollup(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3))
-            .toString(),
-        equalTo("[{1, 3, 4}, {1, 4}, {}]"));
+    assertThat(rollup(ImmutableBitSet.of(1), ImmutableBitSet.of(3)),
+        hasToString("[{1, 3}, {1}, {}]"));
+    assertThat(rollup(ImmutableBitSet.of(1), ImmutableBitSet.of(3, 4)),
+        hasToString("[{1, 3, 4}, {1}, {}]"));
+    assertThat(rollup(ImmutableBitSet.of(1, 3), ImmutableBitSet.of(4)),
+        hasToString("[{1, 3, 4}, {1, 3}, {}]"));
+    assertThat(rollup(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3)),
+        hasToString("[{1, 3, 4}, {1, 4}, {}]"));
     // non-disjoint bit sets
-    assertThat(rollup(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3, 4))
-            .toString(),
-        equalTo("[{1, 3, 4}, {1, 4}, {}]"));
+    assertThat(rollup(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3, 4)),
+        hasToString("[{1, 3, 4}, {1, 4}, {}]"));
     // some bit sets are empty
     assertThat(
         rollup(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(),
-            ImmutableBitSet.of(3, 4), ImmutableBitSet.of()).toString(),
-        equalTo("[{1, 3, 4}, {1, 4}, {}]"));
-    assertThat(rollup(ImmutableBitSet.of(1)).toString(),
-        equalTo("[{1}, {}]"));
+            ImmutableBitSet.of(3, 4), ImmutableBitSet.of()),
+        hasToString("[{1, 3, 4}, {1, 4}, {}]"));
+    assertThat(rollup(ImmutableBitSet.of(1)),
+        hasToString("[{1}, {}]"));
     // one empty bit set
-    assertThat(rollup(ImmutableBitSet.of()).toString(),
-        equalTo("[{}]"));
+    assertThat(rollup(ImmutableBitSet.of()),
+        hasToString("[{}]"));
     // no bit sets
-    assertThat(rollup().toString(),
-        equalTo("[{}]"));
+    assertThat(rollup(),
+        hasToString("[{}]"));
   }
 
   private ImmutableList<ImmutableBitSet> rollup(ImmutableBitSet... sets) {
@@ -4195,32 +4191,32 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   /** Unit test for
    * {@link org.apache.calcite.sql.validate.SqlValidatorUtil#cube}. */
   @Test void testCubeBitSets() {
-    assertThat(cube(ImmutableBitSet.of(1), ImmutableBitSet.of(3)).toString(),
-        equalTo("[{1, 3}, {1}, {3}, {}]"));
-    assertThat(cube(ImmutableBitSet.of(1), ImmutableBitSet.of(3, 4)).toString(),
-        equalTo("[{1, 3, 4}, {1}, {3, 4}, {}]"));
-    assertThat(cube(ImmutableBitSet.of(1, 3), ImmutableBitSet.of(4)).toString(),
-        equalTo("[{1, 3, 4}, {1, 3}, {4}, {}]"));
-    assertThat(cube(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3)).toString(),
-        equalTo("[{1, 3, 4}, {1, 4}, {3}, {}]"));
+    assertThat(cube(ImmutableBitSet.of(1), ImmutableBitSet.of(3)),
+        hasToString("[{1, 3}, {1}, {3}, {}]"));
+    assertThat(cube(ImmutableBitSet.of(1), ImmutableBitSet.of(3, 4)),
+        hasToString("[{1, 3, 4}, {1}, {3, 4}, {}]"));
+    assertThat(cube(ImmutableBitSet.of(1, 3), ImmutableBitSet.of(4)),
+        hasToString("[{1, 3, 4}, {1, 3}, {4}, {}]"));
+    assertThat(cube(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3)),
+        hasToString("[{1, 3, 4}, {1, 4}, {3}, {}]"));
     // non-disjoint bit sets
     assertThat(
-        cube(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3, 4)).toString(),
-        equalTo("[{1, 3, 4}, {1, 4}, {3, 4}, {}]"));
+        cube(ImmutableBitSet.of(1, 4), ImmutableBitSet.of(3, 4)),
+        hasToString("[{1, 3, 4}, {1, 4}, {3, 4}, {}]"));
     // some bit sets are empty, and there are duplicates
     assertThat(
         cube(ImmutableBitSet.of(1, 4),
             ImmutableBitSet.of(),
             ImmutableBitSet.of(1, 4),
             ImmutableBitSet.of(3, 4),
-            ImmutableBitSet.of()).toString(),
-        equalTo("[{1, 3, 4}, {1, 4}, {3, 4}, {}]"));
-    assertThat(cube(ImmutableBitSet.of(1)).toString(),
-        equalTo("[{1}, {}]"));
-    assertThat(cube(ImmutableBitSet.of()).toString(),
-        equalTo("[{}]"));
-    assertThat(cube().toString(),
-        equalTo("[{}]"));
+            ImmutableBitSet.of()),
+        hasToString("[{1, 3, 4}, {1, 4}, {3, 4}, {}]"));
+    assertThat(cube(ImmutableBitSet.of(1)),
+        hasToString("[{1}, {}]"));
+    assertThat(cube(ImmutableBitSet.of()),
+        hasToString("[{}]"));
+    assertThat(cube(),
+        hasToString("[{}]"));
   }
 
   private ImmutableList<ImmutableBitSet> cube(ImmutableBitSet... sets) {

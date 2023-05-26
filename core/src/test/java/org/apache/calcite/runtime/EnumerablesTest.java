@@ -41,6 +41,7 @@ import static com.google.common.collect.Lists.newArrayList;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit tests for {@link org.apache.calcite.runtime.Enumerables}.
@@ -73,29 +74,29 @@ class EnumerablesTest {
   @Test void testSemiJoinEmp() {
     assertThat(
         EnumerableDefaults.semiJoin(EMPS, DEPTS, e -> e.deptno, d -> d.deptno,
-            Functions.identityComparer()).toList().toString(),
-        equalTo("[Emp(20, Theodore), Emp(20, Sebastian)]"));
+            Functions.identityComparer()).toList(),
+        hasToString("[Emp(20, Theodore), Emp(20, Sebastian)]"));
   }
 
   @Test void testSemiJoinDept() {
     assertThat(
         EnumerableDefaults.semiJoin(DEPTS, EMPS, d -> d.deptno, e -> e.deptno,
-            Functions.identityComparer()).toList().toString(),
-        equalTo("[Dept(20, Sales)]"));
+            Functions.identityComparer()).toList(),
+        hasToString("[Dept(20, Sales)]"));
   }
 
   @Test void testAntiJoinEmp() {
     assertThat(
         EnumerableDefaults.antiJoin(EMPS, DEPTS, e -> e.deptno, d -> d.deptno,
-            Functions.identityComparer()).toList().toString(),
-        equalTo("[Emp(10, Fred), Emp(30, Joe)]"));
+            Functions.identityComparer()).toList(),
+        hasToString("[Emp(10, Fred), Emp(30, Joe)]"));
   }
 
   @Test void testAntiJoinDept() {
     assertThat(
         EnumerableDefaults.antiJoin(DEPTS, EMPS, d -> d.deptno, e -> e.deptno,
-            Functions.identityComparer()).toList().toString(),
-        equalTo("[Dept(15, Marketing)]"));
+            Functions.identityComparer()).toList(),
+        hasToString("[Dept(15, Marketing)]"));
   }
 
   @Test void testMergeJoin() {
@@ -116,8 +117,8 @@ class EnumerablesTest {
                     new Dept(30, "Development"))),
             e -> e.deptno,
             d -> d.deptno,
-            (v0, v1) -> v0 + ", " + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("[Emp(20, Theodore), Dept(20, Sales),"
+            (v0, v1) -> v0 + ", " + v1, JoinType.INNER, null).toList(),
+        hasToString("[Emp(20, Theodore), Dept(20, Sales),"
             + " Emp(20, Sebastian), Dept(20, Sales),"
             + " Emp(30, Joe), Dept(30, Research),"
             + " Emp(30, Joe), Dept(30, Development),"
@@ -144,8 +145,8 @@ class EnumerablesTest {
                     new Dept(40, null))),
             e -> e.name,
             d -> d.name,
-            (v0, v1) -> v0 + ", " + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("[Emp(30, Theodore), Dept(30, Theodore),"
+            (v0, v1) -> v0 + ", " + v1, JoinType.INNER, null).toList(),
+        hasToString("[Emp(30, Theodore), Dept(30, Theodore),"
             + " Emp(20, Theodore), Dept(30, Theodore)]"));
   }
 
@@ -348,30 +349,26 @@ class EnumerablesTest {
   private static <T extends Comparable<T>> void testIntersect(
       List<T> list0, List<T> list1, org.hamcrest.Matcher<String> matcher,
       org.hamcrest.Matcher<String> matcherNullLeft, JoinType joinType) {
-    assertThat(
-        intersect(list0, list1, joinType).toList().toString(),
-        matcher);
+    assertThat(intersect(list0, list1, joinType).toList(),
+        hasToString(matcher));
 
     // Repeat test with nulls at the end of left / right
 
     // Null at the end of left
     list0.add(null);
-    assertThat(
-        intersect(list0, list1, joinType).toList().toString(),
-        matcherNullLeft);
+    assertThat(intersect(list0, list1, joinType).toList(),
+        hasToString(matcherNullLeft));
 
     // Null at the end of right
     list0.remove(list0.size() - 1);
     list1.add(null);
-    assertThat(
-        intersect(list0, list1, joinType).toList().toString(),
-        matcher);
+    assertThat(intersect(list0, list1, joinType).toList(),
+        hasToString(matcher));
 
     // Null at the end of left and right
     list0.add(null);
-    assertThat(
-        intersect(list0, list1, joinType).toList().toString(),
-        matcherNullLeft);
+    assertThat(intersect(list0, list1, joinType).toList(),
+        hasToString(matcherNullLeft));
   }
 
   private static <T extends Comparable<T>> Enumerable<String> intersect(
@@ -417,8 +414,8 @@ class EnumerablesTest {
             e1 -> e1.name,
             e2 -> e2.name,
             (e1, e2) -> e1.deptno < e2.deptno,
-            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("["
+            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList(),
+        hasToString("["
             + "Emp(1, Fred)-Emp(2, Fred), "
             + "Emp(1, Fred)-Emp(3, Fred), "
             + "Emp(2, Fred)-Emp(3, Fred), "
@@ -433,8 +430,8 @@ class EnumerablesTest {
             e2 -> e2.name,
             e1 -> e1.name,
             (e2, e1) -> e2.deptno > e1.deptno,
-            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("["
+            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList(),
+        hasToString("["
             + "Emp(2, Fred)-Emp(1, Fred), "
             + "Emp(3, Fred)-Emp(1, Fred), "
             + "Emp(3, Fred)-Emp(2, Fred), "
@@ -449,8 +446,8 @@ class EnumerablesTest {
             e1 -> e1.name,
             e2 -> e2.name,
             (e1, e2) -> e1.deptno == e2.deptno * 2,
-            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("[]"));
+            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList(),
+        hasToString("[]"));
 
     assertThat(
         EnumerableDefaults.mergeJoin(
@@ -459,8 +456,8 @@ class EnumerablesTest {
             e2 -> e2.name,
             e1 -> e1.name,
             (e2, e1) -> e2.deptno == e1.deptno * 2,
-            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("[Emp(2, Fred)-Emp(1, Fred)]"));
+            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList(),
+        hasToString("[Emp(2, Fred)-Emp(1, Fred)]"));
 
     assertThat(
         EnumerableDefaults.mergeJoin(
@@ -469,8 +466,8 @@ class EnumerablesTest {
             e2 -> e2.name,
             e1 -> e1.name,
             (e2, e1) -> e2.deptno == e1.deptno + 2,
-            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList().toString(),
-        equalTo("[Emp(3, Fred)-Emp(1, Fred), Emp(5, Joe)-Emp(3, Joe)]"));
+            (v0, v1) -> v0 + "-" + v1, JoinType.INNER, null).toList(),
+        hasToString("[Emp(3, Fred)-Emp(1, Fred), Emp(5, Joe)-Emp(3, Joe)]"));
   }
 
   @Test void testMergeSemiJoin() {
@@ -496,8 +493,10 @@ class EnumerablesTest {
             null,
             (v0, v1) -> v0,
             JoinType.SEMI,
-            null).toList().toString(), equalTo("[Dept(10, Marketing),"
-            + " Dept(20, Sales)," + " Dept(30, Research)]"));
+            null).toList(),
+        hasToString("[Dept(10, Marketing),"
+            + " Dept(20, Sales),"
+            + " Dept(30, Research)]"));
   }
 
   @Test void testMergeSemiJoinWithPredicate() {
@@ -523,7 +522,8 @@ class EnumerablesTest {
             (d, e) -> e.name.contains("a"),
             (v0, v1) -> v0,
             JoinType.SEMI,
-            null).toList().toString(), equalTo("[Dept(20, Sales)]"));
+            null).toList(),
+        hasToString("[Dept(20, Sales)]"));
   }
 
   @Test void testMergeSemiJoinWithNullKeys() {
@@ -550,7 +550,8 @@ class EnumerablesTest {
             (e, d) -> e.name.startsWith("T"),
             (v0, v1) -> v0,
             JoinType.SEMI,
-            null).toList().toString(), equalTo("[Emp(30, Theodore)]"));
+            null).toList(),
+        hasToString("[Emp(30, Theodore)]"));
   }
 
 
@@ -577,8 +578,8 @@ class EnumerablesTest {
             null,
             (v0, v1) -> v0,
             JoinType.ANTI,
-            null).toList().toString(),
-        equalTo("[Dept(25, HR), Dept(40, Development)]"));
+            null).toList(),
+        hasToString("[Dept(25, HR), Dept(40, Development)]"));
   }
 
   @Test void testMergeAntiJoinWithPredicate() {
@@ -599,13 +600,14 @@ class EnumerablesTest {
                 new Emp(30, "Joe"),
                 new Emp(30, "Greg"),
                 new Emp(50, "Mary"))),
-            d -> Integer.valueOf(d.deptno),
-            e -> Integer.valueOf(e.deptno),
+            d -> d.deptno,
+            e -> e.deptno,
             (d, e) -> e.name.startsWith("F") || e.name.startsWith("S"),
             (v0, v1) -> v0,
             JoinType.ANTI,
-            null).toList().toString(),
-        equalTo("[Dept(25, HR), Dept(30, Research), Dept(40, Development)]"));
+            null).toList(),
+        hasToString("[Dept(25, HR), Dept(30, Research), "
+            + "Dept(40, Development)]"));
   }
 
   @Test void testMergeAntiJoinWithNullKeys() {
@@ -632,8 +634,8 @@ class EnumerablesTest {
             (e, d) -> d.deptno < 30,
             (v0, v1) -> v0,
             JoinType.ANTI,
-            null).toList().toString(),
-        equalTo("[Emp(30, Fred), Emp(20, Sebastian), Emp(20, Zoey)]"));
+            null).toList(),
+        hasToString("[Emp(30, Fred), Emp(20, Sebastian), Emp(20, Zoey)]"));
   }
 
   @Test void testMergeLeftJoin() {
@@ -657,9 +659,10 @@ class EnumerablesTest {
             d -> d.deptno,
             e -> e.deptno,
             null,
-            (v0, v1) -> String.valueOf(v0) + "-" + String.valueOf(v1),
+            (v0, v1) -> v0 + "-" + v1,
             JoinType.LEFT,
-            null).toList().toString(), equalTo("[Dept(10, Marketing)-Emp(10, Fred),"
+            null).toList(),
+        hasToString("[Dept(10, Marketing)-Emp(10, Fred),"
             + " Dept(20, Sales)-Emp(20, Theodore),"
             + " Dept(20, Sales)-Emp(20, Sebastian),"
             + " Dept(25, HR)-null,"
@@ -689,9 +692,10 @@ class EnumerablesTest {
             d -> d.deptno,
             e -> e.deptno,
             (d, e) -> e.name.contains("a"),
-            (v0, v1) -> String.valueOf(v0) + "-" + String.valueOf(v1),
+            (v0, v1) -> v0 + "-" + v1,
             JoinType.LEFT,
-            null).toList().toString(), equalTo("[Dept(10, Marketing)-null,"
+            null).toList(),
+        hasToString("[Dept(10, Marketing)-null,"
             + " Dept(20, Sales)-Emp(20, Sebastian),"
             + " Dept(25, HR)-null,"
             + " Dept(30, Research)-null,"
@@ -720,9 +724,10 @@ class EnumerablesTest {
             e -> e.name,
             d -> d.name,
             (e, d) -> e.name.startsWith("T"),
-            (v0, v1) -> String.valueOf(v0) + "-" + String.valueOf(v1),
+            (v0, v1) -> v0 + "-" + v1,
             JoinType.LEFT,
-            null).toList().toString(), equalTo("[Emp(30, Fred)-null,"
+            null).toList(),
+        hasToString("[Emp(30, Fred)-null,"
             + " Emp(20, Sebastian)-null,"
             + " Emp(30, Theodore)-Dept(30, Theodore),"
             + " Emp(30, Theodore)-Dept(25, Theodore),"
@@ -734,31 +739,31 @@ class EnumerablesTest {
   @Test void testNestedLoopJoin() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.INNER).toList().toString(),
-        equalTo("[{Theodore, 20, 20, Sales}, {Sebastian, 20, 20, Sales}]"));
+            EMP_DEPT_TO_STRING, JoinType.INNER).toList(),
+        hasToString("[{Theodore, 20, 20, Sales}, {Sebastian, 20, 20, Sales}]"));
   }
 
   @Test void testNestedLoopLeftJoin() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.LEFT).toList().toString(),
-        equalTo("[{Fred, 10, null, null}, {Theodore, 20, 20, Sales}, "
+            EMP_DEPT_TO_STRING, JoinType.LEFT).toList(),
+        hasToString("[{Fred, 10, null, null}, {Theodore, 20, 20, Sales}, "
             + "{Sebastian, 20, 20, Sales}, {Joe, 30, null, null}]"));
   }
 
   @Test void testNestedLoopRightJoin() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.RIGHT).toList().toString(),
-        equalTo("[{Theodore, 20, 20, Sales}, {Sebastian, 20, 20, Sales}, "
+            EMP_DEPT_TO_STRING, JoinType.RIGHT).toList(),
+        hasToString("[{Theodore, 20, 20, Sales}, {Sebastian, 20, 20, Sales}, "
             + "{null, null, 15, Marketing}]"));
   }
 
   @Test void testNestedLoopFullJoin() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.FULL).toList().toString(),
-        equalTo("[{Fred, 10, null, null}, {Theodore, 20, 20, Sales}, "
+            EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
+        hasToString("[{Fred, 10, null, null}, {Theodore, 20, 20, Sales}, "
             + "{Sebastian, 20, 20, Sales}, {Joe, 30, null, null}, "
             + "{null, null, 15, Marketing}]"));
   }
@@ -767,51 +772,51 @@ class EnumerablesTest {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS.take(0), DEPTS, EMP_DEPT_EQUAL_DEPTNO,
             EMP_DEPT_TO_STRING, JoinType.FULL)
-            .orderBy(Functions.identitySelector()).toList().toString(),
-        equalTo("[{null, null, 15, Marketing}, {null, null, 20, Sales}]"));
+            .orderBy(Functions.identitySelector()).toList(),
+        hasToString("[{null, null, 15, Marketing}, {null, null, 20, Sales}]"));
   }
 
   @Test void testNestedLoopFullJoinRightEmpty() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS.take(0), EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.FULL).toList().toString(),
-        equalTo("[{Fred, 10, null, null}, {Theodore, 20, null, null}, "
+            EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
+        hasToString("[{Fred, 10, null, null}, {Theodore, 20, null, null}, "
             + "{Sebastian, 20, null, null}, {Joe, 30, null, null}]"));
   }
 
   @Test void testNestedLoopFullJoinBothEmpty() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS.take(0), DEPTS.take(0), EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.FULL).toList().toString(),
-        equalTo("[]"));
+            EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
+        hasToString("[]"));
   }
 
   @Test void testNestedLoopSemiJoinEmp() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            (e, d) -> e.toString(), JoinType.SEMI).toList().toString(),
-        equalTo("[Emp(20, Theodore), Emp(20, Sebastian)]"));
+            (e, d) -> e.toString(), JoinType.SEMI).toList(),
+        hasToString("[Emp(20, Theodore), Emp(20, Sebastian)]"));
   }
 
   @Test void testNestedLoopSemiJoinDept() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(DEPTS, EMPS, DEPT_EMP_EQUAL_DEPTNO,
-            (d, e) -> d.toString(), JoinType.SEMI).toList().toString(),
-        equalTo("[Dept(20, Sales)]"));
+            (d, e) -> d.toString(), JoinType.SEMI).toList(),
+        hasToString("[Dept(20, Sales)]"));
   }
 
   @Test void testNestedLoopAntiJoinEmp() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            (e, d) -> e.toString(), JoinType.ANTI).toList().toString(),
-        equalTo("[Emp(10, Fred), Emp(30, Joe)]"));
+            (e, d) -> e.toString(), JoinType.ANTI).toList(),
+        hasToString("[Emp(10, Fred), Emp(30, Joe)]"));
   }
 
   @Test void testNestedLoopAntiJoinDept() {
     assertThat(
         EnumerableDefaults.nestedLoopJoin(DEPTS, EMPS, DEPT_EMP_EQUAL_DEPTNO,
-            (d, e) -> d.toString(), JoinType.ANTI).toList().toString(),
-        equalTo("[Dept(15, Marketing)]"));
+            (d, e) -> d.toString(), JoinType.ANTI).toList(),
+        hasToString("[Dept(15, Marketing)]"));
   }
 
   @Test @Disabled // TODO fix this
@@ -851,8 +856,8 @@ class EnumerablesTest {
 
     final Enumerable<String> matches =
         Enumerables.match(emps, emp -> 0L, matcher, emitter, 1, 1);
-    assertThat(matches.toList().toString(),
-        equalTo("[[Emp(20, Theodore), Emp(10, Fred)] null 1, "
+    assertThat(matches.toList(),
+        hasToString("[[Emp(20, Theodore), Emp(10, Fred)] null 1, "
             + "[Emp(20, Sebastian), Emp(30, Joe)] null 2]"));
   }
 
@@ -872,9 +877,8 @@ class EnumerablesTest {
             e -> e.deptno,
             d -> d.deptno,
             (v0, v1) -> v0 + ", " + v1, null)
-            .toList()
-            .toString(),
-        equalTo("[Emp(20, Theodore), Dept(20, Sales),"
+            .toList(),
+        hasToString("[Emp(20, Theodore), Dept(20, Sales),"
             + " Emp(20, Sebastian), Dept(20, Sales),"
             + " Emp(30, Joe), Dept(30, Research),"
             + " Emp(30, Joe), Dept(30, Development),"
@@ -902,9 +906,8 @@ class EnumerablesTest {
             d -> d.deptno,
             (v0, v1) -> v0 + ", " + v1, null, false, true,
             (v0, v1) -> v0.deptno < 30)
-            .toList()
-            .toString(),
-        equalTo("[Emp(10, Fred), null,"
+            .toList(),
+        hasToString("[Emp(10, Fred), null,"
             + " Emp(20, Theodore), Dept(20, Sales),"
             + " Emp(20, Sebastian), Dept(20, Sales),"
             + " Emp(30, Joe), null,"
@@ -930,9 +933,8 @@ class EnumerablesTest {
             d -> d.deptno,
             (v0, v1) -> v0 + ", " + v1, null, true, false,
             (v0, v1) -> v0.deptno < 30)
-            .toList()
-            .toString(),
-        equalTo("[Emp(20, Theodore), Dept(20, Sales),"
+            .toList(),
+        hasToString("[Emp(20, Theodore), Dept(20, Sales),"
             + " Emp(20, Sebastian), Dept(20, Sales),"
             + " null, Dept(15, Marketing),"
             + " null, Dept(30, Research),"
@@ -958,9 +960,8 @@ class EnumerablesTest {
             d -> d.deptno,
             (v0, v1) -> v0 + ", " + v1, null, true, true,
             (v0, v1) -> v0.deptno < 30)
-            .toList()
-            .toString(),
-        equalTo("[Emp(10, Fred), null,"
+            .toList(),
+        hasToString("[Emp(10, Fred), null,"
             + " Emp(20, Theodore), Dept(20, Sales),"
             + " Emp(20, Sebastian), Dept(20, Sales),"
             + " Emp(30, Greg), null,"
@@ -982,8 +983,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_ASC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo("[Emp(20, Lilly), Emp(30, Joe), Emp(30, Greg)]"));
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString("[Emp(20, Lilly), Emp(30, Joe), Emp(30, Greg)]"));
   }
 
   @Test void testMergeUnionAllEmptyOnLeft() {
@@ -999,8 +1000,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_ASC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo("[Emp(20, Lilly), Emp(30, Joe), Emp(30, Greg)]"));
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString("[Emp(20, Lilly), Emp(30, Joe), Emp(30, Greg)]"));
   }
 
   @Test void testMergeUnionAllEmptyOnBoth() {
@@ -1012,8 +1013,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_ASC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo("[]"));
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString("[]"));
   }
 
   @Test void testMergeUnionAllOrderByDeptAsc2inputs() {
@@ -1033,8 +1034,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_ASC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(10, Fred), Emp(20, Lilly), Emp(30, Joe), Emp(30, Greg), Emp(30, Theodore), Emp(40, Sebastian)]"));
   }
 
@@ -1061,8 +1062,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_ASC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(10, Fred), Emp(15, Phyllis), Emp(18, Maddie), Emp(20, Lilly), Emp(22, Jenny),"
                 + " Emp(30, Joe), Emp(30, Greg), Emp(30, Joe), Emp(40, Sebastian), Emp(42, Susan)]"));
   }
@@ -1095,8 +1096,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_ASC,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(10, Fred), Emp(15, Phyllis), Emp(18, Maddie), Emp(20, Lilly), Emp(22, Jenny),"
                 + " Emp(30, Joe), Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan)]"));
   }
@@ -1118,8 +1119,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_DESC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(50, Fred), Emp(42, Lilly), Emp(30, Joe), Emp(30, Greg), Emp(30, Theodore), Emp(10, Sebastian)]"));
   }
 
@@ -1148,8 +1149,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_DESC,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(50, Fred), Emp(45, Phyllis), Emp(42, Maddie), Emp(35, Lilly), Emp(22, Jenny),"
                 + " Emp(22, Jenny), Emp(22, Jenny), Emp(20, Joe), Emp(20, Greg), Emp(20, Theodore), Emp(15, Sebastian), Emp(12, Susan)]"));
   }
@@ -1181,8 +1182,8 @@ class EnumerablesTest {
             e -> e.deptno,
             INTEGER_DESC,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(50, Fred), Emp(45, Phyllis), Emp(42, Maddie), Emp(35, Lilly), Emp(22, Jenny),"
                 + " Emp(20, Joe), Emp(20, Greg), Emp(20, Theodore), Emp(15, Sebastian), Emp(12, Susan)]"));
   }
@@ -1204,8 +1205,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_ASC_NULLS_FIRST,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(20, null), Emp(10, null), Emp(20, null), Emp(30, Greg), Emp(30, Sebastian), Emp(10, Theodore)]"));
   }
 
@@ -1226,8 +1227,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_ASC_NULLS_FIRST,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(20, null), Emp(10, null), Emp(30, Greg), Emp(30, Sebastian), Emp(10, Theodore)]"));
   }
 
@@ -1248,8 +1249,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_DESC_NULLS_FIRST,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(20, null), Emp(10, null), Emp(20, null), Emp(30, Theodore), Emp(10, Sebastian), Emp(30, Greg)]"));
   }
 
@@ -1270,8 +1271,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_DESC_NULLS_FIRST,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(20, null), Emp(10, null), Emp(30, Theodore), Emp(10, Sebastian), Emp(30, Greg)]"));
   }
 
@@ -1293,8 +1294,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_ASC_NULLS_LAST,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(20, Greg), Emp(20, Greg), Emp(30, Sebastian), Emp(30, Theodore), Emp(10, null), Emp(30, null), Emp(10, null)]"));
   }
 
@@ -1316,8 +1317,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_ASC_NULLS_LAST,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(20, Greg), Emp(30, Sebastian), Emp(30, Theodore), Emp(10, null), Emp(30, null)]"));
   }
 
@@ -1339,8 +1340,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_DESC_NULLS_LAST,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(30, Theodore), Emp(30, Sebastian), Emp(20, Greg), Emp(20, Greg), Emp(10, null), Emp(30, null), Emp(10, null)]"));
   }
 
@@ -1362,8 +1363,8 @@ class EnumerablesTest {
             e -> e.name,
             STRING_DESC_NULLS_LAST,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(30, Theodore), Emp(30, Sebastian), Emp(20, Greg), Emp(10, null), Emp(30, null)]"));
   }
 
@@ -1399,8 +1400,8 @@ class EnumerablesTest {
             e -> e,
             DEPT_ASC_AND_NAME_DESC_NULLS_FIRST,
             true,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(10, null), Emp(10, Fred), Emp(20, null), Emp(20, Lilly), Emp(20, Lilly), Emp(20, Lilly),"
                 + " Emp(20, Antoine), Emp(20, Annie), Emp(22, null), Emp(22, null), Emp(22, Jenny),"
                 + " Emp(30, Joe), Emp(30, Joe), Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan), Emp(50, Lolly)]"));
@@ -1438,8 +1439,8 @@ class EnumerablesTest {
             e -> e,
             DEPT_ASC_AND_NAME_DESC_NULLS_FIRST,
             false,
-            EMP_EQUALITY_COMPARER).toList().toString(),
-        equalTo(
+            EMP_EQUALITY_COMPARER).toList(),
+        hasToString(
             "[Emp(10, null), Emp(10, Fred), Emp(20, null), Emp(20, Lilly),"
                 + " Emp(20, Antoine), Emp(20, Annie), Emp(22, null), Emp(22, Jenny),"
                 + " Emp(30, Joe), Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan), Emp(50, Lolly)]"));

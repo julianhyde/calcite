@@ -154,7 +154,8 @@ public class ScannableTableTest {
             "j=Paul");
     // Only 2 rows came out of the table. If the value is 4, it means that the
     // planner did not pass the filter down.
-    assertThat(buf, hasToString("returnCount=2, filter=<0, 4>, projects=[1, 0]"));
+    assertThat(buf,
+        hasToString("returnCount=2, filter=<0, 4>, projects=[1, 0]"));
   }
 
   @Test void testProjectableFilterableNonCooperative() throws Exception {
@@ -186,8 +187,8 @@ public class ScannableTableTest {
         .explainContains(explain)
         .returnsUnordered("k=1940; j=John",
             "k=1942; j=Paul");
-    assertThat(buf.toString(),
-        is("returnCount=2, filter=<0, 4>, projects=[2, 1, 0]"));
+    assertThat(buf,
+        hasToString("returnCount=2, filter=<0, 4>, projects=[2, 1, 0]"));
   }
 
   /** A filter on a {@link org.apache.calcite.schema.ProjectableFilterableTable}
@@ -206,8 +207,8 @@ public class ScannableTableTest {
         .explainContains(explain)
         .returnsUnordered("i=4; k=1942",
             "i=6; k=1943");
-    assertThat(buf.toString(),
-        is("returnCount=4, projects=[0, 2]"));
+    assertThat(buf,
+        hasToString("returnCount=4, projects=[0, 2]"));
   }
 
   /** A filter and project on a
@@ -225,8 +226,8 @@ public class ScannableTableTest {
         .explainContains(explain)
         .returnsUnordered("k=1940",
             "k=1942");
-    assertThat(buf.toString(),
-        is("returnCount=4, projects=[2, 0]"));
+    assertThat(buf,
+        hasToString("returnCount=4, projects=[2, 0]"));
   }
 
   @Test void testPFPushDownProjectFilterInAggregateNoGroup() {
@@ -485,8 +486,8 @@ public class ScannableTableTest {
           .query("select \"j\" from \"s\".\"beatles\" where \"j\" = 'John'")
           .explainContains(explain)
           .returnsUnordered("j=John");
-      assertThat(buf.toString(),
-          is("returnCount=1, filter=<1, John>, projects=[1]"));
+      assertThat(buf,
+          hasToString("returnCount=1, filter=<1, John>, projects=[1]"));
     }
   }
 

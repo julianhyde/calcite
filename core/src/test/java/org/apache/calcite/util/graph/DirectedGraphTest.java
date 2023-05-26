@@ -17,12 +17,9 @@
 package org.apache.calcite.util.graph;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.hamcrest.collection.IsIterableWithSize;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -36,6 +33,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.collection.IsIterableWithSize.iterableWithSize;
 import static org.hamcrest.object.HasToString.hasToString;
@@ -140,10 +138,10 @@ class DirectedGraphTest {
     for (String s : DepthFirstIterator.of(graph, "A")) {
       list.add(s);
     }
-    assertThat(list.toString(), equalTo("[A, B, C, D, E, C, D, F]"));
+    assertThat(list, hasToString("[A, B, C, D, E, C, D, F]"));
     list.clear();
     DepthFirstIterator.reachable(list, graph, "A");
-    assertThat(list.toString(), equalTo("[A, B, C, D, E, C, D, F]"));
+    assertThat(list, hasToString("[A, B, C, D, E, C, D, F]"));
   }
 
   /** Unit test for {@link DepthFirstIterator}. */
@@ -157,7 +155,7 @@ class DirectedGraphTest {
    * {@link DefaultDirectedGraph#removeAllVertices(java.util.Collection)}. */
   @Test void testRemoveAllVertices() {
     final DefaultDirectedGraph<String, DefaultEdge> graph = createDag();
-    assertThat(graph.edgeSet().size(), is(6));
+    assertThat(graph.edgeSet(), hasSize(6));
     graph.removeAllVertices(Arrays.asList("B", "E"));
     assertThat(graph.vertexSet(), hasToString("[A, C, D, F]"));
     assertThat(graph.edgeSet(), hasSize(1));

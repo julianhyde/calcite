@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.materialize;
-import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.schema.SchemaPlus;
@@ -61,6 +58,8 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
 import static org.hamcrest.object.HasToString.hasToString;
 
 /**
@@ -472,8 +471,8 @@ class LatticeSuggesterTest {
             table.t.getQualifiedName())
             .sorted(Comparator.comparing(Object::toString))
             .collect(Util.toImmutableList());
-    assertThat(tableNames.toString(),
-        is("[[foodmart, customer],"
+    assertThat(tableNames,
+        hasToString("[[foodmart, customer],"
             + " [foodmart, product],"
             + " [foodmart, sales_fact_1997],"
             + " [foodmart, time_by_day]]"));
@@ -697,8 +696,8 @@ class LatticeSuggesterTest {
     assertThat(t.s.latticeMap, aMapWithSize(1));
     assertThat(t.s.latticeMap.keySet().iterator().next(),
         is("sales_fact_1997 (customer:+($2, 2)):[MIN(customer.fname)]"));
-    assertThat(t.s.space.g.toString(),
-        is("graph(vertices: [[foodmart, customer],"
+    assertThat(t.s.space.g,
+        hasToString("graph(vertices: [[foodmart, customer],"
             + " [foodmart, sales_fact_1997]], "
             + "edges: [Step([foodmart, sales_fact_1997],"
             + " [foodmart, customer], +($2, 2):+($0, 1))])"));

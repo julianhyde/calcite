@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
@@ -146,6 +145,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1463,7 +1463,7 @@ public class RelMetadataTest {
     assertThat(colType(mq, input, 0), equalTo("DEPTNO-agg"));
 
     // There is no caching. Another request causes another call to the provider.
-    assertThat(buf.toString(), equalTo("[DEPTNO-rel, EXPR$1-rel, DEPTNO-agg]"));
+    assertThat(buf, hasToString("[DEPTNO-rel, EXPR$1-rel, DEPTNO-agg]"));
     assertThat(buf, hasSize(3));
     assertThat(colType(mq, input, 0), equalTo("DEPTNO-agg"));
     assertThat(buf, hasSize(4));
@@ -1536,7 +1536,7 @@ public class RelMetadataTest {
     if (metadataConfig.isCaching()) {
       // The metadata query is caching, only the first request for each piece of metadata
       // generates a new call to the provider.
-      assertThat(buf.toString(), equalTo("[DEPTNO-rel, EXPR$1-rel, DEPTNO-agg]"));
+      assertThat(buf, hasToString("[DEPTNO-rel, EXPR$1-rel, DEPTNO-agg]"));
       assertThat(buf, hasSize(3));
       assertThat(colType(mq, input, 0), equalTo("DEPTNO-agg"));
       assertThat(buf, hasSize(3));
@@ -1665,8 +1665,8 @@ public class RelMetadataTest {
     // Values (empty)
     collations =
         RelMdCollation.values(mq, empTable.getRowType(), ImmutableList.of());
-    assertThat(collations.toString(),
-        equalTo("[[0, 1, 2, 3, 4, 5, 6, 7, 8], "
+    assertThat(collations,
+        hasToString("[[0, 1, 2, 3, 4, 5, 6, 7, 8], "
             + "[1, 2, 3, 4, 5, 6, 7, 8], "
             + "[2, 3, 4, 5, 6, 7, 8], "
             + "[3, 4, 5, 6, 7, 8], "
@@ -1697,8 +1697,8 @@ public class RelMetadataTest {
     addRow(tuples, rexBuilder, 2, 3, 2, 2);
     addRow(tuples, rexBuilder, 3, 3, 1, 4);
     collations = RelMdCollation.values(mq, rowType, tuples.build());
-    assertThat(collations.toString(),
-        equalTo("[[0, 1, 2, 3], [1, 3]]"));
+    assertThat(collations,
+        hasToString("[[0, 1, 2, 3], [1, 3]]"));
 
     final LogicalValues values =
         LogicalValues.create(cluster, rowType, tuples.build());
@@ -2762,8 +2762,8 @@ public class RelMetadataTest {
             + "true]"));
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
-    assertThat(tableReferences.toString(),
-        equalTo("[[CATALOG, SALES, DEPT].#0, [CATALOG, SALES, DEPT].#1, "
+    assertThat(tableReferences,
+        hasToString("[[CATALOG, SALES, DEPT].#0, [CATALOG, SALES, DEPT].#1, "
             + "[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1, "
             + "[CATALOG, SALES, EMP].#2, [CATALOG, SALES, EMP].#3]"));
   }
@@ -2784,8 +2784,8 @@ public class RelMetadataTest {
         sortsAs("[>([CATALOG, SALES, EMP].#0.$0, 5)]"));
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
-    assertThat(tableReferences.toString(),
-        equalTo("[[CATALOG, SALES, EMP].#0]"));
+    assertThat(tableReferences,
+        hasToString("[[CATALOG, SALES, EMP].#0]"));
   }
 
   @Test void testAllPredicatesAndTableUnion() {
@@ -2838,8 +2838,8 @@ public class RelMetadataTest {
             + "true]"));
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
-    assertThat(tableReferences.toString(),
-        equalTo("[[CATALOG, SALES, DEPT].#0, [CATALOG, SALES, DEPT].#1, "
+    assertThat(tableReferences,
+        hasToString("[[CATALOG, SALES, DEPT].#0, [CATALOG, SALES, DEPT].#1, "
             + "[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1, "
             + "[CATALOG, SALES, EMP].#2, [CATALOG, SALES, EMP].#3]"));
   }
@@ -2851,16 +2851,16 @@ public class RelMetadataTest {
     final RelMetadataQuery mq1 = rel1.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences1 =
         Sets.newTreeSet(mq1.getTableReferences(rel1));
-    assertThat(tableReferences1.toString(),
-        equalTo("[[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1]"));
+    assertThat(tableReferences1,
+        hasToString("[[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1]"));
 
     final String sql2 = "select a.deptno from dept a intersect all select b.deptno from emp b";
     final RelNode rel2 = sql(sql2).toRel();
     final RelMetadataQuery mq2 = rel2.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences2 =
         Sets.newTreeSet(mq2.getTableReferences(rel2));
-    assertThat(tableReferences2.toString(),
-        equalTo("[[CATALOG, SALES, DEPT].#0, [CATALOG, SALES, EMP].#0]"));
+    assertThat(tableReferences2,
+        hasToString("[[CATALOG, SALES, DEPT].#0, [CATALOG, SALES, EMP].#0]"));
 
   }
 
@@ -2871,8 +2871,8 @@ public class RelMetadataTest {
     final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
     final Set<RelTableRef> tableReferences =
         Sets.newTreeSet(mq.getTableReferences(rel));
-    assertThat(tableReferences.toString(),
-        equalTo("[[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1]"));
+    assertThat(tableReferences,
+        hasToString("[[CATALOG, SALES, EMP].#0, [CATALOG, SALES, EMP].#1]"));
   }
 
   @Test void testAllPredicatesCrossJoinMultiTable() {
@@ -3262,9 +3262,8 @@ public class RelMetadataTest {
         .build();
     assertThat(mq.getPulledUpPredicates(join1)
         .pulledUpPredicates
-        .get(0)
-        .toString(),
-        is("=($0, $8)"));
+        .get(0),
+        hasToString("=($0, $8)"));
   }
 
   @Test void testGetPredicatesForFilter() throws Exception {
@@ -3286,9 +3285,8 @@ public class RelMetadataTest {
         .build();
     assertThat(mq.getPulledUpPredicates(filter1)
             .pulledUpPredicates
-            .get(0)
-            .toString(),
-        is("=($0, $1)"));
+            .get(0),
+        hasToString("=($0, $1)"));
   }
 
   /** Test case for

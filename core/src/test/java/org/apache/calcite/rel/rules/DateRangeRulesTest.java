@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.rel.rules;
 
-
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -29,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.hamcrest.Matcher;
-import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.api.Test;
 
 import java.util.Calendar;
@@ -38,6 +36,7 @@ import java.util.Set;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.any;
+import static org.hamcrest.object.HasToString.hasToString;
 
 /** Unit tests for {@link DateRangeRules} algorithms. */
 class DateRangeRulesTest {
@@ -698,9 +697,9 @@ class DateRangeRulesTest {
   private void checkDateRange(Fixture f, RexNode e, String timeZone,
       Matcher<String> matcher, Matcher<String> simplifyMatcher) {
     e = DateRangeRules.replaceTimeUnits(f.rexBuilder, e, timeZone);
-    assertThat(e.toString(), matcher);
+    assertThat(e, hasToString(matcher));
     final RexNode e2 = f.simplify.simplify(e);
-    assertThat(e2.toString(), simplifyMatcher);
+    assertThat(e2, hasToString(simplifyMatcher));
   }
 
   /** Common expressions across tests. */
