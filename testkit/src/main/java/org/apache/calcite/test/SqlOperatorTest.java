@@ -136,6 +136,7 @@ import static org.apache.calcite.util.DateTimeStringUtils.getDateFormatter;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -386,7 +387,7 @@ public class SqlOperatorTest {
 
       routines.removeIf(operator ->
           !sqlOperator.getClass().isInstance(operator));
-      assertThat(routines.size(), equalTo(1));
+      assertThat(routines, hasSize(1));
       assertThat(sqlOperator, equalTo(routines.get(0)));
     }
   }

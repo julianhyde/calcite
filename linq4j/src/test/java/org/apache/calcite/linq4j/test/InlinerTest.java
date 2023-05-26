@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Statement;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +35,7 @@ import static org.apache.calcite.linq4j.test.BlockBuilderBase.TRUE;
 import static org.apache.calcite.linq4j.test.BlockBuilderBase.TWO;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -149,8 +149,7 @@ class InlinerTest {
                 Expressions.parameter(int.class, "b"),
                 Expressions.parameter(int.class, "c")));
     builder.add(Expressions.return_(null, v));
-    assertThat(Expressions.toString(builder.toBlock()),
-        CoreMatchers.equalTo(s));
+    assertThat(Expressions.toString(builder.toBlock()), is(s));
   }
 
   @Test void testAssignInConditionMultipleUsageNonOptimized() {

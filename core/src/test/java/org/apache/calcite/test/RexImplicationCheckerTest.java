@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
-
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.plan.RexImplicationChecker;
 import org.apache.calcite.rel.type.RelDataType;
@@ -39,6 +38,7 @@ import static org.apache.calcite.test.RexImplicationCheckerFixtures.Fixture;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.object.HasToString.hasToString;
 
 /**
  * Unit tests for {@link RexImplicationChecker}.
@@ -400,7 +400,7 @@ public class RexImplicationCheckerTest {
         assertThat(ceilSimplifiedExpr.getKind(), is(SqlKind.CEIL));
         assertThat(((RexLiteral) ceilSimplifiedExpr.getOperands().get(1)).getValue().toString(),
             is(timeUnitRanges.get(j).toString()));
-        assertThat(ceilSimplifiedExpr.getOperands().get(0).toString(), is(literalTs.toString()));
+        assertThat(ceilSimplifiedExpr.getOperands().get(0), hasToString(literalTs.toString()));
       }
     }
 
@@ -422,11 +422,11 @@ public class RexImplicationCheckerTest {
         final RexCall floorSimplifiedExpr =
             (RexCall) f.simplify.simplifyPreservingType(outerFloorCall,
                 RexUnknownAs.UNKNOWN, true);
-        assertThat(floorSimplifiedExpr.toString(), is(outerFloorCall.toString()));
+        assertThat(floorSimplifiedExpr, hasToString(outerFloorCall.toString()));
         final RexCall ceilSimplifiedExpr =
             (RexCall) f.simplify.simplifyPreservingType(outerCeilCall,
                 RexUnknownAs.UNKNOWN, true);
-        assertThat(ceilSimplifiedExpr.toString(), is(outerCeilCall.toString()));
+        assertThat(ceilSimplifiedExpr, hasToString(outerCeilCall.toString()));
       }
     }
   }

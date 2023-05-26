@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.regex.Pattern;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -115,15 +114,15 @@ class TpcdsLatticeSuggesterTest {
         + " Step([tpcds, STORE_SALES], [tpcds, PROMOTION], SS_PROMO_SK:P_PROMO_SK),"
         + " Step([tpcds, WEB_SALES], [tpcds, CUSTOMER], WS_BILL_CUSTOMER_SK:C_CUSTOMER_SK),"
         + " Step([tpcds, WEB_SALES], [tpcds, DATE_DIM], WS_SOLD_DATE_SK:D_DATE_SK)])";
-    assertThat(t.suggester.space.g.toString(), is(expected));
+    assertThat(t.suggester.space.g, hasToString(expected));
     if (evolve) {
-      assertThat(t.suggester.space.nodeMap.size(), is(5));
-      assertThat(t.suggester.latticeMap.size(), is(3));
-      assertThat(t.suggester.space.pathMap.size(), is(10));
+      assertThat(t.suggester.space.nodeMap, hasSize(5));
+      assertThat(t.suggester.latticeMap, hasSize(3));
+      assertThat(t.suggester.space.pathMap, hasSize(10));
     } else {
-      assertThat(t.suggester.space.nodeMap.size(), is(5));
-      assertThat(t.suggester.latticeMap.size(), is(4));
-      assertThat(t.suggester.space.pathMap.size(), is(10));
+      assertThat(t.suggester.space.nodeMap, hasSize(5));
+      assertThat(t.suggester.latticeMap, hasSize(4));
+      assertThat(t.suggester.space.pathMap, hasSize(10));
     }
   }
 
@@ -185,7 +184,7 @@ class TpcdsLatticeSuggesterTest {
     LatticeRootNode node(String q) throws SqlParseException,
         ValidationException, RelConversionException {
       final List<Lattice> list = addQuery(q);
-      assertThat(list.size(), is(1));
+      assertThat(list, hasSize(1));
       return list.get(0).rootNode;
     }
 

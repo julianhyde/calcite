@@ -121,12 +121,12 @@ public class DruidAdapter2IT {
               System.out.println(map);
             }
             // 1 timestamp, 2 float measure, 1 int measure, 88 dimensions
-            assertThat(map.keySet().size(), is(4));
-            assertThat(map.values().size(), is(92));
-            assertThat(map.get("TIMESTAMP(0) NOT NULL").size(), is(1));
-            assertThat(map.get("DOUBLE").size(), is(2));
-            assertThat(map.get("BIGINT").size(), is(1));
-            assertThat(map.get(VARCHAR_TYPE).size(), is(88));
+            assertThat(map.keySet(), hasSize(4));
+            assertThat(map.values(), hasSize(92));
+            assertThat(map.get("TIMESTAMP(0) NOT NULL"), hasSize(1));
+            assertThat(map.get("DOUBLE"), hasSize(2));
+            assertThat(map.get("BIGINT"), hasSize(1));
+            assertThat(map.get(VARCHAR_TYPE), hasSize(88));
           } catch (SQLException e) {
             throw TestUtil.rethrow(e);
           }

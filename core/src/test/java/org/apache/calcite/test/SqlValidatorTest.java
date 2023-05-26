@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
-
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -85,6 +84,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -8694,7 +8694,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "CALL pre\n"
         + "ESCAPE -\n"
         + "NEW pre\n";
-    assertThat(b.toString(), is(expected));
+    assertThat(b, hasToString(expected));
   }
 
   /** Tests that it is an error to insert into the same column twice, even using
@@ -11338,7 +11338,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     final SqlNode sqlNode = parser.parseExpression();
     final SqlNode validated = validator.validateParameterizedExpression(sqlNode, nameToTypeMap);
     final RelDataType resultType = validator.getValidatedNodeType(validated);
-    assertThat(resultType.toString(), is("INTEGER"));
+    assertThat(resultType, hasToString("INTEGER"));
   }
 
   @Test void testAccessingNestedFieldsOfNullableRecord() {

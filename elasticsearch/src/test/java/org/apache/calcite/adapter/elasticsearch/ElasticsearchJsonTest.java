@@ -55,8 +55,8 @@ class ElasticsearchJsonTest {
 
     ElasticsearchJson.Aggregations a = mapper.readValue(json, ElasticsearchJson.Aggregations.class);
     assertNotNull(a);
-    assertThat(a.asList().size(), is(0));
-    assertThat(a.asMap().size(), is(0));
+    assertThat(a.asList(), hasSize(0));
+    assertThat(a.asMap(), hasSize(0));
   }
 
   @Test void aggSingle1() throws Exception {
@@ -72,7 +72,7 @@ class ElasticsearchJsonTest {
 
     List<Map<String, Object>> rows = new ArrayList<>();
     ElasticsearchJson.visitValueNodes(a, rows::add);
-    assertThat(rows.size(), is(1));
+    assertThat(rows, hasSize(1));
     assertThat(rows.get(0).get("agg1"), is("111"));
   }
 
@@ -107,7 +107,7 @@ class ElasticsearchJsonTest {
     assertThat(a.asMap().keySet(), hasItem("groupby"));
     assertThat(a.get("groupby"), instanceOf(ElasticsearchJson.MultiBucketsAggregation.class));
     ElasticsearchJson.MultiBucketsAggregation multi = a.get("groupby");
-    assertThat(multi.buckets().size(), is(2));
+    assertThat(multi.buckets(), hasSize(2));
     assertThat(multi.getName(), is("groupby"));
     assertThat(multi.buckets().get(0).key(), is("k1"));
     assertThat(multi.buckets().get(0).keyAsString(), is("k1"));
@@ -124,17 +124,17 @@ class ElasticsearchJsonTest {
     ElasticsearchJson.Aggregations a = mapper.readValue(json, ElasticsearchJson.Aggregations.class);
     ElasticsearchJson.MultiBucketsAggregation multi = a.get("groupby");
 
-    assertThat(multi.buckets().get(0).getAggregations().asMap().size(), is(2));
+    assertThat(multi.buckets().get(0).getAggregations().asMap(), hasSize(2));
     assertThat(multi.buckets().get(0).getName(), is("groupby"));
     assertThat(multi.buckets().get(0).key(), is("k1"));
     assertThat(multi.buckets().get(0).getAggregations().asMap().keySet(), hasItems("a1", "a2"));
-    assertThat(multi.buckets().get(1).getAggregations().asMap().size(), is(2));
+    assertThat(multi.buckets().get(1).getAggregations().asMap(), hasSize(2));
     assertThat(multi.buckets().get(1).getName(), is("groupby"));
     assertThat(multi.buckets().get(1).key(), is("k2"));
     assertThat(multi.buckets().get(1).getAggregations().asMap().keySet(), hasItems("a1", "a2"));
     List<Map<String, Object>> rows = new ArrayList<>();
     ElasticsearchJson.visitValueNodes(a, rows::add);
-    assertThat(rows.size(), is(2));
+    assertThat(rows, hasSize(2));
     assertThat(rows.get(0).get("groupby"), is("k1"));
     assertThat(rows.get(0).get("a1"), is(1));
     assertThat(rows.get(0).get("a2"), is(2));
@@ -153,14 +153,14 @@ class ElasticsearchJsonTest {
     assertThat(a.get("col1"), instanceOf(ElasticsearchJson.MultiBucketsAggregation.class));
     ElasticsearchJson.MultiBucketsAggregation m = a.get("col1");
     assertThat(m.getName(), is("col1"));
-    assertThat(m.buckets().size(), is(2));
+    assertThat(m.buckets(), hasSize(2));
     assertThat(m.buckets().get(0).key(), is("k1"));
     assertThat(m.buckets().get(0).getName(), is("col1"));
     assertThat(m.buckets().get(0).getAggregations().asMap().keySet(), hasItem("col2"));
     assertThat(m.buckets().get(1).key(), is("k2"));
     List<Map<String, Object>> rows = new ArrayList<>();
     ElasticsearchJson.visitValueNodes(a, rows::add);
-    assertThat(rows.size(), is(2));
+    assertThat(rows, hasSize(2));
 
     assertThat(rows.get(0).keySet(), hasItems("col1", "col2", "max"));
     assertThat(rows.get(0).get("col1"), is("k1"));

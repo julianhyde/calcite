@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.sql.validate;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableProject;
@@ -73,7 +74,7 @@ class LexCaseSensitiveTest {
     RelNode transform = planner.transform(0, traitSet, convert);
     assertThat(transform, instanceOf(EnumerableProject.class));
     List<String> fieldNames = transform.getRowType().getFieldNames();
-    assertThat(fieldNames.size(), is(2));
+    assertThat(fieldNames, hasSize(2));
     if (lex.caseSensitive) {
       assertThat(fieldNames.get(0), is("EMPID"));
       assertThat(fieldNames.get(1), is("empid"));

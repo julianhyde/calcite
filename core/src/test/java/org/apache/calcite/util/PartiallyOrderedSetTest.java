@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -260,8 +261,8 @@ class PartiallyOrderedSetTest {
           poset.getParents(random.nextInt(n * 2), true);
       parentCount += parents.size();
     }
-    assertThat(poset.size(), is(count));
-    assertThat(poset.size(), is(expectedSize));
+    assertThat(poset, hasSize(count));
+    assertThat(poset, hasSize(expectedSize));
     assertThat(parentCount, is(expectedParentCount));
   }
 

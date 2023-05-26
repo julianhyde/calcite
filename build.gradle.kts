@@ -598,6 +598,16 @@ allprojects {
                     replaceRegex(">[CALCITE-...] link styles: 1", "<a(?:(?!CALCITE-)[^>])++CALCITE-\\d+[^>]++>\\s*+\\[?(CALCITE-\\d+)\\]?", "<a href=\"https://issues.apache.org/jira/browse/\$1\">[\$1]")
                     // If the link was crafted manually, ensure it has [CALCITE-...] in the link text
                     replaceRegex(">[CALCITE-...] link styles: 2", "<a(?:(?!CALCITE-)[^>])++(CALCITE-\\d+)[^>]++>\\s*+\\[?CALCITE-\\d+\\]?", "<a href=\"https://issues.apache.org/jira/browse/\$1\">[\$1]")
+                    replace("hamcrest", "org.hamcrest.object.Matchers.hasToString", "org.hamcrest.object.HasToString.hasToString")
+                    replace("hamcrest: Use Is.is rather than CoreMatchers.is", "org.hamcrest.object.CoreMatchers.is", "org.hamcrest.core.Is.is")
+                    replace("hamcrest", "org.hamcrest.object.CoreMatchers.containsString", "org.hamcrest.core.StringContains.containsString")
+                    replace("hamcrest", "org.hamcrest.object.CoreMatchers.startsWith", "org.hamcrest.core.StringStartsWith.startsWith")
+                    replace("hamcrest", "org.hamcrest.object.CoreMatchers.notNullValue", "org.hamcrest.core.IsNull.notNullValue")
+                    replace("hamcrest", "org.hamcrest.object.CoreMatchers.equalTo", "org.hamcrest.core.IsEqual.equalTo")
+                    replace("hamcrest", "org.hamcrest.object.CoreMatchers.sameInstance", "org.hamcrest.core.IsSame.sameInstance")
+                    replace("hamcrest: Do not import class Matchers; import its methods", "import org.hamcrest.Matchers;", "import static org.hamcrest.Matchers.allOf;")
+                    replace("hamcrest: Do not import class CoreMatchers; import its methods", "import org.hamcrest.CoreMatchers;", "import static org.hamcrest.CoreMatchers.anything;")
+                    replaceRegex("hamcrest: Use hasSize or aMapWithSize", "\\.size\\(\\), (is|equalTo)\\(", ", hasSize\\(")
                     custom("((() preventer", 1) { contents: String ->
                         ParenthesisBalancer.apply(contents)
                     }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.rex;
-
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptUtil;
@@ -73,6 +73,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -2864,7 +2865,7 @@ class RexProgramTest extends RexProgramTestBase {
     final RexCall result = (RexCall) simplify(isFalse);
     assertThat(result.getType().isNullable(), is(false));
     assertThat(result.getOperator(), is(SqlStdOperatorTable.IS_FALSE));
-    assertThat(result.getOperands().size(), is(1));
+    assertThat(result.getOperands(), hasSize(1));
     assertThat(result.getOperands().get(0), is(booleanInput));
 
     // Make sure that IS_FALSE(IS_FALSE(nullable boolean)) != IS_TRUE(nullable boolean)
@@ -2874,7 +2875,7 @@ class RexProgramTest extends RexProgramTestBase {
     final RexCall result2 = (RexCall) simplify(isFalseIsFalse);
     assertThat(result2.getType().isNullable(), is(false));
     assertThat(result2.getOperator(), is(SqlStdOperatorTable.IS_NOT_FALSE));
-    assertThat(result2.getOperands().size(), is(1));
+    assertThat(result2.getOperands(), hasSize(1));
     assertThat(result2.getOperands().get(0), is(booleanInput));
   }
 
@@ -3146,7 +3147,7 @@ class RexProgramTest extends RexProgramTestBase {
    * Computing digest of IN expressions leads to Exceptions</a>. */
   @Test void testInDigest() {
     RexNode e = in(vInt(), literal(1), literal(2));
-    assertThat(e.toString(), is("SEARCH(?0.int0, Sarg[1, 2])"));
+    assertThat(e, hasToString("SEARCH(?0.int0, Sarg[1, 2])"));
   }
 
   /** Tests that {@link #in} does not generate SEARCH if any of the arguments

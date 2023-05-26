@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
@@ -651,7 +652,7 @@ class SqlHintsConverterTest {
 
     @Override public void onMatch(RelOptRuleCall call) {
       LogicalJoin join = call.rel(0);
-      assertThat(join.getHints().size(), is(1));
+      assertThat(join.getHints(), hasSize(1));
       call.transformTo(
           LogicalJoin.create(join.getLeft(),
               join.getRight(),
@@ -691,7 +692,7 @@ class SqlHintsConverterTest {
 
     @Override public RelNode convert(RelNode rel) {
       LogicalJoin join = (LogicalJoin) rel;
-      assertThat(join.getHints().size(), is(1));
+      assertThat(join.getHints(), hasSize(1));
       assertThat(join.getHints().get(0), is(expectedHint));
       List<RelNode> newInputs = new ArrayList<>();
       for (RelNode input : join.getInputs()) {
@@ -739,7 +740,7 @@ class SqlHintsConverterTest {
         @Nullable RelNode parent) {
       if (clazz.isInstance(node)) {
         Hintable rel = (Hintable) node;
-        assertThat(rel.getHints().size(), is(1));
+        assertThat(rel.getHints(), hasSize(1));
         assertThat(rel.getHints().get(0), is(expectedHint));
       }
       super.visit(node, ordinal, parent);

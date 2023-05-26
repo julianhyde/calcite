@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.rex;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.DataContexts;
@@ -118,7 +119,7 @@ class RexExecutorTest {
       final RexLiteral ten = rexBuilder.makeExactLiteral(BigDecimal.TEN);
       executor.reduce(rexBuilder, ImmutableList.of(ten),
           reducedValues);
-      assertThat(reducedValues.size(), equalTo(1));
+      assertThat(reducedValues, hasSize(1));
       assertThat(reducedValues.get(0), instanceOf(RexLiteral.class));
       assertThat(((RexLiteral) reducedValues.get(0)).getValue2(),
           equalTo((Object) 10L));
@@ -161,7 +162,7 @@ class RexExecutorTest {
       assert expression != null;
       executor.reduce(rexBuilder, ImmutableList.of(expression),
           reducedValues);
-      assertThat(reducedValues.size(), equalTo(1));
+      assertThat(reducedValues, hasSize(1));
       final RexNode reducedValue = reducedValues.get(0);
       assertThat(reducedValue, instanceOf(RexLiteral.class));
       final Matcher<Object> matcher;
@@ -243,7 +244,7 @@ class RexExecutorTest {
               hello, plus, four);
       executor.reduce(rexBuilder, ImmutableList.of(substring, plus),
           reducedValues);
-      assertThat(reducedValues.size(), equalTo(2));
+      assertThat(reducedValues, hasSize(2));
       assertThat(reducedValues.get(0), instanceOf(RexLiteral.class));
       assertThat(((RexLiteral) reducedValues.get(0)).getValue2(),
           equalTo((Object) "ello")); // substring('Hello world!, 2, 4)
@@ -270,7 +271,7 @@ class RexExecutorTest {
               binaryHello, plus, four);
       executor.reduce(rexBuilder, ImmutableList.of(substring, plus),
           reducedValues);
-      assertThat(reducedValues.size(), equalTo(2));
+      assertThat(reducedValues, hasSize(2));
       assertThat(reducedValues.get(0), instanceOf(RexLiteral.class));
       assertThat(((RexLiteral) reducedValues.get(0)).getValue2().toString(),
           equalTo((Object) "656c6c6f")); // substring('Hello world!, 2, 4)

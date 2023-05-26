@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.Lattice;
@@ -239,8 +240,8 @@ class LatticeTest {
           assertThat(lattice.firstColumn("P"), is(18));
           assertThat(lattice.firstColumn("T"), is(0));
           assertThat(lattice.firstColumn("PC"), is(-1));
-          assertThat(lattice.defaultMeasures.size(), is(1));
-          assertThat(lattice.rootNode.descendants.size(), is(3));
+          assertThat(lattice.defaultMeasures, hasSize(1));
+          assertThat(lattice.rootNode.descendants, hasSize(3));
         });
   }
 
@@ -622,7 +623,7 @@ class LatticeTest {
         .explainContains("EnumerableTableScan(table=[[adhoc, m{}]])")
         .enable(CalciteAssert.DB != CalciteAssert.DatabaseInstance.ORACLE)
         .returnsUnordered("S=266773.0000; C=86837");
-    assertThat(mats.toString(), mats.size(), equalTo(2));
+    assertThat(mats.toString(), mats, hasSize(2));
 
     // A similar query can use the same materialization.
     that.query("select sum(\"unit_sales\") as s\n"
@@ -631,7 +632,7 @@ class LatticeTest {
         .enableMaterializations(true)
         .enable(CalciteAssert.DB != CalciteAssert.DatabaseInstance.ORACLE)
         .returnsUnordered("S=266773.0000");
-    assertThat(mats.toString(), mats.size(), equalTo(2));
+    assertThat(mats.toString(), mats, hasSize(2));
   }
 
   /** Rolling up SUM. */

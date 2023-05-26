@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
-
 import com.google.common.io.CharSource;
 
 import org.junit.jupiter.api.Disabled;
@@ -41,6 +40,7 @@ import static org.apache.calcite.util.Sources.url;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -194,7 +194,7 @@ class SourceTest {
     final Source foo = file(null, ROOT_PREFIX + "foo");
     final Source baz = file(null, ROOT_PREFIX + "baz");
     final Source bar = fooBar.relative(foo);
-    assertThat(bar.file().toString(), is("bar"));
+    assertThat(bar.file(), hasToString("bar"));
     assertThat(fooBar.relative(baz), is(fooBar));
   }
 }

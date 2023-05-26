@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -2704,7 +2705,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     visitor.visit(afterTrim);
 
     // Ensure sort and filter operators have consistent traitSet after trimming
-    assertThat(rels.size(), is(2));
+    assertThat(rels, hasSize(2));
     RelTrait filterCollation = rels.get(0).getTraitSet()
         .getTrait(RelCollationTraitDef.INSTANCE);
     RelTrait sortCollation = rels.get(1).getTraitSet()
@@ -2731,7 +2732,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
       }
     };
     calc.accept(visitor);
-    assertThat(rels.size(), is(1));
+    assertThat(rels, hasSize(1));
     assertThat(rels.get(0), isA(LogicalCalc.class));
   }
 
@@ -2747,7 +2748,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
       }
     };
     rel.accept(visitor);
-    assertThat(rels.size(), is(1));
+    assertThat(rels, hasSize(1));
     assertThat(rels.get(0), isA(LogicalTableModify.class));
   }
 
@@ -4751,7 +4752,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     LogicalTableModify modify = (LogicalTableModify) rel;
     List<RexNode> parameters = modify.getSourceExpressionList();
     assertThat(parameters, notNullValue());
-    assertThat(parameters.size(), is(2));
+    assertThat(parameters, hasSize(2));
     assertThat(parameters.get(0).getType().getSqlTypeName(), is(SqlTypeName.INTEGER));
     assertThat(parameters.get(1).getType().getSqlTypeName(), is(SqlTypeName.VARCHAR));
   }

@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.rel.rules;
 
+
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -27,8 +28,8 @@ import org.apache.calcite.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.api.Test;
 
 import java.util.Calendar;
@@ -36,6 +37,7 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.any;
 
 /** Unit tests for {@link DateRangeRules} algorithms. */
 class DateRangeRulesTest {
@@ -665,7 +667,7 @@ class DateRangeRulesTest {
             f.timestampLocalTzLiteral(TimestampString.fromCalendarFields(c))),
         "IST",
         is("AND(>=($9, 2010-02-01 17:00:00), <($9, 2010-02-01 18:00:00))"),
-        CoreMatchers.any(String.class));
+        any(String.class));
 
     c.clear();
     c.set(2010, Calendar.FEBRUARY, 1, 11, 00, 0);
@@ -674,7 +676,7 @@ class DateRangeRulesTest {
             f.timestampLiteral(TimestampString.fromCalendarFields(c))),
         "IST",
         is("AND(>=($9, 2010-02-01 11:00:00), <($9, 2010-02-01 12:00:00))"),
-        CoreMatchers.any(String.class));
+        any(String.class));
 
     c.clear();
     c.set(2010, Calendar.FEBRUARY, 1, 00, 00, 0);
@@ -682,7 +684,7 @@ class DateRangeRulesTest {
         f.eq(f.floorHour, f.dateLiteral(DateString.fromCalendarFields(c))),
         "IST",
         is("AND(>=($9, 2010-02-01 00:00:00), <($9, 2010-02-01 01:00:00))"),
-        CoreMatchers.any(String.class));
+        any(String.class));
   }
 
   private static Set<TimeUnitRange> set(TimeUnitRange... es) {
@@ -690,7 +692,7 @@ class DateRangeRulesTest {
   }
 
   private void checkDateRange(Fixture f, RexNode e, Matcher<String> matcher) {
-    checkDateRange(f, e, "UTC", matcher, CoreMatchers.any(String.class));
+    checkDateRange(f, e, "UTC", matcher, any(String.class));
   }
 
   private void checkDateRange(Fixture f, RexNode e, String timeZone,

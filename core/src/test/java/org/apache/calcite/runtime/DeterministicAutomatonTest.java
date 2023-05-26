@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.runtime;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +42,8 @@ class DeterministicAutomatonTest {
     // Result should have three states
     // 0 -A-> 1 -A-> 2
     // 1 and 2 should be final
-    assertThat(da.getTransitions().size(), is(2));
-    assertThat(da.getEndStates().size(), is(2));
+    assertThat(da.getTransitions(), hasSize(2));
+    assertThat(da.getEndStates(), hasSize(2));
   }
 
   @Test void convertAutomaton2() {
@@ -61,8 +62,8 @@ class DeterministicAutomatonTest {
     // 0 -A-> 1
     //   -B->
     // 1 should be final
-    assertThat(da.getTransitions().size(), is(2));
-    assertThat(da.getEndStates().size(), is(1));
+    assertThat(da.getTransitions(), hasSize(2));
+    assertThat(da.getEndStates(), hasSize(1));
   }
 
   @Test void convertAutomaton3() {
@@ -79,8 +80,8 @@ class DeterministicAutomatonTest {
     // Result should have two transitions
     // 0 -A-> 1 -B-> 2 (which again goes to 2 on a "B")
     // 1 should be final
-    assertThat(da.getTransitions().size(), is(3));
-    assertThat(da.getEndStates().size(), is(2));
+    assertThat(da.getTransitions(), hasSize(3));
+    assertThat(da.getEndStates(), hasSize(2));
   }
 
   @Test void convertAutomaton4() {
@@ -96,7 +97,7 @@ class DeterministicAutomatonTest {
         new DeterministicAutomaton(automaton);
 
     // Result should have four transitions and one end state
-    assertThat(da.getTransitions().size(), is(4));
-    assertThat(da.getEndStates().size(), is(1));
+    assertThat(da.getTransitions(), hasSize(4));
+    assertThat(da.getEndStates(), hasSize(1));
   }
 }

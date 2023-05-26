@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
-
+import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.examples.RelBuilderExample;
@@ -114,6 +115,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -264,8 +266,8 @@ class UtilTest {
     for (String s : Util.tokenize("abc,de,f", ",")) {
       list.add(s);
     }
-    assertThat(list.size(), is(3));
-    assertThat(list.toString(), is("[abc, de, f]"));
+    assertThat(list, hasSize(3));
+    assertThat(list, hasToString("[abc, de, f]"));
   }
 
   /**
@@ -436,19 +438,19 @@ class UtilTest {
     final List<String> abc0 = Arrays.asList("a", "b", "c");
 
     final List<String> abc = ConsList.of("a", ImmutableList.of("b", "c"));
-    assertThat(abc.size(), is(3));
+    assertThat(abc, hasSize(3));
     assertThat(abc, is(abc0));
 
     final List<String> bc = Lists.newArrayList("b", "c");
     final List<String> abc2 = ConsList.of("a", bc);
-    assertThat(abc2.size(), is(3));
+    assertThat(abc2, hasSize(3));
     assertThat(abc2, is(abc0));
     bc.set(0, "z");
     assertThat(abc2, is(abc0));
 
     final List<String> bc3 = ConsList.of("b", Collections.singletonList("c"));
     final List<String> abc3 = ConsList.of("a", bc3);
-    assertThat(abc3.size(), is(3));
+    assertThat(abc3, hasSize(3));
     assertThat(abc3, is(abc0));
     assertThat(abc3.indexOf("b"), is(1));
     assertThat(abc3.indexOf("z"), is(-1));
@@ -479,7 +481,7 @@ class UtilTest {
     }
 
     final List<String> a = ConsList.of("a", ImmutableList.of());
-    assertThat(a.size(), is(1));
+    assertThat(a, hasSize(1));
     assertThat(a, is(Collections.singletonList("a")));
   }
 
@@ -487,7 +489,7 @@ class UtilTest {
     final int n = 2000000;
     final int start = 10;
     List<Integer> list = makeConsList(start, n + start);
-    assertThat(list.size(), is(n));
+    assertThat(list, hasSize(n));
     assertThat(list.toString(), startsWith("[10, 11, 12, "));
     assertThat(list.contains(n / 2 + start), is(true));
     assertThat(list.contains(n * 2 + start), is(false));
@@ -565,15 +567,15 @@ class UtilTest {
   @Test void testPrintList() {
     final StringBuilder sb = new StringBuilder();
     Util.printList(sb, 0, (sb2, i) -> sb2.append(i * 2 + 1));
-    assertThat(sb.toString(), is("[]"));
+    assertThat(sb, hasToString("[]"));
     sb.setLength(0);
 
     Util.printList(sb, 1, (sb2, i) -> sb2.append(i * 2 + 1));
-    assertThat(sb.toString(), is("[1]"));
+    assertThat(sb, hasToString("[1]"));
     sb.setLength(0);
 
     Util.printList(sb, 3, (sb2, i) -> sb2.append(i * 2 + 1));
-    assertThat(sb.toString(), is("[1, 3, 5]"));
+    assertThat(sb, hasToString("[1, 3, 5]"));
     sb.setLength(0);
   }
 
@@ -583,15 +585,15 @@ class UtilTest {
     final Set<String> beatles =
         new LinkedHashSet<>(Arrays.asList("John", "Paul", "George", "Ringo"));
     Util.printIterable(sb, beatles);
-    assertThat(sb.toString(), is("[John, Paul, George, Ringo]"));
+    assertThat(sb, hasToString("[John, Paul, George, Ringo]"));
     sb.setLength(0);
 
     Util.printIterable(sb, ImmutableSet.of("abc"));
-    assertThat(sb.toString(), is("[abc]"));
+    assertThat(sb, hasToString("[abc]"));
     sb.setLength(0);
 
     Util.printIterable(sb, ImmutableList.of());
-    assertThat(sb.toString(), is("[]"));
+    assertThat(sb, hasToString("[]"));
     sb.setLength(0);
   }
 
@@ -1106,18 +1108,18 @@ class UtilTest {
     Pair.forEach(strings, integers,
         (s, i) -> b.append(s).append(":").append(i).append(";"));
     final String expected = "paul:1942;george:1943;john:1940;";
-    assertThat(b.toString(), is(expected));
+    assertThat(b, hasToString(expected));
 
     // same, using list of pairs
     b.setLength(0);
     Pair.forEach(pairs,
         (s, i) -> b.append(s).append(":").append(i).append(";"));
-    assertThat(b.toString(), is(expected));
+    assertThat(b, hasToString(expected));
 
     // same, using map
     b.setLength(0);
     map.forEach((s, i) -> b.append(s).append(":").append(i).append(";"));
-    assertThat(b.toString(), is(expected));
+    assertThat(b, hasToString(expected));
   }
 
   /**
@@ -1222,14 +1224,14 @@ class UtilTest {
     assertEquals(0, list5.size());
 
     final List<Pair<String, String>> list6 = Util.pairs(beatles);
-    assertThat(list6.size(), is(2));
+    assertThat(list6, hasSize(2));
     assertThat(list6.get(0).left, is("john"));
     assertThat(list6.get(0).right, is("paul"));
     assertThat(list6.get(1).left, is("george"));
     assertThat(list6.get(1).right, is("ringo"));
 
     final List<Pair<String, String>> list7 = Util.pairs(empty);
-    assertThat(list7.size(), is(0));
+    assertThat(list7, hasSize(0));
   }
 
   @Test void testImmutableIntList() {
@@ -1300,7 +1302,7 @@ class UtilTest {
     final Set<IdPair<?, ?>> set =
         ImmutableSet.of(p0OneTwo, p1OneTwo, p1TwoOne,
             p0s0One, p1s0One, p0s1One);
-    assertThat(set.size(), is(4));
+    assertThat(set, hasSize(4));
     final String[] expected = {"1=2", "2=1", "xy=1", "xy=1"};
     assertThat(set.stream().map(IdPair::toString).sorted().toArray(),
         is(expected));
@@ -1461,9 +1463,9 @@ class UtilTest {
     assertEquals(emp.hashCode(), emp0.hashCode());
     assertEquals(emp.hashCode(), emp1.hashCode());
 
-    assertThat(emp.size(), is(n));
+    assertThat(emp, hasSize(n));
     if (eNull != null) {
-      assertThat(eNull.size(), is(n));
+      assertThat(eNull, hasSize(n));
     }
 
     final List<String> an = FlatLists.of("A", null);
@@ -1476,7 +1478,7 @@ class UtilTest {
       assertEquals(eNull.hashCode(), eNull0.hashCode());
     }
 
-    assertThat(emp.toString(), is(emp1.toString()));
+    assertThat(emp, hasToString(emp1.toString()));
     if (eNull != null) {
       assertThat(eNull.toString().length(), is(emp1.toString().length() + 3));
     }
@@ -1576,7 +1578,7 @@ class UtilTest {
     FlatLists.ComparableList<String> previous = FlatLists.of();
     for (FlatLists.ComparableList<String> strings : product) {
       if (n++ == 1) {
-        assertThat(strings.size(), is(3));
+        assertThat(strings, hasSize(3));
         assertThat(strings.get(0), is("a"));
         assertThat(strings.get(1), is("y"));
         assertThat(strings.get(2), is("q"));
@@ -1713,10 +1715,10 @@ class UtilTest {
 
     map = CompositeMap.of(beatleMap, founderMap);
     assertThat(map.isEmpty(), equalTo(false));
-    assertThat(map.size(), equalTo(6));
-    assertThat(map.keySet().size(), equalTo(6));
-    assertThat(map.entrySet().size(), equalTo(6));
-    assertThat(map.values().size(), equalTo(6));
+    assertThat(map, aMapWithSize(6));
+    assertThat(map.keySet(), hasSize(6));
+    assertThat(map.entrySet(), hasSize(6));
+    assertThat(map.values(), hasSize(6));
     assertThat(map.containsKey("john"), equalTo(true));
     assertThat(map.containsKey("george"), equalTo(true));
     assertThat(map.containsKey("ben"), equalTo(true));
@@ -1893,12 +1895,12 @@ class UtilTest {
   @Test void testSortedSet() {
     final TreeSet<String> treeSet = new TreeSet<String>();
     Collections.addAll(treeSet, "foo", "bar", "fOo", "FOO", "pug");
-    assertThat(treeSet.size(), equalTo(5));
+    assertThat(treeSet, hasSize(5));
 
     final TreeSet<String> treeSet2 =
         new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
     treeSet2.addAll(treeSet);
-    assertThat(treeSet2.size(), equalTo(3));
+    assertThat(treeSet2, hasSize(3));
 
     final Comparator<String> comparator = (o1, o2) -> {
       String u1 = o1.toUpperCase(Locale.ROOT);
@@ -1911,12 +1913,12 @@ class UtilTest {
     };
     final TreeSet<String> treeSet3 = new TreeSet<String>(comparator);
     treeSet3.addAll(treeSet);
-    assertThat(treeSet3.size(), equalTo(5));
+    assertThat(treeSet3, hasSize(5));
 
-    assertThat(checkNav(treeSet3, "foo").size(), equalTo(3));
-    assertThat(checkNav(treeSet3, "FOO").size(), equalTo(3));
-    assertThat(checkNav(treeSet3, "FoO").size(), equalTo(3));
-    assertThat(checkNav(treeSet3, "BAR").size(), equalTo(1));
+    assertThat(checkNav(treeSet3, "foo"), hasSize(3));
+    assertThat(checkNav(treeSet3, "FOO"), hasSize(3));
+    assertThat(checkNav(treeSet3, "FoO"), hasSize(3));
+    assertThat(checkNav(treeSet3, "BAR"), hasSize(1));
   }
 
   private NavigableSet<String> checkNav(NavigableSet<String> set, String s) {
@@ -1930,7 +1932,7 @@ class UtilTest {
   @Test void testImmutableNullableList() {
     final List<String> arrayList = Arrays.asList("a", null, "c");
     final List<String> list = ImmutableNullableList.copyOf(arrayList);
-    assertThat(list.size(), equalTo(arrayList.size()));
+    assertThat(list, hasSize(arrayList.size()));
     assertThat(list, equalTo(arrayList));
     assertThat(list.hashCode(), equalTo(arrayList.hashCode()));
     assertThat(list.toString(), equalTo(arrayList.toString()));
@@ -1986,7 +1988,7 @@ class UtilTest {
     final String[] strings = {"a", null, "c"};
     final List<String> arrayList = Arrays.asList(strings);
     final List<String> list = UnmodifiableArrayList.of(strings);
-    assertThat(list.size(), equalTo(arrayList.size()));
+    assertThat(list, hasSize(arrayList.size()));
     assertThat(list, equalTo(arrayList));
     assertThat(list.hashCode(), equalTo(arrayList.hashCode()));
     assertThat(list.toString(), equalTo(arrayList.toString()));
@@ -2032,7 +2034,7 @@ class UtilTest {
     final List<String> arrayList = Arrays.asList("a", null, "c", "a");
     final Set<String> set = ImmutableNullableSet.copyOf(arrayList);
     final Set<String> set2 = new LinkedHashSet<>(arrayList);
-    assertThat(set.size(), is(set2.size()));
+    assertThat(set, hasSize(set2.size()));
     assertThat(set, equalTo(set2));
     assertThat(set.hashCode(), equalTo(set2.hashCode()));
     assertThat(set.toString(), equalTo(set2.toString()));
@@ -2271,7 +2273,7 @@ class UtilTest {
 
     final List<List<Integer>> list301 = Arrays.asList(list3, list0, list1);
     final List<List<Integer>> immutableList301 = Util.immutableCopy(list301);
-    assertThat(immutableList301.size(), is(3));
+    assertThat(immutableList301, hasSize(3));
     assertThat(immutableList301, is(list301));
     assertThat(immutableList301, not(sameInstance(list301)));
     for (List<Integer> list : immutableList301) {
@@ -2288,7 +2290,7 @@ class UtilTest {
     final List<List<Integer>> list301c =
         Arrays.asList(immutableList3, immutableList0, immutableList1);
     final List<List<Integer>> list301d = Util.immutableCopy(list301c);
-    assertThat(list301d.size(), is(3));
+    assertThat(list301d, hasSize(3));
     assertThat(list301d, is(list301));
     assertThat(list301d, not(sameInstance(list301)));
     assertThat(list301d.get(0), sameInstance(immutableList3));
@@ -2300,7 +2302,7 @@ class UtilTest {
     final List<String> values  = Lists.newArrayList("abCde", "X", "y");
     final Map<String, String> map =
         Util.asIndexMapJ(values, input -> input.toUpperCase(Locale.ROOT));
-    assertThat(map.size(), equalTo(values.size()));
+    assertThat(map, aMapWithSize(values.size()));
     assertThat(map.get("X"), equalTo("X"));
     assertThat(map.get("Y"), equalTo("y"));
     assertThat(map.get("y"), is((String) null));
@@ -2308,7 +2310,7 @@ class UtilTest {
 
     // If you change the values collection, the map changes.
     values.remove(1);
-    assertThat(map.size(), equalTo(values.size()));
+    assertThat(map, aMapWithSize(values.size()));
     assertThat(map.get("X"), is((String) null));
     assertThat(map.get("Y"), equalTo("y"));
   }
@@ -2344,12 +2346,12 @@ class UtilTest {
 
     Ord.forEach(strings,
         (e, i) -> b.append(i).append(":").append(e).append(";"));
-    assertThat(b.toString(), is(expected));
+    assertThat(b, hasToString(expected));
     b.setLength(0);
 
     final List<String> list = Arrays.asList(strings);
     Ord.forEach(list, (e, i) -> b.append(i).append(":").append(e).append(";"));
-    assertThat(b.toString(), is(expected));
+    assertThat(b, hasToString(expected));
   }
 
   /** Tests {@link org.apache.calcite.util.ReflectUtil#getParameterName}. */
@@ -2436,7 +2438,7 @@ class UtilTest {
 
     final StringBuilder sb = new StringBuilder();
     local.letIn(4, () -> sb.append("the value is ").append(local.get()));
-    assertThat(sb.toString(), is("the value is 4"));
+    assertThat(sb, hasToString("the value is 4"));
     assertThat(local.get(), is(2));
 
     // even when the Runnable throws, the value is restored
@@ -2451,7 +2453,7 @@ class UtilTest {
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage(), is("oops"));
     }
-    assertThat(sb.toString(), is("the value is 5"));
+    assertThat(sb, hasToString("the value is 5"));
     assertThat(local.get(), is(10));
     local.remove();
     assertThat(local.get(), is(2));
@@ -2496,32 +2498,32 @@ class UtilTest {
     assertThat(names.contains("BAZ", true), is(false));
     assertThat(names.contains("BAZ", false), is(true));
     assertThat(names.contains("bAz", false), is(true));
-    assertThat(names.range("baz", true).size(), is(1));
-    assertThat(names.range("baz", false).size(), is(1));
-    assertThat(names.range("BAZ", true).size(), is(0));
-    assertThat(names.range("BaZ", true).size(), is(0));
-    assertThat(names.range("BaZ", false).size(), is(1));
-    assertThat(names.range("BAZ", false).size(), is(1));
+    assertThat(names.range("baz", true), hasSize(1));
+    assertThat(names.range("baz", false), hasSize(1));
+    assertThat(names.range("BAZ", true), hasSize(0));
+    assertThat(names.range("BaZ", true), hasSize(0));
+    assertThat(names.range("BaZ", false), hasSize(1));
+    assertThat(names.range("BAZ", false), hasSize(1));
 
     assertThat(names.contains("bAzinga", false), is(false));
-    assertThat(names.range("bAzinga", true).size(), is(0));
-    assertThat(names.range("bAzinga", false).size(), is(0));
+    assertThat(names.range("bAzinga", true), hasSize(0));
+    assertThat(names.range("bAzinga", false), hasSize(0));
 
     assertThat(names.contains("zoo", true), is(false));
     assertThat(names.contains("zoo", false), is(false));
-    assertThat(names.range("zoo", true).size(), is(0));
+    assertThat(names.range("zoo", true), hasSize(0));
 
     assertThat(Iterables.size(names.iterable()), is(1));
     names.add("Baz");
     names.add("Abcde");
     names.add("WOMBAT");
     names.add("Zymurgy");
-    assertThat(names.toString(), is("[Abcde, Baz, baz, WOMBAT, Zymurgy]"));
+    assertThat(names, hasToString("[Abcde, Baz, baz, WOMBAT, Zymurgy]"));
     assertThat(Iterables.size(names.iterable()), is(5));
-    assertThat(names.range("baz", false).size(), is(2));
-    assertThat(names.range("baz", true).size(), is(1));
-    assertThat(names.range("BAZ", true).size(), is(0));
-    assertThat(names.range("Baz", true).size(), is(1));
+    assertThat(names.range("baz", false), hasSize(2));
+    assertThat(names.range("baz", true), hasSize(1));
+    assertThat(names.range("BAZ", true), hasSize(0));
+    assertThat(names.range("Baz", true), hasSize(1));
     assertThat(names.contains("baz", true), is(true));
     assertThat(names.contains("baz", false), is(true));
     assertThat(names.contains("BAZ", true), is(false));
@@ -2688,35 +2690,35 @@ class UtilTest {
     assertThat(map.containsKey("BAZ", true), is(false));
     assertThat(map.containsKey("BAZ", false), is(true));
     assertThat(map.containsKey("bAz", false), is(true));
-    assertThat(map.range("baz", true).size(), is(1));
-    assertThat(map.range("baz", false).size(), is(1));
-    assertThat(map.range("BAZ", true).size(), is(0));
-    assertThat(map.range("BaZ", true).size(), is(0));
-    assertThat(map.range("BaZ", false).size(), is(1));
-    assertThat(map.range("BAZ", false).size(), is(1));
+    assertThat(map.range("baz", true), aMapWithSize(1));
+    assertThat(map.range("baz", false), aMapWithSize(1));
+    assertThat(map.range("BAZ", true), aMapWithSize(0));
+    assertThat(map.range("BaZ", true), aMapWithSize(0));
+    assertThat(map.range("BaZ", false), aMapWithSize(1));
+    assertThat(map.range("BAZ", false), aMapWithSize(1));
 
     assertThat(map.containsKey("bAzinga", false), is(false));
-    assertThat(map.range("bAzinga", true).size(), is(0));
-    assertThat(map.range("bAzinga", false).size(), is(0));
+    assertThat(map.range("bAzinga", true), aMapWithSize(0));
+    assertThat(map.range("bAzinga", false), aMapWithSize(0));
 
     assertThat(map.containsKey("zoo", true), is(false));
     assertThat(map.containsKey("zoo", false), is(false));
-    assertThat(map.range("zoo", true).size(), is(0));
+    assertThat(map.range("zoo", true), aMapWithSize(0));
 
-    assertThat(map.map().size(), is(1));
+    assertThat(map.map(), aMapWithSize(1));
     map.put("Baz", 1);
     map.put("Abcde", 2);
     map.put("WOMBAT", 4);
     map.put("Zymurgy", 3);
     assertThat(map.toString(),
         is("{Abcde=2, Baz=1, baz=0, WOMBAT=4, Zymurgy=3}"));
-    assertThat(map.map().size(), is(5));
-    assertThat(map.map().entrySet().size(), is(5));
-    assertThat(map.map().keySet().size(), is(5));
-    assertThat(map.range("baz", false).size(), is(2));
-    assertThat(map.range("baz", true).size(), is(1));
-    assertThat(map.range("BAZ", true).size(), is(0));
-    assertThat(map.range("Baz", true).size(), is(1));
+    assertThat(map.map(), aMapWithSize(5));
+    assertThat(map.map().entrySet(), hasSize(5));
+    assertThat(map.map().keySet(), hasSize(5));
+    assertThat(map.range("baz", false), aMapWithSize(2));
+    assertThat(map.range("baz", true), aMapWithSize(1));
+    assertThat(map.range("BAZ", true), aMapWithSize(0));
+    assertThat(map.range("Baz", true), aMapWithSize(1));
     assertThat(map.containsKey("baz", true), is(true));
     assertThat(map.containsKey("baz", false), is(true));
     assertThat(map.containsKey("BAZ", true), is(false));
@@ -2747,36 +2749,36 @@ class UtilTest {
     assertThat(map.containsKey("BAZ", true), is(false));
     assertThat(map.containsKey("BAZ", false), is(true));
     assertThat(map.containsKey("bAz", false), is(true));
-    assertThat(map.range("baz", true).size(), is(2));
-    assertThat(map.range("baz", false).size(), is(3));
-    assertThat(map.range("BAZ", true).size(), is(0));
-    assertThat(map.range("BaZ", true).size(), is(0));
-    assertThat(map.range("BaZ", false).size(), is(3));
-    assertThat(map.range("BAZ", false).size(), is(3));
+    assertThat(map.range("baz", true), hasSize(2));
+    assertThat(map.range("baz", false), hasSize(3));
+    assertThat(map.range("BAZ", true), hasSize(0));
+    assertThat(map.range("BaZ", true), hasSize(0));
+    assertThat(map.range("BaZ", false), hasSize(3));
+    assertThat(map.range("BAZ", false), hasSize(3));
 
     assertThat(map.containsKey("bAzinga", false), is(false));
-    assertThat(map.range("bAzinga", true).size(), is(0));
-    assertThat(map.range("bAzinga", false).size(), is(0));
+    assertThat(map.range("bAzinga", true), hasSize(0));
+    assertThat(map.range("bAzinga", false), hasSize(0));
 
     assertThat(map.containsKey("zoo", true), is(false));
     assertThat(map.containsKey("zoo", false), is(false));
-    assertThat(map.range("zoo", true).size(), is(0));
+    assertThat(map.range("zoo", true), hasSize(0));
 
-    assertThat(map.map().size(), is(2));
+    assertThat(map.map(), aMapWithSize(2));
     map.put("Baz", 1);
     map.put("Abcde", 2);
     map.put("WOMBAT", 4);
     map.put("Zymurgy", 3);
     final String expected = "{Abcde=[2], BAz=[0], Baz=[1], baz=[0, 0],"
         + " WOMBAT=[4], Zymurgy=[3]}";
-    assertThat(map.toString(), is(expected));
-    assertThat(map.map().size(), is(6));
-    assertThat(map.map().entrySet().size(), is(6));
-    assertThat(map.map().keySet().size(), is(6));
-    assertThat(map.range("baz", false).size(), is(4));
-    assertThat(map.range("baz", true).size(), is(2));
-    assertThat(map.range("BAZ", true).size(), is(0));
-    assertThat(map.range("Baz", true).size(), is(1));
+    assertThat(map, hasToString(expected));
+    assertThat(map.map(), aMapWithSize(6));
+    assertThat(map.map().entrySet(), hasSize(6));
+    assertThat(map.map().keySet(), hasSize(6));
+    assertThat(map.range("baz", false), hasSize(4));
+    assertThat(map.range("baz", true), hasSize(2));
+    assertThat(map.range("BAZ", true), hasSize(0));
+    assertThat(map.range("Baz", true), hasSize(1));
     assertThat(map.containsKey("baz", true), is(true));
     assertThat(map.containsKey("baz", false), is(true));
     assertThat(map.containsKey("BAZ", true), is(false));
@@ -2837,11 +2839,11 @@ class UtilTest {
 
   @Test void testNlsStringClone() {
     final NlsString s = new NlsString("foo", "LATIN1", SqlCollation.IMPLICIT);
-    assertThat(s.toString(), is("_LATIN1'foo'"));
+    assertThat(s, hasToString("_LATIN1'foo'"));
     final Object s2 = s.clone();
     assertThat(s2, instanceOf(NlsString.class));
     assertThat(s2, not(sameInstance((Object) s)));
-    assertThat(s2.toString(), is(s.toString()));
+    assertThat(s2, hasToString(s.toString()));
   }
 
   @Test void testXmlOutput() {
@@ -2969,16 +2971,16 @@ class UtilTest {
     final List<Integer> evens = ImmutableList.of(0, 2, 4);
     final List<Integer> odds = ImmutableList.of(1, 3, 5);
     final Predicate<Integer> isEven = i -> i % 2 == 0;
-    assertThat(Util.moveToHead(primes, isEven).toString(), is("[2, 3, 5, 7]"));
+    assertThat(Util.moveToHead(primes, isEven), hasToString("[2, 3, 5, 7]"));
     assertThat(Util.moveToHead(primes, isEven), sameInstance(primes));
     assertThat(Util.moveToHead(evenInMiddle, isEven).toString(),
         is("[2, 1, 3]"));
-    assertThat(Util.moveToHead(evenAtEnd, isEven).toString(), is("[8, 1, 3]"));
-    assertThat(Util.moveToHead(empty, isEven).toString(), is("[]"));
+    assertThat(Util.moveToHead(evenAtEnd, isEven), hasToString("[8, 1, 3]"));
+    assertThat(Util.moveToHead(empty, isEven), hasToString("[]"));
     assertThat(Util.moveToHead(empty, isEven), sameInstance(empty));
-    assertThat(Util.moveToHead(evens, isEven).toString(), is("[0, 2, 4]"));
+    assertThat(Util.moveToHead(evens, isEven), hasToString("[0, 2, 4]"));
     assertThat(Util.moveToHead(evens, isEven), sameInstance(evens));
-    assertThat(Util.moveToHead(odds, isEven).toString(), is("[1, 3, 5]"));
+    assertThat(Util.moveToHead(odds, isEven), hasToString("[1, 3, 5]"));
     assertThat(Util.moveToHead(odds, isEven), sameInstance(odds));
   }
 
@@ -2991,11 +2993,11 @@ class UtilTest {
 
     final List<Integer> emptyOrdinals = Collections.emptyList();
     assertThat(Util.select(beatles, emptyOrdinals).isEmpty(), is(true));
-    assertThat(Util.select(beatles, emptyOrdinals).toString(), is("[]"));
+    assertThat(Util.select(beatles, emptyOrdinals), hasToString("[]"));
 
     final List<Integer> ordinal0 = Collections.singletonList(0);
     assertThat(Util.select(beatles, ordinal0).isEmpty(), is(false));
-    assertThat(Util.select(beatles, ordinal0).toString(), is("[John]"));
+    assertThat(Util.select(beatles, ordinal0), hasToString("[John]"));
 
     final List<Integer> ordinal20 = Arrays.asList(2, 0);
     assertThat(Util.select(beatles, ordinal20).isEmpty(), is(false));
@@ -3061,9 +3063,9 @@ class UtilTest {
       assertThat(map.put(i, i * i), is(nullValue()));
       assertThat(map.size(), is(0));
       assertThat(map.entrySet().add(new SimpleEntry<>(i, i * i)), is(true));
-      assertThat(map.entrySet().size(), is(0));
-      assertThat(map.keySet().size(), is(0));
-      assertThat(map.values().size(), is(0));
+      assertThat(map.entrySet(), hasSize(0));
+      assertThat(map.keySet(), hasSize(0));
+      assertThat(map.values(), hasSize(0));
       assertThat(map.entrySet().iterator().hasNext(), is(false));
       try {
         map.entrySet().iterator().next();

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.util;
-
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import org.apache.calcite.runtime.Utilities;
 
 import com.google.common.collect.ImmutableList;
@@ -40,6 +40,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -208,12 +209,12 @@ class ImmutableBitSetTest {
       final List<Integer> list1 = bitSet.toList();
       final List<Integer> listView = bitSet.asList();
       final Set<Integer> setView = bitSet.asSet();
-      assertThat(list1.size(), equalTo(bitSet.cardinality()));
+      assertThat(list1.size(), equalTo(bitSet.cardinality())); // NOAS
       assertThat(listView.size(), equalTo(bitSet.cardinality()));
       assertThat(setView.size(), equalTo(bitSet.cardinality()));
       assertThat(list1.toString(), equalTo(listView.toString()));
       assertThat(list1.toString(), equalTo(setView.toString()));
-      assertTrue(list1.equals(listView));
+      assertThat(list1.equals(listView), is(true));
       assertThat(list1.hashCode(), equalTo(listView.hashCode()));
 
       final Set<Integer> set = new HashSet<>(list1);
@@ -359,7 +360,7 @@ class ImmutableBitSetTest {
   @Test void testReset() {
     final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
     builder.set(2);
-    assertThat(builder.build().toString(), is("{2}"));
+    assertThat(builder.build(), hasToString("{2}"));
     try {
       builder.set(4);
       fail("expected exception");
@@ -381,11 +382,11 @@ class ImmutableBitSetTest {
 
     final ImmutableBitSet.Builder builder2 = ImmutableBitSet.builder();
     builder2.set(2);
-    assertThat(builder2.buildAndReset().toString(), is("{2}"));
-    assertThat(builder2.buildAndReset().toString(), is("{}"));
+    assertThat(builder2.buildAndReset(), hasToString("{2}"));
+    assertThat(builder2.buildAndReset(), hasToString("{}"));
     builder2.set(151);
     builder2.set(3);
-    assertThat(builder2.buildAndReset().toString(), is("{3, 151}"));
+    assertThat(builder2.buildAndReset(), hasToString("{3, 151}"));
   }
 
   @Test void testNth() {

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.calcite.runtime;
-
 import org.apache.calcite.linq4j.MemoryFactory;
 import org.apache.calcite.test.Matchers;
 
@@ -30,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.object.HasToString.hasToString;
 
 /** Unit tests for {@link Automaton}. */
 class AutomatonTest {
@@ -47,7 +47,7 @@ class AutomatonTest {
   @Test void testSimple() {
     // pattern(a)
     final Pattern p = Pattern.builder().symbol("a").build();
-    assertThat(p.toString(), is("a"));
+    assertThat(p, hasToString("a"));
 
     final String[] rows = {"", "a", "", "a"};
     final Matcher<String> matcher =
@@ -63,7 +63,7 @@ class AutomatonTest {
     // pattern(a b)
     final Pattern p =
         Pattern.builder().symbol("a").symbol("b").seq().build();
-    assertThat(p.toString(), is("a b"));
+    assertThat(p, hasToString("a b"));
 
     final String[] rows = {"", "a", "", "ab", "a", "ab", "b", "b"};
     final Matcher<String> matcher =
@@ -80,7 +80,7 @@ class AutomatonTest {
     final Pattern p = Pattern.builder()
         .symbol("a").star()
         .symbol("b").seq().build();
-    assertThat(p.toString(), is("(a)* b"));
+    assertThat(p, hasToString("(a)* b"));
 
     final String[] rows = {"", "a", "", "b", "", "ab", "a", "ab", "b", "b"};
     final Matcher<String> matcher =
@@ -98,7 +98,7 @@ class AutomatonTest {
     final Pattern p = Pattern.builder()
         .symbol("a").plus()
         .symbol("b").seq().build();
-    assertThat(p.toString(), is("(a)+ b"));
+    assertThat(p, hasToString("(a)+ b"));
 
     final String[] rows = {"", "a", "", "b", "", "ab", "a", "ab", "b", "b"};
     final Matcher<String> matcher =
@@ -116,7 +116,7 @@ class AutomatonTest {
         .symbol("a")
         .symbol("b").or()
         .build();
-    assertThat(p.toString(), is("a|b"));
+    assertThat(p, hasToString("a|b"));
 
     final String[] rows = {"", "a", "", "b", "", "ab", "a", "ab", "b", "b"};
     final Matcher<String> matcher =
@@ -135,7 +135,7 @@ class AutomatonTest {
         .symbol("b").optional().seq()
         .symbol("c").seq()
         .build();
-    assertThat(p.toString(), is("a b? c"));
+    assertThat(p, hasToString("a b? c"));
 
     final String rows = "acabcabbc";
     final Matcher<Character> matcher =
@@ -171,7 +171,7 @@ class AutomatonTest {
         .symbol("b").repeat(minRepeat, maxRepeat).seq()
         .symbol("c").seq()
         .build();
-    assertThat(p.toString(), is(pattern));
+    assertThat(p, hasToString(pattern));
 
     final String rows = "acabcabbcabbbcabbbbcabdbc";
     final Matcher<Character> matcher =
@@ -191,7 +191,7 @@ class AutomatonTest {
         .repeat(1, 2).seq()
         .symbol("c").seq()
         .build();
-    assertThat(p.toString(), is("a (b a){1, 2} c"));
+    assertThat(p, hasToString("a (b a){1, 2} c"));
 
     final String rows = "acabcabbcabbbcabbbbcabdbcabacababcababac";
     final Matcher<Character> matcher =
@@ -210,7 +210,7 @@ class AutomatonTest {
         .symbol("A")
         .symbol("B").seq()
         .build();
-    assertThat(p.toString(), is("A B"));
+    assertThat(p, hasToString("A B"));
 
     final String[] rows = {"", "a", "ab", "a", "b"};
     final Matcher<String> matcher =

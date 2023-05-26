@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.sql.validate;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -70,7 +71,7 @@ class SqlValidatorUtilTest {
         assertThat(copyResultList.contains(lowerResult), is(false));
       }
     }
-    assertThat(copyResultList.size(), is(0));
+    assertThat(copyResultList, hasSize(0));
   }
 
   @Test void testUniquifyCaseSensitive() {

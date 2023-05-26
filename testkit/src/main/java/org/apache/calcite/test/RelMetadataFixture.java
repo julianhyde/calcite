@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.test;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -309,7 +310,7 @@ public class RelMetadataFixture {
       String expectedColumnName, boolean expectedDerived) {
     return checkColumnOrigin(result -> {
       assertNotNull(result);
-      assertThat(result.size(), is(1));
+      assertThat(result, hasSize(1));
       RelColumnOrigin rco = result.iterator().next();
       checkColumnOrigin(rco, expectedTableName, expectedColumnName,
           expectedDerived);
@@ -327,7 +328,7 @@ public class RelMetadataFixture {
         not(is(expectedTableName2)));
     return checkColumnOrigin(result -> {
       assertNotNull(result);
-      assertThat(result.size(), is(2));
+      assertThat(result, hasSize(2));
       for (RelColumnOrigin rco : result) {
         RelOptTable actualTable = rco.getOriginTable();
         List<String> actualTableName = actualTable.getQualifiedName();

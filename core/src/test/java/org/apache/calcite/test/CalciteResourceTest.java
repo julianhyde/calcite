@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.test;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -24,6 +23,7 @@ import java.util.Map;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 /**
  * Tests the generated implementation of
@@ -38,6 +38,6 @@ class CalciteResourceTest {
   @Test void testSqlstateProperty() {
     Map<String, String> props =
         RESOURCE.illegalIntervalLiteral("", "").getProperties();
-    assertThat(props.get("SQLSTATE"), CoreMatchers.equalTo("42000"));
+    assertThat(props.get("SQLSTATE"), is("42000"));
   }
 }

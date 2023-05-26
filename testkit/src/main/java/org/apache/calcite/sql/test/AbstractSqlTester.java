@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.sql.test;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -136,7 +137,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
           final RelDataType rowType =
               validator.getValidatedNodeType(n);
           final List<RelDataTypeField> fields = rowType.getFieldList();
-          assertThat("expected query to return 1 field", fields.size(), is(1));
+          assertThat("expected query to return 1 field", fields, hasSize(1));
           return fields.get(0).getType();
         });
   }

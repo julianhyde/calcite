@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.calcite.util.mapping;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 import com.google.common.collect.ImmutableMap;
 
