@@ -39,9 +39,9 @@ import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Tests generating Druid filters.

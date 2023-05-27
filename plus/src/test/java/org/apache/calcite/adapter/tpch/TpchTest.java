@@ -29,9 +29,9 @@ import org.junit.jupiter.api.Timeout;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNot.not;
-import static org.hamcrest.core.StringContains.containsString;
 
 /** Unit test for {@link org.apache.calcite.adapter.tpch.TpchSchema}.
  *

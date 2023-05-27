@@ -35,7 +35,7 @@ import org.apache.calcite.util.TestUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit test for {@link org.apache.calcite.rex.RexSqlStandardConvertletTable}.

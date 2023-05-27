@@ -37,8 +37,8 @@ import static org.apache.calcite.sql.type.SqlTypeUtil.convertTypeToSpec;
 import static org.apache.calcite.sql.type.SqlTypeUtil.equalAsCollectionSansNullability;
 import static org.apache.calcite.sql.type.SqlTypeUtil.equalAsMapSansNullability;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 /**
  * Test of {@link org.apache.calcite.sql.type.SqlTypeUtil}.

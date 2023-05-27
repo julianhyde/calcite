@@ -33,7 +33,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit tests for example user-defined functions.

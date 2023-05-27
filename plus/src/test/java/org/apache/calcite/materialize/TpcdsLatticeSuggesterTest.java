@@ -45,9 +45,9 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit tests for {@link LatticeSuggester}.

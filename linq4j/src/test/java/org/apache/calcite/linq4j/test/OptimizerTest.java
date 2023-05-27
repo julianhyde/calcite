@@ -39,8 +39,8 @@ import static org.apache.calcite.linq4j.test.BlockBuilderBase.TWO;
 import static org.apache.calcite.linq4j.test.BlockBuilderBase.bool;
 import static org.apache.calcite.linq4j.test.BlockBuilderBase.optimize;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**

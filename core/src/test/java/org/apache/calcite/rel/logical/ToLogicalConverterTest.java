@@ -48,8 +48,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.test.Matchers.hasTree;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 /**
  * Tests for {@link ToLogicalConverter}.

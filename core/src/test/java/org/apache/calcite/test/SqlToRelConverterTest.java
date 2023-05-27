@@ -64,11 +64,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.Is.isA;
-import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.Matchers.hasSize;
 
 /**
  * Unit test for {@link org.apache.calcite.sql2rel.SqlToRelConverter}.
@@ -2732,7 +2732,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     };
     calc.accept(visitor);
     assertThat(rels, hasSize(1));
-    assertThat(rels.get(0), isA(LogicalCalc.class));
+    assertThat(rels.get(0), instanceOf(LogicalCalc.class));
   }
 
   @Test void testRelShuttleForLogicalTableModify() {
@@ -2748,7 +2748,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     };
     rel.accept(visitor);
     assertThat(rels, hasSize(1));
-    assertThat(rels.get(0), isA(LogicalTableModify.class));
+    assertThat(rels.get(0), instanceOf(LogicalTableModify.class));
   }
 
   @Test void testOffset0() {

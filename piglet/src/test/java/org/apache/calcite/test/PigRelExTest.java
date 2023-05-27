@@ -27,9 +27,9 @@ import java.io.IOException;
 
 import static org.apache.calcite.test.Matchers.inTree;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.StringContains.containsString;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Tests for {@code PigRelExVisitor}.

@@ -35,10 +35,10 @@ import java.util.function.BiConsumer;
 
 import static org.apache.calcite.test.Matchers.isRangeSet;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.AnyOf.anyOf;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit test for {@link RangeSets} and other utilities relating to Guava

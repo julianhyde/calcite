@@ -30,10 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.Is.isA;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -324,14 +324,14 @@ class SqlTypeFactoryTest {
     final SqlTypeFixture f = new SqlTypeFixture();
 
     final RelDataType unknownType = f.typeFactory.createUnknownType();
-    assertThat(unknownType, isA(BasicSqlType.class));
+    assertThat(unknownType, instanceOf(BasicSqlType.class));
     assertThat(unknownType.getSqlTypeName(), is(SqlTypeName.UNKNOWN));
     assertFalse(unknownType.isNullable());
     assertThat(unknownType.getFullTypeString(), is("UNKNOWN NOT NULL"));
 
     final RelDataType nullableType =
         f.typeFactory.createTypeWithNullability(unknownType, true);
-    assertThat(nullableType, isA(BasicSqlType.class));
+    assertThat(nullableType, instanceOf(BasicSqlType.class));
     assertThat(nullableType.getSqlTypeName(), is(SqlTypeName.UNKNOWN));
     assertTrue(nullableType.isNullable());
     assertThat(nullableType.getFullTypeString(), is("UNKNOWN"));
@@ -339,7 +339,7 @@ class SqlTypeFactoryTest {
     final RelDataType unknownType2 =
         f.typeFactory.createTypeWithNullability(nullableType, false);
     assertThat(unknownType2, is(unknownType));
-    assertThat(unknownType2, isA(BasicSqlType.class));
+    assertThat(unknownType2, instanceOf(BasicSqlType.class));
     assertThat(unknownType2.getSqlTypeName(), is(SqlTypeName.UNKNOWN));
     assertFalse(unknownType2.isNullable());
     assertThat(unknownType2.getFullTypeString(), is("UNKNOWN NOT NULL"));

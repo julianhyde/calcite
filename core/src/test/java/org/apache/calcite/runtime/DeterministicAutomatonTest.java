@@ -17,9 +17,9 @@
 package org.apache.calcite.runtime;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.hasSize;
 
 /** Tests for the {@link DeterministicAutomaton}. */
 class DeterministicAutomatonTest {

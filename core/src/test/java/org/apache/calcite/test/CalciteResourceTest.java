@@ -22,8 +22,8 @@ import java.util.Map;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 /**
  * Tests the generated implementation of

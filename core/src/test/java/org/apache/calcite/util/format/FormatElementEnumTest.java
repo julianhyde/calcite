@@ -22,7 +22,7 @@ import java.time.Instant;
 import java.util.Date;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.object.HasToString.hasToString;
+import static org.hamcrest.Matchers.hasToString;
 
 /**
  * Unit test for {@link FormatElementEnum}.

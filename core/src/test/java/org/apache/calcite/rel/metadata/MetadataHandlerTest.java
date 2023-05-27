@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsArrayWithSize.emptyArray;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.emptyArray;
 
 /**
  * Tests for {@link MetadataHandler}.
