@@ -770,24 +770,24 @@ class EnumerablesTest {
 
   @Test void testNestedLoopFullJoinLeftEmpty() {
     assertThat(
-        EnumerableDefaults.nestedLoopJoin(EMPS.take(0), DEPTS, EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.FULL)
+        EnumerableDefaults.nestedLoopJoin(EMPS.take(0), DEPTS,
+                EMP_DEPT_EQUAL_DEPTNO, EMP_DEPT_TO_STRING, JoinType.FULL)
             .orderBy(Functions.identitySelector()).toList(),
         hasToString("[{null, null, 15, Marketing}, {null, null, 20, Sales}]"));
   }
 
   @Test void testNestedLoopFullJoinRightEmpty() {
     assertThat(
-        EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS.take(0), EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
+        EnumerableDefaults.nestedLoopJoin(EMPS, DEPTS.take(0),
+            EMP_DEPT_EQUAL_DEPTNO, EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
         hasToString("[{Fred, 10, null, null}, {Theodore, 20, null, null}, "
             + "{Sebastian, 20, null, null}, {Joe, 30, null, null}]"));
   }
 
   @Test void testNestedLoopFullJoinBothEmpty() {
     assertThat(
-        EnumerableDefaults.nestedLoopJoin(EMPS.take(0), DEPTS.take(0), EMP_DEPT_EQUAL_DEPTNO,
-            EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
+        EnumerableDefaults.nestedLoopJoin(EMPS.take(0), DEPTS.take(0),
+            EMP_DEPT_EQUAL_DEPTNO, EMP_DEPT_TO_STRING, JoinType.FULL).toList(),
         hasToString("[]"));
   }
 
@@ -1035,8 +1035,8 @@ class EnumerablesTest {
             INTEGER_ASC,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(10, Fred), Emp(20, Lilly), Emp(30, Joe), Emp(30, Greg), Emp(30, Theodore), Emp(40, Sebastian)]"));
+        hasToString("[Emp(10, Fred), Emp(20, Lilly), Emp(30, Joe), "
+            + "Emp(30, Greg), Emp(30, Theodore), Emp(40, Sebastian)]"));
   }
 
   @Test void testMergeUnionAllOrderByDeptAsc3inputs() {
@@ -1063,9 +1063,9 @@ class EnumerablesTest {
             INTEGER_ASC,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(10, Fred), Emp(15, Phyllis), Emp(18, Maddie), Emp(20, Lilly), Emp(22, Jenny),"
-                + " Emp(30, Joe), Emp(30, Greg), Emp(30, Joe), Emp(40, Sebastian), Emp(42, Susan)]"));
+        hasToString("[Emp(10, Fred), Emp(15, Phyllis), Emp(18, Maddie), "
+            + "Emp(20, Lilly), Emp(22, Jenny), Emp(30, Joe), Emp(30, Greg), "
+            + "Emp(30, Joe), Emp(40, Sebastian), Emp(42, Susan)]"));
   }
 
   @Test void testMergeUnionOrderByDeptAsc3inputs() {
@@ -1097,9 +1097,9 @@ class EnumerablesTest {
             INTEGER_ASC,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(10, Fred), Emp(15, Phyllis), Emp(18, Maddie), Emp(20, Lilly), Emp(22, Jenny),"
-                + " Emp(30, Joe), Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan)]"));
+        hasToString("[Emp(10, Fred), Emp(15, Phyllis), Emp(18, Maddie), "
+            + "Emp(20, Lilly), Emp(22, Jenny), Emp(30, Joe), Emp(30, Greg), "
+            + "Emp(40, Sebastian), Emp(42, Susan)]"));
   }
 
   @Test void testMergeUnionAllOrderByDeptDesc2inputs() {
@@ -1120,8 +1120,8 @@ class EnumerablesTest {
             INTEGER_DESC,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(50, Fred), Emp(42, Lilly), Emp(30, Joe), Emp(30, Greg), Emp(30, Theodore), Emp(10, Sebastian)]"));
+        hasToString("[Emp(50, Fred), Emp(42, Lilly), Emp(30, Joe), "
+            + "Emp(30, Greg), Emp(30, Theodore), Emp(10, Sebastian)]"));
   }
 
   @Test void testMergeUnionAllOrderByDeptDesc3inputs() {
@@ -1150,9 +1150,10 @@ class EnumerablesTest {
             INTEGER_DESC,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(50, Fred), Emp(45, Phyllis), Emp(42, Maddie), Emp(35, Lilly), Emp(22, Jenny),"
-                + " Emp(22, Jenny), Emp(22, Jenny), Emp(20, Joe), Emp(20, Greg), Emp(20, Theodore), Emp(15, Sebastian), Emp(12, Susan)]"));
+        hasToString("[Emp(50, Fred), Emp(45, Phyllis), Emp(42, Maddie), "
+            + "Emp(35, Lilly), Emp(22, Jenny), Emp(22, Jenny), "
+            + "Emp(22, Jenny), Emp(20, Joe), Emp(20, Greg), "
+            + "Emp(20, Theodore), Emp(15, Sebastian), Emp(12, Susan)]"));
   }
 
   @Test void testMergeUnionOrderByDeptDesc3inputs() {
@@ -1183,9 +1184,9 @@ class EnumerablesTest {
             INTEGER_DESC,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(50, Fred), Emp(45, Phyllis), Emp(42, Maddie), Emp(35, Lilly), Emp(22, Jenny),"
-                + " Emp(20, Joe), Emp(20, Greg), Emp(20, Theodore), Emp(15, Sebastian), Emp(12, Susan)]"));
+        hasToString("[Emp(50, Fred), Emp(45, Phyllis), Emp(42, Maddie), "
+            + "Emp(35, Lilly), Emp(22, Jenny), Emp(20, Joe), Emp(20, Greg), "
+            + "Emp(20, Theodore), Emp(15, Sebastian), Emp(12, Susan)]"));
   }
 
   @Test void testMergeUnionAllOrderByNameAscNullsFirst() {
@@ -1206,8 +1207,8 @@ class EnumerablesTest {
             STRING_ASC_NULLS_FIRST,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(20, null), Emp(10, null), Emp(20, null), Emp(30, Greg), Emp(30, Sebastian), Emp(10, Theodore)]"));
+        hasToString("[Emp(20, null), Emp(10, null), Emp(20, null), "
+            + "Emp(30, Greg), Emp(30, Sebastian), Emp(10, Theodore)]"));
   }
 
   @Test void testMergeUnionOrderByNameAscNullsFirst() {
@@ -1228,8 +1229,8 @@ class EnumerablesTest {
             STRING_ASC_NULLS_FIRST,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(20, null), Emp(10, null), Emp(30, Greg), Emp(30, Sebastian), Emp(10, Theodore)]"));
+        hasToString("[Emp(20, null), Emp(10, null), Emp(30, Greg), "
+            + "Emp(30, Sebastian), Emp(10, Theodore)]"));
   }
 
   @Test void testMergeUnionAllOrderByNameDescNullsFirst() {
@@ -1250,8 +1251,8 @@ class EnumerablesTest {
             STRING_DESC_NULLS_FIRST,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(20, null), Emp(10, null), Emp(20, null), Emp(30, Theodore), Emp(10, Sebastian), Emp(30, Greg)]"));
+        hasToString("[Emp(20, null), Emp(10, null), Emp(20, null), "
+            + "Emp(30, Theodore), Emp(10, Sebastian), Emp(30, Greg)]"));
   }
 
   @Test void testMergeUnionOrderByNameDescNullsFirst() {
@@ -1272,8 +1273,8 @@ class EnumerablesTest {
             STRING_DESC_NULLS_FIRST,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(20, null), Emp(10, null), Emp(30, Theodore), Emp(10, Sebastian), Emp(30, Greg)]"));
+        hasToString("[Emp(20, null), Emp(10, null), Emp(30, Theodore), "
+            + "Emp(10, Sebastian), Emp(30, Greg)]"));
   }
 
   @Test void testMergeUnionAllOrderByNameAscNullsLast() {
@@ -1295,8 +1296,9 @@ class EnumerablesTest {
             STRING_ASC_NULLS_LAST,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(20, Greg), Emp(20, Greg), Emp(30, Sebastian), Emp(30, Theodore), Emp(10, null), Emp(30, null), Emp(10, null)]"));
+        hasToString("[Emp(20, Greg), Emp(20, Greg), Emp(30, Sebastian), "
+            + "Emp(30, Theodore), Emp(10, null), Emp(30, null), "
+            + "Emp(10, null)]"));
   }
 
   @Test void testMergeUnionOrderByNameAscNullsLast() {
@@ -1318,8 +1320,8 @@ class EnumerablesTest {
             STRING_ASC_NULLS_LAST,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(20, Greg), Emp(30, Sebastian), Emp(30, Theodore), Emp(10, null), Emp(30, null)]"));
+        hasToString("[Emp(20, Greg), Emp(30, Sebastian), "
+            + "Emp(30, Theodore), Emp(10, null), Emp(30, null)]"));
   }
 
   @Test void testMergeUnionAllOrderByNameDescNullsLast() {
@@ -1341,8 +1343,8 @@ class EnumerablesTest {
             STRING_DESC_NULLS_LAST,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(30, Theodore), Emp(30, Sebastian), Emp(20, Greg), Emp(20, Greg), Emp(10, null), Emp(30, null), Emp(10, null)]"));
+        hasToString("[Emp(30, Theodore), Emp(30, Sebastian), Emp(20, Greg), "
+            + "Emp(20, Greg), Emp(10, null), Emp(30, null), Emp(10, null)]"));
   }
 
   @Test void testMergeUnionOrderByNameDescNullsLast() {
@@ -1364,8 +1366,8 @@ class EnumerablesTest {
             STRING_DESC_NULLS_LAST,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(30, Theodore), Emp(30, Sebastian), Emp(20, Greg), Emp(10, null), Emp(30, null)]"));
+        hasToString("[Emp(30, Theodore), Emp(30, Sebastian), Emp(20, Greg), "
+            + "Emp(10, null), Emp(30, null)]"));
   }
 
   @Test void testMergeUnionAllOrderByDeptAscNameDescNullsFirst() {
@@ -1401,10 +1403,12 @@ class EnumerablesTest {
             DEPT_ASC_AND_NAME_DESC_NULLS_FIRST,
             true,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(10, null), Emp(10, Fred), Emp(20, null), Emp(20, Lilly), Emp(20, Lilly), Emp(20, Lilly),"
-                + " Emp(20, Antoine), Emp(20, Annie), Emp(22, null), Emp(22, null), Emp(22, Jenny),"
-                + " Emp(30, Joe), Emp(30, Joe), Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan), Emp(50, Lolly)]"));
+        hasToString("[Emp(10, null), Emp(10, Fred), Emp(20, null), "
+            + "Emp(20, Lilly), Emp(20, Lilly), Emp(20, Lilly), "
+            + "Emp(20, Antoine), Emp(20, Annie), Emp(22, null), "
+            + "Emp(22, null), Emp(22, Jenny), Emp(30, Joe), Emp(30, Joe), "
+            + "Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan), "
+            + "Emp(50, Lolly)]"));
   }
 
   @Test void testMergeUnionOrderByDeptAscNameDescNullsFirst() {
@@ -1440,10 +1444,10 @@ class EnumerablesTest {
             DEPT_ASC_AND_NAME_DESC_NULLS_FIRST,
             false,
             EMP_EQUALITY_COMPARER).toList(),
-        hasToString(
-            "[Emp(10, null), Emp(10, Fred), Emp(20, null), Emp(20, Lilly),"
-                + " Emp(20, Antoine), Emp(20, Annie), Emp(22, null), Emp(22, Jenny),"
-                + " Emp(30, Joe), Emp(30, Greg), Emp(40, Sebastian), Emp(42, Susan), Emp(50, Lolly)]"));
+        hasToString("[Emp(10, null), Emp(10, Fred), Emp(20, null), "
+            + "Emp(20, Lilly), Emp(20, Antoine), Emp(20, Annie), "
+            + "Emp(22, null), Emp(22, Jenny), Emp(30, Joe), Emp(30, Greg), "
+            + "Emp(40, Sebastian), Emp(42, Susan), Emp(50, Lolly)]"));
   }
 
   private static final Comparator<Integer> INTEGER_ASC = Integer::compare;
