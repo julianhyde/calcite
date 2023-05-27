@@ -54,9 +54,9 @@ import static org.apache.calcite.sql.SqlFunctionCategory.USER_DEFINED_SPECIFIC_F
 import static org.apache.calcite.sql.SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION;
 import static org.apache.calcite.sql.SqlFunctionCategory.USER_DEFINED_TABLE_SPECIFIC_FUNCTION;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 /**
  * Test for lookupOperatorOverloads() in {@link CalciteCatalogReader}.

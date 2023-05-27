@@ -28,8 +28,8 @@ import static org.apache.calcite.rel.metadata.RelMdUtil.numDistinctVals;
 import static org.apache.calcite.test.Matchers.within;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.number.OrderingComparison.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**

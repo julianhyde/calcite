@@ -29,8 +29,8 @@ import java.util.Arrays;
 
 import static org.apache.calcite.rel.RelDistributions.ANY;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 /**
  * Tests for {@link RelDistribution}.

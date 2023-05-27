@@ -49,7 +49,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  * Matchers for testing SQL queries.

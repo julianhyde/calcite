@@ -40,8 +40,8 @@ import static org.apache.calcite.sql.test.SqlTester.ParameterChecker;
 import static org.apache.calcite.sql.test.SqlTester.ResultChecker;
 import static org.apache.calcite.sql.test.SqlTester.TypeChecker;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.fail;
 

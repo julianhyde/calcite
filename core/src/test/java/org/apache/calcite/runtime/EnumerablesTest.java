@@ -39,9 +39,9 @@ import java.util.Objects;
 
 import static com.google.common.collect.Lists.newArrayList;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasToString;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.object.HasToString.hasToString;
 
 /**
  * Unit tests for {@link org.apache.calcite.runtime.Enumerables}.

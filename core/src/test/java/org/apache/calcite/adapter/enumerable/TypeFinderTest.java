@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Test for

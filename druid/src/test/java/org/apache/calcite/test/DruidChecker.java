@@ -21,9 +21,9 @@ import org.apache.calcite.adapter.druid.DruidQuery;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * A consumer that checks that a particular Druid query is generated to implement a query.

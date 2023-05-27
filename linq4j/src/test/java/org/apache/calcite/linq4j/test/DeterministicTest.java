@@ -39,9 +39,9 @@ import static org.apache.calcite.linq4j.test.BlockBuilderBase.TWO;
 import static org.apache.calcite.linq4j.test.BlockBuilderBase.optimize;
 import static org.apache.calcite.linq4j.test.BlockBuilderBase.optimizeExpression;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  * Tests factoring out deterministic expressions.

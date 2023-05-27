@@ -62,8 +62,8 @@ import java.util.Map;
 
 import static org.apache.calcite.test.Matchers.hasTree;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 /**
  * Testing Elasticsearch match query.

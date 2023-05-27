@@ -45,10 +45,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.function.UnaryOperator;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Tests the application of the {@link SortRemoveRule}.

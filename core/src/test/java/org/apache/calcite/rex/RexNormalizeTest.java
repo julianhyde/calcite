@@ -19,8 +19,8 @@ package org.apache.calcite.rex;
 import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /** Test cases for {@link RexNormalize}. */
 class RexNormalizeTest extends RexProgramTestBase {

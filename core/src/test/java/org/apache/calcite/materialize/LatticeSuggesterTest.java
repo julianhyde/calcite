@@ -55,11 +55,11 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.object.HasToString.hasToString;
 
 /**

@@ -35,9 +35,9 @@ import static org.apache.calcite.rel.RelFieldCollation.Direction.DESCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.STRICTLY_ASCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.STRICTLY_DESCENDING;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  * Tests for {@link RelCollation} and {@link RelFieldCollation}.

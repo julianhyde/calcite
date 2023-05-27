@@ -28,9 +28,9 @@ import org.hamcrest.Matcher;
 
 import java.util.Objects;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasToString;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.object.HasToString.hasToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Base class for tests of {@link RexProgram}. */

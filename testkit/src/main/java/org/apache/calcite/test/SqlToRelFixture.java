@@ -34,9 +34,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.StringContains.containsString;
 
 import static java.util.Objects.requireNonNull;
 

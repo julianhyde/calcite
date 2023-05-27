@@ -36,8 +36,8 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.object.HasToString.hasToString;
 
 /**
