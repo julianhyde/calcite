@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 
-import org.hamcrest.FeatureMatcher;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
 import java.nio.LongBuffer;
@@ -47,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -189,16 +188,6 @@ class ImmutableBitSetTest {
     for (int[] array : arrays) {
       assertThat(ImmutableBitSet.of(array).toArray(), equalTo(array));
     }
-  }
-
-  /** Returns a Matcher that checks {@link ImmutableBitSet#size()}. */
-  private static Matcher<ImmutableBitSet> isIbsWithSize(int expectedSize) {
-    return new FeatureMatcher<ImmutableBitSet, Integer>(is(expectedSize),
-        "ImmutableBitSet", "size") {
-      @Override protected Integer featureValueOf(ImmutableBitSet actual) {
-        return actual.size();
-      }
-    };
   }
 
   /**
