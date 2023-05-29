@@ -164,10 +164,9 @@ public class RexNormalize {
             && SqlTypeUtil.equalSansNullability(operand0.getType(), operand1.getType());
   }
 
-  /** Compute a hash that is symmetric in its arguments - that is a hash
-   *  where the order of appearance of elements does not matter.
-   *  This is useful for hashing symmetrical rex calls, for example.
-   */
+  /** Computes a hash that is symmetric in its arguments - that is, a hash
+   * where the order of appearance of elements does not matter.
+   * This is useful for hashing symmetrical rex calls, for example. */
   private static int unorderedHash(List<?> xs) {
     int a = 0;
     int b = 0;

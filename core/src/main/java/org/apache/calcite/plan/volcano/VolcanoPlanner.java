@@ -103,7 +103,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    *
    * <p>Any operand can be an 'entry point' to a rule call, when a RelNode is
    * registered which matches the operand. This map allows us to narrow down
-   * operands based on the class of the RelNode.</p>
+   * operands based on the class of the RelNode.
    */
   private final Multimap<Class<? extends RelNode>, RelOptRuleOperand>
       classOperands = LinkedListMultimap.create();
@@ -128,7 +128,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * {@link RelSet} objects. Most {@link RelNode} objects are identified by
    * their digest, which involves the set that their child relational
    * expressions belong to. If those children belong to the same set, we have
-   * to be careful, otherwise it gets incestuous.</p>
+   * to be careful, otherwise it gets incestuous.
    */
   private final IdentityHashMap<RelNode, RelSubset> mapRel2Subset =
       new IdentityHashMap<>();
@@ -254,7 +254,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * Enable or disable top-down optimization.
    *
    * <p>Note: Enabling top-down optimization will automatically enable
-   * top-down trait propagation.</p>
+   * top-down trait propagation.
    */
   public void setTopDownOpt(boolean value) {
     if (topDownOpt == value) {

@@ -71,10 +71,13 @@ class EmbeddedElasticsearchNode implements AutoCloseable {
   }
 
   /**
-   * Creates elastic node as single member of a cluster. Node will not be started
-   * unless {@link #start()} is explicitly called.
-   * <p>Need {@code synchronized} because of static caches inside ES (which are not thread safe).
-   * @return instance which needs to be explicitly started (using {@link #start()})
+   * Creates elastic node as single member of a cluster. Node will not
+   * be started unless {@link #start()} is explicitly called.
+   *
+   * <p>Need {@code synchronized} because of static caches inside ES
+   * (which are not thread safe).
+   *
+   * @return instance; needs to be explicitly started using {@link #start()}
    */
   public static synchronized EmbeddedElasticsearchNode create() {
     File data;

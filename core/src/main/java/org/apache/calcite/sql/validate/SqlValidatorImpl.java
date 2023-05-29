@@ -5029,7 +5029,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   /** Returns whether a query uses {@code DEFAULT} to populate a given
-   *  column. */
+   * column. */
   private static boolean isValuesWithDefault(SqlNode source, int column) {
     switch (source.getKind()) {
     case VALUES:
@@ -7482,15 +7482,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * For example:
      *
      * <blockquote><pre>{@code
-     *  SELECT a + a as twoA
-     *  GROUP BY twoA
+     * SELECT a + a as twoA
+     * GROUP BY twoA
      * }</pre></blockquote>
      *
      * <p>turns into
      *
      * <blockquote><pre>{@code
-     *  SELECT a + a as twoA
-     *  GROUP BY a + a
+     * SELECT a + a as twoA
+     * GROUP BY a + a
      * }</pre></blockquote>
      *
      * <p>This is determined both by the clause and the config.

@@ -116,7 +116,7 @@ public class Graphs {
      * Returns an iterator of all paths between two nodes,
      * in non-decreasing order of path lengths.
      *
-     * <p>The current implementation is not optimal.</p>
+     * <p>The current implementation is not optimal.
      */
     public List<List<V>> getPaths(V from, V to) {
       List<List<V>> list = new ArrayList<>();

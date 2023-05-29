@@ -530,7 +530,7 @@ public abstract class SqlImplementor {
   }
 
   /** Wraps a node in a SELECT statement that has no clauses:
-   *  "SELECT ... FROM (node)". */
+   * "SELECT ... FROM (node)". */
   SqlSelect wrapSelect(SqlNode node) {
     assert node instanceof SqlJoin
         || node instanceof SqlIdentifier

@@ -1603,7 +1603,7 @@ public class RexUtil {
    * would be considered "flat".
    *
    * <p>For example, {@code isFlat([w, AND[x, y], z, AND)} returns false;
-   * <p>{@code isFlat([w, x, y, z], AND)} returns true.</p>
+   * {@code isFlat([w, x, y, z], AND)} returns true.
    */
   private static boolean isFlat(
       List<? extends RexNode> exprs, final SqlOperator op) {
@@ -1959,7 +1959,7 @@ public class RexUtil {
    * Simplifies a boolean expression,
    * using the default executor.
    *
-   * <p>In particular:</p>
+   * <p>In particular:
    * <ul>
    * <li>{@code simplify(x = 1 AND y = 2 AND NOT x = 1)}
    * returns {@code y = 2}</li>

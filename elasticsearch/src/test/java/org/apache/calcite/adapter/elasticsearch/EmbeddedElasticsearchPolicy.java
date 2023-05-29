@@ -38,28 +38,30 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Used to initialize a single elastic node. For performance reasons (node startup costs),
- * same instance is shared across multiple tests (Elasticsearch does not allow multiple
- * instances per JVM).
+ * Used to initialize a single elastic node. For performance reasons
+ * (node startup costs), same instance is shared across multiple tests
+ * (Elasticsearch does not allow multiple instances per JVM).
  *
  * <p>This rule should be used as follows:
  * <pre>
- *  public class MyTest {
- *    public static final EmbeddedElasticsearchPolicy RULE = EmbeddedElasticsearchPolicy.create();
+ * public class MyTest {
+ *   public static final EmbeddedElasticsearchPolicy RULE =
+ *       EmbeddedElasticsearchPolicy.create();
  *
- *    &#64;BeforeClass
- *    public static void setup() {
- *       // ... populate instance
- *       // The collections must have different names so the tests could be executed concurrently
- *    }
+ *   &#64;BeforeClass
+ *   public static void setup() {
+ *      // ... populate instance
+ *      // The collections must have different names so the tests could be
+ *      // executed concurrently
+ *   }
  *
- *    &#64;Test
- *    public void myTest() {
- *      RestClient client = RULE.restClient();
- *      // ....
- *    }
- *  }
- *  </pre>
+ *   &#64;Test
+ *   public void myTest() {
+ *     RestClient client = RULE.restClient();
+ *     // ....
+ *   }
+ * }
+ * </pre>
  */
 class EmbeddedElasticsearchPolicy {
 
@@ -93,16 +95,15 @@ class EmbeddedElasticsearchPolicy {
   }
 
   /**
-   * Creates index in elastic search given a mapping. Mapping can contain nested fields expressed
-   * as dots({@code .}).
+   * Creates index in Elasticsearch given a mapping. Mapping can
+   * contain nested fields expressed as dots({@code .}).
    *
-   * <p>Example
-   * <pre>
-   *  {@code
+   * <p>Example:
+   *
+   * <pre>{@code
    *     b.a: long
    *     b.b: keyword
-   *  }
-   * </pre>
+   * }</pre>
    *
    * @param index index of the index
    * @param mapping field and field type mapping
@@ -133,13 +134,12 @@ class EmbeddedElasticsearchPolicy {
    * Creates alias in elastic search given an index.
    * as dots({@code .}).
    *
-   * <p>Example
-   * <pre>
-   *  {@code
+   * <p>Example:
+   *
+   * <pre>{@code
    *     b.a: long
    *     b.b: keyword
-   *  }
-   * </pre>
+   * }</pre>
    *
    * @param index index of the index
    * @param alias alias of the index

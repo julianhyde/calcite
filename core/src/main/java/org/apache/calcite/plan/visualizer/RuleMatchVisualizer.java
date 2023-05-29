@@ -377,8 +377,8 @@ public class RuleMatchVisualizer implements RelOptListener {
 
   /**
    * Writes the HTML and JS files of the rule match visualization.
-   * <p>
-   * The old files with the same name will be replaced.
+   *
+   * <p>The old files with the same name will be replaced.
    */
   public void writeToFile() {
     if (outputDirectory == null || outputSuffix == null) {
