@@ -175,9 +175,8 @@ public class TypeCoercionImpl extends AbstractTypeCoercion {
     return coerced;
   }
 
-  /**
-   * For NUMERIC and STRING operands, cast STRING to data type of the other operand.
-   **/
+  /** For NUMERIC and STRING operands, cast STRING to data type of the other
+   * operand. */
   protected boolean binaryArithmeticWithStrings(
       SqlCallBinding binding,
       RelDataType left,

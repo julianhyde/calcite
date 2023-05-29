@@ -514,6 +514,7 @@ public abstract class RexProgramBuilderBase {
   /**
    * Creates {@code nullable boolean variable} with index of 0.
    * If you need several distinct variables, use {@link #vBool(int)}
+   *
    * @return nullable boolean variable with index of 0
    */
   protected RexNode vBool() {

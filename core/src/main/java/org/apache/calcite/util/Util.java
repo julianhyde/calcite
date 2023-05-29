@@ -747,6 +747,7 @@ public class Util {
 
   /**
    * Returns true when input string is a valid Java identifier.
+   *
    * @param s input string
    * @return true when input string is a valid Java identifier
    */
@@ -1004,6 +1005,7 @@ public class Util {
 
   /**
    * Returns cause of the given throwable if it is non-null or the throwable itself.
+   *
    * @param throwable input throwable
    * @return cause of the given throwable if it is non-null or the throwable itself
    */

@@ -960,6 +960,7 @@ public interface SqlValidator {
     }
 
     /** Returns the SQL conformance.
+     *
      * @deprecated Use {@link #conformance()} */
     @Deprecated // to be removed before 2.0
     default SqlConformance sqlConformance() {
@@ -970,6 +971,7 @@ public interface SqlValidator {
     Config withConformance(SqlConformance conformance);
 
     /** Sets the SQL conformance of the validator.
+     *
      * @deprecated Use {@link #conformance()} */
     @Deprecated // to be removed before 2.0
     default Config withSqlConformance(SqlConformance conformance) {

@@ -460,6 +460,7 @@ public abstract class CalciteSchema {
 
   /** Returns a subset of a map whose keys match the given string
    * case-insensitively.
+   *
    * @deprecated use NameMap
    */
   @Deprecated // to be removed before 2.0
@@ -470,6 +471,7 @@ public abstract class CalciteSchema {
 
   /** Returns a subset of a set whose values match the given string
    * case-insensitively.
+   *
    * @deprecated use NameSet
    */
   @Deprecated // to be removed before 2.0

@@ -154,7 +154,7 @@ public class RexNormalize {
     return x != 0 ? x : operand1.hashCode() - operand0.hashCode();
   }
 
-  /** Returns whether a call is symmetrical. **/
+  /** Returns whether a call is symmetrical. */
   private static boolean isSymmetricalCall(
       SqlOperator operator,
       RexNode operand0,

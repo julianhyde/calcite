@@ -39,22 +39,26 @@ public interface WinAggImplementor extends AggImplementor {
   enum SeekType {
     /**
      * Start of window.
+     *
      * @see WinAggFrameContext#startIndex()
      */
     START,
     /**
      * Row position in the frame.
+     *
      * @see WinAggFrameContext#index()
      */
     SET,
     /**
      * The index of row that is aggregated.
      * Valid only in {@link WinAggAddContext}.
+     *
      * @see WinAggAddContext#currentPosition()
      */
     AGG_INDEX,
     /**
      * End of window.
+     *
      * @see WinAggFrameContext#endIndex()
      */
     END

@@ -2147,6 +2147,7 @@ public abstract class EnumerableDefaults {
   /**
    * Joins two inputs that are sorted on the key.
    * Inputs must sorted in ascending order, nulls last.
+   *
    * @deprecated Use {@link #mergeJoin(Enumerable, Enumerable, Function1, Function1, Function2, JoinType, Comparator)}
    */
   @Deprecated // to be removed before 2.0
@@ -2668,6 +2669,7 @@ public abstract class EnumerableDefaults {
 
   /**
    * A sort implementation optimized for a sort with a fetch size (LIMIT).
+   *
    * @param offset how many rows are skipped from the sorted output.
    *               Must be greater than or equal to 0.
    * @param fetch how many rows are retrieved. Must be greater than or equal to 0.
@@ -4371,6 +4373,7 @@ public abstract class EnumerableDefaults {
      * Clears {@code left} list, adds {@code left} into it, and advance left enumerator,
      * adding all items with the same key to {@code left} list too, until left enumerator
      * is over or a different key is found.
+     *
      * @return {@code true} if there are still elements to be processed on the left enumerator,
      * {@code false} otherwise (left enumerator is over or null key is found).
      */
@@ -4403,6 +4406,7 @@ public abstract class EnumerableDefaults {
      * Clears {@code right} list, adds {@code right} into it, and advance right enumerator,
      * adding all items with the same key to {@code right} list too, until right enumerator
      * is over or a different key is found.
+     *
      * @return {@code true} if there are still elements to be processed on the right enumerator,
      * {@code false} otherwise (right enumerator is over or null key is found).
      */

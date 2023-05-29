@@ -508,6 +508,7 @@ public class RelMdPredicates
    * Returns the
    * {@link BuiltInMetadata.Predicates#getPredicates()}
    * statistic.
+   *
    * @see RelMetadataQuery#getPulledUpPredicates(RelNode) */
   public RelOptPredicateList getPredicates(RelSubset r,
       RelMetadataQuery mq) {

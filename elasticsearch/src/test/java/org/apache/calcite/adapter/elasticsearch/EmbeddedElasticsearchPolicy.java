@@ -38,9 +38,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Used to initialize a single elastic node. For performance reasons
- * (node startup costs), same instance is shared across multiple tests
- * (Elasticsearch does not allow multiple instances per JVM).
+ * Used to initialize a single Elasticsearch node. For performance reasons (node
+ * startup costs), same instance is shared across multiple tests (Elasticsearch
+ * does not allow multiple instances per JVM).
  *
  * <p>This rule should be used as follows:
  * <pre>
@@ -88,6 +88,7 @@ class EmbeddedElasticsearchPolicy {
 
   /**
    * Factory method to create this rule.
+   *
    * @return managed resource to be used in unit tests
    */
   public static EmbeddedElasticsearchPolicy create() {
@@ -220,6 +221,7 @@ class EmbeddedElasticsearchPolicy {
 
   /**
    * Exposes Jackson API to be used to parse search results.
+   *
    * @return existing instance of ObjectMapper
    */
   ObjectMapper mapper() {
@@ -227,7 +229,9 @@ class EmbeddedElasticsearchPolicy {
   }
 
   /**
-   * Low-level http rest client connected to current embedded elastic search instance.
+   * Low-level http rest client connected to current embedded Elasticsearch
+   * instance.
+   *
    * @return http client connected to ES cluster
    */
   RestClient restClient() {
@@ -252,6 +256,7 @@ class EmbeddedElasticsearchPolicy {
 
   /**
    * HTTP address for rest clients (can be ES native or any other).
+   *
    * @return http address to connect to
    */
   private TransportAddress httpAddress() {

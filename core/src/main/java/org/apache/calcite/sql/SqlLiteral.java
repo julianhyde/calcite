@@ -527,6 +527,7 @@ public class SqlLiteral extends SqlNode {
   /**
    * Converts a chained string literals into regular literals; returns regular
    * literals unchanged.
+   *
    * @throws IllegalArgumentException if {@code node} is not a string literal
    * and cannot be unchained.
    */

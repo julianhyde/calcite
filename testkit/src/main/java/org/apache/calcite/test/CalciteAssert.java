@@ -157,7 +157,7 @@ public class CalciteAssert {
    * Which database to use for tests that require a JDBC data source.
    *
    * @see CalciteSystemProperty#TEST_DB
-   **/
+   */
   public static final DatabaseInstance DB =
       DatabaseInstance.valueOf(CalciteSystemProperty.TEST_DB.value());
 
@@ -1172,7 +1172,7 @@ public class CalciteAssert {
       return with(connectionFactory.with(property, value));
     }
 
-    /** Sets the Lex property. **/
+    /** Sets the Lex property. */
     public AssertThat with(Lex lex) {
       return with(CalciteConnectionProperty.LEX, lex);
     }

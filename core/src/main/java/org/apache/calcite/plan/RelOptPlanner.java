@@ -304,6 +304,7 @@ public interface RelOptPlanner {
    * <p>When a node is pruned, the related pending rule
    * calls are cancelled, and future rules will not fire.
    * This can be used to reduce the search space.
+   *
    * @param rel the node to prune.
    */
   void prune(RelNode rel);

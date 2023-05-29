@@ -84,6 +84,7 @@ public class SqlUserDefinedFunction extends SqlFunction {
 
   /**
    * Returns function that implements given operator call.
+   *
    * @return function that implements given operator call
    */
   public Function getFunction() {

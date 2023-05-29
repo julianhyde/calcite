@@ -1461,6 +1461,7 @@ public abstract class RelOptUtil {
   /**
    * Returns {@link SqlOperator} for given {@link SqlKind} or returns {@code operator}
    * when {@link SqlKind} is not known.
+   *
    * @param kind input kind
    * @param operator default operator value
    * @return SqlOperator for the given kind

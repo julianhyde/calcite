@@ -130,6 +130,7 @@ public class Graphs {
 
     /**
      * Returns the shortest distance between two points, -1, if there is no path.
+     *
      * @param from From
      * @param to To
      * @return The shortest distance, -1, if there is no path.

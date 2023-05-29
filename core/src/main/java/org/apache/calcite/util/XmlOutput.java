@@ -246,6 +246,7 @@ public class XmlOutput {
    * Completes a tag.  This outputs the end tag corresponding to the
    * last exposed beginTag.  The tag name must match the name of the
    * corresponding beginTag.
+   *
    * @param tagName the name of the end tag to write.
    */
   public void endTag(String tagName) {
@@ -475,6 +476,7 @@ public class XmlOutput {
    * Encode a String for XML output, displaying it to a PrintWriter.
    * The String to be encoded is displayed, except that
    * special characters are converted into entities.
+   *
    * @param input a String to convert.
    * @param out a PrintWriter to which to write the results.
    */

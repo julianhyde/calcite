@@ -1645,6 +1645,7 @@ public class RexUtil {
    *
    * <p>The implementation of this method does not return false positives.
    * However, it is not complete.
+   *
    * @param node input node to verify if it represents a loss-less cast
    * @return true iff the node is a loss-less cast
    */
@@ -1666,6 +1667,7 @@ public class RexUtil {
    *
    * <p>The implementation of this method does not return false positives.
    * However, it is not complete.
+   *
    * @param source source type
    * @param target target type
    * @return true iff the conversion is a loss-less cast

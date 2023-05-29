@@ -118,6 +118,7 @@ class EmbeddedElasticsearchNode implements AutoCloseable {
 
   /**
    * Returns current address to connect to with HTTP client.
+   *
    * @return hostname/port for HTTP connection
    */
   public TransportAddress httpAddress() {
