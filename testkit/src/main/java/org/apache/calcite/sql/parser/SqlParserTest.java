@@ -761,6 +761,8 @@ public class SqlParserTest {
             + "FROM `T`");
   }
 
+  /** Tests BigQuery's variant of PERCENTILE_CONT, which uses OVER rather than
+   * WITHIN GROUP, and allows RESPECT/IGNORE NULLS inside the parentheses. */
   @Test void testPercentileContBigQuery() {
     sql("select percentile_cont(x, .5) over() from unnest(array[1,2,3,4]) as x")
         .withDialect(BIG_QUERY)
@@ -776,6 +778,8 @@ public class SqlParserTest {
             + "FROM UNNEST((ARRAY[1, NULL, 3, 4])) AS x");
   }
 
+  /** Tests BigQuery's variant of PERCENTILE_DISC, which uses OVER rather than
+   * WITHIN GROUP, and allows RESPECT/IGNORE NULLS inside the parentheses. */
   @Test void testPercentileDiscBigQuery() {
     sql("select percentile_disc(x, .5) over() from unnest(array[1,2,3,4]) as x")
         .withDialect(BIG_QUERY)

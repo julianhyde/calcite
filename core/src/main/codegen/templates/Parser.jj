@@ -4057,16 +4057,17 @@ SqlCall StringAggFunctionCall() :
 }
 
 /**
-* Parses both the standard and the BigQuery PERCENTILE_CONT/PERCENTILE_DISC functions.
-* The standard is of the form "PERCENTILE_CONT(fraction)" while BigQuery is of the form
-* "PERCENTILE_CONT(value, fraction [ {RESPECT | IGNORE} NULLS ] )". Handles the parsing
-* of the operator and its operands but not the WITHIN GROUP (for the standard) or OVER
-* (for BigQuery) clauses.
-*/
+ * Parses both the standard and the BigQuery PERCENTILE_CONT/PERCENTILE_DISC
+ * functions.
+ *
+ * <p>The standard is of the form "PERCENTILE_CONT(fraction)" while BigQuery is
+ * of the form "PERCENTILE_CONT(value, fraction [ {RESPECT | IGNORE} NULLS ] )".
+ * Handles the parsing of the operator and its operands but not the WITHIN GROUP
+ * (for the standard) or OVER (for BigQuery) clauses.
+ */
 SqlCall PercentileFunctionCall() :
 {
    final Span s;
-   final boolean isCont;
    SqlOperator op;
    final SqlNode e;
    final List<SqlNode> args = new ArrayList<SqlNode>();
@@ -4074,18 +4075,14 @@ SqlCall PercentileFunctionCall() :
 }
 {
    (
-       <PERCENTILE_CONT> { s = span(); isCont = true; }
-   |   <PERCENTILE_DISC> { s = span(); isCont = false; }
+       <PERCENTILE_CONT> { op = SqlStdOperatorTable.PERCENTILE_CONT; }
+   |   <PERCENTILE_DISC> { op = SqlStdOperatorTable.PERCENTILE_DISC; }
    )
+   { s = span(); }
    <LPAREN>
    AddArg(args, ExprContext.ACCEPT_SUB_QUERY)
    (
        <RPAREN> {
-           if (isCont) {
-               op = SqlStdOperatorTable.PERCENTILE_CONT;
-           } else {
-               op = SqlStdOperatorTable.PERCENTILE_DISC;
-           }
            return op.createCall(s.end(this), args);
        }
    |
@@ -4097,11 +4094,10 @@ SqlCall PercentileFunctionCall() :
        )
        <RPAREN>
        {
-           if (isCont) {
-               op = SqlLibraryOperators.PERCENTILE_CONT2;
-           } else {
-               op = SqlLibraryOperators.PERCENTILE_DISC2;
-           }
+           op =
+               op == SqlStdOperatorTable.PERCENTILE_CONT
+                   ? SqlLibraryOperators.PERCENTILE_CONT2
+                   : SqlLibraryOperators.PERCENTILE_DISC2;
            SqlCall call = op.createCall(s.end(this), args);
            if (nullTreatment != null) {
                // Wrap in RESPECT_NULLS or IGNORE_NULLS.

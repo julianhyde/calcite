@@ -582,7 +582,8 @@ public abstract class SqlLibraryOperators {
       SqlStdOperatorTable.ARG_MIN.withName("MIN_BY");
 
   /** The {@code PERCENTILE_CONT} function, BigQuery's
-   * equivalent to {@link SqlStdOperatorTable#PERCENTILE_CONT}. */
+   * equivalent to {@link SqlStdOperatorTable#PERCENTILE_CONT},
+   * but uses an {@code OVER} clause rather than {@code WITHIN GROUP}. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlAggFunction PERCENTILE_CONT2 =
       SqlBasicAggFunction
@@ -595,7 +596,8 @@ public abstract class SqlLibraryOperators {
           .withAllowsNullTreatment(true);
 
   /** The {@code PERCENTILE_DISC} function, BigQuery's
-   * equivalent to {@link SqlStdOperatorTable#PERCENTILE_DISC}. */
+   * equivalent to {@link SqlStdOperatorTable#PERCENTILE_DISC},
+   * but uses an {@code OVER} clause rather than {@code WITHIN GROUP}. */
   @LibraryOperator(libraries = {BIG_QUERY})
   public static final SqlAggFunction PERCENTILE_DISC2 =
       SqlBasicAggFunction
