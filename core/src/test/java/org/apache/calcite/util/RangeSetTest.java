@@ -33,12 +33,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import static org.apache.calcite.test.Matchers.isRangeSet;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit test for {@link RangeSets} and other utilities relating to Guava
@@ -156,8 +159,104 @@ class RangeSetTest {
     assertThat(RangeSets.isPoint(Range.greaterThan(0)), is(false));
     assertThat(RangeSets.isPoint(Range.atLeast(0)), is(false));
 
-    // Test situation where endpoints of closed range are equal under `Comparable.compareTo` but not `T.equals`
-    assertThat(RangeSets.isPoint(Range.closed(new BigDecimal("1"), new BigDecimal("1.0"))), is(true));
+    // Test situation where endpoints of closed range are equal under
+    // Comparable.compareTo but not T.equals.
+    final BigDecimal one = new BigDecimal("1");
+    final BigDecimal onePoint = new BigDecimal("1.0");
+    assertThat(RangeSets.isPoint(Range.closed(one, onePoint)), is(true));
+  }
+
+  /** Tests ranges with a data type that implements {@link Comparable}
+   * but is not consistent with {@code equals}.
+   *
+   * <p>Per {@link Comparable}:
+   *
+   * <blockquote>
+   * Virtually all Java core classes that implement Comparable have natural
+   * orderings that are consistent with equals. One exception is
+   * {@link BigDecimal}, whose natural ordering equates {@code BigDecimal}
+   * objects with equal numerical values and different representations
+   * (such as 4.0 and 4.00). For {@link BigDecimal#equals} to return true,
+   * the representation and numerical value of the two {@code BigDecimal}
+   * objects must be the same.
+   * </blockquote>
+   */
+  @Test void testNotConsistentWithEquals() {
+    final BigDecimal one = new BigDecimal("1");
+    final BigDecimal onePoint = new BigDecimal("1.0");
+    final BigDecimal two = BigDecimal.valueOf(2);
+    assertThat(one.equals(onePoint), is(false));
+    assertThat(onePoint.equals(one), is(false));
+    assertThat(one.compareTo(onePoint), is(0));
+    assertThat(onePoint.equals(one), is(false));
+    assertThat(one.equals(BigDecimal.ONE), is(true));
+    assertThat(onePoint.equals(BigDecimal.ONE), is(false));
+    assertThat(RangeSets.isPoint(Range.closed(one, onePoint)), is(true));
+
+    // Ranges (0, 1], [1.0, 2) merges to [0, 2).
+    final Range<BigDecimal> range01 = Range.closed(BigDecimal.ZERO, one);
+    final Range<BigDecimal> range01point = Range.closed(BigDecimal.ZERO, onePoint);
+    final Range<BigDecimal> range1point2 = Range.closedOpen(onePoint, two);
+    final Range<BigDecimal> range12 = Range.closedOpen(one, two);
+    assertThrows(IllegalArgumentException.class,
+        () -> ImmutableRangeSet.<BigDecimal>builder()
+            .add(range01point)
+            .add(range12)
+            .build());
+
+    assertThat(RangeSets.compare(range01, range12), is(-1));
+    assertThat(RangeSets.compare(range12, range01), is(1));
+    assertThat(RangeSets.compare(range01, range01point), is(0));
+    assertThat(RangeSets.compare(range12, range1point2), is(0));
+
+    // Ranges are merged correctly.
+    final ImmutableRangeSet<BigDecimal> rangeSet =
+        ImmutableRangeSet.unionOf(Arrays.asList(range01point, range12));
+    final ImmutableRangeSet<BigDecimal> rangeSet2 =
+        ImmutableRangeSet.unionOf(Arrays.asList(range01, range12));
+    final ImmutableRangeSet<BigDecimal> rangeSet3 =
+        ImmutableRangeSet.unionOf(Arrays.asList(range01, range1point2));
+    assertThat(rangeSet.asRanges(), hasSize(1));
+    assertThat(rangeSet, is(rangeSet2));
+    assertThat(rangeSet, is(rangeSet3));
+
+    // Check the Consumer mechanism; RangeSets.printer is a Consumer,
+    // and it gives the Consumer mechanism a pretty good workout.
+    final Function<RangeSet<BigDecimal>, String> f =
+        rs -> {
+          final StringBuilder buf = new StringBuilder();
+          final RangeSets.Consumer<BigDecimal> printer =
+              RangeSets.printer(buf, StringBuilder::append);
+          RangeSets.forEach(rs, printer);
+          return buf.toString();
+        };
+    final Function<Range<BigDecimal>, String> f2 =
+        r -> f.apply(ImmutableRangeSet.of(r));
+    assertThat(f.apply(rangeSet), is("[0..2)"));
+
+    // If a closed range has bounds that are equal, Consumer should treat them
+    // as singletons of the lower bound; but not if the bounds compareTo 0.
+    assertThat(f2.apply(Range.singleton(onePoint)), is("1.0"));
+    assertThat(f2.apply(Range.closed(one, one)), is("1"));
+    assertThat(f2.apply(Range.closed(one, onePoint)), is("[1..1.0]"));
+    assertThat(f2.apply(Range.closed(onePoint, one)), is("[1.0..1]"));
+    assertThat(f2.apply(Range.closed(onePoint, onePoint)), is("1.0"));
+    assertThat(f2.apply(Range.closed(onePoint, two)), is("[1.0..2]"));
+
+    // As for Consumer, now for Handler.
+    // RangeSets.copy tests Handler pretty thoroughly.
+    final Function<RangeSet<BigDecimal>, String> g =
+        rs -> RangeSets.copy(rs, v -> v.multiply(two)).toString();
+    final Function<Range<BigDecimal>, String> g2 =
+        r -> g.apply(ImmutableRangeSet.of(r));
+    assertThat(g.apply(rangeSet), is("[[0..4)]"));
+
+    assertThat(g2.apply(Range.singleton(onePoint)), is("[[2.0..2.0]]"));
+    assertThat(g2.apply(Range.closed(one, one)), is("[[2..2]]"));
+    assertThat(g2.apply(Range.closed(one, onePoint)), is("[[2..2.0]]"));
+    assertThat(g2.apply(Range.closed(onePoint, one)), is("[[2.0..2]]"));
+    assertThat(g2.apply(Range.closed(onePoint, onePoint)), is("[[2.0..2.0]]"));
+    assertThat(g2.apply(Range.closed(onePoint, two)), is("[[2.0..4]]"));
   }
 
   /** Tests {@link RangeSets#isOpenInterval(RangeSet)}. */
