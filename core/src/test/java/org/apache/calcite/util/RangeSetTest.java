@@ -211,11 +211,14 @@ class RangeSetTest {
 
     // Ranges are merged correctly.
     final ImmutableRangeSet<BigDecimal> rangeSet =
-        ImmutableRangeSet.unionOf(Arrays.asList(range01point, range12));
+        ImmutableRangeSet.copyOf(
+            TreeRangeSet.create(Arrays.asList(range01point, range12)));
     final ImmutableRangeSet<BigDecimal> rangeSet2 =
-        ImmutableRangeSet.unionOf(Arrays.asList(range01, range12));
+        ImmutableRangeSet.copyOf(
+            TreeRangeSet.create(Arrays.asList(range01, range12)));
     final ImmutableRangeSet<BigDecimal> rangeSet3 =
-        ImmutableRangeSet.unionOf(Arrays.asList(range01, range1point2));
+        ImmutableRangeSet.copyOf(
+            TreeRangeSet.create(Arrays.asList(range01, range1point2)));
     assertThat(rangeSet.asRanges(), hasSize(1));
     assertThat(rangeSet, is(rangeSet2));
     assertThat(rangeSet, is(rangeSet3));

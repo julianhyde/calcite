@@ -1722,9 +1722,9 @@ class RexProgramTest extends RexProgramTestBase {
                 literal(new BigDecimal("1.0")),
                 literal(new BigDecimal("2.0"))));
     final String simplified = "SEARCH($0, "
-        + "Sarg[(-∞..1.0:DECIMAL(2, 1)),"
+        + "Sarg[(-\u221e..1.0:DECIMAL(2, 1)),"
         + " (1.0:DECIMAL(2, 1)..2.0:DECIMAL(2, 1)),"
-        + " (2.0:DECIMAL(2, 1)..+∞)]:DECIMAL(2, 1))";
+        + " (2.0:DECIMAL(2, 1)..+\u221e)]:DECIMAL(2, 1))";
     checkSimplify(expr, simplified);
 
     // The following identical to previous, and simplifies to the same:
@@ -1744,9 +1744,9 @@ class RexProgramTest extends RexProgramTestBase {
                 lt(aRef, literal(new BigDecimal("2.0")))),
             lt(literal(new BigDecimal("2")), aRef));
     final String simplified3 = "SEARCH($0, "
-        + "Sarg[(-∞..1.0:DECIMAL(11, 1)),"
+        + "Sarg[(-\u221e..1.0:DECIMAL(11, 1)),"
         + " (1.0:DECIMAL(11, 1)..2.0:DECIMAL(11, 1)),"
-        + " (2:DECIMAL(11, 1)..+∞)]:DECIMAL(11, 1))";
+        + " (2:DECIMAL(11, 1)..+\u221e)]:DECIMAL(11, 1))";
     checkSimplify(expr3, simplified3);
   }
 
