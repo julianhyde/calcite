@@ -18,6 +18,7 @@ package org.apache.calcite.util;
 
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.externalize.RelJson;
+import org.apache.calcite.test.Matchers;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableRangeSet;
@@ -30,10 +31,11 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+
+import static java.util.Arrays.asList;
 
 import static org.apache.calcite.test.Matchers.isRangeSet;
 
@@ -211,11 +213,11 @@ class RangeSetTest {
 
     // Ranges are merged correctly.
     final ImmutableRangeSet<BigDecimal> rangeSet =
-        unionRangeSet(range01point, range12);
+        unionRangeSet(asList(range01point, range12));
     final ImmutableRangeSet<BigDecimal> rangeSet2 =
-        unionRangeSet(range01, range12);
+        unionRangeSet(asList(range01, range12));
     final ImmutableRangeSet<BigDecimal> rangeSet3 =
-        unionRangeSet(range01, range1point2);
+        unionRangeSet(asList(range01, range1point2));
     assertThat(rangeSet.asRanges(), hasSize(1));
     assertThat(rangeSet, is(rangeSet2));
     assertThat(rangeSet, is(rangeSet3));
@@ -228,7 +230,7 @@ class RangeSetTest {
           final RangeSets.Consumer<BigDecimal> printer =
               RangeSets.printer(buf, StringBuilder::append);
           RangeSets.forEach(rs, printer);
-          return buf.toString();
+          return Matchers.sanitizeRangeSet(buf.toString());
         };
     final Function<Range<BigDecimal>, String> f2 =
         r -> f.apply(ImmutableRangeSet.of(r));
@@ -263,7 +265,7 @@ class RangeSetTest {
    * added in Guava 21. */
   @SuppressWarnings("unchecked")
   private static <C extends Comparable<C>> ImmutableRangeSet<C> unionRangeSet(
-      Range<C>... ranges) {
+      List<? extends Range<C>> ranges) {
     final TreeRangeSet<C> treeRangeSet = TreeRangeSet.create();
     for (Range<C> range : ranges) {
       treeRangeSet.add(range);
@@ -534,7 +536,7 @@ class RangeSetTest {
     final ImmutableRangeSet<Integer> empty = ImmutableRangeSet.of();
 
     final List<Range<Integer>> ranges =
-        Arrays.asList(Range.all(),
+        asList(Range.all(),
             Range.atMost(3),
             Range.atLeast(4),
             Range.lessThan(5),
@@ -556,7 +558,7 @@ class RangeSetTest {
         + "closedOpen(14, 15)";
 
     final List<Range<Integer>> sortedRanges =
-        Arrays.asList(
+        asList(
             Range.lessThan(3),
             Range.atMost(3),
             Range.lessThan(5),
@@ -574,7 +576,7 @@ class RangeSetTest {
             Range.closedOpen(14, 15));
 
     final List<Range<Integer>> disjointRanges =
-        Arrays.asList(Range.lessThan(5),
+        asList(Range.lessThan(5),
             Range.greaterThan(16),
             Range.singleton(7),
             Range.open(8, 9),
