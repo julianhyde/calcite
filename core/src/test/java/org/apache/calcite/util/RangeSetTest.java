@@ -211,14 +211,11 @@ class RangeSetTest {
 
     // Ranges are merged correctly.
     final ImmutableRangeSet<BigDecimal> rangeSet =
-        ImmutableRangeSet.copyOf(
-            TreeRangeSet.create(Arrays.asList(range01point, range12)));
+        unionRangeSet(range01point, range12);
     final ImmutableRangeSet<BigDecimal> rangeSet2 =
-        ImmutableRangeSet.copyOf(
-            TreeRangeSet.create(Arrays.asList(range01, range12)));
+        unionRangeSet(range01, range12);
     final ImmutableRangeSet<BigDecimal> rangeSet3 =
-        ImmutableRangeSet.copyOf(
-            TreeRangeSet.create(Arrays.asList(range01, range1point2)));
+        unionRangeSet(range01, range1point2);
     assertThat(rangeSet.asRanges(), hasSize(1));
     assertThat(rangeSet, is(rangeSet2));
     assertThat(rangeSet, is(rangeSet3));
@@ -260,6 +257,18 @@ class RangeSetTest {
     assertThat(g2.apply(Range.closed(onePoint, one)), is("[[2.0..2]]"));
     assertThat(g2.apply(Range.closed(onePoint, onePoint)), is("[[2.0..2.0]]"));
     assertThat(g2.apply(Range.closed(onePoint, two)), is("[[2.0..4]]"));
+  }
+
+  /** Equivalent to {@link ImmutableRangeSet#unionOf(Iterable)}, which was only
+   * added in Guava 21. */
+  @SuppressWarnings("unchecked")
+  private static <C extends Comparable<C>> ImmutableRangeSet<C> unionRangeSet(
+      Range<C>... ranges) {
+    final TreeRangeSet<C> treeRangeSet = TreeRangeSet.create();
+    for (Range<C> range : ranges) {
+      treeRangeSet.add(range);
+    }
+    return ImmutableRangeSet.copyOf(treeRangeSet);
   }
 
   /** Tests {@link RangeSets#isOpenInterval(RangeSet)}. */
