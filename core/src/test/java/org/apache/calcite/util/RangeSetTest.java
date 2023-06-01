@@ -247,18 +247,19 @@ class RangeSetTest {
 
     // As for Consumer, now for Handler.
     // RangeSets.copy tests Handler pretty thoroughly.
-    final Function<RangeSet<BigDecimal>, String> g =
-        rs -> RangeSets.copy(rs, v -> v.multiply(two)).toString();
-    final Function<Range<BigDecimal>, String> g2 =
+    final Function<RangeSet<BigDecimal>, RangeSet<BigDecimal>> g =
+        rs -> RangeSets.copy(rs, v -> v.multiply(two));
+    final Function<Range<BigDecimal>, RangeSet<BigDecimal>> g2 =
         r -> g.apply(ImmutableRangeSet.of(r));
     assertThat(g.apply(rangeSet), is("[[0..4)]"));
 
-    assertThat(g2.apply(Range.singleton(onePoint)), is("[[2.0..2.0]]"));
-    assertThat(g2.apply(Range.closed(one, one)), is("[[2..2]]"));
-    assertThat(g2.apply(Range.closed(one, onePoint)), is("[[2..2.0]]"));
-    assertThat(g2.apply(Range.closed(onePoint, one)), is("[[2.0..2]]"));
-    assertThat(g2.apply(Range.closed(onePoint, onePoint)), is("[[2.0..2.0]]"));
-    assertThat(g2.apply(Range.closed(onePoint, two)), is("[[2.0..4]]"));
+    assertThat(g2.apply(Range.singleton(onePoint)), isRangeSet("[[2.0..2.0]]"));
+    assertThat(g2.apply(Range.closed(one, one)), isRangeSet("[[2..2]]"));
+    assertThat(g2.apply(Range.closed(one, onePoint)), isRangeSet("[[2..2.0]]"));
+    assertThat(g2.apply(Range.closed(onePoint, one)), isRangeSet("[[2.0..2]]"));
+    assertThat(g2.apply(Range.closed(onePoint, onePoint)),
+        isRangeSet("[[2.0..2.0]]"));
+    assertThat(g2.apply(Range.closed(onePoint, two)), isRangeSet("[[2.0..4]]"));
   }
 
   /** Equivalent to {@link ImmutableRangeSet#unionOf(Iterable)}, which was only
