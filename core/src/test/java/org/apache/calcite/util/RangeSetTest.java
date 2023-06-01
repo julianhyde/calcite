@@ -251,7 +251,7 @@ class RangeSetTest {
         rs -> RangeSets.copy(rs, v -> v.multiply(two));
     final Function<Range<BigDecimal>, RangeSet<BigDecimal>> g2 =
         r -> g.apply(ImmutableRangeSet.of(r));
-    assertThat(g.apply(rangeSet), is("[[0..4)]"));
+    assertThat(g.apply(rangeSet), isRangeSet("[[0..4)]"));
 
     assertThat(g2.apply(Range.singleton(onePoint)), isRangeSet("[[2.0..2.0]]"));
     assertThat(g2.apply(Range.closed(one, one)), isRangeSet("[[2..2]]"));
