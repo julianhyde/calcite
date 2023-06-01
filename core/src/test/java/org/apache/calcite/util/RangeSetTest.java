@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static java.util.Arrays.asList;
-
 import static org.apache.calcite.test.Matchers.isRangeSet;
 
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -44,6 +42,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static java.util.Arrays.asList;
 
 /**
  * Unit test for {@link RangeSets} and other utilities relating to Guava
