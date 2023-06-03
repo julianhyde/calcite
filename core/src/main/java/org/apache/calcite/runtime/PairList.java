@@ -19,6 +19,7 @@ package org.apache.calcite.runtime;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -48,7 +49,16 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return new PairList<>(new ArrayList<>());
   }
 
+  /** Creates a PairList backed by a given list.
+   *
+   * <p>Changes to the backing list will be reflected in the PairList.
+   * If the backing list is immutable, this PairList will be also. */
+  public static <T, U> PairList<T, U> backedBy(List<Object> list) {
+    return new PairList<>(list);
+  }
+
   /** Creates a PairList from a Map. */
+  @SuppressWarnings("RedundantCast")
   public static <T, U> PairList<T, U> of(Map<T, U> map) {
     final List<@Nullable Object> list = new ArrayList<>(map.size() * 2);
     map.forEach((t, u) -> {
@@ -68,12 +78,14 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return list.size() / 2;
   }
 
+  @SuppressWarnings("RedundantCast")
   @Override public boolean add(Map.Entry<T, U> entry) {
     list.add((Object) entry.getKey());
     list.add((Object) entry.getValue());
     return true;
   }
 
+  @SuppressWarnings("RedundantCast")
   @Override public void add(int index, Map.Entry<T, U> entry) {
     int x = index * 2;
     list.add(x, (Object) entry.getKey());
@@ -81,6 +93,7 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   }
 
   /** Adds a pair to this list. */
+  @SuppressWarnings("RedundantCast")
   public void add(T t, U u) {
     list.add((Object) t);
     list.add((Object) u);
@@ -138,6 +151,12 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return b.build();
   }
 
+  /** Returns an immutable PairList whose contents are the same as this
+   * PairList. */
+  public PairList<T, U> immutable() {
+    return backedBy(ImmutableList.copyOf(list));
+  }
+
   /** Action to be taken each step of an indexed iteration over a PairList.
    *
    * @param <T> First type
@@ -145,7 +164,7 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
    *
    * @see PairList#forEachIndexed(IndexedBiConsumer)
    */
-  interface IndexedBiConsumer<T, U> {
+  public interface IndexedBiConsumer<T, U> {
     /**
      * Performs this operation on the given arguments.
      *
