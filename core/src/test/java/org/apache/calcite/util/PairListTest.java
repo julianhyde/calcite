@@ -28,6 +28,8 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** Unit test for {@code PairList}. */
 class PairListTest {
@@ -38,9 +40,9 @@ class PairListTest {
 
     final Runnable validator = () -> {
       assertThat(pairList.isEmpty(), is(list.isEmpty()));
-      assertThat(pairList.size(), is(list.size()));
-      assertThat(pairList.leftList().size(), is(list.size()));
-      assertThat(pairList.rightList().size(), is(list.size()));
+      assertThat(pairList, hasSize(list.size()));
+      assertThat(pairList.leftList(), hasSize(list.size()));
+      assertThat(pairList.rightList(), hasSize(list.size()));
       assertThat(pairList.leftList(), is(Pair.left(list)));
       assertThat(pairList.rightList(), is(Pair.right(list)));
 
@@ -56,6 +58,23 @@ class PairListTest {
       // Check PairList.forEach(BiConsumer)
       list2.clear();
       pairList.forEach((k, v) -> list2.add(Pair.of(k, v)));
+      assertThat(list2, is(list));
+
+      // Check PairList.forEachIndexed
+      list2.clear();
+      pairList.forEachIndexed((i, k, v) -> {
+        assertThat(i, is(list2.size()));
+        list2.add(Pair.of(k, v));
+      });
+      assertThat(list2, is(list));
+
+      final PairList<Integer, String> immutablePairList = pairList.immutable();
+      assertThat(immutablePairList, hasSize(list.size()));
+      assertThat(immutablePairList, is(list));
+      assertThrows(UnsupportedOperationException.class, () ->
+          immutablePairList.add(0, ""));
+      list2.clear();
+      immutablePairList.forEach((k, v) -> list2.add(Pair.of(k, v)));
       assertThat(list2, is(list));
     };
 
@@ -87,7 +106,7 @@ class PairListTest {
   @Test void testPairListOfMap() {
     final ImmutableMap<String, Integer> map = ImmutableMap.of("a", 1, "b", 2);
     final PairList<String, Integer> list = PairList.of(map);
-    assertThat(list.size(), is(2));
+    assertThat(list, hasSize(2));
     assertThat(list.toString(), is("[<a, 1>, <b, 2>]"));
 
     final ImmutableMap<String, Integer> map2 = list.toImmutableMap();
