@@ -27,11 +27,11 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.test.DiffTestCase;
+import org.apache.calcite.test.concurrent.ConcurrentTestCommandScript;
 import org.apache.calcite.util.Puffin;
+import org.apache.calcite.util.Source;
 import org.apache.calcite.util.Sources;
 import org.apache.calcite.util.Util;
-
-import com.google.common.collect.ImmutableList;
 
 import org.junit.jupiter.api.Test;
 
@@ -39,11 +39,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -178,6 +175,126 @@ class DocumentationTest {
     }
   }
 
+  /** Tests that source code has no flaws. */
+  @Test void testLint() {
+    /** Warning that code is not as it should be. */
+    class Message {
+      final Source source;
+      final int line;
+      final String message;
+
+      Message(Source source, int line, String message) {
+        this.source = source;
+        this.line = line;
+        this.message = message;
+      }
+    }
+
+    /** Internal state of the lint rules. */
+    class State {
+      int fileCount = 0;
+      List<Message> messages = new ArrayList<>();
+      int starLine;
+      int atLine;
+      int javadocStartLine;
+      int javadocEndLine;
+
+      void message(String message, Puffin.Line line) {
+        messages.add(new Message(line.source(), line.fnr(), message));
+      }
+
+      void message(Puffin.Line line) {
+        message(line.line, line);
+      }
+
+    }
+    final State state = new State();
+
+    // A line that has only a Javadoc paragraph marker, like this:
+    //   * <p>
+    final Pattern pEndPattern = Pattern.compile("^ *\\* <p>");
+
+    // A line that starts a Javadoc paragraph, like this:
+    //   * <p>The start of a paragraph.
+    final Pattern pPattern = Pattern.compile("^ *\\* <p>.*");
+
+    // A line that starts a Javadoc annotation, like this:
+    //   * @param Param
+    //   * @deprecated
+    final Pattern atPattern = Pattern.compile("^ *\\* @.*");
+
+    // A line that consists of only a star, like this:
+    //   *
+    final Pattern starPattern = Pattern.compile("^ *\\*");
+
+    // A line that starts a javadoc block, like this:
+    //   /** The start of a javadoc block.
+    //   /** A single line javadoc block. */
+    final Pattern javadocStartPattern = Pattern.compile("^ */\\*\\*.*");
+
+    // A line that ends a javadoc block, like this:
+    //   * The end of a javadoc block. */
+    final Pattern javadocEndPattern = Pattern.compile(".*\\*/");
+
+    final Puffin.Program program =
+        Puffin.builder()
+            .add(line -> line.fnr() == 1, line -> {
+              state.fileCount++;
+              state.starLine = 0;
+              state.atLine = 0;
+              state.javadocStartLine = 0;
+              state.javadocEndLine = 0;
+            })
+
+            // Javadoc does not require '</p>'
+            .add(line -> line.line.endsWith("</p>"),
+                line -> state.message("no </p>", line))
+
+            // A Javadoc paragraph '<p>' must not be on its own line.
+            .add(line -> pEndPattern.matcher(line.line).matches(),
+                line -> state.message("<p> must not be on its own line", line))
+
+            // A Javadoc paragraph '<p>' must be preceded by a blank Javadoc
+            // line.
+            .add(line -> starPattern.matcher(line.line).matches(),
+                line -> state.starLine = line.fnr())
+            .add(line -> pPattern.matcher(line.line).matches()
+                    && line.fnr() - 1 != state.starLine,
+                line -> state.message("<p> must be preceded by blank line",
+                    line))
+
+            // The first "@param" of a javadoc block must be preceded by a blank
+            // line.
+            .add(line -> javadocStartPattern.matcher(line.line).matches(),
+                line -> state.javadocStartLine = line.fnr())
+            .add(line -> javadocEndPattern.matcher(line.line).matches(),
+                line -> state.javadocEndLine = line.fnr())
+            .add(line -> atPattern.matcher(line.line).matches(),
+                line -> {
+                  if (state.javadocEndLine < state.javadocStartLine
+                      && state.atLine < state.javadocStartLine
+                      && line.fnr() - 1 != state.starLine) {
+                    state.message("First @tag must be preceded by blank line",
+                        line);
+                  }
+                  state.atLine = line.fnr();
+                })
+            .build();
+
+    try (PrintWriter pw = Util.printWriter(System.out)) {
+      for (File file : new FileFixture().getJavaFiles()) {
+        program.execute(Sources.of(file), pw);
+      }
+    }
+
+    System.out.println("Lint: " + state.fileCount + " files,"
+        + state.messages.size() + " warnings");
+    for (Message message : state.messages) {
+      System.out.println(message.source + ":"
+          + message.line + ":" + message.message);
+    }
+  }
+
   /** A compiled regex and an operator name. An item to be found in the
    * documentation. */
   private static class PatternOp {
@@ -235,142 +352,7 @@ class DocumentationTest {
      *
      * <p>Assumes running Linux or macOS, and that git is available. */
     List<File> getJavaFiles() {
-      try {
-        final Process process =
-            Runtime.getRuntime()
-                .exec("git ls-files *.java", new String[0], base);
-        final ImmutableList.Builder<File> files = ImmutableList.builder();
-        try (InputStream is = process.getInputStream();
-             Reader r = new InputStreamReader(is);
-             BufferedReader br = new BufferedReader(r)) {
-          for (;;) {
-            String line = br.readLine();
-            if (line == null) {
-              break;
-            }
-            files.add(new File(base, line));
-          }
-        } finally {
-          process.destroy();
-        }
-        return files.build();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  /** Tests that source code has no flaws. */
-  @Test void testLint() {
-    class Message {
-      final String fileName;
-      final int line;
-      final String message;
-
-      Message(String fileName, int line, String message) {
-        this.fileName = fileName;
-        this.line = line;
-        this.message = message;
-      }
-    }
-    class State {
-      int fileCount = 0;
-      List<Message> messages = new ArrayList<>();
-      int starLine;
-      int javadocStartLine;
-      int javadocEndLine;
-
-      void message(String message, Puffin.Line line) {
-        messages.add(new Message(line.filename(), line.fnr(), message));
-      }
-
-      void message(Puffin.Line line) {
-        message(line.line, line);
-      }
-
-      public boolean inJavadoc() {
-        return javadocStartLine > javadocEndLine;
-      }
-    }
-    final State state = new State();
-
-    // A line that has only a Javadoc paragraph marker, like this:
-    //   * <p>
-    final Pattern pEndPattern = Pattern.compile("^ *\\* <p>");
-
-    // A line that starts a Javadoc paragraph, like this:
-    //   * <p>The start of a paragraph.
-    final Pattern pPattern = Pattern.compile("^ *\\* <p>.*");
-
-    // A line that starts a Javadoc annoation, like this:
-    //   * @param Param
-    //   * @deprecated
-    final Pattern atPattern = Pattern.compile("^ *\\* @.*");
-
-    // A line that consists of only a star, like this:
-    //   *
-    final Pattern starPattern = Pattern.compile("^ *\\*");
-
-    // A line that starts a javadoc block, like this:
-    //   /** The start of a javadoc block.
-    //   /** A single line javadoc block. */
-    final Pattern javadocStartPattern = Pattern.compile("^ /\\*\\*");
-
-    // A line that ends a javadoc block, like this:
-    //   * The end of a javadoc block. */
-    final Pattern javadocEndPattern = Pattern.compile(".*\\*/");
-
-    final Puffin.Program program =
-        Puffin.builder()
-            .add(line -> line.fnr() == 1, line -> {
-              state.fileCount++;
-              state.starLine = 0;
-              state.javadocStartLine = 0;
-              state.javadocEndLine = 0;
-            })
-
-            // Javadoc does not require '</p>'
-            .add(line -> line.line.endsWith("</p>"),
-                line -> state.message("no </p>", line))
-
-            // A Javadoc paragraph '<p>' must not be on its own line.
-            .add(line -> pEndPattern.matcher(line.line).matches(),
-                line -> state.message("<p> must not be on its own line", line))
-
-            // A Javadoc paragraph '<p>' must be preceded by a blank Javadoc
-            // line.
-            .add(line -> starPattern.matcher(line.line).matches(),
-                line -> state.starLine = line.fnr())
-            .add(line -> pPattern.matcher(line.line).matches()
-                && line.fnr() - 1 != state.starLine,
-                line -> state.message("<p> must be preceded by blank line",
-                    line))
-
-            // The first "@param" of a javadoc block must be preceded by a blank
-            // line.
-            .add(line -> javadocStartPattern.matcher(line.line).matches(),
-                line -> state.javadocStartLine = line.fnr())
-            .add(line -> javadocEndPattern.matcher(line.line).matches(),
-                line -> state.javadocEndLine = line.fnr())
-            .add(line -> atPattern.matcher(line.line).matches()
-                    && state.inJavadoc()
-                    && line.fnr() - 1 != state.starLine,
-                line -> state.message("<p> must be preceded by blank line",
-                    line))
-
-            .build();
-
-    try (final PrintWriter pw = new PrintWriter(System.out)) {
-      for (File file : new FileFixture().getJavaFiles()) {
-        program.execute(file, pw);
-      }
-    }
-
-    System.out.println("Lint: " + state.fileCount + " files,"
-        + state.messages.size() + " warnings");
-    for (Message message : state.messages) {
-      System.out.println(message.fileName + ":"
-          + message.line + ":" + message.message);
+      return ConcurrentTestCommandScript.getJavaFiles(base);
     }
   }
 }

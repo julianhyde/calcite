@@ -20,6 +20,8 @@ import org.apache.calcite.jdbc.SqlTimeoutException;
 import org.apache.calcite.util.Unsafe;
 import org.apache.calcite.util.Util;
 
+import com.google.common.collect.ImmutableList;
+
 import org.slf4j.Logger;
 
 import java.io.BufferedInputStream;
@@ -339,6 +341,48 @@ public class ConcurrentTestCommandScript
       logger.info("exit status=" + status + " from " + pb.command());
     }
     return status;
+  }
+
+  /** Returns a list of Java files in git under a given directory.
+   *
+   * <p>Assumes running Linux or macOS, and that git is available. */
+  public static List<File> getJavaFiles(File base) {
+    String s;
+    try {
+      // WARNING: ProcessBuilder is security-sensitive. Its use is currently
+      // safe because this code is under "core/test". Developers must not move
+      // this code into "core/main".
+      final List<String> strings = Arrays.asList("git", "ls-files", "*.java");
+      ProcessBuilder pb = new ProcessBuilder(strings);
+      pb.directory(base);
+      try {
+        final StringWriter sw = new StringWriter();
+        int status = runAppProcess(pb, null, null, sw);
+        if (status != 0) {
+          throw new RuntimeException("command " + strings
+              + ": exited with status " + status);
+        }
+        s = sw.toString();
+      } catch (Exception e) {
+        throw new RuntimeException("command " + strings
+            + ": failed with exception", e);
+      }
+
+      final ImmutableList.Builder<File> files = ImmutableList.builder();
+      try (StringReader r = new StringReader(s);
+           BufferedReader br = new BufferedReader(r)) {
+        for (;;) {
+          String line = br.readLine();
+          if (line == null) {
+            break;
+          }
+          files.add(new File(base, line));
+        }
+      }
+      return files.build();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
