@@ -18,6 +18,9 @@ package org.apache.calcite.util;
 
 import org.apache.calcite.runtime.PairList;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 
 import java.io.BufferedReader;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import static java.util.Objects.requireNonNull;
 
@@ -116,46 +120,80 @@ public class Puffin {
    * and action that you registered in
    * {@link Builder#add(Predicate, Consumer)}.
    */
-  public static class Line {
-    final Context context;
-    public final String line;
-
-    Line(Context context, String line) {
-      this.context = context;
-      this.line = line;
-    }
-
-    public int fnr() {
-      return context.fnr[0];
-    }
-
-    public Source source() {
-      return context.source;
-    }
-
-    public boolean startsWith(String prefix) {
-      return line.startsWith(prefix);
-    }
+  public interface Line {
+    int fnr();
+    Source source();
+    boolean startsWith(String prefix);
+    boolean endsWith(String suffix);
+    boolean matches(String regex);
+    String line();
   }
 
   /** Context for executing a Puffin program within a given file. */
   public static class Context {
     final PrintWriter out;
     final Source source;
+    private final LoadingCache<String, Pattern> patternCache;
+
+    /** Holds the current line. */
+    String line = "";
 
     /** Holds the current line number in the file (starting from 1).
      *
      * <p>Corresponds to the Awk variable {@code FNR}, which stands for "file
      * number of records". */
-    final int[] fnr = {0};
+    int fnr = 0;
 
-    Context(PrintWriter out, Source source) {
+    Context(PrintWriter out, Source source,
+        LoadingCache<String, Pattern> patternCache) {
       this.out = requireNonNull(out, "out");
       this.source = requireNonNull(source, "source");
+      this.patternCache = requireNonNull(patternCache, "patternCache");
     }
 
     public void println(String s) {
       out.println(s);
+    }
+
+    Pattern pattern(String regex) {
+      return patternCache.getUnchecked(regex);
+    }
+  }
+
+  /** Extension to {@link Context} that also implements {@link Line}.
+   *
+   * <p>We don't want clients to know that {@code Context} implements
+   * {@code Line}, but neither do we want to create a new {@code Line} object
+   * for every line in the file. Making this a subclass accomplishes both
+   * goals. */
+  static class ContextImpl extends Context implements Line {
+    ContextImpl(PrintWriter out, Source source,
+        LoadingCache<String, Pattern> patternCache) {
+      super(out, source, patternCache);
+    }
+
+    @Override public int fnr() {
+      return fnr;
+    }
+
+    @Override public Source source() {
+      return source;
+    }
+
+    @Override public boolean startsWith(String prefix) {
+      return line.startsWith(prefix);
+    }
+
+    @Override public boolean endsWith(String suffix) {
+      return line.endsWith(suffix);
+    }
+
+    @Override public boolean matches(String regex) {
+      return pattern(regex).matcher(line).matches();
+    }
+
+    @Override public String line() {
+      return line;
     }
   }
 
@@ -163,6 +201,10 @@ public class Puffin {
   private static class ProgramImpl implements Program {
     private final PairList<Predicate<Line>, Consumer<Line>> pairList;
     private final ImmutableList<Consumer<Context>> endList;
+    @SuppressWarnings("Convert2MethodRef")
+    private final LoadingCache<String, Pattern> patternCache =
+        CacheBuilder.newBuilder()
+            .build(CacheLoader.from(regex -> Pattern.compile(regex)));
 
     private ProgramImpl(PairList<Predicate<Line>, Consumer<Line>> pairList,
         ImmutableList<Consumer<Context>> endList) {
@@ -173,18 +215,18 @@ public class Puffin {
     @Override public void execute(Source source, PrintWriter out) {
       try (Reader r = source.reader();
            BufferedReader br = new BufferedReader(r)) {
-        Context x = new Context(out, source);
+        final ContextImpl x = new ContextImpl(out, source, patternCache);
         for (;;) {
-          String line = br.readLine();
-          if (line == null) {
+          String lineText = br.readLine();
+          if (lineText == null) {
             endList.forEach(end -> end.accept(x));
             break;
           }
-          ++x.fnr[0];
-          final Line line1 = new Line(x, line);
+          ++x.fnr;
+          x.line = lineText;
           pairList.forEach((predicate, action) -> {
-            if (predicate.test(line1)) {
-              action.accept(line1);
+            if (predicate.test(x)) {
+              action.accept(x);
             }
           });
         }

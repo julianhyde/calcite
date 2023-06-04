@@ -202,39 +202,8 @@ class DocumentationTest {
       void message(String message, Puffin.Line line) {
         messages.add(new Message(line.source(), line.fnr(), message));
       }
-
-      void message(Puffin.Line line) {
-        message(line.line, line);
-      }
-
     }
     final State state = new State();
-
-    // A line that has only a Javadoc paragraph marker, like this:
-    //   * <p>
-    final Pattern pEndPattern = Pattern.compile("^ *\\* <p>");
-
-    // A line that starts a Javadoc paragraph, like this:
-    //   * <p>The start of a paragraph.
-    final Pattern pPattern = Pattern.compile("^ *\\* <p>.*");
-
-    // A line that starts a Javadoc annotation, like this:
-    //   * @param Param
-    //   * @deprecated
-    final Pattern atPattern = Pattern.compile("^ *\\* @.*");
-
-    // A line that consists of only a star, like this:
-    //   *
-    final Pattern starPattern = Pattern.compile("^ *\\*");
-
-    // A line that starts a javadoc block, like this:
-    //   /** The start of a javadoc block.
-    //   /** A single line javadoc block. */
-    final Pattern javadocStartPattern = Pattern.compile("^ */\\*\\*.*");
-
-    // A line that ends a javadoc block, like this:
-    //   * The end of a javadoc block. */
-    final Pattern javadocEndPattern = Pattern.compile(".*\\*/");
 
     final Puffin.Program program =
         Puffin.builder()
@@ -247,29 +216,29 @@ class DocumentationTest {
             })
 
             // Javadoc does not require '</p>'
-            .add(line -> line.line.endsWith("</p>"),
+            .add(line -> line.endsWith("</p>"),
                 line -> state.message("no </p>", line))
 
             // A Javadoc paragraph '<p>' must not be on its own line.
-            .add(line -> pEndPattern.matcher(line.line).matches(),
+            .add(line -> line.matches("^ *\\* <p>"),
                 line -> state.message("<p> must not be on its own line", line))
 
             // A Javadoc paragraph '<p>' must be preceded by a blank Javadoc
             // line.
-            .add(line -> starPattern.matcher(line.line).matches(),
+            .add(line -> line.matches("^ *\\*"),
                 line -> state.starLine = line.fnr())
-            .add(line -> pPattern.matcher(line.line).matches()
+            .add(line -> line.matches("^ *\\* <p>.*")
                     && line.fnr() - 1 != state.starLine,
                 line -> state.message("<p> must be preceded by blank line",
                     line))
 
             // The first "@param" of a javadoc block must be preceded by a blank
             // line.
-            .add(line -> javadocStartPattern.matcher(line.line).matches(),
+            .add(line -> line.matches("^ */\\*\\*.*"),
                 line -> state.javadocStartLine = line.fnr())
-            .add(line -> javadocEndPattern.matcher(line.line).matches(),
+            .add(line -> line.matches(".*\\*/"),
                 line -> state.javadocEndLine = line.fnr())
-            .add(line -> atPattern.matcher(line.line).matches(),
+            .add(line -> line.matches("^ *\\* @.*"),
                 line -> {
                   if (state.javadocEndLine < state.javadocStartLine
                       && state.atLine < state.javadocStartLine

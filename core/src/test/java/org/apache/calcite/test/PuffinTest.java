@@ -40,7 +40,8 @@ public class PuffinTest {
     final AtomicInteger counter = new AtomicInteger();
     Puffin.Program program =
         Puffin.builder()
-            .add(line -> !line.startsWith("#"),
+            .add(line -> !line.startsWith("#")
+                    && !line.matches(".*/\\*.*\\*/.*"),
                 line -> counter.incrementAndGet())
             .after(context -> context.println("counter: " + counter.get()))
             .build();
@@ -74,7 +75,8 @@ public class PuffinTest {
     public Fixture withDefaultInput() {
       final String inputText = "first line\n"
           + "# second line\n"
-          + "third line";
+          + "third line /* with a comment */\n"
+          + "fourth line";
       return withSource(Sources.of(inputText));
     }
 
