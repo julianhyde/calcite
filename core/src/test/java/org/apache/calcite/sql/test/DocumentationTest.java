@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Various automated checks on the documentation. */
@@ -188,6 +189,10 @@ class DocumentationTest {
         this.line = line;
         this.message = message;
       }
+
+      @Override public String toString() {
+        return source + ":" + line + ":" + message;
+      }
     }
 
     /** Internal state of the lint rules. */
@@ -259,9 +264,9 @@ class DocumentationTest {
     System.out.println("Lint: " + state.fileCount + " files,"
         + state.messages.size() + " warnings");
     for (Message message : state.messages) {
-      System.out.println(message.source + ":"
-          + message.line + ":" + message.message);
+      System.out.println(message);
     }
+    assertThat(state.messages, empty());
   }
 
   /** A compiled regex and an operator name. An item to be found in the
