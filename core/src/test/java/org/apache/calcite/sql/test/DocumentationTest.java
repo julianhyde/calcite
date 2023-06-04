@@ -333,7 +333,7 @@ class DocumentationTest {
 
     /** Returns a list of Java files in git under a given directory.
      *
-     * <p>Assumes running Linux or macOS, and that git is available.</p> */
+     * <p>Assumes running Linux or macOS, and that git is available. */
     List<File> getJavaFiles() {
       return ConcurrentTestCommandScript.getJavaFiles(base);
     }
