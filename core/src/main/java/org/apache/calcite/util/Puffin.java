@@ -17,6 +17,7 @@
 package org.apache.calcite.util;
 
 import org.apache.calcite.runtime.PairList;
+import org.apache.calcite.runtime.Unit;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -31,8 +32,11 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -64,53 +68,50 @@ public class Puffin {
   private Puffin() {
   }
 
-  public static Builder builder() {
-    return new Builder() {
-      final PairList<Predicate<Line>, Consumer<Line>> mutablePairList =
-          PairList.of();
-      final List<Consumer<Context>> afterList = new ArrayList<>();
+  /** Creates a Builder.
+   *
+   * @param fileStateFactory Creates the state for each file
+   * @return Builder
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file
+   */
+  public static <F, G> Builder<G, F> builder(Supplier<G> globalStateFactory,
+      Function<G, F> fileStateFactory) {
+    return new BuilderImpl<>(globalStateFactory, fileStateFactory,
+        PairList.of(), new ArrayList<>());
+  }
 
-      @Override public Builder add(Predicate<Line> linePredicate,
-          Consumer<Line> action) {
-        mutablePairList.add(linePredicate, action);
-        return this;
-      }
-
-      @Override public Builder after(Consumer<Context> action) {
-        afterList.add(action);
-        return this;
-      }
-
-      @Override public Program build() {
-        return new ProgramImpl(mutablePairList.immutable(),
-            ImmutableList.copyOf(afterList));
-      }
-    };
+  /** Creates a Builder with no state. */
+  public static Builder<Unit, Unit> builder() {
+    return builder(() -> Unit.INSTANCE, u -> u);
   }
 
   /** Fluent interface for constructing a Program.
    *
-   * @see Puffin#builder() */
-  public interface Builder {
-    Builder add(Predicate<Line> linePredicate,
-        Consumer<Line> action);
-
-    Builder after(Consumer<Context> action);
-    Program build();
-
+   * @see Puffin#builder */
+  public interface Builder<G, F> {
+    Builder<G, F> add(Predicate<Line<G, F>> linePredicate,
+        Consumer<Line<G, F>> action);
+    Builder<G, F> after(Consumer<Context<G, F>> action);
+    Program<G> build();
   }
 
   /** A Puffin program. You can execute it on a file. */
-  public interface Program {
+  public interface Program<G> {
     /** Executes this program. */
-    void execute(Source source, PrintWriter out);
+    G execute(Stream<? extends Source> sources, PrintWriter out);
 
     /** Executes this program, writing to an output stream such as
      * {@link System#out}. */
-    default void execute(Source source, OutputStream out) {
+    default void execute(Stream<? extends Source> sources, OutputStream out) {
       try (PrintWriter w = Util.printWriter(out)) {
-        execute(source, w);
+        execute(sources, w);
       }
+    }
+
+    /** Executes this program on a single source. */
+    default void execute(Source source, OutputStream out) {
+      execute(Stream.of(source), out);
     }
   }
 
@@ -120,19 +121,25 @@ public class Puffin {
    * and action that you registered in
    * {@link Builder#add(Predicate, Consumer)}.
    */
-  public interface Line {
+  public interface Line<G, F> {
+    G globalState();
+    F state();
     int fnr();
     Source source();
     boolean startsWith(String prefix);
+    boolean contains(CharSequence s);
     boolean endsWith(String suffix);
     boolean matches(String regex);
     String line();
+
   }
 
   /** Context for executing a Puffin program within a given file. */
-  public static class Context {
+  public static class Context<G, F> {
     final PrintWriter out;
     final Source source;
+    final F fileState;
+    final G globalState;
     private final LoadingCache<String, Pattern> patternCache;
 
     /** Holds the current line. */
@@ -145,10 +152,21 @@ public class Puffin {
     int fnr = 0;
 
     Context(PrintWriter out, Source source,
-        LoadingCache<String, Pattern> patternCache) {
+        LoadingCache<String, Pattern> patternCache, G globalState,
+        F fileState) {
       this.out = requireNonNull(out, "out");
       this.source = requireNonNull(source, "source");
       this.patternCache = requireNonNull(patternCache, "patternCache");
+      this.globalState = requireNonNull(globalState, "globalState");
+      this.fileState = requireNonNull(fileState, "fileState");
+    }
+
+    public F state() {
+      return fileState;
+    }
+
+    public G globalState() {
+      return globalState;
     }
 
     public void println(String s) {
@@ -166,10 +184,11 @@ public class Puffin {
    * {@code Line}, but neither do we want to create a new {@code Line} object
    * for every line in the file. Making this a subclass accomplishes both
    * goals. */
-  static class ContextImpl extends Context implements Line {
+  static class ContextImpl<G, F> extends Context<G, F> implements Line<G, F> {
+
     ContextImpl(PrintWriter out, Source source,
-        LoadingCache<String, Pattern> patternCache) {
-      super(out, source, patternCache);
+        LoadingCache<String, Pattern> patternCache, G globalState, F state) {
+      super(out, source, patternCache, globalState, state);
     }
 
     @Override public int fnr() {
@@ -182,6 +201,10 @@ public class Puffin {
 
     @Override public boolean startsWith(String prefix) {
       return line.startsWith(prefix);
+    }
+
+    @Override public boolean contains(CharSequence s) {
+      return line.contains(s);
     }
 
     @Override public boolean endsWith(String suffix) {
@@ -198,24 +221,40 @@ public class Puffin {
   }
 
   /** Implementation of {@link Program}. */
-  private static class ProgramImpl implements Program {
-    private final PairList<Predicate<Line>, Consumer<Line>> pairList;
-    private final ImmutableList<Consumer<Context>> endList;
+  private static class ProgramImpl<G, F> implements Program<G> {
+    private final Supplier<G> globalStateFactory;
+    private final Function<G, F> fileStateFactory;
+    private final PairList<Predicate<Line<G, F>>, Consumer<Line<G, F>>> pairList;
+    private final ImmutableList<Consumer<Context<G, F>>> endList;
     @SuppressWarnings("Convert2MethodRef")
     private final LoadingCache<String, Pattern> patternCache =
         CacheBuilder.newBuilder()
             .build(CacheLoader.from(regex -> Pattern.compile(regex)));
 
-    private ProgramImpl(PairList<Predicate<Line>, Consumer<Line>> pairList,
-        ImmutableList<Consumer<Context>> endList) {
+    private ProgramImpl(Supplier<G> globalStateFactory,
+        Function<G, F> fileStateFactory,
+        PairList<Predicate<Line<G, F>>, Consumer<Line<G, F>>> pairList,
+        ImmutableList<Consumer<Context<G, F>>> endList) {
+      this.globalStateFactory = globalStateFactory;
+      this.fileStateFactory = fileStateFactory;
       this.pairList = pairList;
       this.endList = endList;
     }
 
-    @Override public void execute(Source source, PrintWriter out) {
+    @Override public G execute(Stream<? extends Source> sources,
+        PrintWriter out) {
+      final G globalState = globalStateFactory.get();
+      sources.forEach(source -> execute(globalState, source, out));
+      return globalState;
+    }
+
+    private void execute(G globalState, Source source, PrintWriter out) {
       try (Reader r = source.reader();
            BufferedReader br = new BufferedReader(r)) {
-        final ContextImpl x = new ContextImpl(out, source, patternCache);
+        final F fileState = fileStateFactory.apply(globalState);
+        final ContextImpl<G, F> x =
+            new ContextImpl<>(out, source, patternCache, globalState,
+                fileState);
         for (;;) {
           String lineText = br.readLine();
           if (lineText == null) {
@@ -233,6 +272,39 @@ public class Puffin {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  private static class BuilderImpl<G, F> implements Builder<G, F> {
+    private final Supplier<G> globalStateFactory;
+    private final Function<G, F> fileStateFactory;
+    final PairList<Predicate<Line<G, F>>, Consumer<Line<G, F>>> onLineList;
+    final List<Consumer<Context<G, F>>> afterList;
+
+    private BuilderImpl(Supplier<G> globalStateFactory,
+        Function<G, F> fileStateFactory,
+        PairList<Predicate<Line<G, F>>, Consumer<Line<G, F>>> onLineList,
+        List<Consumer<Context<G, F>>> afterList) {
+      this.globalStateFactory = globalStateFactory;
+      this.fileStateFactory = fileStateFactory;
+      this.onLineList = onLineList;
+      this.afterList = afterList;
+    }
+
+    @Override public Builder<G, F> add(Predicate<Line<G, F>> linePredicate,
+        Consumer<Line<G, F>> action) {
+      onLineList.add(linePredicate, action);
+      return this;
+    }
+
+    @Override public Builder<G, F> after(Consumer<Context<G, F>> action) {
+      afterList.add(action);
+      return this;
+    }
+
+    @Override public Program<G> build() {
+      return new ProgramImpl<>(globalStateFactory, fileStateFactory,
+          onLineList.immutable(), ImmutableList.copyOf(afterList));
     }
   }
 }
