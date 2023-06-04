@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.runtime.Unit;
 import org.apache.calcite.util.Puffin;
 import org.apache.calcite.util.Source;
 import org.apache.calcite.util.Sources;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,13 +39,13 @@ public class PuffinTest {
       new Fixture(Sources.of(""), Puffin.builder().build());
 
   @Test void testPuffin() {
-    final AtomicInteger counter = new AtomicInteger();
     Puffin.Program program =
-        Puffin.builder()
+        Puffin.builder(() -> Unit.INSTANCE, u -> new AtomicInteger())
             .add(line -> !line.startsWith("#")
                     && !line.matches(".*/\\*.*\\*/.*"),
-                line -> counter.incrementAndGet())
-            .after(context -> context.println("counter: " + counter.get()))
+                line -> line.state().incrementAndGet())
+            .after(context ->
+                context.println("counter: " + context.state().get()))
             .build();
     fixture().withDefaultInput()
         .withProgram(program)
@@ -91,7 +93,7 @@ public class PuffinTest {
     public Fixture generatesOutput(Matcher<String> matcher) {
       StringWriter sw = new StringWriter();
       try (PrintWriter pw = new PrintWriter(sw)) {
-        program.execute(source, pw);
+        program.execute(Stream.of(source), pw);
       }
       assertThat(sw, hasToString(matcher));
       return this;

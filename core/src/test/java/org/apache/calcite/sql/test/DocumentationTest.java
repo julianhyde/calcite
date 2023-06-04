@@ -196,77 +196,86 @@ class DocumentationTest {
     }
 
     /** Internal state of the lint rules. */
-    class State {
+    class GlobalState {
       int fileCount = 0;
-      List<Message> messages = new ArrayList<>();
+      final List<Message> messages = new ArrayList<>();
+    }
+    class FileState {
+      final GlobalState global;
       int starLine;
       int atLine;
       int javadocStartLine;
       int javadocEndLine;
 
-      void message(String message, Puffin.Line line) {
-        messages.add(new Message(line.source(), line.fnr(), message));
+      FileState(GlobalState global) {
+        this.global = global;
+      }
+
+      void message(String message, Puffin.Line<GlobalState, FileState> line) {
+        global.messages.add(new Message(line.source(), line.fnr(), message));
+      }
+
+      public boolean inJavadoc() {
+        return javadocEndLine < javadocStartLine;
       }
     }
-    final State state = new State();
+    final Puffin.Program<GlobalState> program =
+        Puffin.builder(GlobalState::new, FileState::new)
+            .add(line -> line.fnr() == 1,
+                line -> line.globalState().fileCount++)
 
-    final Puffin.Program program =
-        Puffin.builder()
-            .add(line -> line.fnr() == 1, line -> {
-              state.fileCount++;
-              state.starLine = 0;
-              state.atLine = 0;
-              state.javadocStartLine = 0;
-              state.javadocEndLine = 0;
-            })
-
-            // Javadoc does not require '</p>'
-            .add(line -> line.endsWith("</p>"),
-                line -> state.message("no </p>", line))
+            // Javadoc does not require '</p>', so we do not allow '</p>'
+            .add(line -> line.state().inJavadoc()
+                    && line.contains("</p>"),
+                line -> line.state().message("no </p>", line))
 
             // A Javadoc paragraph '<p>' must not be on its own line.
             .add(line -> line.matches("^ *\\* <p>"),
-                line -> state.message("<p> must not be on its own line", line))
+                line ->
+                    line.state().message("<p> must not be on its own line",
+                        line))
 
             // A Javadoc paragraph '<p>' must be preceded by a blank Javadoc
             // line.
             .add(line -> line.matches("^ *\\*"),
-                line -> state.starLine = line.fnr())
+                line -> line.state().starLine = line.fnr())
             .add(line -> line.matches("^ *\\* <p>.*")
-                    && line.fnr() - 1 != state.starLine,
-                line -> state.message("<p> must be preceded by blank line",
-                    line))
+                    && line.fnr() - 1 != line.state().starLine,
+                line ->
+                    line.state().message("<p> must be preceded by blank line",
+                        line))
 
             // The first "@param" of a javadoc block must be preceded by a blank
             // line.
             .add(line -> line.matches("^ */\\*\\*.*"),
-                line -> state.javadocStartLine = line.fnr())
+                line -> line.state().javadocStartLine = line.fnr())
             .add(line -> line.matches(".*\\*/"),
-                line -> state.javadocEndLine = line.fnr())
+                line -> line.state().javadocEndLine = line.fnr())
             .add(line -> line.matches("^ *\\* @.*"),
                 line -> {
-                  if (state.javadocEndLine < state.javadocStartLine
-                      && state.atLine < state.javadocStartLine
-                      && line.fnr() - 1 != state.starLine) {
-                    state.message("First @tag must be preceded by blank line",
+                  if (line.state().inJavadoc()
+                      && line.state().atLine < line.state().javadocStartLine
+                      && line.fnr() - 1 != line.state().starLine) {
+                    line.state().message(
+                        "First @tag must be preceded by blank line",
                         line);
                   }
-                  state.atLine = line.fnr();
+                  line.state().atLine = line.fnr();
                 })
             .build();
 
+    final GlobalState g;
     try (PrintWriter pw = Util.printWriter(System.out)) {
-      for (File file : new FileFixture().getJavaFiles()) {
-        program.execute(Sources.of(file), pw);
-      }
+      final List<File> javaFiles = new FileFixture().getJavaFiles();
+      g = program.execute(javaFiles.parallelStream().map(Sources::of), pw);
     }
 
-    System.out.println("Lint: " + state.fileCount + " files,"
-        + state.messages.size() + " warnings");
-    for (Message message : state.messages) {
+    System.out.println("Lint: " + g.fileCount + " files,"
+        + g.messages.size() + " warnings");
+    for (Message message : g.messages) {
       System.out.println(message);
     }
-    assertThat(state.messages, empty());
+    assertThat(g.messages, empty());
   }
 
   /** A compiled regex and an operator name. An item to be found in the
@@ -324,7 +333,7 @@ class DocumentationTest {
 
     /** Returns a list of Java files in git under a given directory.
      *
-     * <p>Assumes running Linux or macOS, and that git is available. */
+     * <p>Assumes running Linux or macOS, and that git is available.</p> */
     List<File> getJavaFiles() {
       return TestUnsafe.getJavaFiles(base);
     }
