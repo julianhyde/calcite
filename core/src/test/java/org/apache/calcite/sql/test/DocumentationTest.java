@@ -200,6 +200,8 @@ class DocumentationTest {
       int fileCount = 0;
       final List<Message> messages = new ArrayList<>();
     }
+
+    /** Internal state of the lint rules, per file. */
     class FileState {
       final GlobalState global;
       int starLine;

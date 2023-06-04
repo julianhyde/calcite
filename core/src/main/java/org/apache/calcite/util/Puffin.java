@@ -88,6 +88,8 @@ public class Puffin {
 
   /** Fluent interface for constructing a Program.
    *
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file
    * @see Puffin#builder */
   public interface Builder<G, F> {
     Builder<G, F> add(Predicate<Line<G, F>> linePredicate,
@@ -96,7 +98,9 @@ public class Puffin {
     Program<G> build();
   }
 
-  /** A Puffin program. You can execute it on a file. */
+  /** A Puffin program. You can execute it on a file.
+   *
+   * @param <G> Type of state that is created when we start processing */
   public interface Program<G> {
     /** Executes this program. */
     G execute(Stream<? extends Source> sources, PrintWriter out);
@@ -120,6 +124,9 @@ public class Puffin {
    * <p>Created by an executing program and passed to the predicate
    * and action that you registered in
    * {@link Builder#add(Predicate, Consumer)}.
+   *
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file
    */
   public interface Line<G, F> {
     G globalState();
@@ -131,10 +138,12 @@ public class Puffin {
     boolean endsWith(String suffix);
     boolean matches(String regex);
     String line();
-
   }
 
-  /** Context for executing a Puffin program within a given file. */
+  /** Context for executing a Puffin program within a given file.
+   *
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file */
   public static class Context<G, F> {
     final PrintWriter out;
     final Source source;
@@ -183,7 +192,10 @@ public class Puffin {
    * <p>We don't want clients to know that {@code Context} implements
    * {@code Line}, but neither do we want to create a new {@code Line} object
    * for every line in the file. Making this a subclass accomplishes both
-   * goals. */
+   * goals.
+   *
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file */
   static class ContextImpl<G, F> extends Context<G, F> implements Line<G, F> {
 
     ContextImpl(PrintWriter out, Source source,
@@ -220,7 +232,10 @@ public class Puffin {
     }
   }
 
-  /** Implementation of {@link Program}. */
+  /** Implementation of {@link Program}.
+   *
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file */
   private static class ProgramImpl<G, F> implements Program<G> {
     private final Supplier<G> globalStateFactory;
     private final Function<G, F> fileStateFactory;
@@ -275,6 +290,11 @@ public class Puffin {
     }
   }
 
+
+  /** Implementation of Builder.
+   *
+   * @param <G> Type of state that is created when we start processing
+   * @param <F> Type of state that is created when we start processing a file */
   private static class BuilderImpl<G, F> implements Builder<G, F> {
     private final Supplier<G> globalStateFactory;
     private final Function<G, F> fileStateFactory;
