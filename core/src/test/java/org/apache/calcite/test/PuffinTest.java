@@ -29,17 +29,20 @@ import java.io.StringWriter;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static org.apache.calcite.test.Matchers.isLinux;
+
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 
 /** Tests {@link Puffin}. */
 public class PuffinTest {
-  private static final Fixture EMPTY_FIXTURE =
-      new Fixture(Sources.of(""), Puffin.builder().build());
+  private static final Fixture<Unit> EMPTY_FIXTURE =
+      new Fixture<>(Sources.of(""), Puffin.builder().build());
 
   @Test void testPuffin() {
-    Puffin.Program program =
+    Puffin.Program<Unit> program =
         Puffin.builder(() -> Unit.INSTANCE, u -> new AtomicInteger())
             .add(line -> !line.startsWith("#")
                     && !line.matches(".*/\\*.*\\*/.*"),
@@ -49,32 +52,32 @@ public class PuffinTest {
             .build();
     fixture().withDefaultInput()
         .withProgram(program)
-        .generatesOutput(is("counter: 2\n"));
+        .generatesOutput(isLinux("counter: 2\n"));
   }
 
   @Test void testEmptyProgram() {
-    final Puffin.Program program = Puffin.builder().build();
+    final Puffin.Program<Unit> program = Puffin.builder().build();
     fixture().withDefaultInput()
         .withProgram(program)
         .generatesOutput(is(""));
   }
 
-  static Fixture fixture() {
+  static Fixture<Unit> fixture() {
     return EMPTY_FIXTURE;
   }
 
   /** Fixture that contains all the state necessary to test
    * {@link Puffin}. */
-  private static class Fixture {
+  private static class Fixture<G> {
     private final Source source;
-    private final Puffin.Program program;
+    private final Puffin.Program<G> program;
 
-    Fixture(Source source, Puffin.Program program) {
+    Fixture(Source source, Puffin.Program<G> program) {
       this.source = source;
       this.program = program;
     }
 
-    public Fixture withDefaultInput() {
+    public Fixture<G> withDefaultInput() {
       final String inputText = "first line\n"
           + "# second line\n"
           + "third line /* with a comment */\n"
@@ -82,18 +85,19 @@ public class PuffinTest {
       return withSource(Sources.of(inputText));
     }
 
-    private Fixture withSource(Source source) {
-      return new Fixture(source, program);
+    private Fixture<G> withSource(Source source) {
+      return new Fixture<>(source, program);
     }
 
-    public Fixture withProgram(Puffin.Program program) {
-      return new Fixture(source, program);
+    public <G2> Fixture<G2> withProgram(Puffin.Program<G2> program) {
+      return new Fixture<>(source, program);
     }
 
-    public Fixture generatesOutput(Matcher<String> matcher) {
+    public Fixture<G> generatesOutput(Matcher<String> matcher) {
       StringWriter sw = new StringWriter();
       try (PrintWriter pw = new PrintWriter(sw)) {
-        program.execute(Stream.of(source), pw);
+        G g = program.execute(Stream.of(source), pw);
+        assertThat(g, notNullValue());
       }
       assertThat(sw, hasToString(matcher));
       return this;
