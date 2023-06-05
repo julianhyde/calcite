@@ -27,10 +27,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserTest;
 import org.apache.calcite.test.DiffTestCase;
-import org.apache.calcite.util.Puffin;
-import org.apache.calcite.util.Source;
-import org.apache.calcite.util.Sources;
-import org.apache.calcite.util.TestUnsafe;
+import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
 
 import org.junit.jupiter.api.Test;
@@ -41,7 +38,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -54,8 +50,6 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /** Various automated checks on the documentation. */
 class DocumentationTest {
@@ -176,111 +170,6 @@ class DocumentationTest {
     }
   }
 
-  /** Tests that source code has no flaws. */
-  @Test void testLint() {
-    /** Warning that code is not as it should be. */
-    class Message {
-      final Source source;
-      final int line;
-      final String message;
-
-      Message(Source source, int line, String message) {
-        this.source = source;
-        this.line = line;
-        this.message = message;
-      }
-
-      @Override public String toString() {
-        return source + ":" + line + ":" + message;
-      }
-    }
-
-    /** Internal state of the lint rules. */
-    class GlobalState {
-      int fileCount = 0;
-      final List<Message> messages = new ArrayList<>();
-    }
-
-    /** Internal state of the lint rules, per file. */
-    class FileState {
-      final GlobalState global;
-      int starLine;
-      int atLine;
-      int javadocStartLine;
-      int javadocEndLine;
-
-      FileState(GlobalState global) {
-        this.global = global;
-      }
-
-      void message(String message, Puffin.Line<GlobalState, FileState> line) {
-        global.messages.add(new Message(line.source(), line.fnr(), message));
-      }
-
-      public boolean inJavadoc() {
-        return javadocEndLine < javadocStartLine;
-      }
-    }
-    @SuppressWarnings("Convert2MethodRef") // JDK 8 requires lambdas
-    final Puffin.Program<GlobalState> program =
-        Puffin.builder(() -> new GlobalState(), global -> new FileState(global))
-            .add(line -> line.fnr() == 1,
-                line -> line.globalState().fileCount++)
-
-            // Javadoc does not require '</p>', so we do not allow '</p>'
-            .add(line -> line.state().inJavadoc()
-                    && line.contains("</p>"),
-                line -> line.state().message("no </p>", line))
-
-            // A Javadoc paragraph '<p>' must not be on its own line.
-            .add(line -> line.matches("^ *\\* <p>"),
-                line ->
-                    line.state().message("<p> must not be on its own line",
-                        line))
-
-            // A Javadoc paragraph '<p>' must be preceded by a blank Javadoc
-            // line.
-            .add(line -> line.matches("^ *\\*"),
-                line -> line.state().starLine = line.fnr())
-            .add(line -> line.matches("^ *\\* <p>.*")
-                    && line.fnr() - 1 != line.state().starLine,
-                line ->
-                    line.state().message("<p> must be preceded by blank line",
-                        line))
-
-            // The first "@param" of a javadoc block must be preceded by a blank
-            // line.
-            .add(line -> line.matches("^ */\\*\\*.*"),
-                line -> line.state().javadocStartLine = line.fnr())
-            .add(line -> line.matches(".*\\*/"),
-                line -> line.state().javadocEndLine = line.fnr())
-            .add(line -> line.matches("^ *\\* @.*"),
-                line -> {
-                  if (line.state().inJavadoc()
-                      && line.state().atLine < line.state().javadocStartLine
-                      && line.fnr() - 1 != line.state().starLine) {
-                    line.state().message(
-                        "First @tag must be preceded by blank line",
-                        line);
-                  }
-                  line.state().atLine = line.fnr();
-                })
-            .build();
-
-    final GlobalState g;
-    try (PrintWriter pw = Util.printWriter(System.out)) {
-      final List<File> javaFiles = new FileFixture().getJavaFiles();
-      g = program.execute(javaFiles.parallelStream().map(Sources::of), pw);
-    }
-
-    System.out.println("Lint: " + g.fileCount + " files,"
-        + g.messages.size() + " warnings");
-    for (Message message : g.messages) {
-      System.out.println(message);
-    }
-    assertThat(g.messages, empty());
-  }
-
   /** A compiled regex and an operator name. An item to be found in the
    * documentation. */
   private static class PatternOp {
@@ -299,46 +188,12 @@ class DocumentationTest {
     final File inFile;
     final File outFile;
 
-    private boolean isProjectDir(File dir) {
-      return new File(dir, "pom.xml").isFile()
-          || new File(dir, "build.gradle.kts").isFile()
-          || new File(dir, "gradle.properties").isFile();
-    }
-
     FileFixture() {
-      // Algorithm:
-      // 1) Find location of DocumentationTest.class
-      // 2) Climb via getParentFile() until we detect pom.xml
-      // 3) It means we've got core/pom.xml, and we need to get core/../site/
-      Class<DocumentationTest> klass = DocumentationTest.class;
-      File docTestClass =
-          Sources.of(klass.getResource(klass.getSimpleName() + ".class")).file();
-
-      File core = docTestClass.getAbsoluteFile();
-      for (int i = 0; i < 42; i++) {
-        if (isProjectDir(core)) {
-          // Ok, core == core/
-          break;
-        }
-        core = core.getParentFile();
-      }
-      if (!isProjectDir(core)) {
-        fail("Unable to find neither core/pom.xml nor core/build.gradle.kts. Started with "
-            + docTestClass.getAbsolutePath()
-            + ", the current path is " + core.getAbsolutePath());
-      }
-      base = core.getParentFile();
+      base = TestUtil.getBaseDir(DocumentationTest.class);
       inFile = new File(base, "site/_docs/reference.md");
       // TODO: replace with core/build/ when Maven is migrated to Gradle
       // It does work in Gradle, however, we don't want to create "target" folder in Gradle
       outFile = new File(base, "core/build/reports/documentationTest/reference.md");
-    }
-
-    /** Returns a list of Java files in git under a given directory.
-     *
-     * <p>Assumes running Linux or macOS, and that git is available. */
-    List<File> getJavaFiles() {
-      return TestUnsafe.getJavaFiles(base);
     }
   }
 }

@@ -149,7 +149,7 @@ public class Puffin {
     final Source source;
     final F fileState;
     final G globalState;
-    private final LoadingCache<String, Pattern> patternCache;
+    private final Function<String, Pattern> patternCache;
 
     /** Holds the current line. */
     String line = "";
@@ -161,7 +161,7 @@ public class Puffin {
     int fnr = 0;
 
     Context(PrintWriter out, Source source,
-        LoadingCache<String, Pattern> patternCache, G globalState,
+        Function<String, Pattern> patternCache, G globalState,
         F fileState) {
       this.out = requireNonNull(out, "out");
       this.source = requireNonNull(source, "source");
@@ -183,7 +183,7 @@ public class Puffin {
     }
 
     Pattern pattern(String regex) {
-      return patternCache.getUnchecked(regex);
+      return patternCache.apply(regex);
     }
   }
 
@@ -199,7 +199,7 @@ public class Puffin {
   static class ContextImpl<G, F> extends Context<G, F> implements Line<G, F> {
 
     ContextImpl(PrintWriter out, Source source,
-        LoadingCache<String, Pattern> patternCache, G globalState, F state) {
+        Function<String, Pattern> patternCache, G globalState, F state) {
       super(out, source, patternCache, globalState, state);
     }
 

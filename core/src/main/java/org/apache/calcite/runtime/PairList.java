@@ -53,7 +53,7 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
    *
    * <p>Changes to the backing list will be reflected in the PairList.
    * If the backing list is immutable, this PairList will be also. */
-  public static <T, U> PairList<T, U> backedBy(List<Object> list) {
+  public static <T, U> PairList<T, U> backedBy(List<@Nullable Object> list) {
     return new PairList<>(list);
   }
 
@@ -154,7 +154,8 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   /** Returns an immutable PairList whose contents are the same as this
    * PairList. */
   public PairList<T, U> immutable() {
-    return backedBy(ImmutableList.copyOf(list));
+    final List<@Nullable Object> immutableList = ImmutableList.copyOf(list);
+    return backedBy(immutableList);
   }
 
   /** Action to be taken each step of an indexed iteration over a PairList.
