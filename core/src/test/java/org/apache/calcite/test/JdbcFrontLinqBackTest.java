@@ -307,7 +307,7 @@ public class JdbcFrontLinqBackTest {
    * @return a connection post-processor
    */
   private static CalciteAssert.ConnectionPostProcessor makePostProcessor(
-      final List<Employee> initialData, boolean withMeasures) {
+      List<Employee> initialData, boolean withMeasures) {
     return connection -> {
       CalciteConnection calciteConnection =
           connection.unwrap(CalciteConnection.class);
@@ -319,11 +319,6 @@ public class JdbcFrontLinqBackTest {
       mapSchema.add(tableName, table);
       return calciteConnection;
     };
-  }
-
-  private static CalciteAssert.ConnectionPostProcessor makePostProcessor(
-      final List<Employee> initialData) {
-    return makePostProcessor(initialData, false);
   }
 
   /**
@@ -344,7 +339,7 @@ public class JdbcFrontLinqBackTest {
    * {@link Employee} schema.
    */
   public static Connection makeConnection() throws Exception {
-    return makeConnection(new ArrayList<Employee>(), /* withMeasures = */ false);
+    return makeConnection(new ArrayList<>(), false);
   }
 
   private CalciteAssert.AssertThat mutable(
@@ -352,20 +347,15 @@ public class JdbcFrontLinqBackTest {
     employees.add(new Employee(0, 0, "first", 0f, null));
     return that()
         .with(CalciteAssert.Config.REGULAR)
-        .with(makePostProcessor(employees));
-  }
-
-  static AbstractModifiableTable mutable(String tableName, final List<Employee> employees) {
-    return mutable(tableName, employees, /* withMeasures = */ false);
+        .with(makePostProcessor(employees, false));
   }
 
   /** Creates an AbstractModifiableTable based on {@link Employee} class.
    *
-   * If {@code withMeasures} is true, then {@link Employee#salary} field is treated
-   * as a {@link MeasureSqlType} of type {@link SqlTypeName#FLOAT}.
-   */
-  static AbstractModifiableTable mutable(String tableName, final List<Employee> employees,
-      final boolean withMeasures) {
+   * <p>If {@code withMeasures} is true, treats {@link Employee#salary} field
+   * as a {@link MeasureSqlType} of type {@link SqlTypeName#FLOAT}. */
+  static AbstractModifiableTable mutable(String tableName,
+      List<Employee> employees, boolean withMeasures) {
     return new AbstractModifiableTable(tableName) {
       public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         final JavaTypeFactory javaTypeFactory = (JavaTypeFactory) typeFactory;
@@ -379,7 +369,9 @@ public class JdbcFrontLinqBackTest {
                     ? javaTypeFactory.createMeasureType(
                         javaTypeFactory.createSqlType(SqlTypeName.FLOAT))
                     : javaTypeFactory.createType(fieldType);
-            list.add(new RelDataTypeFieldImpl(field.getName(), list.size(), relType));
+            list.add(
+                new RelDataTypeFieldImpl(field.getName(), list.size(),
+                    relType));
           }
         }
         return new JavaRecordType(list, Employee.class);

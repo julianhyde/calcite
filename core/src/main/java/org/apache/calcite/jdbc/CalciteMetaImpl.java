@@ -460,10 +460,10 @@ public class CalciteMetaImpl extends MetaImpl {
                   ? field.getType().getPrecision()
                   : -1;
           // MEASURE is a special case. We want to surface the type returned
-          // after aggregation rather than its default java.sql.Type of `OTHER(1111)`
+          // after aggregation rather than its default java.sql.Type,
+          // OTHER(1111).
           final int jdbcOrdinal =
-              Optional
-                  .ofNullable(field.getType().getMeasureElementType())
+              Optional.ofNullable(field.getType().getMeasureElementType())
                   .map(RelDataType::getSqlTypeName)
                   .map(SqlTypeName::getJdbcOrdinal)
                   .orElse(field.getType().getSqlTypeName().getJdbcOrdinal());

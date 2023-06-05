@@ -831,18 +831,20 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     }
   }
 
-  private static @Nullable String origin(@Nullable List<String> origins, int offsetFromEnd) {
+  private static @Nullable String origin(@Nullable List<String> origins,
+      int offsetFromEnd) {
     return origins == null || offsetFromEnd >= origins.size()
         ? null
         : origins.get(origins.size() - 1 - offsetFromEnd);
   }
 
-  @SuppressWarnings("dereference.of.nullable")
   private static int getTypeOrdinal(RelDataType type) {
     switch (type.getSqlTypeName()) {
     case MEASURE:
       // getMeasureElementType() for MEASURE types will never be null
-      return type.getMeasureElementType().getSqlTypeName().getJdbcOrdinal();
+      final RelDataType measureElementType =
+          requireNonNull(type.getMeasureElementType(), "measureElementType");
+      return measureElementType.getSqlTypeName().getJdbcOrdinal();
     default:
       return type.getSqlTypeName().getJdbcOrdinal();
     }

@@ -250,15 +250,16 @@ class CalciteRemoteDriverTest {
   @Test void testMeasureColumnsLocal() throws Exception {
     final Connection connection = makeConnectionWithMeasures();
     assertThat(connection.isClosed(), is(false));
-    final ResultSet resultSet = connection.getMetaData().getColumns(null, "foo", null, "salary");
+    final ResultSet resultSet =
+        connection.getMetaData().getColumns(null, "foo", null, "salary");
     assertThat(resultSet.getMetaData().getColumnCount(), is(24));
     final int typeNameIdx = resultSet.findColumn("TYPE_NAME");
     final int dataTypeIdx = resultSet.findColumn("DATA_TYPE");
     assertThat(resultSet.next(), is(true));
-    assertThat(resultSet.getString(typeNameIdx), is("MEASURE<FLOAT NOT NULL> NOT NULL"));
+    assertThat(resultSet.getString(typeNameIdx),
+        is("MEASURE<FLOAT NOT NULL> NOT NULL"));
     assertThat(resultSet.getInt(dataTypeIdx), is(6));
   }
-
 
   @Test void testRemoteCatalogs() {
     CalciteAssert.hr()
@@ -551,21 +552,23 @@ class CalciteRemoteDriverTest {
     }
   }
 
-  public static Connection makeConnection(boolean withMeasures) throws Exception {
+  public static Connection makeConnection(boolean withMeasures)
+      throws Exception {
     List<Employee> employees = new ArrayList<Employee>();
     for (int i = 1; i <= 101; i++) {
       employees.add(new Employee(i, 0, "first", 0f, null));
     }
-    Connection conn = JdbcFrontLinqBackTest.makeConnection(employees, withMeasures);
-    return conn;
+    return JdbcFrontLinqBackTest.makeConnection(employees, withMeasures);
   }
 
+  /** Creates a connection without measures. */
   public static Connection makeConnection() throws Exception {
-    return makeConnection(/* withMeasures = */ false);
+    return makeConnection(false);
   }
 
+  /** Creates a connection with measures. */
   public static Connection makeConnectionWithMeasures() throws Exception {
-    return makeConnection(/* withMeasures = */ true);
+    return makeConnection(true);
   }
 
   @Test void testLocalStatementFetch() throws Exception {
