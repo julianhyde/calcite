@@ -67,7 +67,9 @@ public class PuffinTest {
   }
 
   /** Fixture that contains all the state necessary to test
-   * {@link Puffin}. */
+   * {@link Puffin}.
+   *
+   * @param <G> Type of state that is created when we start processing */
   private static class Fixture<G> {
     private final Source source;
     private final Puffin.Program<G> program;
