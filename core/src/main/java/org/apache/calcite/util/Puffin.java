@@ -75,7 +75,7 @@ public class Puffin {
    * @param <G> Type of state that is created when we start processing
    * @param <F> Type of state that is created when we start processing a file
    */
-  public static <F, G> Builder<G, F> builder(Supplier<G> globalStateFactory,
+  public static <G, F> Builder<G, F> builder(Supplier<G> globalStateFactory,
       Function<G, F> fileStateFactory) {
     return new BuilderImpl<>(globalStateFactory, fileStateFactory,
         PairList.of(), new ArrayList<>());

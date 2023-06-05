@@ -221,8 +221,10 @@ class DocumentationTest {
         return javadocEndLine < javadocStartLine;
       }
     }
+    @SuppressWarnings("Convert2MethodRef") // JDK 8 requires lambdas
     final Puffin.Program<GlobalState> program =
-        Puffin.builder(GlobalState::new, FileState::new)
+        Puffin.<GlobalState, FileState>builder(() -> new GlobalState(),
+                global -> new FileState(global))
             .add(line -> line.fnr() == 1,
                 line -> line.globalState().fileCount++)
 
