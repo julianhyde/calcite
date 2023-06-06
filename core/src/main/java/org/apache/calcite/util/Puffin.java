@@ -242,9 +242,11 @@ public class Puffin {
     private final PairList<Predicate<Line<G, F>>, Consumer<Line<G, F>>> pairList;
     private final ImmutableList<Consumer<Context<G, F>>> endList;
     @SuppressWarnings("Convert2MethodRef")
-    private final LoadingCache<String, Pattern> patternCache =
+    private final LoadingCache<String, Pattern> patternCache0 =
         CacheBuilder.newBuilder()
             .build(CacheLoader.from(regex -> Pattern.compile(regex)));
+    private final Function<String, Pattern> patternCache =
+        patternCache0::getUnchecked;
 
     private ProgramImpl(Supplier<G> globalStateFactory,
         Function<G, F> fileStateFactory,
@@ -268,7 +270,7 @@ public class Puffin {
            BufferedReader br = new BufferedReader(r)) {
         final F fileState = fileStateFactory.apply(globalState);
         final ContextImpl<G, F> x =
-            new ContextImpl<>(out, source, patternCache, globalState,
+            new ContextImpl<G, F>(out, source, patternCache, globalState,
                 fileState);
         for (;;) {
           String lineText = br.readLine();
