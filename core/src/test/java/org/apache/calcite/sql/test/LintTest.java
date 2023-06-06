@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql.test;
 
-import org.apache.calcite.test.concurrent.ConcurrentTestCommandScript;
 import org.apache.calcite.util.Puffin;
 import org.apache.calcite.util.Source;
 import org.apache.calcite.util.Sources;
