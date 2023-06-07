@@ -6879,7 +6879,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
       Iterable<SqlCall> allAggList = validator.aggFinder.findAll(ImmutableList.of(root));
       for (SqlCall agg : allAggList) {
-        if (clause == Clause.HAVING && containsIdentifier(agg, id)) {
+        if (clause == Clause.HAVING && SqlUtil.containsIdentifier(agg, id)) {
           return super.visit(id);
         }
       }
@@ -6939,31 +6939,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
 
       return super.visit(literal);
-    }
-
-    /**
-     * Returns whether a given node contains a {@link SqlIdentifier}.
-     *
-     * @param sqlNode a SqlNode
-     * @param target a SqlIdentifier
-     */
-    private boolean containsIdentifier(SqlNode sqlNode, SqlIdentifier target) {
-      try {
-        SqlVisitor<Void> visitor =
-            new SqlBasicVisitor<Void>() {
-              @Override public Void visit(SqlIdentifier identifier) {
-                if (identifier.equalsDeep(target, Litmus.IGNORE)) {
-                  throw new Util.FoundOne(target);
-                }
-                return super.visit(identifier);
-              }
-            };
-        sqlNode.accept(visitor);
-        return false;
-      } catch (Util.FoundOne e) {
-        Util.swallow(e, null);
-        return true;
-      }
     }
   }
 

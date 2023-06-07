@@ -37,6 +37,7 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.BarfingInvocationHandler;
@@ -1100,6 +1101,36 @@ public abstract class SqlUtil {
     }
   }
 
+  /** Returns whether a list contains any identifiers. */
+  public static boolean containsAny(SqlNodeList valueList) {
+    try {
+      new IdentifierFinder(identifier -> true).visit(valueList);
+      return false;
+    } catch (Util.FoundOne e) {
+      Util.swallow(e, null);
+      return true;
+    }
+  }
+
+  /**
+   * Returns whether a given node contains a given {@link SqlIdentifier}.
+   *
+   * @param node A SqlNode
+   * @param target SqlIdentifier to find
+   */
+  public static boolean containsIdentifier(SqlNode node, SqlIdentifier target) {
+    try {
+      SqlVisitor<Void> visitor =
+          new IdentifierFinder(identifier ->
+              identifier.equalsDeep(target, Litmus.IGNORE));
+      node.accept(visitor);
+      return false;
+    } catch (Util.FoundOne e) {
+      Util.swallow(e, null);
+      return true;
+    }
+  }
+
   /**
    * Returns an immutable list of {@link RelHint} from sql hints, with a given
    * inherit path from the root node.
@@ -1153,6 +1184,7 @@ public abstract class SqlUtil {
    * @return A copy of {@code rel} if there are any hints can be attached given
    * the hint strategies, or the original node if such hints don't exist
    */
+  @Deprecated // to be removed before 2.0
   public static RelNode attachRelHint(
       HintStrategyTable hintStrategies,
       List<RelHint> hints,
@@ -1232,6 +1264,7 @@ public abstract class SqlUtil {
    * {@link org.apache.calcite.util.BarfingInvocationHandler}, which will throw
    * an error.
    */
+  @Deprecated // to be removed before 2.0
   public static class DatabaseMetaDataInvocationHandler
       extends BarfingInvocationHandler {
     private final String databaseProductName;
@@ -1329,6 +1362,24 @@ public abstract class SqlUtil {
 
     @Override public Void visit(SqlDataTypeSpec type) {
       return check(type);
+    }
+  }
+
+  /** Visits a tree of {@link org.apache.calcite.sql.SqlNode} and throws
+   * {@link Util.FoundOne} if there is a {@link SqlIdentifier} that matches
+   * a predicate. */
+  private static class IdentifierFinder extends SqlBasicVisitor<Void> {
+    private final Predicate<SqlIdentifier> predicate;
+
+    IdentifierFinder(Predicate<SqlIdentifier> predicate) {
+      this.predicate = predicate;
+    }
+
+    @Override public Void visit(SqlIdentifier identifier) {
+      if (predicate.test(identifier)) {
+        throw new Util.FoundOne(predicate);
+      }
+      return super.visit(identifier);
     }
   }
 }

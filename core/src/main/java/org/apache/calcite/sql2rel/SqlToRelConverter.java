@@ -1208,9 +1208,10 @@ public class SqlToRelConverter {
 
       if (query instanceof SqlNodeList) {
         SqlNodeList valueList = (SqlNodeList) query;
-        // When the list size under the threshold or the list references columns, we convert to OR.
+        // When the list size under the threshold or the list references
+        // columns, we convert to OR.
         if (valueList.size() < config.getInSubQueryThreshold()
-            || valueList.accept(new SqlIdentifierFinder())) {
+            || SqlUtil.containsAny(valueList)) {
           subQuery.expr =
               convertInToOr(
                   bb,
@@ -6511,43 +6512,6 @@ public class SqlToRelConverter {
       this.logic = logic;
       this.clause = clause;
     }
-  }
-
-  /**
-   * Visitor that looks for an SqlIdentifier inside a tree of
-   * {@link SqlNode} objects and return {@link Boolean#TRUE} when it finds
-   * one.
-   */
-  public static class SqlIdentifierFinder implements SqlVisitor<Boolean> {
-
-    @Override public Boolean visit(SqlCall sqlCall) {
-      return sqlCall.getOperandList().stream().anyMatch(sqlNode -> sqlNode.accept(this));
-    }
-
-    @Override public Boolean visit(SqlNodeList nodeList) {
-      return nodeList.stream().anyMatch(sqlNode -> sqlNode.accept(this));
-    }
-
-    @Override public Boolean visit(SqlIdentifier identifier) {
-      return true;
-    }
-
-    @Override public Boolean visit(SqlLiteral literal) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlDataTypeSpec type) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlDynamicParam param) {
-      return false;
-    }
-
-    @Override public Boolean visit(SqlIntervalQualifier intervalQualifier) {
-      return false;
-    }
-
   }
 
   /**
