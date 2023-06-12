@@ -176,7 +176,7 @@ public interface SqlValidator {
    *                      type 'unknown'.
    * @throws RuntimeException if the query is not valid
    */
-  void validateQuery(SqlNode node, @Nullable SqlValidatorScope scope,
+  void validateQuery(SqlNode node, SqlValidatorScope scope,
       RelDataType targetRowType);
 
   /**
@@ -579,7 +579,7 @@ public interface SqlValidator {
    * @return naming scope for JOIN clause
    * @see #getFromScope
    */
-  @Nullable SqlValidatorScope getJoinScope(SqlNode node);
+  SqlValidatorScope getJoinScope(SqlNode node);
 
   /**
    * Returns a scope containing the objects visible from the GROUP BY clause
@@ -779,7 +779,7 @@ public interface SqlValidator {
 
   void validateSequenceValue(SqlValidatorScope scope, SqlIdentifier id);
 
-  @Nullable SqlValidatorScope getWithScope(SqlNode withItem);
+  SqlValidatorScope getWithScope(SqlNode withItem);
 
   /** Get the type coercion instance. */
   TypeCoercion getTypeCoercion();

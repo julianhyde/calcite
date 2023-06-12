@@ -922,7 +922,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
   private void lookupJoinHints(
       SqlJoin join,
-      @Nullable SqlValidatorScope scope,
+      SqlValidatorScope scope,
       SqlParserPos pos,
       Collection<SqlMoniker> hintList) {
     SqlNode left = join.getLeft();
@@ -1110,7 +1110,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return outermostNode;
   }
 
-  @Override public void validateQuery(SqlNode node, @Nullable SqlValidatorScope scope,
+  @Override public void validateQuery(SqlNode node, SqlValidatorScope scope,
       RelDataType targetRowType) {
     final SqlValidatorNamespace ns = getNamespaceOrThrow(node, scope);
     if (node.getKind() == SqlKind.TABLESAMPLE) {
@@ -1219,12 +1219,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return getScopeOrThrow(node);
   }
 
-  @Override public @Nullable SqlValidatorScope getJoinScope(SqlNode node) {
-    return scopes.get(stripAs(node));
+  @Override public SqlValidatorScope getJoinScope(SqlNode node) {
+    return requireNonNull(scopes.get(stripAs(node)),
+        () -> "scope for " + node);
   }
 
   @Override public SqlValidatorScope getOverScope(SqlNode node) {
     return getScopeOrThrow(node);
+  }
+
+  @Override public SqlValidatorScope getWithScope(SqlNode withItem) {
+    assert withItem.getKind() == SqlKind.WITH_ITEM;
+    return getScopeOrThrow(withItem);
   }
 
   private SqlValidatorScope getScopeOrThrow(SqlNode node) {
@@ -2273,7 +2279,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * Registers scopes and namespaces implied a relational expression in the
    * FROM clause.
    *
-   * <p>{@code parentScope} and {@code usingScope} are often the same. They
+   * <p>{@code parentScope0} and {@code usingScope} are often the same. They
    * differ when the namespace are not visible within the parent. (Example
    * needed.)
    *
@@ -2283,7 +2289,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * sample clause are stripped away to get {@code node}. Both are recorded in
    * the namespace.
    *
-   * @param parentScope   Parent scope which this scope turns to in order to
+   * @param parentScope0  Parent scope which this scope turns to in order to
    *                      resolve objects
    * @param usingScope    Scope whose child list this scope should add itself to
    * @param register      Whether to register this scope as a child of
@@ -2301,7 +2307,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @return registered node, usually the same as {@code node}
    */
   private SqlNode registerFrom(
-      SqlValidatorScope parentScope,
+      SqlValidatorScope parentScope0,
       SqlValidatorScope usingScope,
       boolean register,
       final SqlNode node,
@@ -2358,19 +2364,22 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
 
+    final SqlValidatorScope parentScope;
     if (lateral) {
       SqlValidatorScope s = usingScope;
       while (s instanceof JoinScope) {
         s = ((JoinScope) s).getUsingScope();
       }
       final SqlNode node2 = s != null ? s.getNode() : node;
-      final TableScope tableScope = new TableScope(parentScope, node2);
+      final TableScope tableScope = new TableScope(parentScope0, node2);
       if (usingScope instanceof ListScope) {
         for (ScopeChild child : ((ListScope) usingScope).children) {
           tableScope.addChild(child.namespace, child.name, child.nullable);
         }
       }
       parentScope = tableScope;
+    } else {
+      parentScope = parentScope0;
     }
 
     SqlCall call;
@@ -2498,6 +2507,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       if (newRight != right) {
         join.setRight(newRight);
       }
+      scopes.putIfAbsent(stripAs(join.getRight()), parentScope);
+      scopes.putIfAbsent(stripAs(join.getLeft()), parentScope);
       registerSubQueries(joinScope, join.getCondition());
       final JoinNamespace joinNamespace = new JoinNamespace(this, join);
       registerNamespace(null, null, joinNamespace, forceNullable);
@@ -4317,11 +4328,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     throw newValidationError(id, RESOURCE.notASequence(id.toString()));
   }
 
-  @Override public @Nullable SqlValidatorScope getWithScope(SqlNode withItem) {
-    assert withItem.getKind() == SqlKind.WITH_ITEM;
-    return scopes.get(withItem);
-  }
-
   @Override public TypeCoercion getTypeCoercion() {
     assert config.typeCoercionEnabled();
     return this.typeCoercion;
@@ -5850,9 +5856,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validatePivot(SqlPivot pivot) {
-    final PivotScope scope =
-        requireNonNull((PivotScope) getJoinScope(pivot),
-            () -> "joinScope for " + pivot);
+    final PivotScope scope = (PivotScope) getJoinScope(pivot);
 
     final PivotNamespace ns =
         getNamespaceOrThrow(pivot).unwrap(PivotNamespace.class);
@@ -5928,9 +5932,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validateUnpivot(SqlUnpivot unpivot) {
-    final UnpivotScope scope =
-        (UnpivotScope) requireNonNull(getJoinScope(unpivot), () ->
-            "scope for " + unpivot);
+    final UnpivotScope scope = (UnpivotScope) getJoinScope(unpivot);
 
     final UnpivotNamespace ns =
         getNamespaceOrThrow(unpivot).unwrap(UnpivotNamespace.class);

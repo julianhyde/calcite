@@ -2628,7 +2628,6 @@ public class SqlToRelConverter {
 
   protected void convertPivot(Blackboard bb, SqlPivot pivot) {
     final SqlValidatorScope scope = validator().getJoinScope(pivot);
-
     final Blackboard pivotBb = createBlackboard(scope, null, false);
 
     // Convert input
@@ -2712,7 +2711,6 @@ public class SqlToRelConverter {
 
   protected void convertUnpivot(Blackboard bb, SqlUnpivot unpivot) {
     final SqlValidatorScope scope = validator().getJoinScope(unpivot);
-
     final Blackboard unpivotBb = createBlackboard(scope, null, false);
 
     // Convert input
@@ -3147,16 +3145,13 @@ public class SqlToRelConverter {
     SqlValidator validator = validator();
     final SqlValidatorScope scope = validator.getJoinScope(join);
     final Blackboard fromBlackboard = createBlackboard(scope, null, false);
+
     SqlNode left = join.getLeft();
     SqlNode right = join.getRight();
-    final SqlValidatorScope leftScope =
-        Util.first(validator.getJoinScope(left),
-            ((DelegatingScope) bb.scope).getParent());
+    final SqlValidatorScope leftScope = validator.getJoinScope(left);
     final Blackboard leftBlackboard =
         createBlackboard(leftScope, null, false);
-    final SqlValidatorScope rightScope =
-        Util.first(validator.getJoinScope(right),
-            ((DelegatingScope) bb.scope).getParent());
+    final SqlValidatorScope rightScope = validator.getJoinScope(right);
     final Blackboard rightBlackboard =
         createBlackboard(rightScope, null, false);
     convertFrom(leftBlackboard, left);
