@@ -685,7 +685,7 @@ public class SqlToRelConverter {
   /**
    * Factory method for creating translation workspace.
    */
-  protected Blackboard createBlackboard(@Nullable SqlValidatorScope scope,
+  protected Blackboard createBlackboard(SqlValidatorScope scope,
       @Nullable Map<String, RexNode> nameToNodeMap, boolean top) {
     return new Blackboard(scope, nameToNodeMap, top);
   }
@@ -1084,7 +1084,7 @@ public class SqlToRelConverter {
     if (where == null) {
       return;
     }
-    SqlNode newWhere = pushDownNotForIn(bb.scope(), where);
+    SqlNode newWhere = pushDownNotForIn(bb.scope, where);
     replaceSubQueries(bb, newWhere, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
     final RexNode convertedWhere = bb.convertExpression(newWhere);
     final RexNode convertedWhere2 =
@@ -1309,7 +1309,7 @@ public class SqlToRelConverter {
       final SqlValidatorScope seekScope =
           (query instanceof SqlSelect)
               ? validator().getSelectScope((SqlSelect) query)
-              : null;
+              : ((SqlValidatorImpl) validator()).getEmptyScope();
       final Blackboard seekBb = createBlackboard(seekScope, null, false);
       final RelNode seekRel = convertQueryOrInList(seekBb, query, null);
       requireNonNull(seekRel, () -> "seekRel is null for query " + query);
@@ -1428,7 +1428,7 @@ public class SqlToRelConverter {
   private ImmutableBitSet buildPartitionKeys(Blackboard bb, SqlNodeList partitionList) {
     final ImmutableBitSet.Builder partitionKeys = ImmutableBitSet.builder();
     for (SqlNode partition : partitionList) {
-      validator().deriveType(bb.scope(), partition);
+      validator().deriveType(bb.scope, partition);
       RexNode e = bb.convertExpression(partition);
       partitionKeys.set(parseFieldIdx(e));
     }
@@ -1808,7 +1808,7 @@ public class SqlToRelConverter {
     final SqlValidatorScope seekScope =
         (seek instanceof SqlSelect)
             ? validator().getSelectScope((SqlSelect) seek)
-            : null;
+            : ((SqlValidatorImpl) validator()).getEmptyScope();
     final Blackboard seekBb = createBlackboard(seekScope, null, false);
     RelNode seekRel = convertQueryOrInList(seekBb, seek, targetDataType);
     requireNonNull(seekRel, () -> "seekRel is null for query " + seek);
@@ -2103,7 +2103,8 @@ public class SqlToRelConverter {
       if (node instanceof SqlBasicCall
           && ((SqlCall) node).getOperator() instanceof SqlQuantifyOperator
           && ((SqlQuantifyOperator) ((SqlCall) node).getOperator())
-              .tryDeriveTypeForCollection(bb.getValidator(), bb.scope(), (SqlCall) node) != null) {
+              .tryDeriveTypeForCollection(bb.getValidator(), bb.scope,
+                  (SqlCall) node) != null) {
         findSubQueries(bb, ((SqlCall) node).operand(0), logic, registerOnlyScalarSubQueries,
             clause);
         findSubQueries(bb, ((SqlCall) node).operand(1), logic, registerOnlyScalarSubQueries,
@@ -2192,7 +2193,7 @@ public class SqlToRelConverter {
 
     SqlNode windowOrRef = call.operand(1);
     final SqlWindow window =
-        validator().resolveWindow(windowOrRef, bb.scope());
+        validator().resolveWindow(windowOrRef, bb.scope);
 
     SqlNode sqlLowerBound = window.getLowerBound();
     SqlNode sqlUpperBound = window.getUpperBound();
@@ -2224,7 +2225,7 @@ public class SqlToRelConverter {
     final ImmutableList.Builder<RexNode> partitionKeys =
         ImmutableList.builder();
     for (SqlNode partition : partitionList) {
-      validator().deriveType(bb.scope(), partition);
+      validator().deriveType(bb.scope, partition);
       partitionKeys.add(bb.convertExpression(partition));
     }
     final RexNode lowerBound =
@@ -2235,7 +2236,7 @@ public class SqlToRelConverter {
       // A logical range requires an ORDER BY clause. Use the implicit
       // ordering of this relation. There must be one, otherwise it would
       // have failed validation.
-      orderList = bb.scope().getOrderList();
+      orderList = bb.scope.getOrderList();
       if (orderList == null) {
         throw new AssertionError(
             "Relation should have sort key for implicit ORDER BY");
@@ -2813,7 +2814,7 @@ public class SqlToRelConverter {
     // Expand table macro if possible. It's more efficient than
     // LogicalTableFunctionScan.
     final SqlCallBinding callBinding =
-        new SqlCallBinding(bb.scope().getValidator(), bb.scope, call);
+        new SqlCallBinding(bb.scope.getValidator(), bb.scope, call);
     if (operator instanceof SqlUserDefinedTableMacro) {
       final SqlUserDefinedTableMacro udf =
           (SqlUserDefinedTableMacro) operator;
@@ -2998,7 +2999,7 @@ public class SqlToRelConverter {
           bb.getValidator().getCatalogReader().nameMatcher();
       final SqlValidatorScope.ResolvedImpl resolved =
           new SqlValidatorScope.ResolvedImpl();
-      lookup.bb.scope().resolve(ImmutableList.of(originalRelName),
+      lookup.bb.scope.resolve(ImmutableList.of(originalRelName),
           nameMatcher, false, resolved);
       assert resolved.count() == 1;
       final SqlValidatorScope.Resolve resolve = resolved.only();
@@ -3006,7 +3007,7 @@ public class SqlToRelConverter {
       final RelDataType rowType = resolve.rowType();
       final int childNamespaceIndex = resolve.path.steps().get(0).i;
       final SqlValidatorScope ancestorScope = resolve.scope;
-      boolean correlInCurrentScope = bb.scope().isWithin(ancestorScope);
+      boolean correlInCurrentScope = bb.scope.isWithin(ancestorScope);
 
       if (!correlInCurrentScope) {
         continue;
@@ -3108,10 +3109,10 @@ public class SqlToRelConverter {
       String originalRelName = lookup.getOriginalRelName();
 
       final SqlNameMatcher nameMatcher =
-          lookup.bb.scope().getValidator().getCatalogReader().nameMatcher();
+          lookup.bb.scope.getValidator().getCatalogReader().nameMatcher();
       final SqlValidatorScope.ResolvedImpl resolved =
           new SqlValidatorScope.ResolvedImpl();
-      lookup.bb.scope().resolve(ImmutableList.of(originalRelName), nameMatcher,
+      lookup.bb.scope.resolve(ImmutableList.of(originalRelName), nameMatcher,
           false, resolved);
 
       SqlValidatorScope ancestorScope = resolved.only().scope;
@@ -3150,12 +3151,12 @@ public class SqlToRelConverter {
     SqlNode right = join.getRight();
     final SqlValidatorScope leftScope =
         Util.first(validator.getJoinScope(left),
-            ((DelegatingScope) bb.scope()).getParent());
+            ((DelegatingScope) bb.scope).getParent());
     final Blackboard leftBlackboard =
         createBlackboard(leftScope, null, false);
     final SqlValidatorScope rightScope =
         Util.first(validator.getJoinScope(right),
-            ((DelegatingScope) bb.scope()).getParent());
+            ((DelegatingScope) bb.scope).getParent());
     final Blackboard rightBlackboard =
         createBlackboard(rightScope, null, false);
     convertFrom(leftBlackboard, left);
@@ -3460,7 +3461,7 @@ public class SqlToRelConverter {
       bb.columnMonotonicities.clear();
       for (SqlNode groupItem : groupList) {
         bb.columnMonotonicities.add(
-            bb.scope().getMonotonicity(groupItem));
+            bb.scope.getMonotonicity(groupItem));
       }
 
       // Add the aggregator
@@ -3472,7 +3473,7 @@ public class SqlToRelConverter {
       // Replace sub-queries in having here and modify having to use
       // the replaced expressions
       if (having != null) {
-        SqlNode newHaving = pushDownNotForIn(bb.scope(), having);
+        SqlNode newHaving = pushDownNotForIn(bb.scope, having);
         replaceSubQueries(bb, newHaving, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
         havingExpr = bb.convertExpression(newHaving);
       } else {
@@ -3537,7 +3538,7 @@ public class SqlToRelConverter {
     bb.columnMonotonicities.clear();
     for (SqlNode selectItem : selectList) {
       bb.columnMonotonicities.add(
-          bb.scope().getMonotonicity(selectItem));
+          bb.scope.getMonotonicity(selectItem));
     }
   }
 
@@ -4051,7 +4052,7 @@ public class SqlToRelConverter {
             rexBuilder.makeFieldAccess(sourceRef, j++));
       }
     }
-    return createBlackboard(null, nameToNodeMap, false);
+    return createBlackboard(((SqlValidatorImpl) validator()).getEmptyScope(), nameToNodeMap, false);
   }
 
   private static InitializerExpressionFactory getInitializerFactory(
@@ -4309,12 +4310,7 @@ public class SqlToRelConverter {
       pv = identifier.names.get(0);
     }
 
-    final SqlQualified qualified;
-    if (bb.scope != null) {
-      qualified = bb.scope.fullyQualify(identifier);
-    } else {
-      qualified = SqlQualified.create(null, 1, null, identifier);
-    }
+    final SqlQualified qualified = bb.scope.fullyQualify(identifier);
     final Pair<RexNode, @Nullable BiFunction<RexNode, String, RexNode>> e0 =
         bb.lookupExp(qualified);
     RexNode e = e0.left;
@@ -4428,7 +4424,7 @@ public class SqlToRelConverter {
           usedBb = createBlackboard(nss.getScope(), null, false);
         } else {
           usedBb =
-              createBlackboard(new ListScope(bb.scope()) {
+              createBlackboard(new ListScope(bb.scope) {
                 @Override public SqlNode getNode() {
                   return call;
                 }
@@ -4840,7 +4836,7 @@ public class SqlToRelConverter {
      * Collection of {@link RelNode} objects which correspond to a SELECT
      * statement.
      */
-    public final @Nullable SqlValidatorScope scope;
+    public final SqlValidatorScope scope;
     private final @Nullable Map<String, RexNode> nameToNodeMap;
     public @Nullable RelNode root;
     private @Nullable List<RelNode> inputs;
@@ -4899,7 +4895,7 @@ public class SqlToRelConverter {
      */
     protected Blackboard(@Nullable SqlValidatorScope scope,
         @Nullable Map<String, RexNode> nameToNodeMap, boolean top) {
-      this.scope = scope;
+      this.scope = requireNonNull(scope, "scope");
       this.nameToNodeMap = nameToNodeMap;
       this.top = top;
     }
@@ -4908,6 +4904,7 @@ public class SqlToRelConverter {
       return requireNonNull(root, "root");
     }
 
+    @Deprecated // to be removed before 2.0
     public SqlValidatorScope scope() {
       return requireNonNull(scope, "scope");
     }
@@ -5135,10 +5132,10 @@ public class SqlToRelConverter {
         return Pair.of(node, null);
       }
       final SqlNameMatcher nameMatcher =
-          scope().getValidator().getCatalogReader().nameMatcher();
+          scope.getValidator().getCatalogReader().nameMatcher();
       final SqlValidatorScope.ResolvedImpl resolved =
           new SqlValidatorScope.ResolvedImpl();
-      scope().resolve(qualified.prefix(), nameMatcher, false, resolved);
+      scope.resolve(qualified.prefix(), nameMatcher, false, resolved);
       if (resolved.count() != 1) {
         throw new AssertionError("no unique expression found for " + qualified
             + "; count is " + resolved.count());
@@ -5155,7 +5152,6 @@ public class SqlToRelConverter {
         final LookupContext rels =
             new LookupContext(this, inputs, systemFieldList.size());
         final RexNode node = lookup(resolve.path.steps().get(0).i, rels);
-        assert node != null;
         return Pair.of(node, (e, fieldName) -> {
           final RelDataTypeField field =
               requireNonNull(rowType.getField(fieldName, true, false),
@@ -5306,7 +5302,7 @@ public class SqlToRelConverter {
       // GROUP BY clause, return a reference to the field.
       AggConverter agg = this.agg;
       if (agg != null) {
-        final SqlNode expandedGroupExpr = validator().expand(expr, scope());
+        final SqlNode expandedGroupExpr = validator().expand(expr, scope);
         final int ref = agg.lookupGroupExpr(expandedGroupExpr);
         if (ref >= 0) {
           return rexBuilder.makeInputRef(root(), ref);
@@ -6152,7 +6148,7 @@ public class SqlToRelConverter {
 
       SqlAggFunction aggFunction =
           (SqlAggFunction) call.getOperator();
-      final RelDataType type = validator().deriveType(bb.scope(), call);
+      final RelDataType type = validator().deriveType(bb.scope, call);
       boolean distinct = false;
       SqlLiteral quantifier = call.getFunctionQuantifier();
       if ((null != quantifier)
