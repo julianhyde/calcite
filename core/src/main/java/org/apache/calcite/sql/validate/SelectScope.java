@@ -105,24 +105,24 @@ public class SelectScope extends ListScope {
   private @MonotonicNonNull SqlNodeList orderList;
 
   /** Scope to use to resolve windows. */
-  private final @Nullable SqlValidatorScope windowParent;
+  private final SqlValidatorScope windowParent;
 
   //~ Constructors -----------------------------------------------------------
 
   /**
    * Creates a scope corresponding to a SELECT clause.
    *
-   * @param parent    Parent scope, must not be null
-   * @param winParent Scope for window parent, may be null
+   * @param parent    Parent scope
+   * @param windowParent Scope for window parent (may be empty)
    * @param select    Select clause
    */
   SelectScope(
       SqlValidatorScope parent,
-      @Nullable SqlValidatorScope winParent,
+      SqlValidatorScope windowParent,
       SqlSelect select) {
     super(parent);
     this.select = select;
-    this.windowParent = winParent;
+    this.windowParent = windowParent;
   }
 
   //~ Methods ----------------------------------------------------------------

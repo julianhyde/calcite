@@ -73,7 +73,7 @@ public class SqlCallBinding extends SqlOperatorBinding {
   //~ Instance fields --------------------------------------------------------
 
   private final SqlValidator validator;
-  private final @Nullable SqlValidatorScope scope;
+  private final SqlValidatorScope scope;
   private final SqlCall call;
 
   //~ Constructors -----------------------------------------------------------
@@ -87,13 +87,13 @@ public class SqlCallBinding extends SqlOperatorBinding {
    */
   public SqlCallBinding(
       SqlValidator validator,
-      @Nullable SqlValidatorScope scope,
+      SqlValidatorScope scope,
       SqlCall call) {
     super(
         validator.getTypeFactory(),
         call.getOperator());
     this.validator = validator;
-    this.scope = scope;
+    this.scope = requireNonNull(scope, "scope");
     this.call = call;
   }
 
@@ -131,7 +131,7 @@ public class SqlCallBinding extends SqlOperatorBinding {
   /**
    * Returns the scope of the call.
    */
-  public @Nullable SqlValidatorScope getScope() {
+  public SqlValidatorScope getScope() {
     return scope;
   }
 
