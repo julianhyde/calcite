@@ -1309,7 +1309,7 @@ public class SqlToRelConverter {
       final SqlValidatorScope seekScope =
           (query instanceof SqlSelect)
               ? validator().getSelectScope((SqlSelect) query)
-              : ((SqlValidatorImpl) validator()).getEmptyScope();
+              : validator().getEmptyScope();
       final Blackboard seekBb = createBlackboard(seekScope, null, false);
       final RelNode seekRel = convertQueryOrInList(seekBb, query, null);
       requireNonNull(seekRel, () -> "seekRel is null for query " + query);
@@ -1808,7 +1808,7 @@ public class SqlToRelConverter {
     final SqlValidatorScope seekScope =
         (seek instanceof SqlSelect)
             ? validator().getSelectScope((SqlSelect) seek)
-            : ((SqlValidatorImpl) validator()).getEmptyScope();
+            : validator().getEmptyScope();
     final Blackboard seekBb = createBlackboard(seekScope, null, false);
     RelNode seekRel = convertQueryOrInList(seekBb, seek, targetDataType);
     requireNonNull(seekRel, () -> "seekRel is null for query " + seek);
@@ -4052,7 +4052,7 @@ public class SqlToRelConverter {
             rexBuilder.makeFieldAccess(sourceRef, j++));
       }
     }
-    return createBlackboard(((SqlValidatorImpl) validator()).getEmptyScope(), nameToNodeMap, false);
+    return createBlackboard(validator().getEmptyScope(), nameToNodeMap, false);
   }
 
   private static InitializerExpressionFactory getInitializerFactory(

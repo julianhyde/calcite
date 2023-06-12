@@ -1161,8 +1161,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  @VisibleForTesting
-  public SqlValidatorScope getEmptyScope() {
+  @Override public SqlValidatorScope getEmptyScope() {
     return new EmptyScope(this);
   }
 
