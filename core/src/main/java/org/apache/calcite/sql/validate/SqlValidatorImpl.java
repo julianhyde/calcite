@@ -115,7 +115,6 @@ import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -159,6 +158,7 @@ import static org.apache.calcite.sql.type.NonNullableAccessors.getCollation;
 import static org.apache.calcite.sql.validate.SqlNonNullableAccessors.getCondition;
 import static org.apache.calcite.sql.validate.SqlNonNullableAccessors.getTable;
 import static org.apache.calcite.util.Static.RESOURCE;
+import static org.apache.calcite.util.Util.first;
 
 import static java.util.Objects.requireNonNull;
 
@@ -371,63 +371,55 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return timeFrameSet;
   }
 
-  @Override public SqlNodeList expandStar(
-      SqlNodeList selectList,
-      SqlSelect select,
-      boolean includeSystemVars) {
+  @Override public SqlNodeList expandStar(SqlNodeList selectList,
+      SqlSelect select, boolean includeSystemVars) {
     final List<SqlNode> list = new ArrayList<>();
     final List<Map.Entry<String, RelDataType>> types = new ArrayList<>();
-    for (int i = 0; i < selectList.size(); i++) {
-      final SqlNode selectItem = selectList.get(i);
+    for (SqlNode selectItem : selectList) {
       final RelDataType originalType = getValidatedNodeTypeIfKnown(selectItem);
-      expandSelectItem(
-          selectItem,
-          select,
-          Util.first(originalType, unknownType),
-          list,
-          catalogReader.nameMatcher().createSet(),
-          types,
+      expandSelectItem(selectItem, select, first(originalType, unknownType),
+          list, catalogReader.nameMatcher().createSet(), types,
           includeSystemVars);
     }
     getRawSelectScopeNonNull(select).setExpandedSelectList(list);
     return new SqlNodeList(list, SqlParserPos.ZERO);
   }
 
-  // implement SqlValidator
-  @Override public void declareCursor(SqlSelect select, SqlValidatorScope parentScope) {
+  @Override public void declareCursor(SqlSelect select,
+      SqlValidatorScope parentScope) {
     cursorSet.add(select);
 
     // add the cursor to a map that maps the cursor to its select based on
     // the position of the cursor relative to other cursors in that call
-    FunctionParamInfo funcParamInfo = requireNonNull(functionCallStack.peek(), "functionCall");
+    FunctionParamInfo funcParamInfo =
+        requireNonNull(functionCallStack.peek(), "functionCall");
     Map<Integer, SqlSelect> cursorMap = funcParamInfo.cursorPosToSelectMap;
-    int numCursors = cursorMap.size();
-    cursorMap.put(numCursors, select);
+    final int cursorCount = cursorMap.size();
+    cursorMap.put(cursorCount, select);
 
     // create a namespace associated with the result of the select
     // that is the argument to the cursor constructor; register it
     // with a scope corresponding to the cursor
-    SelectScope cursorScope = new SelectScope(parentScope, null, select);
+    SelectScope cursorScope =
+        new SelectScope(parentScope, getEmptyScope(), select);
     clauseScopes.put(IdPair.of(select, Clause.CURSOR), cursorScope);
     final SelectNamespace selectNs = createSelectNamespace(select, select);
     final String alias = SqlValidatorUtil.alias(select, nextGeneratedId++);
     registerNamespace(cursorScope, alias, selectNs, false);
   }
 
-  // implement SqlValidator
   @Override public void pushFunctionCall() {
     FunctionParamInfo funcInfo = new FunctionParamInfo();
     functionCallStack.push(funcInfo);
   }
 
-  // implement SqlValidator
   @Override public void popFunctionCall() {
     functionCallStack.pop();
   }
 
-  // implement SqlValidator
   @Override public @Nullable String getParentCursor(String columnListParamName) {
-    FunctionParamInfo funcParamInfo = requireNonNull(functionCallStack.peek(), "functionCall");
+    FunctionParamInfo funcParamInfo =
+        requireNonNull(functionCallStack.peek(), "functionCall");
     Map<String, String> parentCursorMap =
         funcParamInfo.columnListParamToParentCursorMap;
     return parentCursorMap.get(columnListParamName);
@@ -445,14 +437,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @param includeSystemVars If true include system vars in lists
    * @return Whether the node was expanded
    */
-  private boolean expandSelectItem(
-      final SqlNode selectItem,
-      SqlSelect select,
-      RelDataType targetType,
-      List<SqlNode> selectItems,
-      Set<String> aliases,
-      List<Map.Entry<String, RelDataType>> fields,
-      final boolean includeSystemVars) {
+  private boolean expandSelectItem(final SqlNode selectItem, SqlSelect select,
+      RelDataType targetType, List<SqlNode> selectItems, Set<String> aliases,
+      List<Map.Entry<String, RelDataType>> fields, boolean includeSystemVars) {
     final SelectScope scope = (SelectScope) getWhereScope(select);
     if (expandStar(selectItems, aliases, fields, includeSystemVars, scope,
         selectItem)) {
@@ -571,7 +558,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   private static SqlNode expandCommonColumn(SqlSelect sqlSelect,
-      SqlNode selectItem, @Nullable SelectScope scope, SqlValidatorImpl validator) {
+      SqlNode selectItem, SelectScope scope, SqlValidatorImpl validator) {
     if (!(selectItem instanceof SqlIdentifier)) {
       return selectItem;
     }
@@ -593,14 +580,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   private static void validateQualifiedCommonColumn(SqlJoin join,
-      SqlIdentifier identifier, @Nullable SelectScope scope, SqlValidatorImpl validator) {
+      SqlIdentifier identifier, SelectScope scope, SqlValidatorImpl validator) {
     List<String> names = validator.usingNames(join);
     if (names == null) {
       // Not USING or NATURAL.
       return;
     }
 
-    requireNonNull(scope, "scope");
     // First we should make sure that the first component is the table name.
     // Then check whether the qualified identifier contains common column.
     for (ScopeChild child : scope.children) {
@@ -838,7 +824,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlParserPos pos,
       Collection<SqlMoniker> hintList) {
     IdInfo info = idPositions.get(pos.toString());
-    if ((info == null) || (info.scope == null)) {
+    if (info == null) {
       SqlNode fromNode = select.getFrom();
       final SqlValidatorScope fromScope = getFromScope(select);
       lookupFromHints(fromNode, fromScope, pos, hintList);
@@ -860,7 +846,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
   private void lookupFromHints(
       @Nullable SqlNode node,
-      @Nullable SqlValidatorScope scope,
+      SqlValidatorScope scope,
       SqlParserPos pos,
       Collection<SqlMoniker> hintList) {
     if (node == null) {
@@ -900,7 +886,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
   private void lookupJoinHints(
       SqlJoin join,
-      @Nullable SqlValidatorScope scope,
+      SqlValidatorScope scope,
       SqlParserPos pos,
       Collection<SqlMoniker> hintList) {
     SqlNode left = join.getLeft();
@@ -1088,7 +1074,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return outermostNode;
   }
 
-  @Override public void validateQuery(SqlNode node, @Nullable SqlValidatorScope scope,
+  @Override public void validateQuery(SqlNode node, SqlValidatorScope scope,
       RelDataType targetRowType) {
     final SqlValidatorNamespace ns = getNamespaceOrThrow(node, scope);
     if (node.getKind() == SqlKind.TABLESAMPLE) {
@@ -1139,8 +1125,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  @VisibleForTesting
-  public SqlValidatorScope getEmptyScope() {
+  @Override public SqlValidatorScope getEmptyScope() {
     return new EmptyScope(this);
   }
 
@@ -1185,8 +1170,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return getScope(select, Clause.WHERE);
   }
 
-  @Override public @Nullable SqlValidatorScope getFromScope(SqlSelect select) {
-    return scopes.get(select);
+  @Override public SqlValidatorScope getFromScope(SqlSelect select) {
+    return requireNonNull(scopes.get(select),
+        () -> "no scope for " + select);
   }
 
   @Override public SqlValidatorScope getOrderScope(SqlSelect select) {
@@ -1197,12 +1183,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return getScopeOrThrow(node);
   }
 
-  @Override public @Nullable SqlValidatorScope getJoinScope(SqlNode node) {
-    return scopes.get(stripAs(node));
+  @Override public SqlValidatorScope getJoinScope(SqlNode node) {
+    return requireNonNull(scopes.get(stripAs(node)),
+        () -> "scope for " + node);
   }
 
   @Override public SqlValidatorScope getOverScope(SqlNode node) {
     return getScopeOrThrow(node);
+  }
+
+  @Override public SqlValidatorScope getWithScope(SqlNode withItem) {
+    assert withItem.getKind() == SqlKind.WITH_ITEM;
+    return getScopeOrThrow(withItem);
   }
 
   private SqlValidatorScope getScopeOrThrow(SqlNode node) {
@@ -2248,7 +2240,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * Registers scopes and namespaces implied a relational expression in the
    * FROM clause.
    *
-   * <p>{@code parentScope} and {@code usingScope} are often the same. They
+   * <p>{@code parentScope0} and {@code usingScope} are often the same. They
    * differ when the namespace are not visible within the parent. (Example
    * needed.)
    *
@@ -2258,7 +2250,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * sample clause are stripped away to get {@code node}. Both are recorded in
    * the namespace.
    *
-   * @param parentScope   Parent scope which this scope turns to in order to
+   * @param parentScope0  Parent scope that this scope turns to in order to
    *                      resolve objects
    * @param usingScope    Scope whose child list this scope should add itself to
    * @param register      Whether to register this scope as a child of
@@ -2276,7 +2268,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @return registered node, usually the same as {@code node}
    */
   private SqlNode registerFrom(
-      SqlValidatorScope parentScope,
+      SqlValidatorScope parentScope0,
       SqlValidatorScope usingScope,
       boolean register,
       final SqlNode node,
@@ -2333,19 +2325,22 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
 
+    final SqlValidatorScope parentScope;
     if (lateral) {
       SqlValidatorScope s = usingScope;
       while (s instanceof JoinScope) {
         s = ((JoinScope) s).getUsingScope();
       }
       final SqlNode node2 = s != null ? s.getNode() : node;
-      final TableScope tableScope = new TableScope(parentScope, node2);
+      final TableScope tableScope = new TableScope(parentScope0, node2);
       if (usingScope instanceof ListScope) {
         for (ScopeChild child : ((ListScope) usingScope).children) {
           tableScope.addChild(child.namespace, child.name, child.nullable);
         }
       }
       parentScope = tableScope;
+    } else {
+      parentScope = parentScope0;
     }
 
     SqlCall call;
@@ -2473,6 +2468,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       if (newRight != right) {
         join.setRight(newRight);
       }
+      scopes.putIfAbsent(stripAs(join.getRight()), parentScope);
+      scopes.putIfAbsent(stripAs(join.getLeft()), parentScope);
       registerSubQueries(joinScope, join.getCondition());
       final JoinNamespace joinNamespace = new JoinNamespace(this, join);
       registerNamespace(null, null, joinNamespace, forceNullable);
@@ -2744,7 +2741,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           createSelectNamespace(select, enclosingNode);
       registerNamespace(usingScope, alias, selectNs, forceNullable);
       final SqlValidatorScope windowParentScope =
-          (usingScope != null) ? usingScope : parentScope;
+          first(usingScope, parentScope);
       SelectScope selectScope =
           new SelectScope(parentScope, windowParentScope, select);
       scopes.put(select, selectScope);
@@ -3082,6 +3079,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final WithNamespace withNamespace =
         new WithNamespace(this, with, enclosingNode);
     registerNamespace(usingScope, alias, withNamespace, forceNullable);
+    scopes.put(with, parentScope);
 
     SqlValidatorScope scope = parentScope;
     for (SqlNode withItem_ : with.withList) {
@@ -3401,6 +3399,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlNode node,
       RelDataType targetRowType,
       SqlValidatorScope scope) {
+    requireNonNull(scope, "scope");
     requireNonNull(targetRowType, "targetRowType");
     switch (node.getKind()) {
     case AS:
@@ -3498,7 +3497,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     throw new AssertionError("OVER unexpected in this context");
   }
 
-  protected void validateUnnest(SqlCall call, SqlValidatorScope scope, RelDataType targetRowType) {
+  protected void validateUnnest(SqlCall call, SqlValidatorScope scope,
+      RelDataType targetRowType) {
     for (int i = 0; i < call.operandCount(); i++) {
       SqlNode expandedItem = expand(call.operand(i), scope);
       call.setOperand(i, expandedItem);
@@ -3737,9 +3737,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
     // Make sure that items in FROM clause have distinct aliases.
-    final SelectScope fromScope =
-        (SelectScope) requireNonNull(getFromScope(select),
-            () -> "fromScope for " + select);
+    final SelectScope fromScope = (SelectScope) getFromScope(select);
     List<@Nullable String> names = fromScope.getChildNames();
     if (!catalogReader.nameMatcher().isCaseSensitive()) {
       //noinspection RedundantTypeArguments
@@ -4156,9 +4154,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       return;
     }
 
-    final SelectScope windowScope =
-        (SelectScope) requireNonNull(getFromScope(select),
-            () -> "fromScope for " + select);
+    final SelectScope windowScope = (SelectScope) getFromScope(select);
 
     // 1. ensure window names are simple
     // 2. ensure they are unique within this scope
@@ -4285,11 +4281,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
     throw newValidationError(id, RESOURCE.notASequence(id.toString()));
-  }
-
-  @Override public @Nullable SqlValidatorScope getWithScope(SqlNode withItem) {
-    assert withItem.getKind() == SqlKind.WITH_ITEM;
-    return scopes.get(withItem);
   }
 
   @Override public TypeCoercion getTypeCoercion() {
@@ -4564,10 +4555,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
     havingScope.checkAggregateExpr(having, true);
-    inferUnknownTypes(
-        booleanType,
-        havingScope,
-        having);
+    inferUnknownTypes(booleanType, havingScope, having);
     having.validate(this, havingScope);
     final RelDataType type = deriveType(havingScope, having);
     if (!SqlTypeUtil.inBooleanFamily(type)) {
@@ -4575,10 +4563,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  protected RelDataType validateSelectList(
-      final SqlNodeList selectItems,
-      SqlSelect select,
-      RelDataType targetRowType) {
+  protected RelDataType validateSelectList(final SqlNodeList selectItems,
+      SqlSelect select, RelDataType targetRowType) {
     // First pass, ensure that aliases are unique. "*" and "TABLE.*" items
     // are ignored.
 
@@ -4590,29 +4576,19 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     for (SqlNode selectItem : selectItems) {
       if (selectItem instanceof SqlSelect) {
-        handleScalarSubQuery(
-            select,
-            (SqlSelect) selectItem,
-            expandedSelectItems,
-            aliases,
-            fieldList);
+        handleScalarSubQuery(select, (SqlSelect) selectItem,
+            expandedSelectItems, aliases, fieldList);
       } else {
         // Use the field list size to record the field index
         // because the select item may be a STAR(*), which could have been expanded.
         final int fieldIdx = fieldList.size();
         final RelDataType fieldType =
-                targetRowType.isStruct()
-                        && targetRowType.getFieldCount() > fieldIdx
+            targetRowType.isStruct()
+                && targetRowType.getFieldCount() > fieldIdx
                 ? targetRowType.getFieldList().get(fieldIdx).getType()
                 : unknownType;
-        expandSelectItem(
-            selectItem,
-            select,
-            fieldType,
-            expandedSelectItems,
-            aliases,
-            fieldList,
-            false);
+        expandSelectItem(selectItem, select, fieldType, expandedSelectItems,
+            aliases, fieldList, false);
       }
     }
 
@@ -4620,9 +4596,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // the original parser position so that any overall failures can
     // still reference the original input text.
     SqlNodeList newSelectList =
-        new SqlNodeList(
-            expandedSelectItems,
-            selectItems.getParserPosition());
+        new SqlNodeList(expandedSelectItems, selectItems.getParserPosition());
     if (config.identifierExpansion()) {
       select.setSelectList(newSelectList);
     }
@@ -4687,12 +4661,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @param aliasList           built from user or system values
    * @param fieldList           Built up entries for each select list entry
    */
-  private void handleScalarSubQuery(
-      SqlSelect parentSelect,
-      SqlSelect selectItem,
-      List<SqlNode> expandedSelectItems,
-      Set<String> aliasList,
-      List<Map.Entry<String, RelDataType>> fieldList) {
+  private void handleScalarSubQuery(SqlSelect parentSelect,
+      SqlSelect selectItem, List<SqlNode> expandedSelectItems,
+      Set<String> aliasList, List<Map.Entry<String, RelDataType>> fieldList) {
     // A scalar sub-query only has one output column.
     if (1 != SqlNonNullableAccessors.getSelectList(selectItem).size()) {
       throw newValidationError(selectItem,
@@ -4794,6 +4765,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       validateSelect(sqlSelect, targetRowType);
     } else {
       final SqlValidatorScope scope = scopes.get(source);
+      requireNonNull(scope, "scope");
       validateQuery(source, scope, targetRowType);
     }
 
@@ -5819,9 +5791,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validatePivot(SqlPivot pivot) {
-    final PivotScope scope =
-        requireNonNull((PivotScope) getJoinScope(pivot),
-            () -> "joinScope for " + pivot);
+    final PivotScope scope = (PivotScope) getJoinScope(pivot);
 
     final PivotNamespace ns =
         getNamespaceOrThrow(pivot).unwrap(PivotNamespace.class);
@@ -5897,9 +5867,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validateUnpivot(SqlUnpivot unpivot) {
-    final UnpivotScope scope =
-        (UnpivotScope) requireNonNull(getJoinScope(unpivot), () ->
-            "scope for " + unpivot);
+    final UnpivotScope scope = (UnpivotScope) getJoinScope(unpivot);
 
     final UnpivotNamespace ns =
         getNamespaceOrThrow(unpivot).unwrap(UnpivotNamespace.class);
@@ -6854,7 +6822,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
       final boolean replaceAliases = clause.shouldReplaceAliases(validator.config);
       if (!replaceAliases) {
-        final SelectScope scope = validator.getRawSelectScope(select);
+        final SelectScope scope = validator.getRawSelectScopeNonNull(select);
         SqlNode node = expandCommonColumn(select, id, scope, validator);
         if (node != id) {
           return node;

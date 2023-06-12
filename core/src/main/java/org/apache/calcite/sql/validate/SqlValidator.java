@@ -175,7 +175,7 @@ public interface SqlValidator {
    *                      type 'unknown'.
    * @throws RuntimeException if the query is not valid
    */
-  void validateQuery(SqlNode node, @Nullable SqlValidatorScope scope,
+  void validateQuery(SqlNode node, SqlValidatorScope scope,
       RelDataType targetRowType);
 
   /**
@@ -464,9 +464,7 @@ public interface SqlValidator {
    * @param includeSystemVars Whether to include system variables
    * @return expanded select clause
    */
-  SqlNodeList expandStar(
-      SqlNodeList selectList,
-      SqlSelect query,
+  SqlNodeList expandStar(SqlNodeList selectList, SqlSelect query,
       boolean includeSystemVars);
 
   /**
@@ -497,9 +495,7 @@ public interface SqlValidator {
    * @param type Its type; must not be null
    */
   @API(status = API.Status.INTERNAL, since = "1.24")
-  void setValidatedNodeType(
-      SqlNode node,
-      RelDataType type);
+  void setValidatedNodeType(SqlNode node, RelDataType type);
 
   /**
    * Removes a node from the set of validated nodes.
@@ -567,7 +563,7 @@ public interface SqlValidator {
    * @param select SELECT statement
    * @return naming scope for FROM clause
    */
-  @Nullable SqlValidatorScope getFromScope(SqlSelect select);
+  SqlValidatorScope getFromScope(SqlSelect select);
 
   /**
    * Returns a scope containing the objects visible from the ON and USING
@@ -578,7 +574,7 @@ public interface SqlValidator {
    * @return naming scope for JOIN clause
    * @see #getFromScope
    */
-  @Nullable SqlValidatorScope getJoinScope(SqlNode node);
+  SqlValidatorScope getJoinScope(SqlNode node);
 
   /**
    * Returns a scope containing the objects visible from the GROUP BY clause
@@ -616,6 +612,11 @@ public interface SqlValidator {
    * @return naming scope for Match recognize clause
    */
   SqlValidatorScope getMatchRecognizeScope(SqlMatchRecognize node);
+
+  /**
+   * Returns a scope that cannot see anything.
+   */
+  SqlValidatorScope getEmptyScope();
 
   /**
    * Declares a SELECT expression as a cursor.
@@ -773,7 +774,7 @@ public interface SqlValidator {
 
   void validateSequenceValue(SqlValidatorScope scope, SqlIdentifier id);
 
-  @Nullable SqlValidatorScope getWithScope(SqlNode withItem);
+  SqlValidatorScope getWithScope(SqlNode withItem);
 
   /** Get the type coercion instance. */
   TypeCoercion getTypeCoercion();
@@ -813,7 +814,7 @@ public interface SqlValidator {
    * Provides methods to set each configuration option.
    */
   @Value.Immutable(singleton = false)
-  public interface Config {
+  interface Config {
     /** Default configuration. */
     SqlValidator.Config DEFAULT = ImmutableSqlValidator.Config.builder()
         .withTypeCoercionFactory(TypeCoercions::createTypeCoercion)
