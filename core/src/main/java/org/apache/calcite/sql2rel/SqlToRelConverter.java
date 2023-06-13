@@ -1391,7 +1391,7 @@ public class SqlToRelConverter {
     final SqlValidatorScope innerTableScope =
         (query instanceof SqlSelect)
             ? validator().getSelectScope((SqlSelect) query)
-            : null;
+            : validator().getEmptyScope();
     final Blackboard setSemanticsTableBb =
         createBlackboard(innerTableScope, null, false);
     final RelNode inputOfSetSemanticsTable =
