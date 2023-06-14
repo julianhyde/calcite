@@ -6443,7 +6443,7 @@ public class JdbcTest {
     Statement statement = con.createStatement();
 
     // Not supported yet. We set timezone using connect-string parameters.
-    //statement.executeUpdate("alter session set timezone = 'gmt-3'");
+    //   statement.executeUpdate("alter session set timezone = 'gmt-3'");
 
     ResultSet rs = statement.executeQuery("SELECT * FROM (VALUES(\n"
         + " TIMESTAMP '1970-01-01 00:00:00',\n"

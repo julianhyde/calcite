@@ -152,7 +152,7 @@ public class Strong {
   /** Returns whether an expression is definitely not true. */
   public boolean isNotTrue(RexNode node) {
     switch (node.getKind()) {
-    //TODO Enrich with more possible cases?
+    // TODO Enrich with more possible cases?
     case IS_NOT_NULL:
       return isNull(((RexCall) node).getOperands().get(0));
     case OR:
