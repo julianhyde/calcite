@@ -50,7 +50,8 @@ class LintTest {
 
         // Comment without space
         .add(line -> line.matches(".* //[^ ].*")
-                && !line.filename().endsWith("/LintTest.java")
+                && !line.source().fileOpt()
+                    .filter(f -> f.getName().equals("LintTest.java")).isPresent()
                 && !line.contains("//--")
                 && !line.contains("//~")
                 && !line.contains("//noinspection")
