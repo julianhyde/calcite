@@ -248,12 +248,12 @@ public class Puffin {
       return fnr;
     }
 
-    @Override public String filename() {
-      return source().toString();
-    }
-
     @Override public boolean isLast() {
       return last;
+    }
+
+    @Override public String filename() {
+      return source().toString();
     }
 
     @Override public Source source() {
