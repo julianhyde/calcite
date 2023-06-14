@@ -2990,14 +2990,13 @@ public class SqlToRelConverter {
           requireNonNull(mapCorrelToDeferred.get(correlName),
               () -> "correlation variable is not found: " + correlName);
       RexFieldAccess fieldAccess = lookup.getFieldAccess(correlName);
-      String originalRelName = lookup.getOriginalRelName();
       String originalFieldName = fieldAccess.getField().getName();
 
       final SqlNameMatcher nameMatcher =
           bb.getValidator().getCatalogReader().nameMatcher();
       final SqlValidatorScope.ResolvedImpl resolved =
           new SqlValidatorScope.ResolvedImpl();
-      lookup.bb.scope.resolve(ImmutableList.of(originalRelName),
+      lookup.bb.scope.resolve(ImmutableList.of(lookup.originalRelName),
           nameMatcher, false, resolved);
       assert resolved.count() == 1;
       final SqlValidatorScope.Resolve resolve = resolved.only();
@@ -3060,8 +3059,8 @@ public class SqlToRelConverter {
           pos = projection;
         } else {
           // correl not grouped
-          throw new AssertionError("Identifier '" + originalRelName + "."
-              + originalFieldName + "' is not a group expr");
+          throw new AssertionError("Identifier '" + lookup.originalRelName
+              + "." + originalFieldName + "' is not a group expr");
         }
       }
 
@@ -3104,7 +3103,7 @@ public class SqlToRelConverter {
       DeferredLookup lookup =
           requireNonNull(mapCorrelToDeferred.get(correlName),
               () -> "correlation variable is not found: " + correlName);
-      String originalRelName = lookup.getOriginalRelName();
+      String originalRelName = lookup.originalRelName;
 
       final SqlNameMatcher nameMatcher =
           lookup.bb.scope.getValidator().getCatalogReader().nameMatcher();
@@ -3520,9 +3519,7 @@ public class SqlToRelConverter {
 
     // implement HAVING (we have already checked that it is non-trivial)
     relBuilder.push(bb.root());
-    if (havingExpr != null) {
-      relBuilder.filter(havingExpr);
-    }
+    relBuilder.filter(havingExpr);
 
     // implement the SELECT list
     relBuilder.project(Pair.left(projects), Pair.right(projects))
@@ -4901,7 +4898,7 @@ public class SqlToRelConverter {
 
     @Deprecated // to be removed before 2.0
     public SqlValidatorScope scope() {
-      return requireNonNull(scope, "scope");
+      return scope;
     }
 
     public void setPatternVarRef(boolean isVarRef) {
@@ -5706,24 +5703,17 @@ public class SqlToRelConverter {
 
   /** Deferred lookup. */
   private static class DeferredLookup {
-    Blackboard bb;
-    String originalRelName;
+    final Blackboard bb;
+    final String originalRelName;
 
-    DeferredLookup(
-        Blackboard bb,
-        String originalRelName) {
+    DeferredLookup(Blackboard bb, String originalRelName) {
       this.bb = bb;
       this.originalRelName = originalRelName;
     }
 
-    public RexFieldAccess getFieldAccess(CorrelationId name) {
-      return (RexFieldAccess) requireNonNull(
-          bb.mapCorrelateToRex.get(name),
+    RexFieldAccess getFieldAccess(CorrelationId name) {
+      return requireNonNull(bb.mapCorrelateToRex.get(name),
           () -> "Correlation " + name + " is not found");
-    }
-
-    public String getOriginalRelName() {
-      return originalRelName;
     }
   }
 

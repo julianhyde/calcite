@@ -85,13 +85,9 @@ public class SqlCallBinding extends SqlOperatorBinding {
    * @param scope     Scope of call
    * @param call      Call node
    */
-  public SqlCallBinding(
-      SqlValidator validator,
-      SqlValidatorScope scope,
+  public SqlCallBinding(SqlValidator validator, SqlValidatorScope scope,
       SqlCall call) {
-    super(
-        validator.getTypeFactory(),
-        call.getOperator());
+    super(validator.getTypeFactory(), call.getOperator());
     this.validator = validator;
     this.scope = requireNonNull(scope, "scope");
     this.call = call;

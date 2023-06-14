@@ -378,38 +378,31 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return timeFrameSet;
   }
 
-  @Override public SqlNodeList expandStar(
-      SqlNodeList selectList,
-      SqlSelect select,
-      boolean includeSystemVars) {
+  @Override public SqlNodeList expandStar(SqlNodeList selectList,
+      SqlSelect select, boolean includeSystemVars) {
     final List<SqlNode> list = new ArrayList<>();
     final List<Map.Entry<String, RelDataType>> types = new ArrayList<>();
-    for (int i = 0; i < selectList.size(); i++) {
-      final SqlNode selectItem = selectList.get(i);
+    for (SqlNode selectItem : selectList) {
       final RelDataType originalType = getValidatedNodeTypeIfKnown(selectItem);
-      expandSelectItem(
-          selectItem,
-          select,
-          first(originalType, unknownType),
-          list,
-          catalogReader.nameMatcher().createSet(),
-          types,
+      expandSelectItem(selectItem, select, first(originalType, unknownType),
+          list, catalogReader.nameMatcher().createSet(), types,
           includeSystemVars);
     }
     getRawSelectScopeNonNull(select).setExpandedSelectList(list);
     return new SqlNodeList(list, SqlParserPos.ZERO);
   }
 
-  // implement SqlValidator
-  @Override public void declareCursor(SqlSelect select, SqlValidatorScope parentScope) {
+  @Override public void declareCursor(SqlSelect select,
+      SqlValidatorScope parentScope) {
     cursorSet.add(select);
 
     // add the cursor to a map that maps the cursor to its select based on
     // the position of the cursor relative to other cursors in that call
-    FunctionParamInfo funcParamInfo = requireNonNull(functionCallStack.peek(), "functionCall");
+    FunctionParamInfo funcParamInfo =
+        requireNonNull(functionCallStack.peek(), "functionCall");
     Map<Integer, SqlSelect> cursorMap = funcParamInfo.cursorPosToSelectMap;
-    int numCursors = cursorMap.size();
-    cursorMap.put(numCursors, select);
+    final int cursorCount = cursorMap.size();
+    cursorMap.put(cursorCount, select);
 
     // create a namespace associated with the result of the select
     // that is the argument to the cursor constructor; register it
@@ -422,20 +415,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     registerNamespace(cursorScope, alias, selectNs, false);
   }
 
-  // implement SqlValidator
   @Override public void pushFunctionCall() {
     FunctionParamInfo funcInfo = new FunctionParamInfo();
     functionCallStack.push(funcInfo);
   }
 
-  // implement SqlValidator
   @Override public void popFunctionCall() {
     functionCallStack.pop();
   }
 
-  // implement SqlValidator
   @Override public @Nullable String getParentCursor(String columnListParamName) {
-    FunctionParamInfo funcParamInfo = requireNonNull(functionCallStack.peek(), "functionCall");
+    FunctionParamInfo funcParamInfo =
+        requireNonNull(functionCallStack.peek(), "functionCall");
     Map<String, String> parentCursorMap =
         funcParamInfo.columnListParamToParentCursorMap;
     return parentCursorMap.get(columnListParamName);
@@ -453,14 +444,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @param includeSystemVars If true include system vars in lists
    * @return Whether the node was expanded
    */
-  private boolean expandSelectItem(
-      final SqlNode selectItem,
-      SqlSelect select,
-      RelDataType targetType,
-      List<SqlNode> selectItems,
-      Set<String> aliases,
-      List<Map.Entry<String, RelDataType>> fields,
-      final boolean includeSystemVars) {
+  private boolean expandSelectItem(final SqlNode selectItem, SqlSelect select,
+      RelDataType targetType, List<SqlNode> selectItems, Set<String> aliases,
+      List<Map.Entry<String, RelDataType>> fields, boolean includeSystemVars) {
     final SelectScope scope = (SelectScope) getWhereScope(select);
     if (expandStar(selectItems, aliases, fields, includeSystemVars, scope,
         selectItem)) {
@@ -2289,7 +2275,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * sample clause are stripped away to get {@code node}. Both are recorded in
    * the namespace.
    *
-   * @param parentScope0  Parent scope which this scope turns to in order to
+   * @param parentScope0  Parent scope that this scope turns to in order to
    *                      resolve objects
    * @param usingScope    Scope whose child list this scope should add itself to
    * @param register      Whether to register this scope as a child of
@@ -4600,10 +4586,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
     havingScope.checkAggregateExpr(having, true);
-    inferUnknownTypes(
-        booleanType,
-        havingScope,
-        having);
+    inferUnknownTypes(booleanType, havingScope, having);
     having.validate(this, havingScope);
     final RelDataType type = deriveType(havingScope, having);
     if (!SqlTypeUtil.inBooleanFamily(type)) {
@@ -4611,10 +4594,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  protected RelDataType validateSelectList(
-      final SqlNodeList selectItems,
-      SqlSelect select,
-      RelDataType targetRowType) {
+  protected RelDataType validateSelectList(final SqlNodeList selectItems,
+      SqlSelect select, RelDataType targetRowType) {
     // First pass, ensure that aliases are unique. "*" and "TABLE.*" items
     // are ignored.
 
@@ -4626,29 +4607,19 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     for (SqlNode selectItem : selectItems) {
       if (selectItem instanceof SqlSelect) {
-        handleScalarSubQuery(
-            select,
-            (SqlSelect) selectItem,
-            expandedSelectItems,
-            aliases,
-            fieldList);
+        handleScalarSubQuery(select, (SqlSelect) selectItem,
+            expandedSelectItems, aliases, fieldList);
       } else {
         // Use the field list size to record the field index
         // because the select item may be a STAR(*), which could have been expanded.
         final int fieldIdx = fieldList.size();
         final RelDataType fieldType =
-                targetRowType.isStruct()
-                        && targetRowType.getFieldCount() > fieldIdx
+            targetRowType.isStruct()
+                && targetRowType.getFieldCount() > fieldIdx
                 ? targetRowType.getFieldList().get(fieldIdx).getType()
                 : unknownType;
-        expandSelectItem(
-            selectItem,
-            select,
-            fieldType,
-            expandedSelectItems,
-            aliases,
-            fieldList,
-            false);
+        expandSelectItem(selectItem, select, fieldType, expandedSelectItems,
+            aliases, fieldList, false);
       }
     }
 
@@ -4656,9 +4627,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // the original parser position so that any overall failures can
     // still reference the original input text.
     SqlNodeList newSelectList =
-        new SqlNodeList(
-            expandedSelectItems,
-            selectItems.getParserPosition());
+        new SqlNodeList(expandedSelectItems, selectItems.getParserPosition());
     if (config.identifierExpansion()) {
       select.setSelectList(newSelectList);
     }
@@ -4723,12 +4692,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @param aliasList           built from user or system values
    * @param fieldList           Built up entries for each select list entry
    */
-  private void handleScalarSubQuery(
-      SqlSelect parentSelect,
-      SqlSelect selectItem,
-      List<SqlNode> expandedSelectItems,
-      Set<String> aliasList,
-      List<Map.Entry<String, RelDataType>> fieldList) {
+  private void handleScalarSubQuery(SqlSelect parentSelect,
+      SqlSelect selectItem, List<SqlNode> expandedSelectItems,
+      Set<String> aliasList, List<Map.Entry<String, RelDataType>> fieldList) {
     // A scalar sub-query only has one output column.
     if (1 != SqlNonNullableAccessors.getSelectList(selectItem).size()) {
       throw newValidationError(selectItem,

@@ -465,9 +465,7 @@ public interface SqlValidator {
    * @param includeSystemVars Whether to include system variables
    * @return expanded select clause
    */
-  SqlNodeList expandStar(
-      SqlNodeList selectList,
-      SqlSelect query,
+  SqlNodeList expandStar(SqlNodeList selectList, SqlSelect query,
       boolean includeSystemVars);
 
   /**
@@ -498,9 +496,7 @@ public interface SqlValidator {
    * @param type Its type; must not be null
    */
   @API(status = API.Status.INTERNAL, since = "1.24")
-  void setValidatedNodeType(
-      SqlNode node,
-      RelDataType type);
+  void setValidatedNodeType(SqlNode node, RelDataType type);
 
   /**
    * Removes a node from the set of validated nodes.
@@ -826,7 +822,7 @@ public interface SqlValidator {
    * Provides methods to set each configuration option.
    */
   @Value.Immutable(singleton = false)
-  public interface Config {
+  interface Config {
     /** Default configuration. */
     SqlValidator.Config DEFAULT = ImmutableSqlValidator.Config.builder()
         .withTypeCoercionFactory(TypeCoercions::createTypeCoercion)
