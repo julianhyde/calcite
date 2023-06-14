@@ -48,6 +48,15 @@ class LintTest {
         .add(line -> line.fnr() == 1,
             line -> line.globalState().fileCount++)
 
+        // Comment without space
+        .add(line -> line.matches(".* //[^ ].*")
+                && !line.filename().endsWith("/LintTest.java")
+                && !line.contains("//--")
+                && !line.contains("//~")
+                && !line.contains("//noinspection")
+                && !line.contains("//CHECKSTYLE"),
+            line -> line.state().message("'//' must be followed by ' '", line))
+
         // Javadoc does not require '</p>', so we do not allow '</p>'
         .add(line -> line.state().inJavadoc()
                 && line.contains("</p>"),
@@ -127,10 +136,12 @@ class LintTest {
         + "   * <p>\n"
         + "   * <p>A paragraph (p must be preceded by blank line).\n"
         + "   *\n"
+        + "   *\n"
         + "   * <p>no p</p>\n"
         + "   * @see java.lang.String (should be preceded by blank line)\n"
         + "   **/\n"
         + "  String x = \"ok because it's not in javadoc:</p>\";\n"
+        + "  //comment without space\n"
         + "}\n";
     final String expectedMessages = "["
         + "GuavaCharSource{memory}:4:"
@@ -139,19 +150,23 @@ class LintTest {
         + "<p> must not be on its own line\n"
         + "GuavaCharSource{memory}:7:"
         + "<p> must be preceded by blank line\n"
-        + "GuavaCharSource{memory}:9:"
-        + "no '</p>'\n"
         + "GuavaCharSource{memory}:10:"
-        + "First @tag must be preceded by blank line\n"
+        + "no '</p>'\n"
         + "GuavaCharSource{memory}:11:"
-        + "no '**/'; use '*/']";
+        + "First @tag must be preceded by blank line\n"
+        + "GuavaCharSource{memory}:12:"
+        + "no '**/'; use '*/'\n"
+        + "GuavaCharSource{memory}:14:"
+        + "'//' must be followed by ' '\n"
+        + "";
     final Puffin.Program<GlobalState> program = makeProgram();
     final StringWriter sw = new StringWriter();
     final GlobalState g;
     try (PrintWriter pw = new PrintWriter(sw)) {
       g = program.execute(Stream.of(Sources.of(code)), pw);
     }
-    assertThat(g.messages.toString().replace(", ", "\n"),
+    assertThat(g.messages.toString().replace(", ", "\n")
+            .replace(']', '\n'),
         is(expectedMessages));
   }
 
