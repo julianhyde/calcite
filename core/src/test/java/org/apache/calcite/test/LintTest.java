@@ -79,7 +79,13 @@ class LintTest {
         // A Javadoc paragraph '<p>' must be preceded by a blank Javadoc
         // line.
         .add(line -> line.matches("^ *\\*"),
-            line -> line.state().starLine = line.fnr())
+            line -> {
+              final FileState f = line.state();
+              if (f.starLine == line.fnr() - 1) {
+                f.message("duplicate empty line in javadoc", line);
+              }
+              f.starLine = line.fnr();
+            })
         .add(line -> line.matches("^ *\\* <p>.*")
                 && line.fnr() - 1 != line.state().starLine,
             line ->
@@ -151,6 +157,8 @@ class LintTest {
         + "<p> must not be on its own line\n"
         + "GuavaCharSource{memory}:7:"
         + "<p> must be preceded by blank line\n"
+        + "GuavaCharSource{memory}:9:"
+        + "duplicate empty line in javadoc\n"
         + "GuavaCharSource{memory}:10:"
         + "no '</p>'\n"
         + "GuavaCharSource{memory}:11:"
