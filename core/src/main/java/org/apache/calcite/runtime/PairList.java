@@ -62,6 +62,11 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return list.add(tuEntry.getValue());
   }
 
+  public void add(T t, U u) {
+    list.add(t);
+    list.add(u);
+  }
+
   @SuppressWarnings("unchecked")
   public List<T> leftList() {
     return Util.quotientList((List<T>) list, 2, 0);
