@@ -195,7 +195,6 @@ import org.slf4j.Logger;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -5059,22 +5058,13 @@ public class SqlToRelConverter {
         assert leftKeyCount == rightFieldLength - 1;
 
         final int rexRangeRefLength = leftKeyCount + rightFieldLength;
-        RelDataType returnType =
-            typeFactory.createStructType(
-                new AbstractList<Map.Entry<String, RelDataType>>() {
-                  @Override public Map.Entry<String, RelDataType> get(
-                      int index) {
-                    return join.getRowType().getFieldList()
-                        .get(origLeftInputCount + index);
-                  }
+        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        for (int i = 0; i < rexRangeRefLength; i++) {
+          builder.add(join.getRowType().getFieldList()
+              .get(origLeftInputCount + i));
+        }
 
-                  @Override public int size() {
-                    return rexRangeRefLength;
-                  }
-                });
-
-        return rexBuilder.makeRangeReference(
-            returnType,
+        return rexBuilder.makeRangeReference(builder.build(),
             origLeftInputCount,
             false);
       } else {

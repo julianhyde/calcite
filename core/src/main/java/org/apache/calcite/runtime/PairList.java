@@ -149,11 +149,16 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   }
 
   @SuppressWarnings("unchecked")
-  @Override public Map.Entry<T, U> set(int index, Map.Entry<T, U> element) {
+  @Override public Map.Entry<T, U> set(int index, Map.Entry<T, U> entry) {
+    return set(index, entry.getKey(), entry.getValue());
+  }
+
+  @SuppressWarnings("unchecked")
+  public Map.Entry<T, U> set(int index, T t, U u) {
     int x = index * 2;
-    T t = (T) list.set(x, element.getKey());
-    U u = (U) list.set(x + 1, element.getValue());
-    return Pair.of(t, u);
+    T t0 = (T) list.set(x, t);
+    U u0 = (U) list.set(x + 1, u);
+    return Pair.of(t0, u0);
   }
 
   @SuppressWarnings("unchecked")

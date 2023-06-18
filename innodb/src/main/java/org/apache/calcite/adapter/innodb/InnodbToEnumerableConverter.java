@@ -34,6 +34,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.PairList;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
@@ -46,10 +47,8 @@ import com.alibaba.innodb.java.reader.comparator.ComparisonOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Relational expression representing a scan of a table
@@ -102,12 +101,8 @@ public class InnodbToEnumerableConverter extends ConverterImpl
                       }
                     }),
                 Pair.class));
-    List<Map.Entry<String, String>> selectList = new ArrayList<>();
-    for (Map.Entry<String, String> entry
-        : Pair.zip(innodbImplementor.selectFields.keySet(),
-        innodbImplementor.selectFields.values())) {
-      selectList.add(entry);
-    }
+    PairList<String, String> selectList =
+        PairList.of(innodbImplementor.selectFields);
     final Expression selectFields =
         list.append("selectFields", constantArrayList(selectList, Pair.class));
     final Expression table =

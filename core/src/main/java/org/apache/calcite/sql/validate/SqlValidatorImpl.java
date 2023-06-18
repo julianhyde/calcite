@@ -383,7 +383,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   @Override public SqlNodeList expandStar(SqlNodeList selectList,
       SqlSelect select, boolean includeSystemVars) {
     final List<SqlNode> list = new ArrayList<>();
-    final List<Map.Entry<String, RelDataType>> types = new ArrayList<>();
+    final PairList<String, RelDataType> types = PairList.of();
     for (SqlNode selectItem : selectList) {
       final RelDataType originalType = getValidatedNodeTypeIfKnown(selectItem);
       expandSelectItem(selectItem, select, first(originalType, unknownType),
@@ -448,7 +448,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    */
   private boolean expandSelectItem(final SqlNode selectItem, SqlSelect select,
       RelDataType targetType, List<SqlNode> selectItems, Set<String> aliases,
-      List<Map.Entry<String, RelDataType>> fields, boolean includeSystemVars) {
+      PairList<String, RelDataType> fields, boolean includeSystemVars) {
     final SqlValidatorScope scope;
     final SqlValidatorScope selectScope;
     SqlNode expanded;
@@ -503,7 +503,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       type = requireNonNull(selectScope.nullifyType(stripAs(expanded), type));
     }
     setValidatedNodeType(expanded, type);
-    fields.add(Pair.of(alias, type));
+    fields.add(alias, type);
     return false;
   }
 
@@ -625,7 +625,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   private boolean expandStar(List<SqlNode> selectItems, Set<String> aliases,
-      List<Map.Entry<String, RelDataType>> fields, boolean includeSystemVars,
+      PairList<String, RelDataType> fields, boolean includeSystemVars,
       SelectScope scope, SqlNode node) {
     if (!(node instanceof SqlIdentifier)) {
       return false;
@@ -693,8 +693,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final RelDataType type = entry.getValue();
             if (!type.isNullable()) {
               fields.set(i,
-                  Pair.of(entry.getKey(),
-                      typeFactory.createTypeWithNullability(type, true)));
+                  entry.getKey(),
+                  typeFactory.createTypeWithNullability(type, true));
             }
           }
         }
@@ -774,7 +774,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   private boolean addOrExpandField(List<SqlNode> selectItems, Set<String> aliases,
-      List<Map.Entry<String, RelDataType>> fields, boolean includeSystemVars,
+      PairList<String, RelDataType> fields, boolean includeSystemVars,
       SelectScope scope, SqlIdentifier id, RelDataTypeField field) {
     switch (field.getType().getStructKind()) {
     case PEEK_FIELDS:
@@ -2158,7 +2158,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     if (!Objects.equals(alias, uniqueAlias)) {
       exp = SqlValidatorUtil.addAlias(exp, uniqueAlias);
     }
-    fieldList.add(Pair.of(uniqueAlias, deriveType(scope, exp)));
+    ((PairList<String, RelDataType>) fieldList)
+        .add(uniqueAlias, deriveType(scope, exp));
     list.add(exp);
   }
 
@@ -4634,7 +4635,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final SqlValidatorScope selectScope = getSelectScope(select);
     final List<SqlNode> expandedSelectItems = new ArrayList<>();
     final Set<String> aliases = new HashSet<>();
-    final List<Map.Entry<String, RelDataType>> fieldList = new ArrayList<>();
+    final PairList<String, RelDataType> fieldList = PairList.of();
 
     for (SqlNode selectItem : selectItems) {
       if (selectItem instanceof SqlSelect) {
@@ -4734,7 +4735,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    */
   private void handleScalarSubQuery(SqlSelect parentSelect,
       SqlSelect selectItem, List<SqlNode> expandedSelectItems,
-      Set<String> aliasList, List<Map.Entry<String, RelDataType>> fieldList) {
+      Set<String> aliasList, PairList<String, RelDataType> fieldList) {
     // A scalar sub-query only has one output column.
     if (1 != SqlNonNullableAccessors.getSelectList(selectItem).size()) {
       throw newValidationError(selectItem,
@@ -4761,7 +4762,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     RelDataType nodeType = rec.getFieldList().get(0).getType();
     nodeType = typeFactory.createTypeWithNullability(nodeType, true);
-    fieldList.add(Pair.of(alias, nodeType));
+    fieldList.add(alias, nodeType);
   }
 
   /**
@@ -4782,12 +4783,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       return baseRowType;
     }
     List<RelDataTypeField> targetFields = baseRowType.getFieldList();
-    final List<Map.Entry<String, RelDataType>> fields = new ArrayList<>();
+    final PairList<String, RelDataType> fields = PairList.of();
     if (append) {
       for (RelDataTypeField targetField : targetFields) {
-        fields.add(
-            Pair.of(SqlUtil.deriveAliasFromOrdinal(fields.size()),
-                targetField.getType()));
+        fields.add(SqlUtil.deriveAliasFromOrdinal(fields.size()),
+            targetField.getType());
       }
     }
     final Set<Integer> assignedFields = new HashSet<>();
@@ -5737,13 +5737,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     }
 
-    List<Map.Entry<String, RelDataType>> measureColumns =
+    PairList<String, RelDataType> measureColumns =
         validateMeasure(matchRecognize, scope, allRows);
-    for (Map.Entry<String, RelDataType> c : measureColumns) {
-      if (!typeBuilder.nameExists(c.getKey())) {
-        typeBuilder.add(c.getKey(), c.getValue());
+    measureColumns.forEach((name, type) -> {
+      if (!typeBuilder.nameExists(name)) {
+        typeBuilder.add(name, type);
       }
-    }
+    });
 
     final RelDataType rowType = typeBuilder.build();
     if (matchRecognize.getMeasureList().size() == 0) {
@@ -5753,12 +5753,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  private List<Map.Entry<String, RelDataType>> validateMeasure(SqlMatchRecognize mr,
+  private PairList<String, RelDataType> validateMeasure(SqlMatchRecognize mr,
       MatchRecognizeScope scope, boolean allRows) {
     final List<String> aliases = new ArrayList<>();
     final List<SqlNode> sqlNodes = new ArrayList<>();
     final SqlNodeList measures = mr.getMeasureList();
-    final List<Map.Entry<String, RelDataType>> fields = new ArrayList<>();
+    final PairList<String, RelDataType> fields = PairList.of();
 
     for (SqlNode measure : measures) {
       assert measure instanceof SqlCall;
@@ -5773,7 +5773,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       final RelDataType type = deriveType(scope, expand);
       setValidatedNodeType(measure, type);
 
-      fields.add(Pair.of(alias, type));
+      fields.add(alias, type);
       sqlNodes.add(
           SqlStdOperatorTable.AS.createCall(SqlParserPos.ZERO, expand,
               new SqlIdentifier(alias, SqlParserPos.ZERO)));
@@ -7422,8 +7422,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
     /** Moves fields according to the permutation. */
-    public void permute(List<SqlNode> selectItems,
-        List<Map.Entry<String, RelDataType>> fields) {
+    void permute(List<SqlNode> selectItems,
+        PairList<String, RelDataType> fields) {
       if (trivial) {
         return;
       }
@@ -7431,8 +7431,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       final List<SqlNode> oldSelectItems = ImmutableList.copyOf(selectItems);
       selectItems.clear();
       selectItems.addAll(oldSelectItems.subList(0, offset));
-      final List<Map.Entry<String, RelDataType>> oldFields =
-          ImmutableList.copyOf(fields);
+      final PairList<String, RelDataType> oldFields = fields.immutable();
       fields.clear();
       fields.addAll(oldFields.subList(0, offset));
       for (ImmutableIntList source : sources) {
@@ -7462,7 +7461,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                   new SqlIdentifier(name, SqlParserPos.ZERO));
           type = typeFactory.createTypeWithNullability(type2, nullable);
         }
-        fields.add(Pair.of(name, type));
+        fields.add(name, type);
         selectItems.add(selectItem);
       }
     }
