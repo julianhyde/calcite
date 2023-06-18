@@ -18,7 +18,6 @@ package org.apache.calcite.runtime;
 
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -148,7 +148,6 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return list.addAll(x, list2.list);
   }
 
-  @SuppressWarnings("unchecked")
   @Override public Map.Entry<T, U> set(int index, Map.Entry<T, U> entry) {
     return set(index, entry.getKey(), entry.getValue());
   }
@@ -173,14 +172,32 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
    * pair. */
   @SuppressWarnings("unchecked")
   public List<T> leftList() {
-    return Util.quotientList((List<T>) list, 2, 0);
+    final int size = list.size() / 2;
+    return new RandomAccessList<T>() {
+      @Override public int size() {
+        return size;
+      }
+
+      @Override public T get(int index) {
+        return (T) list.get(index * 2);
+      }
+    };
   }
 
   /** Returns an unmodifiable list view consisting of the right entry of each
    * pair. */
   @SuppressWarnings("unchecked")
   public List<U> rightList() {
-    return Util.quotientList((List<U>) list, 2, 1);
+    final int size = list.size() / 2;
+    return new RandomAccessList<U>() {
+      @Override public int size() {
+        return size;
+      }
+
+      @Override public U get(int index) {
+        return (U) list.get(index * 2 + 1);
+      }
+    };
   }
 
   /** Calls a BiConsumer with each pair in this list. */
@@ -268,5 +285,12 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     public PairList<T, U> build() {
       return new PairList<>(list);
     }
+  }
+
+  /** Base class for a list that implements {@link java.util.RandomAccess}.
+   *
+   * @param <E> Element type */
+  private abstract static class RandomAccessList<E>
+      extends AbstractList<E> implements RandomAccess {
   }
 }
