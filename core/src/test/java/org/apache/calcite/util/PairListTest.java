@@ -84,7 +84,7 @@ class PairListTest {
     list.add(Pair.of(1, "a"));
     validator.run();
 
-    pairList.add(Pair.of(2, "b"));
+    pairList.add((Map.Entry<Integer, String>) Pair.of(2, "b"));
     list.add(Pair.of(2, "b"));
     validator.run();
 

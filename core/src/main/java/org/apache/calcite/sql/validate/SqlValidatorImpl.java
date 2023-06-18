@@ -37,6 +37,7 @@ import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Feature;
+import org.apache.calcite.runtime.PairList;
 import org.apache.calcite.runtime.Resources;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Table;
@@ -5841,11 +5842,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // an aggregate or as an axis.
 
     // Aggregates, e.g. "PIVOT (sum(x) AS sum_x, count(*) AS c)"
-    final List<Pair<@Nullable String, RelDataType>> aggNames = new ArrayList<>();
+    final PairList<@Nullable String, RelDataType> aggNames = PairList.of();
     pivot.forEachAgg((alias, call) -> {
       call.validate(this, scope);
       final RelDataType type = deriveType(scope, call);
-      aggNames.add(Pair.of(alias, type));
+      aggNames.add(alias, type);
       if (!(call instanceof SqlCall)
           || !(((SqlCall) call).getOperator() instanceof SqlAggFunction)) {
         throw newValidationError(call, RESOURCE.pivotAggMalformed());
@@ -5890,7 +5891,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     subNode.getParserPosition(), identifier, subNode)),
             true);
       });
-      Pair.forEach(aggNames, (aggAlias, aggType) ->
+      aggNames.forEach((aggAlias, aggType) ->
           typeBuilder.add(aggAlias == null ? alias : alias + "_" + aggAlias,
               aggType));
     });
@@ -5954,7 +5955,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     columnNames.addAll(unusedColumnNames);
 
     // Gather the name and type of each measure.
-    final List<Pair<String, RelDataType>> measureNameTypes = new ArrayList<>();
+    final PairList<String, RelDataType> measureNameTypes = PairList.of();
     Ord.forEach(unpivot.measureList, (measure, i) -> {
       final String measureName = ((SqlIdentifier) measure).getSimple();
       final List<RelDataType> types = new ArrayList<>();
@@ -5977,7 +5978,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         throw newValidationError(measure,
             RESOURCE.unpivotDuplicate(measureName));
       }
-      measureNameTypes.add(Pair.of(measureName, type));
+      measureNameTypes.add(measureName, type);
     });
 
     // Gather the name and type of each axis.
@@ -5991,7 +5992,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // The type of 'job' is derived as the least restrictive type of the values
     // ('CLERK', 'ANALYST'), namely VARCHAR(7). The derived type of 'deptno' is
     // the type of values (10, 20), namely INTEGER.
-    final List<Pair<String, RelDataType>> axisNameTypes = new ArrayList<>();
+    final PairList<String, RelDataType> axisNameTypes = PairList.of();
     Ord.forEach(unpivot.axisList, (axis, i) -> {
       final String axisName = ((SqlIdentifier) axis).getSimple();
       final List<RelDataType> types = new ArrayList<>();
@@ -6010,7 +6011,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       if (!columnNames.add(axisName)) {
         throw newValidationError(axis, RESOURCE.unpivotDuplicate(axisName));
       }
-      axisNameTypes.add(Pair.of(axisName, type));
+      axisNameTypes.add(axisName, type);
     });
 
     // Columns that have been seen as arguments to aggregates or as axes

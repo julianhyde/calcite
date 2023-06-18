@@ -31,6 +31,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
+import org.apache.calcite.runtime.PairList;
 import org.apache.calcite.schema.CustomColumnResolvingTable;
 import org.apache.calcite.schema.ExtensibleTable;
 import org.apache.calcite.schema.Table;
@@ -189,7 +190,7 @@ public class SqlValidatorUtil {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static List<Pair<SqlIdentifier, SqlDataTypeSpec>> pairs(
       SqlNodeList extendedColumns) {
-    return Util.pairs((List) extendedColumns);
+    return PairList.backedBy((List) extendedColumns.getList());
   }
 
   /**

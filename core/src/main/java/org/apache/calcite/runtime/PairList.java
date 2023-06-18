@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.runtime;
 
+import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
@@ -26,9 +27,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import static java.util.Objects.requireNonNull;
 
@@ -47,6 +50,20 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   /** Creates an empty PairList. */
   public static <T, U> PairList<T, U> of() {
     return new PairList<>(new ArrayList<>());
+  }
+
+  /** Creates a singleton PairList. */
+  @SuppressWarnings("RedundantCast")
+  public static <T, U> PairList<T, U> of(T t, U u) {
+    final List<Object> list = new ArrayList<>();
+    list.add((Object) t);
+    list.add((Object) u);
+    return new PairList<>(list);
+  }
+
+  /** Creates an empty PairList with a specified initial capacity. */
+  public static <T, U> PairList<T, U> ofSize(int initialCapacity) {
+    return backedBy(new ArrayList<>(initialCapacity));
   }
 
   /** Creates a PairList backed by a given list.
@@ -68,6 +85,11 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return new PairList<>(list);
   }
 
+  /** Creates a Builder. */
+  public static <T, U> Builder<T, U> builder() {
+    return new Builder<>();
+  }
+
   @SuppressWarnings("unchecked")
   @Override public Map.Entry<T, U> get(int index) {
     int x = index * 2;
@@ -76,6 +98,10 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
 
   @Override public int size() {
     return list.size() / 2;
+  }
+
+  @Override public void clear() {
+    list.clear();
   }
 
   @SuppressWarnings("RedundantCast")
@@ -97,6 +123,37 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   public void add(T t, U u) {
     list.add((Object) t);
     list.add((Object) u);
+  }
+
+  /** Adds a pair to this list at a given position. */
+  @SuppressWarnings("RedundantCast")
+  public void add(int index, T t, U u) {
+    int x = index * 2;
+    list.add(x, (Object) t);
+    list.add(x + 1, (Object) u);
+  }
+
+  /** Adds to this list the contents of another PairList.
+   *
+   * <p>Equivalent to {@link #addAll(Collection)}, but more efficient. */
+  public boolean addAll(PairList<T, U> list2) {
+    return list.addAll(list2.list);
+  }
+
+  /** Adds to this list, at a given index, the contents of another PairList.
+   *
+   * <p>Equivalent to {@link #addAll(int, Collection)}, but more efficient. */
+  public boolean addAll(int index, PairList<T, U> list2) {
+    int x = index * 2;
+    return list.addAll(x, list2.list);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override public Map.Entry<T, U> set(int index, Map.Entry<T, U> element) {
+    int x = index * 2;
+    T t = (T) list.set(x, element.getKey());
+    U u = (U) list.set(x + 1, element.getValue());
+    return Pair.of(t, u);
   }
 
   @SuppressWarnings("unchecked")
@@ -158,6 +215,17 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return backedBy(immutableList);
   }
 
+  /** Applies a mapping function to each element of this list. */
+  @SuppressWarnings("unchecked")
+  public <R> List<R> transform(BiFunction<T, U, R> function) {
+    return Functions.generate(list.size() / 2, index -> {
+      final int x = index * 2;
+      final T t = (T) list.get(x);
+      final U u = (U) list.get(x + 1);
+      return function.apply(t, u);
+    });
+  }
+
   /** Action to be taken each step of an indexed iteration over a PairList.
    *
    * @param <T> First type
@@ -174,5 +242,26 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
      * @param u Second input argument
      */
     void accept(int index, T t, U u);
+  }
+
+  /** Builds a PairList.
+   *
+   * @param <T> First type
+   * @param <U> Second type */
+  public static class Builder<T, U> {
+    final List<@Nullable Object> list = new ArrayList<>();
+
+    /** Adds a pair to the list under construction. */
+    @SuppressWarnings("RedundantCast")
+    public Builder<T, U> add(T t, U u) {
+      list.add((Object) t);
+      list.add((Object) u);
+      return this;
+    }
+
+    /** Builds the PairList. */
+    public PairList<T, U> build() {
+      return new PairList<>(list);
+    }
   }
 }
