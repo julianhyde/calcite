@@ -22,6 +22,7 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.plan.RelOptSchemaWithSampling;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -488,9 +489,18 @@ public class SqlValidatorUtil {
       List<? extends @Nullable String> nameList,
       Suggester suggester,
       boolean caseSensitive) {
-    final Set<String> used = caseSensitive
-        ? new LinkedHashSet<>()
-        : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    final Set<String> used;
+    if (caseSensitive) {
+      // Shortcut (avoiding creating a hash map) if the list is short and has
+      // no nulls.
+      if (Util.isDefinitelyDistinct(nameList)
+          && !Functions.exists(nameList, Objects::isNull)) {
+        return (List<String>) nameList;
+      }
+      used = new LinkedHashSet<>();
+    } else {
+      used = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    }
     int changeCount = 0;
     final List<String> newNameList = new ArrayList<>();
     for (String name : nameList) {
