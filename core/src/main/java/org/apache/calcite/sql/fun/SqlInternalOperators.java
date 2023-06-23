@@ -34,6 +34,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -261,7 +262,8 @@ public abstract class SqlInternalOperators {
   /** {@code CLEAR} clause inside {@link #AT}. */
   public static final SqlOperator AT_CLEAR =
       SqlBasicOperator.create(SqlKind.AT_CLEAR, "CLEAR")
-          .withSyntax(SqlSyntax.FUNCTION_ID);
+          .withSyntax(SqlSyntax.FUNCTION_ID)
+          .withReturnType(ReturnTypes.ARG0);
 
   /** {@code SET} clause inside {@link #AT}. */
   public static final SqlOperator AT_SET =
@@ -334,9 +336,10 @@ public abstract class SqlInternalOperators {
     private final SqlSyntax syntax;
 
     /** Private constructor. Use {@link #create}. */
-    private SqlBasicOperator(String name, SqlKind kind, SqlSyntax syntax, int leftPrecedence,
-        int rightPrecedence, Unparser unparser) {
-      super(name, kind, leftPrecedence, rightPrecedence, ReturnTypes.BOOLEAN,
+    private SqlBasicOperator(String name, SqlKind kind, SqlSyntax syntax,
+        Unparser unparser, int leftPrecedence, int rightPrecedence,
+        @Nullable SqlReturnTypeInference returnTypeInference) {
+      super(name, kind, leftPrecedence, rightPrecedence, returnTypeInference,
           InferTypes.RETURN_TYPE, OperandTypes.ANY);
       this.unparser = unparser;
       this.syntax = syntax;
@@ -351,10 +354,14 @@ public abstract class SqlInternalOperators {
     }
 
     static SqlBasicOperator create(SqlKind kind, String name) {
-      return new SqlBasicOperator(name, kind, SqlSyntax.FUNCTION, 0, 0,
-          (writer, call, leftPrec, rightPrec) ->
-              call.getOperator().getSyntax().unparse(writer, call.getOperator(),
-                  call, leftPrec, rightPrec));
+      return new SqlBasicOperator(name, kind, SqlSyntax.FUNCTION,
+          SqlBasicOperator::unparse2, 0, 0, ReturnTypes.BOOLEAN);
+    }
+
+    private static void unparse2(SqlWriter writer, SqlCall call, int leftPrec,
+        int rightPrec) {
+      final SqlSyntax syntax = call.getOperator().getSyntax();
+      syntax.unparse(writer, call.getOperator(), call, leftPrec, rightPrec);
     }
 
     @Override public SqlSyntax getSyntax() {
@@ -363,17 +370,23 @@ public abstract class SqlInternalOperators {
 
     SqlBasicOperator withSyntax(SqlSyntax syntax) {
       return new SqlBasicOperator(getName(), getKind(), syntax,
-          getLeftPrec(), getRightPrec(), unparser);
+          unparser, getLeftPrec(), getRightPrec(), getReturnTypeInference());
     }
 
     SqlBasicOperator withPrecedence(int prec, boolean leftAssoc) {
-      return new SqlBasicOperator(getName(), getKind(), syntax,
-          leftPrec(prec, leftAssoc), rightPrec(prec, leftAssoc), unparser);
+      return new SqlBasicOperator(getName(), getKind(), syntax, unparser,
+          leftPrec(prec, leftAssoc), rightPrec(prec, leftAssoc),
+          getReturnTypeInference());
     }
 
     SqlBasicOperator withUnparser(Unparser unparser) {
-      return new SqlBasicOperator(getName(), getKind(), syntax,
-          getLeftPrec(), getRightPrec(), unparser);
+      return new SqlBasicOperator(getName(), getKind(), syntax, unparser,
+          getLeftPrec(), getRightPrec(), getReturnTypeInference());
+    }
+
+    SqlBasicOperator withReturnType(SqlReturnTypeInference returnTypeInference) {
+      return new SqlBasicOperator(getName(), getKind(), syntax, unparser,
+          getLeftPrec(), getRightPrec(), returnTypeInference);
     }
 
     @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,

@@ -2325,6 +2325,47 @@ public class SqlToRelConverter {
     }
   }
 
+  /** Converts "operand AT (modifier, ...)".
+   *
+   * <p>Each modifier becomes a call to a context-modifying function such as
+   * {@link SqlInternalOperators#AT_WHERE}. */
+  private RexNode convertAt(Blackboard bb, SqlNode node) {
+    final SqlCall call = (SqlCall) node;
+    final SqlNode operand = call.operand(0);
+    final List<SqlNode> modifiers = call.operand(1);
+    final RelNode root = requireNonNull(bb.root, "root");
+    final DimensionalContext dc =
+        new DimensionalContext(root, requireNonNull(bb.scope, "scope"));
+    return folder(dc, bb, operand, modifiers);
+  }
+
+  /** Returns an operator that will apply a modifier (such as CLEAR or SET) to
+   * the output of the previous modifier. A sequence of such 'fold' operators
+   * allows us to achieve recursion without recursion. */
+  private RexNode folder(DimensionalContext dc, Blackboard bb, SqlNode operand,
+      List<SqlNode> modifiers) {
+    if (modifiers.isEmpty()) {
+      return bb.convertExpression(operand);
+    }
+    final SqlCall modifier = (SqlCall) modifiers.get(0);
+    final List<SqlNode> otherModifiers = Util.skip(modifiers);
+    switch (modifier.getKind()) {
+    case AT_WHERE:
+      final RexNode predicate = convertExpression(modifier.operand(0));
+      return rexBuilder.makeCall(SqlInternalOperators.AT_WHERE,
+          folder(dc, bb, operand, otherModifiers), predicate);
+
+    case AT_CLEAR:
+      SqlIdentifier identifier = modifier.operand(0);
+      return rexBuilder.makeCall(SqlInternalOperators.AT_CLEAR,
+          folder(dc, bb, operand, otherModifiers),
+          bb.convertExpression(identifier));
+
+    default:
+      throw new AssertionError("unknown modifier: " + modifier);
+    }
+  }
+
   protected void convertFrom(
       Blackboard bb,
       @Nullable SqlNode from) {
@@ -4349,7 +4390,7 @@ public class SqlToRelConverter {
     final SqlQualified qualified = bb.scope.fullyQualify(identifier);
     final Pair<RexNode, @Nullable BiFunction<RexNode, String, RexNode>> e0 =
         bb.lookupExp(qualified);
-    RexNode e = e0.left;
+    RexNode e = requireNonNull(e0.left, "e0.left");
     for (String name : qualified.suffix()) {
       if (e == e0.left && e0.right != null) {
         e = e0.right.apply(e, name);
@@ -5520,6 +5561,15 @@ public class SqlToRelConverter {
 
       case OVER:
         return convertOver(this, expr);
+
+      case AT:
+        final @Nullable AggConverter oldAgg = agg;
+        try {
+          this.agg = null;
+          return convertAt(this, expr);
+        } finally {
+          this.agg = oldAgg;
+        }
 
       default:
         // fall through

@@ -524,6 +524,23 @@ LogicalProject(EXPR$0=[ITEM(ITEM($3, 1).DETAIL.SKILLS, +(2, 3)).DESC])
 ]]>
     </Resource>
   </TestCase>
+  <TestCase name="testAt">
+    <Resource name="sql">
+      <![CDATA[with e2 as
+  (select *, avg(sal) as measure avg_sal from emp)
+select deptno, job, avg_sal / avg_sal at (clear deptno)
+from e2
+group by deptno, job]]>
+    </Resource>
+    <Resource name="plan">
+      <![CDATA[
+LogicalProject(DEPTNO=[$0], JOB=[$1], EXPR$2=[/($2, CLEAR($2, n))])
+  LogicalAggregate(group=[{0, 1}], agg#0=[AGG_M2V($2)])
+    LogicalProject(DEPTNO=[$7], JOB=[$2], AVG_SAL=[V2M(CAST(/(SUM($5), COUNT($5))):INTEGER NOT NULL)])
+      LogicalTableScan(table=[[CATALOG, SALES, EMP]])
+]]>
+    </Resource>
+  </TestCase>
   <TestCase name="testCase">
     <Resource name="plan">
       <![CDATA[

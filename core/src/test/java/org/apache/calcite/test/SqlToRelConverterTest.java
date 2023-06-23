@@ -4715,6 +4715,17 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
+  /** Measure defined in CTE is referenced in an AT expression. */
+  @Disabled("TODO log is incorrect")
+  @Test void testAt() {
+    final String sql = "with e2 as\n"
+        + "  (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select deptno, job, avg_sal /* / avg_sal at (clear deptno) */\n"
+        + "from e2\n"
+        + "group by deptno, job";
+    sql(sql).ok();
+  }
+
   /** Test case for:
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3310">[CALCITE-3310]
    * Approximate and exact aggregate calls are recognized as the same

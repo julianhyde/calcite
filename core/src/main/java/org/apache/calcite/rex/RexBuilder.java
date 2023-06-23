@@ -212,9 +212,9 @@ public class RexBuilder {
       int i) {
     final RelDataType type = expr.getType();
     final List<RelDataTypeField> fields = type.getFieldList();
-    if ((i < 0) || (i >= fields.size())) {
-      throw new AssertionError("Field ordinal " + i + " is invalid for "
-          + " type '" + type + "'");
+    if (i < 0 || i >= fields.size()) {
+      throw new AssertionError("Field ordinal " + i + " is invalid for type '"
+          + type + "'");
     }
     return makeFieldAccessInternal(expr, fields.get(i));
   }
