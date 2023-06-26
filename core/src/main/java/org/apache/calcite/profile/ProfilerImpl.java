@@ -23,7 +23,6 @@ import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.rel.metadata.NullSentinel;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.PartiallyOrderedSet;
 import org.apache.calcite.util.Util;
 
@@ -44,6 +43,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,7 +55,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.profile.ProfilerImpl.CompositeCollector.OF;
@@ -66,6 +66,7 @@ import static java.util.Objects.requireNonNull;
  * Implementation of {@link Profiler} that only investigates "interesting"
  * combinations of columns.
  */
+@SuppressWarnings("rawtypes")
 public class ProfilerImpl implements Profiler {
   /** The number of combinations to consider per pass.
    * The number is determined by memory, but a value of 1,000 is typical.
@@ -78,7 +79,7 @@ public class ProfilerImpl implements Profiler {
   private final int interestingCount;
 
   /** Whether a successor is considered interesting enough to analyze. */
-  private final Predicate<Pair<Space, Column>> predicate;
+  private final BiPredicate<Space, Column> predicate;
 
   public static Builder builder() {
     return new Builder();
@@ -95,7 +96,7 @@ public class ProfilerImpl implements Profiler {
    *   analyze
    */
   ProfilerImpl(int combinationsPerPass,
-      int interestingCount, Predicate<Pair<Space, Column>> predicate) {
+      int interestingCount, BiPredicate<Space, Column> predicate) {
     Preconditions.checkArgument(combinationsPerPass > 2);
     Preconditions.checkArgument(interestingCount > 2);
     this.combinationsPerPass = combinationsPerPass;
@@ -121,17 +122,14 @@ public class ProfilerImpl implements Profiler {
      * not yet been computed. We may add some of those successors to
      * {@link #spaceQueue}. */
     final Queue<Space> doneQueue =
-        new PriorityQueue<>(100, (s0, s1) -> {
-          // The space with 0 columns is more interesting than
-          // any space with 1 column, and so forth.
-          // For spaces with 2 or more columns we compare "surprise":
-          // how many fewer values did it have than expected?
-          int c = Integer.compare(s0.columns.size(), s1.columns.size());
-          if (c == 0) {
-            c = Double.compare(s0.surprise(), s1.surprise());
-          }
-          return c;
-        });
+        new PriorityQueue<>(100,
+            // The space with 0 columns is more interesting than
+            // any space with 1 column, and so forth.
+            // For spaces with 2 or more columns we compare "surprise":
+            // how many fewer values did it have than expected?
+            Comparator.comparingInt((Space space) -> space.columns.size())
+                .thenComparingDouble(Space::surprise));
+
     final SurpriseQueue surprises;
 
     /** Combinations of columns that we will compute next pass. */
@@ -165,7 +163,7 @@ public class ProfilerImpl implements Profiler {
         }
       }
       this.singletonSpaces =
-          new ArrayList<>(Collections.nCopies(columns.size(), (Space) null));
+          new ArrayList<>(Collections.nCopies(columns.size(), null));
       if (combinationsPerPass > Math.pow(2D, columns.size())) {
         // There are not many columns. We can compute all combinations in the
         // first pass.
@@ -253,7 +251,7 @@ public class ProfilerImpl implements Profiler {
                     || doneSpace.columnOrdinals.cardinality() == 0
                     || !containsKey(
                         doneSpace.columnOrdinals.set(column.ordinal))
-                    && predicate.test(Pair.of(doneSpace, column))) {
+                    && predicate.test(doneSpace, column)) {
                   final ImmutableBitSet nextOrdinals =
                       doneSpace.columnOrdinals.set(column.ordinal);
                   if (resultSet.add(nextOrdinals)) {
@@ -507,7 +505,7 @@ public class ProfilerImpl implements Profiler {
   /** Builds a {@link org.apache.calcite.profile.ProfilerImpl}. */
   public static class Builder {
     int combinationsPerPass = 100;
-    Predicate<Pair<Space, Column>> predicate = p -> true;
+    BiPredicate<Space, Column> predicate = (space, column) -> true;
 
     public ProfilerImpl build() {
       return new ProfilerImpl(combinationsPerPass, 200, predicate);
@@ -519,12 +517,7 @@ public class ProfilerImpl implements Profiler {
     }
 
     public Builder withMinimumSurprise(double v) {
-      predicate =
-          spaceColumnPair -> {
-            @SuppressWarnings("unused")
-            final Space space = spaceColumnPair.left;
-            return false;
-          };
+      predicate = (space, column) -> false;
       return this;
     }
   }
@@ -691,6 +684,7 @@ public class ProfilerImpl implements Profiler {
   }
 
   /** Collector that collects one column value into a HyperLogLog sketch. */
+  @SuppressWarnings("rawtypes")
   static class HllSingletonCollector extends HllCollector {
     final int columnOrdinal;
 
@@ -776,12 +770,12 @@ public class ProfilerImpl implements Profiler {
 
     @Override public String toString() {
       return "min: " + priorityQueue.peek()
-          + ", contents: " + deque.toString();
+          + ", contents: " + deque;
     }
 
     boolean isValid() {
       if (CalciteSystemProperty.DEBUG.value()) {
-        System.out.println(toString());
+        System.out.println(this);
       }
       assert deque.size() == priorityQueue.size();
       if (count > size) {

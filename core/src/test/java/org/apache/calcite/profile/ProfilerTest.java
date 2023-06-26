@@ -404,7 +404,7 @@ class ProfilerTest {
     static final Supplier<Profiler> SIMPLE_FACTORY = SimpleProfiler::new;
 
     static final Supplier<Profiler> BETTER_FACTORY =
-        () -> new ProfilerImpl(600, 200, p -> true);
+        () -> new ProfilerImpl(600, 200, (space, column) -> true);
 
     static final Ordering<Profiler.Statistic> ORDERING =
         new Ordering<Profiler.Statistic>() {
@@ -442,9 +442,9 @@ class ProfilerTest {
             .build();
 
     private static final Supplier<Profiler> PROFILER_FACTORY = () ->
-        new ProfilerImpl(7500, 100, p -> {
+        new ProfilerImpl(7500, 100, (space, column) -> {
           final Profiler.Distribution distribution =
-              p.left.distribution();
+              space.distribution();
           if (distribution == null) {
             // We don't have a distribution yet, because this space
             // has not yet been evaluated. Let's do it anyway.
@@ -454,7 +454,7 @@ class ProfilerTest {
         });
 
     private static final Supplier<Profiler> INCURIOUS_PROFILER_FACTORY =
-        () -> new ProfilerImpl(10, 200, p -> false);
+        () -> new ProfilerImpl(10, 200, (space, column) -> false);
 
     private final String sql;
     private final List<String> columns;
