@@ -61,6 +61,8 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Test that runs every Quidem file as a test.
  */
@@ -113,11 +115,11 @@ public abstract class QuidemTest {
     return m;
   }
 
-  @SuppressWarnings("BetaApi")
+  @SuppressWarnings({"BetaApi", "UnstableApiUsage"})
   protected static Collection<String> data(String first) {
     // inUrl = "file:/home/fred/calcite/core/target/test-classes/sql/agg.iq"
     final URL inUrl = QuidemTest.class.getResource("/" + n2u(first));
-    final File firstFile = Sources.of(inUrl).file();
+    final File firstFile = Sources.of(requireNonNull(inUrl, "inUrl")).file();
     final int commonPrefixLength = firstFile.getAbsolutePath().length() - first.length();
     final File dir = firstFile.getParentFile();
     final List<String> paths = new ArrayList<>();
@@ -137,12 +139,17 @@ public abstract class QuidemTest {
       inFile = f;
       outFile = new File(path + ".out");
     } else {
-      // e.g. path = "sql/outer.iq"
-      // inUrl = "file:/home/fred/calcite/core/target/test-classes/sql/outer.iq"
+      // e.g. path = "sql/agg.iq"
+      // inUrl = "file:/home/fred/calcite/core/build/resources/test/sql/agg.iq"
+      // inFile = "/home/fred/calcite/core/build/resources/test/sql/agg.iq"
+      // outDir = "/home/fred/calcite/core/build/quidem/test/sql"
+      // outFile = "/home/fred/calcite/core/build/quidem/test/sql/agg.iq"
       final URL inUrl = QuidemTest.class.getResource("/" + n2u(path));
-      inFile = Sources.of(inUrl).file();
-      outFile = new File(inFile.getAbsoluteFile().getParent()
-          .replace("resources", "quidem"), u2n("surefire/") + path);
+      inFile = Sources.of(requireNonNull(inUrl, "inUrl")).file();
+      final File outDir =
+          replaceDir(inFile.getAbsoluteFile().getParentFile(), "resources",
+              "quidem");
+      outFile = new File(outDir, path);
     }
     Util.discard(outFile.getParentFile().mkdirs());
     try (Reader reader = Util.reader(inFile);
@@ -178,6 +185,15 @@ public abstract class QuidemTest {
       fail("Files differ: " + outFile + " " + inFile + "\n"
           + diff);
     }
+  }
+
+  /** Returns a file, replacing one directory with another.
+   *
+   * <p>For example, {@code replaceDir("/abc/str/astro.txt", "str", "xyz")}
+   * returns '{@code "/abc/xyz/astro.txt"}'.
+   */
+  private static File replaceDir(File file, String target, String replacement) {
+    return new File(file.getAbsolutePath().replace(target, replacement));
   }
 
   /** Creates a command handler. */

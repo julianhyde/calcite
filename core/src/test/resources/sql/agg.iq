@@ -23,7 +23,7 @@ select count(ename) as c from emp;
 +---+
 | C |
 +---+
-| 9 |
+| 8 |
 +---+
 (1 row)
 
