@@ -146,10 +146,7 @@ public abstract class QuidemTest {
       // outFile = "/home/fred/calcite/core/build/quidem/test/sql/agg.iq"
       final URL inUrl = QuidemTest.class.getResource("/" + n2u(path));
       inFile = Sources.of(requireNonNull(inUrl, "inUrl")).file();
-      final File outDir =
-          replaceDir(inFile.getAbsoluteFile().getParentFile(), "resources",
-              "quidem");
-      outFile = new File(outDir, path);
+      outFile = replaceDir(inFile, "resources", "quidem");
     }
     Util.discard(outFile.getParentFile().mkdirs());
     try (Reader reader = Util.reader(inFile);
@@ -190,10 +187,13 @@ public abstract class QuidemTest {
   /** Returns a file, replacing one directory with another.
    *
    * <p>For example, {@code replaceDir("/abc/str/astro.txt", "str", "xyz")}
-   * returns '{@code "/abc/xyz/astro.txt"}'.
+   * returns "{@code "/abc/xyz/astro.txt}".
+   * Note that the file name "astro.txt" does not become "axyzo.txt".
    */
   private static File replaceDir(File file, String target, String replacement) {
-    return new File(file.getAbsolutePath().replace(target, replacement));
+    return new File(
+        file.getAbsolutePath().replace(n2u('/' + target + '/'),
+            n2u('/' + replacement + '/')));
   }
 
   /** Creates a command handler. */
