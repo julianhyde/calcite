@@ -39,6 +39,7 @@ import com.google.common.io.PatternFilenameFilter;
 import net.hydromatic.quidem.CommandHandler;
 import net.hydromatic.quidem.Quidem;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -71,7 +72,7 @@ public abstract class QuidemTest {
 
   private static final Pattern PATTERN = Pattern.compile("\\.iq$");
 
-  private static Object getEnv(String varName) {
+  private static @Nullable Object getEnv(String varName) {
     switch (varName) {
     case "jdk18":
       return System.getProperty("java.version").startsWith("1.8");
@@ -101,7 +102,7 @@ public abstract class QuidemTest {
     }
   }
 
-  private Method findMethod(String path) {
+  private @Nullable Method findMethod(String path) {
     // E.g. path "sql/agg.iq" gives method "testSqlAgg"
     final String path1 = path.replace(File.separatorChar, '_');
     final String path2 = PATTERN.matcher(path1).replaceAll("");
@@ -206,14 +207,8 @@ public abstract class QuidemTest {
     return new QuidemConnectionFactory();
   }
 
-  /** Converts a path from Unix to native. On Windows, converts
-   * forward-slashes to back-slashes; on Linux, does nothing. */
-  private static String u2n(String s) {
-    return File.separatorChar == '\\'
-        ? s.replace('/', '\\')
-        : s;
-  }
-
+  /** Converts a path from native to Unix. On Windows, converts
+   * back-slashes to forward-slashes; on Linux, does nothing. */
   private static String n2u(String s) {
     return File.separatorChar == '\\'
         ? s.replace('\\', '/')
