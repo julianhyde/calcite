@@ -29,8 +29,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -42,6 +44,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Various automated checks on the code and git history. */
 class LintTest {
+  /** Pattern that matches "[CALCITE-12]" or "[CALCITE-1234]" followed by a
+   * space. */
+  private static final Pattern CALCITE_PATTERN =
+      Pattern.compile("^(\\[CALCITE-[0-9]{1,4}][ ]).*");
+
   @SuppressWarnings("Convert2MethodRef") // JDK 8 requires lambdas
   private Puffin.Program<GlobalState> makeProgram() {
     return Puffin.builder(GlobalState::new, global -> new FileState(global))
@@ -203,85 +210,105 @@ class LintTest {
     assumeTrue(TestUnsafe.haveGit(), "Invalid git environment");
 
     int n = 7;
-    final List<String> messages = TestUnsafe.getCommitMessages(n);
     final List<String> warnings = new ArrayList<>();
-    for (String message : messages) {
-      checkMessage(message, warning ->
-          warnings.add("invalid git log message '" + message + "'; "
-              + warning));
-    }
+    TestUnsafe.getCommitMessages(n, (message, rest) ->
+        checkMessage(message, rest, warning ->
+            warnings.add("invalid git log message '" + message + "'; "
+                + warning)));
     warnings.forEach(System.out::println);
     assertThat(warnings, empty());
   }
 
   @Test void testLogMatcher() {
-    final Function<String, List<String>> f = message -> {
+    final BiFunction<String, String, List<String>> f = (subject, body) -> {
       final List<String> warnings = new ArrayList<>();
-      checkMessage(message, warnings::add);
+      checkMessage(subject, body, warnings::add);
       return warnings;
     };
-    assertThat(f.apply(" [CALCITE-1234] abc"),
+    assertThat(f.apply(" [CALCITE-1234] abc", ""),
         hasItem("starts with space"));
-    assertThat(f.apply("[CALCITE-1234]  abc"),
+    assertThat(f.apply("[CALCITE-1234]  abc", ""),
+        hasItem("starts with space"));
+    assertThat(f.apply("[CALCITE-12b]  abc", ""),
         hasItem("malformed [CALCITE-nnnn] reference"));
-    assertThat(f.apply("[CALCITE-12b]  abc"),
+    assertThat(f.apply("[CALCITE-12345]  abc", ""),
         hasItem("malformed [CALCITE-nnnn] reference"));
-    assertThat(f.apply("[CALCITE-12345]  abc"),
+    assertThat(f.apply("[CALCITE-1234]: abc", ""),
         hasItem("malformed [CALCITE-nnnn] reference"));
-    assertThat(f.apply("[CALCITE-1234]: abc"),
+    assertThat(f.apply("CALCITE-1234: abc", ""),
         hasItem("malformed [CALCITE-nnnn] reference"));
-    assertThat(f.apply("CALCITE-1234: abc"),
-        hasItem("malformed [CALCITE-nnnn] reference"));
-    assertThat(f.apply("[CALCITE-12] abc"),
+    assertThat(f.apply("[CALCITE-12] Abc", ""),
         empty());
-    assertThat(f.apply("[CALCITE-123] abc"),
+    assertThat(f.apply("[CALCITE-123] Abc", ""),
         empty());
-    assertThat(f.apply("[CALCITE-1234] Fix problem with foo"),
+    assertThat(f.apply("[CALCITE-1234] Fix problem with foo", ""),
         hasItem("contains 'fix' or 'fixes'; you should describe the "
             + "problem, not what you did"));
-    assertThat(f.apply("[CALCITE-1234] Baz doesn't buzz"),
+    assertThat(f.apply("[CALCITE-1234] Baz doesn't buzz", ""),
         empty());
-    assertThat(f.apply("[CALCITE-1234] Baz doesn't buzz."),
+    assertThat(f.apply("[CALCITE-1234] Baz doesn't buzz.", ""),
         hasItem("ends with period"));
-    assertThat(f.apply("[CALCITE-1234]  Two problems."),
+    assertThat(f.apply("[CALCITE-1234]  Two problems.", ""),
         hasSize(2));
-    assertThat(f.apply("[CALCITE-1234]  Two problems."),
+    assertThat(f.apply("[CALCITE-1234]  Two problems.", ""),
         hasItem("ends with period"));
-    assertThat(f.apply("[CALCITE-1234]  Two problems."),
-        hasItem("malformed [CALCITE-nnnn] reference"));
-    assertThat(f.apply("Cosmetic: Move everything one character to the left"),
+    assertThat(f.apply("[CALCITE-1234]  Two problems.", ""),
+        hasItem("starts with space"));
+    assertThat(f.apply("Cosmetic: Move everything one character to left", ""),
         empty());
     assertThat(
         f.apply("Finishing up [CALCITE-4937], remove workarounds for "
-            + "[CALCITE-4877]"),
+            + "[CALCITE-4877]", ""),
         empty());
-    assertThat(f.apply("Fix typo in filterable-model.yaml"),
+    assertThat(f.apply("Fix typo in filterable-model.yaml", ""),
         empty());
-    assertThat(f.apply("Fix typo in filterable-model.yaml"),
+    assertThat(
+        f.apply("Revert \"[CALCITE-4817] Expand SubstitutionVisitor\"", ""),
         empty());
-    assertThat(f.apply("Revert \"[CALCITE-4817] Expand SubstitutionVisitor\""),
+    assertThat(f.apply("[CALCITE-4817] cannot start with lower-case", ""),
+        hasSize(1));
+    assertThat(f.apply("[CALCITE-4817] cannot start with lower-case", ""),
+        hasItem("Message must start with upper-case letter"));
+
+    // If 'Lint:skip' occurs in the body, no checks are performed
+    assertThat(
+        f.apply("[CALCITE-4817] cannot start with lower-case",
+            "Body line 1\n"
+                + "\n"
+                + "Lint:skip"),
         empty());
   }
 
-  private static void checkMessage(String message, Consumer<String> consumer) {
-    if (message.startsWith(" ")) {
-      consumer.accept("starts with space");
+  private static void checkMessage(String subject, String body,
+      Consumer<String> consumer) {
+    if (body.contains("Lint:skip")) {
+      return;
     }
-    if (message.endsWith(".")) {
-      consumer.accept("ends with period");
-    }
-    if (message.endsWith(" ")) {
-      consumer.accept("ends with space");
-    }
-    if (message.startsWith("[CALCITE-")
-        || message.startsWith("CALCITE-")) {
-      if (!message.matches("^\\[CALCITE-[0-9]{1,4}] [^ ].*")) {
+    String subject2 = subject;
+    if (subject.startsWith("[CALCITE-")
+        || subject.startsWith("CALCITE-")) {
+      Matcher m = CALCITE_PATTERN.matcher(subject);
+      if (m.matches()) {
+        subject2 = subject.substring(m.toMatchResult().end(1));
+      } else {
         consumer.accept("malformed [CALCITE-nnnn] reference");
       }
-      if (message.matches("(?i).*\\b(fix|fixes)\\b.*")) {
+      if (subject2.matches("(?i).*\\b(fix|fixes)\\b.*")) {
         consumer.accept("contains 'fix' or 'fixes'; you should describe the "
             + "problem, not what you did");
       }
+    }
+    if (subject2.startsWith(" ")) {
+      consumer.accept("starts with space");
+    }
+    if (subject.endsWith(".")) {
+      consumer.accept("ends with period");
+    }
+    if (subject.endsWith(" ")) {
+      consumer.accept("ends with space");
+    }
+    if (subject2.matches("[a-z].*")) {
+      consumer.accept("Message must start with upper-case letter");
     }
   }
 
