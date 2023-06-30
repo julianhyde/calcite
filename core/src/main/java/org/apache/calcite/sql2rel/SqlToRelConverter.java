@@ -3130,15 +3130,6 @@ public class SqlToRelConverter {
     return true;
   }
 
-  /**
-   * Returns a list of fields to be prefixed to each relational expression.
-   *
-   * @return List of system fields
-   */
-  protected List<RelDataTypeField> getSystemFields() {
-    return Collections.emptyList();
-  }
-
   private void convertJoin(Blackboard bb, SqlJoin join) {
     SqlValidator validator = validator();
     final SqlValidatorScope scope = validator.getJoinScope(join);
@@ -4869,7 +4860,6 @@ public class SqlToRelConverter {
     private final List<SqlMonotonicity> columnMonotonicities =
         new ArrayList<>();
 
-    private final List<RelDataTypeField> systemFieldList = new ArrayList<>();
     final boolean top;
 
     private final InitializerExpressionFactory initializerExpressionFactory =
@@ -5061,24 +5051,16 @@ public class SqlToRelConverter {
      *             expressions are.
      */
     public void setRoot(RelNode root, boolean leaf) {
-      setRoot(
-          Collections.singletonList(root), root, root instanceof LogicalJoin);
+      setRoot(Collections.singletonList(root), root);
       if (leaf) {
         leaves.put(root, root.getRowType().getFieldCount());
       }
       this.columnMonotonicities.clear();
     }
 
-    private void setRoot(
-        List<RelNode> inputs,
-        @Nullable RelNode root,
-        boolean hasSystemFields) {
+    private void setRoot(List<RelNode> inputs, @Nullable RelNode root) {
       this.inputs = inputs;
       this.root = root;
-      this.systemFieldList.clear();
-      if (hasSystemFields) {
-        this.systemFieldList.addAll(getSystemFields());
-      }
     }
 
     /**
@@ -5095,7 +5077,7 @@ public class SqlToRelConverter {
     }
 
     void setRoot(List<RelNode> inputs) {
-      setRoot(inputs, null, false);
+      setRoot(inputs, null);
     }
 
     /**
@@ -5133,8 +5115,7 @@ public class SqlToRelConverter {
       final SqlValidatorScope ancestorScope = resolve.scope;
       boolean isParent = ancestorScope != scope;
       if ((inputs != null) && !isParent) {
-        final LookupContext rels =
-            new LookupContext(this, inputs, systemFieldList.size());
+        final LookupContext rels = new LookupContext(this, inputs);
         final RexNode node = lookup(resolve.path.steps().get(0).i, rels);
         return Pair.of(node, (e, fieldName) -> {
           final RelDataTypeField field =
@@ -5192,14 +5173,10 @@ public class SqlToRelConverter {
      * Creates an expression with which to reference the expression whose
      * offset in its from-list is {@code offset}.
      */
-    RexNode lookup(
-        int offset,
-        LookupContext lookupContext) {
+    RexNode lookup(int offset, LookupContext lookupContext) {
       Map.Entry<RelNode, Integer> pair = lookupContext.findRel(offset);
-      return rexBuilder.makeRangeReference(
-          pair.getKey().getRowType(),
-          pair.getValue(),
-          false);
+      return rexBuilder.makeRangeReference(pair.getKey().getRowType(),
+          pair.getValue(), false);
     }
 
     @Nullable RelDataTypeField getRootField(RexInputRef inputRef) {
@@ -5218,11 +5195,8 @@ public class SqlToRelConverter {
       return null;
     }
 
-    public void flatten(
-        List<RelNode> rels,
-        int systemFieldCount,
-        int[] start,
-        BiConsumer<RelNode, Integer> relOffsetList) {
+    public void flatten(List<RelNode> rels, int[] start,
+          BiConsumer<RelNode, Integer> relOffsetList) {
       for (RelNode rel : rels) {
         if (leaves.containsKey(rel)) {
           relOffsetList.accept(rel, start[0]);
@@ -5231,11 +5205,7 @@ public class SqlToRelConverter {
           relOffsetList.accept(rel, start[0]);
           start[0] += rel.getRowType().getFieldCount();
         } else {
-          if (rel instanceof LogicalJoin
-              || rel instanceof LogicalAggregate) {
-            start[0] += systemFieldCount;
-          }
-          flatten(rel.getInputs(), systemFieldCount, start, relOffsetList);
+          flatten(rel.getInputs(), start, relOffsetList);
         }
       }
     }
@@ -5731,10 +5701,9 @@ public class SqlToRelConverter {
      *
      * @param bb               Context for translating this sub-query
      * @param rels             Relational expressions
-     * @param systemFieldCount Number of system fields
      */
-    LookupContext(Blackboard bb, List<RelNode> rels, int systemFieldCount) {
-      bb.flatten(rels, systemFieldCount, new int[]{0}, relOffsetList::add);
+    LookupContext(Blackboard bb, List<RelNode> rels) {
+      bb.flatten(rels, new int[]{0}, relOffsetList::add);
     }
 
     /**
