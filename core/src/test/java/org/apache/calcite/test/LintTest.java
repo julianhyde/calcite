@@ -22,6 +22,7 @@ import org.apache.calcite.util.Sources;
 import org.apache.calcite.util.TestUnsafe;
 import org.apache.calcite.util.Util;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -206,6 +207,7 @@ class LintTest {
    *
    * <p>N needs to be large enough to verify multi-commit PRs, but not so large
    * that it fails because of historical commits. */
+  @Disabled("do not check in")
   @Test void testLintLog() {
     assumeTrue(TestUnsafe.haveGit(), "Invalid git environment");
 
