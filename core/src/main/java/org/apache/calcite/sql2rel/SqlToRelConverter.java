@@ -329,8 +329,7 @@ public class SqlToRelConverter {
       Config config) {
     this.viewExpander = viewExpander;
     this.opTab =
-        (validator
-            == null) ? SqlStdOperatorTable.instance()
+        (validator == null) ? SqlStdOperatorTable.instance()
             : validator.getOperatorTable();
     this.validator = validator;
     this.catalogReader = catalogReader;
@@ -669,7 +668,7 @@ public class SqlToRelConverter {
    */
   public RelNode convertSelect(SqlSelect select, boolean top) {
     final SqlValidatorScope selectScope = validator().getWhereScope(select);
-    final Blackboard bb = createBlackboard(selectScope, null, top);
+    final Blackboard bb = createBlackboard(selectScope, top);
     convertSelectImpl(bb, select);
     return castNonNull(bb.root);
   }
@@ -678,8 +677,16 @@ public class SqlToRelConverter {
    * Factory method for creating translation workspace.
    */
   protected Blackboard createBlackboard(SqlValidatorScope scope,
-      @Nullable Map<String, RexNode> nameToNodeMap, boolean top) {
-    return new Blackboard(scope, nameToNodeMap, top);
+      Map<String, RexNode> nameToNodeMap) {
+    return new Blackboard(scope, nameToNodeMap, false);
+  }
+
+  protected Blackboard createBlackboard(SqlValidatorScope scope) {
+    return createBlackboard(scope, false);
+  }
+
+  protected Blackboard createBlackboard(SqlValidatorScope scope, boolean top) {
+    return new Blackboard(scope, null, top);
   }
 
   /**
@@ -1302,7 +1309,7 @@ public class SqlToRelConverter {
           (query instanceof SqlSelect)
               ? validator().getSelectScope((SqlSelect) query)
               : validator().getEmptyScope();
-      final Blackboard seekBb = createBlackboard(seekScope, null, false);
+      final Blackboard seekBb = createBlackboard(seekScope);
       final RelNode seekRel = convertQueryOrInList(seekBb, query, null);
       requireNonNull(seekRel, () -> "seekRel is null for query " + query);
       // An EXIST sub-query whose inner child has at least 1 tuple
@@ -1384,8 +1391,7 @@ public class SqlToRelConverter {
         (query instanceof SqlSelect)
             ? validator().getSelectScope((SqlSelect) query)
             : validator().getEmptyScope();
-    final Blackboard setSemanticsTableBb =
-        createBlackboard(innerTableScope, null, false);
+    final Blackboard setSemanticsTableBb = createBlackboard(innerTableScope);
     final RelNode inputOfSetSemanticsTable =
         convertQueryRecursive(query, false, null).project();
     requireNonNull(inputOfSetSemanticsTable,
@@ -1801,7 +1807,7 @@ public class SqlToRelConverter {
         (seek instanceof SqlSelect)
             ? validator().getSelectScope((SqlSelect) seek)
             : validator().getEmptyScope();
-    final Blackboard seekBb = createBlackboard(seekScope, null, false);
+    final Blackboard seekBb = createBlackboard(seekScope);
     RelNode seekRel = convertQueryOrInList(seekBb, seek, targetDataType);
     requireNonNull(seekRel, () -> "seekRel is null for query " + seek);
 
@@ -2121,7 +2127,7 @@ public class SqlToRelConverter {
     Map<String, RelDataType> nameToTypeMap = Collections.emptyMap();
     final ParameterScope scope =
         new ParameterScope((SqlValidatorImpl) validator(), nameToTypeMap);
-    final Blackboard bb = createBlackboard(scope, null, false);
+    final Blackboard bb = createBlackboard(scope);
     replaceSubQueries(bb, node, RelOptUtil.Logic.TRUE_FALSE_UNKNOWN);
     return bb.convertExpression(node);
   }
@@ -2146,7 +2152,7 @@ public class SqlToRelConverter {
     }
     final ParameterScope scope =
         new ParameterScope((SqlValidatorImpl) validator(), nameToTypeMap);
-    final Blackboard bb = createBlackboard(scope, nameToNodeMap, false);
+    final Blackboard bb = createBlackboard(scope, nameToNodeMap);
     replaceSubQueries(bb, node, RelOptUtil.Logic.TRUE_FALSE_UNKNOWN);
     return bb.convertExpression(node);
   }
@@ -2457,7 +2463,7 @@ public class SqlToRelConverter {
     final SqlValidatorNamespace ns = getNamespace(matchRecognize);
     final SqlValidatorScope scope = validator().getMatchRecognizeScope(matchRecognize);
 
-    final Blackboard matchBb = createBlackboard(scope, null, false);
+    final Blackboard matchBb = createBlackboard(scope);
     final RelDataType rowType = ns.getRowType();
     // convert inner query, could be a table name or a derived table
     SqlNode expr = matchRecognize.getTableRef();
@@ -2613,7 +2619,7 @@ public class SqlToRelConverter {
 
   protected void convertPivot(Blackboard bb, SqlPivot pivot) {
     final SqlValidatorScope scope = validator().getJoinScope(pivot);
-    final Blackboard pivotBb = createBlackboard(scope, null, false);
+    final Blackboard pivotBb = createBlackboard(scope);
 
     // Convert input
     convertFrom(pivotBb, pivot.query);
@@ -2695,7 +2701,7 @@ public class SqlToRelConverter {
 
   protected void convertUnpivot(Blackboard bb, SqlUnpivot unpivot) {
     final SqlValidatorScope scope = validator().getJoinScope(unpivot);
-    final Blackboard unpivotBb = createBlackboard(scope, null, false);
+    final Blackboard unpivotBb = createBlackboard(scope);
 
     // Convert input
     convertFrom(unpivotBb, unpivot.query);
@@ -3108,16 +3114,14 @@ public class SqlToRelConverter {
   private void convertJoin(Blackboard bb, SqlJoin join) {
     SqlValidator validator = validator();
     final SqlValidatorScope scope = validator.getJoinScope(join);
-    final Blackboard fromBlackboard = createBlackboard(scope, null, false);
+    final Blackboard fromBlackboard = createBlackboard(scope);
 
     SqlNode left = join.getLeft();
     SqlNode right = join.getRight();
     final SqlValidatorScope leftScope = validator.getJoinScope(left);
-    final Blackboard leftBlackboard =
-        createBlackboard(leftScope, null, false);
+    final Blackboard leftBlackboard = createBlackboard(leftScope);
     final SqlValidatorScope rightScope = validator.getJoinScope(right);
-    final Blackboard rightBlackboard =
-        createBlackboard(rightScope, null, false);
+    final Blackboard rightBlackboard = createBlackboard(rightScope);
     convertFrom(leftBlackboard, left);
     final RelNode leftRel = requireNonNull(leftBlackboard.root, "leftBlackboard.root");
     convertFrom(rightBlackboard, right);
@@ -3208,7 +3212,7 @@ public class SqlToRelConverter {
    * However, if the query is joined on the right, side multiplicity is maintained.
    */
   private Pair<RexNode, RelNode> convertOnCondition(
-      Blackboard bb,
+      Blackboard bb0,
       SqlJoin join,
       RelNode leftRel,
       RelNode rightRel) {
@@ -3216,13 +3220,14 @@ public class SqlToRelConverter {
         requireNonNull(join.getCondition(),
             () -> "getCondition for join " + join);
 
-    bb.setRoot(ImmutableList.of(leftRel, rightRel));
+    Blackboard bb = bb0.copy();
+    bb.setInputs(ImmutableList.of(leftRel, rightRel));
     replaceSubQueries(bb, condition, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
     final RelNode newRightRel =
         bb.root == null || bb.registered.size() == 0
             ? rightRel
             : bb.reRegister(rightRel);
-    bb.setRoot(ImmutableList.of(leftRel, newRightRel));
+    bb.setInputs(ImmutableList.of(leftRel, newRightRel));
     RexNode conditionExp =  bb.convertExpression(condition);
     if (conditionExp instanceof RexInputRef && newRightRel != rightRel) {
       int leftFieldCount = leftRel.getRowType().getFieldCount();
@@ -4013,7 +4018,7 @@ public class SqlToRelConverter {
             rexBuilder.makeFieldAccess(sourceRef, j++));
       }
     }
-    return createBlackboard(validator().getEmptyScope(), nameToNodeMap, false);
+    return createBlackboard(validator().getEmptyScope(), nameToNodeMap);
   }
 
   private static InitializerExpressionFactory getInitializerFactory(
@@ -4134,7 +4139,7 @@ public class SqlToRelConverter {
         requireNonNull(call.getSourceSelect(),
             () -> "sourceSelect for " + call);
     final SqlValidatorScope scope = validator().getWhereScope(sourceSelect);
-    Blackboard bb = createBlackboard(scope, null, false);
+    Blackboard bb = createBlackboard(scope);
 
     replaceSubQueries(bb, call, RelOptUtil.Logic.TRUE_FALSE_UNKNOWN);
 
@@ -4317,17 +4322,17 @@ public class SqlToRelConverter {
   protected RexNode adjustInputRef(
       Blackboard bb,
       RexInputRef inputRef) {
-    RelDataTypeField field = bb.getRootField(inputRef);
-    if (field != null) {
-      if (!SqlTypeUtil.equalSansNullability(typeFactory,
-          field.getType(), inputRef.getType())) {
-        return inputRef;
-      }
-      return rexBuilder.makeInputRef(
-          field.getType(),
-          inputRef.getIndex());
+    if (bb.inputs == null) {
+      return inputRef;
     }
-    return inputRef;
+    RelDataTypeField field = bb.getRootField(inputRef);
+    if (!SqlTypeUtil.equalSansNullability(typeFactory,
+        field.getType(), inputRef.getType())) {
+      return inputRef;
+    }
+    return rexBuilder.makeInputRef(
+        field.getType(),
+        inputRef.getIndex());
   }
 
   /**
@@ -4382,14 +4387,14 @@ public class SqlToRelConverter {
         CollectNamespace nss = getNamespaceOrNull(call);
         Blackboard usedBb;
         if (null != nss) {
-          usedBb = createBlackboard(nss.getScope(), null, false);
+          usedBb = createBlackboard(nss.getScope());
         } else {
           usedBb =
               createBlackboard(new ListScope(bb.scope) {
                 @Override public SqlNode getNode() {
                   return call;
                 }
-              }, null, false);
+              });
         }
         RelDataType multisetType = validator().getValidatedNodeType(call);
         validator().setValidatedNodeType(list,
@@ -4703,8 +4708,7 @@ public class SqlToRelConverter {
       SqlCall values,
       @Nullable RelDataType targetRowType) {
     final SqlValidatorScope scope = validator().getOverScope(values);
-    assert scope != null;
-    final Blackboard bb = createBlackboard(scope, null, false);
+    final Blackboard bb = createBlackboard(scope);
     convertValuesImpl(bb, values, targetRowType);
     return bb.root();
   }
@@ -4737,7 +4741,7 @@ public class SqlToRelConverter {
 
     for (SqlNode rowConstructor1 : values.getOperandList()) {
       SqlCall rowConstructor = (SqlCall) rowConstructor1;
-      Blackboard tmpBb = createBlackboard(bb.scope, null, false);
+      Blackboard tmpBb = createBlackboard(bb.scope);
       replaceSubQueries(tmpBb, rowConstructor,
           RelOptUtil.Logic.TRUE_FALSE_UNKNOWN);
       final PairList<RexNode, String> exps = PairList.of();
@@ -4854,9 +4858,18 @@ public class SqlToRelConverter {
      */
     protected Blackboard(@Nullable SqlValidatorScope scope,
         @Nullable Map<String, RexNode> nameToNodeMap, boolean top) {
+      this(requireNonNull(scope, "scope"), top, nameToNodeMap);
+    }
+
+    private Blackboard(SqlValidatorScope scope, boolean top,
+        @Nullable Map<String, RexNode> nameToNodeMap) {
       this.scope = requireNonNull(scope, "scope");
       this.nameToNodeMap = nameToNodeMap;
       this.top = top;
+    }
+
+    public Blackboard copy() {
+      return new Blackboard(scope, nameToNodeMap, top);
     }
 
     public RelNode root() {
@@ -5027,20 +5040,17 @@ public class SqlToRelConverter {
      *             expressions are.
      */
     public void setRoot(RelNode root, boolean leaf) {
-      setRoot(Collections.singletonList(root), root);
+      this.inputs = Collections.singletonList(root);
+      this.root = root;
       if (leaf) {
         leaves.put(root, root.getRowType().getFieldCount());
       }
       this.columnMonotonicities.clear();
     }
 
-    private void setRoot(List<RelNode> inputs, @Nullable RelNode root) {
+    void setInputs(List<RelNode> inputs) {
       this.inputs = inputs;
-      this.root = root;
-    }
-
-    void setRoot(List<RelNode> inputs) {
-      setRoot(inputs, null);
+      this.root = null;
     }
 
     /**
@@ -5142,20 +5152,16 @@ public class SqlToRelConverter {
           pair.getValue(), false);
     }
 
-    @Nullable RelDataTypeField getRootField(RexInputRef inputRef) {
-      List<RelNode> inputs = this.inputs;
-      if (inputs == null) {
-        return null;
-      }
+    RelDataTypeField getRootField(RexInputRef inputRef) {
       int fieldOffset = inputRef.getIndex();
-      for (RelNode input : inputs) {
+      for (RelNode input : requireNonNull(inputs, "inputs")) {
         RelDataType rowType = input.getRowType();
         if (fieldOffset < rowType.getFieldCount()) {
           return rowType.getFieldList().get(fieldOffset);
         }
         fieldOffset -= rowType.getFieldCount();
       }
-      return null;
+      throw new IllegalArgumentException("out of range: " + inputRef);
     }
 
     public void flatten(List<RelNode> rels, int[] start,
