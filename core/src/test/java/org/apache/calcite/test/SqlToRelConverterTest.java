@@ -1492,21 +1492,6 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  @Test void testSample() {
-    final String sql =
-        "select * from emp tablesample substitute('DATASET1') where empno > 5";
-    sql(sql).ok();
-  }
-
-  @Test void testSampleQuery() {
-    final String sql = "select * from (\n"
-        + " select * from emp as e tablesample substitute('DATASET1')\n"
-        + " join dept on e.deptno = dept.deptno\n"
-        + ") tablesample substitute('DATASET2')\n"
-        + "where empno > 5";
-    sql(sql).ok();
-  }
-
   @Test void testSampleBernoulli() {
     final String sql =
         "select * from emp tablesample bernoulli(50) where empno > 5";

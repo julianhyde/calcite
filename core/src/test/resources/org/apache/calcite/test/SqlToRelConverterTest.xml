@@ -6293,18 +6293,6 @@ LogicalProject(EXPR$0=[ROW($9, $1)])
 ]]>
     </Resource>
   </TestCase>
-  <TestCase name="testSample">
-    <Resource name="sql">
-      <![CDATA[select * from emp tablesample substitute('DATASET1') where empno > 5]]>
-    </Resource>
-    <Resource name="plan">
-      <![CDATA[
-LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8])
-  LogicalFilter(condition=[>($0, 5)])
-    LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-]]>
-    </Resource>
-  </TestCase>
   <TestCase name="testSampleBernoulli">
     <Resource name="sql">
       <![CDATA[select * from emp tablesample bernoulli(50) where empno > 5]]>
@@ -6336,25 +6324,6 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
           Sample(mode=[bernoulli], rate=[0.1], repeatableSeed=[1])
             LogicalTableScan(table=[[CATALOG, SALES, EMP]])
           LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
-]]>
-    </Resource>
-  </TestCase>
-  <TestCase name="testSampleQuery">
-    <Resource name="sql">
-      <![CDATA[select * from (
- select * from emp as e tablesample substitute('DATASET1')
- join dept on e.deptno = dept.deptno
-) tablesample substitute('DATASET2')
-where empno > 5]]>
-    </Resource>
-    <Resource name="plan">
-      <![CDATA[
-LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], DEPTNO0=[$9], NAME=[$10])
-  LogicalFilter(condition=[>($0, 5)])
-    LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], DEPTNO0=[$9], NAME=[$10])
-      LogicalJoin(condition=[=($7, $9)], joinType=[inner])
-        LogicalTableScan(table=[[CATALOG, SALES, EMP]])
-        LogicalTableScan(table=[[CATALOG, SALES, DEPT]])
 ]]>
     </Resource>
   </TestCase>

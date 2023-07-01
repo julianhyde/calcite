@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.sql;
 
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
-
 /**
  * Specification of a SQL sample.
  *
@@ -25,10 +23,11 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
  *
  * <blockquote>
  * <pre>SELECT *
- * FROM emp TABLESAMPLE SUBSTITUTE('medium')</pre>
+ * FROM emp TABLESAMPLE BERNOULLI(10)</pre>
  * </blockquote>
  *
- * <p>declares a sample which is created using {@link #createNamed}.
+ * <p>declares a sample which is created using
+ * {@link #createTableSample}(true, .5).
  *
  * <p>A sample is not a {@link SqlNode}. To include it in a parse tree, wrap it
  * as a literal, viz:
@@ -41,13 +40,6 @@ public abstract class SqlSampleSpec {
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  /**
-   * Creates a sample which substitutes one relation for another.
-   */
-  public static SqlSampleSpec createNamed(String name) {
-    return new SqlSubstitutionSampleSpec(name);
-  }
 
   /**
    * Creates a table sample without repeatability.
@@ -81,25 +73,6 @@ public abstract class SqlSampleSpec {
   }
 
   //~ Inner Classes ----------------------------------------------------------
-
-  /** Sample specification that orders substitution. */
-  public static class SqlSubstitutionSampleSpec extends SqlSampleSpec {
-    private final String name;
-
-    private SqlSubstitutionSampleSpec(String name) {
-      this.name = name;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    @Override public String toString() {
-      return "SUBSTITUTE("
-          + CalciteSqlDialect.DEFAULT.quoteStringLiteral(name)
-          + ")";
-    }
-  }
 
   /** Sample specification. */
   public static class SqlTableSampleSpec extends SqlSampleSpec {

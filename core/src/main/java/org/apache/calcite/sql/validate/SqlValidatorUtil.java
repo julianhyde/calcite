@@ -22,7 +22,6 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.plan.RelOptSchemaWithSampling;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -102,6 +101,9 @@ public class SqlValidatorUtil {
    * only possible if the scope represents an identifier, such as "sales.emp".
    * Otherwise, returns null.
    *
+   * @deprecated Use
+   * {@link #getRelOptTable(SqlValidatorNamespace, Prepare.CatalogReader)}.
+   *
    * @param namespace     Namespace
    * @param catalogReader Schema
    * @param datasetName   Name of sample dataset to substitute, or null to use
@@ -109,30 +111,47 @@ public class SqlValidatorUtil {
    * @param usedDataset   Output parameter which is set to true if a sample
    *                      dataset is found; may be null
    */
+  @Deprecated // to be removed before 2.0
   public static @Nullable RelOptTable getRelOptTable(
       SqlValidatorNamespace namespace,
       Prepare.@Nullable CatalogReader catalogReader,
       @Nullable String datasetName,
       boolean @Nullable [] usedDataset) {
+    return getRelOptTable(namespace, catalogReader);
+  }
+
+  /**
+   * Converts a {@link SqlValidatorScope} into a {@link RelOptTable}. This is
+   * only possible if the scope represents an identifier, such as "sales.emp".
+   * Otherwise, returns null.
+   *
+   * @param namespace     Namespace
+   * @param catalogReader Schema
+   */
+  public static @Nullable RelOptTable getRelOptTable(
+      SqlValidatorNamespace namespace,
+      Prepare.@Nullable CatalogReader catalogReader) {
     if (namespace.isWrapperFor(TableNamespace.class)) {
       final TableNamespace tableNamespace =
           namespace.unwrap(TableNamespace.class);
-      return getRelOptTable(tableNamespace,
-          requireNonNull(catalogReader, "catalogReader"), datasetName, usedDataset,
+      requireNonNull(catalogReader, "catalogReader");
+      return getRelOptTable(tableNamespace, catalogReader,
           tableNamespace.extendedFields);
     } else if (namespace.isWrapperFor(SqlValidatorImpl.DmlNamespace.class)) {
       final SqlValidatorImpl.DmlNamespace dmlNamespace =
           namespace.unwrap(SqlValidatorImpl.DmlNamespace.class);
       final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
       if (resolvedNamespace.isWrapperFor(TableNamespace.class)) {
-        final TableNamespace tableNamespace = resolvedNamespace.unwrap(TableNamespace.class);
+        final TableNamespace tableNamespace =
+            resolvedNamespace.unwrap(TableNamespace.class);
         final SqlValidatorTable validatorTable = tableNamespace.getTable();
-        final List<RelDataTypeField> extendedFields = dmlNamespace.extendList == null
-            ? ImmutableList.of()
-            : getExtendedColumns(namespace.getValidator(), validatorTable, dmlNamespace.extendList);
-        return getRelOptTable(
-            tableNamespace, requireNonNull(catalogReader, "catalogReader"),
-            datasetName, usedDataset, extendedFields);
+        final List<RelDataTypeField> extendedFields =
+            dmlNamespace.extendList == null
+                ? ImmutableList.of()
+                : getExtendedColumns(namespace.getValidator(), validatorTable,
+                    dmlNamespace.extendList);
+        requireNonNull(catalogReader, "catalogReader");
+        return getRelOptTable(tableNamespace, catalogReader, extendedFields);
       }
     }
     return null;
@@ -141,20 +160,9 @@ public class SqlValidatorUtil {
   private static @Nullable RelOptTable getRelOptTable(
       TableNamespace tableNamespace,
       Prepare.CatalogReader catalogReader,
-      @Nullable String datasetName,
-      boolean @Nullable [] usedDataset,
       List<RelDataTypeField> extendedFields) {
     final List<String> names = tableNamespace.getTable().getQualifiedName();
-    RelOptTable table;
-    if (datasetName != null
-        && catalogReader instanceof RelOptSchemaWithSampling) {
-      final RelOptSchemaWithSampling reader =
-          (RelOptSchemaWithSampling) catalogReader;
-      table = reader.getTableForMember(names, datasetName, usedDataset);
-    } else {
-      // Schema does not support substitution. Ignore the data set, if any.
-      table = catalogReader.getTableForMember(names);
-    }
+    RelOptTable table = catalogReader.getTableForMember(names);
     if (table != null && !extendedFields.isEmpty()) {
       table = table.extend(extendedFields);
     }

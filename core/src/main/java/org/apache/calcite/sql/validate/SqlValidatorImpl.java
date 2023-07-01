@@ -1105,10 +1105,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlSampleSpec sampleSpec = SqlLiteral.sampleValue(operands.get(1));
       if (sampleSpec instanceof SqlSampleSpec.SqlTableSampleSpec) {
         validateFeature(RESOURCE.sQLFeature_T613(), node.getParserPosition());
-      } else if (sampleSpec
-          instanceof SqlSampleSpec.SqlSubstitutionSampleSpec) {
-        validateFeature(RESOURCE.sQLFeatureExt_T613_Substitution(),
-            node.getParserPosition());
       }
     }
 
@@ -4778,7 +4774,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     validateNamespace(targetNamespace, unknownType);
     final RelOptTable relOptTable =
         SqlValidatorUtil.getRelOptTable(targetNamespace,
-            catalogReader.unwrap(Prepare.CatalogReader.class), null, null);
+            catalogReader.unwrap(Prepare.CatalogReader.class));
     final SqlValidatorTable table = relOptTable == null
         ? getTable(targetNamespace)
         : relOptTable.unwrapOrThrow(SqlValidatorTable.class);
@@ -5203,8 +5199,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     validateNamespace(targetNamespace, unknownType);
     final RelOptTable relOptTable =
         SqlValidatorUtil.getRelOptTable(targetNamespace,
-            castNonNull(catalogReader.unwrap(Prepare.CatalogReader.class)),
-            null, null);
+            castNonNull(catalogReader.unwrap(Prepare.CatalogReader.class)));
     final SqlValidatorTable table = relOptTable == null
         ? getTable(targetNamespace)
         : relOptTable.unwrapOrThrow(SqlValidatorTable.class);

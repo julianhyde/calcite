@@ -677,10 +677,6 @@ public interface CalciteResource {
   @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
   ExInst<CalciteException> sharedStatementPlans();
 
-  @BaseMessage("TABLESAMPLE SUBSTITUTE not supported")
-  @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
-  Feature sQLFeatureExt_T613_Substitution();
-
   @BaseMessage("Personality does not maintain table''s row count in the catalog")
   @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
   ExInst<CalciteException> personalityManagesRowCount();

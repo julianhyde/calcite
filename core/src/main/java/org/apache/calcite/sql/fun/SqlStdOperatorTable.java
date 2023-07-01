@@ -2314,8 +2314,6 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <p>Examples:
    *
    * <ul>
-   * <li><code>&lt;query&gt; TABLESAMPLE SUBSTITUTE('sampleName')</code>
-   * (non-standard)
    * <li><code>&lt;query&gt; TABLESAMPLE BERNOULLI(&lt;percent&gt;)
    * [REPEATABLE(&lt;seed&gt;)]</code> (standard, but not implemented for FTRS
    * yet)

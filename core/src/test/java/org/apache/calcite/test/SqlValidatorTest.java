@@ -7915,29 +7915,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
   @Test void testSample() {
     // applied to table
-    sql("SELECT * FROM emp TABLESAMPLE SUBSTITUTE('foo')").ok();
     sql("SELECT * FROM emp TABLESAMPLE BERNOULLI(50)").ok();
     sql("SELECT * FROM emp TABLESAMPLE SYSTEM(50)").ok();
 
     // applied to query
-    sql("SELECT * FROM ("
-        + "SELECT deptno FROM emp "
-        + "UNION ALL "
-        + "SELECT deptno FROM dept) AS x TABLESAMPLE SUBSTITUTE('foo') "
-        + "WHERE x.deptno < 100").ok();
-
-    sql("SELECT x.^empno^ FROM ("
-        + "SELECT deptno FROM emp TABLESAMPLE SUBSTITUTE('bar') "
-        + "UNION ALL "
-        + "SELECT deptno FROM dept) AS x TABLESAMPLE SUBSTITUTE('foo') "
-        + "ORDER BY 1")
-        .fails("Column 'EMPNO' not found in table 'X'");
-
-    sql("select * from (\n"
-        + "    select * from emp\n"
-        + "    join dept on emp.deptno = dept.deptno\n"
-        + ") tablesample substitute('SMALL')").ok();
-
     sql("SELECT * FROM ("
         + "SELECT deptno FROM emp "
         + "UNION ALL "

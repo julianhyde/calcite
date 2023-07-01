@@ -3288,28 +3288,6 @@ public class SqlParserTest {
   }
 
   @Test void testTableSample() {
-    final String sql0 = "select * from ("
-        + "  select * "
-        + "  from emp "
-        + "  join dept on emp.deptno = dept.deptno"
-        + "  where gender = 'F'"
-        + "  order by sal) tablesample substitute('medium')";
-    final String expected0 = "SELECT *\n"
-        + "FROM (SELECT *\n"
-        + "FROM `EMP`\n"
-        + "INNER JOIN `DEPT` ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)\n"
-        + "WHERE (`GENDER` = 'F')\n"
-        + "ORDER BY `SAL`) TABLESAMPLE SUBSTITUTE('MEDIUM')";
-    sql(sql0).ok(expected0);
-
-    final String sql1 = "select * "
-        + "from emp as x tablesample substitute('medium') "
-        + "join dept tablesample substitute('lar' /* split */ 'ge') on x.deptno = dept.deptno";
-    final String expected1 = "SELECT *\n"
-        + "FROM `EMP` AS `X` TABLESAMPLE SUBSTITUTE('MEDIUM')\n"
-        + "INNER JOIN `DEPT` TABLESAMPLE SUBSTITUTE('LARGE') ON (`X`.`DEPTNO` = `DEPT`.`DEPTNO`)";
-    sql(sql1).ok(expected1);
-
     final String sql2 = "select * "
         + "from emp as x tablesample bernoulli(50)";
     final String expected2 = "SELECT *\n"
@@ -6947,10 +6925,6 @@ public class SqlParserTest {
     // is semantically invalid.
     // TODO: Support this in Calcite.
     sql("select * from (t cross ^join^ u) as x")
-        .fails("Join expression encountered in illegal context");
-    sql("select *\n"
-        + "from (t cross ^join^ u)\n"
-        + "  tablesample substitute('medium')")
         .fails("Join expression encountered in illegal context");
     sql("select *\n"
         + "from (t cross ^join^ u)\n"

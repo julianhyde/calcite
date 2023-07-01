@@ -84,10 +84,6 @@ class SqlValidatorFeatureTest extends SqlValidatorTestCase {
     checkFeature(
         "select name from ^dept tablesample bernoulli(50)^",
         RESOURCE.sQLFeature_T613());
-
-    checkFeature(
-        "select name from ^dept tablesample substitute('sample_dept')^",
-        RESOURCE.sQLFeatureExt_T613_Substitution());
   }
 
   private void checkFeature(String sql, Feature feature) {

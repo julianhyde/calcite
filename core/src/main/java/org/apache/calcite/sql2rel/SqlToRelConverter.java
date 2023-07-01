@@ -194,12 +194,10 @@ import org.slf4j.Logger;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -276,12 +274,6 @@ public class SqlToRelConverter {
    */
   private final Map<CorrelationId, DeferredLookup> mapCorrelToDeferred =
       new HashMap<>();
-
-  /**
-   * Stack of names of datasets requested by the <code>
-   * TABLE(SAMPLE(&lt;datasetName&gt;, &lt;query&gt;))</code> construct.
-   */
-  private final Deque<String> datasetStack = new ArrayDeque<>();
 
   /**
    * Mapping of non-correlated sub-queries that have been converted to their
@@ -2350,14 +2342,7 @@ public class SqlToRelConverter {
       SqlSampleSpec sampleSpec =
           SqlLiteral.sampleValue(
               requireNonNull(operands.get(1), () -> "operand[1] of " + from));
-      if (sampleSpec instanceof SqlSampleSpec.SqlSubstitutionSampleSpec) {
-        String sampleName =
-            ((SqlSampleSpec.SqlSubstitutionSampleSpec) sampleSpec)
-                .getName();
-        datasetStack.push(sampleName);
-        convertFrom(bb, operands.get(0));
-        datasetStack.pop();
-      } else if (sampleSpec instanceof SqlSampleSpec.SqlTableSampleSpec) {
+      if (sampleSpec instanceof SqlSampleSpec.SqlTableSampleSpec) {
         SqlSampleSpec.SqlTableSampleSpec tableSampleSpec =
             (SqlSampleSpec.SqlTableSampleSpec) sampleSpec;
         convertFrom(bb, operands.get(0));
@@ -2758,12 +2743,8 @@ public class SqlToRelConverter {
       convertFrom(bb, fromNamespace.getNode());
       return;
     }
-    final String datasetName =
-        datasetStack.isEmpty() ? null : datasetStack.peek();
-    final boolean[] usedDataset = {false};
     RelOptTable table =
-        SqlValidatorUtil.getRelOptTable(fromNamespace, catalogReader,
-            datasetName, usedDataset);
+        SqlValidatorUtil.getRelOptTable(fromNamespace, catalogReader);
     assert table != null : "getRelOptTable returned null for " + fromNamespace;
     if (extendedColumns != null && extendedColumns.size() > 0) {
       final SqlValidatorTable validatorTable =
@@ -2785,10 +2766,6 @@ public class SqlToRelConverter {
         && removeSortInSubQuery(bb.top)) {
       bb.setRoot(castNonNull(bb.root).getInput(0), true);
     }
-
-    if (usedDataset[0]) {
-      bb.setDataset(datasetName);
-    }
   }
 
   protected void convertCollectionTable(
@@ -2798,12 +2775,10 @@ public class SqlToRelConverter {
     if (operator == SqlStdOperatorTable.TABLESAMPLE) {
       final String sampleName =
           SqlLiteral.unchain(call.operand(0)).getValueAs(String.class);
-      datasetStack.push(sampleName);
       SqlCall cursorCall = call.operand(1);
       SqlNode query = cursorCall.operand(0);
       RelNode converted = convertQuery(query, false, false).rel;
       bb.setRoot(converted, false);
-      datasetStack.pop();
       return;
     }
     replaceSubQueries(bb, call, RelOptUtil.Logic.TRUE_FALSE_UNKNOWN);
@@ -3933,7 +3908,8 @@ public class SqlToRelConverter {
     } else {
       namespace = targetNs.resolve();
     }
-    RelOptTable table = SqlValidatorUtil.getRelOptTable(namespace, catalogReader, null, null);
+    RelOptTable table =
+        SqlValidatorUtil.getRelOptTable(namespace, catalogReader);
     return requireNonNull(table, "no table found for " + call);
   }
 
@@ -5061,19 +5037,6 @@ public class SqlToRelConverter {
     private void setRoot(List<RelNode> inputs, @Nullable RelNode root) {
       this.inputs = inputs;
       this.root = root;
-    }
-
-    /**
-     * Notifies this Blackboard that the root just set using
-     * {@link #setRoot(RelNode, boolean)} was derived using dataset
-     * substitution.
-     *
-     * <p>The default implementation is not interested in such
-     * notifications, and does nothing.
-     *
-     * @param datasetName Dataset name
-     */
-    public void setDataset(@Nullable String datasetName) {
     }
 
     void setRoot(List<RelNode> inputs) {
