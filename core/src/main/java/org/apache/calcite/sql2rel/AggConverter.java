@@ -58,8 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
-
 /**
  * Converts expressions to aggregates.
  *
@@ -596,7 +594,7 @@ class AggConverter implements SqlVisitor<Void> {
         final int groupOrdinal = e.getValue().i;
         return converter.convert(rexBuilder,
             convertedInputExprs.leftList().get(groupOrdinal),
-            rexBuilder.makeInputRef(castNonNull(bb.root), groupOrdinal));
+            rexBuilder.makeInputRef(bb.root(), groupOrdinal));
       }
     }
 

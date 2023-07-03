@@ -268,6 +268,7 @@ public class SqlToRelConverter {
   private int explainParamCount;
   public final SqlToRelConverter.Config config;
   private final RelBuilder relBuilder;
+  public @Nullable RelNode strcRoot;
 
   /**
    * Fields used in name resolution for correlated sub-queries.
@@ -670,7 +671,7 @@ public class SqlToRelConverter {
     final SqlValidatorScope selectScope = validator().getWhereScope(select);
     final Blackboard bb = createBlackboard(selectScope, top);
     convertSelectImpl(bb, select);
-    return castNonNull(bb.root);
+    return bb.popRoot();
   }
 
   /**
@@ -720,7 +721,7 @@ public class SqlToRelConverter {
     //   CREATE VIEW v2 AS SELECT * FROM t ORDER BY x LIMIT 10
     // we would never remove the ORDER BY, because "ORDER BY ... LIMIT" is about
     // semantics. It is not a 'pure order'.
-    if (RelOptUtil.isPureOrder(castNonNull(bb.root))
+    if (RelOptUtil.isPureOrder(bb.root())
         && config.isRemoveSortInSubQuery()) {
       // Remove the Sort if the view is at the top level. Also remove the Sort
       // if there are other nodes, which will cause the view to be in the
@@ -731,7 +732,7 @@ public class SqlToRelConverter {
           || select.hasOrderBy()
           || select.getFetch() != null
           || select.getOffset() != null) {
-        bb.setRoot(castNonNull(bb.root).getInput(0), true);
+        bb.setRoot(bb.root().getInput(0), true);
       }
     }
 
@@ -789,7 +790,7 @@ public class SqlToRelConverter {
                 }
               }), true);
     } else {
-      bb.setRoot(bb.root(), true);
+      bb.setRoot(bb.popRoot(), true);
     }
   }
 
@@ -812,7 +813,7 @@ public class SqlToRelConverter {
     // Say we have 'select x, y, x, z'.
     // Then dups will be {[2, 0]}
     // and oldToNew will be {[0, 0], [1, 1], [2, 0], [3, 2]}
-    RelNode rel = bb.root;
+    RelNode rel = bb.root();
     if (checkForDupExprs && (rel instanceof LogicalProject)) {
       LogicalProject project = (LogicalProject) rel;
       final List<RexNode> projectExprs = project.getProjects();
@@ -845,7 +846,7 @@ public class SqlToRelConverter {
           LogicalProject.create(rel, ImmutableList.of(),
               newProjects.leftList(), newProjects.rightList(),
               project.getVariablesSet());
-      bb.root = rel;
+      bb.setRoot(rel);
       distinctify(bb, false);
       rel = bb.root();
 
@@ -872,7 +873,7 @@ public class SqlToRelConverter {
       return;
     }
 
-    assert rel != null : "rel must not be null, root = " + bb.root;
+    assert rel != null : "rel must not be null, root = " + bb.root();
     // Usual case: all expressions in the SELECT clause are different.
     final ImmutableBitSet groupSet =
         ImmutableBitSet.range(rel.getRowType().getFieldCount());
@@ -1097,7 +1098,7 @@ public class SqlToRelConverter {
     final RelFactories.FilterFactory filterFactory =
         RelFactories.DEFAULT_FILTER_FACTORY;
     final RelNode filter =
-        filterFactory.createFilter(bb.root(), convertedWhere2, ImmutableSet.of());
+        filterFactory.createFilter(bb.popRoot(), convertedWhere2, ImmutableSet.of());
     final RelNode r;
     final CorrelationUse p = getCorrelationUse(bb, filter);
     if (p != null) {
@@ -1231,7 +1232,7 @@ public class SqlToRelConverter {
       //
       // In such case, when converting SqlUpdate#condition, bb.root is null
       // and it makes no sense to do the sub-query substitution.
-      if (bb.root == null) {
+      if (bb.rootIsNull()) {
         return;
       }
       final RelDataType targetRowType =
@@ -1283,7 +1284,7 @@ public class SqlToRelConverter {
       default:
         break;
       }
-      subQuery.expr = translateIn(logic, bb.root, rex);
+      subQuery.expr = translateIn(logic, bb.root(), rex);
       if (notIn) {
         subQuery.expr =
             rexBuilder.makeCall(SqlStdOperatorTable.NOT, subQuery.expr);
@@ -1833,7 +1834,10 @@ public class SqlToRelConverter {
           false,
           targetRowType);
     } else {
-      return convertQueryRecursive(seek, false, null).project();
+      bb.setRoot(null); // TODO remove; temp to sync local and global roots
+      RelRoot relRoot = convertQueryRecursive(seek, false, null);
+      bb.setRoot(null); // TODO remove; temp to sync local and global roots
+      return relRoot.project();
     }
   }
 
@@ -2437,7 +2441,8 @@ public class SqlToRelConverter {
       exprs.add(relBuilder.alias(e, alias));
     });
     RelNode child =
-        (null != bb.root) ? bb.root : LogicalValues.createOneRow(cluster);
+        bb.rootIsNull() ? LogicalValues.createOneRow(cluster)
+            : bb.root();
     RelNode uncollect;
     if (validator().config().conformance().allowAliasUnnestItems()) {
       uncollect = relBuilder
@@ -2768,9 +2773,9 @@ public class SqlToRelConverter {
     final RelNode tableRel = toRel(table, hints);
     bb.setRoot(tableRel, true);
 
-    if (RelOptUtil.isPureOrder(castNonNull(bb.root))
+    if (RelOptUtil.isPureOrder(bb.root())
         && removeSortInSubQuery(bb.top)) {
-      bb.setRoot(castNonNull(bb.root).getInput(0), true);
+      bb.setRoot(bb.root().getInput(0), true);
     }
   }
 
@@ -3030,7 +3035,8 @@ public class SqlToRelConverter {
       // bb.root is an aggregate and only projects group by
       // keys.
       Map<Integer, Integer> exprProjection =
-          bb.mapRootRelToFieldProjection.get(bb.root);
+          bb.rootIsNull() ? null
+              : bb.mapRootRelToFieldProjection.get(bb.root());
       if (exprProjection != null) {
         // sub-query can reference group by keys projected from
         // the root of the outer relation.
@@ -3123,9 +3129,9 @@ public class SqlToRelConverter {
     final SqlValidatorScope rightScope = validator.getJoinScope(right);
     final Blackboard rightBlackboard = createBlackboard(rightScope);
     convertFrom(leftBlackboard, left);
-    final RelNode leftRel = requireNonNull(leftBlackboard.root, "leftBlackboard.root");
+    final RelNode leftRel = leftBlackboard.root();
     convertFrom(rightBlackboard, right);
-    final RelNode tempRightRel = requireNonNull(rightBlackboard.root, "rightBlackboard.root");
+    final RelNode tempRightRel = rightBlackboard.root();
 
     final JoinConditionType conditionType = join.getConditionType();
     final RexNode condition;
@@ -3224,7 +3230,7 @@ public class SqlToRelConverter {
     bb.setInputs(ImmutableList.of(leftRel, rightRel));
     replaceSubQueries(bb, condition, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
     final RelNode newRightRel =
-        bb.root == null || bb.registered.size() == 0
+        bb.rootIsNull() || bb.registered.size() == 0
             ? rightRel
             : bb.reRegister(rightRel);
     bb.setInputs(ImmutableList.of(leftRel, newRightRel));
@@ -3307,7 +3313,7 @@ public class SqlToRelConverter {
    */
   protected void convertAgg(Blackboard bb, SqlSelect select,
       List<SqlNode> orderExprList) {
-    requireNonNull(bb.root, "bb.root");
+    checkArgument(!bb.rootIsNull());
     SqlNodeList groupList = select.getGroup();
     SqlNodeList selectList = select.getSelectList();
     SqlNode having = select.getHaving();
@@ -3574,8 +3580,7 @@ public class SqlToRelConverter {
       List<SqlNode> extraOrderExprs,
       List<RelFieldCollation> collationList) {
     // TODO:  add validation rules to SqlValidator also
-    assert bb.root != null : "precondition: child != null";
-    assert select != null;
+    checkArgument(!bb.rootIsNull(), "precondition: child != null");
     if (orderList == null) {
       return;
     }
@@ -4517,7 +4522,8 @@ public class SqlToRelConverter {
         SqlValidatorUtil.uniquify(fieldNames,
             catalogReader.nameMatcher().isCaseSensitive());
 
-    relBuilder.push(bb.root())
+    final RelNode r0 = bb.popRoot();
+    relBuilder.push(r0)
         .projectNamed(exprs, fieldNames, true);
 
     RelNode project = relBuilder.build();
@@ -4529,7 +4535,7 @@ public class SqlToRelConverter {
       // correlation variables have been normalized in p.r, we should use expressions
       // in p.r instead of the original exprs
       Project project1 = (Project) p.r;
-      r = relBuilder.push(bb.root())
+      r = relBuilder.push(r0)
           .projectNamed(project1.getProjects(), fieldNames, true, ImmutableSet.of(p.id))
           .build();
     } else {
@@ -4592,12 +4598,11 @@ public class SqlToRelConverter {
       return;
     }
 
-    final LogicalProject projectionFromSelect =
-        requireNonNull((LogicalProject) bb.root, "root");
+    final LogicalProject projectionFromSelect = (LogicalProject) bb.root();
 
     // Convert qualify SqlNode to a RexNode
     replaceSubQueries(bb, qualify, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
-    final RelNode originalRoot = requireNonNull(bb.root, "root");
+    final RelNode originalRoot = bb.root();
     RexNode qualifyRexNode;
     try {
       // Set the root to the input of the project,
@@ -4648,7 +4653,7 @@ public class SqlToRelConverter {
       //
       // This is a very specific application of Common Subexpression Elimination
       // (CSE), since the window value pops up twice.
-      relBuilder.push(requireNonNull(bb.root, "root"))
+      relBuilder.push(bb.root())
           .project(
               append(relBuilder.fields(), qualifyWithReferencesRexNode),
               append(relBuilder.peek().getRowType().getFieldNames(),
@@ -4749,9 +4754,9 @@ public class SqlToRelConverter {
           exps.add(tmpBb.convertExpression(operand),
               SqlValidatorUtil.alias(operand, i)));
       RelNode in =
-          (null == tmpBb.root)
+          tmpBb.rootIsNull()
               ? LogicalValues.createOneRow(cluster)
-              : tmpBb.root;
+              : tmpBb.root();
       relBuilder.push(in)
           .project(exps.leftList(), exps.rightList());
     }
@@ -4876,6 +4881,20 @@ public class SqlToRelConverter {
       return requireNonNull(root, "root");
     }
 
+    public RelNode popRoot() {
+      RelNode r = root();
+      SqlToRelConverter.this.strcRoot = null;
+      root = null;
+      return r;
+    }
+
+    public boolean rootIsNull() {
+      if (strcRoot != root) {
+//        throw new AssertionError();
+      }
+      return root == null;
+    }
+
     @Deprecated // to be removed before 2.0
     public SqlValidatorScope scope() {
       return scope;
@@ -4907,7 +4926,7 @@ public class SqlToRelConverter {
         @Nullable List<RexNode> leftKeys) {
       requireNonNull(joinType, "joinType");
       registered.add(new RegisterArgs(rel, joinType, leftKeys));
-      if (root == null) {
+      if (rootIsNull()) {
         assert leftKeys == null : "leftKeys must be null";
         setRoot(rel, false);
         return rexBuilder.makeRangeReference(
@@ -4917,7 +4936,7 @@ public class SqlToRelConverter {
       }
 
       final RexNode joinCond;
-      final int origLeftInputCount = root.getRowType().getFieldCount();
+      final int origLeftInputCount = root().getRowType().getFieldCount();
       if (leftKeys != null) {
         List<RexNode> newLeftInputExprs = new ArrayList<>();
         for (int i = 0; i < origLeftInputCount; i++) {
@@ -5024,7 +5043,7 @@ public class SqlToRelConverter {
         }
         register(relBuilder.build(), reg.joinType, reg.leftKeys);
       }
-      return requireNonNull(this.root, "root");
+      return root();
     }
 
     /**
@@ -5041,16 +5060,21 @@ public class SqlToRelConverter {
      */
     public void setRoot(RelNode root, boolean leaf) {
       this.inputs = Collections.singletonList(root);
-      this.root = root;
+      setRoot(root);
       if (leaf) {
         leaves.put(root, root.getRowType().getFieldCount());
       }
       this.columnMonotonicities.clear();
     }
 
+    void setRoot(@Nullable RelNode root) {
+      SqlToRelConverter.this.strcRoot = root;
+      this.root = root;
+    }
+
     void setInputs(List<RelNode> inputs) {
       this.inputs = inputs;
-      this.root = null;
+      setRoot(null);
     }
 
     /**
@@ -5618,7 +5642,6 @@ public class SqlToRelConverter {
     public List<SqlMonotonicity> getColumnMonotonicities() {
       return columnMonotonicities;
     }
-
   }
 
   private static SqlQuantifyOperator negate(SqlQuantifyOperator operator) {
