@@ -66,6 +66,11 @@ class LintTest {
                 && !line.contains("//CHECKSTYLE"),
             line -> line.state().message("'//' must be followed by ' '", line))
 
+        // In 'for (int i : list)', colon must be surrounded by space.
+        .add(line -> line.matches("^ *for \\(.*:.*")
+                && !line.matches(".*[^ ][ ][:][ ][^ ].*"),
+            line -> line.state().message("':' must be surrounded by ' '", line))
+
         // Javadoc does not require '</p>', so we do not allow '</p>'
         .add(line -> line.state().inJavadoc()
                 && line.contains("</p>"),
@@ -156,7 +161,17 @@ class LintTest {
         + "   * @see java.lang.String (should be preceded by blank line)\n"
         + "   **/\n"
         + "  String x = \"ok because it's not in javadoc:</p>\";\n"
-        + "  //comment without space\n"
+        + "  for (Map.Entry<String, Integer> e: entries) {\n"
+        + "    //comment without space\n"
+        + "  }\n"
+        + "  for (int i :tooFewSpacesAfter) {\n"
+        + "  }\n"
+        + "  for (int i  : tooManySpacesBefore) {\n"
+        + "  }\n"
+        + "  for (int i :   tooManySpacesAfter) {\n"
+        + "  }\n"
+        + "  for (int i : justRight) {\n"
+        + "  }\n"
         + "}\n";
     final String expectedMessages = "["
         + "GuavaCharSource{memory}:4:"
@@ -174,7 +189,15 @@ class LintTest {
         + "GuavaCharSource{memory}:12:"
         + "no '**/'; use '*/'\n"
         + "GuavaCharSource{memory}:14:"
+        + "':' must be surrounded by ' '\n"
+        + "GuavaCharSource{memory}:15:"
         + "'//' must be followed by ' '\n"
+        + "GuavaCharSource{memory}:17:"
+        + "':' must be surrounded by ' '\n"
+        + "GuavaCharSource{memory}:19:"
+        + "':' must be surrounded by ' '\n"
+        + "GuavaCharSource{memory}:21:"
+        + "':' must be surrounded by ' '\n"
         + "";
     final Puffin.Program<GlobalState> program = makeProgram();
     final StringWriter sw = new StringWriter();
