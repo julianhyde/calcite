@@ -276,7 +276,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       final List<RelDataType> types, SqlTypeName sqlTypeName) {
     assert sqlTypeName == SqlTypeName.ARRAY || sqlTypeName == SqlTypeName.MULTISET;
     boolean isNullable = false;
-    for (RelDataType type: types) {
+    for (RelDataType type : types) {
       if (type.getComponentType() == null) {
         return null;
       }
@@ -300,7 +300,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
       final List<RelDataType> types, SqlTypeName sqlTypeName) {
     assert sqlTypeName == SqlTypeName.MAP;
     boolean isNullable = false;
-    for (RelDataType type: types) {
+    for (RelDataType type : types) {
       if (!(type instanceof MapSqlType)) {
         return null;
       }

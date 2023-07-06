@@ -2647,7 +2647,7 @@ public class RelBuilder {
     //      GROUPING SETS (c) produces value 3
     final Map<Integer, Set<ImmutableBitSet>> groupIdToGroupSets = new HashMap<>();
     int maxGroupId = 0;
-    for (Multiset.Entry<ImmutableBitSet> entry: groupSets.entrySet()) {
+    for (Multiset.Entry<ImmutableBitSet> entry : groupSets.entrySet()) {
       int groupId = entry.getCount() - 1;
       if (groupId > maxGroupId) {
         maxGroupId = groupId;

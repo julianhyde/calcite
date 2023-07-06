@@ -151,7 +151,7 @@ public class RelMdColumnOrigins
       }
     };
     final List<RexNode> projects = new ArrayList<>();
-    for (RexNode rex: rexShuttle.apply(rel.getProgram().getProjectList())) {
+    for (RexNode rex : rexShuttle.apply(rel.getProgram().getProjectList())) {
       projects.add(rex);
     }
     final RexNode rexNode = projects.get(iOutputColumn);
