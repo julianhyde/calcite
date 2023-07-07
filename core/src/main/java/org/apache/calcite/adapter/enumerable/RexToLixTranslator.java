@@ -20,7 +20,6 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -82,6 +81,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static org.apache.calcite.linq4j.Ord.forEachIndexed;
 import static org.apache.calcite.linq4j.tree.Expressions.constant;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
@@ -1528,7 +1528,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
           declaringClass.getConstructor(FunctionContext.class);
       final List<Expression> constantArgs = new ArrayList<>();
       //noinspection unchecked
-      Ord.forEach(method.getParameterTypes(),
+      forEachIndexed(method.getParameterTypes(),
           (parameterType, i) ->
               constantArgs.add(
                   callBinding.isOperandLiteral(i, true)

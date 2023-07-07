@@ -58,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.apache.calcite.linq4j.Ord.forEachIndexed;
+
 /**
  * Converts expressions to aggregates.
  *
@@ -154,7 +156,7 @@ class AggConverter implements SqlVisitor<Void> {
     // Collect all expressions used in the select list so that aggregate
     // calls can be named correctly.
     final Map<String, String> nameMap = new HashMap<>();
-    Ord.forEach(scope.getNode().getSelectList(), (selectItem, i) -> {
+    forEachIndexed(scope.getNode().getSelectList(), (selectItem, i) -> {
       final String name;
       if (SqlUtil.isCallTo(selectItem, SqlStdOperatorTable.AS)) {
         final SqlCall call = (SqlCall) selectItem;

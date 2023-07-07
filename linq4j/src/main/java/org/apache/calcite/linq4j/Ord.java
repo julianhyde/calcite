@@ -99,6 +99,7 @@ public class Ord<E> implements Map.Entry<Integer, E> {
    * <p>Given the array ["a", "b", "c"], returns (2, "c") then (1, "b") then
    * (0, "a").
    */
+  @SafeVarargs
   public static <E> Iterable<Ord<E>> reverse(E... elements) {
     return reverse(ImmutableList.copyOf(elements));
   }
@@ -120,10 +121,6 @@ public class Ord<E> implements Map.Entry<Integer, E> {
 
       @Override public Ord<E> next() {
         return Ord.of(i, elementList.get(i--));
-      }
-
-      @Override public void remove() {
-        throw new UnsupportedOperationException("remove");
       }
     };
   }
@@ -150,12 +147,20 @@ public class Ord<E> implements Map.Entry<Integer, E> {
    * @param action The action to be performed for each element
    * @param <T> Element type
    */
+  // May be deprecated in favor of forEachIndexed in future
   public static <T> void forEach(Iterable<T> iterable,
       ObjIntConsumer<? super T> action) {
     int i = 0;
     for (T t : iterable) {
       action.accept(t, i++);
     }
+  }
+
+  /** Synonym for {@link #forEach(Iterable, ObjIntConsumer)},
+   * more suitable for static import. */
+  public static <T> void forEachIndexed(Iterable<T> iterable,
+      ObjIntConsumer<? super T> action) {
+    forEach(iterable, action);
   }
 
   /** Applies an action to every element of an array, passing the zero-based
@@ -168,11 +173,19 @@ public class Ord<E> implements Map.Entry<Integer, E> {
    * @param action The action to be performed for each element
    * @param <T> Element type
    */
-  public static <T> void forEach(T[] ts,
+  public static <T> void forEachIndexed(T[] ts,
       ObjIntConsumer<? super T> action) {
     for (int i = 0; i < ts.length; i++) {
       action.accept(ts[i], i);
     }
+  }
+
+  /** Deprecated synonym for
+   * {@link #forEachIndexed(Object[], ObjIntConsumer)}. */
+  @Deprecated // to be removed before 2.0
+  public static <T> void forEach(T[] ts,
+      ObjIntConsumer<? super T> action) {
+    forEachIndexed(ts, action);
   }
 
   /** List of {@link Ord} backed by a list of elements.

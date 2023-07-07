@@ -182,7 +182,7 @@ import static java.util.Objects.requireNonNull;
 public class RelBuilder {
   protected final RelOptCluster cluster;
   protected final @Nullable RelOptSchema relOptSchema;
-  private final Deque<Frame> stack = new ArrayDeque<>();
+  private final Deque<Frame> stack;
   private RexSimplify simplifier;
   private final Config config;
   private final RelOptTable.ViewExpander viewExpander;
@@ -190,6 +190,12 @@ public class RelBuilder {
 
   protected RelBuilder(@Nullable Context context, RelOptCluster cluster,
       @Nullable RelOptSchema relOptSchema) {
+    this(new ArrayDeque<>(), context, cluster, relOptSchema);
+  }
+
+  private RelBuilder(Deque<Frame> stack, @Nullable Context context,
+      RelOptCluster cluster, @Nullable RelOptSchema relOptSchema) {
+    this.stack = stack;
     this.cluster = cluster;
     this.relOptSchema = relOptSchema;
     if (context == null) {
@@ -251,7 +257,7 @@ public class RelBuilder {
   public RelBuilder transform(UnaryOperator<Config> transform) {
     final Context context =
         Contexts.of(struct, transform.apply(config));
-    return new RelBuilder(context, cluster, relOptSchema);
+    return new RelBuilder(stack, context, cluster, relOptSchema);
   }
 
   /** Performs an action on this RelBuilder.
@@ -1804,16 +1810,16 @@ public class RelBuilder {
     final RexNode conjunctionPredicates;
     if (config.simplify()) {
       conjunctionPredicates = simplifier.simplifyFilterPredicates(predicates);
+      if (conjunctionPredicates == null
+          || conjunctionPredicates.isAlwaysFalse()) {
+        return empty();
+      }
+      if (conjunctionPredicates.isAlwaysTrue()) {
+        return this;
+      }
     } else {
       conjunctionPredicates =
           RexUtil.composeConjunction(simplifier.rexBuilder, predicates);
-    }
-
-    if (conjunctionPredicates == null || conjunctionPredicates.isAlwaysFalse()) {
-      return empty();
-    }
-    if (conjunctionPredicates.isAlwaysTrue()) {
-      return this;
     }
 
     final Frame frame = stack.pop();
@@ -4839,6 +4845,16 @@ public class RelBuilder {
 
     /** Sets {@link #simplify}. */
     Config withSimplify(boolean simplify);
+
+    /** Whether to perform basic simplifications; default true.
+     * If false, the effect is as if you are calling the factories directly.
+     * Ignored if {@link #simplify()} is true. */
+    @Value.Default default boolean simplifyBasic() {
+      return true;
+    }
+
+    /** Sets {@link #simplifyBasic}. */
+    Config withSimplifyBasic(boolean simplify);
 
     /** Whether to simplify LIMIT 0 to an empty relation; default true. */
     @Value.Default default boolean simplifyLimit() {

@@ -2410,19 +2410,21 @@ class UtilTest {
     assertThat(reverse.hasNext(), is(false));
   }
 
-  /** Tests {@link Ord#forEach(Iterable, ObjIntConsumer)}. */
-  @Test void testOrdForEach() {
+  /** Tests {@link Ord#forEachIndexed(Iterable, ObjIntConsumer)}
+   * and {@link Ord#forEachIndexed(Object[], ObjIntConsumer)}. */
+  @Test void testOrdForEachIndexed() {
     final String[] strings = {"ab", "", "cde"};
     final StringBuilder b = new StringBuilder();
     final String expected = "0:ab;1:;2:cde;";
 
-    Ord.forEach(strings,
+    Ord.forEachIndexed(strings,
         (e, i) -> b.append(i).append(":").append(e).append(";"));
     assertThat(b, hasToString(expected));
     b.setLength(0);
 
     final List<String> list = Arrays.asList(strings);
-    Ord.forEach(list, (e, i) -> b.append(i).append(":").append(e).append(";"));
+    Ord.forEachIndexed(list,
+        (e, i) -> b.append(i).append(":").append(e).append(";"));
     assertThat(b, hasToString(expected));
   }
 

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 /**
  * Pair of objects.
@@ -91,6 +92,7 @@ public class Pair<T1 extends @Nullable Object, T2 extends @Nullable Object>
 
   //~ Methods ----------------------------------------------------------------
 
+  @SuppressWarnings("rawtypes")
   @Override public boolean equals(@Nullable Object obj) {
     return this == obj
         || (obj instanceof Map.Entry)
@@ -253,6 +255,14 @@ public class Pair<T1 extends @Nullable Object, T2 extends @Nullable Object>
       final List<K> ks,
       final List<V> vs) {
     return new MutableZipList<>(ks, vs);
+  }
+
+  /** Transforms a pair of lists, applying a function to each pair of
+   * elements. */
+  public static <K, V, R> List<R> transform(List<? extends K> lefts,
+      List<? extends V> rights, BiFunction<? super K, ? super V, R> f) {
+    return Util.transform(zip(lefts, rights),
+        pair -> f.apply(pair.left, pair.right));
   }
 
   /** Applies an action to every element of a pair of iterables.
