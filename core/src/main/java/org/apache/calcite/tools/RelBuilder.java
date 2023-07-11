@@ -3895,8 +3895,9 @@ public class RelBuilder {
    */
   public RelBuilder hints(Iterable<RelHint> hints) {
     requireNonNull(hints, "hints");
-    final List<RelHint> relHintList = hints instanceof List ? (List<RelHint>) hints
-        : Lists.newArrayList(hints);
+    final List<RelHint> relHintList =
+        hints instanceof List ? (List<RelHint>) hints
+            : Lists.newArrayList(hints);
     if (relHintList.isEmpty()) {
       return this;
     }
@@ -4181,8 +4182,9 @@ public class RelBuilder {
         ImmutableBitSet groupSet, RelNode r) {
       List<Integer> args =
           registrar.registerExpressions(this.operands);
-      final int filterArg = this.filter == null ? -1
-          : registrar.registerExpression(this.filter);
+      final int filterArg =
+          this.filter == null ? -1
+              : registrar.registerExpression(this.filter);
       if (this.distinct && !this.aggFunction.isQuantifierAllowed()) {
         throw new IllegalArgumentException("DISTINCT not allowed");
       }
