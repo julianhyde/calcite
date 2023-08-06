@@ -1681,7 +1681,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .ok();
     // test multiple input tables
     sql("select * from table(\n"
-        + "similarlity(\n"
+        + "similarity(\n"
         + "  table emp partition by deptno order by empno,\n"
         + "  table emp_b partition by deptno order by empno))")
         .ok();

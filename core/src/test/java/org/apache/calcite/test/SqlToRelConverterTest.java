@@ -2373,7 +2373,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test void testTableFunctionWithMultipleInputTables() {
     final String sql = "select *\n"
         + "from table(\n"
-        + "similarlity(\n"
+        + "similarity(\n"
         + "  table emp partition by deptno order by empno nulls first,\n"
         + "  table emp_b partition by deptno order by empno nulls first))";
     sql(sql).ok();
@@ -2382,7 +2382,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   @Test void testTableFunctionWithMultipleInputTablesWithParamNames() {
     final String sql = "select *\n"
         + "from table(\n"
-        + "similarlity(\n"
+        + "similarity(\n"
         + "  LTABLE => table emp partition by deptno order by empno nulls first,\n"
         + "  RTABLE => table emp_b partition by deptno order by empno nulls first))";
     sql(sql).ok();

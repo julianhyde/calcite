@@ -4449,19 +4449,19 @@ public class SqlParserTest {
   }
 
   @Test void testTableFunctionWithMultipleInputTables() {
-    final String sql = "select * from table(similarlity(table emp, table emp_b))";
+    final String sql = "select * from table(similarity(table emp, table emp_b))";
     final String expected = "SELECT *\n"
-        + "FROM TABLE(`SIMILARLITY`((TABLE `EMP`), (TABLE `EMP_B`)))";
+        + "FROM TABLE(`SIMILARITY`((TABLE `EMP`), (TABLE `EMP_B`)))";
     sql(sql).ok(expected);
   }
 
   @Test void testTableFunctionWithMultipleInputTablesAndSubClauses() {
     final String sql = "select * from table("
-        + "similarlity("
+        + "similarity("
         + "  table emp partition by deptno order by empno, "
         + "  table emp_b partition by deptno order by empno))";
     final String expected = "SELECT *\n"
-        + "FROM TABLE(`SIMILARLITY`(((TABLE `EMP`) PARTITION BY `DEPTNO` ORDER BY `EMPNO`), "
+        + "FROM TABLE(`SIMILARITY`(((TABLE `EMP`) PARTITION BY `DEPTNO` ORDER BY `EMPNO`), "
         + "((TABLE `EMP_B`) PARTITION BY `DEPTNO` ORDER BY `EMPNO`)))";
     sql(sql).ok(expected);
   }

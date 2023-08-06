@@ -96,7 +96,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
                 new CompositeFunction(),
                 new ScoreTableFunction(),
                 new TopNTableFunction(),
-                new SimilarlityTableFunction(),
+                new SimilarityTableFunction(),
                 new InvalidTableFunction())));
   }
 
@@ -364,7 +364,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
   /** Similarity performs an analysis on two data sets, which are both tables
    * of two columns, treated as the x and y axes of a graph. It has two input
    * tables with set semantics. */
-  public static class SimilarlityTableFunction extends SqlFunction
+  public static class SimilarityTableFunction extends SqlFunction
       implements SqlTableFunction {
 
     private final Map<Integer, TableCharacteristic> tableParams =
@@ -378,8 +378,8 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
                 .builder(TableCharacteristic.Semantics.SET)
                 .build());
 
-    public SimilarlityTableFunction() {
-      super("SIMILARLITY",
+    public SimilarityTableFunction() {
+      super("SIMILARITY",
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.CURSOR,
           null,
