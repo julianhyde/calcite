@@ -3613,9 +3613,8 @@ LogicalProject(DEPTNO=[$0], NAME=[$1], EXPR$0=[$2])
       Uncollect
         LogicalProject(EXPR$0=[$SLICE($0)])
           Collect(field=[EXPR$0])
-            LogicalUnion(all=[true])
-              LogicalProject(EXPR$0=[$cor0.$f2])
-                LogicalValues(tuples=[[{ 0 }]])
+            LogicalProject(EXPR$0=[$cor0.$f2])
+              LogicalValues(tuples=[[{ 0 }]])
 ]]>
     </Resource>
   </TestCase>
@@ -3633,9 +3632,8 @@ LogicalProject(DEPTNO=[$0], NAME=[$1], EXPR$0=[$2])
       Uncollect
         LogicalProject(EXPR$0=[$SLICE($0)])
           Collect(field=[EXPR$0])
-            LogicalUnion(all=[true])
-              LogicalProject(EXPR$0=[$cor0.$f2])
-                LogicalValues(tuples=[[{ 0 }]])
+            LogicalProject(EXPR$0=[$cor0.$f2])
+              LogicalValues(tuples=[[{ 0 }]])
 ]]>
     </Resource>
   </TestCase>

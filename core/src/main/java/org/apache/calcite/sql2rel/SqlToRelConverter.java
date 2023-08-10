@@ -1097,7 +1097,7 @@ public class SqlToRelConverter {
           .filter(ImmutableSet.of(p.id), f.getCondition());
     }
 
-    bb.setRoot(relBuilder.peek(), leaf);
+    bb.setRoot(relBuilder.peek(), false);
   }
 
   private void replaceSubQueries(
@@ -1258,7 +1258,7 @@ public class SqlToRelConverter {
       final RexNode rex =
           bb.register(converted.r,
               converted.outerJoin ? JoinRelType.LEFT : JoinRelType.INNER,
-              leftKeys);
+              leftKeys, true);
 
       RelOptUtil.Logic logic = subQuery.logic;
       switch (logic) {
@@ -1353,9 +1353,10 @@ public class SqlToRelConverter {
       //
       // select * from table(tumble(table emps, descriptor(deptno), interval '3' DAY))
       //
-      relBuilder.push(converted.r);
-      bb.addCursor();
+      relBuilder.push(converted.r); // TODO remove
+      bb.addCursor(converted.r);
       return;
+
     case SET_SEMANTICS_TABLE:
       if (!config.isExpand()) {
         return;
@@ -1401,13 +1402,14 @@ public class SqlToRelConverter {
     } else {
       relBuilder.sortExchange(distribution, orders);
     }
-    subQuery.expr = bb.register(relBuilder.peek(), JoinRelType.LEFT);
+    subQuery.expr =
+        bb.register(relBuilder.peek(), JoinRelType.LEFT, null, false);
     // This is used when converting window table functions:
     //
     // select * from table(tumble(table emps, descriptor(deptno),
     // interval '3' DAY))
     //
-    bb.addCursor();
+    bb.addCursor(relBuilder.peek());
   }
 
   private ImmutableBitSet buildPartitionKeys(Blackboard bb, SqlNodeList partitionList) {
@@ -2813,6 +2815,8 @@ public class SqlToRelConverter {
     final List<RelNode> inputs = bb.retrieveCursors();
     Set<RelColumnMapping> columnMappings =
         getColumnMappings(operator);
+
+    inputs.forEach(i -> relBuilder.build()); // TODO add list arg to replaceSubqueries
 
     relBuilder.push(
         LogicalTableFunctionScan.create(cluster,
@@ -4316,9 +4320,9 @@ public class SqlToRelConverter {
     SqlNode query = cursorCall.operand(0);
     RelNode converted = convertQuery(query, false, false).rel;
 
-    final int iCursor = bb.cursorCount;
-    relBuilder.push(converted);
-    bb.addCursor();
+    final int iCursor = bb.cursorCount();
+//    relBuilder.push(converted);
+    bb.addCursor(converted);
     subQuery.expr = new RexInputRef(iCursor, converted.getRowType());
   }
 
@@ -4752,9 +4756,7 @@ public class SqlToRelConverter {
 
     private boolean isPatternVarRef = false;
 
-    /** The number of cursors. The cursors are the top elements on the
-     * {@link #relBuilder} stack. */
-    int cursorCount;
+    private final List<RelNode> cursors = new ArrayList<>();
 
     /**
      * List of <code>IN</code> and <code>EXISTS</code> nodes inside this
@@ -4849,7 +4851,7 @@ public class SqlToRelConverter {
     public RexNode register(
         RelNode rel,
         JoinRelType joinType) {
-      return register(rel, joinType, null);
+      return register(rel, joinType, null, true);
     }
 
     /**
@@ -4862,10 +4864,8 @@ public class SqlToRelConverter {
      * @return Expression with which to refer to the row (or partial row)
      * coming from this relational expression's side of the join
      */
-    public RexNode register(
-        RelNode rel,
-        JoinRelType joinType,
-        @Nullable List<RexNode> leftKeys) {
+    public RexNode register(RelNode rel, JoinRelType joinType,
+        @Nullable List<RexNode> leftKeys, boolean b) {
       requireNonNull(joinType, "joinType");
       registered.add(new RegisterArgs(rel, joinType, leftKeys));
       if (rootIsNull()) {
@@ -4926,19 +4926,14 @@ public class SqlToRelConverter {
         joinCond = rexBuilder.makeLiteral(true);
       }
 
-      relBuilder.build(); // remove 'rel'
       int leftFieldCount = root().getRowType().getFieldCount();
-      final RelNode join =
-          createJoin(
-              this,
-              root(),
-              rel,
-              joinCond,
-              joinType);
-
-      relBuilder.push(join);
+      if (b) {
+        relBuilder.build(); // remove 'rel'
+        final RelNode join =
+            createJoin(this, root(), rel, joinCond, joinType);
+        relBuilder.push(join);
+      }
       setRoot(relBuilder.peek(), false);
-//      setRoot(join, false);
 
       if (leftKeys != null
           && joinType == JoinRelType.LEFT) {
@@ -4948,9 +4943,10 @@ public class SqlToRelConverter {
 
         final int rexRangeRefLength = leftKeyCount + rightFieldLength;
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        final List<RelDataTypeField> fieldList =
+            relBuilder.peek().getRowType().getFieldList();
         for (int i = 0; i < rexRangeRefLength; i++) {
-          builder.add(join.getRowType().getFieldList()
-              .get(origLeftInputCount + i));
+          builder.add(fieldList.get(origLeftInputCount + i));
         }
 
         return rexBuilder.makeRangeReference(builder.build(),
@@ -4975,11 +4971,10 @@ public class SqlToRelConverter {
     public RelNode reRegister(RelNode root) {
       setRoot(root, false);
       final List<RegisterArgs> registerCopy = ImmutableList.copyOf(registered);
-      registered.forEach(r -> relBuilder.build());
+//      relBuilder.build();
       registered.clear();
       for (RegisterArgs reg: registerCopy) {
-        RelNode relNode = reg.rel;
-        relBuilder.push(relNode);
+        relBuilder.push(reg.rel);
         final RelMetadataQuery mq = relBuilder.getCluster().getMetadataQuery();
         final Boolean unique =
             mq.areColumnsUnique(relBuilder.peek(), ImmutableBitSet.of());
@@ -4988,7 +4983,8 @@ public class SqlToRelConverter {
               relBuilder.aggregateCall(SqlStdOperatorTable.SINGLE_VALUE,
                   relBuilder.field(0)));
         }
-        register(relBuilder.peek(), reg.joinType, reg.leftKeys);
+        register(relBuilder.peek(), reg.joinType, reg.leftKeys, true);
+        relBuilder.build();
       }
       return root();
     }
@@ -5187,11 +5183,11 @@ public class SqlToRelConverter {
     }
 
     ImmutableList<RelNode> retrieveCursors() {
-      ImmutableList.Builder<RelNode> list = ImmutableList.builder();
-      for (; cursorCount > 0; --cursorCount) {
-        list.add(relBuilder.build());
+      try {
+        return ImmutableList.copyOf(cursors);
+      } finally {
+        cursors.clear();
       }
-      return list.build().reverse();
     }
 
     @Override public RexNode convertExpression(SqlNode expr) {
@@ -5601,8 +5597,13 @@ public class SqlToRelConverter {
 
     /** Adds a cursor. The cursors are the top elements on the
      * {@link #relBuilder} stack. */
-    public void addCursor() {
-      ++cursorCount;
+    public void addCursor(RelNode r) {
+      cursors.add(r);
+    }
+
+    /** Returns the number of cursors. */
+    int cursorCount() {
+      return cursors.size();
     }
   }
 
