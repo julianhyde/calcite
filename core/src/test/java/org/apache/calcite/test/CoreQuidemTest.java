@@ -20,6 +20,8 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 
 import net.hydromatic.quidem.Quidem;
 
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
+
 import java.sql.Connection;
 import java.util.Collection;
 
@@ -62,6 +64,26 @@ class CoreQuidemTest extends QuidemTest {
           return CalciteAssert.that()
               .with(CalciteConnectionProperty.PARSER_FACTORY,
                   ExtensionDdlExecutor.class.getName() + "#PARSER_FACTORY")
+              .with(CalciteAssert.Config.SCOTT)
+              .connect();
+        case "scott-lenient":
+          // Same as "scott", but uses LENIENT conformance.
+          // TODO: add a way to change conformance without defining a new
+          // connection
+          return CalciteAssert.that()
+              .with(CalciteConnectionProperty.PARSER_FACTORY,
+                  ExtensionDdlExecutor.class.getName() + "#PARSER_FACTORY")
+              .with(CalciteConnectionProperty.CONFORMANCE,
+                  SqlConformanceEnum.LENIENT)
+              .with(CalciteAssert.Config.SCOTT)
+              .connect();
+        case "scott-mysql":
+          // Same as "scott", but uses MySQL conformance.
+          return CalciteAssert.that()
+              .with(CalciteConnectionProperty.PARSER_FACTORY,
+                  ExtensionDdlExecutor.class.getName() + "#PARSER_FACTORY")
+              .with(CalciteConnectionProperty.CONFORMANCE,
+                  SqlConformanceEnum.MYSQL_5)
               .with(CalciteAssert.Config.SCOTT)
               .connect();
         default:
