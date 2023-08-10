@@ -17,10 +17,9 @@
 package org.apache.calcite.test;
 
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 
 import net.hydromatic.quidem.Quidem;
-
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 
 import java.sql.Connection;
 import java.util.Collection;
