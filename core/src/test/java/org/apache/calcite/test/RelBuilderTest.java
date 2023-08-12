@@ -100,6 +100,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -3903,6 +3904,32 @@ public class RelBuilderTest {
         + "    " + expectedIncludeNulls.replace("\n  ", "\n      ");
     assertThat(f.apply(createBuilder(), true), hasTree(expectedIncludeNulls));
     assertThat(f.apply(createBuilder(), false), hasTree(expectedExcludeNulls));
+  }
+
+  @Test void testSample() {
+    // Equivalent SQL:
+    //  SELECT *
+    //  FROM emp
+    //  TABLESAMPLE SYSTEM(40)
+    final RelBuilder builder = RelBuilder.create(config().build());
+
+    final RelNode root =
+        builder.scan("EMP")
+            .sample(false, new BigDecimal("0.4"), null)
+            .build();
+    final String expected = ""
+        + "Sample(mode=[system], rate=[0.4], repeatableSeed=[-])\n"
+        + "  LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root, hasTree(expected));
+
+    final RelNode root2 =
+        builder.scan("EMP")
+            .sample(true, new BigDecimal("0.25"), 31415926)
+            .build();
+    final String expected2 = ""
+        + "Sample(mode=[bernoulli], rate=[0.25], repeatableSeed=[31415926])\n"
+        + "  LogicalTableScan(table=[[scott, EMP]])\n";
+    assertThat(root2, hasTree(expected2));
   }
 
   @Test void testMatchRecognize() {

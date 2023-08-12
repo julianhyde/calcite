@@ -2376,13 +2376,11 @@ public class SqlToRelConverter {
           // The table sample rate is 1; the query should return the contents
           // of the underlying table.
         } else {
-          RelOptSamplingParameters params =
-              new RelOptSamplingParameters(
-                  tableSampleSpec.isBernoulli(),
-                  tableSampleSpec.sampleRate,
-                  tableSampleSpec.isRepeatable(),
-                  tableSampleSpec.getRepeatableSeed());
-          relBuilder.push(new Sample(cluster, relBuilder.build(), params));
+          relBuilder.sample(tableSampleSpec.isBernoulli(),
+              tableSampleSpec.sampleRate,
+              tableSampleSpec.isRepeatable()
+                  ? tableSampleSpec.getRepeatableSeed()
+                  : null);
         }
         bb.setRoot(relBuilder.build(), true);
       } else {
