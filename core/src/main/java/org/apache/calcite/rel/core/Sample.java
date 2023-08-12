@@ -25,8 +25,13 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Relational expression that returns a sample of the rows from its input.
@@ -60,12 +65,18 @@ public class Sample extends SingleRel {
       RelInput input) {
     String mode = input.getString("mode");
     final boolean bernoulli = "bernoulli".equals(mode);
-    float percentage = input.getFloat("rate");
-    Object repeatableSeed = input.get("repeatableSeed");
-    boolean repeatable = repeatableSeed instanceof Number;
-    return new RelOptSamplingParameters(bernoulli,
-        BigDecimal.valueOf(percentage), repeatable,
-        repeatable ? ((Number) repeatableSeed).intValue() : 0);
+    final BigDecimal rate = input.getBigDecimal("rate");
+    final Object repeatableSeed = input.get("repeatableSeed");
+    final int seed;
+    final boolean repeatable;
+    if (repeatableSeed instanceof Number) {
+      repeatable = true;
+      seed = ((Number) repeatableSeed).intValue();
+    } else {
+      repeatable = false;
+      seed = 0;
+    }
+    return new RelOptSamplingParameters(bernoulli, rate, repeatable, seed);
   }
 
   @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
