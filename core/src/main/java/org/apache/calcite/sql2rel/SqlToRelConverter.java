@@ -2361,18 +2361,30 @@ public class SqlToRelConverter {
         SqlSampleSpec.SqlTableSampleSpec tableSampleSpec =
             (SqlSampleSpec.SqlTableSampleSpec) sampleSpec;
         convertFrom(bb, operands.get(0));
-        // If the table sample percentage is 0, then the query should return empty.
-        if (tableSampleSpec.samplePercentage.compareTo(BigDecimal.ZERO) == 0) {
-          bb.setRoot(relBuilder.push(bb.root()).empty().build(), true);
+
+        // Treat TABLESAMPLE(0) and TABLESAMPLE(100) as no table
+        // sampling at all.  Not strictly correct: TABLESAMPLE(0)
+        // should produce no output, but it simplifies implementation
+        // to know that some amount of sampling will occur.
+        // In practice values less than ~1E-43% are treated as 0.0 and
+        // values greater than ~99.999997% are treated as 1.0
+        relBuilder.push(bb.root());
+        if (tableSampleSpec.sampleRate.compareTo(BigDecimal.ZERO) == 0) {
+          // The table sample rate is 0; the query should return empty.
+          relBuilder.empty();
+        } else if (tableSampleSpec.sampleRate.compareTo(BigDecimal.ONE) == 0) {
+          // The table sample rate is 1; the query should return the contents
+          // of the underlying table.
         } else {
           RelOptSamplingParameters params =
               new RelOptSamplingParameters(
                   tableSampleSpec.isBernoulli(),
-                  tableSampleSpec.samplePercentage.floatValue(),
+                  tableSampleSpec.sampleRate.floatValue(),
                   tableSampleSpec.isRepeatable(),
                   tableSampleSpec.getRepeatableSeed());
-          bb.setRoot(new Sample(cluster, bb.root(), params), false);
+          relBuilder.push(new Sample(cluster, relBuilder.build(), params));
         }
+        bb.setRoot(relBuilder.build(), true);
       } else {
         throw new AssertionError("unknown TABLESAMPLE type: " + sampleSpec);
       }

@@ -1523,7 +1523,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test void testSampleBernoulliWithRateZero() {
-    final String sql = "select * from (select * from emp limit 10) as e tablesample bernoulli(0)";
+    final String sql = "select *\n"
+        + "from (\n"
+        + "  select * from emp limit 10\n"
+        + ") as e tablesample bernoulli(0)";
     sql(sql).ok();
   }
 

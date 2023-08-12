@@ -6341,7 +6341,10 @@ LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$
   </TestCase>
   <TestCase name="testSampleBernoulliWithRateZero">
     <Resource name="sql">
-      <![CDATA[select * from (select * from emp limit 10) as e tablesample bernoulli(0)]]>
+      <![CDATA[select *
+from (
+  select * from emp limit 10
+) as e tablesample bernoulli(0)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
