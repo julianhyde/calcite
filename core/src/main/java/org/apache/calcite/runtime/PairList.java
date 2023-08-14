@@ -36,6 +36,8 @@ import java.util.function.BiPredicate;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import static org.apache.calcite.linq4j.Nullness.castNonNullList;
+
 import static java.util.Objects.requireNonNull;
 
 /** A list of pairs, stored as a quotient list.
@@ -177,6 +179,10 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return new MapEntry<>(t, u);
   }
 
+  @Override public PairList<T, U> subList(int fromIndex, int toIndex) {
+    return new PairList<>(list.subList(fromIndex * 2, toIndex * 2));
+  }
+
   /** Returns an unmodifiable list view consisting of the left entry of each
    * pair. */
   @SuppressWarnings("unchecked")
@@ -240,9 +246,11 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
   }
 
   /** Returns an immutable PairList whose contents are the same as this
-   * PairList. */
+   * PairList.
+   *
+   * <p>Throws {@link NullPointerException} if any keys or values are null. */
   public ImmutablePairList<T, U> immutable() {
-    return new ImmutablePairList<>(ImmutableList.copyOf(list));
+    return new ImmutablePairList<>(ImmutableList.copyOf(castNonNullList(list)));
   }
 
   /** Applies a mapping function to each element of this list. */
@@ -298,6 +306,41 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     return true;
   }
 
+  /** Reverses the contents of this PairList.
+   * Throws if this PairList is immutable.
+   *
+   * @see #reversed() */
+  public void reverse() {
+    for (int i = 0, j = list.size() - 2; i < j;) {
+      @Nullable Object o = list.get(i);
+      list.set(i, list.get(j));
+      list.set(j, o);
+      o = list.get(i + 1);
+      list.set(i + 1, list.get(j + 1));
+      list.set(j + 1, o);
+      i += 2;
+      j -= 2;
+    }
+  }
+
+  /** Returns an immutable copy of this ImmutablePairList with the elements
+   * reversed.
+   *
+   * <p>Throws {@link NullPointerException} if any keys or values are null. */
+  public ImmutablePairList<T, U> reversed() {
+    if (size() <= 1) {
+      return immutable();
+    }
+    final ImmutableList.Builder<Object> b = ImmutableList.builder();
+    final List<Object> nonNullList = castNonNullList(list);
+    for (int j = list.size() - 2; j >= 0;) {
+      b.add(nonNullList.get(j));
+      b.add(nonNullList.get(j + 1));
+      j -= 2;
+    }
+    return new ImmutablePairList<>(b.build());
+  }
+
   /** Action to be taken each step of an indexed iteration over a PairList.
    *
    * @param <T> First type
@@ -334,6 +377,12 @@ public class PairList<T, U> extends AbstractList<Map.Entry<T, U>> {
     /** Builds the PairList. */
     public PairList<T, U> build() {
       return new PairList<>(list);
+    }
+
+    /** Builds an ImmutablePairList. */
+    public ImmutablePairList<T, U> buildImmutable() {
+      return new ImmutablePairList<>(
+          ImmutableList.copyOf(castNonNullList(list)));
     }
   }
 

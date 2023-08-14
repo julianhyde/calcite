@@ -1040,7 +1040,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
               : RelCollations.EMPTY;
       RelRoot root =
           new RelRoot(rel, resultType, SqlKind.SELECT, fields, collation,
-              new ArrayList<>());
+              ImmutableList.of());
 
       if (timingTracer != null) {
         timingTracer.traceTime("end sql2rel");

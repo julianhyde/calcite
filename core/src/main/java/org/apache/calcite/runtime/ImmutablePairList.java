@@ -18,6 +18,8 @@ package org.apache.calcite.runtime;
 
 import com.google.common.collect.ImmutableList;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.Map;
 
 /** Immutable list of pairs.
@@ -29,8 +31,9 @@ public class ImmutablePairList<T, U> extends PairList<T, U> {
   private static final ImmutablePairList<Object, Object> EMPTY =
       new ImmutablePairList<>(ImmutableList.of());
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   ImmutablePairList(ImmutableList<Object> list) {
-    super(list);
+    super((ImmutableList) list);
   }
 
   /** Creates an empty ImmutablePairList. */
@@ -40,13 +43,13 @@ public class ImmutablePairList<T, U> extends PairList<T, U> {
   }
 
   /** Creates a singleton ImmutablePairList. */
-  public static <T, U> ImmutablePairList<T, U> of(T t, U u) {
+  public static <T, U> ImmutablePairList<T, U> of(@NonNull T t, @NonNull U u) {
     return new ImmutablePairList<>(ImmutableList.of(t, u));
   }
 
   @SuppressWarnings("unchecked")
   public static <T, U> ImmutablePairList<T, U> copyOf(
-      Iterable<? extends Map.Entry<T, U>> iterable) {
+      Iterable<? extends Map.Entry<@NonNull T, @NonNull U>> iterable) {
     if (iterable instanceof PairList) {
       return ((PairList<T, U>) iterable).immutable();
     }
@@ -60,5 +63,15 @@ public class ImmutablePairList<T, U> extends PairList<T, U> {
 
   @Override public ImmutablePairList<T, U> immutable() {
     return this;
+  }
+
+  @Override public ImmutablePairList<T, U> subList(int fromIndex, int toIndex) {
+    return new ImmutablePairList<>(
+        ((ImmutableList<Object>) list).subList(fromIndex * 2, toIndex * 2));
+  }
+
+  @Deprecated // will always throw
+  @Override public void reverse() {
+    throw new UnsupportedOperationException();
   }
 }
