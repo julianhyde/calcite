@@ -93,7 +93,8 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     ImmutableList.Builder<AccumulatorFactory> builder = ImmutableList.builder();
     for (AggregateCall aggregateCall : rel.getAggCallList()) {
       @SuppressWarnings("method.invocation.invalid")
-      AccumulatorFactory accumulator = getAccumulator(aggregateCall, false);
+      AccumulatorFactory accumulator =
+          getAccumulator(compiler, aggregateCall, false);
       builder.add(accumulator);
     }
     accumulatorFactories = builder.build();
@@ -112,10 +113,10 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     }
   }
 
-  private AccumulatorFactory getAccumulator(final AggregateCall call,
-      boolean ignoreFilter) {
+  private AccumulatorFactory getAccumulator(Compiler compiler,
+      final AggregateCall call, boolean ignoreFilter) {
     if (call.filterArg >= 0 && !ignoreFilter) {
-      final AccumulatorFactory factory = getAccumulator(call, true);
+      final AccumulatorFactory factory = getAccumulator(compiler, call, true);
       return () -> {
         final Accumulator accumulator = factory.get();
         return new FilterAccumulator(accumulator, call.filterArg);
@@ -135,7 +136,9 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
       return new UdaAccumulatorFactory(getAggFunction(clazz), call, true,
           dataContext);
     } else if (op == SqlInternalOperators.LITERAL_AGG) {
-      return () -> new LiteralAccumulator(call);
+      final Scalar scalar = compiler.compile(call.rexList, null);
+      final Object value = scalar.execute(compiler.createContext());
+      return () -> new LiteralAccumulator(value);
     } else {
       final JavaTypeFactory typeFactory =
           (JavaTypeFactory) rel.getCluster().getTypeFactory();
@@ -281,17 +284,17 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
   /** Accumulator for calls to the LITERAL_AGG function. */
   private static class LiteralAccumulator implements Accumulator {
-    private final AggregateCall call;
+    private final @Nullable Object value;
 
-    LiteralAccumulator(AggregateCall call) {
-      this.call = call;
+    LiteralAccumulator(@Nullable Object value) {
+      this.value = value;
     }
 
     @Override public void send(Row row) {
     }
 
-    @Override public Object end() {
-      return call.rexList.get(0);
+    @Override public @Nullable Object end() {
+      return value;
     }
   }
 
