@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -152,6 +153,7 @@ public class Puffin {
     boolean startsWith(String prefix);
     boolean contains(CharSequence s);
     boolean endsWith(String suffix);
+    Matcher matcher(String regex);
     boolean matches(String regex);
     String line();
   }
@@ -243,8 +245,12 @@ public class Puffin {
       return line.endsWith(suffix);
     }
 
+    @Override public Matcher matcher(String regex) {
+      return pattern(regex).matcher(line);
+    }
+
     @Override public boolean matches(String regex) {
-      return pattern(regex).matcher(line).matches();
+      return matcher(regex).matches();
     }
 
     @Override public String line() {
