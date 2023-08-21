@@ -56,6 +56,26 @@ class LintTest {
         .add(line -> line.fnr() == 1,
             line -> line.globalState().fileCount++)
 
+        // Skip directive
+        .add(line -> line.matches(".* lint:skip ([0-9]+).*"),
+            line -> {
+              final Matcher matcher = line.matcher(".* lint:skip ([0-9]+).*");
+              if (matcher.matches()) {
+                int n = Integer.parseInt(matcher.group(1));
+                line.state().skipToLine = line.fnr() + n;
+              }
+            })
+
+        // Trailing space
+        .add(line -> line.endsWith(" "),
+            line -> line.state().message("Trailing space", line))
+
+        // Tab
+        .add(line -> line.contains("\t")
+                && !line.filename().endsWith(".txt")
+                && !skipping(line),
+            line -> line.state().message("Tab", line))
+
         // Comment without space
         .add(line -> line.matches(".* //[^ ].*")
                 && !line.source().fileOpt()
@@ -68,7 +88,8 @@ class LintTest {
 
         // In 'for (int i : list)', colon must be surrounded by space.
         .add(line -> line.matches("^ *for \\(.*:.*")
-                && !line.matches(".*[^ ][ ][:][ ][^ ].*"),
+                && !line.matches(".*[^ ][ ][:][ ][^ ].*")
+                && isJava(line.filename()),
             line -> line.state().message("':' must be surrounded by ' '", line))
 
         // Javadoc does not require '</p>', so we do not allow '</p>'
@@ -77,7 +98,7 @@ class LintTest {
             line -> line.state().message("no '</p>'", line))
 
         // No "**/"
-        .add(line -> line.contains("**/")
+        .add(line -> line.contains(" **/")
                 && line.state().inJavadoc(),
             line ->
                 line.state().message("no '**/'; use '*/'",
@@ -111,7 +132,8 @@ class LintTest {
                 && line.state().blockquoteCount == 0
                 && line.contains("* ")
                 && line.fnr() - 1 == line.state().starLine
-                && line.matches("^ *\\* [^<@].*"),
+                && line.matches("^ *\\* [^<@].*")
+                && isJava(line.filename()),
             line -> line.state().message("missing '<p>'", line))
 
         // The first "@param" of a javadoc block must be preceded by a blank
@@ -145,6 +167,21 @@ class LintTest {
         .add(line -> line.contains("</ul>"),
             line -> line.state().ulCount--)
         .build();
+  }
+
+  /** Returns whether we are currently in a region where lint rules should not
+   * be applied. */
+  private static boolean skipping(Puffin.Line<GlobalState, FileState> line) {
+    return line.state().skipToLine >= 0
+        && line.fnr() < line.state().skipToLine;
+  }
+
+  /** Returns whether we are in a file that contains Java code. */
+  private static boolean isJava(String filename) {
+    return filename.endsWith(".java")
+        || filename.endsWith(".jj")
+        || filename.endsWith(".fmpp")
+        || filename.endsWith(".ftl");
   }
 
   @Test void testProgramWorks() {
@@ -215,11 +252,11 @@ class LintTest {
     assumeTrue(TestUnsafe.haveGit(), "Invalid git environment");
 
     final Puffin.Program<GlobalState> program = makeProgram();
-    final List<File> javaFiles = TestUnsafe.getJavaFiles();
+    final List<File> files = TestUnsafe.getTextFiles();
 
     final GlobalState g;
     try (PrintWriter pw = Util.printWriter(System.out)) {
-      g = program.execute(javaFiles.parallelStream().map(Sources::of), pw);
+      g = program.execute(files.parallelStream().map(Sources::of), pw);
     }
 
     g.messages.forEach(System.out::println);
@@ -363,6 +400,7 @@ class LintTest {
   /** Internal state of the lint rules, per file. */
   private static class FileState {
     final GlobalState global;
+    int skipToLine;
     int starLine;
     int atLine;
     int javadocStartLine;
