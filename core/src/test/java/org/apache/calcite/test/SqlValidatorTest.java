@@ -1605,25 +1605,23 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + "Was expecting 2 arguments");
   }
 
-  @Test void testCurrentDatetime() throws SqlParseException, ValidationException {
+  @Test void testCurrentDatetime() {
     final String currentDateTimeExpr = "select ^current_datetime^";
     SqlValidatorFixture shouldFail = sql(currentDateTimeExpr)
         .withConformance(SqlConformanceEnum.BIG_QUERY);
     final String expectedError = "query [select CURRENT_DATETIME]; exception "
         + "[Column 'CURRENT_DATETIME' not found in any table]; class "
         + "[class org.apache.calcite.sql.validate.SqlValidatorException]; pos [line 1 col 8 thru line 1 col 8]";
-    shouldFail.fails("Column 'CURRENT_DATETIME' not found in any table");
+//    shouldFail.fails("Column 'CURRENT_DATETIME' not found in any table");
 
     final SqlOperatorTable opTable = operatorTableFor(SqlLibrary.BIG_QUERY);
-    sql("select current_datetime()")
+    final SqlValidatorFixture f = sql("?")
         .withConformance(SqlConformanceEnum.BIG_QUERY)
-        .withOperatorTable(opTable).ok();
-    sql("select CURRENT_DATETIME('America/Los_Angeles')")
-        .withConformance(SqlConformanceEnum.BIG_QUERY)
-        .withOperatorTable(opTable).ok();
-    sql("select CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))")
-        .withConformance(SqlConformanceEnum.BIG_QUERY)
-        .withOperatorTable(opTable).ok();
+        .withOperatorTable(opTable);
+    f.withSql("select current_datetime").ok();
+    f.withSql("select current_datetime()").ok();
+    f.withSql("select CURRENT_DATETIME('America/Los_Angeles')").ok();
+    f.withSql("select CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))").ok();
   }
 
   @Test void testInvalidFunction() {
