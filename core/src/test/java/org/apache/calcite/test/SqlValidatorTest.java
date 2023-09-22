@@ -52,7 +52,6 @@ import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.test.catalog.CountingFactory;
 import org.apache.calcite.testlib.annotations.LocaleEnUs;
-import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -1606,18 +1605,15 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test void testCurrentDatetime() {
-    final String currentDateTimeExpr = "select ^current_datetime^";
-    SqlValidatorFixture shouldFail = sql(currentDateTimeExpr)
+    // The CURRENT_DATETIME function is defined in the BigQuery library,
+    // is not available in the default library,
+    // and can be called with and without parentheses.
+    SqlValidatorFixture f0 = sql("select ^current_datetime^")
         .withConformance(SqlConformanceEnum.BIG_QUERY);
-    final String expectedError = "query [select CURRENT_DATETIME]; exception "
-        + "[Column 'CURRENT_DATETIME' not found in any table]; class "
-        + "[class org.apache.calcite.sql.validate.SqlValidatorException]; pos [line 1 col 8 thru line 1 col 8]";
-//    shouldFail.fails("Column 'CURRENT_DATETIME' not found in any table");
+    f0.fails("Column 'CURRENT_DATETIME' not found in any table");
 
-    final SqlOperatorTable opTable = operatorTableFor(SqlLibrary.BIG_QUERY);
-    final SqlValidatorFixture f = sql("?")
-        .withConformance(SqlConformanceEnum.BIG_QUERY)
-        .withOperatorTable(opTable);
+    final SqlValidatorFixture f =
+        f0.withOperatorTable(operatorTableFor(SqlLibrary.BIG_QUERY));
     f.withSql("select current_datetime").ok();
     f.withSql("select current_datetime()").ok();
     f.withSql("select CURRENT_DATETIME('America/Los_Angeles')").ok();
