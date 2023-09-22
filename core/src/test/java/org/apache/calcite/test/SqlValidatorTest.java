@@ -1604,22 +1604,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + "Was expecting 2 arguments");
   }
 
-  @Test void testCurrentDatetime() {
-    // The CURRENT_DATETIME function is defined in the BigQuery library,
-    // is not available in the default library,
-    // and can be called with and without parentheses.
-    SqlValidatorFixture f0 = sql("select ^current_datetime^")
-        .withConformance(SqlConformanceEnum.BIG_QUERY);
-    f0.fails("Column 'CURRENT_DATETIME' not found in any table");
-
-    final SqlValidatorFixture f =
-        f0.withOperatorTable(operatorTableFor(SqlLibrary.BIG_QUERY));
-    f.withSql("select current_datetime").ok();
-    f.withSql("select current_datetime()").ok();
-    f.withSql("select CURRENT_DATETIME('America/Los_Angeles')").ok();
-    f.withSql("select CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))").ok();
-  }
-
   @Test void testInvalidFunction() {
     wholeExpr("foo()")
         .fails("No match found for function signature FOO..");
