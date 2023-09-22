@@ -6771,8 +6771,7 @@ public class SqlOperatorTest {
   @Test void testUnixSecondsFunc() {
     SqlOperatorFixture f = fixture()
         .setFor(SqlLibraryOperators.UNIX_SECONDS)
-        .withLibrary(SqlLibrary.BIG_QUERY)
-        .withConformance(SqlConformanceEnum.BIG_QUERY);
+        .withLibrary(SqlLibrary.BIG_QUERY);
     f.checkScalar("unix_seconds(timestamp '1970-01-01 00:00:00')", 0,
         "BIGINT NOT NULL");
     f.checkNull("unix_seconds(cast(null as timestamp))");
@@ -6789,11 +6788,45 @@ public class SqlOperatorTest {
     // allow it as a function.
     f.checkNull("DATE(null)");
     f.checkScalar("DATE('1985-12-06')", "1985-12-06", "DATE NOT NULL");
-    // DATETIME is valid with and without parentheses
-    f.checkType("CURRENT_DATETIME()", "TIMESTAMP(0) NOT NULL");
+  }
+
+  /** Tests that the {@code CURRENT_DATETIME} function is defined in the
+   * BigQuery library, is not available in the default library,
+   * and can be called with and without parentheses. */
+  @Test void testCurrentDatetimeFunc() {
+    SqlOperatorFixture f0 = fixture()
+        .setFor(SqlLibraryOperators.CURRENT_DATETIME);
+
+    // In default conformance, with BigQuery operator table,
+    // CURRENT_DATETIME is valid only without parentheses.
+    final SqlOperatorFixture f1 =
+        f0.withLibrary(SqlLibrary.BIG_QUERY);
+    f1.checkType("CURRENT_DATETIME", "TIMESTAMP(0) NOT NULL");
+    f1.checkFails("^CURRENT_DATETIME()^",
+        "No match found for function signature CURRENT_DATETIME\\(\\)",
+        false);
+
+    // In BigQuery conformance, with BigQuery operator table,
+    // CURRENT_DATETIME should be valid with and without parentheses.
+    // We cannot execute it because results are non-deterministic.
+    SqlOperatorFixture f =
+        f1.withConformance(SqlConformanceEnum.BIG_QUERY);
     f.checkType("CURRENT_DATETIME", "TIMESTAMP(0) NOT NULL");
-    f.checkType("CURRENT_DATETIME('America/Los_Angeles')", "TIMESTAMP(0) NOT NULL");
+    f.checkType("CURRENT_DATETIME()", "TIMESTAMP(0) NOT NULL");
+    f.checkType("CURRENT_DATETIME('America/Los_Angeles')",
+        "TIMESTAMP(0) NOT NULL");
     f.checkType("CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))", "TIMESTAMP(0)");
+    f.checkNull("CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))");
+
+    // In BigQuery conformance, but with the default operator table,
+    // CURRENT_DATETIME is not found.
+    final SqlOperatorFixture f2 =
+        f0.withConformance(SqlConformanceEnum.BIG_QUERY);
+    f2.checkFails("^CURRENT_DATETIME^",
+        "Column 'CURRENT_DATETIME' not found in any table", false);
+    f2.checkFails("^CURRENT_DATETIME()^",
+        "No match found for function signature CURRENT_DATETIME\\(\\)",
+        false);
   }
 
   @Test void testAbsFunc() {
