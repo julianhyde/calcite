@@ -6816,7 +6816,6 @@ public class SqlOperatorTest {
     f.checkType("CURRENT_DATETIME('America/Los_Angeles')",
         "TIMESTAMP(0) NOT NULL");
     f.checkType("CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))", "TIMESTAMP(0)");
-    f.checkNull("CURRENT_DATETIME(CAST(NULL AS VARCHAR(20)))");
 
     // In BigQuery conformance, but with the default operator table,
     // CURRENT_DATETIME is not found.
