@@ -16,9 +16,11 @@
  */
 package org.apache.calcite.util;
 
+import org.apache.calcite.runtime.ImmutablePairList;
 import org.apache.calcite.runtime.PairList;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import org.junit.jupiter.api.Test;
 
@@ -97,6 +99,9 @@ class PairListTest {
       assertThat(immutablePairList, hasSize(list.size()));
       assertThat(immutablePairList, is(list));
 
+      assertThat(pairList.reversed(), is(Lists.reverse(list)));
+      assertThat(immutablePairList.reversed(), is(Lists.reverse(list)));
+
       list2.clear();
       immutablePairList.forEach((k, v) -> list2.add(Pair.of(k, v)));
       assertThat(list2, is(list));
@@ -104,6 +109,8 @@ class PairListTest {
       // PairList.immutable should throw if there are null keys or values
       assertThrows(NullPointerException.class,
           pairList::immutable);
+      assertThrows(NullPointerException.class,
+          pairList::reversed);
     }
   }
 
@@ -297,6 +304,9 @@ class PairListTest {
     final PairList<String, Integer> list0 = b.build();
     validate(list0, list);
 
+    final ImmutablePairList<String, Integer> list0i = b.buildImmutable();
+    validate(list0i, list);
+
     b.add("a", 1);
     list.add(Pair.of("a", 1));
     final PairList<String, Integer> list1 = b.build();
@@ -308,5 +318,51 @@ class PairListTest {
     list.add(Pair.of("c", null));
     final PairList<String, Integer> list3 = b.build();
     validate(list3, list);
+
+    // Reverse PairList in place
+    list3.reverse();
+    validate(list3, Lists.reverse(list));
+  }
+
+  @Test void testReversed() {
+    final PairList<Integer, Integer> list = PairList.of();
+    assertThat("empty list", list, hasToString("[]"));
+
+    list.reverse();
+    assertThat("empty list, reversed", list, hasToString("[]"));
+    assertThat(list.reversed(), is(Lists.reverse(list)));
+    assertThat(list.reversed().reversed(), is(list));
+
+    list.add(1, 2);
+    list.reverse();
+    assertThat("singleton list, reversed", list, hasToString("[<1, 2>]"));
+    assertThat(list.reversed(), is(Lists.reverse(list)));
+    assertThat(list.reversed().reversed(), is(list));
+
+    list.reverse();
+    assertThat("singleton list reversed twice", list,
+        hasToString("[<1, 2>]"));
+    assertThat(list.reversed(), is(Lists.reverse(list)));
+    assertThat(list.reversed().reversed(), is(list));
+
+    list.add(3, 4);
+    list.reverse();
+    assertThat("list with even length, reversed", list,
+        hasToString("[<3, 4>, <1, 2>]"));
+    assertThat(list.reversed(), is(Lists.reverse(list)));
+    assertThat(list.reversed().reversed(), is(list));
+
+    list.reverse();
+    assertThat("list with even length, reversed twice", list,
+        hasToString("[<1, 2>, <3, 4>]"));
+    assertThat(list.reversed(), is(Lists.reverse(list)));
+    assertThat(list.reversed().reversed(), is(list));
+
+    list.add(5, 6);
+    list.reverse();
+    assertThat("list with odd length, reversed", list,
+        hasToString("[<5, 6>, <3, 4>, <1, 2>]"));
+    assertThat(list.reversed(), is(Lists.reverse(list)));
+    assertThat(list.reversed().reversed(), is(list));
   }
 }
