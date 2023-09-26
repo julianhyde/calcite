@@ -212,11 +212,15 @@ public class Driver extends UnregisteredDriver {
   }
 
   @Override public Meta createMeta(AvaticaConnection connection) {
-    CalciteMetaTableFactory metaTableFactory = ((CalciteConnectionConfig) connection.config())
-        .metaTableFactory(CalciteMetaTableFactory.class, null);
-    CalciteMetaColumnFactory metaColumnFactory = ((CalciteConnectionConfig) connection.config())
-            .metaColumnFactory(CalciteMetaColumnFactory.class, null);
-    return new CalciteMetaImpl((CalciteConnectionImpl) connection,
+    final CalciteConnectionConfig config =
+        (CalciteConnectionConfig) connection.config();
+    CalciteMetaTableFactory metaTableFactory =
+        config.metaTableFactory(CalciteMetaTableFactory.class,
+            new CalciteMetaTableFactoryImpl());
+    CalciteMetaColumnFactory metaColumnFactory =
+        config.metaColumnFactory(CalciteMetaColumnFactory.class,
+            new CalciteMetaColumnFactoryImpl());
+    return CalciteMetaImpl.create((CalciteConnectionImpl) connection,
         metaTableFactory, metaColumnFactory);
   }
 

@@ -96,44 +96,52 @@ public class CalciteMetaImpl extends MetaImpl {
 
   /** Creates a CalciteMetaImpl.
    *
-   * @deprecated Use
-   * {@link #CalciteMetaImpl(CalciteConnectionImpl, CalciteMetaTableFactory, CalciteMetaColumnFactory)}
-   * instead.
+   * @deprecated Use {@link #create(CalciteConnectionImpl)} instead.
    */
   @Deprecated // to be removed before 2.0
   public CalciteMetaImpl(CalciteConnectionImpl connection) {
-    this(connection, new CalciteMetaTableFactoryImpl(), new CalciteMetaColumnFactoryImpl());
+    this(connection, new CalciteMetaTableFactoryImpl(),
+        new CalciteMetaColumnFactoryImpl());
   }
 
-  /**
-   * Creates a CalciteMetaImpl.
-   *
-   * <p> Public to allow subclassing purposes in conjunction with CalciteMetaTableFactory.
-   *
-   * @param connection CalciteConnectionImpl
-   * @param metaTableFactory Factory for creating MetaTable or subclass of MetaTable
-   * @param metaColumnFactory Factory for creating MetaColumn or subclass of MetaColumn
-   * */
-  public CalciteMetaImpl(CalciteConnectionImpl connection,
-      @Nullable CalciteMetaTableFactory metaTableFactory,
-      @Nullable CalciteMetaColumnFactory metaColumnFactory) {
+  /** Internal constructor. Protected to allow subclassing. */
+  protected CalciteMetaImpl(CalciteConnectionImpl connection,
+      CalciteMetaTableFactory metaTableFactory,
+      CalciteMetaColumnFactory metaColumnFactory) {
     super(connection);
     this.connProps
         .setAutoCommit(false)
         .setReadOnly(false)
         .setTransactionIsolation(Connection.TRANSACTION_NONE);
     this.connProps.setDirty(false);
+    this.metaTableFactory =
+        requireNonNull(metaTableFactory, "metaTableFactory");
+    this.metaColumnFactory =
+        requireNonNull(metaColumnFactory, "metaColumnFactory");
+  }
 
-    if (metaTableFactory != null) {
-      this.metaTableFactory = metaTableFactory;
-    } else {
-      this.metaTableFactory = new CalciteMetaTableFactoryImpl();
-    }
-    if (metaColumnFactory != null) {
-      this.metaColumnFactory = metaColumnFactory;
-    } else {
-      this.metaColumnFactory = new CalciteMetaColumnFactoryImpl();
-    }
+  /**
+   * Creates a CalciteMetaImpl.
+   *
+   * @param connection Calcite connection
+   */
+  public static CalciteMetaImpl create(CalciteConnectionImpl connection) {
+    return create(connection,
+        new CalciteMetaTableFactoryImpl(),
+        new CalciteMetaColumnFactoryImpl());
+  }
+
+  /**
+   * Creates a CalciteMetaImpl.
+   *
+   * @param connection Calcite connection
+   * @param metaTableFactory Factory for creating MetaTable (or subclass)
+   * @param metaColumnFactory Factory for creating MetaColumn (or subclass)
+   */
+  public static CalciteMetaImpl create(CalciteConnectionImpl connection,
+      CalciteMetaTableFactory metaTableFactory,
+      CalciteMetaColumnFactory metaColumnFactory) {
+    return new CalciteMetaImpl(connection, metaTableFactory, metaColumnFactory);
   }
 
   static <T extends Named> Predicate1<T> namedMatcher(final Pat pattern) {
