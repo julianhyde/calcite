@@ -26,11 +26,13 @@ import java.util.List;
 /** Factory for creating MetaTables for getTables(). */
 public interface CalciteMetaTableFactory {
   /** Instantiates a MetaTable. */
-  MetaTable newMetaTable(Table table, String tableCat, String tableSchem, String tableName);
+  MetaTable newMetaTable(Table table, String tableCat, String tableSchem,
+      String tableName);
 
   /** Returns the list of expected column names.
-   *  The default implementation returns the columns described in the JDBC specification.
-   * */
+   *
+   * <p>The default implementation returns the columns described in the JDBC
+   * specification. */
   default List<String> getColumnNames() {
     return JDBC_STANDARD_COLUMNS;
   }

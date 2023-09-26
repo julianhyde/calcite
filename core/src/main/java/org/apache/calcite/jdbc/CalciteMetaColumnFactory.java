@@ -45,8 +45,9 @@ public interface CalciteMetaColumnFactory {
       String isNullable);
 
   /** Returns the list of expected column names.
-   *  The default implementation returns the columns described in the JDBC specification.
-   * */
+   *
+   * <p>The default implementation returns the columns described in the JDBC
+   * specification. */
   default List<String> getColumnNames() {
     return JDBC_STANDARD_COLUMNS;
   }

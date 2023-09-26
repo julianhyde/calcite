@@ -22,8 +22,8 @@ import org.apache.calcite.schema.Table;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Default implementation of CalciteMetaColumnFactoryImpl. */
-public class CalciteMetaColumnFactoryImpl implements
-    CalciteMetaColumnFactory {
+public class CalciteMetaColumnFactoryImpl
+    implements CalciteMetaColumnFactory {
 
   /** Singleton instance. */
   public static final CalciteMetaColumnFactoryImpl INSTANCE =

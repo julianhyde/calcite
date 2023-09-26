@@ -21,8 +21,8 @@ import org.apache.calcite.jdbc.CalciteMetaImpl.CalciteMetaTable;
 import org.apache.calcite.schema.Table;
 
 /** Default implementation of CalciteMetaTableFactory. */
-public class CalciteMetaTableFactoryImpl implements
-    CalciteMetaTableFactory {
+public class CalciteMetaTableFactoryImpl
+    implements CalciteMetaTableFactory {
 
   /** Singleton instance. */
   public static final CalciteMetaTableFactoryImpl INSTANCE =

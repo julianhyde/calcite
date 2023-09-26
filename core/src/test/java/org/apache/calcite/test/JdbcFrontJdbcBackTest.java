@@ -82,9 +82,10 @@ class JdbcFrontJdbcBackTest {
   }
 
 
-  /** Sample subclass used in {@link JdbcFrontJdbcBackTest#testTablesExtraColumn()}.*/
+  /** Mock implementation of {@link CalciteMetaTable}. */
   private static class MetaExtraTable extends CalciteMetaTable {
-    public final String extraLabel;
+    final String extraLabel;
+
     MetaExtraTable(Table calciteTable, String tableCat,
         String tableSchem, String tableName) {
       super(calciteTable, tableCat, tableSchem, tableName);
@@ -92,17 +93,18 @@ class JdbcFrontJdbcBackTest {
     }
   }
 
-  /** Sample factory that creates MetaExtraTables.
-   * This needs to be public otherwise inaccessible from {@link org.apache.calcite.jdbc.Driver}
-   * */
-  public static class MetaExtraTableFactoryImpl implements CalciteMetaTableFactory {
-
-    public static final MetaExtraTableFactoryImpl INSTANCE = new MetaExtraTableFactoryImpl();
+  /** Mock implementation of {@link CalciteMetaTableFactory} that creates
+   * instances of {@link MetaExtraTable}. Must be public, otherwise it is
+   * inaccessible from {@link org.apache.calcite.jdbc.Driver}. */
+  public static class MetaExtraTableFactoryImpl
+      implements CalciteMetaTableFactory {
+    public static final MetaExtraTableFactoryImpl INSTANCE =
+        new MetaExtraTableFactoryImpl();
 
     MetaExtraTableFactoryImpl() {}
 
-    @Override public MetaTable newMetaTable(Table table, String tableCat, String tableSchem,
-        String tableName) {
+    @Override public MetaTable newMetaTable(Table table, String tableCat,
+        String tableSchem, String tableName) {
       return new MetaExtraTable(table, tableCat, tableSchem, tableName);
     }
 
