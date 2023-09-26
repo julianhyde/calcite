@@ -100,8 +100,8 @@ public class CalciteMetaImpl extends MetaImpl {
    */
   @Deprecated // to be removed before 2.0
   public CalciteMetaImpl(CalciteConnectionImpl connection) {
-    this(connection, new CalciteMetaTableFactoryImpl(),
-        new CalciteMetaColumnFactoryImpl());
+    this(connection, CalciteMetaTableFactoryImpl.INSTANCE,
+        CalciteMetaColumnFactoryImpl.INSTANCE);
   }
 
   /** Internal constructor. Protected to allow subclassing. */
@@ -126,9 +126,8 @@ public class CalciteMetaImpl extends MetaImpl {
    * @param connection Calcite connection
    */
   public static CalciteMetaImpl create(CalciteConnectionImpl connection) {
-    return create(connection,
-        new CalciteMetaTableFactoryImpl(),
-        new CalciteMetaColumnFactoryImpl());
+    return create(connection, CalciteMetaTableFactoryImpl.INSTANCE,
+        CalciteMetaColumnFactoryImpl.INSTANCE);
   }
 
   /**

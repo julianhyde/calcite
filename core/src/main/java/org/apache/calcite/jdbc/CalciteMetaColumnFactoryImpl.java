@@ -25,8 +25,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class CalciteMetaColumnFactoryImpl implements
     CalciteMetaColumnFactory {
 
-  public static final CalciteMetaColumnFactoryImpl INSTANCE = new CalciteMetaColumnFactoryImpl();
-  public CalciteMetaColumnFactoryImpl() {}
+  /** Singleton instance. */
+  public static final CalciteMetaColumnFactoryImpl INSTANCE =
+      new CalciteMetaColumnFactoryImpl();
+
+  /** Internal constructor; protected to allow subclassing. */
+  protected CalciteMetaColumnFactoryImpl() {}
 
   @Override public MetaColumn newMetaColumn(
       Table table,

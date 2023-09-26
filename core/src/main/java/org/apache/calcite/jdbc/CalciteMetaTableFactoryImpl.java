@@ -24,8 +24,13 @@ import org.apache.calcite.schema.Table;
 public class CalciteMetaTableFactoryImpl implements
     CalciteMetaTableFactory {
 
-  public static final CalciteMetaTableFactoryImpl INSTANCE = new CalciteMetaTableFactoryImpl();
-  public CalciteMetaTableFactoryImpl() {}
+  /** Singleton instance. */
+  public static final CalciteMetaTableFactoryImpl INSTANCE =
+      new CalciteMetaTableFactoryImpl();
+
+  /** Internal constructor; protected to allow subclassing. */
+  protected CalciteMetaTableFactoryImpl() {}
+
   @Override public CalciteMetaTable newMetaTable(
       Table table,
       String tableCat,
