@@ -73,7 +73,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -102,60 +101,6 @@ class CalciteRemoteDriverTest {
       CalciteSystemProperty.DEBUG.value() ? Util.printWriter(System.out)
           : new PrintWriter(new StringWriter());
 
-  private static final Function<Connection, ResultSet> GET_SCHEMAS =
-      connection -> {
-        try {
-          return connection.getMetaData().getSchemas();
-        } catch (SQLException e) {
-          throw TestUtil.rethrow(e);
-        }
-      };
-
-  private static final Function<Connection, ResultSet> GET_CATALOGS =
-      connection -> {
-        try {
-          return connection.getMetaData().getCatalogs();
-        } catch (SQLException e) {
-          throw TestUtil.rethrow(e);
-        }
-      };
-
-  private static final Function<Connection, ResultSet> GET_COLUMNS =
-      connection -> {
-        try {
-          return connection.getMetaData().getColumns(null, null, null, null);
-        } catch (SQLException e) {
-          throw TestUtil.rethrow(e);
-        }
-      };
-
-  private static final Function<Connection, ResultSet> GET_TABLES =
-      connection -> {
-        try {
-          return connection.getMetaData().getTables(null, null, null, null);
-        } catch (SQLException e) {
-          throw TestUtil.rethrow(e);
-        }
-      };
-
-  private static final Function<Connection, ResultSet> GET_TYPEINFO =
-      connection -> {
-        try {
-          return connection.getMetaData().getTypeInfo();
-        } catch (SQLException e) {
-          throw TestUtil.rethrow(e);
-        }
-      };
-
-  private static final Function<Connection, ResultSet> GET_TABLE_TYPES =
-      connection -> {
-        try {
-          return connection.getMetaData().getTableTypes();
-        } catch (SQLException e) {
-          throw TestUtil.rethrow(e);
-        }
-      };
-
   private static @Nullable Connection localConnection;
   private static @Nullable HttpServer start;
 
@@ -181,6 +126,54 @@ class CalciteRemoteDriverTest {
 
     if (start != null) {
       start.stop();
+    }
+  }
+
+  private static ResultSet getSchemas(Connection connection) {
+    try {
+      return connection.getMetaData().getSchemas();
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
+    }
+  }
+
+  private static ResultSet getCatalogs(Connection connection) {
+    try {
+      return connection.getMetaData().getCatalogs();
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
+    }
+  }
+
+  private static ResultSet getColumns(Connection connection) {
+    try {
+      return connection.getMetaData().getColumns(null, null, null, null);
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
+    }
+  }
+
+  private static ResultSet getTables(Connection connection) {
+    try {
+      return connection.getMetaData().getTables(null, null, null, null);
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
+    }
+  }
+
+  private static ResultSet getTypeInfo(Connection connection) {
+    try {
+      return connection.getMetaData().getTypeInfo();
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
+    }
+  }
+
+  private static ResultSet getTableTypes(Connection connection) {
+    try {
+      return connection.getMetaData().getTableTypes();
+    } catch (SQLException e) {
+      throw TestUtil.rethrow(e);
     }
   }
 
@@ -272,14 +265,14 @@ class CalciteRemoteDriverTest {
   @Test void testRemoteCatalogs() {
     CalciteAssert.hr()
         .with(CalciteRemoteDriverTest::getRemoteConnection)
-        .metaData(GET_CATALOGS)
+        .metaData(CalciteRemoteDriverTest::getCatalogs)
         .returns("TABLE_CAT=null\n");
   }
 
   @Test void testRemoteSchemas() {
     CalciteAssert.hr()
         .with(CalciteRemoteDriverTest::getRemoteConnection)
-        .metaData(GET_SCHEMAS)
+        .metaData(CalciteRemoteDriverTest::getSchemas)
         .returns("TABLE_SCHEM=POST; TABLE_CATALOG=null\n"
             + "TABLE_SCHEM=foodmart; TABLE_CATALOG=null\n"
             + "TABLE_SCHEM=hr; TABLE_CATALOG=null\n"
@@ -292,7 +285,7 @@ class CalciteRemoteDriverTest {
   @Test void testRemoteColumns() {
     CalciteAssert.hr()
         .with(CalciteRemoteDriverTest::getRemoteConnection)
-        .metaData(GET_COLUMNS)
+        .metaData(CalciteRemoteDriverTest::getColumns)
         .returns(
             CalciteAssert.checkResultContains("TABLE_CAT=null; "
                 + "TABLE_SCHEM=POST; TABLE_NAME=EMPS; COLUMN_NAME=EMPNO; "
@@ -312,7 +305,7 @@ class CalciteRemoteDriverTest {
   @Test void testRemoteTables() {
     CalciteAssert.hr()
         .with(CalciteRemoteDriverTest::getRemoteConnection)
-        .metaData(GET_TABLES)
+        .metaData(CalciteRemoteDriverTest::getTables)
         .returns(
             CalciteAssert.checkResultContains("TABLE_CAT=null; "
                 + "TABLE_SCHEM=POST; TABLE_NAME=DEPT; TABLE_TYPE=VIEW; "
@@ -325,14 +318,14 @@ class CalciteRemoteDriverTest {
     // TypeInfo does not include internal types (NULL, SYMBOL, ANY, etc.)
     CalciteAssert.hr()
         .with(CalciteRemoteDriverTest::getRemoteConnection)
-        .metaData(GET_TYPEINFO)
+        .metaData(CalciteRemoteDriverTest::getTypeInfo)
         .returns(CalciteAssert.checkResultCount(is(41)));
   }
 
   @Test void testRemoteTableTypes() {
     CalciteAssert.hr()
         .with(CalciteRemoteDriverTest::getRemoteConnection)
-        .metaData(GET_TABLE_TYPES)
+        .metaData(CalciteRemoteDriverTest::getTableTypes)
         .returns("TABLE_TYPE=TABLE\n"
             + "TABLE_TYPE=VIEW\n");
   }
