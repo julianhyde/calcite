@@ -83,46 +83,6 @@ class JdbcFrontJdbcBackTest {
         });
   }
 
-
-  /** Mock implementation of {@link CalciteMetaTable}. */
-  private static class MetaExtraTable extends CalciteMetaTable {
-    final String extraLabel;
-
-    MetaExtraTable(Table calciteTable, String tableCat,
-        String tableSchem, String tableName) {
-      super(calciteTable, tableCat, tableSchem, tableName);
-      this.extraLabel = "extraLabel1";
-    }
-  }
-
-  /** Mock implementation of {@link CalciteMetaTableFactory} that creates
-   * instances of {@link MetaExtraTable}. Must be public, otherwise it is
-   * inaccessible from {@link org.apache.calcite.jdbc.Driver}. */
-  public static class MetaExtraTableFactoryImpl
-      implements CalciteMetaTableFactory {
-    public static final MetaExtraTableFactoryImpl INSTANCE =
-        new MetaExtraTableFactoryImpl();
-
-    MetaExtraTableFactoryImpl() {}
-
-    @Override public MetaTable createTable(Table table, String tableCat,
-        String tableSchem, String tableName) {
-      return new MetaExtraTable(table, tableCat, tableSchem, tableName);
-    }
-
-    @Override public List<String> getColumnNames() {
-      // 11 columns total.
-      return ImmutableList.<String>builder()
-          .addAll(CalciteMetaImpl.TABLE_COLUMNS)
-          .add("EXTRA_LABEL")
-          .build();
-    }
-
-    @Override public Class<? extends MetaTable> getMetaTableClass() {
-      return MetaExtraTable.class;
-    }
-  }
-
   @Test void testTablesExtraColumn() throws Exception {
     that()
         .with(CalciteAssert.Config.JDBC_FOODMART)
@@ -143,7 +103,6 @@ class JdbcFrontJdbcBackTest {
             throw TestUtil.rethrow(e);
           }
         });
-
   }
 
   @Test void testTablesByType() throws Exception {
@@ -222,5 +181,44 @@ class JdbcFrontJdbcBackTest {
             + "and \"time_id\" < 400")
         .returns2("c0=11.4\n"
             + "c0=8.55\n");
+  }
+
+  /** Mock implementation of {@link CalciteMetaTable}. */
+  private static class MetaExtraTable extends CalciteMetaTable {
+    final String extraLabel;
+
+    MetaExtraTable(Table calciteTable, String tableCat,
+        String tableSchem, String tableName) {
+      super(calciteTable, tableCat, tableSchem, tableName);
+      this.extraLabel = "extraLabel1";
+    }
+  }
+
+  /** Mock implementation of {@link CalciteMetaTableFactory} that creates
+   * instances of {@link MetaExtraTable}. Must be public, otherwise it is
+   * inaccessible from {@link org.apache.calcite.jdbc.Driver}. */
+  public static class MetaExtraTableFactoryImpl
+      implements CalciteMetaTableFactory {
+    public static final MetaExtraTableFactoryImpl INSTANCE =
+        new MetaExtraTableFactoryImpl();
+
+    MetaExtraTableFactoryImpl() {}
+
+    @Override public MetaTable createTable(Table table, String tableCat,
+        String tableSchem, String tableName) {
+      return new MetaExtraTable(table, tableCat, tableSchem, tableName);
+    }
+
+    @Override public List<String> getColumnNames() {
+      // 11 columns total.
+      return ImmutableList.<String>builder()
+          .addAll(CalciteMetaImpl.TABLE_COLUMNS)
+          .add("EXTRA_LABEL")
+          .build();
+    }
+
+    @Override public Class<? extends MetaTable> getMetaTableClass() {
+      return MetaExtraTable.class;
+    }
   }
 }
