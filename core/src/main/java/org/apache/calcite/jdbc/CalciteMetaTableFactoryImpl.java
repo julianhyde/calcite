@@ -31,7 +31,7 @@ public class CalciteMetaTableFactoryImpl
   /** Internal constructor; protected to allow subclassing. */
   protected CalciteMetaTableFactoryImpl() {}
 
-  @Override public CalciteMetaTable newMetaTable(
+  @Override public CalciteMetaTable createTable(
       Table table,
       String tableCat,
       String tableSchem,

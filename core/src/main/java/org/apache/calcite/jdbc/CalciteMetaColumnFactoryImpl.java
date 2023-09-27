@@ -32,7 +32,7 @@ public class CalciteMetaColumnFactoryImpl
   /** Internal constructor; protected to allow subclassing. */
   protected CalciteMetaColumnFactoryImpl() {}
 
-  @Override public MetaColumn newMetaColumn(
+  @Override public MetaColumn createColumn(
       Table table,
       String tableCat,
       String tableSchem,

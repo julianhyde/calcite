@@ -74,7 +74,6 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -94,9 +93,92 @@ public class CalciteMetaImpl extends MetaImpl {
   private final CalciteMetaTableFactory metaTableFactory;
   private final CalciteMetaColumnFactory metaColumnFactory;
 
+  /** The columns returned by {@link DatabaseMetaData#getCatalogs()}. */
+  public static final List<String> CATALOG_COLUMNS =
+      ImmutableList.of("TABLE_CAT");
+
+  /** Column names returned by {@link DatabaseMetaData#getColumns}. */
+  public static final List<String> COLUMN_COLUMNS =
+      ImmutableList.of("TABLE_CAT",
+          "TABLE_SCHEM",
+          "TABLE_NAME",
+          "COLUMN_NAME",
+          "DATA_TYPE",
+          "TYPE_NAME",
+          "COLUMN_SIZE",
+          "BUFFER_LENGTH",
+          "DECIMAL_DIGITS",
+          "NUM_PREC_RADIX",
+          "NULLABLE",
+          "REMARKS",
+          "COLUMN_DEF",
+          "SQL_DATA_TYPE",
+          "SQL_DATETIME_SUB",
+          "CHAR_OCTET_LENGTH",
+          "ORDINAL_POSITION",
+          "IS_NULLABLE",
+          "SCOPE_CATALOG",
+          "SCOPE_SCHEMA",
+          "SCOPE_TABLE",
+          "SOURCE_DATA_TYPE",
+          "IS_AUTOINCREMENT",
+          "IS_GENERATEDCOLUMN");
+
+  /** The columns returned by {@link DatabaseMetaData#getFunctions}. */
+  public static final List<String> FUNCTION_COLUMNS =
+      ImmutableList.of("FUNCTION_CAT",
+          "FUNCTION_SCHEM",
+          "FUNCTION_NAME",
+          "REMARKS",
+          "FUNCTION_TYPE",
+          "SPECIFIC_NAME");
+
+  /** The columns returned by {@link DatabaseMetaData#getSchemas()}. */
+  public static final List<String> SCHEMA_COLUMNS =
+      ImmutableList.of("TABLE_SCHEM",
+          "TABLE_CATALOG");
+
+  /** The columns returned by {@link DatabaseMetaData#getTables}. */
+  public static final List<String> TABLE_COLUMNS =
+      ImmutableList.of("TABLE_CAT",
+          "TABLE_SCHEM",
+          "TABLE_NAME",
+          "TABLE_TYPE",
+          "REMARKS",
+          "TYPE_CAT",
+          "TYPE_SCHEM",
+          "TYPE_NAME",
+          "SELF_REFERENCING_COL_NAME",
+          "REF_GENERATION");
+
+  /** The columns returned by {@link DatabaseMetaData#getTableTypes()}. */
+  public static final List<String> TABLE_TYPE_COLUMNS =
+      ImmutableList.of("TABLE_TYPE");
+
+  /** The columns returned by {@link DatabaseMetaData#getTypeInfo()}. */
+  public static final List<String> TYPE_INFO_COLUMNS =
+      ImmutableList.of("TYPE_NAME",
+          "DATA_TYPE",
+          "PRECISION",
+          "LITERAL_PREFIX",
+          "LITERAL_SUFFIX",
+          "CREATE_PARAMS",
+          "NULLABLE",
+          "CASE_SENSITIVE",
+          "SEARCHABLE",
+          "UNSIGNED_ATTRIBUTE",
+          "FIXED_PREC_SCALE",
+          "AUTO_INCREMENT",
+          "LOCAL_TYPE_NAME",
+          "MINIMUM_SCALE",
+          "MAXIMUM_SCALE",
+          "SQL_DATA_TYPE",
+          "SQL_DATETIME_SUB",
+          "NUM_PREC_RADIX");
+
   /** Creates a CalciteMetaImpl.
    *
-   * @deprecated Use {@link #create(CalciteConnectionImpl)} instead.
+   * @deprecated Use {@link #create(CalciteConnection)} instead.
    */
   @Deprecated // to be removed before 2.0
   public CalciteMetaImpl(CalciteConnectionImpl connection) {
@@ -125,7 +207,7 @@ public class CalciteMetaImpl extends MetaImpl {
    *
    * @param connection Calcite connection
    */
-  public static CalciteMetaImpl create(CalciteConnectionImpl connection) {
+  public static CalciteMetaImpl create(CalciteConnection connection) {
     return create(connection, CalciteMetaTableFactoryImpl.INSTANCE,
         CalciteMetaColumnFactoryImpl.INSTANCE);
   }
@@ -137,10 +219,11 @@ public class CalciteMetaImpl extends MetaImpl {
    * @param metaTableFactory Factory for creating MetaTable (or subclass)
    * @param metaColumnFactory Factory for creating MetaColumn (or subclass)
    */
-  public static CalciteMetaImpl create(CalciteConnectionImpl connection,
+  public static CalciteMetaImpl create(CalciteConnection connection,
       CalciteMetaTableFactory metaTableFactory,
       CalciteMetaColumnFactory metaColumnFactory) {
-    return new CalciteMetaImpl(connection, metaTableFactory, metaColumnFactory);
+    return new CalciteMetaImpl((CalciteConnectionImpl) connection,
+        metaTableFactory, metaColumnFactory);
   }
 
   static <T extends Named> Predicate1<T> namedMatcher(final Pat pattern) {
@@ -323,25 +406,7 @@ public class CalciteMetaImpl extends MetaImpl {
 
   @Override public MetaResultSet getTypeInfo(ConnectionHandle ch) {
     return createResultSet(allTypeInfo(),
-        MetaTypeInfo.class,
-        Arrays.asList("TYPE_NAME",
-            "DATA_TYPE",
-            "PRECISION",
-            "LITERAL_PREFIX",
-            "LITERAL_SUFFIX",
-            "CREATE_PARAMS",
-            "NULLABLE",
-            "CASE_SENSITIVE",
-            "SEARCHABLE",
-            "UNSIGNED_ATTRIBUTE",
-            "FIXED_PREC_SCALE",
-            "AUTO_INCREMENT",
-            "LOCAL_TYPE_NAME",
-            "MINIMUM_SCALE",
-            "MAXIMUM_SCALE",
-            "SQL_DATA_TYPE",
-            "SQL_DATETIME_SUB",
-            "NUM_PREC_RADIX"));
+        MetaTypeInfo.class, TYPE_INFO_COLUMNS);
   }
 
   @Override public MetaResultSet getColumns(ConnectionHandle ch,
@@ -404,7 +469,7 @@ public class CalciteMetaImpl extends MetaImpl {
               requireNonNull(schema.calciteSchema.getTable(name, true),
                   () -> "table " + name + " is not found (case sensitive)")
                   .getTable();
-          return metaTableFactory.newMetaTable(table, schema.tableCatalog,
+          return metaTableFactory.createTable(table, schema.tableCatalog,
               schema.tableSchem, name);
         })
         .concat(
@@ -413,7 +478,7 @@ public class CalciteMetaImpl extends MetaImpl {
                     .entrySet())
                 .select(pair -> {
                   final Table table = pair.getValue();
-                  return metaTableFactory.newMetaTable(table,
+                  return metaTableFactory.createTable(table,
                       schema.tableCatalog,
                       schema.tableSchem,
                       pair.getKey());
@@ -483,7 +548,7 @@ public class CalciteMetaImpl extends MetaImpl {
                   .map(RelDataType::getSqlTypeName)
                   .map(SqlTypeName::getJdbcOrdinal)
                   .orElse(field.getType().getSqlTypeName().getJdbcOrdinal());
-          return metaColumnFactory.newMetaColumn(
+          return metaColumnFactory.createColumn(
               table.calciteTable,
               table.tableCat,
               table.tableSchem,
@@ -509,21 +574,17 @@ public class CalciteMetaImpl extends MetaImpl {
       Pat schemaPattern) {
     final Predicate1<MetaSchema> schemaMatcher = namedMatcher(schemaPattern);
     return createResultSet(schemas(catalog).where(schemaMatcher),
-        MetaSchema.class,
-        Arrays.asList("TABLE_SCHEM",
-        "TABLE_CATALOG"));
+        MetaSchema.class, SCHEMA_COLUMNS);
   }
 
   @Override public MetaResultSet getCatalogs(ConnectionHandle ch) {
     return createResultSet(catalogs(),
-        MetaCatalog.class,
-        Arrays.asList("TABLE_CAT"));
+        MetaCatalog.class, CATALOG_COLUMNS);
   }
 
   @Override public MetaResultSet getTableTypes(ConnectionHandle ch) {
     return createResultSet(tableTypes(),
-        MetaTableType.class,
-        Arrays.asList("TABLE_TYPE"));
+        MetaTableType.class, TABLE_TYPE_COLUMNS);
   }
 
   @Override public MetaResultSet getFunctions(ConnectionHandle ch,
@@ -537,13 +598,7 @@ public class CalciteMetaImpl extends MetaImpl {
             .orderBy(x ->
                 (Comparable) FlatLists.of(
                     x.functionCat, x.functionSchem, x.functionName, x.specificName)),
-        MetaFunction.class,
-        Arrays.asList("FUNCTION_CAT",
-        "FUNCTION_SCHEM",
-        "FUNCTION_NAME",
-        "REMARKS",
-        "FUNCTION_TYPE",
-        "SPECIFIC_NAME"));
+        MetaFunction.class, FUNCTION_COLUMNS);
   }
 
   Enumerable<MetaFunction> functions(final MetaSchema schema_, final String catalog) {

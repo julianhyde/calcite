@@ -590,7 +590,7 @@ class CalciteRemoteDriverTest {
 
   public static Connection makeConnection(boolean withMeasures)
       throws Exception {
-    List<Employee> employees = new ArrayList<Employee>();
+    List<Employee> employees = new ArrayList<>();
     for (int i = 1; i <= 101; i++) {
       employees.add(new Employee(i, 0, "first", 0f, null));
     }
@@ -698,7 +698,7 @@ class CalciteRemoteDriverTest {
       try {
         Connection conn = makeConnection();
         final CalciteMetaImpl meta =
-            CalciteMetaImpl.create(conn.unwrap(CalciteConnectionImpl.class));
+            CalciteMetaImpl.create(conn.unwrap(CalciteConnection.class));
         return new LocalService(meta);
       } catch (Exception e) {
         throw TestUtil.rethrow(e);
@@ -855,7 +855,7 @@ class CalciteRemoteDriverTest {
     public Meta create(List<String> args) {
       try {
         final Connection connection = CalciteAssert.hr().connect();
-        return CalciteMetaImpl.create((CalciteConnectionImpl) connection);
+        return CalciteMetaImpl.create((CalciteConnection) connection);
       } catch (Exception e) {
         throw TestUtil.rethrow(e);
       }
@@ -882,7 +882,7 @@ class CalciteRemoteDriverTest {
       try {
         Connection conn = JdbcFrontLinqBackTest.makeConnection();
         final CalciteMetaImpl meta =
-            CalciteMetaImpl.create(conn.unwrap(CalciteConnectionImpl.class));
+            CalciteMetaImpl.create(conn.unwrap(CalciteConnection.class));
         return new LocalService(meta);
       } catch (Exception e) {
         throw TestUtil.rethrow(e);
@@ -992,6 +992,6 @@ class CalciteRemoteDriverTest {
   /**
    * Remote PreparedStatement insert WITH bind variables.
    */
-  @Test void testRemotePreparedStatementInsert2() throws Exception {
+  @Test void testRemotePreparedStatementInsert2() {
   }
 }

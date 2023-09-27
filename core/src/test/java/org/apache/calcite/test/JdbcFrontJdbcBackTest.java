@@ -18,10 +18,13 @@ package org.apache.calcite.test;
 
 import org.apache.calcite.avatica.MetaImpl.MetaTable;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.jdbc.CalciteMetaImpl;
 import org.apache.calcite.jdbc.CalciteMetaImpl.CalciteMetaTable;
 import org.apache.calcite.jdbc.CalciteMetaTableFactory;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.util.TestUtil;
+
+import com.google.common.collect.ImmutableList;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Disabled;
@@ -29,7 +32,6 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.calcite.test.CalciteAssert.that;
@@ -103,25 +105,17 @@ class JdbcFrontJdbcBackTest {
 
     MetaExtraTableFactoryImpl() {}
 
-    @Override public MetaTable newMetaTable(Table table, String tableCat,
+    @Override public MetaTable createTable(Table table, String tableCat,
         String tableSchem, String tableName) {
       return new MetaExtraTable(table, tableCat, tableSchem, tableName);
     }
 
     @Override public List<String> getColumnNames() {
       // 11 columns total.
-      return Arrays.asList(
-          "TABLE_CAT",
-          "TABLE_SCHEM",
-          "TABLE_NAME",
-          "TABLE_TYPE",
-          "REMARKS",
-          "TYPE_CAT",
-          "TYPE_SCHEM",
-          "TYPE_NAME",
-          "SELF_REFERENCING_COL_NAME",
-          "REF_GENERATION",
-          "EXTRA_LABEL");
+      return ImmutableList.<String>builder()
+          .addAll(CalciteMetaImpl.TABLE_COLUMNS)
+          .add("EXTRA_LABEL")
+          .build();
     }
 
     @Override public Class<? extends MetaTable> getMetaTableClass() {
