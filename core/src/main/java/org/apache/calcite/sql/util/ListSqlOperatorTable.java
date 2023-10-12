@@ -33,7 +33,10 @@ import java.util.List;
  * Implementation of the {@link SqlOperatorTable} interface by using a list of
  * {@link SqlOperator operators}.
  */
-public class ListSqlOperatorTable implements SqlOperatorTable {
+public class ListSqlOperatorTable
+    extends SqlOperatorTables.IndexedSqlOperatorTable
+    implements SqlOperatorTable {
+
   //~ Instance fields --------------------------------------------------------
 
   private final List<SqlOperator> operatorList;
@@ -60,6 +63,7 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
 
   // internal constructor
   ListSqlOperatorTable(List<SqlOperator> operatorList, boolean ignored) {
+    super(operatorList);
     this.operatorList = operatorList;
   }
 
@@ -79,21 +83,21 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
       SqlSyntax syntax,
       List<SqlOperator> operatorList,
       SqlNameMatcher nameMatcher) {
-    for (SqlOperator operator : this.operatorList) {
-      if (operator.getSyntax().family != syntax) {
-        continue;
-      }
-      if (!opName.isSimple()
-          || !nameMatcher.matches(operator.getName(), opName.getSimple())) {
-        continue;
+    if (!opName.isSimple()) {
+      return;
+    }
+    final String simpleName = opName.getSimple();
+    lookUpOperators(simpleName, nameMatcher.isCaseSensitive(), op -> {
+      if (op.getSyntax().family != syntax) {
+        return;
       }
       if (category != null
-          && category != category(operator)
+          && category != category(op)
           && !category.isUserDefinedNotSpecificFunction()) {
-        continue;
+        return;
       }
-      operatorList.add(operator);
-    }
+      operatorList.add(op);
+    });
   }
 
   protected static SqlFunctionCategory category(SqlOperator operator) {
