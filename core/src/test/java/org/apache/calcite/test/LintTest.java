@@ -181,7 +181,8 @@ class LintTest {
     return filename.endsWith(".java")
         || filename.endsWith(".jj")
         || filename.endsWith(".fmpp")
-        || filename.endsWith(".ftl");
+        || filename.endsWith(".ftl")
+        || filename.equals("GuavaCharSource{memory}"); // for testing
   }
 
   @Test void testProgramWorks() {
