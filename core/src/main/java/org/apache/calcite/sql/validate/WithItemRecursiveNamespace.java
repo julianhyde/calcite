@@ -16,21 +16,14 @@
  */
 package org.apache.calcite.sql.validate;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.util.Pair;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import static java.util.Objects.requireNonNull;
 
 /** Very similar to {@link WithItemNamespace} but created only for RECURSIVE queries. */
 class WithItemRecursiveNamespace extends WithItemNamespace {
@@ -52,32 +45,12 @@ class WithItemRecursiveNamespace extends WithItemNamespace {
     this.withItemTableRef = new SqlWithItemTableRef(SqlParserPos.ZERO, withItem);
   }
 
-  @Override public RelDataType getRowType() {
-    if (rowType == null) {
-      SqlBasicCall call;
-      if (this.withItem.query.getKind() == SqlKind.WITH) {
-        call = (SqlBasicCall) ((SqlWith) this.withItem.query).body;
-      } else {
-        call = (SqlBasicCall) this.withItem.query;
-      }
-      // As this is a recursive query we only should evaluate left child for getting the rowType.
-      RelDataType leftChildType =
-          validator.getNamespaceOrThrow(
-              call.operand(0)).getRowType();
-      SqlNodeList columnList = withItem.columnList;
-      if (columnList == null || columnList.isEmpty()) {
-        // This should never happen but added to protect against the NullPointerException.
-        return leftChildType;
-      }
-      final RelDataTypeFactory.Builder builder =
-          validator.getTypeFactory().builder();
-      Pair.forEach(SqlIdentifier.simpleNames(columnList),
-          leftChildType.getFieldList(),
-          (name, field) -> builder.add(name, field.getType()));
-      setType(builder.build());
-      requireNonNull(rowType, "setType should set the rowType");
+  @Override protected SqlNode getQuery() {
+    SqlNode call = this.withItem.query;
+    while (call.getKind() == SqlKind.WITH) {
+      call = ((SqlWith) call).body;
     }
-    return rowType;
+    return ((SqlCall) call).operand(0);
   }
 
   @Override public @Nullable SqlNode getNode() {
