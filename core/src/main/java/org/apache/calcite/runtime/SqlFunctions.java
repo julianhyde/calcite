@@ -411,8 +411,9 @@ public class SqlFunctions {
       }
     }
 
-    /** Check for multiple capturing groups in regex arguments in REGEXP_* fns, throws an
-     * exception if regex pattern has more than 1 capturing group, else nothing is returned. */
+    /** Checks for multiple capturing groups in regex arguments in REGEXP_*
+     * functions. Throws if the regex pattern has more than 1 capturing
+     * group. */
     private static void checkMultipleCapturingGroupsInRegex(Matcher matcher,
         String methodName) {
       if (matcher.groupCount() > 1) {
@@ -421,34 +422,37 @@ public class SqlFunctions {
       }
     }
 
-    /** Validates the value ranges for position and occurrence arguments in REGEXP_* fns.
-     * Functions not using occurrencePosition param pass a default value of 0.
-     * Throws an exception or returns false if any arguments are beyond accepted range,
-     * returns true if all argument values are valid. */
+    /** Validates the value ranges for position and occurrence arguments in
+     * REGEXP_* functions. Functions not using the {@code occurrencePosition}
+     * parameter pass a default value of 0. Throws an exception or returns
+     * false if any arguments are beyond accepted range; returns true if all
+     * argument values are valid. */
     private static boolean validatePosOccurrenceParamValues(int position,
         int occurrence, int occurrencePosition, String value, String methodName) {
       if (position <= 0) {
-        throw RESOURCE.invalidIntegerInputForRegexpFunctions(Integer.toString(position),
-            "position", methodName).ex();
+        throw RESOURCE.invalidIntegerInputForRegexpFunctions(
+            Integer.toString(position), "position", methodName).ex();
       }
       if (occurrence <= 0) {
-        throw RESOURCE.invalidIntegerInputForRegexpFunctions(Integer.toString(occurrence),
-            "occurrence", methodName).ex();
+        throw RESOURCE.invalidIntegerInputForRegexpFunctions(
+            Integer.toString(occurrence), "occurrence", methodName).ex();
       }
       if (occurrencePosition != 0 && occurrencePosition != 1) {
-        throw RESOURCE.invalidIntegerInputForRegexpFunctions(Integer.toString(occurrencePosition),
-            "occurrence_position", methodName).ex();
+        throw RESOURCE.invalidIntegerInputForRegexpFunctions(
+            Integer.toString(occurrencePosition), "occurrence_position",
+                methodName).ex();
       }
       return position <= value.length();
     }
 
-    /** Preprocess double-backslash-based indexing for capturing groups into
+    /** Preprocesses double-backslash-based indexing for capturing groups into
      * $-based indices recognized by java regex, throws an error for invalid escapes. */
     public static String replaceNonDollarIndexedString(String replacement) {
       // Explicitly escaping any $ symbols coming from input
       // to ignore them from being considered as capturing group index
-      String indexedReplacement = replacement.replace("\\\\", "\\")
-          .replace("$", "\\$");
+      String indexedReplacement =
+          replacement.replace("\\\\", "\\")
+              .replace("$", "\\$");
 
       // Check each occurrence of escaped chars, convert '\<n>' integers into '$<n>' indices,
       // keep occurrences of '\\' and '\$', throw an error for any other invalid escapes
@@ -582,7 +586,7 @@ public class SqlFunctions {
 
       if (regex.isEmpty()
           || !validatePosOccurrenceParamValues(position, occurrence,
-          occurrencePosition, value, methodName)) {
+              occurrencePosition, value, methodName)) {
         return 0;
       }
 
