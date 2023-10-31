@@ -98,19 +98,39 @@ public abstract class SqlTypeTransforms {
       };
 
   /**
-   * Parameter type-inference transform strategy where a derived type is
-   * transformed into the same type, but nullable if and only if the type
-   * of a call's operand #0 (0-based) is nullable.
+   * Type-inference transform strategy where a derived type is
+   * transformed into the same type, but nullable if and only if call's
+   * operand #0 (0-based) has nullable type.
    */
   public static final SqlTypeTransform ARG0_NULLABLE =
-      (opBinding, typeToTransform) -> {
-        RelDataType arg0 = opBinding.getOperandType(0);
-        if (arg0.isNullable()) {
-          return opBinding.getTypeFactory()
-              .createTypeWithNullability(typeToTransform, true);
-        }
-        return typeToTransform;
-      };
+      SqlTypeTransforms::transformType0;
+
+  private static RelDataType transformType0(SqlOperatorBinding binding,
+      RelDataType type) {
+    return transformType(binding, type, 0);
+  }
+
+  /**
+   * Type-inference transform strategy where a derived type is
+   * transformed into the same type, but nullable if and only if call's
+   * operand #1 (1-based) has nullable type.
+   */
+  public static final SqlTypeTransform ARG1_NULLABLE =
+      SqlTypeTransforms::transformType1;
+
+  private static RelDataType transformType1(SqlOperatorBinding binding,
+      RelDataType type) {
+    return transformType(binding, type, 1);
+  }
+
+  private static RelDataType transformType(SqlOperatorBinding binding,
+      RelDataType type, int ordinal) {
+    if (binding.getOperandType(ordinal).isNullable()) {
+      return binding.getTypeFactory()
+          .createTypeWithNullability(type, true);
+    }
+    return type;
+  }
 
   /**
    * Parameter type-inference transform strategy where a derived type is

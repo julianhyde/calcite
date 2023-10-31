@@ -1865,8 +1865,10 @@ public class SqlOperatorTest {
       f.checkScalar("chr(0)", String.valueOf('\u0000'), "CHAR(1) NOT NULL");
       f.checkNull("chr(null)");
     };
-    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL),
-        consumer);
+    final List<SqlLibrary> libraries =
+        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE,
+            SqlLibrary.POSTGRESQL);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testCodePointsToBytes() {
@@ -4370,16 +4372,16 @@ public class SqlOperatorTest {
     final Consumer<SqlOperatorFixture> consumer = f -> {
       f.checkString("from_base64('VGhpcyBpcyBhIHRlc3QgU3RyaW5nLg==')",
           "546869732069732061207465737420537472696e672e",
-          "VARBINARY NOT NULL");
+          "VARBINARY");
       f.checkString("from_base64('VGhpcyBpcyBhIHRlc\t3QgU3RyaW5nLg==')",
           "546869732069732061207465737420537472696e672e",
-          "VARBINARY NOT NULL");
+          "VARBINARY");
       f.checkString("from_base64('VGhpcyBpcyBhIHRlc\t3QgU3\nRyaW5nLg==')",
           "546869732069732061207465737420537472696e672e",
-          "VARBINARY NOT NULL");
+          "VARBINARY");
       f.checkString("from_base64('VGhpcyB  pcyBhIHRlc3Qg\tU3Ry\naW5nLg==')",
           "546869732069732061207465737420537472696e672e",
-          "VARBINARY NOT NULL");
+          "VARBINARY");
       f.checkNull("from_base64('-1')");
       f.checkNull("from_base64('-100')");
     };

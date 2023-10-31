@@ -1222,18 +1222,21 @@ public abstract class SqlLibraryOperators {
 
   @SuppressWarnings("argument.type.incompatible")
   private static RelDataType arrayInsertReturnType(SqlOperatorBinding opBinding) {
-    final RelDataType arrayType = opBinding.collectOperandTypes().get(0);
+    final List<RelDataType> operandTypes = opBinding.collectOperandTypes();
+    final RelDataType arrayType = operandTypes.get(0);
     final RelDataType componentType = arrayType.getComponentType();
-    final RelDataType elementType = opBinding.collectOperandTypes().get(2);
+    final RelDataType offsetType = operandTypes.get(1);
+    final RelDataType elementType = operandTypes.get(2);
     // we don't need to do leastRestrictive on componentType and elementType,
     // because in operand checker we limit the elementType must equals array component type.
     // So we use componentType directly.
-    RelDataType type = componentType;
+    RelDataType type =
+        requireNonNull(componentType, "inferred array element type");
     if (elementType.isNullable()) {
       type = opBinding.getTypeFactory().createTypeWithNullability(type, true);
     }
-    requireNonNull(type, "inferred array element type");
-    return SqlTypeUtil.createArrayType(opBinding.getTypeFactory(), type, arrayType.isNullable());
+    return SqlTypeUtil.createArrayType(opBinding.getTypeFactory(), type,
+        arrayType.isNullable() || offsetType.isNullable());
   }
 
   /** The "ARRAY_INSERT(array, pos, val)" function (Spark). */
@@ -1305,9 +1308,8 @@ public abstract class SqlLibraryOperators {
   @LibraryOperator(libraries = {SPARK})
   public static final SqlFunction ARRAY_REPEAT =
       SqlBasicFunction.create(SqlKind.ARRAY_REPEAT,
-          ReturnTypes.TO_ARRAY,
-          OperandTypes.sequence(
-              "ARRAY_REPEAT(ANY, INTEGER)",
+          ReturnTypes.TO_ARRAY.andThen(SqlTypeTransforms.ARG1_NULLABLE),
+          OperandTypes.sequence("ARRAY_REPEAT(ANY, INTEGER)",
               OperandTypes.ANY, OperandTypes.typeName(SqlTypeName.INTEGER)));
 
   /** The "ARRAY_REVERSE(array)" function. */
@@ -1491,7 +1493,7 @@ public abstract class SqlLibraryOperators {
   @LibraryOperator(libraries = {BIG_QUERY, MYSQL})
   public static final SqlFunction FROM_BASE64 =
       SqlBasicFunction.create("FROM_BASE64",
-          ReturnTypes.VARBINARY_NULLABLE,
+          ReturnTypes.VARBINARY.andThen(SqlTypeTransforms.FORCE_NULLABLE),
           OperandTypes.STRING, SqlFunctionCategory.STRING);
 
   @LibraryOperator(libraries = {MYSQL})
@@ -1916,7 +1918,7 @@ public abstract class SqlLibraryOperators {
   @LibraryOperator(libraries = {BIG_QUERY, ORACLE, POSTGRESQL})
   public static final SqlFunction CHR =
       SqlBasicFunction.create("CHR",
-          ReturnTypes.CHAR,
+          ReturnTypes.CHAR.andThen(SqlTypeTransforms.TO_NULLABLE),
           OperandTypes.INTEGER,
           SqlFunctionCategory.STRING);
 

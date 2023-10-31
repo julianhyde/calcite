@@ -64,6 +64,12 @@ public abstract class SqlTests {
   };
 
   /**
+   * Checker that allows any nullable type.
+   */
+  public static final TypeChecker NULLABLE_TYPE_CHECKER =
+      (sql, type) -> assertThat(sql.get(), type.isNullable(), is(true));
+
+  /**
    * Checker that allows any number or type of parameters.
    */
   public static final ParameterChecker ANY_PARAMETER_CHECKER = parameterRowType -> {
