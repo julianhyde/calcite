@@ -3368,7 +3368,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         SqlNode listNode = list.get(i);
         if (listNode.getKind().belongsTo(SqlKind.QUERY)) {
           listNode =
-              SqlStdOperatorTable.SCALAR_QUERY.createCall(
+              SqlInternalOperators.SCALAR_QUERY.createCall(
                   listNode.getParserPosition(),
                   listNode);
           list.set(i, listNode);
@@ -3400,7 +3400,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     if (operand.getKind().belongsTo(SqlKind.QUERY)
         && call.getOperator().argumentMustBeScalar(operandOrdinal)) {
       operand =
-          SqlStdOperatorTable.SCALAR_QUERY.createCall(
+          SqlInternalOperators.SCALAR_QUERY.createCall(
               operand.getParserPosition(),
               operand);
       call.setOperand(operandOrdinal, operand);

@@ -170,6 +170,8 @@ public abstract class SqlOperator {
 
   //~ Methods ----------------------------------------------------------------
 
+  /** Given the precedence of an operator and whether it is left-associative,
+   * returns the value for {@link #getLeftPrec()}. */
   protected static int leftPrec(int prec, boolean leftAssoc) {
     assert (prec % 2) == 0;
     if (!leftAssoc) {
@@ -178,12 +180,34 @@ public abstract class SqlOperator {
     return prec;
   }
 
+  /** Given the precedence of an operator and whether it is left-associative,
+   * returns the value for {@link #getRightPrec()}. */
   protected static int rightPrec(int prec, boolean leftAssoc) {
     assert (prec % 2) == 0;
     if (leftAssoc) {
       ++prec;
     }
     return prec;
+  }
+
+  /** Given the values of {@link #getLeftPrec()} and {@link #getRightPrec()},
+   * returns the precedence of the operator.
+   *
+   * <p>Converse of {@link #leftPrec} and {@link #rightPrec}, in the sense that
+   * {@code prec(leftPrec(p, a), rightPrec(p, a))} returns {@code p}
+   * for all {@code p} and {@code a}. */
+  protected static int prec(int leftPrec, int rightPrec) {
+    return Math.min(leftPrec, rightPrec);
+  }
+
+  /** Given the values of {@link #getLeftPrec()} and {@link #getRightPrec()},
+   * returns whether the operator is left-associative.
+   *
+   * <p>Converse of {@link #leftPrec} and {@link #rightPrec}, in the sense that
+   * {@code isLeftAssoc(leftPrec(p, a), rightPrec(p, a))} returns {@code a}
+   * for all {@code p} and {@code a}. */
+  protected static boolean isLeftAssoc(int leftPrec, int rightPrec) {
+    return leftPrec > rightPrec;
   }
 
   public @Nullable SqlOperandTypeChecker getOperandTypeChecker() {

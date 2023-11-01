@@ -17,6 +17,7 @@
 package org.apache.calcite.rex;
 
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 
@@ -41,7 +42,7 @@ public class RexMultisetUtil {
           SqlStdOperatorTable.CARDINALITY,
           SqlStdOperatorTable.CAST,
           SqlStdOperatorTable.ELEMENT,
-          SqlStdOperatorTable.ELEMENT_SLICE,
+          SqlInternalOperators.ELEMENT_SLICE,
           SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT,
           SqlStdOperatorTable.MULTISET_EXCEPT,
           SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT,

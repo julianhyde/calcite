@@ -368,7 +368,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 cx.getValidator().getValidatedNodeType(operand);
             if (!getComponentTypeOrThrow(type).isStruct()) {
               return cx.convertExpression(
-                  SqlStdOperatorTable.ELEMENT_SLICE.createCall(
+                  SqlInternalOperators.ELEMENT_SLICE.createCall(
                       SqlParserPos.ZERO, operand));
             }
 
@@ -379,7 +379,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     // Convert "$element_slice(<expr>)" to "element(<expr>).field#0"
     if (false) {
-      registerOp(SqlStdOperatorTable.ELEMENT_SLICE,
+      registerOp(SqlInternalOperators.ELEMENT_SLICE,
           (cx, call) -> {
             assert call.operandCount() == 1;
             final SqlNode operand = call.operand(0);
@@ -662,7 +662,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       // then '$SLICE(<ms>) has type 'INTEGER MULTISET'.
       // This will be removed as the expression is translated.
       expr =
-          cx.getRexBuilder().makeCall(originalType, SqlStdOperatorTable.SLICE,
+          cx.getRexBuilder().makeCall(originalType, SqlInternalOperators.SLICE,
               ImmutableList.of(expr));
     }
     return expr;

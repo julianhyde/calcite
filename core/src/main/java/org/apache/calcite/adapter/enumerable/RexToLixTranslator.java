@@ -57,7 +57,7 @@ import org.apache.calcite.schema.FunctionContext;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWindowTableFunction;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -1587,7 +1587,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
           builder.makeLiteral(fieldName, typeFactory.createType(String.class), true);
       RexCall accessCall =
           (RexCall) builder.makeCall(fieldAccess.getType(),
-              SqlStdOperatorTable.STRUCT_ACCESS,
+              SqlInternalOperators.STRUCT_ACCESS,
               ImmutableList.of(target, rxIndex, rxName));
       final Result result2 = accessCall.accept(this);
       rexWithStorageTypeResultMap.put(key, result2);

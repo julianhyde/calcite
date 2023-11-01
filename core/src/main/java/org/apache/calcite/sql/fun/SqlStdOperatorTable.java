@@ -53,7 +53,6 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlTumbleTableFunction;
 import org.apache.calcite.sql.SqlUnnestOperator;
-import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlValuesOperator;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.SqlWithinDistinctOperator;
@@ -255,7 +254,9 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlGroupingFunction("GROUPING_ID");
 
   /** {@code EXTEND} operator. */
-  public static final SqlInternalOperator EXTEND = new SqlExtendOperator();
+  @Deprecated // to be removed before 2.0
+  public static final SqlInternalOperator EXTEND =
+      SqlInternalOperators.toInternal(SqlInternalOperators.EXTEND);
 
   /**
    * String and array-to-array concatenation operator, '<code>||</code>'.
@@ -879,9 +880,6 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
 
   public static final SqlPostfixOperator JSON_VALUE_EXPRESSION =
       new SqlJsonValueExpressionOperator();
-
-  public static final SqlJsonTypeOperator JSON_TYPE_OPERATOR =
-      new SqlJsonTypeOperator();
 
 
   //-------------------------------------------------------------
@@ -2167,104 +2165,21 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlMapValueConstructor MAP_VALUE_CONSTRUCTOR =
       new SqlMapValueConstructor();
 
-  /**
-   * The internal "$SLICE" operator takes a multiset of records and returns a
-   * multiset of the first column of those records.
-   *
-   * <p>It is introduced when multisets of scalar types are created, in order
-   * to keep types consistent. For example, <code>MULTISET [5]</code> has type
-   * <code>INTEGER MULTISET</code> but is translated to an expression of type
-   * <code>RECORD(INTEGER EXPR$0) MULTISET</code> because in our internal
-   * representation of multisets, every element must be a record. Applying the
-   * "$SLICE" operator to this result converts the type back to an <code>
-   * INTEGER MULTISET</code> multiset value.
-   *
-   * <p><code>$SLICE</code> is often translated away when the multiset type is
-   * converted back to scalar values.
-   */
+  @Deprecated // to be removed before 2.0
   public static final SqlInternalOperator SLICE =
-      new SqlInternalOperator(
-          "$SLICE",
-          SqlKind.OTHER,
-          0,
-          false,
-          ReturnTypes.MULTISET_PROJECT0,
-          null,
-          OperandTypes.RECORD_COLLECTION) {
-      };
+      SqlInternalOperators.SLICE;
 
-  /**
-   * The internal "$ELEMENT_SLICE" operator returns the first field of the
-   * only element of a multiset.
-   *
-   * <p>It is introduced when multisets of scalar types are created, in order
-   * to keep types consistent. For example, <code>ELEMENT(MULTISET [5])</code>
-   * is translated to <code>$ELEMENT_SLICE(MULTISET (VALUES ROW (5
-   * EXPR$0))</code> It is translated away when the multiset type is converted
-   * back to scalar values.
-   *
-   * <p>NOTE: jhyde, 2006/1/9: Usages of this operator are commented out, but
-   * I'm not deleting the operator, because some multiset tests are disabled,
-   * and we may need this operator to get them working!
-   */
+  @Deprecated // to be removed before 2.0
   public static final SqlInternalOperator ELEMENT_SLICE =
-      new SqlInternalOperator(
-          "$ELEMENT_SLICE",
-          SqlKind.OTHER,
-          0,
-          false,
-          ReturnTypes.MULTISET_RECORD,
-          null,
-          OperandTypes.MULTISET) {
-        @Override public void unparse(
-            SqlWriter writer,
-            SqlCall call,
-            int leftPrec,
-            int rightPrec) {
-          SqlUtil.unparseFunctionSyntax(this, writer, call, false);
-        }
-      };
+      SqlInternalOperators.ELEMENT_SLICE;
 
-  /**
-   * The internal "$SCALAR_QUERY" operator returns a scalar value from a
-   * record type. It assumes the record type only has one field, and returns
-   * that field as the output.
-   */
+  @Deprecated // to be removed before 2.0
   public static final SqlInternalOperator SCALAR_QUERY =
-      new SqlInternalOperator(
-          "$SCALAR_QUERY",
-          SqlKind.SCALAR_QUERY,
-          0,
-          false,
-          ReturnTypes.RECORD_TO_SCALAR,
-          null,
-          OperandTypes.RECORD_TO_SCALAR) {
-        @Override public void unparse(
-            SqlWriter writer,
-            SqlCall call,
-            int leftPrec,
-            int rightPrec) {
-          final SqlWriter.Frame frame = writer.startList("(", ")");
-          call.operand(0).unparse(writer, 0, 0);
-          writer.endList(frame);
-        }
+      SqlInternalOperators.SCALAR_QUERY;
 
-        @Override public boolean argumentMustBeScalar(int ordinal) {
-          // Obvious, really.
-          return false;
-        }
-      };
-
-  /**
-   * The internal {@code $STRUCT_ACCESS} operator is used to access a
-   * field of a record.
-   *
-   * <p>In contrast with {@link #DOT} operator, it never appears in an
-   * {@link SqlNode} tree and allows to access fields by position and
-   * not by name.
-   */
+  @Deprecated // to be removed before 2.0
   public static final SqlInternalOperator STRUCT_ACCESS =
-      new SqlInternalOperator("$STRUCT_ACCESS", SqlKind.OTHER);
+      SqlInternalOperators.STRUCT_ACCESS;
 
   /**
    * The CARDINALITY operator, used to retrieve the number of elements in a

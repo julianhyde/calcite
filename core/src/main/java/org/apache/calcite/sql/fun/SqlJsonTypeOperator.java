@@ -26,6 +26,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 
 /** Operator that indicates that the result is a json string. */
+@Deprecated // to be removed before 2.0
 class SqlJsonTypeOperator extends SqlInternalOperator {
   SqlJsonTypeOperator() {
     super("JSON_TYPE", SqlKind.JSON_TYPE, MDX_PRECEDENCE, true,

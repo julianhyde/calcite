@@ -35,6 +35,7 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlFloorFunction;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -132,7 +133,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
             SqlNodeList.of(
                 nullLiteral,
                 SqlStdOperatorTable.MIN.createCall(SqlParserPos.ZERO, operand)),
-            SqlStdOperatorTable.SCALAR_QUERY.createCall(SqlParserPos.ZERO,
+            SqlInternalOperators.SCALAR_QUERY.createCall(SqlParserPos.ZERO,
                 SqlStdOperatorTable.UNION_ALL
                     .createCall(SqlParserPos.ZERO, unionOperand, unionOperand)));
 
