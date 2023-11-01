@@ -143,6 +143,7 @@ import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlInOperator;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -6320,9 +6321,8 @@ public class SqlToRelConverter {
     /** Sets {@link #getHintStrategyTable()}. */
     Config withHintStrategyTable(HintStrategyTable hintStrategyTable);
 
-    /**
-     * Whether add {@link SqlStdOperatorTable#JSON_TYPE_OPERATOR} for between json functions.
-     */
+    /** Whether add {@link SqlInternalOperators#JSON_TYPE_OPERATOR} for between
+     * JSON functions. */
     @Value.Default default boolean isAddJsonTypeOperatorEnabled() {
       return true;
     }
@@ -6331,10 +6331,8 @@ public class SqlToRelConverter {
     Config withAddJsonTypeOperatorEnabled(boolean addJsonTypeOperatorEnabled);
   }
 
-  /**
-   * Used to find nested json functions, and add {@link SqlStdOperatorTable#JSON_TYPE_OPERATOR}
-   * to nested json output.
-   */
+  /** Used to find nested JSON functions, and add
+   * {@link SqlInternalOperators#JSON_TYPE_OPERATOR} to nested JSON output. */
   private class NestedJsonFunctionRelRewriter extends RelShuttleImpl {
 
     @Override public RelNode visit(LogicalProject project) {
@@ -6434,7 +6432,8 @@ public class SqlToRelConverter {
     private RexNode forceChildJsonType(RexNode rexNode) {
       final RexNode childResult = rexNode.accept(this);
       if (isJsonResult(rexNode)) {
-        return rexBuilder.makeCall(SqlStdOperatorTable.JSON_TYPE_OPERATOR, childResult);
+        return rexBuilder.makeCall(SqlInternalOperators.JSON_TYPE_OPERATOR,
+            childResult);
       }
       return childResult;
     }

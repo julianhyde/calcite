@@ -206,7 +206,7 @@ public class MysqlSqlDialect extends SqlDialect {
             SqlNodeList.of(
                 nullLiteral,
                 operand),
-            SqlStdOperatorTable.SCALAR_QUERY.createCall(SqlParserPos.ZERO,
+            SqlInternalOperators.SCALAR_QUERY.createCall(SqlParserPos.ZERO,
                 SqlStdOperatorTable.UNION_ALL
                     .createCall(SqlParserPos.ZERO, unionOperand, unionOperand)));
 

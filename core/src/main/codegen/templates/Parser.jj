@@ -254,7 +254,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
     }
 
     private SqlNode extend(SqlNode table, SqlNodeList extendList) {
-        return SqlStdOperatorTable.EXTEND.createCall(
+        return SqlInternalOperators.EXTEND.createCall(
             Span.of(table, extendList).pos(), table, extendList);
     }
 

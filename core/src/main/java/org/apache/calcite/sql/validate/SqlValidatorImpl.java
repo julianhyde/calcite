@@ -88,6 +88,7 @@ import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.TableCharacteristic;
 import org.apache.calcite.sql.fun.SqlCase;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.AssignableOperandTypeChecker;
@@ -3256,7 +3257,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         SqlNode listNode = list.get(i);
         if (listNode.getKind().belongsTo(SqlKind.QUERY)) {
           listNode =
-              SqlStdOperatorTable.SCALAR_QUERY.createCall(
+              SqlInternalOperators.SCALAR_QUERY.createCall(
                   listNode.getParserPosition(),
                   listNode);
           list.set(i, listNode);
@@ -3288,7 +3289,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     if (operand.getKind().belongsTo(SqlKind.QUERY)
         && call.getOperator().argumentMustBeScalar(operandOrdinal)) {
       operand =
-          SqlStdOperatorTable.SCALAR_QUERY.createCall(
+          SqlInternalOperators.SCALAR_QUERY.createCall(
               operand.getParserPosition(),
               operand);
       call.setOperand(operandOrdinal, operand);
