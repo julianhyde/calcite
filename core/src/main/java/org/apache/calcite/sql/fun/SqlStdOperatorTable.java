@@ -256,7 +256,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   /** {@code EXTEND} operator. */
   @Deprecated // to be removed before 2.0
   public static final SqlInternalOperator EXTEND =
-      SqlInternalOperators.toInternal(SqlInternalOperators.EXTEND);
+      SqlOperators.toInternal(SqlInternalOperators.EXTEND);
 
   /**
    * String and array-to-array concatenation operator, '<code>||</code>'.

@@ -17,6 +17,7 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -47,8 +48,8 @@ public class SqlPrefixOperator extends SqlOperator {
     super(
         name,
         kind,
-        leftPrec(prec, true),
-        rightPrec(prec, true),
+        SqlOperators.leftPrec(prec, true),
+        SqlOperators.rightPrec(prec, true),
         returnTypeInference,
         operandTypeInference,
         operandTypeChecker);

@@ -17,6 +17,7 @@
 package org.apache.calcite.sql;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
@@ -65,8 +66,8 @@ public class SqlBinaryOperator extends SqlOperator {
     super(
         name,
         kind,
-        leftPrec(prec, leftAssoc),
-        rightPrec(prec, leftAssoc),
+        SqlOperators.leftPrec(prec, leftAssoc),
+        SqlOperators.rightPrec(prec, leftAssoc),
         returnTypeInference,
         operandTypeInference,
         operandTypeChecker);

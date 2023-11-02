@@ -27,16 +27,11 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
-import org.apache.calcite.sql.type.SqlOperandTypeChecker;
-import org.apache.calcite.sql.type.SqlOperandTypeInference;
-import org.apache.calcite.sql.type.SqlReturnTypeInference;
-import org.apache.calcite.sql.type.SqlSingleOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.util.Litmus;
@@ -46,8 +41,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 import static org.apache.calcite.sql.SqlOperator.MDX_PRECEDENCE;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Contains internal operators.
@@ -68,7 +61,7 @@ public abstract class SqlInternalOperators {
    * to achieve schema-on-query against other adapters.
    */
   public static final SqlOperator EXTEND =
-      SqlBasicOperator.create("EXTEND")
+      SqlOperators.create("EXTEND")
           .withKind(SqlKind.EXTEND)
           .withPrecedence(MDX_PRECEDENCE, true)
           .withUnparse(SqlInternalOperators::unparseExtend)
@@ -76,13 +69,15 @@ public abstract class SqlInternalOperators {
 
   /** Operator that indicates that the result is a json string. */
   public static final SqlOperator JSON_TYPE_OPERATOR =
-      SqlBasicOperator.create(SqlKind.JSON_TYPE)
+      SqlOperators.create(SqlKind.JSON_TYPE)
           .withPrecedence(MDX_PRECEDENCE, true)
           .withReturnTypeInference(
               ReturnTypes.explicit(SqlTypeName.ANY)
                   .andThen(SqlTypeTransforms.TO_NULLABLE))
           .withOperandChecker(OperandTypes.CHARACTER)
-          .withUnparse(UnparseHandler::unparseUsingOperand0);
+          .withUnparse(UnparseHandler::unparseUsingOperand0)
+          .operator();
+
   /**
    * The internal "$SLICE" operator takes a multiset of records and returns a
    * multiset of the first column of those records.
@@ -180,8 +175,7 @@ public abstract class SqlInternalOperators {
    * and not by name.
    */
   public static final SqlInternalOperator STRUCT_ACCESS =
-      SqlBasicOperator.create("$STRUCT_ACCESS")
-          .toInternal();
+      SqlOperators.create("$STRUCT_ACCESS").toInternal();
 
   private SqlInternalOperators() {
   }
@@ -224,8 +218,7 @@ public abstract class SqlInternalOperators {
   /** "$THROW_UNLESS(condition, message)" throws an error with the given message
    * if condition is not TRUE, otherwise returns TRUE. */
   public static final SqlInternalOperator THROW_UNLESS =
-      SqlBasicOperator.create("$THROW_UNLESS")
-          .toInternal();
+      SqlOperators.create("$THROW_UNLESS").toInternal();
 
   /** <code>MEASURE</code> operator wraps an expression in the SELECT clause
    * that is a measure. It always occurs inside a call to "AS". */
@@ -334,7 +327,7 @@ public abstract class SqlInternalOperators {
 
   /** Separator expression inside GROUP_CONCAT, e.g. '{@code SEPARATOR ','}'. */
   public static final SqlOperator SEPARATOR =
-      SqlBasicOperator.create(SqlKind.SEPARATOR)
+      SqlOperators.create(SqlKind.SEPARATOR)
           .withPrecedence(20, false)
           .toInternal();
 
@@ -344,8 +337,9 @@ public abstract class SqlInternalOperators {
 
   /** Fetch operator is ONLY used for its precedence during unparsing. */
   public static final SqlOperator FETCH =
-      SqlBasicOperator.create("FETCH")
-          .withPrecedence(SqlStdOperatorTable.UNION.getLeftPrec() - 2, true);
+      SqlOperators.create("FETCH")
+          .withPrecedence(SqlStdOperatorTable.UNION.getLeftPrec() - 2, true)
+          .operator();
 
   /** 2-argument form of the special minus-date operator
    * to be used with BigQuery subtraction functions. It differs from
@@ -356,21 +350,13 @@ public abstract class SqlInternalOperators {
 
   /** Offset operator is ONLY used for its precedence during unparsing. */
   public static final SqlOperator OFFSET =
-      SqlBasicOperator.create("OFFSET")
-          .withPrecedence(SqlStdOperatorTable.UNION.getLeftPrec() - 2, true);
+      SqlOperators.create("OFFSET")
+          .withPrecedence(SqlStdOperatorTable.UNION.getLeftPrec() - 2, true)
+          .operator();
 
   /** Aggregate function that always returns a given literal. */
   public static final SqlAggFunction LITERAL_AGG =
       SqlLiteralAggFunction.INSTANCE;
-
-  /** Converts a basic operator to internal.
-   * Allows us to keep some deprecated operators that used to be internal. */
-  static SqlInternalOperator toInternal(SqlOperator operator) {
-    if (operator instanceof SqlInternalOperator) {
-      return (SqlInternalOperator) operator;
-    }
-    return ((SqlBasicOperator) operator).toInternal();
-  }
 
   /** Unparses the {@link #EXTEND} operator. */
   static void unparseExtend(SqlWriter writer, SqlCall call, int leftPrec,
@@ -394,122 +380,4 @@ public abstract class SqlInternalOperators {
     writer.endList(frame);
   }
 
-  /** Subject to change. */
-  private static class SqlBasicOperator extends SqlOperator {
-    private final UnparseHandler unparseHandler;
-
-    @Override public SqlSyntax getSyntax() {
-      return SqlSyntax.SPECIAL;
-    }
-
-    /** Private constructor. Use {@link #create}. */
-    private SqlBasicOperator(String name, SqlKind kind, int leftPrecedence,
-        int rightPrecedence, SqlReturnTypeInference returnTypeInference,
-        @Nullable SqlOperandTypeInference operandTypeInference,
-        SqlOperandTypeChecker operandTypeChecker,
-        UnparseHandler unparseHandler) {
-      super(name, kind, leftPrecedence, rightPrecedence,
-          returnTypeInference, operandTypeInference, operandTypeChecker);
-      this.unparseHandler = requireNonNull(unparseHandler, "unparseHandler");
-    }
-
-    static SqlBasicOperator create(SqlKind kind, String name) {
-      return new SqlBasicOperator(name, kind, 0, 0,
-          ReturnTypes.ARG0, null, OperandTypes.VARIADIC,
-          UnparseHandler::unparseUsingSyntax);
-    }
-
-    static SqlBasicOperator create(SqlKind kind) {
-      return create(kind, kind.name());
-    }
-
-    static SqlBasicOperator create(String name) {
-      return create(SqlKind.OTHER, name);
-    }
-
-    @Override public SqlReturnTypeInference getReturnTypeInference() {
-      return requireNonNull(super.getReturnTypeInference(),
-          "returnTypeInference");
-    }
-
-    @Override public SqlOperandTypeChecker getOperandTypeChecker() {
-      return requireNonNull(super.getOperandTypeChecker(),
-          "operandTypeChecker");
-    }
-
-    @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
-        int rightPrec) {
-      unparseHandler.unparse(writer, call, leftPrec, rightPrec);
-    }
-
-    SqlBasicOperator withKind(SqlKind kind) {
-      return new SqlBasicOperator(getName(), kind, getLeftPrec(),
-          getRightPrec(), getReturnTypeInference(),
-          getOperandTypeInference(), getOperandTypeChecker(), unparseHandler);
-    }
-
-    SqlBasicOperator withPrecedence(int prec, boolean leftAssoc) {
-      return new SqlBasicOperator(getName(), kind, leftPrec(prec, leftAssoc),
-          rightPrec(prec, leftAssoc), getReturnTypeInference(),
-          getOperandTypeInference(), getOperandTypeChecker(), unparseHandler);
-    }
-
-    SqlBasicOperator withReturnTypeInference(
-        SqlReturnTypeInference returnTypeInference) {
-      return new SqlBasicOperator(getName(), kind, getLeftPrec(),
-          getRightPrec(), returnTypeInference,
-          getOperandTypeInference(), getOperandTypeChecker(), unparseHandler);
-    }
-
-
-    SqlBasicOperator withOperandChecker(
-        SqlSingleOperandTypeChecker operandTypeChecker) {
-      return new SqlBasicOperator(getName(), kind, getLeftPrec(),
-          getRightPrec(), getReturnTypeInference(),
-          getOperandTypeInference(), operandTypeChecker, unparseHandler);
-    }
-
-    SqlBasicOperator withUnparse(UnparseHandler unparseHandler) {
-      return new SqlBasicOperator(getName(), kind, getLeftPrec(),
-          getRightPrec(), getReturnTypeInference(),
-          getOperandTypeInference(), getOperandTypeChecker(), unparseHandler);
-    }
-
-    /** Converts this operator to an
-     * {@link org.apache.calcite.sql.SqlInternalOperator}. */
-    SqlInternalOperator toInternal() {
-      return new SqlInternalOperator(this.getName(), getKind(),
-          prec(getLeftPrec(), getRightPrec()),
-          isLeftAssoc(getLeftPrec(), getRightPrec()), getReturnTypeInference(),
-          getOperandTypeInference(), getOperandTypeChecker()) {
-        @Override public void unparse(SqlWriter writer, SqlCall call,
-            int leftPrec, int rightPrec) {
-          unparseHandler.unparse(writer, call, leftPrec, rightPrec);
-        }
-      };
-    }
-  }
-
-  /** Functional interface equivalent to
-   * {@link org.apache.calcite.sql.SqlOperator#unparse}. */
-  @FunctionalInterface
-  interface UnparseHandler {
-    void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec);
-
-    /** Implementation of {@link UnparseHandler} that uses an operator's
-     * syntax. */
-    static void unparseUsingSyntax(SqlWriter writer, SqlCall call,
-        int leftPrec, int rightPrec) {
-      final SqlOperator operator = call.getOperator();
-      final SqlSyntax syntax = operator.getSyntax();
-      syntax.unparse(writer, operator, call, leftPrec, rightPrec);
-    }
-
-    /** Implementation of {@link UnparseHandler} that delegates to
-     * operand #0. */
-    static void unparseUsingOperand0(SqlWriter writer, SqlCall call,
-        int leftPrec, int rightPrec) {
-      call.operand(0).unparse(writer, leftPrec, rightPrec);
-    }
-  }
 }
