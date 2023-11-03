@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.apache.calcite.sql.util.SqlVisitor;
@@ -59,7 +60,15 @@ public class SqlUnpivot extends SqlCall {
   public final SqlNodeList axisList;
   public final SqlNodeList inList;
 
-  static final Operator OPERATOR = new Operator(SqlKind.UNPIVOT);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.UNPIVOT)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlUnpivot(pos,
+                  requireNonNull(operands.get(0), "query"), true,
+                  requireNonNull((SqlNodeList) operands.get(1), "measureList"),
+                  requireNonNull((SqlNodeList) operands.get(2), "axisList"),
+                  requireNonNull((SqlNodeList) operands.get(3), "inList")))
+          .operator();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -169,12 +178,5 @@ public class SqlUnpivot extends SqlCall {
       b.append(Util.last(((SqlIdentifier) alias).names));
     });
     return b.toString();
-  }
-
-  /** Unpivot operator. */
-  static class Operator extends SqlSpecialOperator {
-    Operator(SqlKind kind) {
-      super(kind.name(), kind);
-    }
   }
 }

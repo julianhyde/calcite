@@ -21,8 +21,10 @@ import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -176,24 +178,13 @@ public abstract class RelToSqlConverterUtil {
     return inputString;
   }
 
-  /** Returns a {@link SqlSpecialOperator} with given operator name, mainly used for
-   * unparse override. */
-  public static SqlSpecialOperator specialOperatorByName(String opName) {
-    return new SqlSpecialOperator(opName, SqlKind.OTHER_FUNCTION) {
-      @Override public void unparse(
-          SqlWriter writer,
-          SqlCall call,
-          int leftPrec,
-          int rightPrec) {
-        writer.print(getName());
-        final SqlWriter.Frame frame =
-            writer.startList(SqlWriter.FrameTypeEnum.FUN_CALL, "(", ")");
-        for (SqlNode operand : call.getOperandList()) {
-          writer.sep(",");
-          operand.unparse(writer, 0, 0);
-        }
-        writer.endList(frame);
-      }
-    };
+  /** Returns a {@link SqlSpecialOperator} with given operator name, mainly used
+   * for unparse override.
+   *
+   * @deprecated Use {@link org.apache.calcite.sql.fun.SqlOperators#create}
+   */
+  @Deprecated // to be removed before 2.0
+  public static SqlOperator specialOperatorByName(String opName) {
+    return SqlOperators.create(opName).toFunction();
   }
 }

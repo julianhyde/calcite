@@ -32,6 +32,7 @@ import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlOperandCountRanges;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.util.Litmus;
@@ -64,7 +65,8 @@ public abstract class SqlInternalOperators {
       SqlOperators.create("EXTEND")
           .withKind(SqlKind.EXTEND)
           .withPrecedence(MDX_PRECEDENCE, true)
-          .withUnparse(SqlInternalOperators::unparseExtend)
+          .withUnparse((writer, operator, call, leftPrec, rightPrec)
+              -> unparseExtend(writer, call, leftPrec, rightPrec))
           .toInternal();
 
   /** Operator that indicates that the result is a json string. */
@@ -176,6 +178,19 @@ public abstract class SqlInternalOperators {
    */
   public static final SqlInternalOperator STRUCT_ACCESS =
       SqlOperators.create("$STRUCT_ACCESS").toInternal();
+  /**
+   * An <code>REINTERPRET</code> operator is internal to the planner. When the
+   * physical storage of two types is the same, this operator may be used to
+   * reinterpret values of one type as the other. This operator is similar to
+   * a cast, except that it does not alter the data value. Like a regular cast
+   * it accepts one operand and stores the target type as the return type. It
+   * performs an overflow check if it has <i>any</i> second operand, whether
+   * true or not.
+   */
+  public static final SqlOperator REINTERPRET =
+      SqlOperators.create(SqlKind.REINTERPRET)
+          .withOperandCountRange(SqlOperandCountRanges.between(1, 2))
+          .operator();
 
   private SqlInternalOperators() {
   }

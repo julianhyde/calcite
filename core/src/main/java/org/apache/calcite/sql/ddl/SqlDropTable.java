@@ -19,7 +19,7 @@ package org.apache.calcite.sql.ddl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 /**
@@ -27,7 +27,8 @@ import org.apache.calcite.sql.parser.SqlParserPos;
  */
 public class SqlDropTable extends SqlDropObject {
   private static final SqlOperator OPERATOR =
-      new SqlSpecialOperator("DROP TABLE", SqlKind.DROP_TABLE);
+      SqlOperators.create(SqlKind.DROP_TABLE)
+          .operator();
 
   /** Creates a SqlDropTable. */
   SqlDropTable(SqlParserPos pos, boolean ifExists, SqlIdentifier name) {

@@ -23,8 +23,8 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import com.google.common.collect.ImmutableList;
@@ -39,8 +39,9 @@ import java.util.List;
  * <p>And {@code FOREIGN KEY}, when we support it.
  */
 public class SqlColumnDeclaration extends SqlCall {
-  private static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("COLUMN_DECL", SqlKind.COLUMN_DECL);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.COLUMN_DECL)
+          .operator();
 
   public final SqlIdentifier name;
   public final SqlDataTypeSpec dataType;

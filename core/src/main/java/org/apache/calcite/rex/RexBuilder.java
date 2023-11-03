@@ -32,10 +32,11 @@ import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.ArraySqlType;
 import org.apache.calcite.sql.type.MapSqlType;
@@ -97,8 +98,8 @@ public class RexBuilder {
    * during sql-to-rel translation, then replaced during the process that
    * trims unwanted fields.
    */
-  public static final SqlSpecialOperator GET_OPERATOR =
-      new SqlSpecialOperator("_get", SqlKind.OTHER_FUNCTION);
+  public static final SqlOperator GET_OPERATOR =
+      SqlOperators.create("_get", SqlKind.OTHER_FUNCTION).operator();
 
   /** The smallest valid {@code int} value, as a {@link BigDecimal}. */
   private static final BigDecimal INT_MIN =
@@ -953,10 +954,7 @@ public class RexBuilder {
     } else {
       args = ImmutableList.of(exp);
     }
-    return new RexCall(
-        type,
-        SqlStdOperatorTable.REINTERPRET,
-        args);
+    return new RexCall(type, SqlInternalOperators.REINTERPRET, args);
   }
 
   /**

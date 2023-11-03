@@ -33,6 +33,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -261,7 +262,7 @@ public class ReduceDecimalsRule
       map.put(SqlStdOperatorTable.CEIL, ceil);
 
       RexExpander reinterpret = new ReinterpretExpander(rexBuilder);
-      map.put(SqlStdOperatorTable.REINTERPRET, reinterpret);
+      map.put(SqlInternalOperators.REINTERPRET, reinterpret);
 
       RexExpander caseExpander = new CaseExpander(rexBuilder);
       map.put(SqlStdOperatorTable.CASE, caseExpander);

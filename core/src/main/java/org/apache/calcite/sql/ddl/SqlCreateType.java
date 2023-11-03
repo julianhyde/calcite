@@ -23,8 +23,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -43,7 +43,8 @@ public class SqlCreateType extends SqlCreate {
   public final @Nullable SqlDataTypeSpec dataType;
 
   private static final SqlOperator OPERATOR =
-      new SqlSpecialOperator("CREATE TYPE", SqlKind.CREATE_TYPE);
+      SqlOperators.create(SqlKind.CREATE_TYPE)
+          .operator();
 
   /** Creates a SqlCreateType. */
   SqlCreateType(SqlParserPos pos, boolean replace, SqlIdentifier name,

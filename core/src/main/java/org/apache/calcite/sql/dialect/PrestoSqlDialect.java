@@ -27,12 +27,13 @@ import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.fun.SqlArrayValueConstructor;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.util.RelToSqlConverterUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -54,6 +55,12 @@ public class PrestoSqlDialect extends SqlDialect {
       .withNullCollation(NullCollation.LAST);
 
   public static final SqlDialect DEFAULT = new PrestoSqlDialect(DEFAULT_CONTEXT);
+
+  private static final SqlOperator SUBSTR_OPERATOR =
+      SqlOperators.create("SUBSTR").toFunction();
+
+  private static final SqlOperator APPROX_DISTINCT_OPERATOR =
+      SqlOperators.create("APPROX_DISTINCT").toFunction();
 
   /**
    * Creates a PrestoSqlDialect.
@@ -135,11 +142,9 @@ public class PrestoSqlDialect extends SqlDialect {
   @Override public void unparseCall(SqlWriter writer, SqlCall call,
       int leftPrec, int rightPrec) {
     if (call.getOperator() == SqlStdOperatorTable.SUBSTRING) {
-      RelToSqlConverterUtil.specialOperatorByName("SUBSTR")
-          .unparse(writer, call, 0, 0);
+      SUBSTR_OPERATOR.unparse(writer, call, 0, 0);
     } else if (call.getOperator() == SqlStdOperatorTable.APPROX_COUNT_DISTINCT) {
-      RelToSqlConverterUtil.specialOperatorByName("APPROX_DISTINCT")
-          .unparse(writer, call, 0, 0);
+      APPROX_DISTINCT_OPERATOR.unparse(writer, call, 0, 0);
     } else {
       switch (call.getKind()) {
       case MAP_VALUE_CONSTRUCTOR:

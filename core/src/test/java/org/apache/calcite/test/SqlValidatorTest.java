@@ -9413,7 +9413,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "UNION ALL left\n"
         + "\n"
         + "$throw -\n"
-        + "Reinterpret -\n"
         + "TABLE pre\n"
         + "VALUES -\n"
         + "\n"

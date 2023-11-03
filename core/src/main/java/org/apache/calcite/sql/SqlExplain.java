@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -24,20 +25,23 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A <code>SqlExplain</code> is a node of a parse tree which represents an
  * EXPLAIN PLAN statement.
  */
 public class SqlExplain extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("EXPLAIN", SqlKind.EXPLAIN) {
-        @SuppressWarnings("argument.type.incompatible")
-        @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-            SqlParserPos pos, @Nullable SqlNode... operands) {
-          return new SqlExplain(pos, operands[0], (SqlLiteral) operands[1],
-              (SqlLiteral) operands[2], (SqlLiteral) operands[3], 0);
-        }
-      };
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.EXPLAIN)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlExplain(pos,
+                  requireNonNull(operands.get(0), "explicandum"),
+                  requireNonNull((SqlLiteral) operands.get(1), "detailLevel"),
+                  requireNonNull((SqlLiteral) operands.get(2), "depth"),
+                  requireNonNull((SqlLiteral) operands.get(3), "format"),
+                  0))
+          .operator();
 
   //~ Enums ------------------------------------------------------------------
 

@@ -22,8 +22,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -42,7 +42,8 @@ public class SqlCreateView extends SqlCreate {
   public final SqlNode query;
 
   private static final SqlOperator OPERATOR =
-      new SqlSpecialOperator("CREATE VIEW", SqlKind.CREATE_VIEW);
+      SqlOperators.create(SqlKind.CREATE_VIEW)
+          .operator();
 
   /** Creates a SqlCreateView. */
   SqlCreateView(SqlParserPos pos, boolean replace, SqlIdentifier name,

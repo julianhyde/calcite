@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -31,15 +32,13 @@ import static java.util.Objects.requireNonNull;
  */
 public class SqlDescribeTable extends SqlCall {
 
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("DESCRIBE_TABLE", SqlKind.DESCRIBE_TABLE) {
-        @SuppressWarnings("argument.type.incompatible")
-        @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-            SqlParserPos pos, @Nullable SqlNode... operands) {
-          return new SqlDescribeTable(pos, (SqlIdentifier) operands[0],
-              (@Nullable SqlIdentifier) operands[1]);
-        }
-      };
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.DESCRIBE_TABLE)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlDescribeTable(pos,
+                  (SqlIdentifier) requireNonNull(operands.get(0), "table"),
+                  (SqlIdentifier) operands.get(1)))
+          .operator();
 
   SqlIdentifier table;
   @Nullable SqlIdentifier column;

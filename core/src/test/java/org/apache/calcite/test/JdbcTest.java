@@ -74,13 +74,12 @@ import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.schema.impl.DelegatingSchema;
 import org.apache.calcite.schema.impl.TableMacroImpl;
 import org.apache.calcite.schema.impl.ViewTable;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelect;
-import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
@@ -8806,6 +8805,9 @@ public class JdbcTest {
   /** Implementation of {@link CalcitePrepare} that counts how many DDL
    * statements have been executed. */
   private static class CountingPrepare extends CalcitePrepareImpl {
+    private static final SqlOperator COMMIT_OPERATOR =
+        SqlOperators.create(SqlKind.COMMIT).operator();
+
     private final AtomicInteger counter;
 
     CountingPrepare(AtomicInteger counter) {
@@ -8816,16 +8818,7 @@ public class JdbcTest {
       return super.parserConfig().withParserFactory(stream ->
           new SqlParserImpl(stream) {
             @Override public SqlNode parseSqlStmtEof() {
-              return new SqlCall(SqlParserPos.ZERO) {
-                @Override public SqlOperator getOperator() {
-                  return new SqlSpecialOperator("COMMIT",
-                      SqlKind.COMMIT);
-                }
-
-                @Override public List<SqlNode> getOperandList() {
-                  return ImmutableList.of();
-                }
-              };
+              return COMMIT_OPERATOR.createCall(SqlParserPos.ZERO);
             }
           });
     }

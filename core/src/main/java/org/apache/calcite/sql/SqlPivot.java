@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
@@ -33,6 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,7 +56,16 @@ public class SqlPivot extends SqlCall {
   public final SqlNodeList axisList;
   public final SqlNodeList inList;
 
-  static final Operator OPERATOR = new Operator(SqlKind.PIVOT);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.PIVOT)
+          .withCallFactory((operator, qualifier, pos, operands) -> {
+            checkArgument(operands.size() == 4);
+            return new SqlPivot(pos,
+                requireNonNull(operands.get(0), "query"),
+                requireNonNull((SqlNodeList) operands.get(1), "aggList"),
+                requireNonNull((SqlNodeList) operands.get(2), "axisList"),
+                requireNonNull((SqlNodeList) operands.get(3), "inList"));
+          }).operator();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -189,23 +201,5 @@ public class SqlPivot extends SqlCall {
       axis.accept(nameCollector);
     }
     return columnNames;
-  }
-
-  /** Pivot operator. */
-  static class Operator extends SqlSpecialOperator {
-    Operator(SqlKind kind) {
-      super(kind.name(), kind);
-    }
-
-    @Override public SqlCall createCall(
-        @Nullable SqlLiteral functionQualifier,
-        SqlParserPos pos,
-        @Nullable SqlNode... operands) {
-      assert operands.length == 4;
-      return new SqlPivot(pos, requireNonNull(operands[0], "query"),
-          requireNonNull((SqlNodeList) operands[1], "aggList"),
-          requireNonNull((SqlNodeList) operands[2], "axisList"),
-          requireNonNull((SqlNodeList) operands[3], "inList"));
-    }
   }
 }

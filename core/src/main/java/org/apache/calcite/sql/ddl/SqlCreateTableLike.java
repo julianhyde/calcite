@@ -23,9 +23,9 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.Symbolizable;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -41,7 +41,8 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class SqlCreateTableLike extends SqlCreate {
   private static final SqlOperator OPERATOR =
-      new SqlSpecialOperator("CREATE TABLE LIKE", SqlKind.CREATE_TABLE_LIKE);
+      SqlOperators.create(SqlKind.CREATE_TABLE_LIKE)
+          .operator();
 
   /**
    * The LikeOption specify which additional properties of the original table to copy.

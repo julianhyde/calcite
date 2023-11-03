@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -33,8 +34,9 @@ import java.util.List;
  * statement.
  */
 public class SqlMerge extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("MERGE", SqlKind.MERGE);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.MERGE)
+          .operator();
 
   SqlNode targetTable;
   SqlNode condition;
