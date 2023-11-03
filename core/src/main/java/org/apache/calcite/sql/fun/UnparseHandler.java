@@ -26,7 +26,7 @@ import org.apache.calcite.sql.SqlWriter;
  * {@link org.apache.calcite.sql.SqlOperator#unparse}.
  */
 @FunctionalInterface
-interface UnparseHandler {
+public interface UnparseHandler {
   void unparse(SqlWriter writer, SqlOperator operator, SqlCall call,
       int leftPrec, int rightPrec);
 

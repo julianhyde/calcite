@@ -17,20 +17,18 @@
 package org.apache.calcite.sql.babel.postgresql;
 
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.ReturnTypes;
 
 import com.google.common.collect.ImmutableList;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Parse tree node representing a {@code COMMIT} clause.
@@ -38,16 +36,14 @@ import java.util.List;
  * @see <a href="https://www.postgresql.org/docs/current/sql-commit.html">COMMIT specification</a>
  */
 public class SqlCommit extends SqlCall {
+  public static final SqlOperator OPERATOR =
+      SqlOperators.create("COMMIT")
+          .withPrecedence(32, false)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlCommit(pos,
+                  requireNonNull((SqlLiteral) operands.get(0), "chain")))
+          .operator();
 
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("COMMIT", SqlKind.OTHER_FUNCTION, 32, false, ReturnTypes.BOOLEAN, null,
-          null) {
-        @Override public SqlCall createCall(@Nullable final SqlLiteral functionQualifier,
-            final SqlParserPos pos,
-            final @Nullable SqlNode... operands) {
-          return new SqlCommit(pos, (SqlLiteral) operands[0]);
-        }
-      };
   private final SqlLiteral chain;
 
   protected SqlCommit(final SqlParserPos pos, final SqlLiteral chain) {

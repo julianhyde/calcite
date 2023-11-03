@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -23,15 +24,28 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import static org.apache.calcite.sql.SqlOperator.MDX_PRECEDENCE;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * An item in a WITH clause of a query.
  * It has a name, an optional column list, and a query.
  */
 public class SqlWithItem extends SqlCall {
   public SqlIdentifier name;
-  public @Nullable SqlNodeList columnList; // may be null
+  public @Nullable SqlNodeList columnList;
   public SqlLiteral recursive;
   public SqlNode query;
+
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.WITH_ITEM)
+          .withPrecedence(0, true)
+          .withUnparse(SqlWithItem::unparse)
+          .withCallFactory(SqlWithItem::create)
+          .operator();
 
   @Deprecated // to be removed before 2.0
   public SqlWithItem(SqlParserPos pos, SqlIdentifier name,
@@ -50,6 +64,17 @@ public class SqlWithItem extends SqlCall {
     this.query = query;
   }
 
+  static SqlCall create(SqlOperator operator, @Nullable SqlLiteral qualifier,
+      SqlParserPos pos, List<? extends @Nullable SqlNode> operands) {
+    checkArgument(qualifier == null);
+    checkArgument(operands.size() == 3);
+    return new SqlWithItem(pos,
+        requireNonNull((SqlIdentifier) operands.get(0), "name"),
+        requireNonNull((SqlNodeList) operands.get(1), "columnList"),
+        requireNonNull(operands.get(2), "query"),
+        SqlLiteral.createBoolean(false, SqlParserPos.ZERO));
+  }
+
   //~ Methods ----------------------------------------------------------------
 
   @Override public SqlKind getKind() {
@@ -65,13 +90,13 @@ public class SqlWithItem extends SqlCall {
   @Override public void setOperand(int i, @Nullable SqlNode operand) {
     switch (i) {
     case 0:
-      name = (SqlIdentifier) operand;
+      name = requireNonNull((SqlIdentifier) operand, "name");
       break;
     case 1:
       columnList = (@Nullable SqlNodeList) operand;
       break;
     case 2:
-      query = operand;
+      query = requireNonNull(operand, "operand");
       break;
     case 3:
       recursive = (SqlLiteral) operand;
@@ -82,44 +107,19 @@ public class SqlWithItem extends SqlCall {
   }
 
   @Override public SqlOperator getOperator() {
-    return SqlWithItemOperator.INSTANCE;
+    return OPERATOR;
   }
 
-  /**
-   * SqlWithItemOperator is used to represent an item in a WITH clause of a
-   * query. It has a name, an optional column list, and a query.
-   */
-  private static class SqlWithItemOperator extends SqlSpecialOperator {
-    private static final SqlWithItemOperator INSTANCE =
-        new SqlWithItemOperator();
-
-    SqlWithItemOperator() {
-      super("WITH_ITEM", SqlKind.WITH_ITEM, 0);
+  static void unparse(SqlWriter writer, SqlOperator operator, SqlCall call,
+      int leftPrec, int rightPrec) {
+    final SqlWithItem withItem = (SqlWithItem) call;
+    withItem.name.unparse(writer, operator.getLeftPrec(),
+        operator.getRightPrec());
+    if (withItem.columnList != null) {
+      withItem.columnList.unparse(writer, operator.getLeftPrec(),
+          operator.getRightPrec());
     }
-
-    //~ Methods ----------------------------------------------------------------
-
-    @Override public void unparse(
-        SqlWriter writer,
-        SqlCall call,
-        int leftPrec,
-        int rightPrec) {
-      final SqlWithItem withItem = (SqlWithItem) call;
-      withItem.name.unparse(writer, getLeftPrec(), getRightPrec());
-      if (withItem.columnList != null) {
-        withItem.columnList.unparse(writer, getLeftPrec(), getRightPrec());
-      }
-      writer.keyword("AS");
-      withItem.query.unparse(writer, MDX_PRECEDENCE, MDX_PRECEDENCE);
-    }
-
-    @SuppressWarnings("argument.type.incompatible")
-    @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-        SqlParserPos pos, @Nullable SqlNode... operands) {
-      assert functionQualifier == null;
-      assert operands.length == 4;
-      return new SqlWithItem(pos, (SqlIdentifier) operands[0],
-          (SqlNodeList) operands[1], operands[2], (SqlLiteral) operands[3]);
-    }
+    writer.keyword("AS");
+    withItem.query.unparse(writer, MDX_PRECEDENCE, MDX_PRECEDENCE);
   }
 }

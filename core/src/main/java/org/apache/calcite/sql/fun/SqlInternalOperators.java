@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql.fun;
 
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
@@ -27,7 +26,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
@@ -51,147 +50,6 @@ import static org.apache.calcite.sql.SqlOperator.MDX_PRECEDENCE;
  * interface {@link SqlOperatorTable}.
  */
 public abstract class SqlInternalOperators {
-  // TODO move down
-
-  /** {@code EXTEND} operator.
-   *
-   * <p>Adds columns to a table's schema, as in
-   * {@code SELECT ... FROM emp EXTEND (horoscope VARCHAR(100))}.
-   *
-   * <p>Not standard SQL. Added to Calcite to support Phoenix, but can be used
-   * to achieve schema-on-query against other adapters.
-   */
-  public static final SqlOperator EXTEND =
-      SqlOperators.create("EXTEND")
-          .withKind(SqlKind.EXTEND)
-          .withPrecedence(MDX_PRECEDENCE, true)
-          .withUnparse((writer, operator, call, leftPrec, rightPrec)
-              -> unparseExtend(writer, call, leftPrec, rightPrec))
-          .toInternal();
-
-  /** Operator that indicates that the result is a json string. */
-  public static final SqlOperator JSON_TYPE_OPERATOR =
-      SqlOperators.create(SqlKind.JSON_TYPE)
-          .withPrecedence(MDX_PRECEDENCE, true)
-          .withReturnTypeInference(
-              ReturnTypes.explicit(SqlTypeName.ANY)
-                  .andThen(SqlTypeTransforms.TO_NULLABLE))
-          .withOperandChecker(OperandTypes.CHARACTER)
-          .withUnparse(UnparseHandler::unparseUsingOperand0)
-          .operator();
-
-  /**
-   * The internal "$SLICE" operator takes a multiset of records and returns a
-   * multiset of the first column of those records.
-   *
-   * <p>It is introduced when multisets of scalar types are created, in order
-   * to keep types consistent. For example, <code>MULTISET [5]</code> has type
-   * <code>INTEGER MULTISET</code> but is translated to an expression of type
-   * <code>RECORD(INTEGER EXPR$0) MULTISET</code> because in our internal
-   * representation of multisets, every element must be a record. Applying the
-   * "$SLICE" operator to this result converts the type back to an <code>
-   * INTEGER MULTISET</code> multiset value.
-   *
-   * <p><code>$SLICE</code> is often translated away when the multiset type is
-   * converted back to scalar values.
-   */
-  public static final SqlInternalOperator SLICE =
-      new SqlInternalOperator(
-          "$SLICE",
-          SqlKind.OTHER,
-          0,
-          false,
-          ReturnTypes.MULTISET_PROJECT0,
-          null,
-          OperandTypes.RECORD_COLLECTION) {
-      };
-
-  /**
-   * The internal "$ELEMENT_SLICE" operator returns the first field of the
-   * only element of a multiset.
-   *
-   * <p>It is introduced when multisets of scalar types are created, in order
-   * to keep types consistent. For example, <code>ELEMENT(MULTISET [5])</code>
-   * is translated to <code>$ELEMENT_SLICE(MULTISET (VALUES ROW (5
-   * EXPR$0))</code> It is translated away when the multiset type is converted
-   * back to scalar values.
-   *
-   * <p>NOTE: jhyde, 2006/1/9: Usages of this operator are commented out, but
-   * I'm not deleting the operator, because some multiset tests are disabled,
-   * and we may need this operator to get them working!
-   */
-  public static final SqlInternalOperator ELEMENT_SLICE =
-      new SqlInternalOperator(
-          "$ELEMENT_SLICE",
-          SqlKind.OTHER,
-          0,
-          false,
-          ReturnTypes.MULTISET_RECORD,
-          null,
-          OperandTypes.MULTISET) {
-        @Override public void unparse(
-            SqlWriter writer,
-            SqlCall call,
-            int leftPrec,
-            int rightPrec) {
-          SqlUtil.unparseFunctionSyntax(this, writer, call, false);
-        }
-      };
-
-  /**
-   * The internal "$SCALAR_QUERY" operator returns a scalar value from a
-   * record type. It assumes the record type only has one field, and returns
-   * that field as the output.
-   */
-  public static final SqlInternalOperator SCALAR_QUERY =
-      new SqlInternalOperator(
-          "$SCALAR_QUERY",
-          SqlKind.SCALAR_QUERY,
-          0,
-          false,
-          ReturnTypes.RECORD_TO_SCALAR,
-          null,
-          OperandTypes.RECORD_TO_SCALAR) {
-        @Override public void unparse(
-            SqlWriter writer,
-            SqlCall call,
-            int leftPrec,
-            int rightPrec) {
-          final SqlWriter.Frame frame = writer.startList("(", ")");
-          call.operand(0).unparse(writer, 0, 0);
-          writer.endList(frame);
-        }
-
-        @Override public boolean argumentMustBeScalar(int ordinal) {
-          // Obvious, really.
-          return false;
-        }
-      };
-
-  /**
-   * The internal {@code $STRUCT_ACCESS} operator is used to access a
-   * field of a record.
-   *
-   * <p>In contrast with {@link SqlStdOperatorTable#DOT} operator, it never
-   * appears in an {@link SqlNode} tree and allows to access fields by position
-   * and not by name.
-   */
-  public static final SqlInternalOperator STRUCT_ACCESS =
-      SqlOperators.create("$STRUCT_ACCESS").toInternal();
-  /**
-   * An <code>REINTERPRET</code> operator is internal to the planner. When the
-   * physical storage of two types is the same, this operator may be used to
-   * reinterpret values of one type as the other. This operator is similar to
-   * a cast, except that it does not alter the data value. Like a regular cast
-   * it accepts one operand and stores the target type as the return type. It
-   * performs an overflow check if it has <i>any</i> second operand, whether
-   * true or not.
-   */
-  public static final SqlOperator REINTERPRET =
-      SqlOperators.create(SqlKind.REINTERPRET)
-          .withOperandCountRange(SqlOperandCountRanges.between(1, 2))
-          .operator();
-
   private SqlInternalOperators() {
   }
 
@@ -373,26 +231,105 @@ public abstract class SqlInternalOperators {
   public static final SqlAggFunction LITERAL_AGG =
       SqlLiteralAggFunction.INSTANCE;
 
-  /** Unparses the {@link #EXTEND} operator. */
-  static void unparseExtend(SqlWriter writer, SqlCall call, int leftPrec,
-      int rightPrec) {
-    final SqlOperator operator = call.getOperator();
-    assert call.operandCount() == 2;
-    final SqlWriter.Frame frame =
-        writer.startList(SqlWriter.FrameTypeEnum.SIMPLE);
-    call.operand(0).unparse(writer, leftPrec, operator.getLeftPrec());
-    writer.setNeedWhitespace(true);
-    writer.sep(operator.getName());
-    final SqlNodeList list = call.operand(1);
-    final SqlWriter.Frame frame2 = writer.startList("(", ")");
-    for (Ord<SqlNode> node2 : Ord.zip(list)) {
-      if (node2.i > 0 && node2.i % 2 == 0) {
-        writer.sep(",");
-      }
-      node2.e.unparse(writer, 2, 3);
-    }
-    writer.endList(frame2);
-    writer.endList(frame);
-  }
+  /** Operator that indicates that the result is a json string. */
+  public static final SqlOperator JSON_TYPE_OPERATOR =
+      SqlOperators.create(SqlKind.JSON_TYPE)
+          .withPrecedence(MDX_PRECEDENCE, true)
+          .withReturnTypeInference(
+              ReturnTypes.explicit(SqlTypeName.ANY)
+                  .andThen(SqlTypeTransforms.TO_NULLABLE))
+          .withOperandChecker(OperandTypes.CHARACTER)
+          .withUnparse(UnparseHandler::unparseUsingOperand0)
+          .operator();
 
+  /**
+   * The internal "$SLICE" operator takes a multiset of records and returns a
+   * multiset of the first column of those records.
+   *
+   * <p>It is introduced when multisets of scalar types are created, in order
+   * to keep types consistent. For example, <code>MULTISET [5]</code> has type
+   * <code>INTEGER MULTISET</code> but is translated to an expression of type
+   * <code>RECORD(INTEGER EXPR$0) MULTISET</code> because in our internal
+   * representation of multisets, every element must be a record. Applying the
+   * "$SLICE" operator to this result converts the type back to an <code>
+   * INTEGER MULTISET</code> multiset value.
+   *
+   * <p><code>$SLICE</code> is often translated away when the multiset type is
+   * converted back to scalar values.
+   */
+  public static final SqlInternalOperator SLICE =
+      SqlOperators.create("$SLICE")
+          .withPrecedence(0, false)
+          .withReturnTypeInference(ReturnTypes.MULTISET_PROJECT0)
+          .withOperandChecker(OperandTypes.RECORD_COLLECTION)
+          .toInternal();
+
+  /**
+   * The internal "$ELEMENT_SLICE" operator returns the first field of the
+   * only element of a multiset.
+   *
+   * <p>It is introduced when multisets of scalar types are created, in order
+   * to keep types consistent. For example, <code>ELEMENT(MULTISET [5])</code>
+   * is translated to <code>$ELEMENT_SLICE(MULTISET (VALUES ROW (5
+   * EXPR$0))</code> It is translated away when the multiset type is converted
+   * back to scalar values.
+   *
+   * <p>NOTE: jhyde, 2006/1/9: Usages of this operator are commented out, but
+   * I'm not deleting the operator, because some multiset tests are disabled,
+   * and we may need this operator to get them working!
+   */
+  public static final SqlInternalOperator ELEMENT_SLICE =
+      SqlOperators.create("$ELEMENT_SLICE")
+          .withPrecedence(0, false)
+          .withReturnTypeInference(ReturnTypes.MULTISET_RECORD)
+          .withOperandChecker(OperandTypes.MULTISET)
+          .withSyntax(SqlSyntax.FUNCTION)
+          .withUnparse(UnparseHandler::unparseUsingSyntax)
+          .toInternal();
+
+  /**
+   * The internal "$SCALAR_QUERY" operator returns a scalar value from a
+   * record type. It assumes the record type only has one field, and returns
+   * that field as the output.
+   */
+  public static final SqlInternalOperator SCALAR_QUERY =
+      new SqlInternalOperator("$SCALAR_QUERY", SqlKind.SCALAR_QUERY, 0, false,
+          ReturnTypes.RECORD_TO_SCALAR, null, OperandTypes.RECORD_TO_SCALAR) {
+        @Override public void unparse(SqlWriter writer, SqlCall call,
+            int leftPrec, int rightPrec) {
+          final SqlWriter.Frame frame = writer.startList("(", ")");
+          call.operand(0).unparse(writer, 0, 0);
+          writer.endList(frame);
+        }
+
+        @Override public boolean argumentMustBeScalar(int ordinal) {
+          // Obvious, really.
+          return false;
+        }
+      };
+
+  /**
+   * The internal {@code $STRUCT_ACCESS} operator is used to access a
+   * field of a record.
+   *
+   * <p>In contrast with {@link SqlStdOperatorTable#DOT} operator, it never
+   * appears in an {@link SqlNode} tree and allows to access fields by position
+   * and not by name.
+   */
+  public static final SqlInternalOperator STRUCT_ACCESS =
+      SqlOperators.create("$STRUCT_ACCESS").toInternal();
+
+  /**
+   * The {@code REINTERPRET} operator is internal to the planner. When the
+   * physical storage of two types is the same, this operator may be used to
+   * reinterpret values of one type as the other. This operator is similar to
+   * a cast, except that it does not alter the data value. Like a regular cast
+   * it accepts one operand and stores the target type as the return type. It
+   * performs an overflow check if it has <i>any</i> second operand, whether
+   * true or not.
+   */
+  public static final SqlOperator REINTERPRET =
+      SqlOperators.create(SqlKind.REINTERPRET)
+          .withOperandCountRange(SqlOperandCountRanges.between(1, 2))
+          .operator();
 }

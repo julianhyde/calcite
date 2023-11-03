@@ -17,22 +17,19 @@
 package org.apache.calcite.sql.babel.postgresql;
 
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.Symbolizable;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.ReturnTypes;
 
 import com.google.common.collect.ImmutableList;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Parse tree node representing a {@code BEGIN} clause.
@@ -40,15 +37,14 @@ import java.util.List;
  * @see <a href="https://www.postgresql.org/docs/current/sql-begin.html">BEGIN specification</a>
  */
 public class SqlBegin extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("BEGIN", SqlKind.OTHER_FUNCTION, 32, false, ReturnTypes.BOOLEAN, null,
-          null) {
-        @Override public SqlCall createCall(@Nullable final SqlLiteral functionQualifier,
-            final SqlParserPos pos,
-            final @Nullable SqlNode... operands) {
-          return new SqlBegin(pos, (SqlNodeList) operands[0]);
-        }
-      };
+  public static final SqlOperator OPERATOR =
+      SqlOperators.create("BEGIN")
+          .withPrecedence(32, false)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlBegin(pos,
+                  requireNonNull((SqlNodeList) operands.get(0),
+                      "transactionModeList")))
+          .operator();
 
   private final SqlNodeList transactionModeList;
 
