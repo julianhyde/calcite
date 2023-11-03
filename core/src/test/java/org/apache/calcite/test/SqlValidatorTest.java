@@ -8779,12 +8779,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "DOT -\n"
         + "ITEM -\n"
         + "NEXT_VALUE -\n"
-        + "PATTERN_EXCLUDE -\n"
-        + "PATTERN_PERMUTE -\n"
         + "WITHIN DISTINCT left\n"
         + "WITHIN GROUP left\n"
-        + "\n"
-        + "PATTERN_QUANTIFIER -\n"
         + "\n"
         + " left\n"
         + "$LiteralChain -\n"
@@ -8890,7 +8886,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "IGNORE NULLS -\n"
         + "OVER left\n"
         + "RESPECT NULLS -\n"
-        + "TABLESAMPLE -\n"
         + "\n"
         + "NULLS FIRST post\n"
         + "NULLS LAST post\n"
@@ -8914,7 +8909,6 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         + "VALUES -\n"
         + "\n"
         + "CALL pre\n"
-        + "ESCAPE -\n"
         + "NEW pre\n";
     assertThat(b, hasToString(expected));
   }

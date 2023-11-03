@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlLateralOperator;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMatchFunction;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNullTreatmentOperator;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperator;
@@ -84,6 +85,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.linq4j.Ord.forEach;
+import static org.apache.calcite.sql.SqlOperator.MDX_PRECEDENCE;
 
 import static java.util.Objects.requireNonNull;
 
@@ -252,10 +255,41 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlAggFunction GROUPING_ID =
       new SqlGroupingFunction("GROUPING_ID");
 
-  /** {@code EXTEND} operator. */
-  @Deprecated // to be removed before 2.0
+  /** {@code EXTEND} operator.
+   *
+   * <p>Adds columns to a table's schema, as in
+   * {@code SELECT ... FROM emp EXTEND (horoscope VARCHAR(100))}.
+   *
+   * <p>Not standard SQL. Added to Calcite to support Phoenix, but can be used
+   * to achieve schema-on-query against other adapters.
+   */
   public static final SqlInternalOperator EXTEND =
-      SqlOperators.toInternal(SqlInternalOperators.EXTEND);
+      SqlOperators.create("EXTEND")
+          .withKind(SqlKind.EXTEND)
+          .withPrecedence(MDX_PRECEDENCE, true)
+          .withUnparse(SqlStdOperatorTable::unparseExtend)
+          .toInternal();
+
+  /** Unparses the {@link #EXTEND} operator. */
+  static void unparseExtend(SqlWriter writer, SqlOperator operator,
+      SqlCall call, int leftPrec, int rightPrec) {
+    assert call.operandCount() == 2;
+    final SqlWriter.Frame frame =
+        writer.startList(SqlWriter.FrameTypeEnum.SIMPLE);
+    call.operand(0).unparse(writer, leftPrec, operator.getLeftPrec());
+    writer.setNeedWhitespace(true);
+    writer.sep(operator.getName());
+    final SqlNodeList list = call.operand(1);
+    final SqlWriter.Frame frame2 = writer.startList("(", ")");
+    forEach(list, (e, i) -> {
+      if (i > 0 && i % 2 == 0) {
+        writer.sep(",");
+      }
+      e.unparse(writer, 2, 3);
+    });
+    writer.endList(frame2);
+    writer.endList(frame);
+  }
 
   /**
    * String and array-to-array concatenation operator, '<code>||</code>'.
@@ -1520,7 +1554,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * SIMILAR TO expression.
    */
   public static final SqlSpecialOperator ESCAPE =
-      new SqlSpecialOperator("ESCAPE", SqlKind.ESCAPE, 0);
+      SqlOperators.create(SqlKind.ESCAPE).toSpecial();
 
   public static final SqlCaseOperator CASE = SqlCaseOperator.INSTANCE;
 
@@ -2239,24 +2273,16 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * wrapped in a {@link SqlLiteral}.
    */
   public static final SqlSpecialOperator TABLESAMPLE =
-      new SqlSpecialOperator(
-          "TABLESAMPLE",
-          SqlKind.TABLESAMPLE,
-          20,
-          true,
-          ReturnTypes.ARG0,
-          null,
-          OperandTypes.VARIADIC) {
-        @Override public void unparse(
-            SqlWriter writer,
-            SqlCall call,
-            int leftPrec,
-            int rightPrec) {
-          call.operand(0).unparse(writer, leftPrec, 0);
-          writer.keyword("TABLESAMPLE");
-          call.operand(1).unparse(writer, 0, rightPrec);
-        }
-      };
+      SqlOperators.create(SqlKind.TABLESAMPLE)
+          .withPrecedence(20, true)
+          .withReturnTypeInference(ReturnTypes.ARG0)
+          .withOperandChecker(OperandTypes.VARIADIC)
+          .withUnparse((writer, operator, call, leftPrec, rightPrec) -> {
+            call.operand(0).unparse(writer, leftPrec, 0);
+            writer.keyword("TABLESAMPLE");
+            call.operand(1).unparse(writer, 0, rightPrec);
+          })
+          .toSpecial();
 
   /** DESCRIPTOR(column_name, ...). */
   public static final SqlOperator DESCRIPTOR = new SqlDescriptorOperator();
@@ -2367,42 +2393,46 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    *
    * <p>If {@code p} is a pattern then {@code p{3, 5}} is a
    * pattern that matches between 3 and 5 occurrences of {@code p}. */
+  @LibraryOperator(libraries = {}) // do not include in index
   public static final SqlSpecialOperator PATTERN_QUANTIFIER =
-      new SqlSpecialOperator("PATTERN_QUANTIFIER", SqlKind.PATTERN_QUANTIFIER,
-          90) {
-        @Override public void unparse(SqlWriter writer, SqlCall call,
-            int leftPrec, int rightPrec) {
-          call.operand(0).unparse(writer, this.getLeftPrec(), this.getRightPrec());
-          int startNum = ((SqlNumericLiteral) call.operand(1)).intValue(true);
-          SqlNumericLiteral endRepNum = call.operand(2);
-          boolean isReluctant = ((SqlLiteral) call.operand(3)).booleanValue();
-          int endNum = endRepNum.intValue(true);
-          if (startNum == endNum) {
-            writer.keyword("{ " + startNum + " }");
-          } else {
-            if (endNum == -1) {
-              if (startNum == 0) {
-                writer.keyword("*");
-              } else if (startNum == 1) {
-                writer.keyword("+");
-              } else {
-                writer.keyword("{ " + startNum + ", }");
-              }
-            } else {
-              if (startNum == 0 && endNum == 1) {
-                writer.keyword("?");
-              } else if (startNum == -1) {
-                writer.keyword("{ , " + endNum + " }");
-              } else {
-                writer.keyword("{ " + startNum + ", " + endNum + " }");
-              }
-            }
-            if (isReluctant) {
-              writer.keyword("?");
-            }
-          }
+      SqlOperators.create(SqlKind.PATTERN_QUANTIFIER)
+          .withPrecedence(90, true)
+          .withUnparse(SqlStdOperatorTable::unparsePatternQuantifier)
+          .toSpecial();
+
+  private static void unparsePatternQuantifier(SqlWriter writer,
+      SqlOperator operator, SqlCall call, int leftPrec, int rightPrec) {
+    call.operand(0).unparse(writer, operator.getLeftPrec(),
+        operator.getRightPrec());
+    int startNum = ((SqlNumericLiteral) call.operand(1)).intValue(true);
+    SqlNumericLiteral endRepNum = call.operand(2);
+    boolean isReluctant = ((SqlLiteral) call.operand(3)).booleanValue();
+    int endNum = endRepNum.intValue(true);
+    if (startNum == endNum) {
+      writer.keyword("{ " + startNum + " }");
+    } else {
+      if (endNum == -1) {
+        if (startNum == 0) {
+          writer.keyword("*");
+        } else if (startNum == 1) {
+          writer.keyword("+");
+        } else {
+          writer.keyword("{ " + startNum + ", }");
         }
-      };
+      } else {
+        if (startNum == 0 && endNum == 1) {
+          writer.keyword("?");
+        } else if (startNum == -1) {
+          writer.keyword("{ , " + endNum + " }");
+        } else {
+          writer.keyword("{ " + startNum + ", " + endNum + " }");
+        }
+      }
+      if (isReluctant) {
+        writer.keyword("?");
+      }
+    }
+  }
 
   /** {@code PERMUTE} operator to combine patterns within
    * {@code MATCH_RECOGNIZE}.
@@ -2411,37 +2441,42 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * is a pattern that matches all permutations of {@code p1} and
    * {@code p2}. */
   public static final SqlSpecialOperator PATTERN_PERMUTE =
-      new SqlSpecialOperator("PATTERN_PERMUTE", SqlKind.PATTERN_PERMUTE, 100) {
-        @Override public void unparse(SqlWriter writer, SqlCall call,
-            int leftPrec, int rightPrec) {
-          writer.keyword("PERMUTE");
-          SqlWriter.Frame frame = writer.startList("(", ")");
-          for (int i = 0; i < call.getOperandList().size(); i++) {
-            SqlNode pattern = call.getOperandList().get(i);
-            pattern.unparse(writer, 0, 0);
-            if (i != call.getOperandList().size() - 1) {
-              writer.print(",");
-            }
-          }
-          writer.endList(frame);
-        }
-      };
+      SqlOperators.create(SqlKind.PATTERN_PERMUTE)
+          .withPrecedence(100, true)
+          .withUnparse(SqlStdOperatorTable::unparsePatternPermute)
+          .toSpecial();
+
+  private static void unparsePatternPermute(SqlWriter writer,
+      SqlOperator operator, SqlCall call, int leftPrec, int rightPrec) {
+    writer.keyword("PERMUTE");
+    SqlWriter.Frame frame = writer.startList("(", ")");
+    for (int i = 0; i < call.getOperandList().size(); i++) {
+      SqlNode pattern = call.getOperandList().get(i);
+      pattern.unparse(writer, 0, 0);
+      if (i != call.getOperandList().size() - 1) {
+        writer.print(",");
+      }
+    }
+    writer.endList(frame);
+  }
 
   /** {@code EXCLUDE} operator within {@code MATCH_RECOGNIZE}.
    *
    * <p>If {@code p} is a pattern then {@code {- p -} }} is a
    * pattern that excludes {@code p} from the output. */
   public static final SqlSpecialOperator PATTERN_EXCLUDE =
-      new SqlSpecialOperator("PATTERN_EXCLUDE", SqlKind.PATTERN_EXCLUDED,
-          100) {
-        @Override public void unparse(SqlWriter writer, SqlCall call,
-            int leftPrec, int rightPrec) {
-          SqlWriter.Frame frame = writer.startList("{-", "-}");
-          SqlNode node = call.getOperandList().get(0);
-          node.unparse(writer, 0, 0);
-          writer.endList(frame);
-        }
-      };
+      SqlOperators.create(SqlKind.PATTERN_EXCLUDED)
+          .withPrecedence(100, true)
+          .withUnparse(SqlStdOperatorTable::unparsePatternExclude)
+          .toSpecial();
+
+  private static void unparsePatternExclude(SqlWriter writer,
+      SqlOperator operator, SqlCall call, int leftPrec, int rightPrec) {
+    SqlWriter.Frame frame = writer.startList("{-", "-}");
+    SqlNode node = call.getOperandList().get(0);
+    node.unparse(writer, 0, 0);
+    writer.endList(frame);
+  }
 
   /** SetSemanticsTable represents as an input table with set semantics. */
   public static final SqlInternalOperator SET_SEMANTICS_TABLE = new SqlSetSemanticsTableOperator();

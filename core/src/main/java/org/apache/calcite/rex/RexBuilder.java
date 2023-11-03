@@ -30,7 +30,6 @@ import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
@@ -97,7 +96,7 @@ public class RexBuilder {
    * trims unwanted fields.
    */
   public static final SqlOperator GET_OPERATOR =
-      SqlOperators.create("_get", SqlKind.OTHER_FUNCTION).operator();
+      SqlOperators.create("_get").operator();
 
   /** The smallest valid {@code int} value, as a {@link BigDecimal}. */
   private static final BigDecimal INT_MIN =

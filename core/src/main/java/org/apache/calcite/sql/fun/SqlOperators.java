@@ -62,7 +62,7 @@ public abstract class SqlOperators {
 
   /** Creates a builder. */
   public static OperatorBuilder create(String name) {
-    return create(name, SqlKind.OTHER);
+    return create(name, SqlKind.OTHER_FUNCTION);
   }
 
   /** Converts a basic operator to internal.
@@ -206,7 +206,7 @@ public abstract class SqlOperators {
     }
 
     @Override public SqlInternalOperator toInternal() {
-      return new MySqlInternalOperator(name, kind, syntax, prec, leftAssoc,
+      return new SqlBasicInternalOperator(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
@@ -277,12 +277,14 @@ public abstract class SqlOperators {
   }
 
   /** Basic implementation of {@link SqlInternalOperator}. */
-  private static class MySqlInternalOperator extends SqlInternalOperator {
+  private static class SqlBasicInternalOperator
+      extends SqlInternalOperator implements Rebuildable {
     private final SqlSyntax syntax;
     private final UnparseHandler unparseHandler;
     private final CallFactory callFactory;
 
-    MySqlInternalOperator(String name, SqlKind kind, SqlSyntax syntax,
+    /** Creates a SqlBasicInternalOperator. */
+    SqlBasicInternalOperator(String name, SqlKind kind, SqlSyntax syntax,
         int prec, boolean leftAssoc, SqlReturnTypeInference returnTypeInference,
         @Nullable SqlOperandTypeInference operandTypeInference,
         SqlOperandTypeChecker operandTypeChecker, UnparseHandler unparseHandler,
@@ -295,7 +297,7 @@ public abstract class SqlOperators {
     }
 
     /** Converts this operator back to a builder. */
-    OperatorBuilder toBuilder() {
+    @Override public OperatorBuilder toBuilder() {
       return new OperatorBuilderImpl(getName(), kind, syntax,
           prec(getLeftPrec(), getRightPrec()),
           isLeftAssoc(getLeftPrec(), getRightPrec()),
@@ -325,6 +327,7 @@ public abstract class SqlOperators {
     @Override public SqlCall createCall(
         @Nullable SqlLiteral functionQualifier, SqlParserPos pos,
         @Nullable SqlNode... operands) {
+      pos = pos.plusAll(operands);
       return callFactory.createCall(this, functionQualifier, pos,
           ImmutableNullableList.copyOf(operands));
     }

@@ -28,6 +28,7 @@ import org.apache.calcite.sql.SqlBasicFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
@@ -3776,9 +3777,7 @@ class RexProgramTest extends RexProgramTestBase {
    * Allow SqlUserDefinedFunction to define an optional Strong.Policy</a>. */
   @Test void testSimplifyFunctionWithStrongPolicy() {
     final SqlOperator op =
-        new SqlSpecialOperator("OP1", SqlKind.OTHER_FUNCTION, 0, false,
-            ReturnTypes.BOOLEAN, null, null) {
-        };
+        SqlOperators.create("OP1", SqlKind.OTHER_FUNCTION).operator();
     // Operator with no Strong.Policy defined: no simplification can be made
     checkSimplifyUnchanged(rexBuilder.makeCall(op, vInt()));
     checkSimplifyUnchanged(rexBuilder.makeCall(op, vIntNotNull()));

@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -23,23 +24,24 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Parse tree node that represents an {@code ORDER BY} on a query other than a
  * {@code SELECT} (e.g. {@code VALUES} or {@code UNION}).
  *
  * <p>It is a purely syntactic operator, and is eliminated by
- * {@link org.apache.calcite.sql.validate.SqlValidatorImpl#performUnconditionalRewrites}
+ * {@link org.apache.calcite.sql.validate.SqlValidatorImpl}.performUnconditionalRewrites
  * and replaced with the ORDER_OPERAND of SqlSelect.
  */
 public class SqlOrderBy extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR = new Operator() {
-    @SuppressWarnings("argument.type.incompatible")
-    @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-        SqlParserPos pos, @Nullable SqlNode... operands) {
-      return new SqlOrderBy(pos, operands[0], (SqlNodeList) operands[1],
-          operands[2], operands[3]);
-    }
-  };
+  public static final SqlSpecialOperator OPERATOR =
+      SqlOperators.create(SqlKind.ORDER_BY)
+          // lower precedence than SELECT to avoid extra parentheses
+          .withPrecedence(0, true)
+          .withUnparse(SqlOrderBy::unparse)
+          .withCallFactory(SqlOrderBy::create)
+          .toSpecial();
 
   public final SqlNode query;
   public final SqlNodeList orderList;
@@ -57,6 +59,13 @@ public class SqlOrderBy extends SqlCall {
     this.fetch = fetch;
   }
 
+  private static SqlCall create(SqlOperator operator, @Nullable SqlLiteral qualifier,
+      SqlParserPos pos, List<? extends @Nullable SqlNode> operands) {
+    return new SqlOrderBy(pos, requireNonNull(operands.get(0), "query"),
+        (SqlNodeList) requireNonNull(operands.get(1), "orderList"),
+        operands.get(2), operands.get(3));
+  }
+
   //~ Methods ----------------------------------------------------------------
 
   @Override public SqlKind getKind() {
@@ -72,35 +81,21 @@ public class SqlOrderBy extends SqlCall {
     return ImmutableNullableList.of(query, orderList, offset, fetch);
   }
 
-  /** Definition of {@code ORDER BY} operator. */
-  private static class Operator extends SqlSpecialOperator {
-    private Operator() {
-      // NOTE:  make precedence lower then SELECT to avoid extra parens
-      super("ORDER BY", SqlKind.ORDER_BY, 0);
+  private static void unparse(SqlWriter writer, SqlOperator operator,
+      SqlCall call, int leftPrec, int rightPrec) {
+    SqlOrderBy orderBy = (SqlOrderBy) call;
+    final SqlWriter.Frame frame =
+        writer.startList(SqlWriter.FrameTypeEnum.ORDER_BY);
+    orderBy.query.unparse(writer, operator.getLeftPrec(),
+        operator.getRightPrec());
+    if (orderBy.orderList != SqlNodeList.EMPTY) {
+      writer.sep("ORDER BY");
+      writer.list(SqlWriter.FrameTypeEnum.ORDER_BY_LIST, SqlWriter.COMMA,
+          orderBy.orderList);
     }
-
-    @Override public SqlSyntax getSyntax() {
-      return SqlSyntax.POSTFIX;
+    if (orderBy.offset != null || orderBy.fetch != null) {
+      writer.fetchOffset(orderBy.fetch, orderBy.offset);
     }
-
-    @Override public void unparse(
-        SqlWriter writer,
-        SqlCall call,
-        int leftPrec,
-        int rightPrec) {
-      SqlOrderBy orderBy = (SqlOrderBy) call;
-      final SqlWriter.Frame frame =
-          writer.startList(SqlWriter.FrameTypeEnum.ORDER_BY);
-      orderBy.query.unparse(writer, getLeftPrec(), getRightPrec());
-      if (orderBy.orderList != SqlNodeList.EMPTY) {
-        writer.sep(getName());
-        writer.list(SqlWriter.FrameTypeEnum.ORDER_BY_LIST, SqlWriter.COMMA,
-            orderBy.orderList);
-      }
-      if (orderBy.offset != null || orderBy.fetch != null) {
-        writer.fetchOffset(orderBy.fetch, orderBy.offset);
-      }
-      writer.endList(frame);
-    }
+    writer.endList(frame);
   }
 }
