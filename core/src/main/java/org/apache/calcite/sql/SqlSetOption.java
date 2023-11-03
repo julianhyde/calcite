@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -62,17 +63,16 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  */
 public class SqlSetOption extends SqlAlter {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("SET_OPTION", SqlKind.SET_OPTION) {
-        @SuppressWarnings("argument.type.incompatible")
-        @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-            SqlParserPos pos, @Nullable SqlNode... operands) {
-          final SqlNode scopeNode = operands[0];
-          return new SqlSetOption(pos,
-              scopeNode == null ? null : scopeNode.toString(),
-              (SqlIdentifier) operands[1], operands[2]);
-        }
-      };
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.SET_OPTION)
+          .withCallFactory((operator, qualifier, pos, operands) -> {
+            final SqlNode scope = operands.get(0);
+            return new SqlSetOption(pos,
+                scope == null ? null : scope.toString(),
+                requireNonNull((SqlIdentifier) operands.get(1), "name"),
+                operands.get(2));
+          })
+          .operator();
 
   /** Name of the option as an {@link org.apache.calcite.sql.SqlIdentifier}
    * with one or more parts.*/
@@ -97,9 +97,8 @@ public class SqlSetOption extends SqlAlter {
       @Nullable SqlNode value) {
     super(pos, scope);
     this.scope = scope;
-    this.name = name;
+    this.name = requireNonNull(name, "name");
     this.value = value;
-    assert name != null;
   }
 
   @Override public SqlKind getKind() {

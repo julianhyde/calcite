@@ -16,12 +16,11 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -70,19 +69,15 @@ public class SqlHint extends SqlCall {
   private final SqlNodeList options;
   private final HintOptionFormat optionFormat;
 
-  private static final SqlOperator OPERATOR =
-      new SqlSpecialOperator("HINT", SqlKind.HINT) {
-        @Override public SqlCall createCall(
-            @Nullable SqlLiteral functionQualifier,
-            SqlParserPos pos,
-            @Nullable SqlNode... operands) {
-          return new SqlHint(pos,
-              (SqlIdentifier) requireNonNull(operands[0], "name"),
-              (SqlNodeList) requireNonNull(operands[1], "options"),
-              ((SqlLiteral) requireNonNull(operands[2], "optionFormat"))
-                  .getValueAs(HintOptionFormat.class));
-        }
-      };
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.DESCRIBE_SCHEMA)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlHint(pos,
+                  (SqlIdentifier) requireNonNull(operands.get(0), "name"),
+                  (SqlNodeList) requireNonNull(operands.get(1), "options"),
+                  ((SqlLiteral) requireNonNull(operands.get(2), "optionFormat"))
+                      .getValueAs(HintOptionFormat.class)))
+          .operator();
 
   //~ Constructors -----------------------------------------------------------
 

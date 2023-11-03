@@ -33,9 +33,9 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.fun.SqlFloorFunction;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.util.RelToSqlConverterUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -57,6 +57,9 @@ public class FireboltSqlDialect extends SqlDialect {
 
   public static final SqlDialect DEFAULT =
       new FireboltSqlDialect(DEFAULT_CONTEXT);
+
+  private static final SqlOperator SUBSTR_OPERATOR =
+      SqlOperators.create("SUBSTR").toFunction();
 
   /** Creates a FireboltSqlDialect. */
   public FireboltSqlDialect(Context context) {
@@ -181,8 +184,7 @@ public class FireboltSqlDialect extends SqlDialect {
 
   @Override public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
     if (call.getOperator() == SqlStdOperatorTable.SUBSTRING) {
-      RelToSqlConverterUtil.specialOperatorByName("SUBSTR")
-          .unparse(writer, call, 0, 0);
+      SUBSTR_OPERATOR.unparse(writer, call, 0, 0);
     } else {
       switch (call.getKind()) {
       case FLOOR:

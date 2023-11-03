@@ -22,8 +22,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -37,11 +37,13 @@ import java.util.List;
  * <p>And {@code FOREIGN KEY}, when we support it.
  */
 public class SqlKeyConstraint extends SqlCall {
-  private static final SqlSpecialOperator UNIQUE =
-      new SqlSpecialOperator("UNIQUE", SqlKind.UNIQUE);
+  private static final SqlOperator UNIQUE =
+      SqlOperators.create(SqlKind.UNIQUE)
+          .operator();
 
-  protected static final SqlSpecialOperator PRIMARY =
-      new SqlSpecialOperator("PRIMARY KEY", SqlKind.PRIMARY_KEY);
+  protected static final SqlOperator PRIMARY =
+      SqlOperators.create(SqlKind.PRIMARY_KEY)
+          .operator();
 
   private final @Nullable SqlIdentifier name;
   private final SqlNodeList columnList;

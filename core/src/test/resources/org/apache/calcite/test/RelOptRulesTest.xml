@@ -12404,7 +12404,7 @@ LogicalProject(ENAME=[$1])
     <Resource name="planAfter">
       <![CDATA[
 LogicalProject(ENAME=[$1])
-  LogicalCalc(expr#0..8=[{inputs}], expr#9=[10:BIGINT], expr#10=[*($t5, $t9)], expr#11=[100.0:DECIMAL(4, 1)], expr#12=[Reinterpret($t11)], expr#13=[>($t10, $t12)], proj#0..8=[{exprs}], $condition=[$t13])
+  LogicalCalc(expr#0..8=[{inputs}], expr#9=[10:BIGINT], expr#10=[*($t5, $t9)], expr#11=[100.0:DECIMAL(4, 1)], expr#12=[REINTERPRET($t11)], expr#13=[>($t10, $t12)], proj#0..8=[{exprs}], $condition=[$t13])
     LogicalTableScan(table=[[CATALOG, SALES, EMP]])
 ]]>
     </Resource>

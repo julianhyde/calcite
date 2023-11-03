@@ -23,8 +23,8 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -43,8 +43,9 @@ public class SqlCreateFunction extends SqlCreate {
   private final SqlNode className;
   private final SqlNodeList usingList;
 
-  private static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("CREATE FUNCTION", SqlKind.CREATE_FUNCTION);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.CREATE_FUNCTION)
+          .operator();
 
   /** Creates a SqlCreateFunction. */
   public SqlCreateFunction(SqlParserPos pos, boolean replace,

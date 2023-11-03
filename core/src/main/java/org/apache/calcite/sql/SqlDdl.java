@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Objects;
@@ -24,7 +25,7 @@ import java.util.Objects;
 public abstract class SqlDdl extends SqlCall {
   /** Use this operator only if you don't have a better one. */
   protected static final SqlOperator DDL_OPERATOR =
-      new SqlSpecialOperator("DDL", SqlKind.OTHER_DDL);
+      SqlOperators.create("DDL", SqlKind.OTHER_DDL).operator();
 
   private final SqlOperator operator;
 

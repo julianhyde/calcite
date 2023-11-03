@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -26,25 +27,22 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A <code>SqlInsert</code> is a node of a parse tree which represents an INSERT
  * statement.
  */
 public class SqlInsert extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("INSERT", SqlKind.INSERT) {
-        @SuppressWarnings("argument.type.incompatible")
-        @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-            SqlParserPos pos,
-            @Nullable SqlNode... operands) {
-          return new SqlInsert(
-              pos,
-              (SqlNodeList) operands[0],
-              operands[1],
-              operands[2],
-              (SqlNodeList) operands[3]);
-        }
-      };
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.INSERT)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlInsert(pos,
+                  requireNonNull((SqlNodeList) operands.get(0), "keywords"),
+                  requireNonNull(operands.get(1), "targetTable"),
+                  requireNonNull(operands.get(2), "source"),
+                  (SqlNodeList) operands.get(3)))
+          .operator();
 
   SqlNodeList keywords;
   SqlNode targetTable;
@@ -59,11 +57,10 @@ public class SqlInsert extends SqlCall {
       SqlNode source,
       @Nullable SqlNodeList columnList) {
     super(pos);
-    this.keywords = keywords;
+    this.keywords = requireNonNull(keywords, "keywords");
     this.targetTable = targetTable;
     this.source = source;
     this.columnList = columnList;
-    assert keywords != null;
   }
 
   //~ Methods ----------------------------------------------------------------

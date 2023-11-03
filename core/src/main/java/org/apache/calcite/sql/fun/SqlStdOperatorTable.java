@@ -38,7 +38,6 @@ import org.apache.calcite.sql.SqlMatchFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNullTreatmentOperator;
 import org.apache.calcite.sql.SqlNumericLiteral;
-import org.apache.calcite.sql.SqlOperandCountRange;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOverOperator;
 import org.apache.calcite.sql.SqlPostfixOperator;
@@ -1544,21 +1543,13 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    */
   public static final SqlBinaryOperator OVER = new SqlOverOperator();
 
-  /**
-   * An <code>REINTERPRET</code> operator is internal to the planner. When the
-   * physical storage of two types is the same, this operator may be used to
-   * reinterpret values of one type as the other. This operator is similar to
-   * a cast, except that it does not alter the data value. Like a regular cast
-   * it accepts one operand and stores the target type as the return type. It
-   * performs an overflow check if it has <i>any</i> second operand, whether
-   * true or not.
-   */
+  /** Internal operator.
+   * @deprecated Use {@link SqlInternalOperators#REINTERPRET}. */
+  @Deprecated // to be removed before 2.0
   public static final SqlSpecialOperator REINTERPRET =
-      new SqlSpecialOperator("Reinterpret", SqlKind.REINTERPRET) {
-        @Override public SqlOperandCountRange getOperandCountRange() {
-          return SqlOperandCountRanges.between(1, 2);
-        }
-      };
+      SqlOperators.create(SqlKind.REINTERPRET)
+          .withOperandCountRange(SqlOperandCountRanges.between(1, 2))
+          .toSpecial();
 
   //-------------------------------------------------------------
   //                   FUNCTIONS

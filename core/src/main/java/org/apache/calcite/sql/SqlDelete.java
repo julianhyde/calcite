@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -31,8 +32,8 @@ import java.util.List;
  * statement.
  */
 public class SqlDelete extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("DELETE", SqlKind.DELETE);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create("DELETE", SqlKind.DELETE).operator();
 
   SqlNode targetTable;
   @Nullable SqlNode condition;

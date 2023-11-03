@@ -47,7 +47,7 @@ public abstract class SqlDropObject extends SqlDrop {
   }
 
   @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-    writer.keyword(getOperator().getName()); // "DROP TABLE" etc.
+    writer.keyword(getOperator().getName().replace('_', ' ')); // "DROP TABLE" etc.
     if (ifExists) {
       writer.keyword("IF EXISTS");
     }

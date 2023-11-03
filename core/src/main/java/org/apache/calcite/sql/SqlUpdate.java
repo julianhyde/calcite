@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -28,13 +29,16 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A <code>SqlUpdate</code> is a node of a parse tree which represents an UPDATE
  * statement.
  */
 public class SqlUpdate extends SqlCall {
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("UPDATE", SqlKind.UPDATE);
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.UPDATE)
+          .operator();
 
   SqlNode targetTable;
   SqlNodeList targetColumnList;
@@ -143,7 +147,8 @@ public class SqlUpdate extends SqlCall {
   /**
    * Gets the source SELECT expression for the data to be updated. Returns
    * null before the statement has been expanded by
-   * {@link SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
+   * {@link SqlValidatorImpl}{@code
+   * .performUnconditionalRewrites(SqlNode, boolean)}.
    *
    * @return the source SELECT for the data to be updated
    */
@@ -171,10 +176,10 @@ public class SqlUpdate extends SqlCall {
     for (Pair<SqlNode, SqlNode> pair
         : Pair.zip(getTargetColumnList(), getSourceExpressionList())) {
       writer.sep(",");
-      SqlIdentifier id = (SqlIdentifier) pair.left;
+      SqlIdentifier id = requireNonNull((SqlIdentifier) pair.left, "id");
       id.unparse(writer, opLeft, opRight);
       writer.keyword("=");
-      SqlNode sourceExp = pair.right;
+      SqlNode sourceExp = requireNonNull(pair.right, "sourceExp");
       sourceExp.unparse(writer, opLeft, opRight);
     }
     writer.endList(setFrame);

@@ -17,12 +17,15 @@
 package org.apache.calcite.sql.fun;
 
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlBasicFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlInternalOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperandCountRange;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -44,20 +47,22 @@ import static java.util.Objects.requireNonNull;
  * and {@link SqlInternalOperator}.
  */
 public abstract class SqlOperators {
-  /** Creates an operator. */
-  static OperatorBuilder create(SqlKind kind, String name) {
-    return new OperatorBuilderImpl(name, kind, 0, 0,
+  /** Creates a builder. */
+  public static OperatorBuilder create(String name, SqlKind kind) {
+    return new OperatorBuilderImpl(name, kind, SqlSyntax.INTERNAL, 2, true,
         ReturnTypes.ARG0, null, OperandTypes.VARIADIC,
         UnparseHandler::unparseUsingSyntax,
         CallFactory::basic);
   }
 
+  /** Creates a builder. */
   public static OperatorBuilder create(SqlKind kind) {
-    return create(kind, kind.name());
+    return create(kind.name(), kind);
   }
 
-  static OperatorBuilder create(String name) {
-    return create(SqlKind.OTHER, name);
+  /** Creates a builder. */
+  public static OperatorBuilder create(String name) {
+    return create(name, SqlKind.OTHER);
   }
 
   /** Converts a basic operator to internal.
@@ -66,7 +71,7 @@ public abstract class SqlOperators {
     if (operator instanceof SqlInternalOperator) {
       return (SqlInternalOperator) operator;
     }
-    return ((SqlBasicOperator) operator).toInternal();
+    return ((Rebuildable) operator).toBuilder().toInternal();
   }
 
   /** Given the precedence of an operator and whether it is left-associative,
@@ -111,50 +116,17 @@ public abstract class SqlOperators {
     return leftPrec > rightPrec;
   }
 
-  /** Subject to change. */
-  static class SqlBasicOperator extends SqlOperator {
-    private final UnparseHandler unparseHandler;
-
-    @Override public SqlSyntax getSyntax() {
-      return SqlSyntax.SPECIAL;
-    }
-
-    /** Private constructor. Use {@link #create}. */
-    private SqlBasicOperator(String name, SqlKind kind, int leftPrecedence,
-        int rightPrecedence, SqlReturnTypeInference returnTypeInference,
-        @Nullable SqlOperandTypeInference operandTypeInference,
-        SqlOperandTypeChecker operandTypeChecker,
-        UnparseHandler unparseHandler) {
-      super(name, kind, leftPrecedence, rightPrecedence,
-          returnTypeInference, operandTypeInference, operandTypeChecker);
-      this.unparseHandler = requireNonNull(unparseHandler, "unparseHandler");
-    }
-
-    @Override public SqlReturnTypeInference getReturnTypeInference() {
-      return requireNonNull(super.getReturnTypeInference(),
-          "returnTypeInference");
-    }
-
-    @Override public SqlOperandTypeChecker getOperandTypeChecker() {
-      return requireNonNull(super.getOperandTypeChecker(),
-          "operandTypeChecker");
-    }
-    @Override public void unparse(SqlWriter writer, SqlCall call, int leftPrec,
-        int rightPrec) {
-      unparseHandler.unparse(writer, call, leftPrec, rightPrec);
-    }
-
-    public SqlInternalOperator toInternal() {
-      throw new UnsupportedOperationException(); // TODO
-    }
+  public static OperatorBuilder createFrom(SqlOperator operator) {
+    throw new UnsupportedOperationException("createFrom"); // TODO
   }
 
   /** Subject to change. */
   static class OperatorBuilderImpl implements OperatorBuilder {
     final String name;
     final SqlKind kind;
-    final int leftPrec;
-    final int rightPrec;
+    private final SqlSyntax syntax;
+    final int prec;
+    final boolean leftAssoc;
     final SqlReturnTypeInference returnTypeInference;
     final @Nullable SqlOperandTypeInference operandTypeInference;
     final SqlOperandTypeChecker operandTypeChecker;
@@ -162,15 +134,16 @@ public abstract class SqlOperators {
     final CallFactory callFactory;
 
     /** Private constructor. Use {@link #create}. */
-    private OperatorBuilderImpl(String name, SqlKind kind, int leftPrec,
-        int rightPrec, SqlReturnTypeInference returnTypeInference,
+    private OperatorBuilderImpl(String name, SqlKind kind, SqlSyntax syntax,
+        int prec, boolean leftAssoc, SqlReturnTypeInference returnTypeInference,
         @Nullable SqlOperandTypeInference operandTypeInference,
         SqlOperandTypeChecker operandTypeChecker,
         UnparseHandler unparseHandler, CallFactory callFactory) {
       this.name = name;
       this.kind = kind;
-      this.leftPrec = leftPrec;
-      this.rightPrec = rightPrec;
+      this.syntax = syntax;
+      this.prec = prec;
+      this.leftAssoc = leftAssoc;
       this.returnTypeInference =
           requireNonNull(returnTypeInference, "returnTypeInference");
       this.operandTypeInference = operandTypeInference;
@@ -181,66 +154,74 @@ public abstract class SqlOperators {
     }
 
     @Override public OperatorBuilder withCallFactory(CallFactory callFactory) {
-      return new OperatorBuilderImpl(name, kind, leftPrec, rightPrec,
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
 
     @Override public OperatorBuilderImpl withKind(SqlKind kind) {
-      return new OperatorBuilderImpl(name, kind, leftPrec, rightPrec,
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
 
     @Override public OperatorBuilderImpl withPrecedence(int prec,
         boolean leftAssoc) {
-      return new OperatorBuilderImpl(name, kind,
-          leftPrec(prec, leftAssoc), rightPrec(prec, leftAssoc),
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
 
     @Override public OperatorBuilderImpl withReturnTypeInference(
         SqlReturnTypeInference returnTypeInference) {
-      return new OperatorBuilderImpl(name, kind, leftPrec, rightPrec,
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
 
     @Override public OperatorBuilderImpl withOperandChecker(
         SqlOperandTypeChecker operandTypeChecker) {
-      return new OperatorBuilderImpl(name, kind, leftPrec, rightPrec,
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
+          returnTypeInference, operandTypeInference, operandTypeChecker,
+          unparseHandler, callFactory);
+    }
+
+    @Override public OperatorBuilder withOperandCountRange(SqlOperandCountRange countRange) {
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
 
     @Override public OperatorBuilderImpl withUnparse(
         UnparseHandler unparseHandler) {
-      return new OperatorBuilderImpl(name, kind, leftPrec, rightPrec,
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
+          returnTypeInference, operandTypeInference, operandTypeChecker,
+          unparseHandler, callFactory);
+    }
+
+    @Override public OperatorBuilder withSyntax(SqlSyntax syntax) {
+      return new OperatorBuilderImpl(name, kind, syntax, prec, leftAssoc,
           returnTypeInference, operandTypeInference, operandTypeChecker,
           unparseHandler, callFactory);
     }
 
     @Override public SqlInternalOperator toInternal() {
-      return new SqlInternalOperator(name, kind,
-          prec(leftPrec, rightPrec), isLeftAssoc(leftPrec, rightPrec),
-          returnTypeInference, operandTypeInference, operandTypeChecker) {
-        @Override public void unparse(SqlWriter writer, SqlCall call,
-            int leftPrec, int rightPrec) {
-          unparseHandler.unparse(writer, call, leftPrec, rightPrec);
-        }
-
-        @Override public SqlCall createCall(
-            @Nullable SqlLiteral functionQualifier, SqlParserPos pos,
-            @Nullable SqlNode... operands) {
-          return callFactory.createCall(this, functionQualifier, pos,
-              ImmutableNullableList.copyOf(operands));
-        }
-      };
+      return new MySqlInternalOperator(name, kind, syntax, prec, leftAssoc,
+          returnTypeInference, operandTypeInference, operandTypeChecker,
+          unparseHandler, callFactory);
     }
 
     @Override public SqlOperator operator() {
       return toInternal();
+    }
+
+    @Override public SqlSpecialOperator toSpecial() {
+      return toInternal();
+    }
+
+    @Override public SqlOperator toFunction() {
+      return SqlBasicFunction.create(name, returnTypeInference, operandTypeChecker)
+          .withKind(kind);
     }
   }
 
@@ -261,8 +242,21 @@ public abstract class SqlOperators {
     OperatorBuilder withOperandChecker(
         SqlOperandTypeChecker operandTypeChecker);
 
+    default OperatorBuilder withOperandCountRange(
+        SqlOperandCountRange countRange) {
+      return withOperandChecker(OperandTypes.repeat(countRange, OperandTypes.ANY));
+    }
+
+    OperatorBuilder withSyntax(SqlSyntax syntax);
+
     /** Converts this builder to an {@link SqlInternalOperator}. */
     SqlInternalOperator toInternal();
+
+    /** Converts this builder to an {@link SqlSpecialOperator}. */
+    SqlSpecialOperator toSpecial();
+
+    /** Converts this builder to an operator with function syntax. */
+    SqlOperator toFunction();
   }
 
   /** Creates a {@link SqlCall} or subclass specific to the operator. */
@@ -280,5 +274,64 @@ public abstract class SqlOperators {
         List<? extends @Nullable SqlNode> operands) {
       return new SqlBasicCall(operator, operands, pos, qualifier);
     }
+  }
+
+  /** Basic implementation of {@link SqlInternalOperator}. */
+  private static class MySqlInternalOperator extends SqlInternalOperator {
+    private final SqlSyntax syntax;
+    private final UnparseHandler unparseHandler;
+    private final CallFactory callFactory;
+
+    MySqlInternalOperator(String name, SqlKind kind, SqlSyntax syntax,
+        int prec, boolean leftAssoc, SqlReturnTypeInference returnTypeInference,
+        @Nullable SqlOperandTypeInference operandTypeInference,
+        SqlOperandTypeChecker operandTypeChecker, UnparseHandler unparseHandler,
+        CallFactory callFactory) {
+      super(name, kind, prec, leftAssoc, returnTypeInference,
+          operandTypeInference, operandTypeChecker);
+      this.syntax = syntax;
+      this.unparseHandler = unparseHandler;
+      this.callFactory = callFactory;
+    }
+
+    /** Converts this operator back to a builder. */
+    OperatorBuilder toBuilder() {
+      return new OperatorBuilderImpl(getName(), kind, syntax,
+          prec(getLeftPrec(), getRightPrec()),
+          isLeftAssoc(getLeftPrec(), getRightPrec()),
+          getReturnTypeInference(), getOperandTypeInference(),
+          getOperandTypeChecker(), unparseHandler, callFactory);
+    }
+
+    @Override public SqlReturnTypeInference getReturnTypeInference() {
+      return requireNonNull(super.getReturnTypeInference(),
+          "returnTypeInference");
+    }
+
+    @Override public SqlOperandTypeChecker getOperandTypeChecker() {
+      return requireNonNull(super.getOperandTypeChecker(),
+          "operandTypeChecker");
+    }
+
+    @Override public SqlSyntax getSyntax() {
+      return syntax;
+    }
+
+    @Override public void unparse(SqlWriter writer, SqlCall call,
+        int leftPrec, int rightPrec) {
+      unparseHandler.unparse(writer, this, call, leftPrec, rightPrec);
+    }
+
+    @Override public SqlCall createCall(
+        @Nullable SqlLiteral functionQualifier, SqlParserPos pos,
+        @Nullable SqlNode... operands) {
+      return callFactory.createCall(this, functionQualifier, pos,
+          ImmutableNullableList.copyOf(operands));
+    }
+  }
+
+  /** Operator that can be converted by into a builder. */
+  private interface Rebuildable {
+    OperatorBuilder toBuilder();
   }
 }

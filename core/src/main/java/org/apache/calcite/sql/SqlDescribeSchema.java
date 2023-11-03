@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql;
 
+import org.apache.calcite.sql.fun.SqlOperators;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
@@ -23,20 +24,20 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A <code>SqlDescribeSchema</code> is a node of a parse tree that represents a
  * {@code DESCRIBE SCHEMA} statement.
  */
 public class SqlDescribeSchema extends SqlCall {
 
-  public static final SqlSpecialOperator OPERATOR =
-      new SqlSpecialOperator("DESCRIBE_SCHEMA", SqlKind.DESCRIBE_SCHEMA) {
-        @SuppressWarnings("argument.type.incompatible")
-        @Override public SqlCall createCall(@Nullable SqlLiteral functionQualifier,
-            SqlParserPos pos, @Nullable SqlNode... operands) {
-          return new SqlDescribeSchema(pos, (SqlIdentifier) operands[0]);
-        }
-      };
+  static final SqlOperator OPERATOR =
+      SqlOperators.create(SqlKind.DESCRIBE_SCHEMA)
+          .withCallFactory((operator, qualifier, pos, operands) ->
+              new SqlDescribeSchema(pos,
+                  (SqlIdentifier) requireNonNull(operands.get(0), "operand")))
+          .operator();
 
   SqlIdentifier schema;
 

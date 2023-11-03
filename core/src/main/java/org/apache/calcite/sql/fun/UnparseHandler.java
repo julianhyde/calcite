@@ -27,15 +27,15 @@ import org.apache.calcite.sql.SqlWriter;
  */
 @FunctionalInterface
 interface UnparseHandler {
-  void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec);
+  void unparse(SqlWriter writer, SqlOperator operator, SqlCall call,
+      int leftPrec, int rightPrec);
 
   /**
    * Implementation of {@link UnparseHandler} that uses an operator's
    * syntax.
    */
-  static void unparseUsingSyntax(SqlWriter writer, SqlCall call,
-      int leftPrec, int rightPrec) {
-    final SqlOperator operator = call.getOperator();
+  static void unparseUsingSyntax(SqlWriter writer, SqlOperator operator,
+      SqlCall call, int leftPrec, int rightPrec) {
     final SqlSyntax syntax = operator.getSyntax();
     syntax.unparse(writer, operator, call, leftPrec, rightPrec);
   }
@@ -44,8 +44,8 @@ interface UnparseHandler {
    * Implementation of {@link UnparseHandler} that delegates to
    * operand #0.
    */
-  static void unparseUsingOperand0(SqlWriter writer, SqlCall call,
-      int leftPrec, int rightPrec) {
+  static void unparseUsingOperand0(SqlWriter writer, SqlOperator operator,
+      SqlCall call, int leftPrec, int rightPrec) {
     call.operand(0).unparse(writer, leftPrec, rightPrec);
   }
 }
