@@ -622,12 +622,12 @@ public class RelJson {
         }
         map.put("operands", list);
         switch (node.getKind()) {
-          case MINUS:
-          case CAST:
-            map.put("type", toJson(node.getType()));
-            break;
-          default:
-            break;
+        case MINUS:
+        case CAST:
+          map.put("type", toJson(node.getType()));
+          break;
+        default:
+          break;
         }
         if (call.getOperator() instanceof SqlFunction) {
           if (((SqlFunction) call.getOperator()).getFunctionType().isUserDefined()) {
