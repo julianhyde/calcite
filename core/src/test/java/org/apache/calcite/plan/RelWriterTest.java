@@ -1074,10 +1074,8 @@ class RelWriterTest {
     final RelNode rel = builder
         .scan("EMP")
         .project(builder.field("JOB"),
-            rb.makeCall(intervalType,
-                SqlStdOperatorTable.MINUS_DATE,
-                ImmutableList.of(op2, op1))
-        ).build();
+            rb.makeCall(intervalType, SqlStdOperatorTable.MINUS_DATE,
+                ImmutableList.of(op2, op1))).build();
     final RelJsonWriter jsonWriter =
         new RelJsonWriter(new JsonBuilder(), RelJson::withLibraryOperatorTable);
     rel.explain(jsonWriter);
