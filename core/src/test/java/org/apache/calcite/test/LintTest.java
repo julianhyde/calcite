@@ -97,11 +97,11 @@ class LintTest {
                 && line.contains("</p>"),
             line -> line.state().message("no '</p>'", line))
 
-        // No "**/"
-        .add(line -> line.contains(" **/")
+        // No "**/" or "* */"
+        .add(line -> (line.contains(" **/") || line.contains("* */"))
                 && line.state().inJavadoc(),
             line ->
-                line.state().message("no '**/'; use '*/'",
+                line.state().message("no '**/' or '* */'; use '*/'",
                     line))
 
         // A Javadoc paragraph '<p>' must not be on its own line.
@@ -210,6 +210,10 @@ class LintTest {
         + "  }\n"
         + "  for (int i : justRight) {\n"
         + "  }\n"
+        + "  /**\n"
+        + "   * Bad javadoc.\n"
+        + "   * */\n"
+        + "  int x = 1;\n"
         + "}\n";
     final String expectedMessages = "["
         + "GuavaCharSource{memory}:4:"
@@ -225,7 +229,7 @@ class LintTest {
         + "GuavaCharSource{memory}:11:"
         + "First @tag must be preceded by blank line\n"
         + "GuavaCharSource{memory}:12:"
-        + "no '**/'; use '*/'\n"
+        + "no '**/' or '* */'; use '*/'\n"
         + "GuavaCharSource{memory}:14:"
         + "':' must be surrounded by ' '\n"
         + "GuavaCharSource{memory}:15:"
@@ -236,6 +240,8 @@ class LintTest {
         + "':' must be surrounded by ' '\n"
         + "GuavaCharSource{memory}:21:"
         + "':' must be surrounded by ' '\n"
+        + "GuavaCharSource{memory}:27:"
+        + "no '**/' or '* */'; use '*/'\n"
         + "";
     final Puffin.Program<GlobalState> program = makeProgram();
     final StringWriter sw = new StringWriter();
