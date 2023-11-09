@@ -199,10 +199,9 @@ public class JaninoRelMetadataProvider implements RelMetadataProvider, MetadataH
   public void register(Iterable<Class<? extends RelNode>> classes) {
   }
 
-  /** Exception that indicates there there should be a handler for
-   * this class but there is not. The action is probably to
-   * re-generate the handler class. Use {@link MetadataHandlerProvider.NoHandler} instead.
-   * */
+  /** Exception that indicates there there should be a handler for this class
+   * but there is not. The action is probably to re-generate the handler
+   * class. Use {@link MetadataHandlerProvider.NoHandler} instead. */
   @Deprecated
   public static class NoHandler extends MetadataHandlerProvider.NoHandler {
     public NoHandler(Class<? extends RelNode> relClass) {

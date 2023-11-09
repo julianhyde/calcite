@@ -553,7 +553,7 @@ public class ModelHandler {
      * "http://localhost/foo/bar.json", "inline:{...}",
      * "target/test-classes/model.yaml",
      * "http://localhost/foo/bar.yaml", "inline:..."
-     * */
+     */
     MODEL_URI("modelUri"),
 
     /** Base directory from which to read files. */

@@ -161,7 +161,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
    * Returns the appropriate {@link ComplexMetric} that is mapped from the given <code>alias</code>
    * if it exists, and is used in the expected context with the given {@link AggregateCall}.
    * Otherwise returns <code>null</code>.
-   * */
+   */
   public ComplexMetric resolveComplexMetric(String alias, AggregateCall call) {
     List<ComplexMetric> potentialMetrics = getComplexMetricsFrom(alias);
 

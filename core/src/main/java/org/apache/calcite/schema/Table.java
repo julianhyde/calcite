@@ -65,9 +65,7 @@ public interface Table {
   /** Type of table. */
   Schema.TableType getJdbcTableType();
 
-  /**
-   * Determines whether the given {@code column} has been rolled up.
-   * */
+  /** Returns whether the given {@code column} has been rolled up. */
   boolean isRolledUp(String column);
 
   /**

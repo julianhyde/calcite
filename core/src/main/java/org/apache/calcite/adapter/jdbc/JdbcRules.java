@@ -435,7 +435,7 @@ public class JdbcRules {
   /** Calc operator implemented in JDBC convention.
    *
    * @see org.apache.calcite.rel.core.Calc
-   * */
+   */
   @Deprecated // to be removed before 2.0
   public static class JdbcCalc extends SingleRel implements JdbcRel {
     private final RexProgram program;

@@ -65,7 +65,7 @@ public class ComplexMetric {
   /**
    * Returns true if and only if this <code>ComplexMetric</code>
    * can be used in the given {@link AggregateCall}.
-   * */
+   */
   public boolean canBeUsed(AggregateCall call) {
     switch (type) {
     case HYPER_UNIQUE:

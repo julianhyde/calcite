@@ -1058,7 +1058,7 @@ class RelWriterTest {
    *
    * <p>Before the fix, RelJson.toRex would throw an ArrayIndexOutOfBounds error
    * when deserialization.
-   * */
+   */
   @Test void testDeserializeMinusDateOperator() {
     final FrameworkConfig config = RelBuilderTest.config().build();
     final RelBuilder builder = RelBuilder.create(config);

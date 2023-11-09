@@ -33,7 +33,7 @@ import java.util.List;
  * The REGEXP_REPLACE(source_string, pattern, replacement [, pos, occurrence, match_type])
  * searches for a regular expression pattern and replaces every occurrence of the pattern
  * with the specified string.
- * */
+ */
 public class SqlRegexpReplaceFunction extends SqlFunction {
 
   public SqlRegexpReplaceFunction() {
