@@ -1510,7 +1510,7 @@ public class CalciteAssert {
      * it checks if a {@link SqlValidatorException} or {@link CalciteException} was thrown.
      *
      * @param optionalMessage An optional message to check for in the output stacktrace
-     * */
+     */
     public AssertQuery failsAtValidation(String optionalMessage) {
       return withConnection(connection ->
         assertQuery(connection, sql, limit, materializationsEnabled,

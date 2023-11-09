@@ -111,7 +111,7 @@ public abstract class RelEnumTypes {
    * The converse of {@link #fromEnum(Enum)}.
    *
    * @throws NullPointerException if there is no corresponding registered {@link Enum}
-   * */
+   */
   static <E extends Enum<E>> @NonNull E toEnum(String name) {
     return (E) requireNonNull(ENUM_BY_NAME.get(name));
   }

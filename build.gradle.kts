@@ -550,7 +550,7 @@ allprojects {
                 java {
                     filter.exclude(*javaccGeneratedPatterns +
                             "**/test/java/*.java" +
-                            "**/RelRule.java" /** remove as part of CALCITE-4831 **/)
+                            "**/RelRule.java" /* remove as part of CALCITE-4831 */)
                     license()
                     if (!project.props.bool("junit4", default = false)) {
                         replace("junit5: Test", "org.junit.Test", "org.junit.jupiter.api.Test")

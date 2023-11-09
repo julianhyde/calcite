@@ -2603,7 +2603,7 @@ public class DruidAdapter2IT {
    * Test to make sure that if a complex metric is also a dimension, then
    * {@link org.apache.calcite.adapter.druid.DruidTable} should allow it to be used like any other
    * column.
-   * */
+   */
   @Test void testComplexMetricAlsoDimension() {
     foodmartApprox("select \"customer_id\" from \"foodmart\"")
         .runs();
@@ -2622,7 +2622,7 @@ public class DruidAdapter2IT {
   /**
    * Test to make sure that the mapping from a Table name to a Table returned from
    * {@link org.apache.calcite.adapter.druid.DruidSchema} is always the same Java object.
-   * */
+   */
   @Test void testTableMapReused() {
     AbstractSchema schema =
         new DruidSchema("http://localhost:8082", "http://localhost:8081", true);
