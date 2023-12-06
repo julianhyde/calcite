@@ -2266,7 +2266,8 @@ class RelToSqlConverterTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6150">[CALCITE-6150]
-   * Generate dialect-specific SQL for EXTRACT operator</a>. */
+   * JDBC adapter for ClickHouse generates incorrect SQL for certain units in
+   * the EXTRACT function</a>. Also tests other units in other dialects. */
   @Test void testExtract() {
     final String sql = "SELECT\n"
         + "EXTRACT(YEAR FROM DATE '2023-12-01'),\n"
