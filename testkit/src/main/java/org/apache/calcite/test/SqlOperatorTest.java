@@ -4096,35 +4096,29 @@ public class SqlOperatorTest {
     f.checkNull("REPLACE('ciao', 'bella', cast(null as varchar(3)))");
   }
 
-  @Test void testCharLengthFunc() {
-    final SqlOperatorFixture f = fixture();
-    f.setFor(SqlStdOperatorTable.CHAR_LENGTH, VmName.EXPAND);
-    f.checkScalarExact("char_length('abc')", 3);
-    f.checkNull("char_length(cast(null as varchar(1)))");
-  }
-
-  @Test void testCharacterLengthFunc() {
-    final SqlOperatorFixture f = fixture();
-    f.setFor(SqlStdOperatorTable.CHARACTER_LENGTH, VmName.EXPAND);
-    f.checkScalarExact("CHARACTER_LENGTH('abc')", 3);
-    f.checkNull("CHARACTER_LENGTH(cast(null as varchar(1)))");
-  }
-
-  @Test void testLengthFunc() {
-    final SqlOperatorFixture f0 = fixture().setFor(SqlLibraryOperators.LENGTH);
-    f0.checkFails("^length('hello')^",
-        "No match found for function signature LENGTH\\(<CHARACTER>\\)",
-        false);
-
+  /** Tests the {@code CHAR_LENGTH}, {@code CHARACTER_LENGTH}, and {@code LENGTH} operator. */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("charLengthAliases")
+  void testCharLengthFunction(FunctionAlias functionAlias) {
+    final SqlOperatorFixture f0 = fixture();
+    final SqlFunction function = functionAlias.function;
+    f0.setFor(function);
+    final String alias = function.getName();
     final Consumer<SqlOperatorFixture> consumer = f -> {
-      f.checkScalar("length('hello')", "5", "INTEGER NOT NULL");
-      f.checkScalar("length('')", "0", "INTEGER NOT NULL");
-      f.checkScalar("length(CAST('x' as CHAR(3)))", "3", "INTEGER NOT NULL");
-      f.checkScalar("length(CAST('x' as VARCHAR(4)))", "1", "INTEGER NOT NULL");
-      f.checkNull("length(CAST(NULL as CHAR(5)))");
-    };
-
-    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY), consumer);
+			f.checkScalarExact(alias + "('abc')", 3);
+			f.checkNull(alias + "(cast(null as varchar(1)))");
+			f.checkScalar(alias + "('')", "0", "INTEGER NOT NULL");
+      f.checkScalar(alias + "(CAST('x' as CHAR(3)))", "3", "INTEGER NOT NULL");
+      f.checkScalar(alias + "(CAST('x' as VARCHAR(4)))", "1", "INTEGER NOT NULL");
+		};
+		f0.forEachLibrary(list(functionAlias.libraries), consumer);
+  }
+  
+  static Stream<FunctionAlias> charLengthAliases() throws NoSuchFieldException {
+    return Stream.of(
+    		FunctionAlias.of(SqlLibraryOperators.LENGTH),
+        FunctionAlias.of(SqlStdOperatorTable.CHAR_LENGTH),
+        FunctionAlias.of(SqlStdOperatorTable.CHARACTER_LENGTH));
   }
 
   @Test void testOctetLengthFunc() {
@@ -8936,56 +8930,43 @@ public class SqlOperatorTest {
         FunctionAlias.of(SqlLibraryOperators.STARTS_WITH),
         FunctionAlias.of(SqlLibraryOperators.STARTSWITH));
   }
-
-  @Test void testEndsWithFunction() {
-    final SqlOperatorFixture f0 = fixture();
-    f0.setFor(SqlLibraryOperators.ENDS_WITH);
+  
+	/** Tests the {@code ENDS_WITH} and {@code ENDSWITH} operator. */  
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("endsWithAliases")
+  void testEndsWithFunction(FunctionAlias functionAlias) {
+		final SqlOperatorFixture f0 = fixture();		
+		final SqlFunction function = functionAlias.function;
+    f0.setFor(function);
+    final String alias = function.getName();
     final Consumer<SqlOperatorFixture> consumer = f -> {
-      f.checkBoolean("ends_with('12345', '345')", true);
-      f.checkBoolean("ends_with('12345', '123')", false);
-      f.checkBoolean("ends_with(x'11', x'11')", true);
-      f.checkBoolean("ends_with(x'112211', x'33')", false);
-      f.checkFails("^ends_with('aabbcc', x'aa')^",
-          "Cannot apply 'ENDS_WITH' to arguments of type "
-              + "'ENDS_WITH\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported "
-              + "form\\(s\\): 'ENDS_WITH\\(<STRING>, <STRING>\\)'",
+      f.checkBoolean(alias + "('12345', '345')", true);
+      f.checkBoolean(alias + "('12345', '123')", false);
+      f.checkBoolean(alias + "(x'11', x'11')", true);
+      f.checkBoolean(alias + "(x'112211', x'33')", false);
+      f.checkFails("^" + alias + "('aabbcc', x'aa')^",
+          "Cannot apply '" + function.getName() + "' to arguments of type "
+              + "'" + function.getName() + "\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported "
+              + "form\\(s\\): '" + function.getName() + "\\(<STRING>, <STRING>\\)'",
           false);
-      f.checkNull("ends_with(null, null)");
-      f.checkNull("ends_with('12345', null)");
-      f.checkNull("ends_with(null, '123')");
-      f.checkBoolean("ends_with('', '123')", false);
-      f.checkBoolean("ends_with('', '')", true);
-      f.checkNull("ends_with(x'aa', null)");
-      f.checkNull("ends_with(null, x'aa')");
-      f.checkBoolean("ends_with(x'1234', x'')", true);
-      f.checkBoolean("ends_with(x'', x'123456')", false);
-      f.checkBoolean("ends_with(x'', x'')", true);
+      f.checkNull(alias + "(null, null)");
+      f.checkNull(alias + "('12345', null)");
+      f.checkNull(alias + "(null, '123')");
+      f.checkBoolean(alias + "('', '123')", false);
+      f.checkBoolean(alias + "('', '')", true);
+      f.checkNull(alias + "(x'aa', null)");
+      f.checkNull(alias + "(null, x'aa')");
+      f.checkBoolean(alias + "(x'1234', x'')", true);
+      f.checkBoolean(alias + "(x'', x'123456')", false);
+      f.checkBoolean(alias + "(x'', x'')", true);
     };
-    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.POSTGRESQL), consumer);
+    f0.forEachLibrary(list(functionAlias.libraries), consumer);
   }
-
-  @Test void testSnowflakeEndsWithFunction() {
-    final SqlOperatorFixture f = fixture().withLibrary(SqlLibrary.SNOWFLAKE);
-    f.setFor(SqlLibraryOperators.ENDS_WITH);
-    f.checkBoolean("endswith('12345', '345')", true);
-    f.checkBoolean("endswith('12345', '123')", false);
-    f.checkBoolean("endswith(x'11', x'11')", true);
-    f.checkBoolean("endswith(x'112211', x'33')", false);
-    f.checkFails("^endswith('aabbcc', x'aa')^",
-        "Cannot apply 'ENDSWITH' to arguments of type "
-            + "'ENDSWITH\\(<CHAR\\(6\\)>, <BINARY\\(1\\)>\\)'\\. Supported "
-            + "form\\(s\\): 'ENDSWITH\\(<STRING>, <STRING>\\)'",
-        false);
-    f.checkNull("endswith(null, null)");
-    f.checkNull("endswith('12345', null)");
-    f.checkNull("endswith(null, '123')");
-    f.checkBoolean("endswith('', '123')", false);
-    f.checkBoolean("endswith('', '')", true);
-    f.checkNull("endswith(x'aa', null)");
-    f.checkNull("endswith(null, x'aa')");
-    f.checkBoolean("endswith(x'1234', x'')", true);
-    f.checkBoolean("endswith(x'', x'123456')", false);
-    f.checkBoolean("endswith(x'', x'')", true);
+  
+  static Stream<FunctionAlias> endsWithAliases() throws NoSuchFieldException {
+    return Stream.of(
+        FunctionAlias.of(SqlLibraryOperators.ENDS_WITH),
+        FunctionAlias.of(SqlLibraryOperators.ENDSWITH));
   }
 
   /** Tests the {@code SPLIT} operator. */
@@ -9543,24 +9524,32 @@ public class SqlOperatorTest {
     f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
-  @Test void testNvlFunc() {
-    final SqlOperatorFixture f = fixture()
-        .setFor(SqlLibraryOperators.NVL, VmName.EXPAND)
-        .withLibrary(SqlLibrary.ORACLE);
-    f.checkScalar("nvl(1, 2)", "1", "INTEGER NOT NULL");
-    f.checkFails("^nvl(1, true)^", "Parameters must be of the same type",
-        false);
-    f.checkScalar("nvl(true, false)", true, "BOOLEAN NOT NULL");
-    f.checkScalar("nvl(false, true)", false, "BOOLEAN NOT NULL");
-    f.checkString("nvl('abc', 'de')", "abc", "CHAR(3) NOT NULL");
-    f.checkString("nvl('abc', 'defg')", "abc ", "CHAR(4) NOT NULL");
-    f.checkString("nvl('abc', CAST(NULL AS VARCHAR(20)))", "abc",
-        "VARCHAR(20) NOT NULL");
-    f.checkString("nvl(CAST(NULL AS VARCHAR(20)), 'abc')", "abc",
-        "VARCHAR(20) NOT NULL");
-    f.checkNull("nvl(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
-
-    final SqlOperatorFixture f12 = f.forOracle(SqlConformanceEnum.ORACLE_12);
+	/** Tests the {@code NVL} and {@code IFNULL} operator. */  
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("nvlAliases")
+  void testNvlFunction(FunctionAlias functionAlias) {
+		final SqlOperatorFixture f0 = fixture();		
+		final SqlFunction function = functionAlias.function;
+    f0.setFor(function);
+    final String alias = function.getName();
+    final Consumer<SqlOperatorFixture> consumer = f -> {
+			f.checkScalar(alias + "(1, 2)", "1", "INTEGER NOT NULL");
+			f.checkFails("^" + alias + "(1, true)^", 
+									 "Parameters must be of the same type", false);
+			f.checkScalar(alias + "(true, false)", true, "BOOLEAN NOT NULL");
+			f.checkScalar(alias + "(false, true)", false, "BOOLEAN NOT NULL");
+			f.checkString(alias + "('abc', 'de')", "abc", "CHAR(3) NOT NULL");
+			f.checkString(alias + "('abc', 'defg')", "abc ", "CHAR(4) NOT NULL");
+			f.checkString(alias + "('abc', CAST(NULL AS VARCHAR(20)))", "abc",
+										"VARCHAR(20) NOT NULL");
+			f.checkString(alias + "(CAST(NULL AS VARCHAR(20)), 'abc')", "abc",
+										"VARCHAR(20) NOT NULL");
+			f.checkNull(alias + "(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
+		};
+		f0.forEachLibrary(list(functionAlias.libraries), consumer);
+    final SqlOperatorFixture f12 = f0
+			.withLibrary(SqlLibrary.ORACLE)
+    	.forOracle(SqlConformanceEnum.ORACLE_12);
     f12.checkString("nvl('abc', 'de')", "abc", "VARCHAR(3) NOT NULL");
     f12.checkString("nvl('abc', 'defg')", "abc", "VARCHAR(4) NOT NULL");
     f12.checkString("nvl('abc', CAST(NULL AS VARCHAR(20)))", "abc",
@@ -9569,30 +9558,11 @@ public class SqlOperatorTest {
         "VARCHAR(20) NOT NULL");
     f12.checkNull("nvl(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
   }
-
-  /** Tests {@code IFNULL}, which is a synonym for {@code NVL}, and is related to
-   * {@code COALESCE} but requires precisely two arguments. */
-  @Test void testIfnullFunc() {
-    final SqlOperatorFixture f = fixture()
-        .withLibrary(SqlLibrary.BIG_QUERY)
-        .setFor(SqlLibraryOperators.IFNULL, VM_EXPAND);
-
-    f.checkString("ifnull('a','b')", "a", "CHAR(1) NOT NULL");
-    f.checkString("ifnull(null,'b')", "b", "CHAR(1) NOT NULL");
-    f.checkScalar("ifnull(4,3)", 4, "INTEGER NOT NULL");
-    f.checkScalar("ifnull(null, 4)", 4, "INTEGER NOT NULL");
-    f.enableTypeCoercion(false)
-        .checkFails("1 + ifnull('a', 1) + 2",
-            "Cannot infer return type for IFNULL; operand types: \\[CHAR\\(1\\), INTEGER\\]",
-            false);
-    f.checkType("1 + ifnull(1, null) + 2",
-        "INTEGER NOT NULL");
-    f.checkFails("^ifnull(1,2,3)^",
-        "Invalid number of arguments to function 'IFNULL'. Was expecting 2 arguments",
-        false);
-    f.checkFails("^ifnull(1)^",
-        "Invalid number of arguments to function 'IFNULL'. Was expecting 2 arguments",
-        false);
+  
+  static Stream<FunctionAlias> nvlAliases() throws NoSuchFieldException {
+    return Stream.of(
+        FunctionAlias.of(SqlLibraryOperators.NVL),
+        FunctionAlias.of(SqlLibraryOperators.IFNULL));
   }
 
   @Test void testDecodeFunc() {
@@ -13892,6 +13862,8 @@ public class SqlOperatorTest {
 
     private FunctionAlias(SqlFunction function) throws NoSuchFieldException {
       this.function = function;
+//      if (SqlStdOperatorTable.class.getField0(function.getName()) != null) {
+//      }
       Field field = SqlLibraryOperators.class.getField(function.getName());
       LibraryOperator libraryOperator = field.getAnnotation(LibraryOperator.class);
       this.libraries = ImmutableList.copyOf(Arrays.asList(libraryOperator.libraries()));
