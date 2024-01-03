@@ -103,7 +103,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -4096,29 +4095,43 @@ public class SqlOperatorTest {
     f.checkNull("REPLACE('ciao', 'bella', cast(null as varchar(3)))");
   }
 
-  /** Tests the {@code CHAR_LENGTH}, {@code CHARACTER_LENGTH}, and {@code LENGTH} operator. */
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("charLengthAliases")
-  void testCharLengthFunction(FunctionAlias functionAlias) {
-    final SqlOperatorFixture f0 = fixture();
-    final SqlFunction function = functionAlias.function;
-    f0.setFor(function);
-    final String alias = function.getName();
-    final Consumer<SqlOperatorFixture> consumer = f -> {
-			f.checkScalarExact(alias + "('abc')", 3);
-			f.checkNull(alias + "(cast(null as varchar(1)))");
-			f.checkScalar(alias + "('')", "0", "INTEGER NOT NULL");
-      f.checkScalar(alias + "(CAST('x' as CHAR(3)))", "3", "INTEGER NOT NULL");
-      f.checkScalar(alias + "(CAST('x' as VARCHAR(4)))", "1", "INTEGER NOT NULL");
-		};
-		f0.forEachLibrary(list(functionAlias.libraries), consumer);
+  @Test void testCharLengthFunc() {
+    final SqlOperatorFixture f = fixture();
+    f.setFor(SqlStdOperatorTable.CHAR_LENGTH, VmName.EXPAND);
+    f.checkScalarExact("char_length('abc')", 3);
+    f.checkNull("char_length(cast(null as varchar(1)))");
+    checkCharLength(f, FunctionAlias.of(SqlStdOperatorTable.CHAR_LENGTH));
   }
-  
-  static Stream<FunctionAlias> charLengthAliases() throws NoSuchFieldException {
-    return Stream.of(
-    		FunctionAlias.of(SqlLibraryOperators.LENGTH),
-        FunctionAlias.of(SqlStdOperatorTable.CHAR_LENGTH),
-        FunctionAlias.of(SqlStdOperatorTable.CHARACTER_LENGTH));
+
+  @Test void testCharacterLengthFunc() {
+    final SqlOperatorFixture f = fixture();
+    f.setFor(SqlStdOperatorTable.CHARACTER_LENGTH, VmName.EXPAND);
+    f.checkScalarExact("CHARACTER_LENGTH('abc')", 3);
+    f.checkNull("CHARACTER_LENGTH(cast(null as varchar(1)))");
+    checkCharLength(f, FunctionAlias.of(SqlStdOperatorTable.CHARACTER_LENGTH));
+  }
+
+  @Test void testLengthFunc() {
+    final SqlOperatorFixture f0 = fixture().setFor(SqlLibraryOperators.LENGTH);
+    f0.checkFails("^length('hello')^",
+        "No match found for function signature LENGTH\\(<CHARACTER>\\)",
+        false);
+    checkCharLength(f0, FunctionAlias.of(SqlLibraryOperators.LENGTH));
+  }
+
+  /** Common tests for {@code CHAR_LENGTH}, {@code CHARACTER_LENGTH},
+   * and {@code LENGTH} functions. */
+  void checkCharLength(SqlOperatorFixture f0, FunctionAlias functionAlias) {
+    final SqlFunction function = functionAlias.function;
+    final String f = function.getName();
+    final Consumer<SqlOperatorFixture> consumer = f -> {
+      f.checkScalarExact(f + "('abc')", 3);
+      f.checkNull(f + "(cast(null as varchar(1)))");
+      f.checkScalar(f + "('')", "0", "INTEGER NOT NULL");
+      f.checkScalar(f + "(CAST('x' as CHAR(3)))", "3", "INTEGER NOT NULL");
+      f.checkScalar(f + "(CAST('x' as VARCHAR(4)))", "1", "INTEGER NOT NULL");
+    };
+    f0.forEachLibrary(functionAlias.libraries, consumer);
   }
 
   @Test void testOctetLengthFunc() {
@@ -8930,12 +8943,12 @@ public class SqlOperatorTest {
         FunctionAlias.of(SqlLibraryOperators.STARTS_WITH),
         FunctionAlias.of(SqlLibraryOperators.STARTSWITH));
   }
-  
-	/** Tests the {@code ENDS_WITH} and {@code ENDSWITH} operator. */  
+
+	/** Tests the {@code ENDS_WITH} and {@code ENDSWITH} operator. */
   @ParameterizedTest(name = "{0}")
   @MethodSource("endsWithAliases")
   void testEndsWithFunction(FunctionAlias functionAlias) {
-		final SqlOperatorFixture f0 = fixture();		
+		final SqlOperatorFixture f0 = fixture();
 		final SqlFunction function = functionAlias.function;
     f0.setFor(function);
     final String alias = function.getName();
@@ -8962,7 +8975,7 @@ public class SqlOperatorTest {
     };
     f0.forEachLibrary(list(functionAlias.libraries), consumer);
   }
-  
+
   static Stream<FunctionAlias> endsWithAliases() throws NoSuchFieldException {
     return Stream.of(
         FunctionAlias.of(SqlLibraryOperators.ENDS_WITH),
@@ -9524,17 +9537,17 @@ public class SqlOperatorTest {
     f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE), consumer);
   }
 
-	/** Tests the {@code NVL} and {@code IFNULL} operator. */  
+	/** Tests the {@code NVL} and {@code IFNULL} operator. */
   @ParameterizedTest(name = "{0}")
   @MethodSource("nvlAliases")
   void testNvlFunction(FunctionAlias functionAlias) {
-		final SqlOperatorFixture f0 = fixture();		
+		final SqlOperatorFixture f0 = fixture();
 		final SqlFunction function = functionAlias.function;
     f0.setFor(function);
     final String alias = function.getName();
     final Consumer<SqlOperatorFixture> consumer = f -> {
 			f.checkScalar(alias + "(1, 2)", "1", "INTEGER NOT NULL");
-			f.checkFails("^" + alias + "(1, true)^", 
+			f.checkFails("^" + alias + "(1, true)^",
 									 "Parameters must be of the same type", false);
 			f.checkScalar(alias + "(true, false)", true, "BOOLEAN NOT NULL");
 			f.checkScalar(alias + "(false, true)", false, "BOOLEAN NOT NULL");
@@ -9558,7 +9571,7 @@ public class SqlOperatorTest {
         "VARCHAR(20) NOT NULL");
     f12.checkNull("nvl(CAST(NULL AS VARCHAR(6)), cast(NULL AS VARCHAR(4)))");
   }
-  
+
   static Stream<FunctionAlias> nvlAliases() throws NoSuchFieldException {
     return Stream.of(
         FunctionAlias.of(SqlLibraryOperators.NVL),
@@ -13856,21 +13869,20 @@ public class SqlOperatorTest {
 
   /** Contains alias data for parameterized tests. */
   static class FunctionAlias {
-    public static final String FUNCTION_TEMPLATE = "%function%";
-    private final SqlFunction function;
-    private final Collection<SqlLibrary> libraries;
+    final SqlFunction function;
+    final List<SqlLibrary> libraries;
 
-    private FunctionAlias(SqlFunction function) throws NoSuchFieldException {
+    private FunctionAlias(SqlFunction function, SqlLibrary[] libraries) {
       this.function = function;
-//      if (SqlStdOperatorTable.class.getField0(function.getName()) != null) {
-//      }
-      Field field = SqlLibraryOperators.class.getField(function.getName());
-      LibraryOperator libraryOperator = field.getAnnotation(LibraryOperator.class);
-      this.libraries = ImmutableList.copyOf(Arrays.asList(libraryOperator.libraries()));
+      this.libraries = ImmutableList.copyOf(libraries);
     }
 
-    public static FunctionAlias of(SqlFunction function) throws NoSuchFieldException {
-      return new FunctionAlias(function);
+    static FunctionAlias of(SqlFunction function) {
+      Field field =
+          Types.lookupField(SqlLibraryOperators.class, function.getName());
+      LibraryOperator libraryOperator =
+          field.getAnnotation(LibraryOperator.class);
+      return new FunctionAlias(function, libraryOperator.libraries());
     }
 
     // Used for test naming while running tests in IDE
