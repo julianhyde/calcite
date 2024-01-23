@@ -302,7 +302,13 @@ public abstract class SqlUtil {
       SqlOperator operator,
       SqlWriter writer,
       SqlCall call) {
-    unparseFunctionSyntax(operator, writer, call, false);
+    unparseFunctionSyntax(operator, writer, call, false, false);
+  }
+
+  @Deprecated // to be removed before 2.0
+  public static void unparseFunctionSyntax(SqlOperator operator,
+      SqlWriter writer, SqlCall call, boolean ordered) {
+    unparseFunctionSyntax(operator, writer, call, false, false);
   }
 
   /**
@@ -314,7 +320,7 @@ public abstract class SqlUtil {
    * @param ordered     Whether argument list may end with ORDER BY
    */
   public static void unparseFunctionSyntax(SqlOperator operator,
-      SqlWriter writer, SqlCall call, boolean ordered) {
+      SqlWriter writer, SqlCall call, boolean ordered, boolean per) {
     if (operator instanceof SqlFunction) {
       SqlFunction function = (SqlFunction) operator;
 
@@ -363,6 +369,8 @@ public abstract class SqlUtil {
     for (SqlNode operand : call.getOperandList()) {
       if (ordered && operand instanceof SqlNodeList) {
         writer.sep("ORDER BY");
+      } else if (per && operand instanceof SqlNodeList) {
+        writer.sep("PER");
       } else if (ordered && operand.getKind() == SqlKind.SEPARATOR) {
         writer.sep("SEPARATOR");
         ((SqlCall) operand).operand(0).unparse(writer, 0, 0);

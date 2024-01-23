@@ -116,7 +116,8 @@ public class SparkSqlDialect extends SqlDialect {
   @Override public void unparseCall(SqlWriter writer, SqlCall call,
       int leftPrec, int rightPrec) {
     if (call.getOperator() == SqlStdOperatorTable.SUBSTRING) {
-      SqlUtil.unparseFunctionSyntax(SPARKSQL_SUBSTRING, writer, call, false);
+      SqlUtil.unparseFunctionSyntax(SPARKSQL_SUBSTRING, writer, call, false,
+          false);
     } else {
       switch (call.getKind()) {
       case ARRAY_VALUE_CONSTRUCTOR:
@@ -152,7 +153,8 @@ public class SparkSqlDialect extends SqlDialect {
         unparseHiveTrim(writer, call, leftPrec, rightPrec);
         break;
       case POSITION:
-        SqlUtil.unparseFunctionSyntax(SqlStdOperatorTable.POSITION, writer, call, false);
+        SqlUtil.unparseFunctionSyntax(SqlStdOperatorTable.POSITION, writer,
+            call, false, false);
         break;
       default:
         super.unparseCall(writer, call, leftPrec, rightPrec);

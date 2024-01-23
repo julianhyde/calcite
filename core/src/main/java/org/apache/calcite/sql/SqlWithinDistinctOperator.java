@@ -39,8 +39,8 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * </ul>
  */
 public class SqlWithinDistinctOperator extends SqlBinaryOperator {
-  public SqlWithinDistinctOperator() {
-    super("WITHIN DISTINCT", SqlKind.WITHIN_DISTINCT, 100, true,
+  public SqlWithinDistinctOperator(SqlKind kind) {
+    super(kind.name().replace('_', ' '), kind, 100, true,
         ReturnTypes.ARG0, null, OperandTypes.ANY_IGNORE);
   }
 

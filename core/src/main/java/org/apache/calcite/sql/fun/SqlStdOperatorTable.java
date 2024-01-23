@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlLateralOperator;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMatchFunction;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNullTreatmentOperator;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperandCountRange;
@@ -59,6 +60,7 @@ import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.SqlWithinDistinctOperator;
 import org.apache.calcite.sql.SqlWithinGroupOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
@@ -80,6 +82,7 @@ import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -212,7 +215,26 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   /** <code>WITHIN_DISTINCT</code> operator performs aggregations on distinct
    * data input. */
   public static final SqlWithinDistinctOperator WITHIN_DISTINCT =
-      new SqlWithinDistinctOperator();
+      new SqlWithinDistinctOperator(SqlKind.WITHIN_DISTINCT);
+
+  /** <code>PER</code> operator performs aggregations on distinct
+   * data input. */
+  public static final SqlWithinDistinctOperator PER =
+      new SqlWithinDistinctOperator(SqlKind.PER) {
+        @Override public void unparse(SqlWriter writer, SqlCall call,
+            int leftPrec, int rightPrec) {
+          // Given call = "PER(AVG(x), list(y, z))", flip it to create
+          // call2 = "AVG(x, list(y, z))"
+          final SqlCall agg = call.operand(0);
+          final SqlNodeList perList = call.operand(1);
+          final List<SqlNode> args = new ArrayList<>(agg.getOperandList());
+          args.add(perList);
+          final SqlBasicCall call2 =
+              new SqlBasicCall(agg.getOperator(), args, SqlParserPos.ZERO);
+          SqlUtil.unparseFunctionSyntax(agg.getOperator(), writer, call2,
+              false, true);
+        }
+      };
 
   /** {@code CUBE} operator, occurs within {@code GROUP BY} clause
    * or nested within a {@code GROUPING SETS}. */
@@ -2188,7 +2210,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
             SqlCall call,
             int leftPrec,
             int rightPrec) {
-          SqlUtil.unparseFunctionSyntax(this, writer, call, false);
+          SqlUtil.unparseFunctionSyntax(this, writer, call, false, false);
         }
       };
 

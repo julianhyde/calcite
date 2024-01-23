@@ -975,6 +975,8 @@ List<SqlNode> FunctionParameterList(ExprContext exprContext) :
 {
     final SqlLiteral qualifier;
     final List<SqlNode> list = new ArrayList<SqlNode>();
+    final SqlNodeList perList;
+    final Span s;
 }
 {
     <LPAREN>
@@ -991,6 +993,11 @@ List<SqlNode> FunctionParameterList(ExprContext exprContext) :
         }
         AddArg(list, exprContext)
     )*
+    [
+        <PER> { s = span(); }
+        perList = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
+        { list.add(SqlStdOperatorTable.PER.createCall(perList)); }
+    ]
     <RPAREN>
     {
         return list;
@@ -7444,6 +7451,16 @@ SqlCall NamedCall() :
         }
     )
     {
+        if (args.size() > 0
+                && Util.last(args).getKind() == SqlKind.PER) {
+            // Flip "agg(a PER b, c)" to "avg(a) WITHIN DISTINCT (b, c)"
+            SqlCall per = (SqlCall) args.remove(args.size() - 1);
+            SqlParserPos pos = per.getParserPosition();
+            SqlCall call =
+                createCall(qualifiedName, pos, funcType, quantifier, args);
+            return SqlStdOperatorTable.PER.createCall(pos, call,
+                new SqlNodeList(per.getOperandList(), pos));
+        }
         return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
     }
 }

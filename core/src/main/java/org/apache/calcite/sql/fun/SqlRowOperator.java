@@ -73,10 +73,9 @@ public class SqlRowOperator extends SqlSpecialOperator {
       SqlCall call,
       int leftPrec,
       int rightPrec) {
-    SqlUtil.unparseFunctionSyntax(this, writer, call, false);
+    SqlUtil.unparseFunctionSyntax(this, writer, call, false, false);
   }
 
-  // override SqlOperator
   @Override public boolean requiresDecimalExpansion() {
     return false;
   }

@@ -238,6 +238,10 @@ public enum SqlKind {
   /** {@code WITHIN DISTINCT} operator. */
   WITHIN_DISTINCT,
 
+  /** {@code PER} operator,
+   * e.g. {@code MIN(AVG(revenue) PER MONTH(orderDate))}. */
+  PER,
+
   /** Window specification. */
   WINDOW,
 

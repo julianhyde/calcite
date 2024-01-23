@@ -172,6 +172,6 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
       call1 = call.getOperator().createCall(call.getParserPosition(), op2, op1);
     }
 
-    SqlUtil.unparseFunctionSyntax(func, writer, call1, false);
+    SqlUtil.unparseFunctionSyntax(func, writer, call1, false, false);
   }
 }

@@ -8695,6 +8695,30 @@ public class SqlParserTest {
     sql(sql).ok(expected);
   }
 
+  @Test void testPer() {
+    final String sql = "select min(avg(a) per b, c) from t";
+    final String expected = "SELECT (MIN(AVG(`A`) PER `B`, `C`))\n"
+        + "FROM `T`";
+    sql(sql).ok(expected);
+  }
+
+  @Test void testPer2() {
+    final String sql = "select col1,\n"
+        + " min(distinct avg(col2) - sum(1 - col2) per col3 + col4, col5)\n"
+        + "   within group (order by col6 desc)\n"
+        + "   filter (where col7 < col8) as sum2\n"
+        + "from t\n"
+        + "group by col9";
+    final String expected = "SELECT `COL1`, "
+        + "(MIN((AVG(`COL2`) - SUM((1 - `COL2`)))"
+        + " PER (`COL3` + `COL4`), `COL5`))"
+        + " WITHIN GROUP (ORDER BY `COL6` DESC)"
+        + " FILTER (WHERE (`COL7` < `COL8`)) AS `SUM2`\n"
+        + "FROM `T`\n"
+        + "GROUP BY `COL9`";
+    sql(sql).ok(expected);
+  }
+
   @Test void testJsonValueExpressionOperator() {
     expr("foo format json")
         .ok("`FOO` FORMAT JSON");
