@@ -188,8 +188,8 @@ class RelToSqlConverterTest {
         .put(DatabaseProduct.MYSQL.getDialect(), DatabaseProduct.MYSQL)
         .put(mySqlDialect(NullCollation.HIGH), DatabaseProduct.MYSQL)
         .put(DatabaseProduct.ORACLE.getDialect(), DatabaseProduct.ORACLE)
-        .put(DatabaseProduct.POSTGRESQL.getDialect(), DatabaseProduct.POSTGRESQL)
         .put(DatabaseProduct.POSTGIS.getDialect(), DatabaseProduct.POSTGIS)
+        .put(DatabaseProduct.POSTGRESQL.getDialect(), DatabaseProduct.POSTGRESQL)
         .put(DatabaseProduct.PRESTO.getDialect(), DatabaseProduct.PRESTO)
         .build();
   }
@@ -8010,18 +8010,18 @@ class RelToSqlConverterTest {
               .withNullCollation(oracleDialect.getNullCollation())));
     }
 
+    Sql withPostgis() {
+      return dialect(DatabaseProduct.POSTGIS.getDialect())
+          .withLibrary(SqlLibrary.SPATIAL)
+          .schema(SchemaSpec.GEO);
+    }
+
     Sql withPostgresql() {
       return dialect(DatabaseProduct.POSTGRESQL.getDialect());
     }
 
     Sql withPresto() {
       return dialect(DatabaseProduct.PRESTO.getDialect());
-    }
-
-    Sql withPostgis() {
-      return dialect(DatabaseProduct.POSTGIS.getDialect())
-          .withLibrary(SqlLibrary.SPATIAL)
-          .schema(SchemaSpec.GEO);
     }
 
     Sql withRedshift() {

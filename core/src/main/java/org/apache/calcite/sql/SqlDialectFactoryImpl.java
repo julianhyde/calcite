@@ -221,10 +221,10 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
       return ParaccelSqlDialect.DEFAULT;
     case PHOENIX:
       return PhoenixSqlDialect.DEFAULT;
-    case POSTGRESQL:
-      return PostgresqlSqlDialect.DEFAULT;
     case POSTGIS:
       return PostgisSqlDialect.DEFAULT;
+    case POSTGRESQL:
+      return PostgresqlSqlDialect.DEFAULT;
     case PRESTO:
       return PrestoSqlDialect.DEFAULT;
     case REDSHIFT:
