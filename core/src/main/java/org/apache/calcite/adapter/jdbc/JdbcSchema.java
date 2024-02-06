@@ -433,6 +433,12 @@ public class JdbcSchema implements Schema {
                 typeFactory.createSqlType(SqlTypeName.ANY), true);
       }
       return typeFactory.createArrayType(component, -1);
+    case OTHER:
+      if (typeString != null && typeString.startsWith("geometry")) {
+        return typeFactory.createTypeWithNullability(
+            typeFactory.createSqlType(SqlTypeName.GEOMETRY), true);
+      }
+      break;
     default:
       break;
     }
