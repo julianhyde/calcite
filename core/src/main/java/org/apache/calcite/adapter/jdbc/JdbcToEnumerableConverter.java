@@ -45,7 +45,7 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.dialect.PostgisGeometryParser;
+import org.apache.calcite.sql.dialect.PostgisGeometryDecoder;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
@@ -287,8 +287,8 @@ public class JdbcToEnumerableConverter
     case GEOMETRY:
       source =
           Expressions.call(
-              PostgisGeometryParser.class,
-              "parse",
+              PostgisGeometryDecoder.class,
+              "decode",
               Expressions.call(
                   resultSet_, "getString",
                   Expressions.constant(i + 1)));
