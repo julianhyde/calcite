@@ -437,7 +437,7 @@ public class JdbcSchema implements Schema {
       return typeFactory.createTypeWithNullability(
           typeFactory.createSqlType(SqlTypeName.GEOMETRY), true);
     case OTHER:
-      // In most databases, the type name is upper case. In Postgis it is
+      // In most databases, the type name is upper case. In PostGIS it is
       // lower case. Therefore, we ignore the case.
       if (typeString != null && typeString.equalsIgnoreCase("GEOMETRY")) {
         return typeFactory.createTypeWithNullability(
