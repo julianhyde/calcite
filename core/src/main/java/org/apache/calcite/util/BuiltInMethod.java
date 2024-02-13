@@ -118,6 +118,8 @@ import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.calcite.sql.dialect.PostgisGeometryDecoder;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Constructor;
@@ -445,6 +447,7 @@ public enum BuiltInMethod {
   IS_JSON_SCALAR(JsonFunctions.class, "isJsonScalar", String.class),
   ST_GEOM_FROM_EWKT(SpatialTypeFunctions.class, "ST_GeomFromEWKT", String.class),
   ST_GEOM_FROM_EWKB(SpatialTypeFunctions.class, "ST_GeomFromEWKB", ByteString.class),
+  DECODE_POSTGIS_GEOMETRY(PostgisGeometryDecoder.class, "decode", String.class),
   INITCAP(SqlFunctions.class, "initcap", String.class),
   SUBSTRING(SqlFunctions.class, "substring", String.class, int.class,
       int.class),
