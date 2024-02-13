@@ -158,6 +158,12 @@ class SqlTypeNameTest {
     assertEquals(VARBINARY, tn, "VARBINARY did not map to VARBINARY");
   }
 
+  @Test void testOther() {
+    SqlTypeName tn =
+        SqlTypeName.getNameForJdbcType(Types.OTHER);
+    assertEquals(OTHER, tn, "OTHER did not map to OTHER");
+  }
+
   @Test void testLongvarbinary() {
     SqlTypeName tn =
         SqlTypeName.getNameForJdbcType(Types.LONGVARBINARY);
@@ -168,12 +174,6 @@ class SqlTypeNameTest {
     SqlTypeName tn =
         SqlTypeName.getNameForJdbcType(Types.NULL);
     assertEquals(null, tn, "NULL did not map to null");
-  }
-
-  @Test void testOther() {
-    SqlTypeName tn =
-        SqlTypeName.getNameForJdbcType(Types.OTHER);
-    assertEquals(OTHER, tn, "OTHER did not map to null");
   }
 
   @Test void testJavaobject() {
