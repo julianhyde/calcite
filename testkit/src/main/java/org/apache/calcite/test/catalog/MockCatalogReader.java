@@ -106,6 +106,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Mock implementation of {@link SqlValidatorCatalogReader} which returns tables
  * "EMP", "DEPT", "BONUS", "SALGRADE" (same as Oracle's SCOTT schema).
@@ -317,7 +319,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
     protected final Double maxRowCount;
     protected final Set<String> monotonicColumnSet = new HashSet<>();
     protected StructKind kind = StructKind.FULLY_QUALIFIED;
-    protected final ColumnResolver resolver;
+    protected final @Nullable ColumnResolver resolver;
     private final boolean temporal;
     protected final InitializerExpressionFactory initializerFactory;
     protected final Set<String> rolledUpColumns = new HashSet<>();
@@ -329,7 +331,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
 
     public MockTable(MockCatalogReader catalogReader, String catalogName,
         String schemaName, String name, boolean stream, boolean temporal,
-        double rowCount, ColumnResolver resolver,
+        double rowCount, @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerFactory) {
       this(catalogReader, ImmutableList.of(catalogName, schemaName, name),
           stream, temporal, rowCount, resolver, initializerFactory,
@@ -351,7 +353,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
 
     private MockTable(MockCatalogReader catalogReader, List<String> names,
         boolean stream, boolean temporal, double rowCount,
-        ColumnResolver resolver,
+        @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerFactory, List<Object> wraps,
         Double maxRowCount) {
       this.catalogReader = catalogReader;
@@ -667,11 +669,13 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
 
       ModifiableTableWithCustomColumnResolving(String tableName) {
         super(tableName);
+        requireNonNull(resolver, "resolver");
       }
 
       @Override public List<Pair<RelDataTypeField, List<String>>> resolveColumn(
           RelDataType rowType, RelDataTypeFactory typeFactory,
           List<String> names) {
+        requireNonNull(resolver, "resolver");
         return resolver.resolveColumn(rowType, typeFactory, names);
       }
     }
@@ -701,7 +705,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
         MockCatalogReader catalogReader, boolean stream, double rowCount,
         List<Map.Entry<String, RelDataType>> columnList, List<Integer> keyList,
         RelDataType rowType, List<RelCollation> collationList, List<String> names,
-        Set<String> monotonicColumnSet, StructKind kind, ColumnResolver resolver,
+        Set<String> monotonicColumnSet, StructKind kind,
+        @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerFactory) {
       super(catalogReader, stream, false, rowCount, columnList, keyList,
           rowType, collationList, names,
@@ -912,9 +917,13 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
      */
     private class ModifiableViewWithCustomColumnResolving
         extends ModifiableView implements CustomColumnResolvingTable, Wrapper {
+      ModifiableViewWithCustomColumnResolving() {
+        requireNonNull(resolver, "resolver");
+      }
 
       @Override public List<Pair<RelDataTypeField, List<String>>> resolveColumn(
           RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names) {
+        requireNonNull(resolver, "resolver");
         return resolver.resolveColumn(rowType, typeFactory, names);
       }
 
@@ -979,7 +988,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
 
     MustFilterMockTable(MockCatalogReader catalogReader, String catalogName,
         String schemaName, String name, boolean stream, boolean temporal,
-        double rowCount, ColumnResolver resolver,
+        double rowCount, @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory,
         Map<String, String> mustFilterFields) {
       super(catalogReader, catalogName, schemaName, name, stream, temporal,
@@ -987,11 +996,10 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
       this.mustFilterFields = mustFilterFields;
     }
 
-
     /** Creates a MustFilterMockTable that implements {@link SemanticTable}. */
     public static MustFilterMockTable create(MockCatalogReader catalogReader,
         MockSchema schema, String name, boolean stream, double rowCount,
-        ColumnResolver resolver,
+        @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory,
         boolean temporal, Map<String, String> alwaysFilterFields) {
       MustFilterMockTable table =

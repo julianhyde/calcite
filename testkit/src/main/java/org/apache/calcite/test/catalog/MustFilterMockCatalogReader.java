@@ -22,13 +22,13 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.common.collect.ImmutableMap;
 
 /**
- * Tags a few columns in the tables as must-filter.
- * Used for testing must-filter validation.
- * See {@code org.apache.calcite.test.SqlValidatorTest#testMustFilterColumns()}
+ * Mock catalog reader that tags a few columns in the tables as must-filter.
+ *
+ * <p>Used for testing must-filter validation.
+ * See {@code org.apache.calcite.test.SqlValidatorTest#testMustFilterColumns()}.
  */
 public class MustFilterMockCatalogReader extends MockCatalogReader {
 
@@ -45,16 +45,12 @@ public class MustFilterMockCatalogReader extends MockCatalogReader {
   @Override public MockCatalogReader init() {
     MockSchema salesSchema = new MockSchema("SALES");
     registerSchema(salesSchema);
-    Map<String, String> empMustFilterFields =
-        new HashMap<String, String>() {{
-          put("EMPNO", "10");
-          put("JOB", "JOB_1");
-        }};
-    // Register "EMP" table.
+
+    // Register "EMP" table. Must-filter fields are "EMPNO", "JOB".
     MustFilterMockTable empTable =
         MustFilterMockTable.create(this, salesSchema, "EMP",
             false, 14, null, NullInitializerExpressionFactory.INSTANCE,
-            false, empMustFilterFields);
+            false, ImmutableMap.of("EMPNO", "10", "JOB", "JOB_1"));
 
     final RelDataType integerType =
         typeFactory.createSqlType(SqlTypeName.INTEGER);
@@ -75,15 +71,11 @@ public class MustFilterMockCatalogReader extends MockCatalogReader {
     empTable.addColumn("SLACKER", booleanType);
     registerTable(empTable);
 
-    // Register "DEPT" table.
-    Map<String, String> deptMustFilterFields =
-        new HashMap<String, String>() {{
-          put("NAME", "ACCOUNTING_DEPT");
-        }};
+    // Register "DEPT" table. "NAME" is a must-filter field.
     MustFilterMockTable deptTable =
         MustFilterMockTable.create(this, salesSchema, "DEPT",
             false, 14, null, NullInitializerExpressionFactory.INSTANCE,
-            false, deptMustFilterFields);
+            false, ImmutableMap.of("NAME", "ACCOUNTING_DEPT"));
     deptTable.addColumn("DEPTNO", integerType, true);
     deptTable.addColumn("NAME", varcharType);
     registerTable(deptTable);
