@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -106,9 +105,6 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     default:
       throw Util.unexpected(status);
     }
-  }
-
-  @Override public void validateAlwaysFilter(Set<String> alwaysFilterFields) {
   }
 
   /**

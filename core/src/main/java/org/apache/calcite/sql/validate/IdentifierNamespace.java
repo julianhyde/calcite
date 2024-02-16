@@ -32,8 +32,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -242,24 +240,6 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     // Validation successful.
     return rowType;
-  }
-
-  @Override public void validateAlwaysFilter(Set<String> alwaysFilterFields) {
-    resolvedNamespace = resolveImpl(id);
-    if (resolvedNamespace instanceof TableNamespace) {
-      SqlValidatorTable table = ((TableNamespace) resolvedNamespace).getTable();
-      Optional<SemanticTable> semanticTable =
-          Optional.ofNullable(table.unwrap(SemanticTable.class));
-      if (semanticTable.isPresent()) {
-        SemanticTable semanticTable_ = semanticTable.get();
-        for (RelDataTypeField field : table.getRowType().getFieldList()) {
-          String columnName = field.getName();
-          if (semanticTable_.mustFilter(columnName)) {
-            alwaysFilterFields.add(columnName);
-          }
-        }
-      }
-    }
   }
 
   public SqlIdentifier getId() {

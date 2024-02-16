@@ -1173,12 +1173,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final ImmutableBitSet mustFilterFields =
             namespace.getMustFilterFields();
         if (!mustFilterFields.isEmpty()) {
-          final List<String> fieldNames =
-              namespace.getRowType().getFieldNames();
-          throw newMustFilterValidationException(node,
+          // Set of field names, sorted alphabetically for determinism.
+          Set<String> fieldNameSet =
               StreamSupport.stream(mustFilterFields.spliterator(), false)
-                  .map(fieldNames::get)
-                  .collect(Collectors.toCollection(TreeSet::new)));
+                  .map(namespace.getRowType().getFieldNames()::get)
+                  .collect(Collectors.toCollection(TreeSet::new));
+          throw newValidationError(node,
+              RESOURCE.mustFilterFieldsMissing(fieldNameSet.toString()));
         }
       }
     }
@@ -1939,9 +1940,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       return ns.getType();
     }
     type = deriveTypeImpl(scope, expr);
-    checkArgument(
-        type != null,
-        "SqlValidator.deriveTypeInternal returned null");
+    requireNonNull(type, "SqlValidator.deriveTypeInternal returned null");
     setValidatedNodeType(expr, type);
     return type;
   }
@@ -2041,15 +2040,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
     throw newValidationError(call,
         RESOURCE.validatorUnknownFunction(signature));
-  }
-
-  /** Validation error used for surfacing missing WHERE/HAVING clauses on fields tagged as
-   * must-filter.
-   * See {@link SemanticTable}
-   */
-  public CalciteContextException newMustFilterValidationException(SqlNode node,
-      TreeSet<String> mustFilterFields) {
-    return newValidationError(node, RESOURCE.mustFilterFieldsMissing(mustFilterFields.toString()));
   }
 
   protected void inferUnknownTypes(
@@ -3968,9 +3958,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // If there are must-filter fields that are not in the SELECT clause,
         // this is an error.
         if (!qualifieds.isEmpty()) {
-          throw newMustFilterValidationException(select,
-              qualifieds.stream().map(q -> q.suffix().get(0))
-                  .collect(Collectors.toCollection(TreeSet::new)));
+          throw newValidationError(select,
+              RESOURCE.mustFilterFieldsMissing(
+                  qualifieds.stream()
+                      .map(q -> q.suffix().get(0))
+                      .collect(Collectors.toCollection(TreeSet::new))
+                      .toString()));
         }
         ns.mustFilterFields = ImmutableBitSet.fromBitSet(mustFilterFields);
       }
@@ -3991,6 +3984,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
+  /** For each identifier in an expression, resolves it to a qualified name
+   * and calls the provided action. */
   private static void forEachQualified(SqlNode node, SqlValidatorScope scope,
       Consumer<SqlQualified> consumer) {
     node.accept(new SqlBasicVisitor<Void>() {
@@ -4001,6 +3996,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
     });
   }
+
   private void checkRollUpInSelectList(SqlSelect select) {
     SqlValidatorScope scope = getSelectScope(select);
     for (SqlNode item : SqlNonNullableAccessors.getSelectList(select)) {
