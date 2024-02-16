@@ -65,7 +65,7 @@ class TableNamespace extends AbstractNamespace {
         .ifPresent(semanticTable ->
             this.mustFilterFields =
                 table.getRowType().getFieldList().stream()
-                    .filter(f -> semanticTable.hasFilter(f.getName()))
+                    .filter(f -> semanticTable.mustFilter(f.getName()))
                     .map(RelDataTypeField::getIndex)
                     .collect(toImmutableBitSet()));
 

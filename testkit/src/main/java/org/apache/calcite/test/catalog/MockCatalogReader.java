@@ -1014,7 +1014,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
       return mustFilterFields.get(columnName);
     }
 
-    @Override public boolean hasFilter(String columnName) {
+    @Override public boolean mustFilter(String columnName) {
       return mustFilterFields.containsKey(columnName);
     }
   }

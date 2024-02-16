@@ -22,13 +22,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Extension to {@link SqlValidatorTable} with extra, optional metadata.
  *
  * <p>Used to flag individual columns as 'filter required'.
- *
- * <p>See {@link AlwaysFilterValidator}
  */
 public interface SemanticTable {
-  /** Returns the filter expression for {@code columnName} as a nullable string. */
+  /** Returns the filter expression for column {@code columnName}
+   * if it is a must-filter column,
+   * or null if it is not a must-filter column.
+   *
+   * @see #mustFilter(String) */
   @Nullable String getFilter(String columnName);
 
-  /** Returns whether {@code columnName} has a filter. */
-  boolean hasFilter(String columnName);
+  /** Returns whether column {@code columnName} must be filtered in any query
+   * that references this table. */
+  boolean mustFilter(String columnName);
 }
