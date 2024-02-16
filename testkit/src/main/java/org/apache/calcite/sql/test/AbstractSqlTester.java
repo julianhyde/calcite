@@ -100,6 +100,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
       SqlTests.checkEx(e, expectedMsgPattern, sap, SqlTests.Stage.PARSE);
       return;
     }
+
     final SqlValidator validator = factory.createValidator();
     Throwable thrown = null;
     try {
