@@ -21,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Extension to {@link SqlValidatorTable} with extra, optional metadata.
  *
- * <p>Used to flag individual columns as 'filter required'.
+ * <p>Used to flag individual columns as 'must-filter'.
  */
 public interface SemanticTable {
   /** Returns the filter expression for column {@code columnName}

@@ -91,6 +91,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -993,7 +994,7 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
         Map<String, String> mustFilterFields) {
       super(catalogReader, catalogName, schemaName, name, stream, temporal,
           rowCount, resolver, initializerExpressionFactory);
-      this.mustFilterFields = mustFilterFields;
+      this.mustFilterFields = ImmutableMap.copyOf(mustFilterFields);
     }
 
     /** Creates a MustFilterMockTable that implements {@link SemanticTable}. */
@@ -1001,11 +1002,11 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
         MockSchema schema, String name, boolean stream, double rowCount,
         @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory,
-        boolean temporal, Map<String, String> alwaysFilterFields) {
+        boolean temporal, Map<String, String> mustFilterFields) {
       MustFilterMockTable table =
           new MustFilterMockTable(catalogReader, schema.getCatalogName(),
               schema.name, name, stream, temporal, rowCount, resolver,
-              initializerExpressionFactory, alwaysFilterFields);
+              initializerExpressionFactory, mustFilterFields);
       schema.addTable(name);
       return table;
     }
