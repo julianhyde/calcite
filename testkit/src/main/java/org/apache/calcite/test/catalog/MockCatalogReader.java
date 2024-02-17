@@ -984,17 +984,16 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
    */
   public static class MustFilterMockTable
       extends MockTable implements SemanticTable {
-
-    private final Map<String, String> mustFilterFields;
+    private final Map<String, String> fieldFilters;
 
     MustFilterMockTable(MockCatalogReader catalogReader, String catalogName,
         String schemaName, String name, boolean stream, boolean temporal,
         double rowCount, @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory,
-        Map<String, String> mustFilterFields) {
+        Map<String, String> fieldFilters) {
       super(catalogReader, catalogName, schemaName, name, stream, temporal,
           rowCount, resolver, initializerExpressionFactory);
-      this.mustFilterFields = ImmutableMap.copyOf(mustFilterFields);
+      this.fieldFilters = ImmutableMap.copyOf(fieldFilters);
     }
 
     /** Creates a MustFilterMockTable that implements {@link SemanticTable}. */
@@ -1002,21 +1001,23 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
         MockSchema schema, String name, boolean stream, double rowCount,
         @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory,
-        boolean temporal, Map<String, String> mustFilterFields) {
+        boolean temporal, Map<String, String> fieldFilters) {
       MustFilterMockTable table =
           new MustFilterMockTable(catalogReader, schema.getCatalogName(),
               schema.name, name, stream, temporal, rowCount, resolver,
-              initializerExpressionFactory, mustFilterFields);
+              initializerExpressionFactory, fieldFilters);
       schema.addTable(name);
       return table;
     }
 
-    @Override public @Nullable String getFilter(String columnName) {
-      return mustFilterFields.get(columnName);
+    @Override public @Nullable String getFilter(int column) {
+      String columnName = columnList.get(column).getKey();
+      return fieldFilters.get(columnName);
     }
 
-    @Override public boolean mustFilter(String columnName) {
-      return mustFilterFields.containsKey(columnName);
+    @Override public boolean mustFilter(int column) {
+      String columnName = columnList.get(column).getKey();
+      return fieldFilters.containsKey(columnName);
     }
   }
 

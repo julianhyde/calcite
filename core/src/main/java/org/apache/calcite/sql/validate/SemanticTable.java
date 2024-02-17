@@ -24,14 +24,24 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>Used to flag individual columns as 'must-filter'.
  */
 public interface SemanticTable {
-  /** Returns the filter expression for column {@code columnName}
-   * if it is a must-filter column,
+  /** Returns the filter expression for {@code column}
+   * if it is a {@link #mustFilter(int) must-filter} column,
    * or null if it is not a must-filter column.
    *
-   * @see #mustFilter(String) */
-  @Nullable String getFilter(String columnName);
+   * @param column Column ordinal (0-based)
+   *
+   * @throws IndexOutOfBoundsException if column ordinal is out of range */
+  default @Nullable String getFilter(int column) {
+    return null;
+  }
 
-  /** Returns whether column {@code columnName} must be filtered in any query
-   * that references this table. */
-  boolean mustFilter(String columnName);
+  /** Returns whether {@code column} must be filtered in any query
+   * that references this table.
+   *
+   * @param column Column ordinal (0-based)
+   *
+   * @throws IndexOutOfBoundsException if column ordinal is out of range */
+  default boolean mustFilter(int column) {
+    return getFilter(column) != null;
+  }
 }
