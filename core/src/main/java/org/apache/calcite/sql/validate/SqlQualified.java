@@ -52,7 +52,7 @@ public class SqlQualified {
     return hash(identifier.names, prefixLength);
   }
 
-  @Override public boolean equals(Object obj) {
+  @Override public boolean equals(@Nullable Object obj) {
     // Two SqlQualified instances are equivalent if they are of the same
     // identifier and same prefix length. Thus, in
     //
