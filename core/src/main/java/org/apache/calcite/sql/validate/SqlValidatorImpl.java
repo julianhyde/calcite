@@ -3895,44 +3895,26 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     // Deduce which columns must be filtered.
     ns.mustFilterFields = ImmutableBitSet.of();
     if (from != null) {
-      int offset = 0;
-      // TODO: add ListScope.namespaceOffset() or ScopeChild.offset
-      Map<SqlValidatorNamespace, Integer> namespaceOffsets =
-          new IdentityHashMap<>();
-      Set<SqlQualified> qualifieds = new LinkedHashSet<>();
+      final Set<SqlQualified> qualifieds = new LinkedHashSet<>();
       for (ScopeChild child : fromScope.children) {
-        final List<RelDataTypeField> fields =
-            child.namespace.getRowType().getFieldList();
+        final List<String> fieldNames =
+            child.namespace.getRowType().getFieldNames();
         child.namespace.getMustFilterFields()
-            .forEachInt(
-                i -> qualifieds.add(
-                SqlQualified.create(fromScope, 1, child.namespace,
-                    new SqlIdentifier(
-                        ImmutableList.of(child.name, fields.get(i).getName()),
-                        SqlParserPos.ZERO))));
-        namespaceOffsets.put(child.namespace, offset);
-        offset += child.namespace.getRowType().getFieldCount();
+            .forEachInt(i ->
+                qualifieds.add(
+                    SqlQualified.create(fromScope, 1, child.namespace,
+                        new SqlIdentifier(
+                            ImmutableList.of(child.name, fieldNames.get(i)),
+                            SqlParserPos.ZERO))));
       }
       if (!qualifieds.isEmpty()) {
-        Consumer<SqlQualified> consumer = sqlQualified -> {
-          requireNonNull(sqlQualified.namespace, "namespace");
-/*
-          final String fieldName = sqlQualified.suffix().get(0);
-          final RelDataType namespaceRowType =
-              sqlQualified.namespace.getRowType();
-          final int j = namespaceRowType.getFieldNames().indexOf(fieldName);
-          checkArgument(j >= 0);
-          final Integer i = namespaceOffsets.get(sqlQualified.namespace);
-          mustFilterFields.set(j + i, false);
-*/
-          qualifieds.remove(sqlQualified);
-        };
         if (select.getWhere() != null) {
-          forEachQualified(select.getWhere(), getWhereScope(select), consumer);
+          forEachQualified(select.getWhere(), getWhereScope(select),
+              qualifieds::remove);
         }
         if (select.getHaving() != null) {
           forEachQualified(select.getHaving(), getHavingScope(select),
-              consumer);
+              qualifieds::remove);
         }
 
         // Each of the must-filter fields identified must be returned as a
