@@ -68,6 +68,7 @@ dependencies {
     implementation("com.yahoo.datasketches:sketches-core")
     implementation("commons-codec:commons-codec")
     implementation("net.hydromatic:aggdesigner-algorithm")
+    implementation("net.hydromatic:filtex")
     implementation("org.apache.commons:commons-dbcp2")
     implementation("org.apache.commons:commons-lang3")
     implementation("org.apache.commons:commons-math3")

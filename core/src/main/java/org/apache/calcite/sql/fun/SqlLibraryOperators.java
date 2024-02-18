@@ -968,6 +968,15 @@ public abstract class SqlLibraryOperators {
   public static final SqlSpecialOperator NOT_RLIKE =
       new SqlLikeOperator("NOT RLIKE", SqlKind.RLIKE, true, true);
 
+  /** The "MATCHES_FILTER(value, pattern)" function. */
+  @LibraryOperator(libraries = {CALCITE})
+  public static final SqlFunction MATCHES_FILTER =
+      SqlBasicFunction.create(SqlKind.MATCHES_FILTER,
+          ReturnTypes.BOOLEAN_NULLABLE,
+          OperandTypes.sequence("MATCHES_FILTER(<VALUE>, <CHARACTER>)",
+              OperandTypes.ANY,
+              OperandTypes.CHARACTER.and(OperandTypes.LITERAL)));
+
   /** The "CONCAT(arg, ...)" function that concatenates strings.
    * For example, "CONCAT('a', 'bc', 'd')" returns "abcd".
    *

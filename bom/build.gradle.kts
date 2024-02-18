@@ -87,6 +87,7 @@ dependencies {
         apiv("mysql:mysql-connector-java")
         apiv("net.hydromatic:aggdesigner-algorithm")
         apiv("net.hydromatic:chinook-data-hsqldb")
+        apiv("net.hydromatic:filtex")
         apiv("net.hydromatic:foodmart-data-hsqldb")
         apiv("net.hydromatic:foodmart-data-json")
         apiv("net.hydromatic:foodmart-queries")

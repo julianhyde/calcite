@@ -58,6 +58,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static org.apache.calcite.test.Matchers.relIsValid;
 
@@ -77,7 +78,14 @@ import static java.util.Objects.requireNonNull;
  * {@link SqlValidator}.
  */
 public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
-  private  static final String NL = System.getProperty("line.separator");
+  private static final String NL = System.getProperty("line.separator");
+
+  /** Expressions whose arguments must be literals. */
+  private static final Pattern LITERAL_ARG_PATTERN =
+      Pattern.compile("(?i).*(percentile_(cont|disc)"
+          + "|convert"
+          + "|matches_filter"
+          + "|sort_array)\\(.*");
 
   public AbstractSqlTester() {
   }
@@ -327,7 +335,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
    * @return Query that evaluates a scalar expression
    */
   protected String buildQuery2(SqlTestFactory factory, String expression) {
-    if (expression.matches("(?i).*(percentile_(cont|disc)|convert|sort_array)\\(.*")) {
+    if (LITERAL_ARG_PATTERN.matcher(expression).matches()) {
       // PERCENTILE_CONT requires its argument to be a literal,
       // so converting its argument to a column will cause false errors.
       // Similarly, MSSQL-style CONVERT.

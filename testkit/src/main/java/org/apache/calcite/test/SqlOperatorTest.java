@@ -3941,6 +3941,39 @@ public class SqlOperatorTest {
     f.setFor(SqlStdOperatorTable.ESCAPE, VM_EXPAND);
   }
 
+  @Test void testMatchesFilterFunc() {
+    final SqlOperatorFixture f = fixture().withLibrary(SqlLibrary.CALCITE);
+    f.setFor(SqlLibraryOperators.MATCHES_FILTER, VM_EXPAND);
+    f.checkFails("^matches_filter(123, 'not' || ' a literal')^",
+        "Argument to function 'MATCHES_FILTER' must be a literal", false);
+
+    // null
+/* TODO
+    f.checkNull("matches_filter(unknown, '')");
+*/
+    f.checkNull("matches_filter(cast(null as integer), '> 1')");
+/* TODO
+    f.checkNull("matches_filter(cast(null as date), 'today')");
+*/
+
+    // numeric
+    f.checkBoolean("matches_filter(123, '> 100')", true);
+    f.checkBoolean("matches_filter(123, '> 200')", false);
+    f.checkBoolean("matches_filter(123, '> -200')", true);
+    f.checkBoolean("matches_filter(123, '< 200')", true);
+    f.checkBoolean("matches_filter(123, '[0, 20], > 100')", true);
+    f.checkBoolean("matches_filter(23, '[0, 20], > 100')", false);
+    f.checkBoolean("matches_filter(13, '[0, 20], > 100')", true);
+    f.checkBoolean("matches_filter(5, '2, 3, 7, 5, 11')", true);
+    f.checkBoolean("matches_filter(6, '2, 3, 7, 5, 11')", false);
+  }
+
+  // TODO: merge with previous
+  @Test void testMatchesFilterFunc2() {
+    final SqlOperatorFixture f = fixture().withLibrary(SqlLibrary.CALCITE);
+    f.setFor(SqlLibraryOperators.MATCHES_FILTER, VM_EXPAND);
+  }
+
   @Test void testConvertFunc() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.CONVERT, VM_FENNEL, VM_JAVA);

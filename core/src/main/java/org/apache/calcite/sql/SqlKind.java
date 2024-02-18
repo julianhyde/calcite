@@ -698,6 +698,9 @@ public enum SqlKind {
   /** {@code EXTRACT} function. */
   EXTRACT,
 
+  /** {@code MATCHES_FILTER} function. */
+  MATCHES_FILTER,
+
   /** {@code ARRAY_APPEND} function (Spark semantics). */
   ARRAY_APPEND,
 

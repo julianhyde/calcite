@@ -30,6 +30,7 @@ import org.apache.calcite.rex.RexCallBinding;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexRangeRef;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -80,10 +81,19 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Sarg;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
+
+import net.hydromatic.filtex.Filtex;
+import net.hydromatic.filtex.TypeFamily;
+import net.hydromatic.filtex.ast.Ast;
+import net.hydromatic.filtex.ast.AstNode;
 
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -344,6 +354,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     registerOp(SqlStdOperatorTable.INTERVAL,
         StandardConvertletTable::convertInterval);
+    registerOp(SqlLibraryOperators.MATCHES_FILTER,
+        StandardConvertletTable::convertMatchesFilter);
 
     // Convert "element(<expr>)" to "$element_slice(<expr>)", if the
     // expression is a multiset of scalars.
@@ -417,6 +429,79 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 cx.getTypeFactory()
                     .createTypeWithNullability(type, operand1.getType().isNullable()),
                 operand1)));
+  }
+
+  /** Converts a call to the {@code MATCHES_FILTER} function. */
+  private static RexNode convertMatchesFilter(SqlRexContext cx, SqlCall call) {
+    final RexBuilder rexBuilder = cx.getRexBuilder();
+    final RexNode operand0 = cx.convertExpression(call.operand(0));
+    final RexNode operand1 = cx.convertExpression(call.operand(1));
+
+    final String filter = ((RexLiteral) operand1).getValueAs(String.class);
+    TypeFamily typeFamily = TypeFamily.NUMBER;
+    AstNode f = Filtex.parseFilterExpression(typeFamily, filter);
+    Sarg sarg =
+        Sarg.of(RexUnknownAs.UNKNOWN,
+            ImmutableRangeSet.copyOf(toRangeSet(f, BigDecimal.class)));
+
+    return rexBuilder.makeCall(SqlStdOperatorTable.SEARCH, operand0,
+        rexBuilder.makeSearchArgumentLiteral(sarg, operand0.getType()));
+  }
+
+  private static <C extends Comparable<C>> List<Range<C>> toRangeSet(AstNode f,
+      Class<C> clazz) {
+    switch (f.op) {
+    case GE:
+    case GT:
+    case LE:
+    case LT:
+    case CLOSED_CLOSED:
+    case CLOSED_OPEN:
+    case OPEN_CLOSED:
+    case OPEN_OPEN:
+      return ImmutableList.of(toRange(f, clazz));
+
+    case EQ:
+      final ImmutableList.Builder<Range<C>> list = ImmutableList.builder();
+      f.value().forEach(c -> list.add(Range.singleton((C) c)));
+      return list.build();
+
+    case COMMA:
+      Ast.Call2 f1 = (Ast.Call2) f;
+      return ImmutableList.<Range<C>>builder()
+          .addAll(toRangeSet(f1.left, clazz))
+          .addAll(toRangeSet(f1.right, clazz))
+          .build();
+
+    default:
+      throw new AssertionError(f.op + ": " + f);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <C extends Comparable<C>> Range<C> toRange(AstNode f,
+      Class<C> clazz) {
+    List<C> list = (List<C>) Lists.newArrayList((Iterable) f.value());
+    switch (f.op) {
+    case GE:
+      return Range.atLeast(list.get(0));
+    case GT:
+      return Range.greaterThan(list.get(0));
+    case LE:
+      return Range.atMost(list.get(0));
+    case LT:
+      return Range.lessThan(list.get(0));
+    case CLOSED_CLOSED:
+      return Range.closed(list.get(0), list.get(1));
+    case CLOSED_OPEN:
+      return Range.closedOpen(list.get(0), list.get(1));
+    case OPEN_CLOSED:
+      return Range.openClosed(list.get(0), list.get(1));
+    case OPEN_OPEN:
+      return Range.open(list.get(0), list.get(1));
+    default:
+      throw new AssertionError(f.op + ": " + f);
+    }
   }
 
   /** Converts a call to the INSTR function.
