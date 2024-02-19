@@ -108,6 +108,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.QUANTIFY_OPERATORS;
 import static org.apache.calcite.sql.type.NonNullableAccessors.getComponentTypeOrThrow;
 import static org.apache.calcite.util.Util.first;
@@ -437,10 +438,11 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     final RexNode operand0 = cx.convertExpression(call.operand(0));
     final RexNode operand1 = cx.convertExpression(call.operand(1));
 
-    final String filter = ((RexLiteral) operand1).getValueAs(String.class);
+    final String filter =
+        castNonNull(((RexLiteral) operand1).getValueAs(String.class));
     TypeFamily typeFamily = TypeFamily.NUMBER;
     AstNode f = Filtex.parseFilterExpression(typeFamily, filter);
-    Sarg sarg =
+    Sarg<BigDecimal> sarg =
         Sarg.of(RexUnknownAs.UNKNOWN,
             ImmutableRangeSet.copyOf(toRangeSet(f, BigDecimal.class)));
 
@@ -480,7 +482,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
   @SuppressWarnings("unchecked")
   private static <C extends Comparable<C>> Range<C> toRange(AstNode f,
-      Class<C> clazz) {
+      Class<C> unused) {
     List<C> list = (List<C>) Lists.newArrayList((Iterable) f.value());
     switch (f.op) {
     case GE:
