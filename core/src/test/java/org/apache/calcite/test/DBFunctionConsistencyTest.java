@@ -26,34 +26,33 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Tests ensuring the results of SQL functions are consistent across different databases.
+ * Tests that ensure that the results of SQL functions are consistent across
+ * different databases.
  */
 public class DBFunctionConsistencyTest {
   /**
    * Whether to execute a statement using a raw JDBC connection or via Calcite.
    */
-  private static final Boolean USE_RAW_JDBC_CONNECTION = false;
-  private static final Map<Type, JdbcDatabaseContainer<?>> DBS = initContainers();
-  private static Map<Type, JdbcDatabaseContainer<?>> initContainers() {
-    Map<Type, JdbcDatabaseContainer<?>> dbs = new HashMap<>();
-    dbs.put(Type.POSTGRES_9_6, new PostgreSQLContainer<>("postgres:9.6"));
-    dbs.put(Type.POSTGRES_12_2, new PostgreSQLContainer<>("postgres:12.2"));
-    dbs.put(Type.MYSQL, new MySQLContainer<>());
-    dbs.put(
-        Type.ORACLE, new OracleContainer(
-            "gvenzl/oracle-xe:21-slim-faststart"));
-    return dbs;
-  }
+  private static final Boolean USE_RAW_JDBC_CONNECTION = true;
+
+  private static final Map<Type, JdbcDatabaseContainer<?>> DBS =
+      ImmutableMap.<Type, JdbcDatabaseContainer<?>>builder()
+          .put(Type.POSTGRES_9_6, new PostgreSQLContainer<>("postgres:9.6"))
+          .put(Type.POSTGRES_12_2, new PostgreSQLContainer<>("postgres:12.2"))
+          .put(Type.MYSQL, new MySQLContainer<>("mysql:5.7.34"))
+          .put(Type.ORACLE,
+              new OracleContainer("gvenzl/oracle-xe:21-slim-faststart"))
+          .build();
 
   /**
    * Type identifier for the database used.
@@ -63,7 +62,10 @@ public class DBFunctionConsistencyTest {
       @Override String query(final String sqlFunction) {
         return "SELECT " + sqlFunction + " FROM DUAL";
       }
-    }, POSTGRES_9_6, POSTGRES_12_2, MYSQL;
+    },
+    POSTGRES_9_6,
+    POSTGRES_12_2,
+    MYSQL;
 
     String query(String sqlFunction) {
       return "SELECT " + sqlFunction;
