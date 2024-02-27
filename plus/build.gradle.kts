@@ -43,5 +43,13 @@ dependencies {
     testImplementation("net.hydromatic:sql-logic-test")
     testImplementation(project(":testkit"))
     testImplementation("org.incava:java-diff")
+    testImplementation("org.testcontainers:mysql")
+    testImplementation("org.testcontainers:oracle-xe")
+    testImplementation("org.testcontainers:postgresql")
+
+    testRuntimeOnly("com.h2database:h2")
+    testRuntimeOnly("com.oracle.ojdbc:ojdbc8")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
+    testRuntimeOnly("org.postgresql:postgresql")
+    testRuntimeOnly("mysql:mysql-connector-java")
 }
