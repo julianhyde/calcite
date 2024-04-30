@@ -138,6 +138,36 @@ from empm;
 
 !ok
 
+# Measure plus aggregate function
+select job, avg_sal as a, count(*) as c
+from empm
+group by job;
++-----------+-------------------+---+
+| JOB       | A                 | C |
++-----------+-------------------+---+
+| ANALYST   |           3000.00 | 2 |
+| CLERK     |           1037.50 | 4 |
+| MANAGER   | 2758.333333333333 | 3 |
+| PRESIDENT |           5000.00 | 1 |
+| SALESMAN  |           1400.00 | 4 |
++-----------+-------------------+---+
+(5 rows)
+
+!ok
+
+# Measure on measure
+with
+  empm as (
+    select *, avg(sal) as measure avg_sal
+    from emp),
+  empm2 as (
+    select *, /* floor(avg_sal) + */ count(*) as measure m2
+    from empm)
+select job, m2
+from empm2
+group by job;
+!ok
+
 # CTE with literal measure
 with emp2 as (
   select *, 2 as measure two
