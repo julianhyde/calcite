@@ -22,6 +22,7 @@ import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlCollectionTypeNameSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlRowTypeNameSpec;
+import org.apache.calcite.util.TryThreadLocal;
 
 import com.google.common.collect.ImmutableList;
 
@@ -124,13 +125,17 @@ class SqlTypeUtilTest {
         is(false));
     assertThat(SqlTypeUtil.canCastFrom(f.sqlTimestampPrec3, f.sqlBoolean, defaultRules),
         is(false));
-    SqlTypeCoercionRule.THREAD_PROVIDERS.set(typeCoercionRules);
-    assertThat(SqlTypeUtil.canCastFrom(f.sqlTimestampPrec3, f.sqlBoolean, true),
-        is(true));
-    assertThat(SqlTypeUtil.canCastFrom(f.sqlTimestampPrec3, f.sqlBoolean, typeCoercionRules),
-        is(true));
-    // Recover the mappings to default.
-    SqlTypeCoercionRule.THREAD_PROVIDERS.set(defaultRules);
+
+    try (TryThreadLocal.Memo ignored =
+             SqlTypeCoercionRule.THREAD_PROVIDERS.push(typeCoercionRules)) {
+      assertThat(
+          SqlTypeUtil.canCastFrom(f.sqlTimestampPrec3, f.sqlBoolean, true),
+          is(true));
+      assertThat(
+          SqlTypeUtil.canCastFrom(f.sqlTimestampPrec3, f.sqlBoolean,
+              typeCoercionRules),
+          is(true));
+    }
   }
 
   @Test void testEqualAsCollectionSansNullability() {

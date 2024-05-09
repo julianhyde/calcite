@@ -245,12 +245,12 @@ public enum FormatElementEnum implements FormatElement {
   /** Work space. Provides a value for each mutable data structure that might
    * be needed by a format element. Ensures thread-safety. */
   static class Work {
-    private static final ThreadLocal<@Nullable Work> THREAD_WORK =
+    private static final ThreadLocal<Work> THREAD_WORK =
         ThreadLocal.withInitial(Work::new);
 
     /** Returns an instance of Work for this thread. */
     static Work get() {
-      return castNonNull(THREAD_WORK.get());
+      return THREAD_WORK.get();
     }
 
     final Calendar calendar =
