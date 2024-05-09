@@ -137,7 +137,7 @@ public abstract class DateRangeRules {
    * generate hundreds of ranges we'll later throw away. */
   static ImmutableSortedSet<TimeUnitRange> extractTimeUnits(RexNode e) {
     try (ExtractFinder finder = ExtractFinder.THREAD_INSTANCES.get()) {
-      assert requireNonNull(finder, "finder").timeUnits.isEmpty() && finder.opKinds.isEmpty()
+      assert finder.timeUnits.isEmpty() && finder.opKinds.isEmpty()
           : "previous user did not clean up";
       e.accept(finder);
       return ImmutableSortedSet.copyOf(finder.timeUnits);
@@ -190,7 +190,7 @@ public abstract class DateRangeRules {
      * If none of these, we cannot apply the rule. */
     private static boolean containsRoundingExpression(Filter filter) {
       try (ExtractFinder finder = ExtractFinder.THREAD_INSTANCES.get()) {
-        assert requireNonNull(finder, "finder").timeUnits.isEmpty() && finder.opKinds.isEmpty()
+        assert finder.timeUnits.isEmpty() && finder.opKinds.isEmpty()
             : "previous user did not clean up";
         filter.getCondition().accept(finder);
         return finder.timeUnits.contains(TimeUnitRange.YEAR)
@@ -239,7 +239,7 @@ public abstract class DateRangeRules {
         EnumSet.noneOf(TimeUnitRange.class);
     private final Set<SqlKind> opKinds = EnumSet.noneOf(SqlKind.class);
 
-    private static final ThreadLocal<@Nullable ExtractFinder> THREAD_INSTANCES =
+    private static final ThreadLocal<ExtractFinder> THREAD_INSTANCES =
         ThreadLocal.withInitial(ExtractFinder::new);
 
     private ExtractFinder() {

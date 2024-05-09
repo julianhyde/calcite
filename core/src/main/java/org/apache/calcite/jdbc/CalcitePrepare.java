@@ -70,7 +70,7 @@ import static java.util.Objects.requireNonNull;
  */
 public interface CalcitePrepare {
   Function0<CalcitePrepare> DEFAULT_FACTORY = CalcitePrepareImpl::new;
-  ThreadLocal<@Nullable Deque<Context>> THREAD_CONTEXT_STACK =
+  ThreadLocal<Deque<Context>> THREAD_CONTEXT_STACK =
       ThreadLocal.withInitial(ArrayDeque::new);
 
   ParseResult parse(Context context, String sql);
@@ -207,7 +207,7 @@ public interface CalcitePrepare {
     }
 
     public static Context peek() {
-      return castNonNull(castNonNull(THREAD_CONTEXT_STACK.get()).peek());
+      return castNonNull(THREAD_CONTEXT_STACK.get().peek());
     }
 
     public static void pop(Context context) {
