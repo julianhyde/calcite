@@ -165,7 +165,13 @@ public abstract class QuidemTest {
             }
             if (propertyName.equals("insubquerythreshold")) {
               int thresholdValue = ((BigDecimal) value).intValue();
-              closer.add(Prepare.THREAD_INSUBQUERY_THRESHOLD.push(thresholdValue));
+              closer.add(
+                  Prepare.THREAD_IN_SUB_QUERY_THRESHOLD.push(thresholdValue));
+            }
+            if (propertyName.equals("trim")) {
+              final boolean b = value instanceof Boolean
+                  && (Boolean) value;
+              closer.add(Prepare.THREAD_TRIM.push(b));
             }
           })
           .withEnv(QuidemTest::getEnv)
