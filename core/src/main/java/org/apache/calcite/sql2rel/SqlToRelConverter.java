@@ -4576,11 +4576,7 @@ public class SqlToRelConverter {
       final RexNode e;
       if (measure != null) {
         final RexNode m = measureBb.convertExpression(measure);
-        if (m.getType().isMeasure()) {
-          e = m;
-        } else {
-          e = rexBuilder.makeCall(SqlInternalOperators.V2M, m);
-        }
+        e = ensureMeasure(m);
       } else {
         e = bb.convertExpression(expr);
       }
@@ -4627,6 +4623,15 @@ public class SqlToRelConverter {
       bb.columnMonotonicities.add(
           selectItem.getMonotonicity(bb.scope));
     }
+  }
+
+  /** Ensures that an expression is a measure.
+   * If its type is not {@code MEASURE<T>}, wraps in {@code V2M}. */
+  private RexNode ensureMeasure(RexNode e) {
+    if (e.getType().isMeasure()) {
+      return e;
+    }
+    return rexBuilder.makeCall(SqlInternalOperators.V2M, e);
   }
 
   /**
@@ -5530,10 +5535,6 @@ public class SqlToRelConverter {
       return requireNonNull(rex, "rex");
     }
 
-    /**
-     * Converts an item in an ORDER BY clause inside a window (OVER) clause,
-     * extracting DESC, NULLS LAST and NULLS FIRST flags first.
-     */
     @Deprecated // to be removed before 2.0
     public RexFieldCollation convertSortExpression(SqlNode expr,
         RelFieldCollation.Direction direction,

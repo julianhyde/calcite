@@ -4715,6 +4715,17 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
+  /** Measure whose formula involves another measure. */
+  @Test void testMeasureOnMeasure() {
+    final String sql = "with\n"
+        + "  empm1 as (select *, sum(sal) as measure ss from emp),\n"
+        + "  empm2 as (select *, ss + count(*) as measure ssc from empm1)\n"
+        + "select job, ssc\n"
+        + "  from empm2\n"
+        + "group by job";
+    sql(sql).ok();
+  }
+
   /** Test case for:
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3310">[CALCITE-3310]
    * Approximate and exact aggregate calls are recognized as the same

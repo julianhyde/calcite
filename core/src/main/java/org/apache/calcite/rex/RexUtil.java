@@ -717,10 +717,6 @@ public class RexUtil {
     return node;
   }
 
-  public static boolean containsKind(SqlKind kind) {
-    return false;
-  }
-
   /**
    * Walks over an expression and determines whether it is constant.
    */

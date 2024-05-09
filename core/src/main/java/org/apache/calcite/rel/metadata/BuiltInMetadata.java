@@ -885,6 +885,13 @@ public abstract class BuiltInMetadata {
 
       /** Returns the number of dimension columns. */
       int getDimensionCount();
+
+      /** Returns whether this evaluation context is an equivalent to a scan
+       * over a given relational expression.
+       *
+       * <p>This is useful information, because if the context is equivalent
+       * we may be able to avoid a correlated scalar subquery. */
+      boolean isEquivalentTo(RelNode input);
     }
   }
 

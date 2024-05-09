@@ -18,13 +18,41 @@
 !set outputformat mysql
 !use scott
 
+!set trim false
+
+# View with one measure
+create view empm as
+select *, avg(sal) as measure avg_sal
+from emp;
+(0 rows modified)
+
+!update
+
+# Aggregate query with naked measure
+select job, avg_sal as a
+from empm
+group by job;
++-----------+-------------------+
+| JOB       | A                 |
++-----------+-------------------+
+| ANALYST   |           3000.00 |
+| CLERK     |           1037.50 |
+| MANAGER   | 2758.333333333333 |
+| PRESIDENT |           5000.00 |
+| SALESMAN  |           1400.00 |
++-----------+-------------------+
+(5 rows)
+
+!ok
+
+
 # Measure on measure
 with
   empm as (
-    select *, avg(sal) as measure avg_sal
+    select *, sum(sal) as measure sum_sal
     from emp),
   empm2 as (
-    select *, floor(avg_sal) + count(*) as measure m2
+    select *, sum_sal + count(*) as measure m2
     from empm)
 select job, m2
 from empm2

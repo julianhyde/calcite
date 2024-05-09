@@ -84,6 +84,7 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -97,6 +98,8 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
+import static com.google.common.collect.Iterables.getOnlyElement;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.QUANTIFY_OPERATORS;
 import static org.apache.calcite.sql.type.NonNullableAccessors.getComponentTypeOrThrow;
@@ -1124,6 +1127,11 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       exprs.clear();
       Pair.forEach(oldExprs, operandTypes, (expr, type) ->
           exprs.add(cx.getRexBuilder().ensureType(type, expr, true)));
+    } else if (exprs.stream().anyMatch(e -> e.getType().isMeasure())) {
+      final List<RexNode> oldExprs = new ArrayList<>(exprs);
+      exprs.clear();
+      oldExprs.forEach(expr ->
+          exprs.add(ensureNotMeasure(cx.getRexBuilder(), expr)));
     }
     if (exprs.size() > 1) {
       final RelDataType type =
@@ -1137,6 +1145,22 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       }
     }
     return exprs;
+  }
+
+  /** Ensures that an expression is not a measure.
+   * Converts measures to values.
+   *
+   * <p>{@code m} becomes {@code AGG_M2V(m)};
+   * {@code V2M(e)} becomes {@code e}.
+   */
+  private static RexNode ensureNotMeasure(RexBuilder rexBuilder, RexNode e) {
+    if (!e.getType().isMeasure()) {
+      return e;
+    }
+    if (e.isA(SqlKind.V2M)) {
+      return getOnlyElement(((RexCall) e).operands);
+    }
+    return rexBuilder.makeCall(SqlInternalOperators.AGG_M2V, e);
   }
 
   private static @Nullable RelDataType consistentType(SqlRexContext cx,

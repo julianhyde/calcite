@@ -29,10 +29,14 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSubQuery;
+import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.tools.RelBuilder;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -108,6 +112,11 @@ public class RelMdMeasure
       return mq.expand(project.getInput().stripped(), ref.getIndex(), context2);
     case V2M:
       final RexCall call = (RexCall) e;
+      if (context2.isEquivalentTo(project)) {
+        // This measure is used in the same context as it is defined.
+        // We do not need a correlated scalar subquery.
+        return call.operands.get(0);
+      }
       final RexSubQuery scalarQuery =
           context.getRelBuilder().scalarQuery(b ->
               b.push(project.getInput().stripped())
@@ -186,6 +195,21 @@ public class RelMdMeasure
                       b.field(v, filters.size()))));
           return filters;
         }
+
+        @Override public boolean isEquivalentTo(RelNode input) {
+          return input.equals(aggregate.getInput().stripped());
+        }
+      };
+    }
+
+    /** Returns a context that filters field {@code ordinal}. */
+    public static BuiltInMetadata.Measure.Context filteringField(
+        BuiltInMetadata.Measure.Context context, int ordinal) {
+      Preconditions.checkArgument(ordinal >= 0);
+      return new DelegatingContext(context) {
+        @Override public List<RexNode> getFilters(RelBuilder b) {
+          return FlatLists.append(super.getFilters(b), b.field(ordinal));
+        }
       };
     }
   }
@@ -209,6 +233,10 @@ public class RelMdMeasure
 
     @Override public int getDimensionCount() {
       return context.getDimensionCount();
+    }
+
+    @Override public boolean isEquivalentTo(RelNode input) {
+      return context.isEquivalentTo(input);
     }
   }
 }

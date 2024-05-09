@@ -293,21 +293,11 @@ public abstract class MeasureRules {
               if (c.getAggregation().kind == SqlKind.AGG_M2V) {
                 final int arg = getOnlyElement(c.getArgList());
                 aggCallList.add(b3 ->
-                    b3.aggregateCall(SqlInternalOperators.AGG_M2M,
-                        b3.fields(c.getArgList()))
+                    b3.aggregateCall(SqlInternalOperators.AGG_M2M, b3.field(arg))
                         .filter(c.filterArg < 0 ? null : b3.field(c.filterArg)));
                 final BuiltInMetadata.Measure.Context context2 =
-                    new RelMdMeasure.DelegatingContext(context) {
-                      @Override public List<RexNode> getFilters(RelBuilder b) {
-                        final ImmutableList.Builder<RexNode> builder =
-                            ImmutableList.builder();
-                        builder.addAll(super.getFilters(b));
-                        if (c.filterArg >= 0) {
-                          builder.add(b.field(c.filterArg));
-                        }
-                        return builder.build();
-                      }
-                    };
+                    c.filterArg < 0 ? context
+                        : RelMdMeasure.Contexts.filteringField(context, c.filterArg);
                 projects.add(b4 -> mq.expand(b4.peek(), arg, context2));
               } else {
                 final int i =

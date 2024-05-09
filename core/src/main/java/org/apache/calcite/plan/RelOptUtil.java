@@ -3158,6 +3158,10 @@ public abstract class RelOptUtil {
       // function? Possibly. But it's invalid SQL, so don't go there.
       return null;
     }
+    if (RexUtil.find(SqlKind.V2M).inProject(project)) {
+      // Do not merge onto a Project that defines a measure.
+//      return null;
+    }
     final List<RexNode> list = pushPastProject(nodes, project);
     final int bottomCount = RexUtil.nodeCount(project.getProjects());
     final int topCount = RexUtil.nodeCount(nodes);
