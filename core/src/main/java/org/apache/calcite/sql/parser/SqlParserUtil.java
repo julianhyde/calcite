@@ -45,6 +45,7 @@ import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.PrecedenceClimbingParser;
+import org.apache.calcite.util.RequiredThreadLocal;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimeWithTimeZoneString;
 import org.apache.calcite.util.TimestampString;
@@ -1214,8 +1215,8 @@ public final class SqlParserUtil {
   /** Pre-initialized {@link DateFormat} objects, to be used within the current
    * thread, because {@code DateFormat} is not thread-safe. */
   private static class Format {
-    private static final ThreadLocal<Format> PER_THREAD =
-        ThreadLocal.withInitial(Format::new);
+    private static final RequiredThreadLocal<Format> PER_THREAD =
+        RequiredThreadLocal.withInitial(Format::new);
 
     private static Format get() {
       return PER_THREAD.get();
