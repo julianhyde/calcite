@@ -45,7 +45,7 @@ import org.apache.calcite.sql.validate.CyclicDefinitionException;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.tools.RelRunner;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.RequiredThreadLocal;
+import org.apache.calcite.util.TryThreadLocal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
@@ -71,8 +71,8 @@ import static java.util.Objects.requireNonNull;
  */
 public interface CalcitePrepare {
   Function0<CalcitePrepare> DEFAULT_FACTORY = CalcitePrepareImpl::new;
-  RequiredThreadLocal<Deque<Context>> THREAD_CONTEXT_STACK =
-      RequiredThreadLocal.withInitial(ArrayDeque::new);
+  TryThreadLocal<Deque<Context>> THREAD_CONTEXT_STACK =
+      TryThreadLocal.withInitial(ArrayDeque::new);
 
   ParseResult parse(Context context, String sql);
 

@@ -18,7 +18,7 @@ package org.apache.calcite.runtime;
 
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.util.Holder;
-import org.apache.calcite.util.RequiredThreadLocal;
+import org.apache.calcite.util.TryThreadLocal;
 import org.apache.calcite.util.Util;
 
 import org.apiguardian.api.API;
@@ -109,8 +109,8 @@ public enum Hook {
       new CopyOnWriteArrayList<>();
 
   @SuppressWarnings("ImmutableEnumChecker")
-  private final RequiredThreadLocal<List<Consumer<Object>>> threadHandlers =
-      RequiredThreadLocal.withInitial(ArrayList::new);
+  private final TryThreadLocal<List<Consumer<Object>>> threadHandlers =
+      TryThreadLocal.withInitial(ArrayList::new);
 
   /** Adds a handler for this Hook.
    *

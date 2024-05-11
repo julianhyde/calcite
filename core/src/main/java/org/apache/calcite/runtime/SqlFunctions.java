@@ -40,9 +40,9 @@ import org.apache.calcite.runtime.FlatLists.ComparableList;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.util.NumberUtil;
-import org.apache.calcite.util.RequiredThreadLocal;
 import org.apache.calcite.util.TimeWithTimeZoneString;
 import org.apache.calcite.util.TimestampWithTimeZoneString;
+import org.apache.calcite.util.TryThreadLocal;
 import org.apache.calcite.util.Unsafe;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.format.FormatElement;
@@ -203,8 +203,8 @@ public class SqlFunctions {
    * <p>This is a straw man of an implementation whose main goal is to prove
    * that sequences can be parsed, validated and planned. A real application
    * will want persistent values for sequences, shared among threads. */
-  private static final RequiredThreadLocal<Map<String, AtomicLong>> THREAD_SEQUENCES =
-      RequiredThreadLocal.withInitial(HashMap::new);
+  private static final TryThreadLocal<Map<String, AtomicLong>> THREAD_SEQUENCES =
+      TryThreadLocal.withInitial(HashMap::new);
 
   /** A byte string consisting of a single byte that is the ASCII space
    * character (0x20). */

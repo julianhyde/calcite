@@ -16,8 +16,8 @@
  */
 package org.apache.calcite.runtime;
 
-import org.apache.calcite.util.RequiredThreadLocal;
 import org.apache.calcite.util.SimpleNamespaceContext;
+import org.apache.calcite.util.TryThreadLocal;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -67,8 +67,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class XmlFunctions {
 
-  private static final RequiredThreadLocal<XPathFactory> XPATH_FACTORY =
-      RequiredThreadLocal.withInitial(() -> {
+  private static final TryThreadLocal<XPathFactory> XPATH_FACTORY =
+      TryThreadLocal.withInitial(() -> {
         final XPathFactory xPathFactory = XPathFactory.newInstance();
         try {
           xPathFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -78,8 +78,8 @@ public class XmlFunctions {
         return xPathFactory;
       });
 
-  private static final RequiredThreadLocal<TransformerFactory> TRANSFORMER_FACTORY =
-      RequiredThreadLocal.withInitial(() -> {
+  private static final TryThreadLocal<TransformerFactory> TRANSFORMER_FACTORY =
+      TryThreadLocal.withInitial(() -> {
         final TransformerFactory transformerFactory = TransformerFactory.newInstance();
         transformerFactory.setErrorListener(new InternalErrorListener());
         try {
@@ -90,8 +90,8 @@ public class XmlFunctions {
         return transformerFactory;
       });
 
-  private static final RequiredThreadLocal<DocumentBuilderFactory> DOCUMENT_BUILDER_FACTORY =
-      RequiredThreadLocal.withInitial(() -> {
+  private static final TryThreadLocal<DocumentBuilderFactory> DOCUMENT_BUILDER_FACTORY =
+      TryThreadLocal.withInitial(() -> {
         final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         documentBuilderFactory.setXIncludeAware(false);
         documentBuilderFactory.setExpandEntityReferences(false);

@@ -17,7 +17,7 @@
 package org.apache.calcite.util.format;
 
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.util.RequiredThreadLocal;
+import org.apache.calcite.util.TryThreadLocal;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -425,8 +425,8 @@ public enum FormatElementEnum implements FormatElement {
   /** Work space. Provides a value for each mutable data structure that might
    * be needed by a format element. Ensures thread-safety. */
   static class Work {
-    private static final RequiredThreadLocal<Work> THREAD_WORK =
-        RequiredThreadLocal.withInitial(Work::new);
+    private static final TryThreadLocal<Work> THREAD_WORK =
+        TryThreadLocal.withInitial(Work::new);
 
     /** Returns an instance of Work for this thread. */
     static Work get() {

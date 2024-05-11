@@ -21,9 +21,10 @@ import org.apache.calcite.util.TryThreadLocal;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -356,8 +357,8 @@ public class SqlTypeCoercionRule implements SqlTypeMappingRule {
   //~ Methods ----------------------------------------------------------------
 
   /** Returns an instance. */
-  public static SqlTypeCoercionRule instance() {
-    return Objects.requireNonNull(THREAD_PROVIDERS.get(), "threadProviders");
+  public static @NonNull SqlTypeCoercionRule instance() {
+    return THREAD_PROVIDERS.get();
   }
 
   /** Returns an instance that allows more lenient type coercion. */

@@ -513,7 +513,7 @@ public class Smalls {
    * and named parameters. */
   public static class MyPlusFunction {
     public static final ThreadLocal<AtomicInteger> INSTANCE_COUNT =
-        new ThreadLocal<>().withInitial(() -> new AtomicInteger(0));
+        ThreadLocal.withInitial(AtomicInteger::new);
 
     // Note: Not marked @Deterministic
     public MyPlusFunction() {
@@ -530,7 +530,7 @@ public class Smalls {
    * {@link org.apache.calcite.schema.FunctionContext} parameter. */
   public static class MyPlusInitFunction {
     public static final ThreadLocal<AtomicInteger> INSTANCE_COUNT =
-        new ThreadLocal<>().withInitial(() -> new AtomicInteger(0));
+        ThreadLocal.withInitial(AtomicInteger::new);
     public static final ThreadLocal<String> THREAD_DIGEST =
         new ThreadLocal<>();
 
@@ -565,7 +565,7 @@ public class Smalls {
   /** As {@link MyPlusFunction} but declared to be deterministic. */
   public static class MyDeterministicPlusFunction {
     public static final ThreadLocal<AtomicInteger> INSTANCE_COUNT =
-        new ThreadLocal<>().withInitial(() -> new AtomicInteger(0));
+        ThreadLocal.withInitial(AtomicInteger::new);
 
     @Deterministic public MyDeterministicPlusFunction() {
       INSTANCE_COUNT.get().incrementAndGet();
