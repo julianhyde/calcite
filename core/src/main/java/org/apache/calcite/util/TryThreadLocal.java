@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.util;
 
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -189,15 +188,13 @@ public abstract class TryThreadLocal<T> extends ThreadLocal<@Nullable T> {
    * @param <T> Value type */
   private static class SuppliedTryThreadLocal<T> extends TryThreadLocal<T> {
     private final Supplier<? extends @NonNull T> supplier;
-    private @MonotonicNonNull T initialValue;
 
     SuppliedTryThreadLocal(Supplier<? extends @NonNull T> supplier) {
       this.supplier = requireNonNull(supplier, "supplier");
     }
 
     @Override protected @NonNull T initialValue() {
-      initialValue = requireNonNull(supplier.get(), "supplier returned null");
-      return initialValue;
+      return requireNonNull(supplier.get(), "supplier returned null");
     }
 
     @Override public void set(@Nullable T value) {
@@ -208,10 +205,13 @@ public abstract class TryThreadLocal<T> extends ThreadLocal<@Nullable T> {
       // If the thread had no value before they called 'push', should we call
       // 'remove()' here? No, for two reasons.
       //
-      // 1. It's not possible to know whether there was a value;
-      // 2. It may or may not be what the user wants. If each 'restoreTo' call
-      //    invokes 'remove', then the next call to 'push' will invoke the
-      //    supplier again. Does the user really want that?
+      // First, it's not possible to know whether there was a value.
+      // (ThreadLocal.isPresent() is package-protected.)
+      //
+      // Second, it may be what the user wants. If each 'restoreTo' call invokes
+      // 'remove', then the next call to 'push' will invoke the supplier again.
+      // Sometimes the user doesn't want to pay the initialization cost multiple
+      // times, or to lose the state in the initialized object.
       set(previous);
     }
   }
