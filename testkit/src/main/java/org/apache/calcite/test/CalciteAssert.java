@@ -1717,7 +1717,7 @@ public class CalciteAssert {
 
     // CHECKSTYLE: IGNORE 1
     /** @deprecated Use {@link #queryContains(Consumer)}. */
-    @SuppressWarnings("Guava")
+    @SuppressWarnings({"Guava", "CheckReturnValue"})
     @Deprecated // to be removed before 2.0
     public final AssertQuery queryContains(
         com.google.common.base.Function<List, Void> predicate) {

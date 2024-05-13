@@ -160,7 +160,7 @@ public enum Hook {
 
   // CHECKSTYLE: IGNORE 1
   /** @deprecated Use {@link #addThread(Consumer)}. */
-  @SuppressWarnings("Guava")
+  @SuppressWarnings({"Guava", "CheckReturnValue"})
   @Deprecated // to be removed before 2.0
   public <T, R> Closeable addThread(
       final com.google.common.base.Function<T, R> handler) {
