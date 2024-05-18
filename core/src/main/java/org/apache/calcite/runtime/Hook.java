@@ -164,7 +164,9 @@ public enum Hook {
   @Deprecated // to be removed before 2.0
   public <T, R> Closeable addThread(
       final com.google.common.base.Function<T, R> handler) {
-    return addThread((Consumer<T>) handler::apply);
+    @SuppressWarnings("CheckReturnValue")
+    final Consumer<T> consumer = handler::apply;
+    return addThread(consumer);
   }
 
   /** Removes a thread handler from this Hook. */
