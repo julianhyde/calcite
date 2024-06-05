@@ -1,0 +1,56 @@
+# attribute.iq - attributes
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to you under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+!set outputformat mysql
+!use scott
+
+# Define an attribute.
+# Value and alias are same as for 'sal'.
+select ename, define_attribute(sal, 'odd', mod(sal, 2) = 1)
+from emp
+where deptno = 10;
++--------+---------+
+| ENAME  | SAL     |
++--------+---------+
+| CLARK  | 2450.00 |
+| KING   | 5000.00 |
+| MILLER | 1300.00 |
++--------+---------+
+(3 rows)
+
+!ok
+
+# Multiple attributes.
+select
+    define_attribute(ename, 'odd', mod(sal, 2) = 1),
+    define_attribute(
+      define_attribute(sal, 'odd', mod(sal, 2) = 1),
+        'even', mod(sal, 2) = 1)
+from emp
+where deptno = 10;
++--------+---------+
+| ENAME  | SAL     |
++--------+---------+
+| CLARK  | 2450.00 |
+| KING   | 5000.00 |
+| MILLER | 1300.00 |
++--------+---------+
+(3 rows)
+
+!ok
+
+# End attribute.iq

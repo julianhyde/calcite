@@ -354,7 +354,9 @@ public class SqlValidatorUtil {
       return ((SqlCall) node).operand(1).toString();
 
     case OVER:
+    case DEFINE_ATTRIBUTE:
       // E.g. "bids over w" --> "bids"
+      // E.g. "define_attribute(sal, 'x', 1 + 2)" --> "sal"
       return getAlias(((SqlCall) node).operand(0), ordinal);
 
     case IDENTIFIER:

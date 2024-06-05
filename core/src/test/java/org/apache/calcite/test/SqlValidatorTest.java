@@ -4042,6 +4042,15 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .isAggregate(is(false));
   }
 
+  /** Tests validation of attributes,
+   * including the {@code DEFINE_ATTRIBUTE} function. */
+  @Test void testAttribute() {
+    sql("select deptno, define_attribute(sal, 'a', sal > 0) from emp")
+        .withOperatorTable(operatorTableFor(SqlLibrary.CALCITE))
+        .type("RecordType(INTEGER NOT NULL DEPTNO,"
+            + " INTEGER NOT NULL SAL) NOT NULL");
+  }
+
   @Test void testAmbiguousColumnInIn() {
     // ok: cyclic reference
     sql("select * from emp as e\n"

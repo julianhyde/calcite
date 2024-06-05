@@ -262,6 +262,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     // "MEASURE" has no effect, so expand "x AS MEASURE id" into "x".
     registerOp(SqlInternalOperators.MEASURE,
         (cx, call) -> cx.convertExpression(call.operand(0)));
+    // "DEFINE_ATTRIBUTE(x, y, z)" expands to "x".
+    registerOp(SqlLibraryOperators.DEFINE_ATTRIBUTE,
+        (cx, call) -> cx.convertExpression(call.operand(0)));
 
     // "SQRT(x)" is equivalent to "POWER(x, .5)"
     registerOp(SqlStdOperatorTable.SQRT,

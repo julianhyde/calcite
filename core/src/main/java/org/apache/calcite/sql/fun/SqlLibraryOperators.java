@@ -83,6 +83,17 @@ public abstract class SqlLibraryOperators {
           ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE),
           OperandTypes.MEASURE);
 
+  /** The "DEFINE_ATTRIBUTE(targetExpr, attributeName, expr)" function
+   * defines an attribute. Its value, return type and alias are the same as
+   * those of "targetExpr". */
+  @LibraryOperator(libraries = {CALCITE})
+  public static final SqlFunction DEFINE_ATTRIBUTE =
+      SqlBasicFunction.create(SqlKind.DEFINE_ATTRIBUTE,
+          ReturnTypes.ARG0,
+          OperandTypes.sequence("xxx", OperandTypes.ANY,
+              OperandTypes.CHARACTER /*.and(OperandTypes.LITERAL) */,
+              OperandTypes.ANY));
+
   /** The "CONVERT_TIMEZONE(tz1, tz2, datetime)" function;
    * converts the timezone of {@code datetime} from {@code tz1} to {@code tz2}.
    * This function is only on Redshift, but we list it in PostgreSQL

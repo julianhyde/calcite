@@ -228,6 +228,9 @@ public enum SqlKind {
   /** {@code SAME_PARTITION} pseudo-function. */
   SAME_PARTITION,
 
+  /** {@code DEFINE_ATTRIBUTE} function. */
+  DEFINE_ATTRIBUTE,
+
   /** Argument assignment operator, {@code =>}. */
   ARGUMENT_ASSIGNMENT,
 
