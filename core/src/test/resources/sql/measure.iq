@@ -18,6 +18,210 @@
 !set outputformat mysql
 !use scott
 
+# "Measures in SQL" paper
+
+# Table 1: Customers table
+create view "Customers" as
+select * from (values
+ ('Alice',23),
+ ('Bob',41),
+ ('Celia',17))
+  as t ("custName", "age");
+(0 rows modified)
+
+!update
+
+# Table 2: Orders table
+create view "Orders" as
+select * from (values
+ ('Happy','Alice',DATE '2023-11-28',6,4),
+ ('Acme','Bob',DATE '2023-11-27',5,2),
+ ('Happy','Alice',DATE '2024-11-28',7,4),
+ ('Whizz','Celia',DATE '2023-11-25',3,1),
+ ('Happy','Bob',DATE '2022-11-27',4,1))
+  as t ("prodName","custName","orderDate","revenue","cost");
+(0 rows modified)
+
+!update
+
+# Listing 1: Summarizing Orders by product name
+SELECT "prodName",
+  COUNT (*) AS c,
+  CAST(SUM ("revenue") - SUM("cost") AS DECIMAL(4,2)) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+GROUP BY "prodName";
++----------+---+--------------------+
+| prodName | C | profitMargin       |
++----------+---+--------------------+
+| Acme     | 1 |                0.6 |
+| Happy    | 3 | 0.4705882352941176 |
+| Whizz    | 1 | 0.6666666666666667 |
++----------+---+--------------------+
+(3 rows)
+
+!ok
+
+CREATE VIEW "SummarizedOrders" AS
+SELECT "prodName", "orderDate",
+  CAST(SUM("revenue") - SUM("cost") AS DECIMAL(4,2)) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+GROUP BY "prodName", "orderDate";
+(0 rows modified)
+
+!update
+
+# Listing 2: Summarized Orders view
+SELECT "prodName", AVG("profitMargin") AS m
+FROM "SummarizedOrders"
+GROUP BY "prodName";
++----------+--------------------+
+| prodName | M                  |
++----------+--------------------+
+| Acme     |                0.6 |
+| Happy    | 0.5039682539682540 |
+| Whizz    | 0.6666666666666667 |
++----------+--------------------+
+(3 rows)
+
+!ok
+
+# Alternative views
+SELECT * FROM "SummarizedOrders";
++----------+------------+--------------------+
+| prodName | orderDate  | profitMargin       |
++----------+------------+--------------------+
+| Acme     | 2023-11-27 |                0.6 |
+| Happy    | 2022-11-27 |               0.75 |
+| Happy    | 2023-11-28 | 0.3333333333333333 |
+| Happy    | 2024-11-28 | 0.4285714285714286 |
+| Whizz    | 2023-11-25 | 0.6666666666666667 |
++----------+------------+--------------------+
+(5 rows)
+
+!ok
+
+SELECT "prodName", "custName",
+  CAST(SUM ("revenue") - SUM("cost") AS DECIMAL(4,2)) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+GROUP BY "prodName", "custName";
++----------+----------+--------------------+
+| prodName | custName | profitMargin       |
++----------+----------+--------------------+
+| Acme     | Bob      |                0.6 |
+| Happy    | Alice    | 0.3846153846153846 |
+| Happy    | Bob      |               0.75 |
+| Whizz    | Celia    | 0.6666666666666667 |
++----------+----------+--------------------+
+(4 rows)
+
+!ok
+
+SELECT "prodName",
+  CAST(SUM ("revenue") - SUM("cost") AS DECIMAL(4,2)) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+GROUP BY "prodName";
++----------+--------------------+
+| prodName | profitMargin       |
++----------+--------------------+
+| Acme     |                0.6 |
+| Happy    | 0.4705882352941176 |
+| Whizz    | 0.6666666666666667 |
++----------+--------------------+
+(3 rows)
+
+!ok
+
+SELECT "prodName", "orderDate", "custName",
+  CAST(SUM ("revenue") - SUM("cost") AS DECIMAL(4,2)) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+GROUP BY "prodName", "orderDate", "custName";
++----------+------------+----------+--------------------+
+| prodName | orderDate  | custName | profitMargin       |
++----------+------------+----------+--------------------+
+| Acme     | 2023-11-27 | Bob      |                0.6 |
+| Happy    | 2022-11-27 | Bob      |               0.75 |
+| Happy    | 2023-11-28 | Alice    | 0.3333333333333333 |
+| Happy    | 2024-11-28 | Alice    | 0.4285714285714286 |
+| Whizz    | 2023-11-25 | Celia    | 0.6666666666666667 |
++----------+------------+----------+--------------------+
+(5 rows)
+
+!ok
+
+SELECT "custName",
+  CAST(SUM ("revenue") - SUM("cost") AS DECIMAL(4,2)) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+GROUP BY "custName";
++----------+--------------------+
+| custName | profitMargin       |
++----------+--------------------+
+| Alice    | 0.3846153846153846 |
+| Bob      | 0.6666666666666667 |
+| Celia    | 0.6666666666666667 |
++----------+--------------------+
+(3 rows)
+
+!ok
+
+# Profit margin for Bob/Happy orders
+SELECT "custName", "prodName",
+  (SUM ("revenue") - SUM("cost")) / SUM("revenue") AS "profitMargin"
+FROM "Orders"
+WHERE "prodName" = 'Happy'
+GROUP BY "custName";
+!ok
+
+# Listing 9: Joining measures
+!if (false) {
+WITH EnhancedCustomers AS (
+  SELECT *, AVG(age) AS MEASURE avgAge
+  FROM Customers)
+SELECT o.prodName,
+  COUNT(*) AS orderCount,
+  AVG(c.age) AS weightedAvgAge,
+  c.avgAge AS avgAge,
+  c.avgAge AT (VISIBLE) AS visibleAvgAge
+FROM Orders AS o
+JOIN EnhancedCustomers AS c USING (custName)
+WHERE e.age >= 18
+GROUP BY o.prodName;
+!ok
+!}
+
+# Listing 9, simplified
+!if (false) {
+WITH EnhancedCustomers AS (
+  SELECT *, AVG(age) AS MEASURE avgAge
+  FROM Customers)
+SELECT o.prodName,
+  AVG(c.age) AS weightedAvgAge,
+  c.avgAge AS avgAge
+FROM Orders AS o
+JOIN EnhancedCustomers AS c USING (custName)
+GROUP BY o.prodName;
+!ok
+!}
+
+WITH EnhancedCustomers AS (
+  SELECT *, AVG("age") AS MEASURE "avgAge"
+  FROM "Customers")
+SELECT o."prodName",
+  AVG(c."age") AS "weightedAvgAge",
+  AVG(c."age") WITHIN DISTINCT (c."custName") AS "avgAge"
+FROM "Orders" AS o
+JOIN EnhancedCustomers AS c USING ("custName")
+GROUP BY o."prodName";
++----------+----------------+--------+
+| prodName | weightedAvgAge | avgAge |
++----------+----------------+--------+
+| Acme     |             41 |     41 |
+| Happy    |             29 |     32 |
+| Whizz    |             17 |     17 |
++----------+----------------+--------+
+(3 rows)
+
+!ok
+
 # View with one measure
 create view empm as
 select *, avg(sal) as measure avg_sal
