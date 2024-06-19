@@ -53,4 +53,26 @@ where deptno = 10;
 
 !ok
 
+# Describe.
+with emp2 as (
+  select deptno,
+      define_attribute(ename, 'odd', mod(sal, 2) = 1),
+      define_attribute(
+        define_attribute(sal, 'odd', mod(sal, 2) = 1),
+          'even', mod(sal, 2) = 1)
+  from emp
+  where deptno = 10)
+select describe_attributes(deptno) deptno_attrs,
+    describe_attributes(sal) deptno_attrs,
+    describe_attributes(ename) deptno_attrs
+from emp2;
+!ok
+
+# Describe on table with no attributes.
+select describe_attributes(deptno) deptno_attrs,
+    describe_attributes(sal) deptno_attrs,
+    describe_attributes(ename) deptno_attrs
+from emp2;
+!ok
+
 # End attribute.iq

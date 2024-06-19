@@ -94,6 +94,13 @@ public abstract class SqlLibraryOperators {
               OperandTypes.CHARACTER /*.and(OperandTypes.LITERAL) */,
               OperandTypes.ANY));
 
+  /** The "DESCRIBE_ATTRIBUTES(targetExpr)" function returns a string describing
+   * the attributes on "targetExpr", or the empty string for no attributes. */
+  @LibraryOperator(libraries = {CALCITE})
+  public static final SqlFunction DESCRIBE_ATTRIBUTES =
+      SqlBasicFunction.create(SqlKind.DESCRIBE_ATTRIBUTES,
+          ReturnTypes.VARCHAR_2000, OperandTypes.ANY);
+
   /** The "CONVERT_TIMEZONE(tz1, tz2, datetime)" function;
    * converts the timezone of {@code datetime} from {@code tz1} to {@code tz2}.
    * This function is only on Redshift, but we list it in PostgreSQL

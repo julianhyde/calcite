@@ -266,6 +266,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     registerOp(SqlLibraryOperators.DEFINE_ATTRIBUTE,
         (cx, call) -> cx.convertExpression(call.operand(0)));
 
+    // "DESCRIBE_ATTRIBUTE(x)" expands to "x".
+    registerOp(SqlLibraryOperators.DESCRIBE_ATTRIBUTES,
+        this::convertDescribeAttributes);
+
     // "SQRT(x)" is equivalent to "POWER(x, .5)"
     registerOp(SqlStdOperatorTable.SQRT,
         (cx, call) -> cx.convertExpression(
@@ -917,6 +921,43 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       SqlCall call) {
     final RexBuilder rexBuilder = cx.getRexBuilder();
     final SqlOperator op = call.getOperator();
+    SqlOperandTypeChecker operandTypeChecker = op.getOperandTypeChecker();
+    final SqlOperandTypeChecker.Consistency consistency =
+        operandTypeChecker == null
+            ? SqlOperandTypeChecker.Consistency.NONE
+            : operandTypeChecker.getConsistency();
+    final List<RexNode> exprs = convertOperands(cx, call, consistency);
+
+    final RelDataType collectionType = exprs.get(0).getType();
+    final boolean isRowTypeField = SqlTypeUtil.isRow(collectionType);
+    final boolean isNumericIndex = SqlTypeUtil.isIntType(exprs.get(1).getType());
+
+    if (isRowTypeField && isNumericIndex) {
+      final SqlOperatorBinding opBinding =
+          new RexCallBinding(cx.getTypeFactory(), op, exprs, ImmutableList.of());
+      final RelDataType operandType = opBinding.getOperandType(0);
+
+      final Integer index = opBinding.getOperandLiteralValue(1, Integer.class);
+      if (index == null || index < 1 || index > operandType.getFieldCount()) {
+        throw new AssertionError("Cannot access field at position "
+            + index + " within ROW type: " + operandType);
+      } else {
+        RelDataTypeField relDataTypeField = collectionType.getFieldList().get(index - 1);
+        return rexBuilder.makeFieldAccess(
+            exprs.get(0), relDataTypeField.getName(), false);
+      }
+    }
+    RelDataType type = rexBuilder.deriveReturnType(op, exprs);
+    return rexBuilder.makeCall(type, op, RexUtil.flatten(exprs, op));
+  }
+
+  private RexNode convertDescribeAttributes(
+      @UnknownInitialization StandardConvertletTable this,
+      SqlRexContext cx,
+      SqlCall call) {
+    final RexBuilder rexBuilder = cx.getRexBuilder();
+    final SqlNode operand = call.operand(0);
+    cx.getValidator().getValidatedNodeType(operand)
     SqlOperandTypeChecker operandTypeChecker = op.getOperandTypeChecker();
     final SqlOperandTypeChecker.Consistency consistency =
         operandTypeChecker == null

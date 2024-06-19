@@ -231,6 +231,9 @@ public enum SqlKind {
   /** {@code DEFINE_ATTRIBUTE} function. */
   DEFINE_ATTRIBUTE,
 
+  /** {@code DESCRIBE_ATTRIBUTES} function. */
+  DESCRIBE_ATTRIBUTES,
+
   /** Argument assignment operator, {@code =>}. */
   ARGUMENT_ASSIGNMENT,
 
