@@ -72,6 +72,7 @@ dependencies {
     implementation("org.apache.commons:commons-lang3")
     implementation("org.apache.commons:commons-math3")
     implementation("commons-io:commons-io")
+    implementation("net.hydromatic:lookml")
     implementation("org.codehaus.janino:commons-compiler")
     implementation("org.codehaus.janino:janino")
     annotationProcessor("org.immutables:value")

@@ -1,0 +1,116 @@
+# measure-lookml.iq - measure expressions and views created from LookML
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to you under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+!set outputformat mysql
+!use steelwheels
+
+# Query the 'steelwheels' database directly.
+select count(*) as c
+from steelwheels.orderfact;
++------+
+| c    |
++------+
+| 2996 |
++------+
+(1 row)
+
+!ok
+
+# As above, without the 'steelwheels' prefix, because 'steelwheels' is the
+# default schema.
+select count(*) as c
+from orderfact;
++------+
+| c    |
++------+
+| 2996 |
++------+
+(1 row)
+
+!ok
+
+# Translate LookML model to SQL string
+# using the LOOKML_VIEW_STRING function.
+!set outputformat csv
+select lookml_view_string('orders', 'model: m {
+  view: orders {
+    sql_table_name: steelwheels.orderfact;; #
+    dimension: order_number {
+      sql: ordernumber;; #
+    }
+    dimension: order_date {
+      sql: orderdate;; #
+    }
+    dimension: order_year {
+      sql: YEAR(orderdate);; #
+    }
+    measure: c {
+      type: count
+    }
+  }
+  explore: orders {
+  }
+}') as `sql`;
+sql
+SELECT `orders`.`order_number` AS `orders.order_number`,
+    `orders`.`order_date` AS `orders.order_date`,
+    `orders`.`order_year` AS `orders.order_year`,
+    `orders`.`c` AS MEASURE `orders.c`
+FROM (
+    SELECT ordernumber AS `order_number`,
+        orderdate AS `order_date`,
+        YEAR(orderdate) AS `order_year`,
+        COUNT(*) AS MEASURE `c`
+    FROM steelwheels.orderfact AS `orders`) AS `orders`
+!ok
+
+# Translate LookML model to SQL
+# using the LOOKML_VIEW_STRING function
+# followed by the SQL_TO_REL table function.
+!set outputformat mysql
+select *
+from table(sql_to_rel(lookml_view_string('orders', 'model: m {
+  view: orders {
+    sql_table_name: steelwheels.orderfact;; #
+    dimension: order_number {
+      sql: ordernumber;; #
+    }
+    dimension: order_date {
+      sql: orderdate;; #
+    }
+    dimension: order_year {
+      sql: YEAR(orderdate);; #
+    }
+  }
+  explore: orders {
+  }
+}')))
+order by `orders.order_number`, `orders.order_date` limit 5;
++---------------------+---------------------+-------------------+
+| orders.order_number | orders.order_date   | orders.order_year |
++---------------------+---------------------+-------------------+
+|               10100 | 2008-07-31 14:24:30 |              2008 |
+|               10100 | 2008-07-31 14:24:30 |              2008 |
+|               10100 | 2008-07-31 14:24:30 |              2008 |
+|               10100 | 2008-07-31 14:24:30 |              2008 |
+|               10101 | 2003-01-09 00:00:00 |              2003 |
++---------------------+---------------------+-------------------+
+(5 rows)
+
+!ok
+
+# End measure-lookml.iq

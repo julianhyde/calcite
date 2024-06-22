@@ -88,6 +88,7 @@ dependencies {
         apiv("net.hydromatic:foodmart-data-hsqldb")
         apiv("net.hydromatic:foodmart-data-json")
         apiv("net.hydromatic:foodmart-queries")
+        apiv("net.hydromatic:lookml")
         apiv("net.hydromatic:quidem")
         apiv("net.hydromatic:scott-data-hsqldb")
         apiv("net.hydromatic:steelwheels-data-hsqldb")

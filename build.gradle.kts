@@ -331,6 +331,9 @@ allprojects {
     repositories {
         // RAT and Autostyle dependencies
         mavenCentral()
+
+        // For LookML
+        mavenLocal()
     }
 
     val javaUsed = file("src/main/java").isDirectory
