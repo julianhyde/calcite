@@ -83,20 +83,15 @@ public abstract class SqlLibraryOperators {
           ReturnTypes.ARG0.andThen(SqlTypeTransforms.FROM_MEASURE),
           OperandTypes.MEASURE);
 
-  /** The "LOOKML_VIEW_STRING(exploreName, lookml)" function. */
+  /** The "LOOKML_TO_SQL(exploreName, lookml)" function. */
   @LibraryOperator(libraries = {CALCITE})
-  public static final SqlFunction LOOKML_VIEW_STRING =
-      SqlLookmlFunctions.lookmlViewString();
-
-  /** The "LOOKML_VIEW(exploreName, lookml)" table macro. */
-  @LibraryOperator(libraries = {CALCITE})
-  public static final SqlOperator LOOKML_VIEW =
-      SqlLookmlFunctions.lookmlView();
+  public static final SqlFunction LOOKML_TO_SQL =
+      SqlLookmlFunctions.lookmlToSql();
 
   /** The "SQL_TO_REL(sql)" table macro. */
   @LibraryOperator(libraries = {CALCITE})
   public static final SqlOperator SQL_TO_REL =
-      SqlLookmlFunctions.sqlToRel();
+      new SqlToRelTableMacro("SQL_TO_REL");
 
   /** The "CONVERT_TIMEZONE(tz1, tz2, datetime)" function;
    * converts the timezone of {@code datetime} from {@code tz1} to {@code tz2}.

@@ -44,9 +44,9 @@ from orderfact;
 !ok
 
 # Translate LookML model to SQL string
-# using the LOOKML_VIEW_STRING function.
+# using the LOOKML_TO_SQL function.
 !set outputformat csv
-select lookml_view_string('orders', 'model: m {
+select lookml_to_sql('orders', 'model: m {
   view: orders {
     sql_table_name: steelwheels.orderfact;; #
     dimension: order_number {
@@ -79,11 +79,11 @@ FROM (
 !ok
 
 # Translate LookML model to SQL
-# using the LOOKML_VIEW_STRING function
+# using the LOOKML_TO_SQL function
 # followed by the SQL_TO_REL table function.
 !set outputformat mysql
 select *
-from table(sql_to_rel(lookml_view_string('orders', 'model: m {
+from table(sql_to_rel(lookml_to_sql('orders', 'model: m {
   view: orders {
     sql_table_name: steelwheels.orderfact;; #
     dimension: order_number {
