@@ -165,8 +165,8 @@ import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlQualified;
+import org.apache.calcite.sql.validate.SqlTableMacro;
 import org.apache.calcite.sql.validate.SqlUserDefinedTableFunction;
-import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
@@ -976,7 +976,7 @@ public class SqlToRelConverter {
     // we can't represent the real collation.
     //
     // If it is the top node, use the real collation, but don't trim fields.
-    if (orderExprList.size() > 0 && !bb.top) {
+    if (!orderExprList.isEmpty() && !bb.top) {
       final List<RexNode> exprs = new ArrayList<>();
       final RelDataType rowType = bb.root().getRowType();
       final int fieldCount =
@@ -1701,8 +1701,8 @@ public class SqlToRelConverter {
       SqlNodeList selectList = select.getSelectList();
       SqlNodeList groupList = select.getGroup();
 
-      if ((selectList.size() == 1)
-          && ((groupList == null) || (groupList.size() == 0))) {
+      if (selectList.size() == 1
+          && (groupList == null || groupList.isEmpty())) {
         SqlNode selectExpr = selectList.get(0);
         if (selectExpr instanceof SqlCall) {
           SqlCall selectExprCall = (SqlCall) selectExpr;
@@ -2845,17 +2845,17 @@ public class SqlToRelConverter {
     // LogicalTableFunctionScan.
     final SqlCallBinding callBinding =
         new SqlCallBinding(bb.scope.getValidator(), bb.scope, call);
-    if (operator instanceof SqlUserDefinedTableMacro) {
-      final SqlUserDefinedTableMacro udf =
-          (SqlUserDefinedTableMacro) operator;
+    if (operator instanceof SqlTableMacro) {
+      final SqlTableMacro udf = (SqlTableMacro) operator;
       final TranslatableTable table = udf.getTable(callBinding);
+      requireNonNull(table, "table");
       final RelDataType rowType = table.getRowType(typeFactory);
       CalciteSchema schema =
           Schemas.subSchema(catalogReader.getRootSchema(),
               udf.getNameAsId().skipLast(1).names);
+      requireNonNull(schema, "schema");
       TableExpressionFactory expressionFunction =
-          clazz -> Schemas.getTableExpression(
-              Objects.requireNonNull(schema, "schema").plus(),
+          clazz -> Schemas.getTableExpression(schema.plus(),
               Util.last(udf.getNameAsId().names), table, clazz);
       RelOptTable relOptTable =
           RelOptTableImpl.create(null, rowType,

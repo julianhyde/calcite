@@ -23,12 +23,10 @@ import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperatorBinding;
-import org.apache.calcite.sql.SqlTableFunction;
 import org.apache.calcite.sql.type.SqlOperandMetadata;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
@@ -40,26 +38,28 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * User-defined table macro.
  *
  * <p>Created by the validator, after resolving a function call to a function
  * defined in a Calcite schema.
 */
-public class SqlUserDefinedTableMacro extends SqlFunction
-    implements SqlTableFunction {
+public class SqlUserDefinedTableMacro extends SqlTableMacro {
   private final TableMacro tableMacro;
 
   @Deprecated // to be removed before 2.0
   public SqlUserDefinedTableMacro(SqlIdentifier opName,
       SqlReturnTypeInference returnTypeInference,
       SqlOperandTypeInference operandTypeInference,
-      @Nullable SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes,
+      @Nullable SqlOperandTypeChecker operandTypeChecker,
+      List<RelDataType> paramTypes,
       TableMacro tableMacro) {
     this(opName, SqlKind.OTHER_FUNCTION, returnTypeInference,
         operandTypeInference,
-        operandTypeChecker instanceof SqlOperandMetadata
-            ? (SqlOperandMetadata) operandTypeChecker : null, tableMacro);
+        requireNonNull(operandTypeChecker instanceof SqlOperandMetadata
+            ? (SqlOperandMetadata) operandTypeChecker : null), tableMacro);
     Util.discard(paramTypes); // no longer used
   }
 
@@ -67,7 +67,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction
   public SqlUserDefinedTableMacro(SqlIdentifier opName, SqlKind kind,
       SqlReturnTypeInference returnTypeInference,
       SqlOperandTypeInference operandTypeInference,
-      @Nullable SqlOperandMetadata operandMetadata,
+      SqlOperandMetadata operandMetadata,
       TableMacro tableMacro) {
     super(Util.last(opName.names), opName, kind,
         returnTypeInference, operandTypeInference, operandMetadata,
@@ -75,17 +75,12 @@ public class SqlUserDefinedTableMacro extends SqlFunction
     this.tableMacro = tableMacro;
   }
 
-  @Override public @Nullable SqlOperandMetadata getOperandTypeChecker() {
-    return (@Nullable SqlOperandMetadata) super.getOperandTypeChecker();
-  }
-
   @SuppressWarnings("deprecation")
   @Override public List<String> getParamNames() {
     return Util.transform(tableMacro.getParameters(), FunctionParameter::getName);
   }
 
-  /** Returns the table in this UDF, or null if there is no table. */
-  public TranslatableTable getTable(SqlOperatorBinding callBinding) {
+  @Override public TranslatableTable getTable(SqlOperatorBinding callBinding) {
     List<@Nullable Object> arguments =
         convertArguments(callBinding, tableMacro, getNameAsId(), true);
     return tableMacro.apply(arguments);
@@ -126,15 +121,5 @@ public class SqlUserDefinedTableMacro extends SqlFunction
       arguments.add(value);
     });
     return arguments;
-  }
-
-  @Override public SqlReturnTypeInference getRowTypeInference() {
-    return this::inferRowType;
-  }
-
-  private RelDataType inferRowType(SqlOperatorBinding callBinding) {
-    final RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
-    final TranslatableTable table = getTable(callBinding);
-    return table.getRowType(typeFactory);
   }
 }
