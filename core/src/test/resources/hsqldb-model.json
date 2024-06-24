@@ -32,6 +32,13 @@
     "jdbcUrl": "jdbc:hsqldb:res:scott",
     "jdbcSchema": "SCOTT"
   }, {
+    "type": "jdbc",
+    "name": "STEELWHEELS",
+    "jdbcUser": "STEELWHEELS",
+    "jdbcPassword": "STEELWHEELS",
+    "jdbcUrl": "jdbc:hsqldb:res:steelwheels",
+    "jdbcSchema": "steelwheels"
+  }, {
     "type": "custom",
     "name": "FOODMART_CLONE",
     "factory": "org.apache.calcite.adapter.clone.CloneSchema$Factory",
