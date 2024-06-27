@@ -4097,6 +4097,56 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .type("RecordType(INTEGER NOT NULL DEPTNO, "
             + "VARCHAR(10) NOT NULL JOB, "
             + "INTEGER NOT NULL AVG_SAL_ALL_DEPTS) NOT NULL");
+
+    // As previous, with GROUP BY
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select deptno, job,\n"
+        + " avg_sal at (clear deptno) as avg_sal_all_depts\n"
+        + "from e2\n"
+        + "group by deptno, job")
+        .type("RecordType(INTEGER NOT NULL DEPTNO, "
+            + "VARCHAR(10) NOT NULL JOB, "
+            + "INTEGER NOT NULL AVG_SAL_ALL_DEPTS) NOT NULL");
+
+    // As previous, removing 'deptno' from SELECT but not GROUP BY.
+    // 'CLEAR deptno' is valid because 'deptno' is a group key.
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select job, avg_sal at (clear deptno) as avg_sal_all_depts\n"
+        + "from e2\n"
+        + "group by deptno, job")
+        .type("RecordType(VARCHAR(10) NOT NULL JOB, "
+            + "INTEGER NOT NULL AVG_SAL_ALL_DEPTS) NOT NULL");
+
+    // As previous, removing 'deptno' from GROUP BY.
+    // Cannot apply CLEAR to a column that is not in the GROUP BY
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select job, avg_sal at (clear ^deptno^) as avg_sal_all_depts\n"
+        + "from e2\n"
+        + "group by job")
+        .fails("Expression 'DEPTNO' is not being grouped");
+
+    // CLEAR references invalid column
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select job, avg_sal at (clear ^baz^) as avg_sal_all_depts\n"
+        + "from e2\n"
+        + "group by job")
+        .fails("Column 'BAZ' not found in any table");
+
+    // Qualified references are illegal.
+    // (Maybe they will one day be legal when we allow expressions in AT.)
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select job, avg_sal at (clear e2^.^job) as x\n"
+        + "from e2\n"
+        + "group by job")
+        .fails("(?s).*Encountered \"\\.\" at .*");
+
+    // SET with an expression on right-side.
+    sql("with e2 as (select *, avg(sal) as measure avg_sal from emp)\n"
+        + "select job, avg_sal at (set deptno = mod(deptno, 2)) as x\n"
+        + "from e2\n"
+        + "group by deptno, job")
+        .type("RecordType(VARCHAR(10) NOT NULL JOB, "
+            + "INTEGER NOT NULL X) NOT NULL");
   }
 
   @Test void testAmbiguousColumnInIn() {

@@ -4716,11 +4716,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   /** Measure defined in CTE is referenced in an AT expression. */
-  @Disabled("TODO log is incorrect")
   @Test void testAt() {
     final String sql = "with e2 as\n"
         + "  (select *, avg(sal) as measure avg_sal from emp)\n"
-        + "select deptno, job, avg_sal /* / avg_sal at (clear deptno) */\n"
+        + "select deptno, job, avg_sal /**/ / avg_sal at (clear deptno) /**/\n"
         + "from e2\n"
         + "group by deptno, job";
     sql(sql).ok();

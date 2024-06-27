@@ -1188,6 +1188,33 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     return getScope(select, Clause.MEASURE);
   }
 
+  @Override public SqlValidatorScope getMeasureScope2(SqlValidatorScope scope,
+      SqlNode measure) {
+    if (measure instanceof SqlIdentifier) {
+      final SqlIdentifier identifier = (SqlIdentifier) measure;
+      final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();
+      final SqlQualified qualified = scope.fullyQualify(identifier);
+      final SqlValidatorScope.ResolvedImpl resolved =
+          new SqlValidatorScope.ResolvedImpl();
+      scope.resolve(qualified.prefix(), nameMatcher, false, resolved);
+      if (resolved.count() != 1) {
+        throw new AssertionError("no unique expression found for " + identifier
+            + "; count is " + resolved.count());
+      }
+      final SqlValidatorScope.Resolve resolve = resolved.only();
+      return new ListScope(resolve.scope) {
+        {
+          addChild(resolve.namespace, "", false);
+        }
+
+        @Override public SqlNode getNode() {
+          return measure;
+        }
+      };
+    }
+    throw new UnsupportedOperationException(); // return getScope(select, Clause.MEASURE);
+  }
+
   @Override public @Nullable SelectScope getRawSelectScope(SqlSelect select) {
     SqlValidatorScope scope = clauseScopes.get(IdPair.of(select, Clause.SELECT));
     if (scope instanceof AggregatingSelectScope) {
@@ -2180,26 +2207,25 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlNode enclosingNode,
       @Nullable String alias,
       boolean forceNullable) {
+    final MatchRecognizeNamespace namespace =
+        createMatchRecognizeNamespace(call, enclosingNode);
+    registerNamespace(usingScope, alias, namespace, forceNullable);
 
-    final MatchRecognizeNamespace matchRecognizeNamespace =
-        createMatchRecognizeNameSpace(call, enclosingNode);
-    registerNamespace(usingScope, alias, matchRecognizeNamespace, forceNullable);
-
-    final MatchRecognizeScope matchRecognizeScope =
+    final MatchRecognizeScope scope =
         new MatchRecognizeScope(parentScope, call);
-    scopes.put(call, matchRecognizeScope);
+    scopes.put(call, scope);
 
     // parse input query
     SqlNode expr = call.getTableRef();
     SqlNode newExpr =
-        registerFrom(usingScope, matchRecognizeScope, true, expr,
+        registerFrom(usingScope, scope, true, expr,
             expr, null, null, forceNullable, false);
     if (expr != newExpr) {
       call.setOperand(0, newExpr);
     }
   }
 
-  protected MatchRecognizeNamespace createMatchRecognizeNameSpace(
+  protected MatchRecognizeNamespace createMatchRecognizeNamespace(
       SqlMatchRecognize call,
       SqlNode enclosingNode) {
     return new MatchRecognizeNamespace(this, call, enclosingNode);

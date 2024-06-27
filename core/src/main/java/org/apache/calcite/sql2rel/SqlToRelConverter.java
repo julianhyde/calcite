@@ -2334,16 +2334,19 @@ public class SqlToRelConverter {
     final SqlNode operand = call.operand(0);
     final List<SqlNode> modifiers = call.operand(1);
     final RelNode root = requireNonNull(bb.root, "root");
-    final DimensionalContext dc =
-        new DimensionalContext(root, requireNonNull(bb.scope, "scope"));
-    return folder(dc, bb, operand, modifiers);
+    requireNonNull(bb.scope, "scope");
+    final SqlValidatorScope measureScope =
+        validator().getMeasureScope2(bb.scope, operand);
+    final Blackboard measureBlackboard =
+        new Blackboard(measureScope, ImmutableMap.of(), false);
+    return folder(measureBlackboard, bb, operand, modifiers);
   }
 
   /** Returns an operator that will apply a modifier (such as CLEAR or SET) to
    * the output of the previous modifier. A sequence of such 'fold' operators
    * allows us to achieve recursion without recursion. */
-  private RexNode folder(DimensionalContext dc, Blackboard bb, SqlNode operand,
-      List<SqlNode> modifiers) {
+  private RexNode folder(Blackboard measureBlackboard, Blackboard bb,
+      SqlNode operand, List<SqlNode> modifiers) {
     if (modifiers.isEmpty()) {
       return bb.convertExpression(operand);
     }
@@ -2353,13 +2356,13 @@ public class SqlToRelConverter {
     case AT_WHERE:
       final RexNode predicate = convertExpression(modifier.operand(0));
       return rexBuilder.makeCall(SqlInternalOperators.AT_WHERE,
-          folder(dc, bb, operand, otherModifiers), predicate);
+          folder(measureBlackboard, bb, operand, otherModifiers), predicate);
 
     case AT_CLEAR:
       SqlIdentifier identifier = modifier.operand(0);
       return rexBuilder.makeCall(SqlInternalOperators.AT_CLEAR,
-          folder(dc, bb, operand, otherModifiers),
-          bb.convertExpression(identifier));
+          folder(measureBlackboard, bb, operand, otherModifiers),
+          measureBlackboard.convertExpression(identifier));
 
     default:
       throw new AssertionError("unknown modifier: " + modifier);
@@ -2779,16 +2782,14 @@ public class SqlToRelConverter {
 
     // 4. Build values, for example
     // IN ((v11, v12, ...) AS label1, (v21, v22, ...) AS label2, ...)
-    final ImmutableList.Builder<Pair<String, List<RexNode>>> valueList =
-        ImmutableList.builder();
+    final PairList<String, List<RexNode>> valueList = PairList.of();
     pivot.forEachNameValues((alias, nodeList) ->
-        valueList.add(
-            Pair.of(alias,
-                nodeList.stream().map(bb::convertExpression)
-                    .collect(Util.toImmutableList()))));
+        valueList.add(alias,
+            nodeList.stream().map(bb::convertExpression)
+                    .collect(Util.toImmutableList())));
 
     final RelNode rel =
-        relBuilder.pivot(groupKey, aggCalls, axes, valueList.build())
+        relBuilder.pivot(groupKey, aggCalls, axes, valueList)
             .build();
     bb.setRoot(rel, true);
   }
@@ -2808,8 +2809,7 @@ public class SqlToRelConverter {
     final List<String> axisNames =  unpivot.axisList.stream()
         .map(node -> ((SqlIdentifier) node).getSimple())
         .collect(Util.toImmutableList());
-    final ImmutableList.Builder<Pair<List<RexLiteral>, List<RexNode>>> axisMap =
-        ImmutableList.builder();
+    final PairList<List<RexLiteral>, List<RexNode>> axisMap = PairList.of();
     unpivot.forEachNameValues((nodeList, valueList) -> {
       if (valueList == null) {
         valueList =
@@ -2829,8 +2829,7 @@ public class SqlToRelConverter {
           .collect(Util.toImmutableList());
       axisMap.add(Pair.of(literals, nodes));
     });
-    relBuilder.unpivot(unpivot.includeNulls, measureNames, axisNames,
-        axisMap.build());
+    relBuilder.unpivot(unpivot.includeNulls, measureNames, axisNames, axisMap);
     relBuilder.convert(getNamespace(unpivot).getRowType(), false);
 
     bb.setRoot(relBuilder.build(), true);
@@ -4388,9 +4387,8 @@ public class SqlToRelConverter {
     }
 
     final SqlQualified qualified = bb.scope.fullyQualify(identifier);
-    final Pair<RexNode, @Nullable BiFunction<RexNode, String, RexNode>> e0 =
-        bb.lookupExp(qualified);
-    RexNode e = requireNonNull(e0.left, "e0.left");
+    final LookupResult e0 = bb.lookupExp(qualified);
+    RexNode e = e0.left;
     for (String name : qualified.suffix()) {
       if (e == e0.left && e0.right != null) {
         e = e0.right.apply(e, name);
@@ -5201,15 +5199,14 @@ public class SqlToRelConverter {
      * @param qualified The alias of the FROM item
      * @return a {@link RexFieldAccess} or {@link RexRangeRef}, never null
      */
-    Pair<RexNode, @Nullable BiFunction<RexNode, String, RexNode>> lookupExp(
-        SqlQualified qualified) {
+    LookupResult lookupExp(SqlQualified qualified) {
       if (nameToNodeMap != null && qualified.prefixLength == 1) {
         RexNode node = nameToNodeMap.get(qualified.identifier.names.get(0));
         if (node == null) {
           throw new AssertionError("Unknown identifier '" + qualified.identifier
               + "' encountered while expanding expression");
         }
-        return Pair.of(node, null);
+        return LookupResult.of(node);
       }
       final SqlNameMatcher nameMatcher =
           scope.getValidator().getCatalogReader().nameMatcher();
@@ -5232,7 +5229,7 @@ public class SqlToRelConverter {
         final LookupContext rels =
             new LookupContext(this, inputs, systemFieldList.size());
         final RexNode node = lookup(resolve.path.steps().get(0).i, rels);
-        return Pair.of(node, (e, fieldName) -> {
+        return LookupResult.of(node, (e, fieldName) -> {
           final RelDataTypeField field =
               requireNonNull(rowType.getField(fieldName, true, false),
                   () -> "field " + fieldName);
@@ -5248,7 +5245,7 @@ public class SqlToRelConverter {
         final CorrelationId correlId = cluster.createCorrel();
         mapCorrelToDeferred.put(correlId, lookup);
         if (resolve.path.steps().get(0).i < 0) {
-          return Pair.of(rexBuilder.makeCorrel(rowType, correlId), null);
+          return LookupResult.of(rexBuilder.makeCorrel(rowType, correlId));
         } else {
           final RelDataTypeFactory.Builder builder = typeFactory.builder();
           final ListScope ancestorScope1 = (ListScope)
@@ -5276,8 +5273,9 @@ public class SqlToRelConverter {
           final RexNode c =
               rexBuilder.makeCorrel(builder.uniquify().build(), correlId);
           final ImmutableMap<String, Integer> fieldMap = fields.build();
-          return Pair.of(c, (e, fieldName) -> {
-            final int j = requireNonNull(fieldMap.get(fieldName), "field " + fieldName);
+          return LookupResult.of(c, (e, fieldName) -> {
+            final int j =
+                requireNonNull(fieldMap.get(fieldName), "field " + fieldName);
             return rexBuilder.makeFieldAccess(e, j);
           });
         }
@@ -6459,6 +6457,28 @@ public class SqlToRelConverter {
         return measureScope.lookupMeasure(identifier.getSimple());
       }
       return super.lookupMeasure(identifier);
+    }
+  }
+
+  /** Return value of
+   * {@link SqlToRelConverter.Blackboard#lookupExp(SqlQualified)}. */
+  static class LookupResult {
+    final RexNode left;
+    final @Nullable BiFunction<RexNode, String, RexNode> right;
+
+    private LookupResult(RexNode node,
+        @Nullable BiFunction<RexNode, String, RexNode> right) {
+      this.left = node;
+      this.right = right;
+    }
+
+    static LookupResult of(RexNode node) {
+      return new LookupResult(node, null);
+    }
+
+    static LookupResult of(RexNode node,
+        BiFunction<RexNode, String, RexNode> right) {
+      return new LookupResult(node, right);
     }
   }
 }

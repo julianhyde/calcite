@@ -480,6 +480,15 @@ public interface SqlValidator {
 
   SqlValidatorScope getMeasureScope(SqlSelect select);
 
+  /** Returns a scope that contains the dimensions of {@code measure}
+   * as visible columns.
+   *
+   * <p>For example, when validating {@code avgUnits AT (CLEAR color)}
+   * we call {@code getMeasureScope2} with {@code avgUnits} as the argument,
+   * and it gives us a scope that contains {@code color} as one of the
+   * dimensions. */
+  SqlValidatorScope getMeasureScope2(SqlValidatorScope scope, SqlNode measure);
+
   /**
    * Returns the type factory used by this validator.
    *

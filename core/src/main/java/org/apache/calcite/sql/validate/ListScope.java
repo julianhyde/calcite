@@ -104,16 +104,14 @@ public abstract class ListScope extends DelegatingScope {
       SqlNameMatcher nameMatcher) {
     for (ScopeChild child : children) {
       String lastName = Util.last(names);
-      if (child.name != null) {
-        if (!nameMatcher.matches(child.name, lastName)) {
-          // Alias does not match last segment. Don't consider the
-          // fully-qualified name. E.g.
-          //    SELECT sales.emp.name FROM sales.emp AS otherAlias
-          continue;
-        }
-        if (names.size() == 1) {
-          return child;
-        }
+      if (!nameMatcher.matches(child.name, lastName)) {
+        // Alias does not match last segment. Don't consider the
+        // fully-qualified name. E.g.
+        //    SELECT sales.emp.name FROM sales.emp AS otherAlias
+        continue;
+      }
+      if (names.size() == 1) {
+        return child;
       }
 
       // Look up the 2 tables independently, in case one is qualified with
