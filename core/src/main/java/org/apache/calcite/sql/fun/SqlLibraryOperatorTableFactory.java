@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -137,20 +138,26 @@ public class SqlLibraryOperatorTableFactory {
       throw new AssertionError("Operator must belong to at least one library: "
           + operatorName);
     }
-    final ImmutableSet<SqlLibrary> excludeLibrarySet =
-        ImmutableSet.copyOf(libraryOperator.exceptLibraries());
     for (SqlLibrary library : librarySet) {
       if (seekLibrarySet.contains(library)) {
         return true;
       }
-      // Also check child libraries (if any) that are not excluded
-      final Set<SqlLibrary> childLibraries = SqlLibrary.CHILDREN_MAP.get(library);
-      if (childLibraries != null && !childLibraries.isEmpty()) {
-        for (SqlLibrary childLibrary : childLibraries) {
-          if (seekLibrarySet.contains(childLibrary) && !excludeLibrarySet.contains(childLibrary)) {
-            return true;
-          }
+      // Also check inheritor libraries (if any) that are not excluded
+      for (SqlLibrary inheritor : library.inheritors()) {
+        if (seekLibrarySet.contains(inheritor)
+            && !arrayContains(libraryOperator.exceptLibraries(), inheritor)) {
+          return true;
         }
+      }
+    }
+    return false;
+  }
+
+  /** Returns whether an array contains a given element. */
+  private static <E> boolean arrayContains(E[] elements, E seek) {
+    for (E element : elements) {
+      if (Objects.equals(element, seek)) {
+        return true;
       }
     }
     return false;

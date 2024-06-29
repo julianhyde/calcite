@@ -2116,8 +2116,9 @@ public class SqlOperatorTest {
       f.checkScalar("chr(0)", String.valueOf('\u0000'), "CHAR(1) NOT NULL");
       f.checkNull("chr(null)");
     };
-    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL),
-        consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testCodePointsToBytes() {
@@ -4005,9 +4006,10 @@ public class SqlOperatorTest {
       f1.checkNull("REGEXP_LIKE('atest\nstr', NULL, 'sn')");
       f1.checkNull("REGEXP_LIKE('atest\nstr', 'test.str', NULL)");
     };
-    f.forEachLibrary(
-        list(SqlLibrary.MYSQL, SqlLibrary.SPARK,
-        SqlLibrary.POSTGRESQL, SqlLibrary.ORACLE), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.MYSQL, SqlLibrary.SPARK, SqlLibrary.POSTGRESQL,
+            SqlLibrary.ORACLE);
+    f.forEachLibrary(libraries, consumer);
   }
 
   /** Test case for
@@ -4323,8 +4325,8 @@ public class SqlOperatorTest {
       f.checkNull("translate('aabbcc', 'ab', cast(null as varchar(2)))");
     };
     final List<SqlLibrary> libraries =
-        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE,
-            SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL,
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
     f0.forEachLibrary(libraries, consumer);
   }
 
@@ -4722,7 +4724,8 @@ public class SqlOperatorTest {
   @Test void testToChar() {
     final SqlOperatorFixture f0 = fixture().setFor(SqlLibraryOperators.TO_CHAR);
     final Consumer<SqlOperatorFixture> consumer = f -> {
-      f.checkString("to_char(timestamp '2022-06-03 12:15:48.678', 'YYYY-MM-DD HH24:MI:SS.MS TZ')",
+      f.checkString(
+          "to_char(timestamp '2022-06-03 12:15:48.678', 'YYYY-MM-DD HH24:MI:SS.MS TZ')",
           "2022-06-03 12:15:48.678",
           "VARCHAR NOT NULL");
       f.checkString("to_char(timestamp '2022-06-03 12:15:48.678', 'Day')",
@@ -4798,7 +4801,9 @@ public class SqlOperatorTest {
       f.checkNull("to_char(cast(NULL as timestamp), NULL)");
       f.checkNull("to_char(cast(NULL as timestamp), 'Day')");
     };
-    f0.forEachLibrary(list(SqlLibrary.MYSQL, SqlLibrary.ORACLE, SqlLibrary.REDSHIFT), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.MYSQL, SqlLibrary.ORACLE, SqlLibrary.REDSHIFT);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testToCharPg() {
@@ -5100,8 +5105,9 @@ public class SqlOperatorTest {
       f.checkNull("to_date('2022-06-03', NULL)");
       f.checkNull("to_date(NULL, NULL)");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT),
-        consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testToTimestamp() {
@@ -5136,8 +5142,9 @@ public class SqlOperatorTest {
       f.checkNull("to_timestamp('2022-06-03 18:34:56', NULL)");
       f.checkNull("to_timestamp(NULL, NULL)");
     };
-    f0.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT),
-        consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testFromBase64() {
@@ -5353,9 +5360,10 @@ public class SqlOperatorTest {
       f.checkNull("REPEAT('abc', cast(null as integer))");
       f.checkNull("REPEAT(cast(null as varchar(1)), cast(null as integer))");
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL,
-        SqlLibrary.POSTGRESQL, SqlLibrary.SPARK), consumer);
+            SqlLibrary.POSTGRESQL, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testSpaceFunc() {
@@ -5389,7 +5397,7 @@ public class SqlOperatorTest {
         "No match found for function signature SOUNDEX\\(<CHARACTER>\\)",
         false);
     final List<SqlLibrary> libraries =
-        ImmutableList.of(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL,
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL,
             SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT);
     final Consumer<SqlOperatorFixture> consumer = f -> {
       f.checkString("SOUNDEX('TECH ON THE NET')", "T253", "VARCHAR(4) NOT NULL");
@@ -5445,7 +5453,9 @@ public class SqlOperatorTest {
       f.checkNull("DIFFERENCE('muller', cast(null as varchar(1)))");
       f.checkNull("DIFFERENCE(cast(null as varchar(1)), 'muller')");
     };
-    f0.forEachLibrary(list(SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testReverseFunc() {
@@ -5566,9 +5576,10 @@ public class SqlOperatorTest {
       f.checkNull("left(cast(null as binary(1)), -2)");
       f.checkNull("left(x'ABCdef', cast(null as Integer))");
     };
-    f0.forEachLibrary(
-        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT,
-         SqlLibrary.SPARK), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL,
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testRightFunc() {
@@ -5592,9 +5603,10 @@ public class SqlOperatorTest {
       f.checkNull("right(x'ABCdef', cast(null as Integer))");
     };
 
-    f0.forEachLibrary(
-        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT,
-        SqlLibrary.SPARK), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.POSTGRESQL,
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testRegexpContainsFunc() {
@@ -5711,9 +5723,10 @@ public class SqlOperatorTest {
       f.checkQuery("select regexp_replace('a b c', 'b', 'X', 1, 3)");
       f.checkQuery("select regexp_replace('a b c', 'b', 'X', 1, 3, 'i')");
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.ORACLE,
-        SqlLibrary.REDSHIFT), consumer);
+            SqlLibrary.REDSHIFT);
+    f0.forEachLibrary(libraries, consumer);
 
     // Tests for double-backslash indexed capturing groups for regexp_replace in BQ
     final SqlOperatorFixture f1 =
@@ -7032,7 +7045,9 @@ public class SqlOperatorTest {
         fixture.checkScalarApprox("random()", "DOUBLE NOT NULL", isWithin(0.5, 0.5));
       }
     };
-    f.forEachLibrary(list(SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT);
+    f.forEachLibrary(libraries, consumer);
   }
 
   @Test void testRandIntegerSeedFunc() {
@@ -9889,9 +9904,10 @@ public class SqlOperatorTest {
       f.checkFails("lpad(x'aa', 3, x'')",
           "Third argument \\(pad pattern\\) for LPAD/RPAD must not be empty", true);
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL,
-        SqlLibrary.REDSHIFT, SqlLibrary.SPARK), consumer);
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testRpadFunction() {
@@ -9920,9 +9936,10 @@ public class SqlOperatorTest {
       f.checkFails("rpad(x'aa', 3, x'')",
           "Third argument \\(pad pattern\\) for LPAD/RPAD must not be empty", true);
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL,
-        SqlLibrary.REDSHIFT, SqlLibrary.SPARK), consumer);
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testContainsSubstrFunc() {
@@ -10009,8 +10026,9 @@ public class SqlOperatorTest {
       f.checkNull("STRPOS(null, x'')");
       f.checkNull("STRPOS(x'', null)");
     };
-    f0.forEachLibrary(list(SqlLibrary.BIG_QUERY, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT),
-        consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.POSTGRESQL, SqlLibrary.REDSHIFT);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testInstrFunction() {
@@ -10041,8 +10059,9 @@ public class SqlOperatorTest {
       f.checkNull("INSTR(null, x'', 1, 1)");
       f.checkNull("INSTR(x'', null, 1, 1)");
     };
-    f0.forEachLibrary(
-        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.ORACLE), consumer);
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.BIG_QUERY, SqlLibrary.MYSQL, SqlLibrary.ORACLE);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testSnowflakeStartsWithFunc() {
@@ -10646,9 +10665,10 @@ public class SqlOperatorTest {
       f.checkString("rtrim(' aAa  ')", " aAa", "VARCHAR(6) NOT NULL");
       f.checkNull("rtrim(CAST(NULL AS VARCHAR(6)))");
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL,
-        SqlLibrary.REDSHIFT, SqlLibrary.SPARK), consumer);
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testLtrimFunc() {
@@ -10661,9 +10681,10 @@ public class SqlOperatorTest {
       f.checkString("ltrim(' aAa  ')", "aAa  ", "VARCHAR(6) NOT NULL");
       f.checkNull("ltrim(CAST(NULL AS VARCHAR(6)))");
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.POSTGRESQL,
-        SqlLibrary.REDSHIFT, SqlLibrary.SPARK), consumer);
+            SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testGreatestFunc() {
@@ -10685,9 +10706,10 @@ public class SqlOperatorTest {
       f12.checkString("greatest('show', 'on', 'earth')", "show",
           "VARCHAR(5) NOT NULL");
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.REDSHIFT,
-        SqlLibrary.SPARK), consumer);
+            SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testLeastFunc() {
@@ -10709,9 +10731,10 @@ public class SqlOperatorTest {
       f12.checkString("least('show', 'on', 'earth')", "earth",
           "VARCHAR(5) NOT NULL");
     };
-    f0.forEachLibrary(
+    final List<SqlLibrary> libraries =
         list(SqlLibrary.BIG_QUERY, SqlLibrary.ORACLE, SqlLibrary.REDSHIFT,
-        SqlLibrary.SPARK), consumer);
+            SqlLibrary.SPARK);
+    f0.forEachLibrary(libraries, consumer);
   }
 
   @Test void testIfNullFunc() {
@@ -10773,8 +10796,9 @@ public class SqlOperatorTest {
       f12.checkFails("^NVL2(2.0, 1, true)^", "Parameters must be of the same type", false);
       f12.checkFails("^NVL2(NULL, 1, true)^", "Parameters must be of the same type", false);
     };
-    f.forEachLibrary(list(SqlLibrary.ORACLE, SqlLibrary.REDSHIFT, SqlLibrary.SPARK), consumer);
-
+    final List<SqlLibrary> libraries =
+        list(SqlLibrary.ORACLE, SqlLibrary.REDSHIFT, SqlLibrary.SPARK);
+    f.forEachLibrary(libraries, consumer);
   }
 
   /** Tests the {@code NVL} and {@code IFNULL} operators. */

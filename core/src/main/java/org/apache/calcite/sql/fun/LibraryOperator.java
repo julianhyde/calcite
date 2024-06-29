@@ -41,8 +41,18 @@ public @interface LibraryOperator {
    * Must not be null or empty. */
   SqlLibrary[] libraries();
 
-  /** The set of libraries that this function should be excluded from. Only
-   * needed when a library inherits functions from another library.
+  /** The set of libraries that this function should be excluded from.
+   *
+   * <p>Only needed when a library inherits functions from another library.
+   * For example, {@link SqlLibrary#REDSHIFT} inherits from
+   * {@link SqlLibrary#POSTGRESQL}, and therefore contains all of PostgreSQL's
+   * operators by default. The {@code STARTS_WITH} function is in BigQuery and
+   * PostgreSQL but not in Redshift and therefore has the annotation
+   *
+   * <blockquote>
+   *   <pre>@LibraryOperator(libraries = {BIG_QUERY, POSTGRESQL},
+   *   exceptLibraries = {REDSHIFT})</pre>
+   * </blockquote>
    */
   SqlLibrary[] exceptLibraries() default {};
 }
