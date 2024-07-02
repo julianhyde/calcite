@@ -239,4 +239,71 @@ select deptno, (select empno from "scott".emp order by empno limit 1) as x from 
 
 !ok
 
+# Scalar subquery that joins on nullable column
+select e.ename,
+  (select count(*)
+    from emp as f
+    where f.comm is not distinct from e.comm) as c
+from emp as e;
++--------+----+
+| ENAME  | C  |
++--------+----+
+| ADAMS  |  0 |
+| ALLEN  | 10 |
+| BLAKE  |  0 |
+| CLARK  |  0 |
+| FORD   |  0 |
+| JAMES  |  0 |
+| JONES  |  0 |
+| KING   |  0 |
+| MARTIN | 10 |
+| MILLER |  0 |
+| SCOTT  |  0 |
+| SMITH  |  0 |
+| TURNER | 10 |
+| WARD   | 10 |
++--------+----+
+(14 rows)
+
+!ok
+
+# As above, with WHERE
+select e.ename,
+  (select count(*)
+    from emp as f
+    where f.comm is not distinct from e.comm) as c
+from emp as e
+where e.deptno = 10;
++--------+----+
+| ENAME  | C  |
++--------+----+
+| CLARK  |  0 |
+| KING   |  0 |
+| MILLER |  0 |
+| SCOTT  |  0 |
+| SMITH  |  0 |
+| TURNER | 10 |
+| WARD   | 10 |
++--------+----+
+(14 rows)
+
+!ok
+
+# Justification for previous result
+select comm, count(*) as c
+from emp
+group by comm;
++---------+----+
+| COMM    | C  |
++---------+----+
+|    0.00 |  1 |
+| 1400.00 |  1 |
+|  300.00 |  1 |
+|  500.00 |  1 |
+|         | 10 |
++---------+----+
+(5 rows)
+
+!ok
+
 # End scalar.iq
