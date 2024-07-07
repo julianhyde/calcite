@@ -3941,6 +3941,9 @@ public class SqlOperatorTest {
     f.setFor(SqlStdOperatorTable.ESCAPE, VM_EXPAND);
   }
 
+  /** Tests the {code MATCHES_FILTER} function, which implements
+   * Looker-style filter expressions. There is a comprehensive set of tests
+   * in {@code matches-filter.iq}. */
   @Test void testMatchesFilterFunc() {
     final SqlOperatorFixture f = fixture().withLibrary(SqlLibrary.CALCITE);
     f.setFor(SqlLibraryOperators.MATCHES_FILTER, VM_EXPAND);
@@ -3969,9 +3972,23 @@ public class SqlOperatorTest {
   }
 
   // TODO: merge with previous
+  @Disabled
   @Test void testMatchesFilterFunc2() {
     final SqlOperatorFixture f = fixture().withLibrary(SqlLibrary.CALCITE);
     f.setFor(SqlLibraryOperators.MATCHES_FILTER, VM_EXPAND);
+
+    // strings
+    f.checkBoolean("matches_filter('FOO', 'FOO')", true);
+    f.checkBoolean("matches_filter('FOOD', 'FOO')", false);
+    f.checkBoolean("matches_filter('FOO', 'FOO,BAR')", true);
+    f.checkBoolean("matches_filter('BAR', 'FOO,BAR')", true);
+    f.checkBoolean("matches_filter('BAZ', 'FOO,BAR')", false);
+    f.checkBoolean("matches_filter('buffoon', '%FOO%')", true);
+    f.checkBoolean("matches_filter('fast food', '%FOO%')", true);
+    f.checkBoolean("matches_filter('buffoon', 'FOO%')", false);
+    f.checkBoolean("matches_filter('fast food', 'FOO%')", false);
+    f.checkBoolean("matches_filter('foolish', 'FOO%')", true);
+    f.checkBoolean("matches_filter('food', 'FOO%')", true);
   }
 
   @Test void testConvertFunc() {

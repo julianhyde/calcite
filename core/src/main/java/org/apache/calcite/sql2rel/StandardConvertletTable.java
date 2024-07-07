@@ -438,16 +438,27 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     final RexNode operand0 = cx.convertExpression(call.operand(0));
     final RexNode operand1 = cx.convertExpression(call.operand(1));
 
+    final TypeFamily typeFamily = getTypeFamily(operand0.getType());
     final String filter =
         castNonNull(((RexLiteral) operand1).getValueAs(String.class));
-    TypeFamily typeFamily = TypeFamily.NUMBER;
-    AstNode f = Filtex.parseFilterExpression(typeFamily, filter);
-    Sarg<BigDecimal> sarg =
+    final AstNode f = Filtex.parseFilterExpression(typeFamily, filter);
+    final Sarg<BigDecimal> sarg =
         Sarg.of(RexUnknownAs.UNKNOWN,
             ImmutableRangeSet.copyOf(toRangeSet(f, BigDecimal.class)));
+    final Sarg<BigDecimal> sarg2 = f.is() ? sarg : sarg.negate();
 
     return rexBuilder.makeCall(SqlStdOperatorTable.SEARCH, operand0,
-        rexBuilder.makeSearchArgumentLiteral(sarg, operand0.getType()));
+        rexBuilder.makeSearchArgumentLiteral(sarg2, operand0.getType()));
+  }
+
+  private static TypeFamily getTypeFamily(RelDataType type) {
+    switch (type.getSqlTypeName()) {
+    case VARCHAR:
+    case CHAR:
+      return TypeFamily.STRING;
+    default:
+      return TypeFamily.NUMBER;
+    }
   }
 
   private static <C extends Comparable<C>> List<Range<C>> toRangeSet(AstNode f,

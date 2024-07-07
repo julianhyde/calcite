@@ -65,6 +65,11 @@ class CoreQuidemTest extends QuidemTest {
                   ExtensionDdlExecutor.class.getName() + "#PARSER_FACTORY")
               .with(CalciteAssert.Config.SCOTT)
               .connect();
+        case "scott-calcite":
+          return CalciteAssert.that()
+              .with(CalciteAssert.Config.SCOTT)
+              .with(CalciteConnectionProperty.FUN, "standard,calcite")
+              .connect();
         case "scott-lenient":
           // Same as "scott", but uses LENIENT conformance.
           // TODO: add a way to change conformance without defining a new

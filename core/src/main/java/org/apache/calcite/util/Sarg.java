@@ -281,7 +281,7 @@ public class Sarg<C extends Comparable<C>> implements Comparable<Sarg<C>> {
   }
 
   /** Returns a Sarg that matches a value if and only this Sarg does not. */
-  public Sarg negate() {
+  public Sarg<C> negate() {
     return Sarg.of(nullAs.negate(), rangeSet.complement());
   }
 
