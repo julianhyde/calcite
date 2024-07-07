@@ -17,9 +17,11 @@
 package org.apache.calcite.sql.test;
 
 import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -36,6 +38,7 @@ import org.apache.calcite.test.ConnectionFactories;
 import org.apache.calcite.test.ConnectionFactory;
 import org.apache.calcite.test.Matchers;
 import org.apache.calcite.util.Bug;
+import org.apache.calcite.util.Holder;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -587,6 +590,23 @@ public interface SqlOperatorFixture extends AutoCloseable {
         .withConnectionFactory(cf ->
             cf.with(ConnectionFactories.add(CalciteAssert.SchemaSpec.HR))
                 .with("fun", "oracle"));
+  }
+
+  /** Runs some code with a given timestamp and time zone.
+   *
+   * @see Hook#CURRENT_TIME
+   * @see CalciteConnectionProperty#TIME_ZONE */
+  default void withTimestamp(String timestampString, String timeZoneString,
+      Consumer<SqlOperatorFixture> consumer) {
+    final long timeInMillis =
+        DateTimeUtils.timestampStringToUnixDate(timestampString);
+    final Consumer<Holder<Long>> consumer2 = o -> o.set(timeInMillis);
+    try (Hook.Closeable ignore = Hook.CURRENT_TIME.addThread(consumer2)) {
+      final SqlOperatorFixture f =
+          withConnectionFactory(cf ->
+              cf.with(CalciteConnectionProperty.TIME_ZONE, timeZoneString));
+      consumer.accept(f);
+    }
   }
 
   /**

@@ -82,6 +82,7 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Sarg;
+import org.apache.calcite.util.TimestampString;
 import org.apache.calcite.util.Util;
 
 import com.google.common.base.Preconditions;
@@ -442,13 +443,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     final String filter =
         castNonNull(((RexLiteral) operand1).getValueAs(String.class));
     final AstNode f = Filtex.parseFilterExpression(typeFamily, filter);
-    final Sarg<BigDecimal> sarg =
-        Sarg.of(RexUnknownAs.UNKNOWN,
-            ImmutableRangeSet.copyOf(toRangeSet(f, BigDecimal.class)));
-    final Sarg<BigDecimal> sarg2 = f.is() ? sarg : sarg.negate();
-
     return rexBuilder.makeCall(SqlStdOperatorTable.SEARCH, operand0,
-        rexBuilder.makeSearchArgumentLiteral(sarg2, operand0.getType()));
+        rexBuilder.makeSearchArgumentLiteral(toSarg(f, typeFamily),
+            operand0.getType()));
   }
 
   private static TypeFamily getTypeFamily(RelDataType type) {
@@ -456,13 +453,38 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     case VARCHAR:
     case CHAR:
       return TypeFamily.STRING;
+    case DATE:
+      return TypeFamily.DATE;
     default:
       return TypeFamily.NUMBER;
     }
   }
 
-  private static <C extends Comparable<C>> List<Range<C>> toRangeSet(AstNode f,
-      Class<C> clazz) {
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static Sarg toSarg(AstNode f, TypeFamily typeFamily) {
+    final List<Range<Comparable>> ranges;
+    switch (typeFamily) {
+    case NUMBER:
+      ranges = (List) toRangeSetNumeric(f, BigDecimal.class);
+      break;
+    case DATE:
+      ranges = (List) toRangeSetDate(f, TimestampString.class);
+      break;
+    default:
+      throw new AssertionError("unknown family " + typeFamily);
+    }
+    Sarg sarg =
+        Sarg.of(RexUnknownAs.UNKNOWN,
+            ImmutableRangeSet.copyOf(ranges));
+    if (!f.is()) {
+      sarg = sarg.negate();
+    }
+    return sarg;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <C extends Comparable<C>> List<Range<C>> toRangeSetNumeric(
+      AstNode f, Class<C> clazz) {
     switch (f.op) {
     case GE:
     case GT:
@@ -482,8 +504,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     case COMMA:
       Ast.Call2 f1 = (Ast.Call2) f;
       return ImmutableList.<Range<C>>builder()
-          .addAll(toRangeSet(f1.left, clazz))
-          .addAll(toRangeSet(f1.right, clazz))
+          .addAll(toRangeSetNumeric(f1.left, clazz))
+          .addAll(toRangeSetNumeric(f1.right, clazz))
           .build();
 
     default:
@@ -512,6 +534,20 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
       return Range.openClosed(list.get(0), list.get(1));
     case OPEN_OPEN:
       return Range.open(list.get(0), list.get(1));
+    default:
+      throw new AssertionError(f.op + ": " + f);
+    }
+  }
+
+  private static <C extends Comparable<C>> List<Range<C>> toRangeSetDate(
+      AstNode f, Class<C> clazz) {
+    switch (f.op) {
+    case MATCHES_ADVANCED:
+      Ast.MatchesAdvanced a = (Ast.MatchesAdvanced) f;
+      if (a.expression.equals("today")) {
+        throw new UnsupportedOperationException("TODO");
+      }
+      // fall through
     default:
       throw new AssertionError(f.op + ": " + f);
     }

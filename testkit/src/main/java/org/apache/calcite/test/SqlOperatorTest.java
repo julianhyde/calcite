@@ -3969,6 +3969,11 @@ public class SqlOperatorTest {
     f.checkBoolean("matches_filter(13, '[0, 20], > 100')", true);
     f.checkBoolean("matches_filter(5, '2, 3, 7, 5, 11')", true);
     f.checkBoolean("matches_filter(6, '2, 3, 7, 5, 11')", false);
+
+    // date
+    f.withTimestamp("2018-05-18 18:30:02", "UTC", f2 -> {
+      f2.checkBoolean("matches_filter(date '2018-05-18', 'today')", true);
+    });
   }
 
   // TODO: merge with previous
@@ -8780,6 +8785,18 @@ public class SqlOperatorTest {
         Pattern.compile(pair.left.substring(11) + "[0-9][0-9]:[0-9][0-9]"),
         "TIME(0) NOT NULL");
     pair.right.close();
+  }
+
+  /** Tests {@code CURRENT_TIMESTAMP} and similar functions, fixing the time and
+   * time zone. */
+  @Test void testCurrentTimestampFuncWithNow() {
+    fixture().withLibrary(SqlLibrary.CALCITE)
+        .withTimestamp("2018-05-18 18:30:02", "UTC", f -> {
+          f.checkScalar("CURRENT_TIMESTAMP", "2018-05-18 18:30:02",
+              "TIMESTAMP(0) NOT NULL");
+          f.checkScalar("CURRENT_TIME", "18:30:02", "TIME(0) NOT NULL");
+          f.checkScalar("CURRENT_DATE", "2018-05-18", "DATE NOT NULL");
+        });
   }
 
   @Tag("slow")
