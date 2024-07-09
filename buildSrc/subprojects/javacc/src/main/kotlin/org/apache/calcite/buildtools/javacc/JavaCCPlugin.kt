@@ -36,7 +36,7 @@ open class JavaCCPlugin : Plugin<Project> {
             isCanBeConsumed = false
         }.defaultDependencies {
             // TODO: use properties for versions
-            add(dependencies.create("net.java.dev.javacc:javacc:4.0")) // 7.0.5"))
+            add(dependencies.create("net.java.dev.javacc:javacc:7.0.13"))
         }
 
         tasks.register(GENERATE_SOURCES_TASK_NAME) {

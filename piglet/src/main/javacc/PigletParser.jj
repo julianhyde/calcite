@@ -723,6 +723,7 @@ Node atom() :
       p = pos();
     }
     list = expCommaListOrEmpty() <RBRACE> {
+      e = null;
       return new Call(pos2(p), Op.BAG, list);
     }
   ) {

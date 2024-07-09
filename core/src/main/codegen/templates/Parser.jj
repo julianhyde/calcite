@@ -3120,7 +3120,7 @@ SqlNode PatternTerm() :
 
 SqlNode PatternFactor() :
 {
-    final SqlNode e;
+    SqlNode e = null;
     final SqlNode extra;
     final SqlLiteral startNum;
     final SqlLiteral endNum;
@@ -3167,6 +3167,8 @@ SqlNode PatternFactor() :
                 { startNum = LITERAL_MINUS_ONE; }
             |
                 <MINUS> extra = PatternExpression() <MINUS> <RBRACE> {
+startNum = LITERAL_ZERO; //!
+endNum = LITERAL_ONE; //!
                     return SqlStdOperatorTable.PATTERN_CONCAT.createCall(
                         Span.of(e).end(this), e,
                         SqlStdOperatorTable.PATTERN_EXCLUDE.createCall(
@@ -3184,7 +3186,11 @@ SqlNode PatternFactor() :
             { reluctant = SqlLiteral.createBoolean(false, SqlParserPos.ZERO); }
         )
     |
-        { return e; }
+        {
+startNum = LITERAL_ZERO; //!
+endNum = LITERAL_ONE; //!
+reluctant = null; //!
+         return e; }
     )
     {
         return SqlStdOperatorTable.PATTERN_QUANTIFIER.createCall(
