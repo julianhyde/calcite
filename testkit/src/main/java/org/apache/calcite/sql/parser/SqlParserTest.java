@@ -782,7 +782,7 @@ public class SqlParserTest {
     sql("select * from emp^.^*")
         .fails("(?s)Encountered \"\\.\" at .*");
     sql("select emp.empno AS x from emp^.^*")
-        .fails("(?s)Encountered \"\\. \\*\" at .*");
+        .fails("(?s)Encountered \"\\.\" at .*");
     sql("select emp.empno AS x from ^*^")
         .fails("(?s)Encountered \"\\*\" at .*");
   }
