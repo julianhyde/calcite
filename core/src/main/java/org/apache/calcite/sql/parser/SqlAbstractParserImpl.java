@@ -32,26 +32,34 @@ import org.apache.calcite.sql.SqlUnresolvedFunction;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.Glossary;
+import org.apache.calcite.util.SourceStringReader;
+import org.apache.calcite.util.trace.CalciteTrace;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
 
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.util.Objects.requireNonNull;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -60,6 +68,25 @@ import static org.apache.calcite.util.Static.RESOURCE;
  */
 public abstract class SqlAbstractParserImpl {
   //~ Static fields/initializers ---------------------------------------------
+
+  protected static final Logger LOGGER = CalciteTrace.getParserTracer();
+
+  // Can't use quoted literal because of a bug in how JavaCC translates
+  // backslash-backslash.
+  protected static final char BACKSLASH = 0x5c;
+  protected static final char DOUBLE_QUOTE = 0x22;
+  protected static final String DQ = DOUBLE_QUOTE + "";
+  protected static final String DQDQ = DQ + DQ;
+  protected static final SqlLiteral LITERAL_ZERO =
+      SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO);
+  protected static final SqlLiteral LITERAL_ONE =
+      SqlLiteral.createExactNumeric("1", SqlParserPos.ZERO);
+  protected static final SqlLiteral LITERAL_MINUS_ONE =
+      SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
+  protected static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100L);
+  private static final String DUMMY_STATEMENT = "1";
+  private static final Pattern LEXICAL_ERROR_PATTERN =
+      Pattern.compile("(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
 
   private static final ImmutableSet<String> SQL_92_RESERVED_WORD_SET =
       ImmutableSet.of(
@@ -411,6 +438,11 @@ public abstract class SqlAbstractParserImpl {
 
   protected final List<CalciteContextException> warnings = new ArrayList<>();
 
+  protected @Nullable Casing unquotedCasing;
+  protected @Nullable Casing quotedCasing;
+  protected int identifierMaxLength;
+  protected @Nullable SqlConformance conformance;
+
   //~ Methods ----------------------------------------------------------------
 
   /**
@@ -476,10 +508,175 @@ public abstract class SqlAbstractParserImpl {
    * Removes or transforms misleading information from a parse exception or
    * error, and converts to {@link SqlParseException}.
    *
-   * @param ex dirty excn
-   * @return clean excn
+   * <p>Default implementation can only handle {@link CalciteContextException}
+   * and {@link SqlParseException}. Generated subclasses (the actual parsers)
+   * should override to handle generated exception classes
+   * ({@code ParseException} and {@code TokenMgrError}), then call
+   * {@code super.normalizeException} for other exception types.
+   *
+   * @param ex Dirty exception
+   * @return Clean exception
    */
-  public abstract SqlParseException normalizeException(@Nullable Throwable ex);
+  public SqlParseException normalizeException(Throwable ex) {
+    if (ex instanceof SqlParseException) {
+      return (SqlParseException) ex;
+    }
+
+    if (ex instanceof CalciteContextException) {
+      // CalciteContextException is the standard wrapper for exceptions
+      // produced by the validator, but in the parser, the standard is
+      // SqlParseException; so, strip it away. In case you were wondering,
+      // the CalciteContextException appears because the parser
+      // occasionally calls into validator-style code such as
+      // SqlSpecialOperator.reduceExpr.
+      CalciteContextException ece =
+          (CalciteContextException) ex;
+      if (originalSql != null) {
+        ece.setOriginalStatement(originalSql);
+      }
+      SqlParserPos pos =
+          new SqlParserPos(ece.getPosLine(), ece.getPosColumn(),
+              ece.getEndPosLine(), ece.getEndPosColumn());
+      Throwable cause = ece.getCause();
+      return new SqlParseException(cause.getMessage(), pos, null, null, cause);
+    }
+
+    // Unknown exception (might be IllegalArgumentException,
+    // CalciteException). Wrap it in SqlParseException.
+    return new SqlParseException(ex.getMessage(), null, null, null, ex);
+  }
+
+  protected SqlParseException normalizeParseException(WrappedParseException w) {
+    cleanupParseException(w);
+
+    final SqlParserPos pos = w.pos();
+    final int[][] expectedTokenSequences = w.expectedTokenSequences();
+    final String[] tokenImages = w.tokenImages();
+    final String image = w.image();
+    Throwable ex = w.ex();
+    if (image != null) {
+      // To avoid recursive call, checks whether the token is a dummy statement.
+      // The MetadataImpl constructor uses constant "1" to
+      // throw intentionally to collect the expected tokens.
+      if (!image.equals(DUMMY_STATEMENT)
+          && getMetadata().isKeyword(image)
+          && SqlParserUtil.allowsIdentifier(tokenImages, expectedTokenSequences)) {
+        // If the next token is a keyword, reformat the error message as
+        // follows:
+        //   Incorrect syntax near the keyword '{keyword}' at
+        //   line {line_number}, column {column_number}.
+        final String message = w.ex().getMessage();
+        final String expecting =
+            message.substring(message.indexOf("Was expecting"));
+        final String message2 =
+            String.format("Incorrect syntax near the keyword '%s' "
+                    + "at line %d, column %d.\n%s",
+                image, pos.getLineNum(), pos.getColumnNum(), expecting);
+
+        // Replace the ParseException with explicit error message.
+        ex = w.copy(message2);
+      }
+    }
+
+    return new SqlParseException(ex.getMessage(), pos, expectedTokenSequences,
+        tokenImages, ex);
+  }
+
+  protected void cleanupParseException(WrappedParseException w) {
+    final int[][] expectedTokenSequences = w.expectedTokenSequences();
+    if (expectedTokenSequences == null) {
+      return;
+    }
+    int identifier = arrayIndexOf(w.tokenImages(), "<IDENTIFIER>");
+
+    // Find all sequences in the error which contain identifier. For
+    // example,
+    //       {<IDENTIFIER>}
+    //       {A}
+    //       {B, C}
+    //       {D, <IDENTIFIER>}
+    //       {D, A}
+    //       {D, B}
+    //
+    // would yield
+    //       {}
+    //       {D}
+    final List<int[]> prefixList = new ArrayList<>();
+    for (int[] seq : expectedTokenSequences) {
+      int j = seq.length - 1;
+      int k = seq[j];
+      if (k == identifier) {
+        int[] prefix = new int[j];
+        System.arraycopy(seq, 0, prefix, 0, j);
+        prefixList.add(prefix);
+      }
+    }
+
+    if (prefixList.isEmpty()) {
+      return;
+    }
+
+    int[][] prefixes = prefixList.toArray(new int[0][]);
+
+    // Since <IDENTIFIER> was one of the possible productions,
+    // we know that the parser will also have included all
+    // the non-reserved keywords (which are treated as
+    // identifiers in non-keyword contexts).  So, now we need
+    // to clean those out, since they're totally irrelevant.
+
+    final List<int[]> list = new ArrayList<>();
+    final Metadata metadata = getMetadata();
+    for (int[] seq : expectedTokenSequences) {
+      String tokenImage = w.tokenImages()[seq[seq.length - 1]];
+      String token = SqlParserUtil.getTokenVal(tokenImage);
+      if (token == null || !metadata.isNonReservedKeyword(token)) {
+        list.add(seq);
+        continue;
+      }
+      boolean match = matchesPrefix(seq, prefixes);
+      if (!match) {
+        list.add(seq);
+      }
+    }
+
+    w.setExpectedTokenSequences(list.toArray(new int[0][]));
+  }
+
+  protected SqlParseException normalizeTokenMgrError(Error ex) {
+    // Example:
+    //    Lexical error at line 3, column 24.  Encountered "#" after "a".
+    final Matcher matcher = LEXICAL_ERROR_PATTERN.matcher(ex.getMessage());
+    final SqlParserPos pos;
+    if (matcher.matches()) {
+      int line = Integer.parseInt(matcher.group(1));
+      int column = Integer.parseInt(matcher.group(2));
+      pos = new SqlParserPos(line, column, line, column);
+    } else {
+      pos = SqlParserPos.ZERO;
+    }
+    return new SqlParseException(ex.getMessage(), pos, null, null, ex);
+  }
+
+  /** Finds an element of an array.
+   *
+   * <p>If there are no nulls, {@code arrayIndexOf(elements, seek)} is
+   * equivalent to {@code Arrays.asList(elements).indexOf(seek)}.
+   *
+   * @param <E> Element type
+   *
+   * @throws NullPointerException if {@code seek} is null,
+   * {@code elements} is null, or an element of {@code elements} is null
+   */
+  @SuppressWarnings("SameParameterValue")
+  private static <E> int arrayIndexOf(E[] elements, E seek) {
+    requireNonNull(seek);
+    for (int i = 0; i < elements.length; i++) {
+      if (elements[i].equals(seek)) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
   protected abstract SqlParserPos getPos() throws Exception;
 
@@ -528,19 +725,26 @@ public abstract class SqlAbstractParserImpl {
    *
    * @param quotedCasing Casing to set.
    */
-  public abstract void setQuotedCasing(Casing quotedCasing);
+  public void setQuotedCasing(Casing quotedCasing) {
+    this.quotedCasing = quotedCasing;
+  }
 
   /**
    * Sets the casing policy for unquoted identifiers.
    *
    * @param unquotedCasing Casing to set.
    */
-  public abstract void setUnquotedCasing(Casing unquotedCasing);
+  public void setUnquotedCasing(Casing unquotedCasing) {
+    this.unquotedCasing = unquotedCasing;
+  }
 
   /**
    * Sets the maximum length for sql identifier.
    */
-  public abstract void setIdentifierMaxLength(int identifierMaxLength);
+  public void setIdentifierMaxLength(int identifierMaxLength) {
+    this.identifierMaxLength = identifierMaxLength;
+  }
+
 
   /**
    * Sets the map from identifier to time unit.
@@ -552,7 +756,9 @@ public abstract class SqlAbstractParserImpl {
   /**
    * Sets the SQL language conformance level.
    */
-  public abstract void setConformance(SqlConformance conformance);
+  public void setConformance(SqlConformance conformance) {
+    this.conformance = conformance;
+  }
 
   /**
    * Parses string to array literal.
@@ -704,20 +910,15 @@ public abstract class SqlAbstractParserImpl {
    * Default implementation of the {@link Metadata} interface.
    */
   public static class MetadataImpl implements Metadata {
-    private final Set<String> reservedFunctionNames = new HashSet<>();
-    private final Set<String> contextVariableNames = new HashSet<>();
-    private final Set<String> nonReservedKeyWordSet = new HashSet<>();
-
-    /**
-     * Set of all tokens.
-     */
-    private final NavigableSet<String> tokenSet = new TreeSet<>();
+    private final Set<String> reservedFunctionNames;
+    private final Set<String> contextVariableNames;
+    private final Set<String> nonReservedKeyWordSet;
 
     /**
      * Immutable list of all tokens, in alphabetical order.
      */
     private final List<String> tokenList;
-    private final Set<String> reservedWords = new HashSet<>();
+    private final Set<String> reservedWords;
     private final String sql92ReservedWords;
 
     /**
@@ -726,26 +927,30 @@ public abstract class SqlAbstractParserImpl {
      * @param sqlParser Parser
      */
     public MetadataImpl(SqlAbstractParserImpl sqlParser) {
-      initList(sqlParser, reservedFunctionNames, "ReservedFunctionName");
-      initList(sqlParser, contextVariableNames, "ContextVariable");
-      initList(sqlParser, nonReservedKeyWordSet, "NonReservedKeyWord");
+      final NavigableSet<String> tokenSet = new TreeSet<>();
+      reservedFunctionNames = initList(sqlParser, tokenSet, "ReservedFunctionName");
+      contextVariableNames = initList(sqlParser, tokenSet, "ContextVariable");
+      nonReservedKeyWordSet = initList(sqlParser, tokenSet, "NonReservedKeyWord");
       tokenList = ImmutableList.copyOf(tokenSet);
-      sql92ReservedWords = constructSql92ReservedWordList();
-      Set<String> reservedWordSet = new TreeSet<>();
-      reservedWordSet.addAll(tokenSet);
-      reservedWordSet.removeAll(nonReservedKeyWordSet);
-      reservedWords.addAll(reservedWordSet);
+      tokenSet.removeAll(nonReservedKeyWordSet);
+      reservedWords = ImmutableSet.copyOf(tokenSet);
+
+      // Build a comma-separated list of JDBC reserved words.
+      final Set<String> jdbcReservedSet = new TreeSet<>(tokenList);
+      jdbcReservedSet.removeAll(SQL_92_RESERVED_WORD_SET);
+      jdbcReservedSet.removeAll(nonReservedKeyWordSet);
+      sql92ReservedWords = commaList(jdbcReservedSet);
     }
 
     /**
      * Initializes lists of keywords.
      */
-    private void initList(
-        @UnderInitialization MetadataImpl this,
+    private static ImmutableSet<String> initList(
         SqlAbstractParserImpl parserImpl,
-        Set<String> keywords,
+        Set<String> tokenSet,
         String name) {
-      parserImpl.ReInit(new StringReader("1"));
+      ImmutableSet.Builder<String> keywords = ImmutableSet.builder();
+      parserImpl.ReInit(new StringReader(DUMMY_STATEMENT));
       try {
         Object o = virtualCall(parserImpl, name);
         throw new AssertionError("expected call to fail, got " + o);
@@ -774,6 +979,7 @@ public abstract class SqlAbstractParserImpl {
             keywords.add(tokenVal);
           }
         }
+        return keywords.build();
       } catch (Throwable e) {
         throw new RuntimeException("While building token lists", e);
       }
@@ -787,8 +993,7 @@ public abstract class SqlAbstractParserImpl {
      * @param name       Name of method. For example "ReservedFunctionName".
      * @return Result of calling method
      */
-    private @Nullable Object virtualCall(
-        @UnderInitialization MetadataImpl this,
+    private static @Nullable Object virtualCall(
         SqlAbstractParserImpl parserImpl,
         String name) throws Throwable {
       Class<?> clazz = parserImpl.getClass();
@@ -801,67 +1006,112 @@ public abstract class SqlAbstractParserImpl {
       }
     }
 
-    /**
-     * Builds a comma-separated list of JDBC reserved words.
-     */
-    private String constructSql92ReservedWordList(
-        @UnderInitialization MetadataImpl this) {
-      StringBuilder sb = new StringBuilder();
-      TreeSet<String> jdbcReservedSet = new TreeSet<>();
-      jdbcReservedSet.addAll(tokenSet);
-      jdbcReservedSet.removeAll(SQL_92_RESERVED_WORD_SET);
-      jdbcReservedSet.removeAll(nonReservedKeyWordSet);
-      int j = 0;
-      for (String jdbcReserved : jdbcReservedSet) {
-        if (j++ > 0) {
-          sb.append(",");
-        }
-        sb.append(jdbcReserved);
-      }
-      return sb.toString();
-    }
-
-    @Override
-    public List<String> getTokens() {
+    @Override public List<String> getTokens() {
       return tokenList;
     }
 
-    @Override
-    public boolean isSql92ReservedWord(String token) {
+    @Override public boolean isSql92ReservedWord(String token) {
       return SQL_92_RESERVED_WORD_SET.contains(token);
     }
 
-    @Override
-    public String getJdbcKeywords() {
+    @Override public String getJdbcKeywords() {
       return sql92ReservedWords;
     }
 
-    @Override
-    public boolean isKeyword(String token) {
+    @Override public boolean isKeyword(String token) {
       return isNonReservedKeyword(token)
           || isReservedFunctionName(token)
           || isContextVariableName(token)
           || isReservedWord(token);
     }
 
-    @Override
-    public boolean isNonReservedKeyword(String token) {
+    @Override public boolean isNonReservedKeyword(String token) {
       return nonReservedKeyWordSet.contains(token);
     }
 
-    @Override
-    public boolean isReservedFunctionName(String token) {
+    @Override public boolean isReservedFunctionName(String token) {
       return reservedFunctionNames.contains(token);
     }
 
-    @Override
-    public boolean isContextVariableName(String token) {
+    @Override public boolean isContextVariableName(String token) {
       return contextVariableNames.contains(token);
     }
 
-    @Override
-    public boolean isReservedWord(String token) {
+    @Override public boolean isReservedWord(String token) {
       return reservedWords.contains(token);
     }
+  }
+
+  /** Converts a collection of strings to a comma-separated list.
+   *
+   * <p>{@code commaList(["a", "bc"]} yields "a,bc". */
+  private static String commaList(Iterable<String> strings) {
+    StringBuilder sb = new StringBuilder();
+    for (String string : strings) {
+      if (sb.length() > 0) {
+        sb.append(",");
+      }
+      sb.append(string);
+    }
+    return sb.toString();
+  }
+
+  protected static boolean matchesPrefix(int[] seq, int[][] prefixes) {
+    for (int[] prefix : prefixes) {
+      if (allMatch(seq, prefix)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean allMatch(int[] seq, int[] prefix) {
+    if (seq.length != prefix.length + 1) {
+      return false;
+    }
+    for (int k = 0; k < prefix.length; k++) {
+      if (prefix[k] != seq[k]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Abstract implementation of {@link SqlParserImplFactory}. */
+  protected abstract static class AbstractFactory
+      implements SqlParserImplFactory {
+    private final Supplier<Metadata> metadataSupplier =
+        Suppliers.memoize(() ->
+            new MetadataImpl(create(new StringReader(""))));
+
+    @Override public SqlAbstractParserImpl getParser(Reader reader) {
+      final SqlAbstractParserImpl parser = create(reader);
+      if (reader instanceof SourceStringReader) {
+        parser.setOriginalSql(((SourceStringReader) reader).getSourceString());
+      }
+      return parser;
+    }
+
+    /** Creates a parser. */
+    protected abstract SqlAbstractParserImpl create(Reader reader);
+
+    /** Returns metadata, caching after the first call. */
+    @Override public Metadata getMetadata() {
+      return metadataSupplier.get();
+    }
+  }
+
+  /** Wrapper around a parse exception. */
+  protected interface WrappedParseException {
+    int [] @Nullable [] expectedTokenSequences();
+    void setExpectedTokenSequences(int[][] expectedTokenSequences);
+    String[] tokenImages();
+    SqlParserPos pos();
+    @Nullable String image();
+    Throwable ex();
+
+    /** Returns a same copy of the underlying exception, with the same type
+     * but with the given message. */
+    Throwable copy(String message);
   }
 }

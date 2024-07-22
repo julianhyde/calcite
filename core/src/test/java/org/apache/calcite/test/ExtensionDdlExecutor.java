@@ -16,16 +16,13 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
-import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.parser.parserextensiontesting.ExtensionSqlCreateTable;
 import org.apache.calcite.sql.parser.parserextensiontesting.ExtensionSqlParserImpl;
 
-import java.io.Reader;
 import java.util.function.BiConsumer;
 
 /** Executes the few DDL commands supported by
@@ -36,18 +33,11 @@ public class ExtensionDdlExecutor extends MockDdlExecutor {
   /** Parser factory. */
   @SuppressWarnings("unused") // used via reflection
   public static final SqlParserImplFactory PARSER_FACTORY =
-      new SqlParserImplFactory() {
-        @Override public SqlAbstractParserImpl getParser(Reader stream) {
-          return ExtensionSqlParserImpl.FACTORY.getParser(stream);
-        }
+      SqlParserImplFactory.of(ExtensionSqlParserImpl.FACTORY,
+          ExtensionDdlExecutor.INSTANCE);
 
-        @Override public DdlExecutor getDdlExecutor() {
-          return ExtensionDdlExecutor.INSTANCE;
-        }
-      };
-
-  @Override protected void forEachNameType(SqlCreateTable createTable, BiConsumer<SqlIdentifier,
-      SqlDataTypeSpec> consumer) {
+  @Override protected void forEachNameType(SqlCreateTable createTable,
+      BiConsumer<SqlIdentifier, SqlDataTypeSpec> consumer) {
     ((ExtensionSqlCreateTable) createTable).forEachNameType(consumer);
   }
 }

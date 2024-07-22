@@ -18,8 +18,11 @@ package org.apache.calcite.sql.parser;
 
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.server.DdlExecutor;
+import org.apache.calcite.util.SourceStringReader;
 
 import java.io.Reader;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for
@@ -37,7 +40,14 @@ public interface SqlParserImplFactory {
    *
    * @return {@link SqlAbstractParserImpl} object.
    */
-  SqlAbstractParserImpl getParser(Reader stream);
+  SqlAbstractParserImpl getParser(Reader reader);
+
+  /**
+   * Returns metadata.
+   */
+  default SqlAbstractParserImpl.Metadata getMetadata() {
+    return new SqlAbstractParserImpl.MetadataImpl(getParser(new SourceStringReader("")));
+  }
 
   /**
    * Returns a DDL executor.
@@ -56,5 +66,26 @@ public interface SqlParserImplFactory {
   @Experimental
   default DdlExecutor getDdlExecutor() {
     return DdlExecutor.USELESS;
+  }
+
+  /** Creates a parser factory that delegates to a parser factory and DDL
+   * executor. */
+  static SqlParserImplFactory of(SqlParserImplFactory factory,
+      DdlExecutor ddlExecutor) {
+    requireNonNull(factory, "factory");
+    requireNonNull(ddlExecutor, "ddlExecutor");
+    return new SqlParserImplFactory() {
+      @Override public SqlAbstractParserImpl getParser(Reader reader) {
+        return factory.getParser(reader);
+      }
+
+      @Override public SqlAbstractParserImpl.Metadata getMetadata() {
+        return factory.getMetadata();
+      }
+
+      @Override public DdlExecutor getDdlExecutor() {
+        return ddlExecutor;
+      }
+    };
   }
 }

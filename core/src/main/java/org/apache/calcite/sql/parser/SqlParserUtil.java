@@ -45,6 +45,7 @@ import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.PrecedenceClimbingParser;
+import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimeWithTimeZoneString;
 import org.apache.calcite.util.TimestampString;
@@ -57,7 +58,6 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
-import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -461,7 +461,7 @@ public final class SqlParserUtil {
    */
   public static SqlNode parseArrayLiteral(String s) throws SqlParseException {
     SqlAbstractParserImpl parser =
-        SqlParserImpl.FACTORY.getParser(new StringReader(s));
+        SqlParserImpl.FACTORY.getParser(new SourceStringReader(s));
     return parser.parseArray();
   }
 

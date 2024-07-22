@@ -69,7 +69,6 @@ import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlTruncateTable;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -92,7 +91,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.Reader;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -121,15 +119,8 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
   /** Parser factory. */
   @SuppressWarnings("unused") // used via reflection
   public static final SqlParserImplFactory PARSER_FACTORY =
-      new SqlParserImplFactory() {
-        @Override public SqlAbstractParserImpl getParser(Reader stream) {
-          return SqlDdlParserImpl.FACTORY.getParser(stream);
-        }
-
-        @Override public DdlExecutor getDdlExecutor() {
-          return ServerDdlExecutor.INSTANCE;
-        }
-      };
+      SqlParserImplFactory.of(SqlDdlParserImpl.FACTORY,
+          ServerDdlExecutor.INSTANCE);
 
   /** Creates a ServerDdlExecutor.
    * Protected only to allow sub-classing;

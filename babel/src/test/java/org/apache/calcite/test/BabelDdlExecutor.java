@@ -16,12 +16,8 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.server.DdlExecutor;
-import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.parser.babel.SqlBabelParserImpl;
-
-import java.io.Reader;
 
 /** Executes the few DDL commands supported by
  * {@link SqlBabelParserImpl}. */
@@ -31,13 +27,6 @@ public class BabelDdlExecutor extends MockDdlExecutor {
   /** Parser factory. */
   @SuppressWarnings("unused") // used via reflection
   public static final SqlParserImplFactory PARSER_FACTORY =
-      new SqlParserImplFactory() {
-        @Override public SqlAbstractParserImpl getParser(Reader stream) {
-          return SqlBabelParserImpl.FACTORY.getParser(stream);
-        }
-
-        @Override public DdlExecutor getDdlExecutor() {
-          return BabelDdlExecutor.INSTANCE;
-        }
-      };
+      SqlParserImplFactory.of(SqlBabelParserImpl.FACTORY,
+          BabelDdlExecutor.INSTANCE);
 }

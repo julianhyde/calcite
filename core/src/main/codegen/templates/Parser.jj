@@ -123,8 +123,12 @@ import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
 import java.io.Reader;
@@ -145,63 +149,30 @@ import static org.apache.calcite.util.Static.RESOURCE;
  */
 public class ${parser.class} extends SqlAbstractParserImpl
 {
-    private static final Logger LOGGER = CalciteTrace.getParserTracer();
-
-    // Can't use quoted literal because of a bug in how JavaCC translates
-    // backslash-backslash.
-    private static final char BACKSLASH = 0x5c;
-    private static final char DOUBLE_QUOTE = 0x22;
-    private static final String DQ = DOUBLE_QUOTE + "";
-    private static final String DQDQ = DQ + DQ;
-    private static final SqlLiteral LITERAL_ZERO =
-        SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO);
-    private static final SqlLiteral LITERAL_ONE =
-        SqlLiteral.createExactNumeric("1", SqlParserPos.ZERO);
-    private static final SqlLiteral LITERAL_MINUS_ONE =
-        SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
-    private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100L);
-
-    private static Metadata metadata;
-
-    private Casing unquotedCasing;
-    private Casing quotedCasing;
-    private int identifierMaxLength;
-    private SqlConformance conformance;
-
     /**
-     * {@link SqlParserImplFactory} implementation for creating parser.
+     * {@link SqlParserImplFactory} implementation for creating parser
+     * and metadata.
      */
-    public static final SqlParserImplFactory FACTORY = new SqlParserImplFactory() {
-        public SqlAbstractParserImpl getParser(Reader reader) {
-            final ${parser.class} parser = new ${parser.class}(reader);
-            if (reader instanceof SourceStringReader) {
-                final String sql =
-                    ((SourceStringReader) reader).getSourceString();
-                parser.setOriginalSql(sql);
+    public static final SqlParserImplFactory FACTORY =
+        new AbstractFactory() {
+            @Override public SqlAbstractParserImpl create(Reader reader) {
+                return new ${parser.class}(reader);
             }
-          return parser;
-        }
-    };
+        };
 
-    public SqlParseException normalizeException(Throwable ex) {
-        try {
-            if (ex instanceof ParseException) {
-                ex = cleanupParseException((ParseException) ex);
-            }
-            return convertException(ex);
-        } catch (ParseException e) {
-            throw new AssertionError(e);
+    @Override public SqlParseException normalizeException(Throwable ex) {
+        if (ex instanceof ParseException) {
+            return normalizeParseException(
+                new WrappedParseExceptionImpl((ParseException) ex));
         }
+        if (ex instanceof TokenMgrError) {
+            return normalizeTokenMgrError((TokenMgrError) ex);
+        }
+        return super.normalizeException(ex);
     }
 
-    public Metadata getMetadata() {
-        synchronized (${parser.class}.class) {
-            if (metadata == null) {
-                metadata = new MetadataImpl(
-                    new ${parser.class}(new java.io.StringReader("")));
-            }
-            return metadata;
-        }
+    @Override public Metadata getMetadata() {
+        return FACTORY.getMetadata();
     }
 
     public void setTabSize(int tabSize) {
@@ -213,22 +184,6 @@ public class ${parser.class} extends SqlAbstractParserImpl
             Arrays.asList(${parser.class}TokenManager.lexStateNames)
                 .indexOf(state.name());
         token_source.SwitchTo(stateOrdinal);
-    }
-
-    public void setQuotedCasing(Casing quotedCasing) {
-        this.quotedCasing = quotedCasing;
-    }
-
-    public void setUnquotedCasing(Casing unquotedCasing) {
-        this.unquotedCasing = unquotedCasing;
-    }
-
-    public void setIdentifierMaxLength(int identifierMaxLength) {
-        this.identifierMaxLength = identifierMaxLength;
-    }
-
-    public void setConformance(SqlConformance conformance) {
-        this.conformance = conformance;
     }
 
     public SqlNode parseSqlExpressionEof() throws Exception {
@@ -271,6 +226,52 @@ public class ${parser.class} extends SqlAbstractParserImpl
             SqlUtil.newContextException(getPos(),
                 RESOURCE.nonStandardFeatureUsed(token)));
         return timeUnit;
+    }
+
+    /** Implementation of {@code WrappedParseException}. */
+    private static class WrappedParseExceptionImpl
+            implements WrappedParseException {
+        final ParseException pex;
+        final Token next;
+
+        WrappedParseExceptionImpl(ParseException pex) {
+            this.pex = pex;
+            this.next = pex.currentToken == null ? null : pex.currentToken.next;
+        }
+
+        @Override public Exception ex() {
+            return pex;
+        }
+
+        @Override public Exception copy(String message) {
+            return new ParseException(message);
+        }
+
+        @Override public int[][] expectedTokenSequences() {
+            return pex.expectedTokenSequences;
+        }
+
+        @Override public void setExpectedTokenSequences(
+                int[][] expectedTokenSequences) {
+            pex.expectedTokenSequences = expectedTokenSequences;
+        }
+
+        @Override public String[] tokenImages() {
+            return pex.tokenImage;
+        }
+
+        @Override public @Nullable String image() {
+            return next == null
+                ? null
+                : next.image;
+        }
+
+        @Override public SqlParserPos pos() {
+            return next == null
+                ? SqlParserPos.ZERO
+                : new SqlParserPos(next.beginLine, next.beginColumn,
+                    next.endLine, next.endColumn);
+        }
     }
 }
 
@@ -447,173 +448,6 @@ JAVACODE SqlNode checkNotJoin(SqlNode e)
             RESOURCE.illegalJoinExpression());
     }
     return e;
-}
-
-/**
- * Converts a ParseException (local to this particular instantiation
- * of the parser) into a SqlParseException (common to all parsers).
- */
-JAVACODE SqlParseException convertException(Throwable ex)
-{
-    if (ex instanceof SqlParseException) {
-        return (SqlParseException) ex;
-    }
-    SqlParserPos pos = null;
-    int[][] expectedTokenSequences = null;
-    String[] tokenImage = null;
-    if (ex instanceof ParseException) {
-        ParseException pex = (ParseException) ex;
-        expectedTokenSequences = pex.expectedTokenSequences;
-        tokenImage = pex.tokenImage;
-        if (pex.currentToken != null) {
-            final Token token = pex.currentToken.next;
-            // Checks token.image.equals("1") to avoid recursive call.
-            // The SqlAbstractParserImpl#MetadataImpl constructor uses constant "1" to
-            // throw intentionally to collect the expected tokens.
-            if (!token.image.equals("1")
-                && getMetadata().isKeyword(token.image)
-                && SqlParserUtil.allowsIdentifier(tokenImage, expectedTokenSequences)) {
-                // If the next token is a keyword, reformat the error message as:
-
-                // Incorrect syntax near the keyword '{keyword}' at line {line_number},
-                // column {column_number}.
-                final String expecting = ex.getMessage()
-                    .substring(ex.getMessage().indexOf("Was expecting"));
-                final String errorMsg = String.format("Incorrect syntax near the keyword '%s' "
-                        + "at line %d, column %d.\n%s",
-                    token.image,
-                    token.beginLine,
-                    token.beginColumn,
-                    expecting);
-                // Replace the ParseException with explicit error message.
-                ex = new ParseException(errorMsg);
-            }
-            pos = new SqlParserPos(
-                token.beginLine,
-                token.beginColumn,
-                token.endLine,
-                token.endColumn);
-        }
-    } else if (ex instanceof TokenMgrError) {
-        expectedTokenSequences = null;
-        tokenImage = null;
-        // Example:
-        //    Lexical error at line 3, column 24.  Encountered "#" after "a".
-        final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
-            "(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
-        java.util.regex.Matcher matcher = pattern.matcher(ex.getMessage());
-        if (matcher.matches()) {
-            int line = Integer.parseInt(matcher.group(1));
-            int column = Integer.parseInt(matcher.group(2));
-            pos = new SqlParserPos(line, column, line, column);
-        }
-    } else if (ex instanceof CalciteContextException) {
-        // CalciteContextException is the standard wrapper for exceptions
-        // produced by the validator, but in the parser, the standard is
-        // SqlParseException; so, strip it away. In case you were wondering,
-        // the CalciteContextException appears because the parser
-        // occasionally calls into validator-style code such as
-        // SqlSpecialOperator.reduceExpr.
-        CalciteContextException ece =
-            (CalciteContextException) ex;
-        pos = new SqlParserPos(
-            ece.getPosLine(),
-            ece.getPosColumn(),
-            ece.getEndPosLine(),
-            ece.getEndPosColumn());
-        ex = ece.getCause();
-    }
-
-    return new SqlParseException(
-        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
-}
-
-/**
- * Removes or transforms misleading information from a parse exception.
- *
- * @param e dirty excn
- *
- * @return clean excn
- */
-JAVACODE ParseException cleanupParseException(ParseException ex)
-{
-    if (ex.expectedTokenSequences == null) {
-        return ex;
-    }
-    int iIdentifier = Arrays.asList(ex.tokenImage).indexOf("<IDENTIFIER>");
-
-    // Find all sequences in the error which contain identifier. For
-    // example,
-    //       {<IDENTIFIER>}
-    //       {A}
-    //       {B, C}
-    //       {D, <IDENTIFIER>}
-    //       {D, A}
-    //       {D, B}
-    //
-    // would yield
-    //       {}
-    //       {D}
-    final List<int[]> prefixList = new ArrayList<int[]>();
-    for (int i = 0; i < ex.expectedTokenSequences.length; ++i) {
-        int[] seq = ex.expectedTokenSequences[i];
-        int j = seq.length - 1;
-        int i1 = seq[j];
-        if (i1 == iIdentifier) {
-            int[] prefix = new int[j];
-            System.arraycopy(seq, 0, prefix, 0, j);
-            prefixList.add(prefix);
-        }
-    }
-
-    if (prefixList.isEmpty()) {
-        return ex;
-    }
-
-    int[][] prefixes = (int[][])
-        prefixList.toArray(new int[prefixList.size()][]);
-
-    // Since <IDENTIFIER> was one of the possible productions,
-    // we know that the parser will also have included all
-    // of the non-reserved keywords (which are treated as
-    // identifiers in non-keyword contexts).  So, now we need
-    // to clean those out, since they're totally irrelevant.
-
-    final List<int[]> list = new ArrayList<int[]>();
-    Metadata metadata = getMetadata();
-    for (int i = 0; i < ex.expectedTokenSequences.length; ++i) {
-        int [] seq = ex.expectedTokenSequences[i];
-        String tokenImage = ex.tokenImage[seq[seq.length - 1]];
-        String token = SqlParserUtil.getTokenVal(tokenImage);
-        if (token == null  || !metadata.isNonReservedKeyword(token)) {
-            list.add(seq);
-            continue;
-        }
-        boolean match = matchesPrefix(seq, prefixes);
-        if (!match) {
-            list.add(seq);
-        }
-    }
-
-    ex.expectedTokenSequences =
-        (int [][]) list.toArray(new int [list.size()][]);
-    return ex;
-}
-
-JAVACODE boolean matchesPrefix(int[] seq, int[][] prefixes)
-{
-    nextPrefix:
-    for (int[] prefix : prefixes) {
-        if (seq.length == prefix.length + 1) {
-            for (int k = 0; k < prefix.length; k++) {
-                if (prefix[k] != seq[k]) {
-                    continue nextPrefix;
-                }
-            }
-            return true;
-        }
-    }
-    return false;
 }
 
 /*****************************************
