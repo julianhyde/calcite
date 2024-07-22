@@ -175,6 +175,28 @@ public class ${parser.class} extends SqlAbstractParserImpl
         return FACTORY.getMetadata();
     }
 
+    @Override protected Pair<int[][], String[]> call(String name) {
+        Object o;
+        try {
+          switch (name) {
+          case "ReservedFunctionName":
+            o = ReservedFunctionName();
+            break;
+          case "ContextVariable":
+            o = ContextVariable();
+            break;
+          case "NonReservedKeyWord":
+            o = NonReservedKeyWord();
+            break;
+          default:
+            // fall through
+          }
+          throw new AssertionError("expected parse to fail: " + name);
+        } catch (ParseException e) {
+          return Pair.of(e.expectedTokenSequences, e.tokenImage);
+        }
+    }
+
     public void setTabSize(int tabSize) {
         jj_input_stream.setTabSize(tabSize);
     }

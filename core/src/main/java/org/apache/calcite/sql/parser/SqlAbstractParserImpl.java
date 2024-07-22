@@ -32,6 +32,7 @@ import org.apache.calcite.sql.SqlUnresolvedFunction;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.Glossary;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.trace.CalciteTrace;
 
@@ -41,15 +42,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -505,6 +506,11 @@ public abstract class SqlAbstractParserImpl {
   public abstract Metadata getMetadata();
 
   /**
+   * Returns the tokens following a symbol.
+   */
+  protected abstract Pair<int[][], String[]> call(String name);
+
+  /**
    * Removes or transforms misleading information from a parse exception or
    * error, and converts to {@link SqlParseException}.
    *
@@ -537,12 +543,14 @@ public abstract class SqlAbstractParserImpl {
       SqlParserPos pos =
           new SqlParserPos(ece.getPosLine(), ece.getPosColumn(),
               ece.getEndPosLine(), ece.getEndPosColumn());
-      Throwable cause = ece.getCause();
+      Throwable cause = requireNonNull(ece.getCause(), "cause");
+      requireNonNull(cause.getMessage());
       return new SqlParseException(cause.getMessage(), pos, null, null, cause);
     }
 
     // Unknown exception (might be IllegalArgumentException,
     // CalciteException). Wrap it in SqlParseException.
+    requireNonNull(ex.getMessage());
     return new SqlParseException(ex.getMessage(), null, null, null, ex);
   }
 
@@ -554,40 +562,38 @@ public abstract class SqlAbstractParserImpl {
     final String[] tokenImages = w.tokenImages();
     final String image = w.image();
     Throwable ex = w.ex();
-    if (image != null) {
-      // To avoid recursive call, checks whether the token is a dummy statement.
-      // The MetadataImpl constructor uses constant "1" to
-      // throw intentionally to collect the expected tokens.
-      if (!image.equals(DUMMY_STATEMENT)
-          && getMetadata().isKeyword(image)
-          && SqlParserUtil.allowsIdentifier(tokenImages, expectedTokenSequences)) {
-        // If the next token is a keyword, reformat the error message as
-        // follows:
-        //   Incorrect syntax near the keyword '{keyword}' at
-        //   line {line_number}, column {column_number}.
-        final String message = w.ex().getMessage();
-        final String expecting =
-            message.substring(message.indexOf("Was expecting"));
-        final String message2 =
-            String.format("Incorrect syntax near the keyword '%s' "
-                    + "at line %d, column %d.\n%s",
-                image, pos.getLineNum(), pos.getColumnNum(), expecting);
+    if (image != null
+        && expectedTokenSequences != null
+        && getMetadata().isKeyword(image)
+        && SqlParserUtil.allowsIdentifier(tokenImages, expectedTokenSequences)) {
+      // If the next token is a keyword, reformat the error message as
+      // follows:
+      //   Incorrect syntax near the keyword '{keyword}' at
+      //   line {line_number}, column {column_number}.
+      final String message = requireNonNull(w.ex().getMessage());
+      final String expecting =
+          message.substring(message.indexOf("Was expecting"));
+      final String message2 =
+          String.format("Incorrect syntax near the keyword '%s' "
+                  + "at line %d, column %d.\n%s",
+              image, pos.getLineNum(), pos.getColumnNum(), expecting);
 
-        // Replace the ParseException with explicit error message.
-        ex = w.copy(message2);
-      }
+      // Replace the ParseException with explicit error message.
+      ex = w.copy(message2);
     }
 
+    requireNonNull(ex.getMessage());
     return new SqlParseException(ex.getMessage(), pos, expectedTokenSequences,
         tokenImages, ex);
   }
 
   protected void cleanupParseException(WrappedParseException w) {
-    final int[][] expectedTokenSequences = w.expectedTokenSequences();
+    final int @Nullable [][] expectedTokenSequences =
+        w.expectedTokenSequences();
     if (expectedTokenSequences == null) {
       return;
     }
-    int identifier = arrayIndexOf(w.tokenImages(), "<IDENTIFIER>");
+    final String[] tokenImages = w.tokenImages();
 
     // Find all sequences in the error which contain identifier. For
     // example,
@@ -603,11 +609,8 @@ public abstract class SqlAbstractParserImpl {
     //       {D}
     final List<int[]> prefixList = new ArrayList<>();
     for (int[] seq : expectedTokenSequences) {
-      int j = seq.length - 1;
-      int k = seq[j];
-      if (k == identifier) {
-        int[] prefix = new int[j];
-        System.arraycopy(seq, 0, prefix, 0, j);
+      if (tokenImages[seq[seq.length - 1]].equals("<IDENTIFIER>")) {
+        int[] prefix = Arrays.copyOf(seq, seq.length - 1);
         prefixList.add(prefix);
       }
     }
@@ -627,7 +630,7 @@ public abstract class SqlAbstractParserImpl {
     final List<int[]> list = new ArrayList<>();
     final Metadata metadata = getMetadata();
     for (int[] seq : expectedTokenSequences) {
-      String tokenImage = w.tokenImages()[seq[seq.length - 1]];
+      String tokenImage = tokenImages[seq[seq.length - 1]];
       String token = SqlParserUtil.getTokenVal(tokenImage);
       if (token == null || !metadata.isNonReservedKeyword(token)) {
         list.add(seq);
@@ -643,39 +646,31 @@ public abstract class SqlAbstractParserImpl {
   }
 
   protected SqlParseException normalizeTokenMgrError(Error ex) {
-    // Example:
-    //    Lexical error at line 3, column 24.  Encountered "#" after "a".
-    final Matcher matcher = LEXICAL_ERROR_PATTERN.matcher(ex.getMessage());
-    final SqlParserPos pos;
-    if (matcher.matches()) {
-      int line = Integer.parseInt(matcher.group(1));
-      int column = Integer.parseInt(matcher.group(2));
-      pos = new SqlParserPos(line, column, line, column);
-    } else {
-      pos = SqlParserPos.ZERO;
-    }
-    return new SqlParseException(ex.getMessage(), pos, null, null, ex);
+    final String message = ex.getMessage();
+    requireNonNull(message);
+    final SqlParserPos pos = getSqlParserPos(message);
+    return new SqlParseException(message, pos, null, null, ex);
   }
 
-  /** Finds an element of an array.
+  /** Returns an error location in an error message. The message must look
+   * something like
    *
-   * <p>If there are no nulls, {@code arrayIndexOf(elements, seek)} is
-   * equivalent to {@code Arrays.asList(elements).indexOf(seek)}.
-   *
-   * @param <E> Element type
-   *
-   * @throws NullPointerException if {@code seek} is null,
-   * {@code elements} is null, or an element of {@code elements} is null
-   */
-  @SuppressWarnings("SameParameterValue")
-  private static <E> int arrayIndexOf(E[] elements, E seek) {
-    requireNonNull(seek);
-    for (int i = 0; i < elements.length; i++) {
-      if (elements[i].equals(seek)) {
-        return i;
-      }
+   * <blockquote><pre>
+   * Lexical error at line 3, column 24.  Encountered "#" after "a".
+   * </pre></blockquote> */
+  private static SqlParserPos getSqlParserPos(String message) {
+    final Matcher matcher = LEXICAL_ERROR_PATTERN.matcher(message);
+    if (!matcher.matches()) {
+      return SqlParserPos.ZERO;
     }
-    return -1;
+    final String group1 = matcher.group(1);
+    final String group2 = matcher.group(2);
+    if (group1 == null || group2 == null) {
+      return SqlParserPos.ZERO;
+    }
+    int line = Integer.parseInt(group1);
+    int column = Integer.parseInt(group2);
+    return new SqlParserPos(line, column, line, column);
   }
 
   protected abstract SqlParserPos getPos() throws Exception;
@@ -951,59 +946,34 @@ public abstract class SqlAbstractParserImpl {
         String name) {
       ImmutableSet.Builder<String> keywords = ImmutableSet.builder();
       parserImpl.ReInit(new StringReader(DUMMY_STATEMENT));
-      try {
-        Object o = virtualCall(parserImpl, name);
-        throw new AssertionError("expected call to fail, got " + o);
-      } catch (SqlParseException parseException) {
-        // First time through, build the list of all tokens.
-        final String[] tokenImages = parseException.getTokenImages();
-        if (tokenSet.isEmpty()) {
-          for (String token : tokenImages) {
-            String tokenVal = SqlParserUtil.getTokenVal(token);
-            if (tokenVal != null) {
-              tokenSet.add(tokenVal);
-            }
-          }
-        }
+      Pair<int[][], String[]> p = parserImpl.call(name);
+      final int[][] expectedTokenSequences = requireNonNull(p.left);
+      final String[] tokenImages = requireNonNull(p.right);
 
-        // Add the tokens which would have been expected in this
-        // syntactic context to the list we're building.
-        final int[][] expectedTokenSequences =
-            parseException.getExpectedTokenSequences();
-        for (final int[] tokens : expectedTokenSequences) {
-          assert tokens.length == 1;
-          final int tokenId = tokens[0];
-          String token = tokenImages[tokenId];
+      // First time through, build the list of all tokens.
+      requireNonNull(tokenImages);
+      if (tokenSet.isEmpty()) {
+        for (String token : tokenImages) {
           String tokenVal = SqlParserUtil.getTokenVal(token);
           if (tokenVal != null) {
-            keywords.add(tokenVal);
+            tokenSet.add(tokenVal);
           }
         }
-        return keywords.build();
-      } catch (Throwable e) {
-        throw new RuntimeException("While building token lists", e);
       }
-    }
 
-    /**
-     * Uses reflection to invoke a method on this parser. The method must be
-     * public and have no parameters.
-     *
-     * @param parserImpl Parser
-     * @param name       Name of method. For example "ReservedFunctionName".
-     * @return Result of calling method
-     */
-    private static @Nullable Object virtualCall(
-        SqlAbstractParserImpl parserImpl,
-        String name) throws Throwable {
-      Class<?> clazz = parserImpl.getClass();
-      try {
-        final Method method = clazz.getMethod(name);
-        return method.invoke(parserImpl);
-      } catch (InvocationTargetException e) {
-        Throwable cause = e.getCause();
-        throw parserImpl.normalizeException(cause);
+      // Add the tokens which would have been expected in this
+      // syntactic context to the list we're building.
+      requireNonNull(expectedTokenSequences);
+      for (final int[] tokens : expectedTokenSequences) {
+        assert tokens.length == 1;
+        final int tokenId = tokens[0];
+        String token = tokenImages[tokenId];
+        String tokenVal = SqlParserUtil.getTokenVal(token);
+        if (tokenVal != null) {
+          keywords.add(tokenVal);
+        }
       }
+      return keywords.build();
     }
 
     @Override public List<String> getTokens() {
@@ -1093,7 +1063,8 @@ public abstract class SqlAbstractParserImpl {
     }
 
     /** Creates a parser. */
-    protected abstract SqlAbstractParserImpl create(Reader reader);
+    protected abstract SqlAbstractParserImpl create(
+        @UnknownInitialization AbstractFactory this, Reader reader);
 
     /** Returns metadata, caching after the first call. */
     @Override public Metadata getMetadata() {
@@ -1103,7 +1074,7 @@ public abstract class SqlAbstractParserImpl {
 
   /** Wrapper around a parse exception. */
   protected interface WrappedParseException {
-    int [] @Nullable [] expectedTokenSequences();
+    int @Nullable [][] expectedTokenSequences();
     void setExpectedTokenSequences(int[][] expectedTokenSequences);
     String[] tokenImages();
     SqlParserPos pos();
