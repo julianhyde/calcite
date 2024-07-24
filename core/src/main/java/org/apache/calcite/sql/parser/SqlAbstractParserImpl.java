@@ -979,14 +979,14 @@ public abstract class SqlAbstractParserImpl {
       tokenMap = builder.build();
 
       // Build a comma-separated list of JDBC reserved words.
-      final Set<String> jdbcReservedSet = new TreeSet<>(tokenMap.keySet());
-      jdbcReservedSet.removeAll(SQL_92_RESERVED_WORD_SET);
-      jdbcReservedSet.removeIf(w -> {
-        final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(w);
-        return keywordTypes == null
-            || keywordTypes.contains(KeywordType.NON_RESERVED_KEYWORD);
+      final StringBuilder b = new StringBuilder();
+      tokenMap.forEach((token, keywordTypes) -> {
+        if (!SQL_92_RESERVED_WORD_SET.contains(token)
+            && !keywordTypes.contains(KeywordType.NON_RESERVED_KEYWORD)) {
+          b.append(b.length() > 0 ? "," : "").append(token);
+        }
       });
-      sql92ReservedWords = commaList(jdbcReservedSet);
+      sql92ReservedWords = b.toString();
     }
 
     /**
@@ -1090,20 +1090,6 @@ public abstract class SqlAbstractParserImpl {
     NON_RESERVED_KEYWORD,
     TOKEN,
     RESERVED_WORD
-  }
-
-  /** Converts a collection of strings to a comma-separated list.
-   *
-   * <p>{@code commaList(["a", "bc"]} yields "a,bc". */
-  private static String commaList(Iterable<String> strings) {
-    StringBuilder sb = new StringBuilder();
-    for (String string : strings) {
-      if (sb.length() > 0) {
-        sb.append(",");
-      }
-      sb.append(string);
-    }
-    return sb.toString();
   }
 
   protected static boolean matchesPrefix(int[] seq, int[][] prefixes) {
