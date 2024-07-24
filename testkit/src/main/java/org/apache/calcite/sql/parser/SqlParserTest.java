@@ -776,11 +776,11 @@ public class SqlParserTest {
 
   @Test void testFromStarFails() {
     sql("select * from sales^.^*")
-        .fails("(?s)Encountered \"\\. \\*\" at .*");
+        .fails("(?s)Encountered \"\\.\" at .*");
     sql("select emp.empno AS x from sales^.^*")
-        .fails("(?s)Encountered \"\\. \\*\" at .*");
+        .fails("(?s)Encountered \"\\.\" at .*");
     sql("select * from emp^.^*")
-        .fails("(?s)Encountered \"\\. \\*\" at .*");
+        .fails("(?s)Encountered \"\\.\" at .*");
     sql("select emp.empno AS x from emp^.^*")
         .fails("(?s)Encountered \"\\. \\*\" at .*");
     sql("select emp.empno AS x from ^*^")
@@ -1310,7 +1310,7 @@ public class SqlParserTest {
         .fails(".*BETWEEN operator has no terminating AND");
 
     sql("values a ^between^")
-        .fails("(?s).*Encountered \"between <EOF>\" at line 1, column 10.*");
+        .fails("(?s).*Encountered \"between\" at line 1, column 10.*");
 
     sql("values a between symmetric 1^")
         .fails(".*BETWEEN operator has no terminating AND");
@@ -1932,13 +1932,13 @@ public class SqlParserTest {
     // ESCAPE with no expression
     if (isReserved("ESCAPE")) {
       sql("values a ^like^ escape d")
-          .fails("(?s).*Encountered \"like escape\" at .*");
+          .fails("(?s).*Encountered \"like\" at .*");
     }
 
     // ESCAPE with no expression
     if (isReserved("ESCAPE")) {
       sql("values a like b || c ^escape^ and false")
-          .fails("(?s).*Encountered \"escape and\" at line 1, column 22.*");
+          .fails("(?s).*Encountered \"escape\" at line 1, column 22.*");
     }
 
     // basic SIMILAR TO
@@ -2216,9 +2216,9 @@ public class SqlParserTest {
             + "FROM `T`\n"
             + "GROUP BY `X`");
     expr("foo(x ^+^ DEFAULT)")
-        .fails("(?s).*Encountered \"\\+ DEFAULT\" at .*");
+        .fails("(?s).*Encountered \"\\+\" at .*");
     expr("foo(0, x ^+^ DEFAULT + y)")
-        .fails("(?s).*Encountered \"\\+ DEFAULT\" at .*");
+        .fails("(?s).*Encountered \"\\+\" at .*");
     expr("foo(0, DEFAULT ^+^ y)")
         .fails("(?s).*Encountered \"\\+\" at .*");
   }
@@ -2227,9 +2227,9 @@ public class SqlParserTest {
     sql("select ^DEFAULT^ from emp")
         .fails("(?s)Incorrect syntax near the keyword 'DEFAULT' at .*");
     sql("select cast(empno ^+^ DEFAULT as double) from emp")
-        .fails("(?s)Encountered \"\\+ DEFAULT\" at .*");
+        .fails("(?s)Encountered \"\\+\" at .*");
     sql("select empno ^+^ DEFAULT + deptno from emp")
-        .fails("(?s)Encountered \"\\+ DEFAULT\" at .*");
+        .fails("(?s)Encountered \"\\+\" at .*");
     sql("select power(0, DEFAULT ^+^ empno) from emp")
         .fails("(?s)Encountered \"\\+\" at .*");
     sql("select * from emp join dept on ^DEFAULT^")
@@ -2419,7 +2419,7 @@ public class SqlParserTest {
     // Nested rollup not ok
     final String sql1 = "select deptno from emp\n"
         + "group by rollup (deptno^, rollup(e, d))";
-    sql(sql1).fails("(?s)Encountered \", rollup\" at .*");
+    sql(sql1).fails("(?s)Encountered \",\" at .*");
   }
 
   @Test void testGrouping() {
@@ -2899,7 +2899,7 @@ public class SqlParserTest {
 
     final String sql3 = "select * from emp\n"
         + "where name like (select ^some^ name from emp)";
-    sql(sql3).fails("(?s).*Encountered \"some name\" at .*");
+    sql(sql3).fails("(?s).*Encountered \"some\" at .*");
 
     final String sql4 = "select * from emp\n"
         + "where name like some (select name from emp)";
@@ -3282,7 +3282,7 @@ public class SqlParserTest {
   @Test void testFullInnerJoinFails() {
     // cannot have more than one of INNER, FULL, LEFT, RIGHT, CROSS
     sql("select * from a ^full^ inner join b")
-        .fails("(?s).*Encountered \"full inner\" at line .*");
+        .fails("(?s).*Encountered \"full\" at line .*");
   }
 
   @Test void testFullOuterJoin() {
@@ -3295,7 +3295,7 @@ public class SqlParserTest {
 
   @Test void testInnerOuterJoinFails() {
     sql("select * from a ^inner^ outer join b")
-        .fails("(?s).*Encountered \"inner outer\" at line .*");
+        .fails("(?s).*Encountered \"inner\" at line .*");
   }
 
   @Test void testJoinAssociativity() {
@@ -5367,7 +5367,7 @@ public class SqlParserTest {
         .ok("NULLIF(`V1`, `V2`)");
     if (isReserved("NULLIF")) {
       expr("1 + ^nullif^ + 3")
-          .fails("(?s)Encountered \"nullif \\+\" at line 1, column 5.*");
+          .fails("(?s)Encountered \"nullif\" at line 1, column 5.*");
     }
   }
 
@@ -5589,7 +5589,7 @@ public class SqlParserTest {
             + "' ') || COALESCE('junk ', '')))");
 
     sql("trim(^from^ 'beard')")
-        .fails("(?s).*'FROM' without operands preceding it is illegal.*");
+        .fails("(?s)Encountered \"from\" at .*");
   }
 
   @Test void testConvertAndTranslate() {
@@ -6445,11 +6445,11 @@ public class SqlParserTest {
 
     // illegal qualifiers, no precision in either field
     expr("interval '1' year ^to^ year")
-        .fails("(?s)Encountered \"to year\" at line 1, column 19.\n"
+        .fails("(?s)Encountered \"to\" at line 1, column 19.\n"
             + "Was expecting one of:\n"
             + "    <EOF> \n"
             + "    \"\\(\" \\.\\.\\.\n"
-            + "    \"\\.\" \\.\\.\\..*");
+            + "    ");
     expr("interval '1-2' year ^to^ day")
         .fails(ANY);
     expr("interval '1-2' year ^to^ hour")
@@ -7531,7 +7531,7 @@ public class SqlParserTest {
     // make sure that the tab stops do not affect the placement of the
     // error tokens
     sql("SELECT *\tFROM mytable\t\tWHERE x ^=^ = y AND b = 1")
-        .fails("(?s).*Encountered \"= =\" at line 1, column 32\\..*");
+        .fails("(?s).*Encountered \"=\" at line 1, column 32\\..*");
   }
 
   @Test void testLongIdentifiers() {
@@ -7569,7 +7569,7 @@ public class SqlParserTest {
     expr("\"CAST\"(1 ^as^ double)")
         .fails("(?s).*Encountered \"as\" at .*");
     expr("\"POSITION\"('b' ^in^ 'alphabet')")
-        .fails("(?s).*Encountered \"in \\\\'alphabet\\\\'\" at .*");
+        .fails("(?s).*Encountered \"in\" at .*");
     expr("\"OVERLAY\"('a' ^PLAcing^ 'b' from 1)")
         .fails("(?s).*Encountered \"PLAcing\" at.*");
     expr("\"SUBSTRING\"('a' ^from^ 1)")
@@ -9249,7 +9249,7 @@ public class SqlParserTest {
     final String sql1 = "select "
         + "/*+ properties(^k1^=123, k2='v2'), no_hash_join() */ "
         + "empno, ename, deptno from emps";
-    sql(sql1).fails("(?s).*Encountered \"k1 = 123\" at .*");
+    sql(sql1).fails("(?s).*Encountered \"k1\" at .*");
     final String sql2 = "select "
         + "/*+ properties(k1, k2^=^'v2'), no_hash_join */ "
         + "empno, ename, deptno from emps";
@@ -9266,7 +9266,7 @@ public class SqlParserTest {
     final String sql4 = "select "
         + "/*+ properties(^a^.b.c=123, k2='v2') */"
         + "empno, ename, deptno from emps";
-    sql(sql4).fails("(?s).*Encountered \"a .\" at .*");
+    sql(sql4).fails("(?s).*Encountered \"a\" at .*");
   }
 
   /** Tests {@link Hoist}. */

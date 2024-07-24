@@ -17,6 +17,15 @@
 # Each of these may be overridden in a parser's config.fmpp file.
 # In addition, each parser must define "package" and "class".
 parser: {
+  # Whether this is the Babel parser
+  babel: false
+
+  # Generates "LOOKAHEAD(2)" in Babel, empty in other parsers
+  babelLa2: ""
+
+  # Generates "LOOKAHEAD(3)" in Babel, empty in other parsers
+  babelLa3: ""
+
   # List of additional classes and packages to import.
   # Example: "org.apache.calcite.sql.*", "java.util.List".
   imports: [

@@ -61,7 +61,7 @@ SqlNode PostgresqlSqlSetOption() :
         <SET> {
             s.add(this);
         }
-        [ scope = PostgresqlOptionScope() ]
+        [ LOOKAHEAD(2) scope = PostgresqlOptionScope() ]
         (
           <TIME> <ZONE> { name = new SqlIdentifier("timezone", getPos()); }
           (
@@ -72,26 +72,26 @@ SqlNode PostgresqlSqlSetOption() :
             val = Literal()
           )
         |
-          (
-              <SCHEMA> { name = new SqlIdentifier("search_path", getPos()); }
+            (
+                LOOKAHEAD(2)
+                name = CompoundIdentifier()
+                ( <EQ> | <TO> )
             |
-              <NAMES> { name = new SqlIdentifier("client_encoding", getPos()); }
+                <SCHEMA> { name = new SqlIdentifier("search_path", getPos()); }
             |
-              <SEED> { name = new SqlIdentifier("seed", getPos()); }
+                <NAMES> { name = new SqlIdentifier("client_encoding", getPos()); }
             |
-              name = CompoundIdentifier()
-              ( <EQ> | <TO> )
-          )
-          val = PostgresqlSqlOptionValues()
-        ){
-          return new SqlSetOption(s.end(val), scope, name, val);
-        }
-
+                <SEED> { name = new SqlIdentifier("seed", getPos()); }
+            )
+            val = PostgresqlSqlOptionValues()
+        )
+        { return new SqlSetOption(s.end(val), scope, name, val); }
     |
         <RESET> {
             s.add(this);
         }
         (
+            LOOKAHEAD(2)
             name = CompoundIdentifier()
         |
             <ALL> {
@@ -131,15 +131,15 @@ SqlNode PostgresqlSqlOptionValue():
   final SqlNode val;
 }
 {
-  (
-      val = Default()
-  |
-      val = Literal()
-  |
-      val = SimpleIdentifier()
-  ) {
-    return val;
-  }
+    (
+        LOOKAHEAD(2)
+        val = SimpleIdentifier()
+    |
+        val = Default()
+    |
+        val = Literal()
+    )
+    { return val; }
 }
 
 /** DISCARD { ALL | PLANS | SEQUENCES | TEMPORARY | TEMP } */
@@ -169,9 +169,10 @@ SqlNode PostgresqlSqlBegin() :
 }
 {
   { s = span(); }
-  <BEGIN> [ ( <WORK> | <TRANSACTION> ) ] [transactionModeList = PostgresqlSqlBeginTransactionModeList()] {
-    return SqlBegin.OPERATOR.createCall(s.end(this), (SqlNode) transactionModeList);
-  }
+  <BEGIN>
+  [ <WORK> | <TRANSACTION> ]
+  [ transactionModeList = PostgresqlSqlBeginTransactionModeList() ]
+  { return SqlBegin.OPERATOR.createCall(s.end(this), (SqlNode) transactionModeList); }
 }
 
 SqlNodeList PostgresqlSqlBeginTransactionModeList():
@@ -233,12 +234,14 @@ SqlNode PostgresqlSqlCommit():
 }
 {
   { s = span(); }
-  <COMMIT> [ <WORK> | <TRANSACTION> ] [
-  (
-    <AND> <CHAIN> { chain = AndChain.AND_CHAIN; }
-  |
-    <AND> <NO> <CHAIN>
-  )] {
+  <COMMIT>
+  [ <WORK> | <TRANSACTION> ]
+  [
+    <AND> { chain = AndChain.AND_CHAIN; }
+    [ <NO> { chain = AndChain.AND_NO_CHAIN; } ]
+    <CHAIN>
+  ]
+  {
     final SqlParserPos pos = s.end(this);
     return SqlCommit.OPERATOR.createCall(pos, chain.symbol(pos));
   }
@@ -252,12 +255,14 @@ SqlNode PostgresqlSqlRollback():
 }
 {
   { s = span(); }
-  <ROLLBACK> [ <WORK> | <TRANSACTION> ] [
-  (
-    <AND> <CHAIN> { chain = AndChain.AND_CHAIN; }
-  |
-    <AND> <NO> <CHAIN>
-  )] {
+  <ROLLBACK>
+  [ <WORK> | <TRANSACTION> ]
+  [
+    <AND> { chain = AndChain.AND_CHAIN; }
+    [ <NO> { chain = AndChain.AND_NO_CHAIN; } ]
+    <CHAIN>
+  ]
+  {
     final SqlParserPos pos = s.end(this);
     return SqlRollback.OPERATOR.createCall(pos, chain.symbol(pos));
   }

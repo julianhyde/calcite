@@ -1000,9 +1000,9 @@ SqlNode SqlStmt() :
         LOOKAHEAD(2) stmt = ${method}
     |
 </#list>
-        stmt = SqlSetOption(Span.of(), null)
+        LOOKAHEAD(2) stmt = SqlSetOption(Span.of(), null)
     |
-        stmt = SqlAlter()
+        LOOKAHEAD(2) stmt = SqlAlter()
     |
 <#if (parser.createStatementParserMethods!default.parser.createStatementParserMethods)?size != 0>
         stmt = SqlCreate()
@@ -1023,7 +1023,7 @@ SqlNode SqlStmt() :
     |
         stmt = SqlDescribe()
     |
-        stmt = SqlInsert()
+        LOOKAHEAD(2) stmt = SqlInsert()
     |
         stmt = SqlDelete()
     |
@@ -1207,6 +1207,7 @@ SqlSelect SqlSelect() :
         }
     )?
     (
+        ${parser.babelLa2!default.parser.babelLa2}
         keyword = AllOrDistinct() { keywords.add(keyword); }
     )?
     {
@@ -1642,7 +1643,7 @@ SqlNode SqlDelete() :
     }
     <FROM> tableName = CompoundTableIdentifier()
     ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
-    [ tableRef = ExtendTable(tableRef) ]
+    [ ${parser.babelLa2!default.parser.babelLa2} tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
     ( where = Where() | { where = null; } )
     {
@@ -1673,7 +1674,7 @@ SqlNode SqlUpdate() :
     }
     tableName = CompoundTableIdentifier()
     ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
-    [ tableRef = ExtendTable(tableRef) ]
+    [ ${parser.babelLa2!default.parser.babelLa2} tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
     <SET> id = SimpleIdentifier() {
         targetColumnList.add(id);
@@ -1711,7 +1712,7 @@ SqlNode SqlMerge() :
 {
     <MERGE> { s = span(); } <INTO> tableName = CompoundTableIdentifier()
     ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
-    [ tableRef = ExtendTable(tableRef) ]
+    [ ${parser.babelLa2!default.parser.babelLa2} tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
     <USING> sourceTableRef = TableRef()
     <ON> condition = Expression(ExprContext.ACCEPT_SUB_QUERY)
@@ -2065,9 +2066,9 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
             tableRef = ImplicitTableFunctionCallArgs(tableName)
         |
             ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
-            [ tableRef = ExtendTable(tableRef) ]
+            [ ${parser.babelLa2!default.parser.babelLa2} tableRef = ExtendTable(tableRef) ]
             tableRef = Over(tableRef)
-            [ tableRef = Snapshot(tableRef) ]
+            [ ${parser.babelLa2!default.parser.babelLa2} tableRef = Snapshot(tableRef) ]
             [ tableRef = MatchRecognize(tableRef) ]
         )
     |
@@ -2300,6 +2301,7 @@ SqlNode TableFunctionCall() :
 {
     <TABLE> { s = span(); } <LPAREN>
     [
+        ${parser.babelLa2!default.parser.babelLa2}
         <SPECIFIC>
         {
             funcType = SqlFunctionCategory.USER_DEFINED_TABLE_SPECIFIC_FUNCTION;
@@ -2498,7 +2500,8 @@ void AddGroupingElement(List<SqlNode> list) :
         list.add(
             SqlStdOperatorTable.ROLLUP.createCall(s.end(this), nodes.getList()));
     }
-|   <CUBE> { s = span(); }
+|   ${parser.babelLa2!default.parser.babelLa2}
+    <CUBE> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
         list.add(
@@ -2619,6 +2622,7 @@ SqlWindow WindowSpecification() :
             <RANGE> { isRows = SqlLiteral.createBoolean(false, getPos()); }
         )
         (
+            ${parser.babelLa2!default.parser.babelLa2}
             <BETWEEN> lowerBound = WindowRange()
             <AND> upperBound = WindowRange()
         |
@@ -3167,8 +3171,8 @@ SqlNode PatternFactor() :
                 { startNum = LITERAL_MINUS_ONE; }
             |
                 <MINUS> extra = PatternExpression() <MINUS> <RBRACE> {
-startNum = LITERAL_ZERO; //!
-endNum = LITERAL_ONE; //!
+                    startNum = null; // to appease javac
+                    endNum = null; // to appease javac
                     return SqlStdOperatorTable.PATTERN_CONCAT.createCall(
                         Span.of(e).end(this), e,
                         SqlStdOperatorTable.PATTERN_EXCLUDE.createCall(
@@ -3187,10 +3191,11 @@ endNum = LITERAL_ONE; //!
         )
     |
         {
-startNum = LITERAL_ZERO; //!
-endNum = LITERAL_ONE; //!
-reluctant = null; //!
-         return e; }
+            startNum = null; // to appease javac
+            endNum = null; // to appease javac
+            reluctant = null; // to appease javac
+            return e;
+        }
     )
     {
         return SqlStdOperatorTable.PATTERN_QUANTIFIER.createCall(
@@ -3205,6 +3210,7 @@ SqlNode PatternPrimary() :
     final List<SqlNode> list;
 }
 {
+    ${parser.babelLa2!default.parser.babelLa2}
     e = SimpleIdentifier() { return e; }
 |
     <LPAREN> e = PatternExpression() <RPAREN> { return e; }
@@ -3215,16 +3221,14 @@ SqlNode PatternPrimary() :
         return SqlStdOperatorTable.PATTERN_EXCLUDE.createCall(s.end(this), e);
     }
 |
-    (
-        <PERMUTE> { s = span(); list = new ArrayList<SqlNode>(); }
-        <LPAREN>
-        e = PatternExpression() { list.add(e); }
-        ( <COMMA> e = PatternExpression() { list.add(e); } )*
-        <RPAREN> {
-            return SqlStdOperatorTable.PATTERN_PERMUTE.createCall(
-                s.end(this), list);
-        }
-    )
+    <PERMUTE> { s = span(); list = new ArrayList<SqlNode>(); }
+    <LPAREN>
+    e = PatternExpression() { list.add(e); }
+    ( <COMMA> e = PatternExpression() { list.add(e); } )*
+    <RPAREN> {
+        return SqlStdOperatorTable.PATTERN_PERMUTE.createCall(
+            s.end(this), list);
+    }
 }
 
 SqlNodeList SubsetDefinitionCommaList(Span s) :
@@ -3422,7 +3426,12 @@ SqlNodeList WithList() :
     boolean recursive = false;
 }
 {
-    <WITH> [ <RECURSIVE> { recursive = true; } ]{ s = span(); }
+    <WITH> { s = span(); }
+    [
+       ${parser.babelLa2!default.parser.babelLa2}
+       <RECURSIVE>
+       { recursive = true; }
+    ]
     AddWithItem(list, SqlLiteral.createBoolean(recursive, getPos()))
     ( <COMMA> AddWithItem(list, SqlLiteral.createBoolean(recursive, getPos())) )*
     { return new SqlNodeList(list, s.end(this)); }
@@ -3451,6 +3460,7 @@ SqlNode LeafQueryOrExpr(ExprContext exprContext) :
     SqlNode e;
 }
 {
+    ${parser.babelLa2!default.parser.babelLa2}
     e = LeafQuery(exprContext) { return e; }
 |
     e = Expression(exprContext) { return e; }
@@ -4101,13 +4111,16 @@ SqlNode AtomicRowExpression() :
     |
         e = JdbcFunctionCall()
     |
+        ${parser.babelLa2!default.parser.babelLa2}
         e = MultisetConstructor()
     |
+        ${parser.babelLa2!default.parser.babelLa2}
         e = ArrayConstructor()
     |
         LOOKAHEAD(3)
         e = MapConstructor()
     |
+        ${parser.babelLa3!default.parser.babelLa3}
         e = PeriodConstructor()
     |
         // NOTE jvs 18-Jan-2005:  use syntactic lookahead to discriminate
@@ -4116,6 +4129,7 @@ SqlNode AtomicRowExpression() :
         LOOKAHEAD( [<SPECIFIC>] FunctionName() <LPAREN>)
         e = NamedFunctionCall()
     |
+        ${parser.babelLa2!default.parser.babelLa2}
         e = ContextVariable()
     |
         e = CompoundIdentifier()
@@ -4206,6 +4220,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         name = CompoundIdentifier()
         <EQ>
         (
+            ${parser.babelLa2!default.parser.babelLa2}
             val = Literal()
         |
             val = SimpleIdentifier()
@@ -4224,6 +4239,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             s.add(this);
         }
         (
+            ${parser.babelLa2!default.parser.babelLa2}
             name = CompoundIdentifier()
         |
             <ALL> {
@@ -4582,6 +4598,7 @@ SqlNode StringLiteral() :
         }
     )*
     [
+        ${parser.babelLa2!default.parser.babelLa2}
         <UESCAPE> <QUOTED_STRING>
         {
             if (unicodeEscapeChar == 0) {
@@ -4971,6 +4988,7 @@ SqlNode IntervalLiteralOrExpression() :
             e = Expression(ExprContext.ACCEPT_SUB_QUERY)
             <RPAREN>
         |
+            ${parser.babelLa2!default.parser.babelLa2}
             e = UnsignedNumericLiteral()
         |
             e = CompoundIdentifier()
@@ -5331,6 +5349,7 @@ void AddIdentifierSegment(List<String> names, List<SqlParserPos> positions) :
             image = SqlParserUtil.stripQuotes(image, DQ, DQ, DQDQ, quotedCasing);
         }
         [
+            ${parser.babelLa2!default.parser.babelLa2}
             <UESCAPE> <QUOTED_STRING> {
                 String s = SqlParserUtil.parseString(token.image);
                 unicodeEscapeChar = SqlParserUtil.checkUnicodeEscapeChar(s);
@@ -5648,6 +5667,7 @@ SqlDataTypeSpec DataType() :
         s = Span.of(typeName.getParserPos());
     }
     (
+        ${parser.babelLa2!default.parser.babelLa2}
         typeName = CollectionsTypeName(typeName)
     )*
     {
@@ -5740,7 +5760,11 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
         <REAL> { s.add(this); sqlTypeName = SqlTypeName.REAL; }
     |
         <DOUBLE> { s.add(this); }
-        [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE; }
+        [
+            ${parser.babelLa2!default.parser.babelLa2}
+             <PRECISION>
+        ]
+        { sqlTypeName = SqlTypeName.DOUBLE; }
     |
         <FLOAT> { s.add(this); sqlTypeName = SqlTypeName.FLOAT; }
     )
@@ -5991,6 +6015,7 @@ SqlTypeNameSpec CharacterTypeName(Span s) :
     )
     precision = PrecisionOpt()
     [
+        ${parser.babelLa2!default.parser.babelLa2}
         <CHARACTER> <SET>
         charSetName = Identifier()
     ]
@@ -6242,60 +6267,52 @@ SqlNode BuiltinFunctionCall() :
         }
     |
         <TRIM> {
-            SqlLiteral flag = null;
-            SqlNode trimChars = null;
+            final SqlLiteral flag;
+            final SqlNode e0;
+            final SqlNode e1;
             s = span();
         }
         <LPAREN>
-        [
+        (
             LOOKAHEAD(2)
-            [
-                <BOTH> {
-                    s.add(this);
-                    flag = SqlTrimFunction.Flag.BOTH.symbol(getPos());
-                }
-            |
-                <TRAILING> {
-                    s.add(this);
-                    flag = SqlTrimFunction.Flag.TRAILING.symbol(getPos());
-                }
-            |
-                <LEADING> {
-                    s.add(this);
-                    flag = SqlTrimFunction.Flag.LEADING.symbol(getPos());
-                }
-            ]
-            [ trimChars = Expression(ExprContext.ACCEPT_SUB_QUERY) ]
             (
-                <FROM> {
-                    if (null == flag && null == trimChars) {
-                        throw SqlUtil.newContextException(getPos(),
-                            RESOURCE.illegalFromEmpty());
-                    }
+                ${parser.babelLa2!default.parser.babelLa2}
+                (
+                    <BOTH> { flag = SqlTrimFunction.Flag.BOTH.symbol(getPos()); }
+                |   <TRAILING> { flag = SqlTrimFunction.Flag.TRAILING.symbol(getPos()); }
+                |   <LEADING> { flag = SqlTrimFunction.Flag.LEADING.symbol(getPos()); }
+                )
+                (
+                    e0 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                |
+                    { e0 = null; }
+                )
+            |
+                e0 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                { flag = SqlTrimFunction.Flag.BOTH.symbol(SqlParserPos.ZERO); }
+            )
+            (
+                <FROM> e1 = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+                    // E.g. 'TRIM(LEADING e0 FROM e1)'
+                    // or 'TRIM(LEADING FROM e1)'
+                    // or 'TRIM('xyz' FROM e1)'
+                    args.add(flag);
+                    args.add(e0);
+                    args.add(e1);
                 }
             |
-                <RPAREN> {
-                    // This is to handle the case of TRIM(x)
-                    // (FRG-191).
-                    if (flag == null) {
-                        flag = SqlTrimFunction.Flag.BOTH.symbol(SqlParserPos.ZERO);
-                    }
+                {
+                    // 'TRIM(BOTH e0)' or 'TRIM(e0)'
                     args.add(flag);
-                    args.add(null); // no trim chars
-                    args.add(trimChars); // reinterpret trimChars as source
-                    return SqlStdOperatorTable.TRIM.createCall(s.end(this),
-                        args);
+                    args.add(null);
+                    args.add(e0);
                 }
             )
-        ]
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-            if (flag == null) {
-                flag = SqlTrimFunction.Flag.BOTH.symbol(SqlParserPos.ZERO);
+        |
+            e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+                args.add(e);
             }
-            args.add(flag);
-            args.add(trimChars);
-            args.add(e);
-        }
+        )
         <RPAREN> {
             return SqlStdOperatorTable.TRIM.createCall(s.end(this), args);
         }
@@ -6815,6 +6832,7 @@ SqlCall JsonArrayAggFunctionCall() :
             .createCall(span.end(this), valueExpr, orderList);
     }
     [
+        ${parser.babelLa2!default.parser.babelLa2}
         e = withinGroup(aggCall) {
             if (orderList != null) {
                 throw SqlUtil.newContextException(span.pos().plus(e.getParserPosition()),
@@ -7315,9 +7333,11 @@ SqlNode NamedFunctionCall() :
         call = withinDistinct(call)
     ]
     [
+        ${parser.babelLa2!default.parser.babelLa2}
         call = withinGroup(call)
     ]
     [
+        ${parser.babelLa2!default.parser.babelLa2}
         <FILTER> { filterSpan = span(); }
         <LPAREN>
         <WHERE>
@@ -7444,6 +7464,7 @@ SqlIdentifier FunctionName() :
 }
 {
     (
+        ${parser.babelLa2!default.parser.babelLa2}
         qualifiedName = CompoundIdentifier()
     |
         qualifiedName = ReservedFunctionName()
@@ -7635,6 +7656,7 @@ SqlNode JdbcFunctionCall() :
             args = new SqlNodeList(call.getOperandList(), getPos());
         }
     |
+        ${parser.babelLa2!default.parser.babelLa2}
         <CONVERT> { name = unquotedIdentifier(); }
         <LPAREN>
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
@@ -7652,9 +7674,11 @@ SqlNode JdbcFunctionCall() :
             ( <INSERT> | <LEFT> | <RIGHT> | <TRUNCATE> ) { name = unquotedIdentifier(); }
         |
             // For cases like {fn power(1,2)} and {fn lower('a')}
+            ${parser.babelLa2!default.parser.babelLa2}
             id = ReservedFunctionName() { name = id.getSimple(); }
         |
             // For cases like {fn substring('foo', 1,2)}
+            ${parser.babelLa2!default.parser.babelLa2}
             name = NonReservedJdbcFunctionName()
         |
             name = Identifier()
@@ -7688,6 +7712,7 @@ SqlBinaryOperator BinaryQueryOperator() :
     (
         <UNION>
         (
+            ${parser.babelLa2!default.parser.babelLa2}
             <ALL> { return SqlStdOperatorTable.UNION_ALL; }
         |   <DISTINCT> { return SqlStdOperatorTable.UNION; }
         |   { return SqlStdOperatorTable.UNION; }
@@ -7695,6 +7720,7 @@ SqlBinaryOperator BinaryQueryOperator() :
     |
         <INTERSECT>
         (
+            ${parser.babelLa2!default.parser.babelLa2}
             <ALL> { return SqlStdOperatorTable.INTERSECT_ALL; }
         |   <DISTINCT> { return SqlStdOperatorTable.INTERSECT; }
         |   { return SqlStdOperatorTable.INTERSECT; }
@@ -7710,6 +7736,7 @@ SqlBinaryOperator BinaryQueryOperator() :
             }
         )
         (
+            ${parser.babelLa2!default.parser.babelLa2}
             <ALL> { return SqlStdOperatorTable.EXCEPT_ALL; }
         |   <DISTINCT> { return SqlStdOperatorTable.EXCEPT; }
         |   { return SqlStdOperatorTable.EXCEPT; }
@@ -7724,29 +7751,32 @@ SqlBinaryOperator BinaryMultisetOperator() :
 {
 }
 {
-    // If both the ALL or DISTINCT keywords are missing, DISTINCT is implicit
+    // If both the ALL or DISTINCT keywords are missing, ALL is implicit
     <MULTISET>
     (
         <UNION>
-        [
-            <ALL>
+        (
+            ${parser.babelLa2!default.parser.babelLa2}
+            <ALL> { return SqlStdOperatorTable.MULTISET_UNION; }
         |   <DISTINCT> { return SqlStdOperatorTable.MULTISET_UNION_DISTINCT; }
-        ]
-        { return SqlStdOperatorTable.MULTISET_UNION; }
+        |   { return SqlStdOperatorTable.MULTISET_UNION; }
+        )
     |
         <INTERSECT>
-        [
-            <ALL>
+        (
+            ${parser.babelLa2!default.parser.babelLa2}
+            <ALL> { return SqlStdOperatorTable.MULTISET_INTERSECT; }
         |   <DISTINCT> { return SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT; }
-        ]
-        { return SqlStdOperatorTable.MULTISET_INTERSECT; }
+        |   { return SqlStdOperatorTable.MULTISET_INTERSECT; }
+        )
     |
         <EXCEPT>
-        [
-            <ALL>
+        (
+            ${parser.babelLa2!default.parser.babelLa2}
+            <ALL> { return SqlStdOperatorTable.MULTISET_EXCEPT; }
         |   <DISTINCT> { return SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT; }
-        ]
-        { return SqlStdOperatorTable.MULTISET_EXCEPT; }
+        |   { return SqlStdOperatorTable.MULTISET_EXCEPT; }
+        )
     )
 }
 
@@ -8583,6 +8613,20 @@ SqlPostfixOperator PostfixRowOperator() :
 </#list>
 }
 
+boolean isReserved() : {
+  String s;
+}
+{
+  LOOKAHEAD(2)
+  s = NonReservedKeyWord() {
+    return false;
+  }
+|
+  s = Identifier() {
+    return true;
+  }
+}
+
 /**
  * Parses a non-reserved keyword for use as an identifier.
  *
@@ -8602,8 +8646,11 @@ String NonReservedKeyWord() :
 }
 {
     (
+        ${parser.babelLa2!default.parser.babelLa2}
         NonReservedKeyWord0of3()
-    |   NonReservedKeyWord1of3()
+    |
+        ${parser.babelLa2!default.parser.babelLa2}
+        NonReservedKeyWord1of3()
     |   NonReservedKeyWord2of3()
     )
     {
@@ -8619,9 +8666,9 @@ void NonReservedKeyWord0of3() :
     (
 <#list (parser.nonReservedKeywords!default.parser.nonReservedKeywords) + (parser.nonReservedKeywordsToAdd!default.parser.nonReservedKeywordsToAdd) as keyword>
 <#if keyword?index == 0>
-        <${keyword}>
+        ${parser.babelLa2!default.parser.babelLa2} <${keyword}>
 <#elseif keyword?index % 3 == 0>
-    |   <${keyword}>
+    |   ${parser.babelLa2!default.parser.babelLa2} <${keyword}>
 </#if>
 </#list>
     )
@@ -8635,9 +8682,9 @@ void NonReservedKeyWord1of3() :
     (
 <#list (parser.nonReservedKeywords!default.parser.nonReservedKeywords) + (parser.nonReservedKeywordsToAdd!default.parser.nonReservedKeywordsToAdd) as keyword>
 <#if keyword?index == 1>
-        <${keyword}>
+        ${parser.babelLa2!default.parser.babelLa2} <${keyword}>
 <#elseif keyword?index % 3 == 1>
-    |   <${keyword}>
+    |   ${parser.babelLa2!default.parser.babelLa2} <${keyword}>
 </#if>
 </#list>
     )
@@ -8651,9 +8698,9 @@ void NonReservedKeyWord2of3() :
     (
 <#list (parser.nonReservedKeywords!default.parser.nonReservedKeywords) + (parser.nonReservedKeywordsToAdd!default.parser.nonReservedKeywordsToAdd) as keyword>
 <#if keyword?index == 2>
-        <${keyword}>
+        ${parser.babelLa2!default.parser.babelLa2} <${keyword}>
 <#elseif keyword?index % 3 == 2>
-    |   <${keyword}>
+    |   ${parser.babelLa2!default.parser.babelLa2} <${keyword}>
 </#if>
 </#list>
     )

@@ -90,8 +90,14 @@ public abstract class SqlAbstractParserImpl {
       SqlLiteral.createExactNumeric("-1", SqlParserPos.ZERO);
   protected static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100L);
   private static final String DUMMY_STATEMENT = "1";
-  private static final Pattern LEXICAL_ERROR_PATTERN =
+  protected static final Pattern LEXICAL_ERROR_PATTERN =
       Pattern.compile("(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
+  protected static final java.util.regex.Pattern ENCOUNTERED6_PATTERN =
+      Pattern.compile(
+          "(?s)Encountered \" \"([^\"]*)\" \"([^\"]*) \"\" (at .*)");
+  protected static final java.util.regex.Pattern ENCOUNTERED4_PATTERN =
+      Pattern.compile(
+          "(?s)Encountered \" <([A-Z_]*)> \"([^\"]*) \"\" (at .*)");
 
   private static final ImmutableSet<String> SQL_92_RESERVED_WORD_SET =
       ImmutableSet.of(
@@ -564,6 +570,7 @@ public abstract class SqlAbstractParserImpl {
     final SqlParserPos pos = w.pos();
     final int[][] expectedTokenSequences = w.expectedTokenSequences();
     final String[] tokenImages = w.tokenImages();
+    final String message = requireNonNull(w.ex().getMessage());
     final String image = w.image();
     Throwable ex = w.ex();
     if (image != null
@@ -574,7 +581,6 @@ public abstract class SqlAbstractParserImpl {
       // follows:
       //   Incorrect syntax near the keyword '{keyword}' at
       //   line {line_number}, column {column_number}.
-      final String message = requireNonNull(w.ex().getMessage());
       final String expecting =
           message.substring(message.indexOf("Was expecting"));
       final String message2 =
@@ -584,6 +590,34 @@ public abstract class SqlAbstractParserImpl {
 
       // Replace the ParseException with explicit error message.
       ex = w.copy(message2);
+    } else {
+      // If message has 6 double-quotes, convert it to one with 2. E.g.,
+      //                  1     2      3
+      //                  ---   ---    ------------------------------
+      //   Encountered " "ABS" "abs "" at line 1, column 21.\nWas ...
+      // becomes
+      //   Encountered "abs" at line 1, column 21.\nWas ...
+      Matcher matcher = ENCOUNTERED6_PATTERN.matcher(message);
+      if (matcher.matches()) {
+        final String message2 =
+            "Encountered \"" + matcher.group(2) + "\" " + matcher.group(3);
+        return new SqlParseException(message2, pos,
+            expectedTokenSequences, tokenImages, null);
+      }
+
+      // If message has 4 double-quotes, convert it to one with 2. E.g.,
+      //                  1               2        3
+      //                  -------------   -----    ---------------------
+      //   Encountered " <QUOTED_STRING> "'foo' "" at line 1, column 21.
+      // becomes
+      //   Encountered "'foo'" at line 1, column 21.
+      matcher = ENCOUNTERED4_PATTERN.matcher(message);
+      if (matcher.matches()) {
+        final String message2 =
+            "Encountered \"" + matcher.group(2) + "\" " + matcher.group(3);
+        return new SqlParseException(message2, pos,
+            expectedTokenSequences, tokenImages, null);
+      }
     }
 
     requireNonNull(ex.getMessage());

@@ -20,6 +20,15 @@ data: {
   # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
   # FMPP will use the declaration from default_config.fmpp.
   parser: {
+    # Whether this is the Babel parser
+    babel: true
+
+    # Generates "LOOKAHEAD(2)" in Babel, empty in other parsers
+    babelLa2: "LOOKAHEAD(2)"
+
+    # Generates "LOOKAHEAD(3)" in Babel, empty in other parsers
+    babelLa3: "LOOKAHEAD(3)"
+
     # Generated parser implementation class package and name
     package: "org.apache.calcite.sql.parser.babel",
     class: "SqlBabelParserImpl",
@@ -94,11 +103,11 @@ data: {
       "ARRAY"
 #     "ARRAY_AGG" # not a keyword in Calcite
       "ARRAY_MAX_CARDINALITY"
-      "AS"
+#     "AS"
       "ASC"
       "ASENSITIVE"
       "ASSERTION"
-      "ASYMMETRIC"
+#     "ASYMMETRIC"
       "AT"
       "ATOMIC"
       "AUTHORIZATION"
@@ -474,7 +483,7 @@ data: {
       "SUBSTRING_REGEX"
       "SUCCEEDS"
       "SUM"
-      "SYMMETRIC"
+#     "SYMMETRIC" # makes 'between x and symmetric y' too hard to parse
       "SYSTEM"
       "SYSTEM_TIME"
       "SYSTEM_USER"
@@ -513,7 +522,7 @@ data: {
 #     "UNTIL" # not a keyword in Calcite
 #     "UPDATE"
       "UPPER"
-      "UPSERT"
+#     "UPSERT" # makes DDL parsing hard
       "USAGE"
       "USER"
 #     "USING"

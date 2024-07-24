@@ -41,7 +41,9 @@ SqlNode DatePartFunctionCall() :
     <DATE_PART> { op = SqlLibraryOperators.DATE_PART; }
     { s = span(); }
     <LPAREN>
-    (   unit = TimeUnitOrName() {
+    (
+        LOOKAHEAD(2)
+        unit = TimeUnitOrName() {
             args = startList(unit);
         }
     |   unit = Expression(ExprContext.ACCEPT_NON_QUERY) {

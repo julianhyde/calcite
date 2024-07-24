@@ -163,7 +163,9 @@ public class ExceptionMessageTest {
       fail("Query should fail");
     } catch (SQLException e) {
       assertThat(e.getMessage(),
-          equalTo("Error while executing SQL \"invalid sql\": parse failed: "
+          equalTo("Error while executing SQL \"invalid sql\": "
+              + "parse failed: "
+              + "From line 1, column 1 to line 1, column 7: "
               + "Non-query expression encountered in illegal context"));
     }
   }
