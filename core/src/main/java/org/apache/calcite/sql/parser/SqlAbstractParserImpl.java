@@ -39,6 +39,7 @@ import org.apache.calcite.util.trace.CalciteTrace;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -52,11 +53,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -905,15 +909,10 @@ public abstract class SqlAbstractParserImpl {
    * Default implementation of the {@link Metadata} interface.
    */
   public static class MetadataImpl implements Metadata {
-    private final Set<String> reservedFunctionNames;
-    private final Set<String> contextVariableNames;
-    private final Set<String> nonReservedKeyWordSet;
-
     /**
-     * Immutable list of all tokens, in alphabetical order.
+     * Immutable map of all tokens, in alphabetical order.
      */
-    private final List<String> tokenList;
-    private final Set<String> reservedWords;
+    private final Map<String, ImmutableSet<KeywordType>> tokenMap;
     private final String sql92ReservedWords;
 
     /**
@@ -922,29 +921,46 @@ public abstract class SqlAbstractParserImpl {
      * @param sqlParser Parser
      */
     public MetadataImpl(SqlAbstractParserImpl sqlParser) {
-      final NavigableSet<String> tokenSet = new TreeSet<>();
-      reservedFunctionNames = initList(sqlParser, tokenSet, "ReservedFunctionName");
-      contextVariableNames = initList(sqlParser, tokenSet, "ContextVariable");
-      nonReservedKeyWordSet = initList(sqlParser, tokenSet, "NonReservedKeyWord");
-      tokenList = ImmutableList.copyOf(tokenSet);
-      tokenSet.removeAll(nonReservedKeyWordSet);
-      reservedWords = ImmutableSet.copyOf(tokenSet);
+      final NavigableMap<String, EnumSet<KeywordType>> tokenSet = new TreeMap<>();
+      initList(sqlParser, tokenSet, "ReservedFunctionName",
+          w -> tokenSet.get(w).add(KeywordType.RESERVED_FUNCTION_NAME));
+      initList(sqlParser, tokenSet, "ContextVariable",
+          w -> tokenSet.get(w).add(KeywordType.CONTEXT_VARIABLE_NAME));
+      initList(sqlParser, tokenSet, "NonReservedKeyWord",
+          w -> tokenSet.get(w).add(KeywordType.NON_RESERVED_KEYWORD));
+      tokenSet.forEach((key, value) -> {
+        if (!value.contains(KeywordType.NON_RESERVED_KEYWORD)) {
+          value.add(KeywordType.RESERVED_WORD);
+        }
+      });
+
+      // Maps each combination of keyword types to an immutable set.
+      final Map<EnumSet<KeywordType>, ImmutableSet<KeywordType>> canonicalMap =
+          new HashMap<>();
+      final ImmutableMap.Builder<String, ImmutableSet<KeywordType>> builder =
+          ImmutableMap.builder();
+      tokenSet.forEach((key, value) ->
+          builder.put(key,
+              canonicalMap.computeIfAbsent(value, ImmutableSet::copyOf)));
+      tokenMap = builder.build();
 
       // Build a comma-separated list of JDBC reserved words.
-      final Set<String> jdbcReservedSet = new TreeSet<>(tokenList);
+      final Set<String> jdbcReservedSet = new TreeSet<>(tokenMap.keySet());
       jdbcReservedSet.removeAll(SQL_92_RESERVED_WORD_SET);
-      jdbcReservedSet.removeAll(nonReservedKeyWordSet);
+      jdbcReservedSet.removeIf(w -> {
+        final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(w);
+        return keywordTypes == null
+            || keywordTypes.contains(KeywordType.NON_RESERVED_KEYWORD);
+      });
       sql92ReservedWords = commaList(jdbcReservedSet);
     }
 
     /**
      * Initializes lists of keywords.
      */
-    private static ImmutableSet<String> initList(
-        SqlAbstractParserImpl parserImpl,
-        Set<String> tokenSet,
-        String name) {
-      ImmutableSet.Builder<String> keywords = ImmutableSet.builder();
+    private static void initList(SqlAbstractParserImpl parserImpl,
+        NavigableMap<String, EnumSet<KeywordType>> tokenSet, String name,
+        Consumer<String> keywords) {
       parserImpl.ReInit(new StringReader(DUMMY_STATEMENT));
       Pair<int[][], String[]> p = parserImpl.call(name);
       final int[][] expectedTokenSequences = requireNonNull(p.left);
@@ -956,7 +972,7 @@ public abstract class SqlAbstractParserImpl {
         for (String token : tokenImages) {
           String tokenVal = SqlParserUtil.getTokenVal(token);
           if (tokenVal != null) {
-            tokenSet.add(tokenVal);
+            tokenSet.put(tokenVal, EnumSet.of(KeywordType.TOKEN));
           }
         }
       }
@@ -970,14 +986,15 @@ public abstract class SqlAbstractParserImpl {
         String token = tokenImages[tokenId];
         String tokenVal = SqlParserUtil.getTokenVal(token);
         if (tokenVal != null) {
-          keywords.add(tokenVal);
+          keywords.accept(tokenVal);
         }
       }
-      return keywords.build();
     }
 
     @Override public List<String> getTokens() {
-      return tokenList;
+      // This operation is efficient. tokenMap is an ImmutableMap, so its
+      // keySet can be viewed as an ImmutableList.
+      return ImmutableList.copyOf(tokenMap.keySet());
     }
 
     @Override public boolean isSql92ReservedWord(String token) {
@@ -989,27 +1006,56 @@ public abstract class SqlAbstractParserImpl {
     }
 
     @Override public boolean isKeyword(String token) {
-      return isNonReservedKeyword(token)
-          || isReservedFunctionName(token)
-          || isContextVariableName(token)
-          || isReservedWord(token);
+      final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(token);
+      if (keywordTypes == null) {
+        return false;
+      }
+      return keywordTypes.contains(KeywordType.NON_RESERVED_KEYWORD)
+          || keywordTypes.contains(KeywordType.RESERVED_FUNCTION_NAME)
+          || keywordTypes.contains(KeywordType.CONTEXT_VARIABLE_NAME)
+          || keywordTypes.contains(KeywordType.RESERVED_WORD);
     }
 
     @Override public boolean isNonReservedKeyword(String token) {
-      return nonReservedKeyWordSet.contains(token);
+      final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(token);
+      if (keywordTypes == null) {
+        return false;
+      }
+      return keywordTypes.contains(KeywordType.NON_RESERVED_KEYWORD);
     }
 
     @Override public boolean isReservedFunctionName(String token) {
-      return reservedFunctionNames.contains(token);
+      final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(token);
+      if (keywordTypes == null) {
+        return false;
+      }
+      return keywordTypes.contains(KeywordType.RESERVED_FUNCTION_NAME);
     }
 
     @Override public boolean isContextVariableName(String token) {
-      return contextVariableNames.contains(token);
+      final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(token);
+      if (keywordTypes == null) {
+        return false;
+      }
+      return keywordTypes.contains(KeywordType.CONTEXT_VARIABLE_NAME);
     }
 
     @Override public boolean isReservedWord(String token) {
-      return reservedWords.contains(token);
+      final ImmutableSet<KeywordType> keywordTypes = tokenMap.get(token);
+      if (keywordTypes == null) {
+        return false;
+      }
+      return keywordTypes.contains(KeywordType.RESERVED_WORD);
     }
+  }
+
+  /** Describes the keyword categories that a token belongs to. */
+  private enum KeywordType {
+    RESERVED_FUNCTION_NAME,
+    CONTEXT_VARIABLE_NAME,
+    NON_RESERVED_KEYWORD,
+    TOKEN,
+    RESERVED_WORD
   }
 
   /** Converts a collection of strings to a comma-separated list.
