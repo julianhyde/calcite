@@ -151,12 +151,14 @@ public abstract class RelOptUtil {
 
   public static final double EPSILON = 1.0e-5;
 
-  /** Default amount by which complexity is allowed to increase.
+  /** Default amount by which the complexity of a {@link Project} or
+   * {@link Filter} may increase when applying a rule. (Complexity is,
+   * roughly, the number of {@link RexNode}s in all expressions.)
    *
    * @see ProjectMergeRule.Config#bloat()
-   * @see FilterProjectTransposeRule.Config#bloat()  */
+   * @see FilterProjectTransposeRule.Config#bloat()
+   * @see RelBuilder.Config#bloat() */
   public static final int DEFAULT_BLOAT = 100;
-
 
   @SuppressWarnings("Guava")
   @Deprecated // to be removed before 2.0
@@ -3178,10 +3180,10 @@ public abstract class RelOptUtil {
     return pushShuttle(project).visitList(nodes);
   }
 
-  public static @Nullable RexNode pushPastProjectUnlessBloat(
-      RexNode node, Project project, int bloat) {
+  public static @Nullable RexNode pushPastProjectUnlessBloat(RexNode node,
+      Project project, int bloat) {
     List<RexNode> newConditions =
-        RelOptUtil.pushPastProjectUnlessBloat(Collections.singletonList(node), project, bloat);
+        pushPastProjectUnlessBloat(Collections.singletonList(node), project, bloat);
     if (newConditions == null || newConditions.size() != 1) {
       return null;
     }

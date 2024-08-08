@@ -2701,8 +2701,8 @@ class RelOptRulesTest extends RelOptTestBase {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6513">[CALCITE-6513]
-   * FilterProjectTransposeRule may cause OOM when Project expressions are complex</a>.
-   */
+   * FilterProjectTransposeRule may cause OOM when Project expressions are
+   * complex</a>. */
   @Test void testFilterProjectTransposeBloat() {
     String sql =
         "SELECT x1 from\n"

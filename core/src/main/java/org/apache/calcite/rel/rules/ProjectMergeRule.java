@@ -48,7 +48,7 @@ public class ProjectMergeRule
    * @see Config#bloat()
    * @deprecated please use {@link RelOptUtil#DEFAULT_BLOAT}
    */
-  @Deprecated
+  @Deprecated // to be removed before 2.0
   public static final int DEFAULT_BLOAT = RelOptUtil.DEFAULT_BLOAT;
 
   /** Creates a ProjectMergeRule. */
@@ -158,9 +158,9 @@ public class ProjectMergeRule
     }
 
     /** Limit how much complexity can increase during merging.
-     * Default is {@link #DEFAULT_BLOAT} (100). */
+     * Default is {@link RelOptUtil#DEFAULT_BLOAT} (100). */
     @Value.Default default int bloat() {
-      return ProjectMergeRule.DEFAULT_BLOAT;
+      return RelOptUtil.DEFAULT_BLOAT;
     }
 
     /** Sets {@link #bloat()}. */
