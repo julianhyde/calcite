@@ -15,25 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-!set outputformat mysql
-!use scott
-
-!if (false) {
-with deptm as
-  (select deptno, dname, avg(char_length(dname)) as measure m
-   from dept)
-select deptno, aggregate(m) as m
-from deptm
-group by deptno;
+!use post
+values 1;
+EXPR$0
+1
 !ok
-!}
-
-with deptm as
-  (select deptno, dname, sum(deptno) as measure m
-   from dept)
-select deptno, aggregate(m) as m
-from deptm
-group by deptno;
-!ok
-
 # End dummy.iq

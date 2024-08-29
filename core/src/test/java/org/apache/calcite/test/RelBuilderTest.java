@@ -3411,7 +3411,7 @@ public class RelBuilderTest {
                 b.alias(b.call(SqlStdOperatorTable.COUNT, b.field("SAL")), "c"))
             .build();
     final String expected =
-        "LogicalAggregate(group=[{}], s=[SUM($7)], c=[COUNT($5)])\n"
+        "LogicalAggregate(group=[{}], s=[SUM($0)], c=[COUNT($5)])\n"
             + "  LogicalTableScan(table=[[scott, EMP]])\n";
     // s is nullable because "GROUP BY ()" may have a group that contains 0 rows
     final String expectedRowType =

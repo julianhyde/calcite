@@ -84,7 +84,9 @@ group by job;
 
 !ok
 
-# [CALCITE-xxxx] Measure on primary key gives type error (casting away NOT NULL)
+# Measure on primary key gives type error (casting away NOT NULL); cause was
+# [CALCITE-6555] RelBuilder.aggregateRex thinks aggregate functions of
+# "GROUP BY ()" queries are NOT NULL
 with empm as (
   select *, min(empno) as measure avg_sal
   from emp
@@ -92,15 +94,14 @@ with empm as (
 select deptno, avg_sal as a
 from empm
 group by deptno;
-+--------+----+
-| DEPTNO | A  |
-+--------+----+
-|     10 | 10 |
-|     20 | 20 |
-|     30 | 30 |
-|     40 | 40 |
-+--------+----+
-(4 rows)
++--------+------+
+| DEPTNO | A    |
++--------+------+
+|     10 | 7782 |
+|     20 | 7369 |
+|     30 | 7499 |
++--------+------+
+(3 rows)
 
 !ok
 

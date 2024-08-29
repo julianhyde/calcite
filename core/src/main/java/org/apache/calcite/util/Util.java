@@ -2639,9 +2639,7 @@ public class Util {
   /** Transforms a list, applying a function to each element. */
   public static <F, T> List<T> transform(List<? extends F> list,
       java.util.function.Function<? super F, ? extends T> function) {
-    if (list.isEmpty()) {
-      return ImmutableList.of(); // save ourselves some effort
-    } else if (list instanceof RandomAccess) {
+    if (list instanceof RandomAccess) {
       return new RandomAccessTransformingList<>(list, function);
     } else {
       return new TransformingList<>(list, function);
@@ -2652,9 +2650,7 @@ public class Util {
    * the element's index in the list. */
   public static <F, T> List<T> transformIndexed(List<? extends F> list,
       BiFunction<? super F, Integer, ? extends T> function) {
-    if (list.isEmpty()) {
-      return ImmutableList.of(); // save ourselves some effort
-    } else if (list instanceof RandomAccess) {
+    if (list instanceof RandomAccess) {
       return new RandomAccessTransformingIndexedList<>(list, function);
     } else {
       return new TransformingIndexedList<>(list, function);
