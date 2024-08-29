@@ -5058,14 +5058,18 @@ public class RelBuilder {
     /** Adds a node that we know to contain an aggregate function, and returns
      * an expression whose input row type is the output row type of the
      * aggregate layer ({@link #groupKeys} and {@link #aggCalls}). */
-    private RexNode convert(RegisterAgg registrar, RexNode node, @Nullable String name) {
+    private RexNode convert(RegisterAgg registrar, RexNode node,
+        @Nullable String name) {
       switch (node.getKind()) {
       case AS:
         final ImmutableList<RexNode> asOperands = ((RexCall) node).operands;
-        final String name2 =
-            Util.first(name,
-                requireNonNull(
-                    ((RexLiteral) asOperands.get(1)).getValueAs(String.class)));
+        final String name2;
+        if (name != null) {
+          name2 = name;
+        } else {
+          final RexLiteral literal = (RexLiteral) asOperands.get(1);
+          name2 = requireNonNull(literal.getValueAs(String.class));
+        }
         final RexNode node2 = convert(registrar, asOperands.get(0), name2);
         return alias(node2, name2);
 
@@ -5080,8 +5084,9 @@ public class RelBuilder {
         if (node instanceof RexCall) {
           final RexCall call = (RexCall) node;
           if (call.getOperator().isAggregator()) {
-            return registrar.registerAgg((SqlAggFunction) call.op, call.operands,
-                call.type, name); // return a reference to the i'th agg call
+            // return a reference to the i'th agg call
+            return registrar.registerAgg((SqlAggFunction) call.op,
+                call.operands, call.type, name);
           } else {
             return call.clone(call.type,
                 Util.transform(call.operands, operand ->
@@ -5110,11 +5115,14 @@ public class RelBuilder {
       final AtomicInteger j = new AtomicInteger(groupKeys.size());
       for (RexNode node : nodes) {
         projects.accept(
-            convert((op, operands, type, name) -> field(j.getAndIncrement()), node, null));
+            convert((op, operands, type, name) -> field(j.getAndIncrement()),
+                node, null));
       }
     }
   }
 
+  /** Callback to handle creation of an aggregate call in
+   * {@link AggBuilder#convert}. */
   private interface RegisterAgg {
     RexInputRef registerAgg(SqlAggFunction op, List<RexNode> operands,
         RelDataType type, @Nullable String name);
