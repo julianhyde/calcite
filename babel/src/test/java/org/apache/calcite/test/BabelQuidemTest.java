@@ -64,7 +64,7 @@ class BabelQuidemTest extends QuidemTest {
    * </blockquote> */
   public static void main(String[] args) throws Exception {
     for (String arg : args) {
-      Locale.setDefault(Locale.US);
+      Unsafe.setDefaultLocale(Locale.US);
       new BabelQuidemTest().test(arg);
     }
   }
