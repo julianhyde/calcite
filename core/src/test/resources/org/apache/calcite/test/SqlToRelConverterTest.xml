@@ -4696,7 +4696,7 @@ from empm]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
-LogicalProject(C=[$9])
+LogicalProject(C=[M2V($9)])
   LogicalTableScan(table=[[CATALOG, SALES, EMPM]])
 ]]>
     </Resource>
