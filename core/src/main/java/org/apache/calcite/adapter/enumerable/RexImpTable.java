@@ -46,7 +46,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexPatternFieldRef;
 import org.apache.calcite.rex.RexWindowExclusion;
 import org.apache.calcite.runtime.FlatLists;
-import org.apache.calcite.runtime.ImmutablePairList;
 import org.apache.calcite.runtime.PairList;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.FunctionContext;
@@ -546,7 +545,7 @@ public class RexImpTable {
   public static final MemberExpression BOXED_TRUE_EXPR =
       Expressions.field(null, Boolean.class, "TRUE");
 
-  private final ImmutableMap<SqlOperator, ImmutablePairList<SqlOperator, RexCallImplementor>> map;
+  private final ImmutableMap<SqlOperator, PairList<SqlOperator, RexCallImplementor>> map;
   private final ImmutableMap<SqlAggFunction, Supplier<? extends AggImplementor>> aggMap;
   private final ImmutableMap<SqlAggFunction, Supplier<? extends WinAggImplementor>> winAggMap;
   private final ImmutableMap<SqlMatchFunction, Supplier<? extends MatchImplementor>> matchMap;
@@ -554,11 +553,9 @@ public class RexImpTable {
       tvfImplementorMap;
 
   private RexImpTable(Builder builder) {
-    final ImmutableMap.Builder<SqlOperator, ImmutablePairList<SqlOperator, RexCallImplementor>>
+    final ImmutableMap.Builder<SqlOperator, PairList<SqlOperator, RexCallImplementor>>
         mapBuilder = ImmutableMap.builder();
-    builder.map.forEach((k, v) -> {
-      mapBuilder.put(k, v.immutable());
-    });
+    builder.map.forEach((k, v) -> mapBuilder.put(k, v.immutable()));
     this.map = ImmutableMap.copyOf(mapBuilder.build());
     this.aggMap = ImmutableMap.copyOf(builder.aggMap);
     this.winAggMap = ImmutableMap.copyOf(builder.winAggMap);
@@ -1316,8 +1313,7 @@ public class RexImpTable {
       if (map.containsKey(operator)) {
         map.get(operator).add(operator, implementor);
       } else {
-        map.put(operator, PairList.<SqlOperator, RexCallImplementor>builder()
-            .add(operator, implementor).build());
+        map.put(operator, PairList.of(operator, implementor));
       }
       return implementor;
     }
@@ -1393,13 +1389,13 @@ public class RexImpTable {
           ((ImplementableFunction) udf).getImplementor();
       return wrapAsRexCallImplementor(implementor);
     } else if (operator instanceof SqlTypeConstructorFunction) {
-      final ImmutablePairList<SqlOperator, RexCallImplementor> implementors =
+      final PairList<SqlOperator, RexCallImplementor> implementors =
           map.get(SqlStdOperatorTable.ROW);
       if (implementors != null && implementors.size() == 1) {
         return implementors.get(0).getValue();
       }
     } else {
-      final ImmutablePairList<SqlOperator, RexCallImplementor> implementors =
+      final PairList<SqlOperator, RexCallImplementor> implementors =
           map.get(operator);
       if (implementors != null) {
         if (implementors.size() == 1) {
