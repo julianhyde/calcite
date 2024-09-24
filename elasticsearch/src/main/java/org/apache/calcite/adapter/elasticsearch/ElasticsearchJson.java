@@ -67,7 +67,8 @@ final class ElasticsearchJson {
   /**
    * Visits leaves of the aggregation where all values are stored.
    */
-  static void visitValueNodes(Aggregations aggregations, Consumer<Map<String, Object>> consumer) {
+  static void visitValueNodes(Aggregations aggregations,
+      Consumer<Map<String, Object>> consumer) {
     requireNonNull(aggregations, "aggregations");
     requireNonNull(consumer, "consumer");
 
@@ -95,8 +96,10 @@ final class ElasticsearchJson {
    * Visits Elasticsearch
    * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html">mapping
    * properties</a> and calls consumer for each {@code field / type} pair.
-   * Nested fields are represented as {@code foo.bar.qux}.
-   * Also supports
+   *
+   * <p>Nested fields are represented as {@code foo.bar.qux}.
+   *
+   * <p>Also supports
    * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-fields.html">
    * multi-field mappings</a>.
    * These fields are also represented as {@code foo.bar} with the difference
@@ -125,7 +128,8 @@ final class ElasticsearchJson {
     if (mapping.path("properties").isObject()
         && !isLeaf.test(mapping.path("properties"))) {
       // recurse on "nested" field
-      visitMappingProperties(path, (ObjectNode) mapping.get("properties"), consumer);
+      visitMappingProperties(path, (ObjectNode) mapping.get("properties"),
+          consumer);
       return;
     }
 
@@ -133,12 +137,14 @@ final class ElasticsearchJson {
     if (mapping.path("fields").isObject()
         && !isLeaf.test(mapping.path("fields"))) {
       // recurse on multi-field
-      visitMappingProperties(path, (ObjectNode) mapping.get("fields"), consumer);
+      visitMappingProperties(path, (ObjectNode) mapping.get("fields"),
+          consumer);
       return;
     }
 
     if (isLeaf.test(mapping)) {
-      // if we reached a leaf we can stop as we've already registered the type mapping
+      // if we reached a leaf we can stop as we've already registered the type
+      // mapping
       return;
     }
 

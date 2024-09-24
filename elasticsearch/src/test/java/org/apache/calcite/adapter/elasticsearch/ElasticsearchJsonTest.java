@@ -224,15 +224,15 @@ class ElasticsearchJsonTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6498">[CALCITE-6498]
    * Elasticsearch multi-field mappings do not work</a>. */
-  @Test void testVisitMappingPropertiesWithMultipleSingleFieldMappings() throws
-      JsonProcessingException {
+  @Test void testVisitMappingPropertiesWithMultipleSingleFieldMappings()
+      throws JsonProcessingException {
     ObjectNode mapping =
         mapper.readValue("{'properties':{"
             + "'title':{'type':'text'},"
             + "'name':{'type':'keyword'}"
             + "}}", ObjectNode.class);
 
-    ImmutableMap<String, String> result = getMappingAsMap(mapping);
+    Map<String, String> result = getMappingAsMap(mapping);
 
     assertThat(result.get("title"), is("text"));
     assertThat(result.get("name"), is("keyword"));
@@ -241,7 +241,8 @@ class ElasticsearchJsonTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6498">[CALCITE-6498]
    * Elasticsearch multi-field mappings do not work</a>. */
-  @Test void testVisitMappingPropertiesWithMultipleMultiFieldMappings() throws Exception {
+  @Test void testVisitMappingPropertiesWithMultipleMultiFieldMappings()
+      throws Exception {
     ObjectNode mapping =
         mapper.readValue("{'properties':{"
             + "'title':{'type':'text',"
@@ -252,7 +253,7 @@ class ElasticsearchJsonTest {
             + "}"
             + "}}", ObjectNode.class);
 
-    ImmutableMap<String, String> result = getMappingAsMap(mapping);
+    Map<String, String> result = getMappingAsMap(mapping);
 
     assertThat(result.get("title"), is("text"));
     assertThat(result.get("title.keyword"), is("keyword"));
@@ -263,7 +264,8 @@ class ElasticsearchJsonTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6498">[CALCITE-6498]
    * Elasticsearch multi-field mappings do not work</a>. */
-  @Test void testVisitMappingPropertiesWithMultipleNestedFieldMappings() throws Exception {
+  @Test void testVisitMappingPropertiesWithMultipleNestedFieldMappings()
+      throws Exception {
     ObjectNode mapping =
         mapper.readValue("{properties:{"
         + "'author':{'type':'nested',"
@@ -278,7 +280,7 @@ class ElasticsearchJsonTest {
         +   "}}"
         + "}}", ObjectNode.class);
 
-    ImmutableMap<String, String> result = getMappingAsMap(mapping);
+    Map<String, String> result = getMappingAsMap(mapping);
 
     assertThat(result.get("author"), is("nested"));
     assertThat(result.get("author.name"), is("text"));
@@ -292,7 +294,8 @@ class ElasticsearchJsonTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6498">[CALCITE-6498]
    * Elasticsearch multi-field mappings do not work</a>. */
-  @Test void testVisitMappingPropertiesWithNestedAndMultiFieldMappings() throws Exception {
+  @Test void testVisitMappingPropertiesWithNestedAndMultiFieldMappings()
+      throws Exception {
     // 'title' is a multi-mapped field
     // 'author' is a nested field ('author.name' is multi-mapped)
     ObjectNode mapping =
@@ -308,7 +311,7 @@ class ElasticsearchJsonTest {
             +   "}"
             + "}}}", ObjectNode.class);
 
-    ImmutableMap<String, String> result = getMappingAsMap(mapping);
+    Map<String, String> result = getMappingAsMap(mapping);
 
     // Checking the multi-field mapping
     assertThat(result.get("title"), is("text"));
@@ -321,7 +324,7 @@ class ElasticsearchJsonTest {
     assertThat(result.get("author.age"), is("integer"));
   }
 
-  private static ImmutableMap<String, String> getMappingAsMap(ObjectNode mapping) {
+  private static Map<String, String> getMappingAsMap(ObjectNode mapping) {
     // ImmutableMap.Builder makes sure that we don't add the same key twice
     // (would throw exception otherwise)
     ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();

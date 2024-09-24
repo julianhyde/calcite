@@ -36,18 +36,20 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * Set of tests for {@link EmbeddedElasticsearchPolicy}.
+ * Tests for {@link EmbeddedElasticsearchPolicy}.
  */
 @ResourceLock(value = "elasticsearch-scrolls", mode = ResourceAccessMode.READ)
 public class EmbeddedElasticsearchPolicyTest {
 
-  private static final EmbeddedElasticsearchPolicy NODE = EmbeddedElasticsearchPolicy.create();
+  private static final EmbeddedElasticsearchPolicy NODE =
+      EmbeddedElasticsearchPolicy.create();
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6498">[CALCITE-6498]
    * Elasticsearch multi-field mappings do not work</a>. */
   @Test void testCreateIndexWithSimpleFieldMappings() throws Exception {
-    final Map<String, String> mapping = ImmutableMap.of("a", "keyword", "b", "text", "c", "long");
+    final Map<String, String> mapping =
+        ImmutableMap.of("a", "keyword", "b", "text", "c", "long");
     final String simpleMappingIndex = "index_simple_mapping";
 
     NODE.createIndex(simpleMappingIndex, mapping);
@@ -95,13 +97,15 @@ public class EmbeddedElasticsearchPolicyTest {
     assertThat(properties.path("a").path("type").asText(), is("text"));
     assertThat(properties.path("a")
                           .path("fields")
-                            .path("keyword").path("type").asText(), is("keyword"));
+                            .path("keyword").path("type").asText(),
+        is("keyword"));
   }
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6498">[CALCITE-6498]
    * Elasticsearch multi-field mappings do not work</a>. */
-  @Test void testCreateIndexWithNestedFieldMappingsAndMultiFieldMappings() throws Exception {
+  @Test void testCreateIndexWithNestedFieldMappingsAndMultiFieldMappings()
+      throws Exception {
     final Map<String, String> mapping =
         ImmutableMap.of("a", "nested", "a.b", "text", "a.b.keyword", "keyword");
     final String index = "index_nested_and_multi_field_mappings";
@@ -128,7 +132,8 @@ public class EmbeddedElasticsearchPolicyTest {
     String responseBody = EntityUtils.toString(entity);
     JsonNode responseJson = new ObjectMapper().readTree(responseBody);
 
-    // It's more readable to assert on a JsonNode than on a map, where you need to cast a lot
+    // It's more readable to assert on a JsonNode than on a map, where you need
+    // to cast a lot
     return responseJson.path(index).path("mappings").path("properties");
   }
 }

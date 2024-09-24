@@ -182,10 +182,12 @@ class EmbeddedElasticsearchPolicy {
 
       if ("nested".equals(parent.get(prefix).get("type").asText())) {
         // Nested field mapping
-        applyMapping(parent.withObject("/" + prefix).withObject("/properties"), suffix, type);
+        applyMapping(parent.withObject("/" + prefix).withObject("/properties"),
+            suffix, type);
       } else {
         // Multi-field mapping
-        applyMapping(parent.withObject("/" + prefix).withObject("/fields"), suffix, type);
+        applyMapping(parent.withObject("/" + prefix).withObject("/fields"),
+            suffix, type);
       }
     } else {
       parent.withObject("/" + key).put("type", type);
