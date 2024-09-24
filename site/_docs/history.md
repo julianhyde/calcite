@@ -114,9 +114,10 @@ Zoltan Haindrich.
 {: #breaking-1-38-0}
 
 In previous versions of Calcite the casts to DECIMAL types were
-treated as no-ops [CALCITE-6322].  Fixing this bug causes all
-calculations that use DECIMAL values to produce slightly different
-results.
+treated as no-ops. With the fix of
+[<a href="https://issues.apache.org/jira/browse/CALCITE-6322">CALCITE-6322</a>],
+all calculations that use `DECIMAL` values may produce slightly
+different results.
 
 Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
 using JDK/OpenJDK versions 8 to 23;
@@ -148,54 +149,6 @@ override logic to the `getMaxScale` and `getMaxPrecision` methods.
 #### New features
 {: #new-features-1-38-0}
 
-* Supporting new functions
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6527">CALCITE-6527</a>]
-    Add `DATE_ADD` function (enabled in Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6549">CALCITE-6549</a>]
-    Add `LOG1P` function (enabled in Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-3779">CALCITE-3779</a>]
-    Implement `BITAND`, `BITOR`, `BITXOR` scalar functions
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-3697">CALCITE-3697</a>]
-    Implement `BITCOUNT` scalar function
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-5807">CALCITE-5807</a>]
-    Add `SUBSTRING_INDEX` function (enabled in Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6396">CALCITE-6396</a>]
-    Add `ADD_MONTHS` function (enabled in Oracle, Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6310">CALCITE-6310</a>]
-    Add `REGEXP_REPLACE` function (enabled in Postgres library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6472">CALCITE-6472</a>]
-    Add degree-based trigonometric functions to Postgres function library
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6312">CALCITE-6312</a>]
-    Add `LOG` function (enabled in Postgres library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6445">CALCITE-6445</a>]
-    Add `REVERSE` function (enabled in Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6449">CALCITE-6449</a>]
-    Enable Postgres implementations of `TO_DATE` and `TO_TIMESTAMP` functions
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-5634">CALCITE-5634</a>]
-    Enable `GREATEST`, `LEAST` functions in Postgres library
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6446">CALCITE-6446</a>]
-    Add `CONCAT_WS` function (enabled in Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6454">CALCITE-6454</a>]
-    Implement array comparison operators
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6325">CALCITE-6325</a>]
-    Add `LOG` function (enabled in Mysql and Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6392">CALCITE-6392</a>]
-    Support all Postgres 14 date/time patterns for `TO_DATE` and `TO_TIMESTAMP`
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6441">CALCITE-6441</a>]
-    Add `BOOLAGG_AND`, `BOOLAGG_OR` aggregate functions (enabled in Snowflake
-    library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6311">CALCITE-6311</a>]
-    Support Postgres `DATE_PART` function
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6424">CALCITE-6424</a>]
-    Enable `RLIKE` function in MySQL library
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6397">CALCITE-6397</a>]
-    Add `NVL2` function (enabled in Oracle, Spark library)
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6358">CALCITE-6358</a>]
-    Support all Postgres 14 date/time patterns for `TO_CHAR` function
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6313">CALCITE-6313</a>]
-    Add `POWER` function for Postgres
-  * [<a href="https://issues.apache.org/jira/browse/CALCITE-6483">CALCITE-6483</a>]
-    Enable `LEN` and `LENGTH` in the correct function libraries
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6576">CALCITE-6576</a>]
   In `SET` clause of `UPDATE` statement, allow column identifiers to be prefixed
   with table alias
@@ -211,7 +164,7 @@ override logic to the `getMaxScale` and `getMaxPrecision` methods.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6519">CALCITE-6519</a>]
   Support non-aggregate query that uses measure in `ORDER BY`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-4496">CALCITE-4496</a>]
-  Measure columns ("SELECT ... AS MEASURE")
+  Measure columns (`SELECT ... AS MEASURE`)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-5802">CALCITE-5802</a>]
   In `RelBuilder`, add method `aggregateRex`, to allow aggregating complex
   expressions such as "`1 + SUM(x + 2)`"
@@ -225,6 +178,55 @@ override logic to the `getMaxScale` and `getMaxPrecision` methods.
   `OVER (... EXCLUDE CURRENT ROW)`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6365">CALCITE-6365</a>]
   Support `RETURNING` clause of `JSON_QUERY` function
+
+New functions:
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6527">CALCITE-6527</a>]
+  Add `DATE_ADD` function (enabled in Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6549">CALCITE-6549</a>]
+  Add `LOG1P` function (enabled in Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-3779">CALCITE-3779</a>]
+  Implement `BITAND`, `BITOR`, `BITXOR` scalar functions
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-3697">CALCITE-3697</a>]
+  Implement `BITCOUNT` scalar function
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-5807">CALCITE-5807</a>]
+  Add `SUBSTRING_INDEX` function (enabled in Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6396">CALCITE-6396</a>]
+  Add `ADD_MONTHS` function (enabled in Oracle, Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6310">CALCITE-6310</a>]
+  Add `REGEXP_REPLACE` function (enabled in Postgres library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6472">CALCITE-6472</a>]
+  Add degree-based trigonometric functions to Postgres function library
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6312">CALCITE-6312</a>]
+  Add `LOG` function (enabled in Postgres library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6445">CALCITE-6445</a>]
+  Add `REVERSE` function (enabled in Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6449">CALCITE-6449</a>]
+  Enable Postgres implementations of `TO_DATE` and `TO_TIMESTAMP` functions
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-5634">CALCITE-5634</a>]
+  Enable `GREATEST`, `LEAST` functions in Postgres library
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6446">CALCITE-6446</a>]
+  Add `CONCAT_WS` function (enabled in Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6454">CALCITE-6454</a>]
+  Implement array comparison operators
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6325">CALCITE-6325</a>]
+  Add `LOG` function (enabled in Mysql and Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6392">CALCITE-6392</a>]
+  Support all Postgres 14 date/time patterns for `TO_DATE` and `TO_TIMESTAMP`
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6441">CALCITE-6441</a>]
+  Add `BOOLAGG_AND`, `BOOLAGG_OR` aggregate functions (enabled in Snowflake
+  library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6311">CALCITE-6311</a>]
+  Support Postgres `DATE_PART` function
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6424">CALCITE-6424</a>]
+  Enable `RLIKE` function in MySQL library
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6397">CALCITE-6397</a>]
+  Add `NVL2` function (enabled in Oracle, Spark library)
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6358">CALCITE-6358</a>]
+  Support all Postgres 14 date/time patterns for `TO_CHAR` function
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6313">CALCITE-6313</a>]
+  Add `POWER` function for Postgres
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6483">CALCITE-6483</a>]
+  Enable `LEN` and `LENGTH` in the correct function libraries
 
 #### Dependency version upgrade
 {: #dependency-1-38-0}
