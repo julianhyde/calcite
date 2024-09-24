@@ -5159,10 +5159,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     for (SqlNode node : targetColumnList) {
       SqlIdentifier id = (SqlIdentifier) node;
       if (!id.isSimple() && targetTableAlias != null) {
-        // checks that target column identifiers are prefixed with the target table alias
+        // checks that target column identifiers are prefixed with the target
+        // table alias
         SqlIdentifier prefixId = id.skipLast(1);
         if (!prefixId.toString().equals(targetTableAlias.toString())) {
-          throw newValidationError(prefixId, RESOURCE.unknownIdentifier(prefixId.toString()));
+          throw newValidationError(prefixId,
+              RESOURCE.unknownIdentifier(prefixId.toString()));
         }
       }
       RelDataTypeField targetField =
@@ -5620,7 +5622,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         : relOptTable.unwrapOrThrow(SqlValidatorTable.class);
 
     final RelDataType targetRowType =
-        createTargetRowType(table, call.getTargetColumnList(), true, call.getAlias());
+        createTargetRowType(table, call.getTargetColumnList(), true,
+            call.getAlias());
 
     final SqlSelect select = SqlNonNullableAccessors.getSourceSelect(call);
     validateSelect(select, targetRowType);
@@ -5661,13 +5664,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     if (updateCall != null) {
       requireNonNull(table, () -> "ns.getTable() for " + targetNamespace);
       targetRowType =
-          createTargetRowType(table, updateCall.getTargetColumnList(), true, call.getAlias());
+          createTargetRowType(table, updateCall.getTargetColumnList(), true,
+              call.getAlias());
     }
     SqlInsert insertCall = call.getInsertCall();
     if (insertCall != null) {
       requireNonNull(table, () -> "ns.getTable() for " + targetNamespace);
       targetRowType =
-          createTargetRowType(table, insertCall.getTargetColumnList(), false, null);
+          createTargetRowType(table, insertCall.getTargetColumnList(), false,
+              null);
     }
 
     validateSelect(sqlSelect, targetRowType);
