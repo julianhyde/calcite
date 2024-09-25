@@ -40,13 +40,15 @@ x,
 y (release manager),
 z.
 
-#### Breaking Changes
-{: #breaking-1-39-0}
-
 Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
 using JDK/OpenJDK versions 8 to 23;
 Guava versions 21.0 to 33.3.0-jre;
 other software versions as specified in gradle.properties.
+
+#### Breaking Changes
+{: #breaking-1-39-0}
+
+None.
 
 #### New features
 {: #new-features-1-39-0}
@@ -68,7 +70,7 @@ other software versions as specified in gradle.properties.
 {: #v1-38-0}
 
 This release comes 6 months after [1.37.0](#v1-37-0),
-contains contributions from 39 contributors, and resolves 148 issues.
+contains contributions from 39 contributors, and resolves 154 issues.
 Contributors to this release:
 Aleksey Plekhanov,
 Alessandro Solimando,
@@ -110,19 +112,19 @@ Xiong Duan,
 YiwenWu,
 Zoltan Haindrich.
 
+Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
+using JDK/OpenJDK versions 8 to 23;
+Guava versions 21.0 to 33.3.0-jre;
+other software versions as specified in gradle.properties.
+
 #### Breaking Changes
 {: #breaking-1-38-0}
 
 In previous versions of Calcite the casts to DECIMAL types were
 treated as no-ops. With the fix of
 [<a href="https://issues.apache.org/jira/browse/CALCITE-6322">CALCITE-6322</a>],
-all calculations that use `DECIMAL` values may produce slightly
+calculations that use `DECIMAL` values may produce slightly
 different results.
-
-Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
-using JDK/OpenJDK versions 8 to 23;
-Guava versions 21.0 to 33.3.0-jre;
-other software versions as specified in gradle.properties.
 
 #### New features
 {: #new-features-1-38-0}
@@ -558,6 +560,11 @@ Zhengqiang Duan,
 zhujiang,
 zstan.
 
+Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
+using JDK/OpenJDK versions 8 to 19;
+Guava versions 21.0 to 32.1.3-jre;
+other software versions as specified in gradle.properties.
+
 #### Breaking Changes
 {: #breaking-1-37-0}
 
@@ -572,11 +579,6 @@ zstan.
   ([<a href="https://issues.apache.org/jira/browse/CALCITE-3679">CALCITE-3679</a>])
   new methods have been added to `RexVisitor`and `RexBiVisitor`;
   any class implementing one of them will have to implement the new methods.
-
-Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
-using JDK/OpenJDK versions 8 to 19;
-Guava versions 21.0 to 32.1.3-jre;
-other software versions as specified in gradle.properties.
 
 #### New features
 {: #new-features-1-37-0}
@@ -946,13 +948,15 @@ ZhangJian He,
 Zhengqiang Duan,
 Zoltan Haindrich.
 
-#### Breaking Changes
-{: #breaking-1-36-0}
-
 Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
 using JDK/OpenJDK versions 8 to 19;
 Guava versions 21.0 to 32.1.3-jre;
 other software versions as specified in gradle.properties.
+
+#### Breaking Changes
+{: #breaking-1-36-0}
+
+None.
 
 #### New features
 {: #new-features-1-36-0}
@@ -1325,6 +1329,11 @@ Will Noble,
 Zhe Hu,
 Zou Dan.
 
+Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
+using JDK/OpenJDK versions 8 to 19;
+Guava versions 16.0.1 to 31.1-jre;
+other software versions as specified in gradle.properties.
+
 #### Breaking Changes
 {: #breaking-1-35-0}
 
@@ -1334,11 +1343,6 @@ Zou Dan.
   Now locale's language tag should match IETF BCP 47 language tag or be empty.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-5477">CALCITE-5477</a>]
   Build with Guava 19.0.
-
-Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
-using JDK/OpenJDK versions 8 to 19;
-Guava versions 16.0.1 to 31.1-jre;
-other software versions as specified in gradle.properties.
 
 #### New features
 {: #new-features-1-35-0}
@@ -1701,6 +1705,11 @@ Command used to generate the release notes (nb: it does not work on MacOS)
 git log b64cb1325cfe1a5143ea3ca534f991b6f881c3c5..ee9b80b0b68d442991dfaa142722e3488ec73e79 --format="%s" | sed 's|\[\(CALCITE-[0-9]\+\)\]|* [<a href="https://issues.apache.org/jira/browse/\1">\1</a>]\n|'
 -->
 
+Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
+using JDK/OpenJDK versions 8 to 18;
+Guava versions 16.0.1 to 31.1-jre;
+other software versions as specified in gradle.properties.
+
 #### Breaking Changes
 {: #breaking-1-34-0}
 
@@ -1715,11 +1724,6 @@ phase.
 To keep the old behavior (which is discouraged but still supported),
 initialize `SqlToRelConverter` using `SqlToRelConverter.config().withExpand(true)` as the value for
 the `config` argument.
-
-Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
-using JDK/OpenJDK versions 8 to 18;
-Guava versions 16.0.1 to 31.1-jre;
-other software versions as specified in gradle.properties.
 
 #### New features
 {: #new-features-1-34-0}
@@ -1873,17 +1877,16 @@ Xurenhe,
 Zhengqiang Duan,
 Zou Dan.
 
+Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
+using JDK/OpenJDK versions 8 to 18;
+Guava versions 16.0.1 to 31.1-jre;
+other software versions as specified in gradle.properties.
+
 #### Breaking Changes
 {: #breaking-1-33-0}
 
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-5293">CALCITE-5293</a>]
   Support general set operators in `PruneEmptyRules`. The default configuration of `PruneEmptyRules` for Set operators has changed: the rules matching scope has increased.
-
-
-Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
-using JDK/OpenJDK versions 8 to 18;
-Guava versions 16.0.1 to 31.1-jre;
-other software versions as specified in gradle.properties.
 
 #### New features
 {: #new-features-1-33-0}
@@ -2139,12 +2142,15 @@ Stamatis Zampetakis,
 TJ Banghart,
 Zhengqiang Duan.
 
-{: #breaking-1-32-0}
-
 Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
 using JDK/OpenJDK versions 8 to 18;
 Guava versions 16.0.1 to 31.1-jre;
 other software versions as specified in gradle.properties.
+
+#### Breaking Changes
+{: #breaking-1-32-0}
+
+None.
 
 #### New features
 {: #new-features-1-32-0}
@@ -2273,6 +2279,11 @@ xiejiajun,
 xurenhe,
 zhangyue.
 
+Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
+using JDK/OpenJDK versions 8 to 18;
+Guava versions 19.0 to 31.1-jre;
+other software versions as specified in gradle.properties.
+
 #### Breaking Changes
 {: #breaking-1-31-0}
 
@@ -2281,11 +2292,6 @@ zhangyue.
   `Filter`/`Project`/`Calc` operator.
   * Old behavior: The Project operator is transformed into Calc.
   * New behavior: The Project operator is not transformed and the rule becomes NOOP.
-
-Compatibility: This release is tested on Linux, macOS, Microsoft Windows;
-using JDK/OpenJDK versions 8 to 18;
-Guava versions 19.0 to 31.1-jre;
-other software versions as specified in gradle.properties.
 
 #### New features
 {: #new-features-1-31-0}
@@ -3579,7 +3585,7 @@ other software versions as specified in gradle.properties.
 {: #breaking-1-26-0}
 
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-2082">CALCITE-2082</a>]
-Do not store types or type factories inside operators
+  Do not store types or type factories inside operators
 
 #### New features
 {: #new-features-1-26-0}
