@@ -34,6 +34,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.test.CustomTypeSystems;
 import org.apache.calcite.test.RexImplicationCheckerFixtures;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.Litmus;
@@ -731,9 +732,15 @@ class RexBuilderTest {
   @Test void testDecimalWithNegativeScaleRoundingHalfUp() {
     final RelDataTypeFactory typeFactory =
         new SqlTypeFactoryImpl(new RelDataTypeSystemImpl() {
-          @Override public int getMinNumericScale() {
-            return -2;
+          @Override public int getMinScale(SqlTypeName typeName) {
+            switch (typeName) {
+            case DECIMAL:
+              return -2;
+            default:
+              return super.getMinScale(typeName);
+            }
           }
+
           @Override public RoundingMode roundingMode() {
             return RoundingMode.HALF_UP;
           }
@@ -747,11 +754,9 @@ class RexBuilderTest {
 
   @Test void testDecimalWithNegativeScaleRoundingDown() {
     final RelDataTypeFactory typeFactory =
-        new SqlTypeFactoryImpl(new RelDataTypeSystemImpl() {
-          @Override public int getMinNumericScale() {
-            return -2;
-          }
-        });
+        new SqlTypeFactoryImpl(
+            CustomTypeSystems.withMinScale(RelDataTypeSystem.DEFAULT,
+                typeName -> -2));
     final RelDataType type = typeFactory.createSqlType(SqlTypeName.DECIMAL, 3, -2);
     final RexBuilder builder = new RexBuilder(typeFactory);
     RexLiteral rexLiteralHalfUp = builder.makeLiteral(new BigDecimal("12355"), type);

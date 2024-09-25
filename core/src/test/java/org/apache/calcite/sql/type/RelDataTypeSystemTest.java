@@ -147,8 +147,13 @@ class RelDataTypeSystemTest {
   @Test void testNegativeScale() {
     final SqlTypeFactoryImpl customTypeFactory =
         new SqlTypeFactoryImpl(new RelDataTypeSystemImpl() {
-          @Override public int getMinNumericScale() {
-            return -10;
+          @Override public int getMinScale(SqlTypeName typeName) {
+            switch (typeName) {
+            case DECIMAL:
+              return -10;
+            default:
+              return super.getMinScale(typeName);
+            }
           }
         });
     RelDataType dataType = customTypeFactory.createSqlType(SqlTypeName.DECIMAL, 10, -5);

@@ -97,9 +97,6 @@ public interface RelDataTypeSystem {
   /** Returns the maximum precision of a NUMERIC or DECIMAL type. And the default value is 19. */
   int getMaxNumericPrecision();
 
-  /** Returns the minimum scale of a NUMERIC or DECIMAL type. And the default value is 0. */
-  int getMinNumericScale();
-
   /** Returns the rounding behavior for numerical operations capable of discarding precision. */
   RoundingMode roundingMode();
 

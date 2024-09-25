@@ -77,7 +77,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
   @Override public int getMinScale(SqlTypeName typeName) {
     switch (typeName) {
     case DECIMAL:
-      return getMinNumericScale();
+      return 0;
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
@@ -261,10 +261,6 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
   @Override public int getMaxNumericPrecision() {
     return 19;
-  }
-
-  @Override public int getMinNumericScale() {
-    return 0;
   }
 
   @Override public RoundingMode roundingMode() {

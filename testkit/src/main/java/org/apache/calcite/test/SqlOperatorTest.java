@@ -28,7 +28,6 @@ import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.rel.type.TimeFrameSet;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.runtime.CalciteException;
@@ -1726,11 +1725,7 @@ public class SqlOperatorTest {
     final SqlOperatorFixture negativeScaleFixture = fixture()
         .withFactory(tf ->
             tf.withTypeSystem(typeSystem ->
-                new RelDataTypeSystemImpl() {
-                  @Override public int getMinNumericScale() {
-                    return -2;
-                  }
-                }));
+                CustomTypeSystems.withMinScale(typeSystem, typeName -> -2)));
     // cast integer to decimal
     negativeScaleFixture.checkScalar("cast(123 as decimal(3, -1))",
         "120", "DECIMAL(3, -1) NOT NULL");

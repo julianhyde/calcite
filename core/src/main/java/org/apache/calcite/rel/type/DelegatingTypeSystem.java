@@ -64,10 +64,6 @@ public class DelegatingTypeSystem implements RelDataTypeSystem {
     return typeSystem.getMaxNumericPrecision();
   }
 
-  @Override public int getMinNumericScale() {
-    return typeSystem.getMinNumericScale();
-  }
-
   @Override public RoundingMode roundingMode() {
     return typeSystem.roundingMode();
   }
