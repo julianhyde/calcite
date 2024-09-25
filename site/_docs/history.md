@@ -35,6 +35,7 @@ Downloads are available on the
 
 This release comes x months after [1.38.0](#v1-38-0),
 contains contributions from x contributors, and resolves x issues.
+
 Contributors to this release:
 x,
 y (release manager),
@@ -71,6 +72,19 @@ None.
 
 This release comes 6 months after [1.37.0](#v1-37-0),
 contains contributions from 39 contributors, and resolves 154 issues.
+Highlights include the
+[`AS MEASURE`](https://issues.apache.org/jira/browse/CALCITE-4496)
+clause to define measures and use them in
+[simple queries](https://issues.apache.org/jira/browse/CALCITE-6519),
+[`ASOF` join](https://issues.apache.org/jira/browse/CALCITE-6372),
+the
+[`EXCLUDE`](https://issues.apache.org/jira/browse/CALCITE-5855)
+clause in window aggregates, and Postgres-compatible implementations of the
+[`TO_DATE`, `TO_TIMESTAMP`](https://issues.apache.org/jira/browse/CALCITE-6449)
+and
+[`TO_CHAR`](https://issues.apache.org/jira/browse/CALCITE-6358)
+functions.
+
 Contributors to this release:
 Aleksey Plekhanov,
 Alessandro Solimando,
@@ -210,7 +224,7 @@ New functions:
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6454">CALCITE-6454</a>]
   Implement array comparison operators
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6325">CALCITE-6325</a>]
-  Add `LOG` function (enabled in Mysql and Spark library)
+  Add `LOG` function (enabled in MySQL and Spark library)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6392">CALCITE-6392</a>]
   Support all Postgres 14 date/time patterns for `TO_DATE` and `TO_TIMESTAMP`
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6441">CALCITE-6441</a>]
@@ -4269,7 +4283,7 @@ gradle.properties.
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3324">CALCITE-3324</a>]
   Set `updateCount` when creating `MetaResultSet` (Robert Yokota)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3733">CALCITE-3733</a>]
-  In JDBC adapter, when generating SQL for MYSQL, generate `TIMESTAMP` type as
+  In JDBC adapter, when generating SQL for MySQL, generate `TIMESTAMP` type as
   `DATETIME` for `CAST` (Vineet Garg)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-3909">CALCITE-3909</a>]
   `RelMdMinRowCount` doesn't take into account `UNION` `DISTINCT`
