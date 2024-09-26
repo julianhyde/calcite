@@ -317,6 +317,10 @@ public class ReduceDecimalsRule
       real8 = builder.getTypeFactory().createSqlType(SqlTypeName.DOUBLE);
     }
 
+    private RelDataTypeSystem typeSystem() {
+      return builder.getTypeFactory().getTypeSystem();
+    }
+
     /**
      * This defaults to the utility method,
      * {@link RexUtil#requiresDecimalExpansion(RexNode, boolean)} which checks
@@ -347,8 +351,7 @@ public class ReduceDecimalsRule
      */
     protected RexNode makeScaleFactor(int scale) {
       assert scale > 0;
-      assert scale
-          < builder.getTypeFactory().getTypeSystem().getMaxNumericPrecision();
+      assert scale < typeSystem().getMaxPrecision(SqlTypeName.DECIMAL);
       return makeExactLiteral(powerOfTen(scale));
     }
 
@@ -377,8 +380,7 @@ public class ReduceDecimalsRule
      */
     protected RexNode makeRoundFactor(int scale) {
       assert scale > 0;
-      assert scale
-          < builder.getTypeFactory().getTypeSystem().getMaxNumericPrecision();
+      assert scale < typeSystem().getMaxPrecision(SqlTypeName.DECIMAL);
       return makeExactLiteral(powerOfTen(scale) / 2);
     }
 
@@ -387,8 +389,7 @@ public class ReduceDecimalsRule
      */
     protected long powerOfTen(int scale) {
       assert scale >= 0;
-      assert scale
-          < builder.getTypeFactory().getTypeSystem().getMaxNumericPrecision();
+      assert scale < typeSystem().getMaxPrecision(SqlTypeName.DECIMAL);
       return BigInteger.TEN.pow(scale).longValue();
     }
 
@@ -417,8 +418,7 @@ public class ReduceDecimalsRule
      */
     protected RexNode scaleUp(SqlParserPos pos, RexNode value, int scale) {
       assert scale >= 0;
-      assert scale
-          < builder.getTypeFactory().getTypeSystem().getMaxNumericPrecision();
+      assert scale < typeSystem().getMaxPrecision(SqlTypeName.DECIMAL);
       if (scale == 0) {
         return value;
       }
@@ -442,7 +442,7 @@ public class ReduceDecimalsRule
      */
     protected RexNode scaleDown(SqlParserPos pos, RexNode value, int scale) {
       final int maxPrecision =
-          builder.getTypeFactory().getTypeSystem().getMaxNumericPrecision();
+          typeSystem().getMaxPrecision(SqlTypeName.DECIMAL);
       assert scale >= 0 && scale <= maxPrecision;
       if (scale == 0) {
         return value;
@@ -487,8 +487,7 @@ public class ReduceDecimalsRule
      */
     protected RexNode scaleDownDouble(SqlParserPos pos, RexNode value, int scale) {
       assert scale >= 0;
-      assert scale
-          <= builder.getTypeFactory().getTypeSystem().getMaxNumericPrecision();
+      assert scale <= typeSystem().getMaxPrecision(SqlTypeName.DECIMAL);
       RexNode cast = ensureType(pos, real8, value);
       if (scale == 0) {
         return cast;
@@ -516,10 +515,10 @@ public class ReduceDecimalsRule
      * @return value * 10^scale, returned as an exact or approximate value
      * corresponding to the input value
      */
-    protected RexNode ensureScale(SqlParserPos pos, RexNode value, int scale, int required) {
-      final RelDataTypeSystem typeSystem =
-          builder.getTypeFactory().getTypeSystem();
-      final int maxPrecision = typeSystem.getMaxNumericPrecision();
+    protected RexNode ensureScale(SqlParserPos pos, RexNode value, int scale,
+        int required) {
+      final RelDataTypeSystem typeSystem = typeSystem();
+      final int maxPrecision = typeSystem.getMaxPrecision(SqlTypeName.DECIMAL);
       assert scale <= maxPrecision && required <= maxPrecision;
       assert required >= scale;
       if (scale == required) {
@@ -1050,7 +1049,7 @@ public class ReduceDecimalsRule
       RexNode rewrite;
       if (scale == 0) {
         rewrite = decValue;
-      } else if (scale == typeSystem.getMaxNumericPrecision()) {
+      } else if (scale == typeSystem.getMaxPrecision(SqlTypeName.DECIMAL)) {
         rewrite =
             makeCase(
                 makeIsNegative(value),
@@ -1101,7 +1100,7 @@ public class ReduceDecimalsRule
       RexNode rewrite;
       if (scale == 0) {
         rewrite = decValue;
-      } else if (scale == typeSystem.getMaxNumericPrecision()) {
+      } else if (scale == typeSystem.getMaxPrecision(SqlTypeName.DECIMAL)) {
         rewrite =
             makeCase(
                 makeIsPositive(value),

@@ -450,12 +450,22 @@ public class SqlOperatorTest {
     SqlOperatorFixture f0 = f.withFactory(tf ->
             tf.withTypeSystem(typeSystem ->
                 new DelegatingTypeSystem(typeSystem) {
-                  @Override public int getMaxNumericPrecision() {
-                    return 10;
+                  @Override public int getMaxPrecision(SqlTypeName typeName) {
+                    switch (typeName) {
+                    case DECIMAL:
+                      return 10;
+                    default:
+                      return super.getMaxPrecision(typeName);
+                    }
                   }
 
-                  @Override public int getMaxNumericScale() {
-                    return 10;
+                  @Override public int getMaxScale(SqlTypeName typeName) {
+                    switch (typeName) {
+                    case DECIMAL:
+                      return 10;
+                    default:
+                      return super.getMaxScale(typeName);
+                    }
                   }
                 }));
     f0.checkFails("^" + largePrecision + "^", OUT_OF_RANGE_MESSAGE, false);
@@ -2700,12 +2710,22 @@ public class SqlOperatorTest {
     SqlOperatorFixture f0 = f.withFactory(tf ->
         tf.withTypeSystem(typeSystem ->
             new DelegatingTypeSystem(typeSystem) {
-              @Override public int getMaxNumericPrecision() {
-                return 28;
+              @Override public int getMaxPrecision(SqlTypeName typeName) {
+                switch (typeName) {
+                case DECIMAL:
+                  return 28;
+                default:
+                  return super.getMaxPrecision(typeName);
+                }
               }
 
-              @Override public int getMaxNumericScale() {
-                return 10;
+              @Override public int getMaxScale(SqlTypeName typeName) {
+                switch (typeName) {
+                case DECIMAL:
+                  return 10;
+                default:
+                  return super.getMaxScale(typeName);
+                }
               }
             }));
     f0.checkScalarExact("95.0 / 100", "DECIMAL(12, 10) NOT NULL", "0.95");

@@ -1369,7 +1369,8 @@ public class RexBuilder {
     RelDataType relType;
     int scale = bd.scale();
     assert scale >= 0;
-    assert scale <= typeFactory.getTypeSystem().getMaxNumericScale() : scale;
+    assert scale <= typeFactory.getTypeSystem().getMaxScale(SqlTypeName.DECIMAL)
+        : scale;
     if (scale == 0) {
       if (bd.compareTo(INT_MIN) >= 0 && bd.compareTo(INT_MAX) <= 0) {
         relType = typeFactory.createSqlType(SqlTypeName.INTEGER);

@@ -91,11 +91,25 @@ public interface RelDataTypeSystem {
    */
   int getMinPrecision(SqlTypeName typeName);
 
-  /** Returns the maximum scale of a NUMERIC or DECIMAL type. And the default value is 19. */
-  int getMaxNumericScale();
+  /** Returns the maximum scale of a NUMERIC or DECIMAL type.
+   * And the default value is 19.
+   *
+   * @deprecated Use {@link #getMaxScale}(DECIMAL);
+   * if you need to override, override {@link #getMaxScale(SqlTypeName)}. */
+  @Deprecated // to be removed before 2.0, and made final before 1.39
+  default int getMaxNumericScale() {
+    return getMaxScale(SqlTypeName.DECIMAL);
+  }
 
-  /** Returns the maximum precision of a NUMERIC or DECIMAL type. And the default value is 19. */
-  int getMaxNumericPrecision();
+  /** Returns the maximum precision of a NUMERIC or DECIMAL type.
+   * And the default value is 19.
+   *
+   * @deprecated Use {@link #getMaxScale}(DECIMAL);
+   * if you need to override, override {@link #getMaxPrecision(SqlTypeName)}. */
+  @Deprecated // to be removed before 2.0, and made final before 1.39
+  default int getMaxNumericPrecision() {
+    return getMaxPrecision(SqlTypeName.DECIMAL);
+  }
 
   /** Returns the rounding behavior for numerical operations capable of discarding precision. */
   RoundingMode roundingMode();
@@ -204,9 +218,9 @@ public interface RelDataTypeSystem {
         int s1 = type1.getScale();
         int s2 = type2.getScale();
         int scale = Math.max(s1, s2);
-        assert scale <= getMaxNumericScale();
+        assert scale <= getMaxScale(SqlTypeName.DECIMAL);
         int precision = Math.max(p1 - s1, p2 - s2) + scale + 1;
-        precision = Math.min(precision, getMaxNumericPrecision());
+        precision = Math.min(precision, getMaxPrecision(SqlTypeName.DECIMAL));
         assert precision > 0;
 
         return typeFactory.createSqlType(SqlTypeName.DECIMAL, precision, scale);
@@ -268,9 +282,9 @@ public interface RelDataTypeSystem {
         int s2 = type2.getScale();
 
         int scale = s1 + s2;
-        scale = Math.min(scale, getMaxNumericScale());
+        scale = Math.min(scale, getMaxScale(SqlTypeName.DECIMAL));
         int precision = p1 + p2;
-        precision = Math.min(precision, getMaxNumericPrecision());
+        precision = Math.min(precision, getMaxPrecision(SqlTypeName.DECIMAL));
 
         RelDataType ret;
         ret = typeFactory.createSqlType(SqlTypeName.DECIMAL, precision, scale);
@@ -334,10 +348,11 @@ public interface RelDataTypeSystem {
         int s1 = type1.getScale();
         int s2 = type2.getScale();
 
-        int six = Math.min(6, getMaxNumericScale());
+        final int maxScale = getMaxScale(SqlTypeName.DECIMAL);
+        int six = Math.min(6, maxScale);
         int d = p1 - s1 + s2;
         int scale = Math.max(six, s1 + p2 + 1);
-        scale = Math.min(scale, getMaxNumericScale());
+        scale = Math.min(scale, maxScale);
         int precision = d + scale;
 
   // Rules from
@@ -359,17 +374,18 @@ public interface RelDataTypeSystem {
         //   reduced and resulting type is decimal(38, 6). The result might be rounded to
         //   7 decimal places, or the overflow error is thrown if the integral part
         //   can't fit into 32 digits.
-        int bound = getMaxNumericPrecision() - six;  // This was '32' in the MS documentation
+        final int maxPrecision = getMaxPrecision(SqlTypeName.DECIMAL);
+        int bound = maxPrecision - six;  // This was '32' in the MS documentation
         if (precision <= bound) {
-          scale = Math.min(scale, getMaxNumericPrecision() - (precision - scale));
+          scale = Math.min(scale, maxPrecision - (precision - scale));
         } else {
           // precision > bound
           scale = Math.min(six, scale);
         }
 
-        precision = Math.min(precision, getMaxNumericPrecision());
+        precision = Math.min(precision, maxPrecision);
         assert precision > 0;
-        assert scale <= getMaxNumericScale();
+        assert scale <= maxScale;
 
         RelDataType ret;
         ret = typeFactory.
@@ -439,9 +455,11 @@ public interface RelDataTypeSystem {
           return type2;
         }
 
-        int scale = Math.min(Math.max(s1, s2), getMaxNumericScale());
+        final int maxScale = getMaxScale(SqlTypeName.DECIMAL);
+        final int scale = Math.min(Math.max(s1, s2), maxScale);
         int precision = Math.min(p1 - s1, p2 - s2) + Math.max(s1, s2);
-        precision = Math.min(precision, getMaxNumericPrecision());
+        final int maxPrecision = getMaxPrecision(SqlTypeName.DECIMAL);
+        precision = Math.min(precision, maxPrecision);
         assert precision > 0;
 
         return typeFactory.createSqlType(SqlTypeName.DECIMAL,

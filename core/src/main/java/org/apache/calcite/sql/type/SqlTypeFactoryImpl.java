@@ -86,18 +86,24 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
     assertBasic(typeName);
     assert (precision >= 0)
         || (precision == RelDataType.PRECISION_NOT_SPECIFIED);
-    final int maxPrecision = typeSystem.getMaxPrecision(typeName);
-    if (maxPrecision >= 0 && precision > maxPrecision) {
-      precision = maxPrecision;
+    if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
+      final int minPrecision = typeSystem.getMinPrecision(typeName);
+      final int maxPrecision = typeSystem.getMaxPrecision(typeName);
+      if (maxPrecision >= 0 && precision > maxPrecision) {
+        precision = maxPrecision;
+      }
+      if (precision < minPrecision) {
+        throw RESOURCE.invalidPrecisionForDecimalType(precision, maxPrecision)
+            .ex();
+      }
     }
-    if (precision != RelDataType.PRECISION_NOT_SPECIFIED
-        && precision < typeSystem.getMinPrecision(typeName)) {
-      throw RESOURCE.invalidPrecisionForDecimalType(precision, maxPrecision).ex();
-    }
-    if (scale != RelDataType.SCALE_NOT_SPECIFIED
-        && scale < typeSystem.getMinScale(typeName)) {
-      throw RESOURCE.invalidScaleForDecimalType(scale,
-          typeSystem.getMinScale(typeName), typeSystem.getMaxNumericScale()).ex();
+    if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
+      final int minScale = typeSystem.getMinScale(typeName);
+      final int maxScale = typeSystem.getMaxScale(typeName);
+      if (scale < minScale) {
+        throw RESOURCE.invalidScaleForDecimalType(scale, minScale, maxScale)
+            .ex();
+      }
     }
     RelDataType newType =
         new BasicSqlType(typeSystem, typeName, precision, scale);
@@ -436,8 +442,9 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
               int p2 = type.getPrecision();
               int s1 = resultType.getScale();
               int s2 = type.getScale();
-              final int maxPrecision = typeSystem.getMaxNumericPrecision();
-              final int maxScale = typeSystem.getMaxNumericScale();
+              final int maxPrecision =
+                  typeSystem.getMaxPrecision(SqlTypeName.DECIMAL);
+              final int maxScale = typeSystem.getMaxScale(SqlTypeName.DECIMAL);
 
               int dout = Math.max(p1 - s1, p2 - s2);
               dout =

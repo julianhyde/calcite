@@ -209,12 +209,22 @@ class RelDataTypeSystemTest {
      * Custom type system class that overrides the default max precision and max scale.
      */
     final class CustomTypeSystem extends RelDataTypeSystemImpl {
-      @Override public int getMaxNumericPrecision() {
-        return 28;
+      @Override public int getMaxPrecision(SqlTypeName typeName) {
+        switch (typeName) {
+        case DECIMAL:
+          return 28;
+        default:
+          return super.getMaxPrecision(typeName);
+        }
       }
 
-      @Override public int getMaxNumericScale() {
-        return 10;
+      @Override public int getMaxScale(SqlTypeName typeName) {
+        switch (typeName) {
+        case DECIMAL:
+          return 10;
+        default:
+          return super.getMaxScale(typeName);
+        }
       }
     }
 
