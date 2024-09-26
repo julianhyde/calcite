@@ -418,7 +418,7 @@ public enum SqlTypeName {
     case INTERVAL_MINUTE:
     case INTERVAL_MINUTE_SECOND:
     case INTERVAL_SECOND:
-      return DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+      return 6; //DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
     default:
       return -1;
     }

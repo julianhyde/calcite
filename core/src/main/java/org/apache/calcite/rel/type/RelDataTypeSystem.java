@@ -98,7 +98,7 @@ public interface RelDataTypeSystem {
    * if you need to override, override {@link #getMaxScale(SqlTypeName)}. */
   @Deprecated // to be removed before 2.0, and made final before 1.39
   default int getMaxNumericScale() {
-    return getMaxScale(SqlTypeName.DECIMAL);
+    return 19;
   }
 
   /** Returns the maximum precision of a NUMERIC or DECIMAL type.
@@ -108,7 +108,7 @@ public interface RelDataTypeSystem {
    * if you need to override, override {@link #getMaxPrecision(SqlTypeName)}. */
   @Deprecated // to be removed before 2.0, and made final before 1.39
   default int getMaxNumericPrecision() {
-    return getMaxPrecision(SqlTypeName.DECIMAL);
+    return 19;
   }
 
   /** Returns the rounding behavior for numerical operations capable of discarding precision. */
