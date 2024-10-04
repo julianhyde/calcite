@@ -67,11 +67,11 @@ None.
 {: #site-1-39-0}
 -->
 
-## <a href="https://github.com/apache/calcite/releases/tag/calcite-1.38.0">1.38.0</a> / 2024-09-30
+## <a href="https://github.com/apache/calcite/releases/tag/calcite-1.38.0">1.38.0</a> / 2024-10-09
 {: #v1-38-0}
 
 This release comes 6 months after [1.37.0](#v1-37-0),
-contains contributions from 39 contributors, and resolves 154 issues.
+contains contributions from 40 contributors, and resolves 162 issues.
 Highlights include the
 [`AS MEASURE`](https://issues.apache.org/jira/browse/CALCITE-4496)
 clause to define measures and use them in
@@ -79,11 +79,12 @@ clause to define measures and use them in
 [`ASOF` join](https://issues.apache.org/jira/browse/CALCITE-6372),
 the
 [`EXCLUDE`](https://issues.apache.org/jira/browse/CALCITE-5855)
-clause in window aggregates, and Postgres-compatible implementations of the
+clause in window aggregates, Postgres-compatible implementations of the
 [`TO_DATE`, `TO_TIMESTAMP`](https://issues.apache.org/jira/browse/CALCITE-6449)
 and
 [`TO_CHAR`](https://issues.apache.org/jira/browse/CALCITE-6358)
-functions.
+functions, and the extension of the type system to allow
+[types with negative scale](https://issues.apache.org/jira/browse/CALCITE-6560).
 
 Contributors to this release:
 Aleksey Plekhanov,
@@ -120,6 +121,7 @@ Sergey Nuyanzin,
 Stamatis Zampetakis,
 suibianwanwan,
 Tim Grein,
+TJ Banghart,
 Wegdan Ghazi,
 xiaohei,
 Xiong Duan,
@@ -164,6 +166,10 @@ override logic to the `getMaxScale` and `getMaxPrecision` methods.
 #### New features
 {: #new-features-1-38-0}
 
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6603">CALCITE-6603</a>]
+  Lattice SQL supports generation of specified dialects
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6560">CALCITE-6560</a>]
+  Allow types with negative scale
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6576">CALCITE-6576</a>]
   In `SET` clause of `UPDATE` statement, allow column identifiers to be prefixed
   with table alias
@@ -195,6 +201,8 @@ override logic to the `getMaxScale` and `getMaxPrecision` methods.
   Support `RETURNING` clause of `JSON_QUERY` function
 
 New functions:
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-3592">CALCITE-3592</a>]
+  Implement `BITNOT` scalar function
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6527">CALCITE-6527</a>]
   Add `DATE_ADD` function (enabled in Spark library)
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6549">CALCITE-6549</a>]
@@ -256,6 +264,25 @@ New functions:
 #### Bug-fixes, API changes and minor enhancements
 {: #fixes-1-38-0}
 
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6598">CALCITE-6598</a>]
+  In `interface RelDataTypeSystem`, deprecate methods `getMaxNumericScale` and
+  `getMaxNumericPrecision`
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6599">CALCITE-6599</a>]
+  `RelMdPredicates` should pull up more predicates from `VALUES` when there are
+  several literals
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6585">CALCITE-6585</a>]
+  In the Postgres `TO_CHAR` function, improve caching
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6593">CALCITE-6593</a>]
+  `EnumerableHashJoin` throws `NullPointerException` when outer-joining tables
+  with many fields and unmatching rows
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6600">CALCITE-6600</a>]
+  `AggregateJoinTransposeRule` throws `ArrayIndexOutOfBoundsException` when
+  applied on a `SemiJoin`
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6595">CALCITE-6595</a>]
+  Preserve collation on non-distinct aggregate calls in
+  `AggregateExpandWithinDistinctRule`
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6596">CALCITE-6596</a>]
+  Enable function-level cache by default
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6498">CALCITE-6498</a>]
   Elasticsearch multi-field mappings do not work
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6374">CALCITE-6374</a>]
@@ -468,6 +495,8 @@ New functions:
 #### Build and test suite
 {: #build-1-38-0}
 
+* [<a href="https://issues.apache.org/jira/browse/CALCITE-6609">CALCITE-6609</a>]
+  Remove redundant warning suppression for Guava's `Beta` and `Unstable` APIs
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6493">CALCITE-6493</a>]
   Add MySQL and other professional term restrictions
 * [<a href="https://issues.apache.org/jira/browse/CALCITE-6580">CALCITE-6580</a>]
