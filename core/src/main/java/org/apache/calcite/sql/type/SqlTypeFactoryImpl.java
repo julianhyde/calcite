@@ -79,7 +79,6 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
     return canonize(newType);
   }
 
-  @SuppressWarnings("deprecation") // [CALCITE-6598]
   @Override public RelDataType createSqlType(
       SqlTypeName typeName,
       int precision,
@@ -100,7 +99,7 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
     }
     if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
       final int minScale = typeSystem.getMinScale(typeName);
-      final int maxScale = typeSystem.getMaxNumericScale();
+      final int maxScale = typeSystem.getMaxScale(typeName);
       if (scale < minScale) {
         throw RESOURCE.invalidScaleForDecimalType(scale, minScale, maxScale)
             .ex();

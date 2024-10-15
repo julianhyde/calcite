@@ -26,6 +26,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCollation;
@@ -1365,12 +1366,12 @@ public class RexBuilder {
   /**
    * Creates a numeric literal.
    */
-  @SuppressWarnings("deprecation") // [CALCITE-6598]
   public RexLiteral makeExactLiteral(BigDecimal bd) {
     RelDataType relType;
     int scale = bd.scale();
     assert scale >= 0;
-    assert scale <= typeFactory.getTypeSystem().getMaxNumericScale() : scale;
+    final RelDataTypeSystem typeSystem = typeFactory.getTypeSystem();
+    assert scale <= typeSystem.getMaxScale(SqlTypeName.DECIMAL) : scale;
     if (scale == 0) {
       if (bd.compareTo(INT_MIN) >= 0 && bd.compareTo(INT_MAX) <= 0) {
         relType = typeFactory.createSqlType(SqlTypeName.INTEGER);

@@ -21,6 +21,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFamily;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
@@ -1805,12 +1806,12 @@ public abstract class SqlTypeUtil {
 
   /** Returns a DECIMAL type with the maximum precision for the current
    * type system. */
-  @SuppressWarnings("deprecation") // [CALCITE-6598]
   public static RelDataType getMaxPrecisionScaleDecimal(RelDataTypeFactory factory) {
-    int maxPrecision = factory.getTypeSystem().getMaxNumericPrecision();
-    int maxScale = factory.getTypeSystem().getMaxNumericScale();
+    final RelDataTypeSystem typeSystem = factory.getTypeSystem();
+    final int maxPrecision = typeSystem.getMaxPrecision(SqlTypeName.DECIMAL);
+    final int maxScale = typeSystem.getMaxScale(SqlTypeName.DECIMAL);
     // scale should not greater than precision.
-    int scale = Math.min(maxPrecision / 2, maxScale);
+    final int scale = Math.min(maxPrecision / 2, maxScale);
     return factory.createSqlType(SqlTypeName.DECIMAL, maxPrecision, scale);
   }
 

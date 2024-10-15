@@ -3419,7 +3419,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  @SuppressWarnings("deprecation") // [CALCITE-6598]
   @Override public void validateLiteral(SqlLiteral literal) {
     switch (literal.getTypeName()) {
     case DECIMAL:
@@ -3430,13 +3429,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       final BigDecimal noTrailingZeros = bd.stripTrailingZeros();
       // If we don't strip trailing zeros we may reject values such as 1.000....0.
 
-      final int maxPrecision = typeSystem.getMaxNumericPrecision();
+      final int maxPrecision = typeSystem.getMaxPrecision(SqlTypeName.DECIMAL);
       if (noTrailingZeros.precision() > maxPrecision) {
         throw newValidationError(literal,
             RESOURCE.numberLiteralOutOfRange(bd.toString()));
       }
 
-      final int maxScale = typeSystem.getMaxNumericScale();
+      final int maxScale = typeSystem.getMaxScale(SqlTypeName.DECIMAL);
       if (noTrailingZeros.scale() > maxScale) {
         throw newValidationError(literal,
             RESOURCE.numberLiteralOutOfRange(bd.toString()));
