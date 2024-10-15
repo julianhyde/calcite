@@ -439,12 +439,13 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
               // and number of whole digits (d) as follows: d =
               // max(p1 - s1, p2 - s2) s <= max(s1, s2) p = s + d
 
-              int p1 = resultType.getPrecision();
-              int p2 = type.getPrecision();
-              int s1 = resultType.getScale();
-              int s2 = type.getScale();
-              final int maxPrecision = typeSystem.getMaxNumericPrecision();
-              final int maxScale = typeSystem.getMaxNumericScale();
+              final int p1 = resultType.getPrecision();
+              final int p2 = type.getPrecision();
+              final int s1 = resultType.getScale();
+              final int s2 = type.getScale();
+              final int maxPrecision =
+                  typeSystem.getMaxPrecision(SqlTypeName.DECIMAL);
+              final int maxScale = typeSystem.getMaxScale(SqlTypeName.DECIMAL);
 
               int dout = Math.max(p1 - s1, p2 - s2);
               dout =

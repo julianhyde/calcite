@@ -928,11 +928,13 @@ class RexBuilderTest {
 
   /** Tests {@link RexBuilder#makeExactLiteral(java.math.BigDecimal)}. */
   @Test void testBigDecimalLiteral() {
-    final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(new RelDataTypeSystemImpl() {
-      @Override public int getMaxPrecision(SqlTypeName typeName) {
-        return 38;
-      }
-    });
+    final RelDataTypeFactory typeFactory =
+        new SqlTypeFactoryImpl(
+            new RelDataTypeSystemImpl() {
+              @Override public int getMaxPrecision(SqlTypeName typeName) {
+                return 38;
+              }
+            });
     final RexBuilder builder = new RexBuilder(typeFactory);
     checkBigDecimalLiteral(builder, "25");
     checkBigDecimalLiteral(builder, "9.9");

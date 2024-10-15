@@ -58,12 +58,12 @@ public class DelegatingTypeSystem implements RelDataTypeSystem {
 
   @SuppressWarnings("deprecation")
   @Override public int getMaxNumericScale() {
-    return typeSystem.getMaxNumericScale();
+    return getMaxScale(SqlTypeName.DECIMAL);
   }
 
   @SuppressWarnings("deprecation")
   @Override public int getMaxNumericPrecision() {
-    return typeSystem.getMaxNumericPrecision();
+    return getMaxPrecision(SqlTypeName.DECIMAL);
   }
 
   @Override public RoundingMode roundingMode() {

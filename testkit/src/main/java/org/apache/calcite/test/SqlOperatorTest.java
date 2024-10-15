@@ -449,10 +449,6 @@ public class SqlOperatorTest {
     SqlOperatorFixture f0 = f.withFactory(tf ->
             tf.withTypeSystem(typeSystem ->
                 new DelegatingTypeSystem(typeSystem) {
-                  @Override public int getMaxNumericPrecision() {
-                    return getMaxPrecision(SqlTypeName.DECIMAL);
-                  }
-
                   @Override public int getMaxPrecision(SqlTypeName typeName) {
                     switch (typeName) {
                     case DECIMAL:
@@ -460,10 +456,6 @@ public class SqlOperatorTest {
                     default:
                       return super.getMaxPrecision(typeName);
                     }
-                  }
-
-                  @Override public int getMaxNumericScale() {
-                    return getMaxScale(SqlTypeName.DECIMAL);
                   }
 
                   @Override public int getMaxScale(SqlTypeName typeName) {
@@ -2717,10 +2709,6 @@ public class SqlOperatorTest {
     SqlOperatorFixture f0 = f.withFactory(tf ->
         tf.withTypeSystem(typeSystem ->
             new DelegatingTypeSystem(typeSystem) {
-              @Override public int getMaxNumericPrecision() {
-                return getMaxPrecision(SqlTypeName.DECIMAL);
-              }
-
               @Override public int getMaxPrecision(SqlTypeName typeName) {
                 switch (typeName) {
                 case DECIMAL:
@@ -2728,10 +2716,6 @@ public class SqlOperatorTest {
                 default:
                   return super.getMaxPrecision(typeName);
                 }
-              }
-
-              @Override public int getMaxNumericScale() {
-                return getMaxScale(SqlTypeName.DECIMAL);
               }
 
               @Override public int getMaxScale(SqlTypeName typeName) {

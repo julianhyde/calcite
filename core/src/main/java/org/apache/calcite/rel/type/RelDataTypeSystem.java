@@ -114,7 +114,7 @@ public interface RelDataTypeSystem {
    * and will remove the override of the method in
    * {@link RelDataTypeSystemImpl}. You should remove all calls to
    * and overrides of this method. */
-  @Deprecated // calcite will cease calling in 1.39, and removed before 2.0
+  @Deprecated // to be removed before 2.0
   default int getMaxNumericScale() {
     return 19;
   }
@@ -249,14 +249,17 @@ public interface RelDataTypeSystem {
         type2 = RelDataTypeFactoryImpl.isJavaType(type2)
             ? typeFactory.decimalOf(type2)
             : type2;
-        int p1 = type1.getPrecision();
-        int p2 = type2.getPrecision();
-        int s1 = type1.getScale();
-        int s2 = type2.getScale();
+        final int p1 = type1.getPrecision();
+        final int p2 = type2.getPrecision();
+        final int s1 = type1.getScale();
+        final int s2 = type2.getScale();
+        final int maxScale = getMaxScale(SqlTypeName.DECIMAL);
+        final int maxPrecision = getMaxPrecision(SqlTypeName.DECIMAL);
+
         int scale = Math.max(s1, s2);
-        assert scale <= getMaxNumericScale();
+        assert scale <= maxScale;
         int precision = Math.max(p1 - s1, p2 - s2) + scale + 1;
-        precision = Math.min(precision, getMaxNumericPrecision());
+        precision = Math.min(precision, maxPrecision);
         assert precision > 0;
 
         return typeFactory.createSqlType(SqlTypeName.DECIMAL, precision, scale);
@@ -312,15 +315,17 @@ public interface RelDataTypeSystem {
         type2 = RelDataTypeFactoryImpl.isJavaType(type2)
             ? typeFactory.decimalOf(type2)
             : type2;
-        int p1 = type1.getPrecision();
-        int p2 = type2.getPrecision();
-        int s1 = type1.getScale();
-        int s2 = type2.getScale();
+        final int p1 = type1.getPrecision();
+        final int p2 = type2.getPrecision();
+        final int s1 = type1.getScale();
+        final int s2 = type2.getScale();
+        final int maxScale = getMaxScale(SqlTypeName.DECIMAL);
+        final int maxPrecision = getMaxPrecision(SqlTypeName.DECIMAL);
 
         int scale = s1 + s2;
-        scale = Math.min(scale, getMaxNumericScale());
+        scale = Math.min(scale, maxScale);
         int precision = p1 + p2;
-        precision = Math.min(precision, getMaxNumericPrecision());
+        precision = Math.min(precision, maxPrecision);
 
         RelDataType ret;
         ret = typeFactory.createSqlType(SqlTypeName.DECIMAL, precision, scale);
@@ -379,12 +384,12 @@ public interface RelDataTypeSystem {
         type2 = RelDataTypeFactoryImpl.isJavaType(type2)
             ? typeFactory.decimalOf(type2)
             : type2;
-        int p1 = type1.getPrecision();
-        int p2 = type2.getPrecision();
-        int s1 = type1.getScale();
-        int s2 = type2.getScale();
+        final int p1 = type1.getPrecision();
+        final int p2 = type2.getPrecision();
+        final int s1 = type1.getScale();
+        final int s2 = type2.getScale();
 
-        final int maxScale = getMaxNumericScale();
+        final int maxScale = getMaxScale(SqlTypeName.DECIMAL);
         int six = Math.min(6, maxScale);
         int d = p1 - s1 + s2;
         int scale = Math.max(six, s1 + p2 + 1);
@@ -410,7 +415,7 @@ public interface RelDataTypeSystem {
         //   reduced and resulting type is decimal(38, 6). The result might be rounded to
         //   7 decimal places, or the overflow error is thrown if the integral part
         //   can't fit into 32 digits.
-        final int maxPrecision = getMaxNumericPrecision();
+        final int maxPrecision = getMaxPrecision(SqlTypeName.DECIMAL);
         int bound = maxPrecision - six;  // This was '32' in the MS documentation
         if (precision <= bound) {
           scale = Math.min(scale, maxPrecision - (precision - scale));
@@ -482,17 +487,17 @@ public interface RelDataTypeSystem {
         type2 = RelDataTypeFactoryImpl.isJavaType(type2)
             ? typeFactory.decimalOf(type2)
             : type2;
-        int p1 = type1.getPrecision();
-        int p2 = type2.getPrecision();
-        int s1 = type1.getScale();
-        int s2 = type2.getScale();
+        final int p1 = type1.getPrecision();
+        final int p2 = type2.getPrecision();
+        final int s1 = type1.getScale();
+        final int s2 = type2.getScale();
         // Keep consistency with SQL standard.
         if (s1 == 0 && s2 == 0) {
           return type2;
         }
 
-        final int maxScale = getMaxNumericScale();
-        final int maxPrecision = getMaxNumericPrecision();
+        final int maxScale = getMaxScale(SqlTypeName.DECIMAL);
+        final int maxPrecision = getMaxPrecision(SqlTypeName.DECIMAL);
 
         final int scale = Math.min(Math.max(s1, s2), maxScale);
         int precision = Math.min(p1 - s1, p2 - s2) + Math.max(s1, s2);
