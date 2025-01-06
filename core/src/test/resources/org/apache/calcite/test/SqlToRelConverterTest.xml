@@ -7570,7 +7570,10 @@ LogicalSort(sort0=[$1], dir0=[DESC], fetch=[3])
   </TestCase>
   <TestCase name="testSortWithOffsetInSubQuery">
     <Resource name="sql">
-      <![CDATA[select count(*) from (select * from emp order by empno offset 10)]]>
+      <![CDATA[select count(*) from (
+  select *
+  from emp
+  order by empno offset 10)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[

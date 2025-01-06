@@ -774,10 +774,8 @@ public class SqlToRelConverter {
     //
     // Semantics example. Given the view definition
     //   CREATE VIEW v2 AS SELECT * FROM t ORDER BY x LIMIT 10
-    // or
-    //   CREATE VIEW v2 AS SELECT * FROM t ORDER BY x OFFSET 10
-    // we would never remove the ORDER BY, because "ORDER BY ... LIMIT/OFFSET" is about
-    // semantics. It is not a 'pure order'.
+    // we would never remove the ORDER BY, because "ORDER BY ... LIMIT" is about
+    // semantics. It is not a 'pure order'. Similarly "ORDER BY x OFFSET 5".
     if (RelOptUtil.isPureOrder(castNonNull(bb.root))
         && config.isRemoveSortInSubQuery()) {
       // Remove the Sort if the view is at the top level. Also remove the Sort
