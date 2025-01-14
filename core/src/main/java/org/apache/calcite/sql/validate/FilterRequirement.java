@@ -58,16 +58,17 @@ import java.util.Set;
  * <p>{@code FilterRequirement} is immutable, and has an instance {@link #EMPTY}
  * with no filters.
  *
- * <h4>Notes on remnantFilterFields</h4>
+ * <p><b>Notes on remnantFilterFields</b>
  *
  * <p>{@link #remnantFilterFields} identifies whether the query should error
  * at the top level query. It is populated with the filter-field value when a
  * filter-field is not selected or filtered on, but a bypass-field for the
  * table is selected.
  *
- * <p>Remnant-filter-fields are no longer accessible by the enclosing query and
- * hence can no longer be defused by filtering on it; however, it can be defused
- * if the bypass-field is filtered on, hence we need to keep track of it.
+ * <p>A remnant-filter field is no longer accessible by the enclosing query,
+ * and so the query can no longer be defused by filtering on it. We must keep
+ * track of the remnant-filter field because the query can still be defused by
+ * filtering on a bypass-field.
  *
  * <p>For example, consider table {@code t} with a must-filter field {@code f}
  * and bypass-fields {@code b0} and {@code b1}.
