@@ -57,13 +57,11 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
   /** As {@link #rowType}, but not necessarily a struct. */
   protected @Nullable RelDataType type;
 
-  /**
-   * Class that holds information about what fields need to be filtered, what bypass-fields
-   * can defuse the errors if they are filtered on as an alternative, and a set used during
-   * validation internally. Initialized as empty object, but should typically be re-assiged
-   * on validate.
-   */
-  protected FilterRequirement filterRequirement = new FilterRequirement();
+  /** Information about what fields need to be filtered and what bypass fields
+   * can defuse the errors if they are filtered on as an alternative.
+   * Initialized as an empty object, but typically re-assigned during
+   * validation. */
+  protected FilterRequirement filterRequirement = FilterRequirement.EMPTY;
 
   protected final @Nullable SqlNode enclosingNode;
 

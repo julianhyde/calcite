@@ -63,15 +63,17 @@ class TableNamespace extends AbstractNamespace {
   @Override protected RelDataType validateImpl(RelDataType targetRowType) {
     table.maybeUnwrap(SemanticTable.class)
         .ifPresent(semanticTable -> {
-          ImmutableBitSet mustFilterFields = table.getRowType().getFieldList().stream()
-              .map(RelDataTypeField::getIndex)
-              .filter(semanticTable::mustFilter)
-              .collect(toImmutableBitSet());
-          ImmutableBitSet bypassFieldList = ImmutableBitSet.of(semanticTable.bypassFieldList());
-          // We pass in an empty set for remnantMustFilterFields here because it isn't exposed to
-          // SemanticTable and only mustFilterFields and bypassFieldList should be supplied.
+          ImmutableBitSet mustFilterFields =
+              table.getRowType().getFieldList().stream()
+                  .map(RelDataTypeField::getIndex)
+                  .filter(semanticTable::mustFilter)
+                  .collect(toImmutableBitSet());
+          // We pass in an empty set for remnantMustFilterFields here because
+          // it isn't exposed to SemanticTable and only mustFilterFields and
+          // bypassFieldList should be supplied.
           this.filterRequirement =
-              new FilterRequirement(mustFilterFields, bypassFieldList, ImmutableSet.of());
+              new FilterRequirement(mustFilterFields,
+                  semanticTable.bypassFieldList(), ImmutableSet.of());
         });
     if (extendedFields.isEmpty()) {
       return table.getRowType();

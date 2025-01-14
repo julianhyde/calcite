@@ -213,8 +213,11 @@ public interface SqlValidatorNamespace {
    */
   boolean supportsModality(SqlModality modality);
 
-  /** Returns a FilterRequirement object used during validation. */
+  /** Returns a {@code FilterRequirement} object describing the "must-filter"
+   * fields of this namespace (fields that must be filtered in a query) and
+   * "bypass" fields that can remove the requirement that fields are
+   * filtered. */
   default FilterRequirement getFilterRequirement() {
-    return new FilterRequirement();
+    return FilterRequirement.EMPTY;
   }
 }

@@ -12419,14 +12419,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * {@link org.apache.calcite.sql.validate.SemanticTable} tags fields as
    * 'must-filter', and the SQL query does not contain a WHERE or HAVING clause
    * on each of the tagged columns, the validator should throw an error.
-   * If any bypass field for a table is in a WHERE/HAVING clause for that SELECT statement,
-   * the must-filter requirements for that table are disabled.
+   * If any bypass field for a table is in a WHERE or HAVING clause for that
+   * SELECT statement, the must-filter requirements for that table are
+   * disabled.
    */
   @Test void testMustFilterColumnsWithBypass() {
     final SqlValidatorFixture fixture = fixture()
         .withParserConfig(c -> c.withQuoting(Quoting.BACK_TICK))
         .withOperatorTable(operatorTableFor(SqlLibrary.BIG_QUERY))
         .withCatalogReader(MustFilterMockCatalogReader::create);
+
     // Basic query
     fixture.withSql("select empno\n"
             + "from emp\n"
@@ -12504,7 +12506,9 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .ok();
     fixture.withSql("^select * from (select * from `SALES`.`EMP`) as a1^ ")
         .fails(missingFilters("EMPNO", "JOB"));
-    fixture.withSql("select * from (select * from `SALES`.`EMP`) as a1 where ename = '1'^ ")
+    fixture.withSql("select *\n"
+            + "from (select * from `SALES`.`EMP`) as a1\n"
+            + "where ename = '1'^ ")
         .ok();
 
     // JOINs
@@ -12513,7 +12517,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + "join dept on emp.deptno = dept.deptno^")
         .fails(missingFilters("EMPNO", "JOB", "NAME"));
 
-    // Query is invalid because ENAME is a bypass field for EMP table, but not the DEPT table.
+    // Query is invalid because ENAME is a bypass field for EMP table, but not
+    // the DEPT table.
     fixture.withSql("^select *\n"
             + "from emp\n"
             + "join dept on emp.deptno = dept.deptno where ename = '1'^")
@@ -12544,14 +12549,16 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + "join `SALES`.emp a2 on a1.empno = a2.empno^")
         .fails(missingFilters("EMPNO", "EMPNO0", "JOB", "JOB0"));
 
-    // Query is invalid because filtering on a bypass field in a1 disables must-filter for a1,
-    // but a2 must-filters are still required.
+    // Query is invalid because filtering on a bypass field in a1 disables
+    // must-filter for a1, but a2 must-filters are still required.
     fixture.withSql("^select *\n"
             + "from `SALES`.emp a1\n"
-            + "join `SALES`.emp a2 on a1.empno = a2.empno where a1.ename = '1'^")
+            + "join `SALES`.emp a2 on a1.empno = a2.empno\n"
+            + "where a1.ename = '1'^")
             .fails(missingFilters("EMPNO0", "JOB0"));
 
-    // Query is invalid because here are two JOB columns but only one is filtered.
+    // Query is invalid because here are two JOB columns but only one is
+    // filtered.
     fixture.withSql("^select *\n"
             + "from emp a1\n"
             + "join emp a2 on a1.empno = a2.empno\n"
@@ -12581,8 +12588,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
             + "  on a1.`EMPNO` = a2.`EMPNO`^")
         .fails(missingFilters("EMPNO", "EMPNO0", "JOB", "JOB0"));
 
-    // Query is invalid because filtering on a bypass field in a1 disables must-filter for a1,
-    // but a2 must-filters are still required.
+    // Query is invalid because filtering on a bypass field in a1 disables
+    // must-filter for a1, but a2 must-filters are still required.
     fixture.withSql("^select *\n"
             + " from (select * from `SALES`.`EMP`) as a1\n"
             + "join (select * from `SALES`.`EMP`) as a2\n"
@@ -12747,8 +12754,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .ok();
 
     // Query is invalid because filters are missing on EMPNO and JOB.
-    // The error message only complains about JOB because EMPNO is in the SELECT clause,
-    // and could theoretically be filtered by an enclosing query.
+    // The error message only complains about JOB because EMPNO is in the SELECT
+    // clause, and could theoretically be filtered by an enclosing query.
     fixture.withSql("^select empno\n"
             + "from emp^")
         .fails(missingFilters("JOB"));

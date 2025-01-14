@@ -52,7 +52,8 @@ public class MustFilterMockCatalogReader extends MockCatalogReader {
     MustFilterMockTable empTable =
         MustFilterMockTable.create(this, salesSchema, "EMP",
             false, 14, null, NullInitializerExpressionFactory.INSTANCE,
-            false, ImmutableMap.of("EMPNO", "10", "JOB", "JOB_1"), ImmutableList.of(1));
+            false, ImmutableMap.of("EMPNO", "10", "JOB", "JOB_1"),
+            ImmutableList.of(1));
 
     final RelDataType integerType =
         typeFactory.createSqlType(SqlTypeName.INTEGER);
@@ -78,7 +79,8 @@ public class MustFilterMockCatalogReader extends MockCatalogReader {
     MustFilterMockTable deptTable =
         MustFilterMockTable.create(this, salesSchema, "DEPT",
             false, 14, null, NullInitializerExpressionFactory.INSTANCE,
-            false, ImmutableMap.of("NAME", "ACCOUNTING_DEPT"), ImmutableList.of(0));
+            false, ImmutableMap.of("NAME", "ACCOUNTING_DEPT"),
+            ImmutableList.of(0));
     deptTable.addColumn("DEPTNO", integerType, true);
     deptTable.addColumn("NAME", varcharType);
     registerTable(deptTable);

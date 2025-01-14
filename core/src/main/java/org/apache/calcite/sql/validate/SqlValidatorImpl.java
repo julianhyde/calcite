@@ -1213,7 +1213,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       RelDataType type = namespace.getType();
 
       if (node == top) {
-        FilterRequirement filterRequirement = namespace.getFilterRequirement();
+        final FilterRequirement filterRequirement =
+            namespace.getFilterRequirement();
+
         // Either of the following two conditions result in an invalid query:
         // 1) A top-level namespace must not return any must-filter fields.
         // A non-top-level namespace (e.g. a subquery) may return must-filter
@@ -1225,15 +1227,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             || !filterRequirement.getRemnantFilterFields().isEmpty()) {
           Stream<String> mustFilterStream =
               StreamSupport.stream(filterRequirement.getFilterFields().spliterator(), false)
-              .map(namespace.getRowType().getFieldNames()::get);
+                  .map(namespace.getRowType().getFieldNames()::get);
           Stream<String> remnantStream =
               filterRequirement.getRemnantFilterFields().stream()
-              .map(q -> q.suffix().get(0));
+                  .map(q -> q.suffix().get(0));
 
           // Set of field names, sorted alphabetically for determinism.
           Set<String> fieldNameSet =
               Stream.concat(mustFilterStream, remnantStream)
-              .collect(Collectors.toCollection(TreeSet::new));
+                  .collect(Collectors.toCollection(TreeSet::new));
           throw newValidationError(node,
               RESOURCE.mustFilterFieldsMissing(fieldNameSet.toString()));
         }
@@ -4141,10 +4143,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     });
   }
 
-  /**
-   * Removes all entries from qualifieds and remnantMustFilterFields if the supplied SqlNode
-   * is a bypassField.
-   */
+  /** Removes all entries from {@code qualifieds} and
+   * {@code remnantMustFilterFields} if {@code node} is a bypassField. */
   private static void purgeForBypassFields(SqlNode node, SqlValidatorScope scope,
       Set<SqlQualified> qualifieds, Set<SqlQualified> bypassQualifieds,
       Set<SqlQualified> remnantMustFilterFields) {
@@ -4153,15 +4153,17 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final SqlQualified qualified = scope.fullyQualify(id);
         if (bypassQualifieds.contains(qualified)) {
           // Clear all the must-filter qualifieds from the same table identifier
-          Collection<SqlQualified> sameIdentifier = qualifieds.stream()
-              .filter(q -> qualifiedMatchesIdentifier(q, qualified))
-              .collect(Collectors.toList());
+          Collection<SqlQualified> sameIdentifier =
+              qualifieds.stream()
+                  .filter(q -> qualifiedMatchesIdentifier(q, qualified))
+                  .collect(Collectors.toList());
           sameIdentifier.forEach(qualifieds::remove);
 
           // Clear all the remnant must-filter qualifieds from the same table identifier
-          Collection<SqlQualified> sameIdentifier_ = remnantMustFilterFields.stream()
-              .filter(q -> qualifiedMatchesIdentifier(q, qualified))
-              .collect(Collectors.toList());
+          Collection<SqlQualified> sameIdentifier_ =
+              remnantMustFilterFields.stream()
+                  .filter(q -> qualifiedMatchesIdentifier(q, qualified))
+                  .collect(Collectors.toList());
           sameIdentifier_.forEach(remnantMustFilterFields::remove);
         }
         return null;
@@ -4169,15 +4171,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     });
   }
 
-  private static void toQualifieds(ImmutableBitSet fields, Set<SqlQualified> qualifiedSet,
-      SelectScope fromScope, ScopeChild child, List<String> fieldNames) {
+  private static void toQualifieds(ImmutableBitSet fields,
+      Set<SqlQualified> qualifiedSet, SelectScope fromScope, ScopeChild child,
+      List<String> fieldNames) {
     fields.forEachInt(i ->
         qualifiedSet.add(
             SqlQualified.create(fromScope, 1, child.namespace,
-                new SqlIdentifier(
-                    ImmutableList.of(child.name, fieldNames.get(i)),
+                new SqlIdentifier(ImmutableList.of(child.name, fieldNames.get(i)),
                     SqlParserPos.ZERO))));
-
   }
 
   private static boolean qualifiedMatchesIdentifier(SqlQualified q1, SqlQualified q2) {
@@ -4638,7 +4639,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   protected void validateMustFilterRequirements(SqlSelect select, SelectNamespace ns) {
-    ns.filterRequirement = new FilterRequirement();
+    ns.filterRequirement = FilterRequirement.EMPTY;
     if (select.getFrom() != null) {
       final SelectScope fromScope = (SelectScope) getFromScope(select);
       final BitSet projectedNonFilteredBypassField = new BitSet();
@@ -4648,12 +4649,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       for (ScopeChild child : fromScope.children) {
         final List<String> fieldNames =
             child.namespace.getRowType().getFieldNames();
-        FilterRequirement mustFilterReq = child.namespace.getFilterRequirement();
-        toQualifieds(mustFilterReq.getFilterFields(), qualifieds, fromScope, child,
-            fieldNames);
-        toQualifieds(mustFilterReq.getBypassFields(), bypassQualifieds, fromScope,
+        final FilterRequirement filterRequirement =
+            child.namespace.getFilterRequirement();
+        toQualifieds(filterRequirement.getFilterFields(), qualifieds, fromScope,
             child, fieldNames);
-        remnantQualifieds.addAll(mustFilterReq.getRemnantFilterFields());
+        toQualifieds(filterRequirement.getBypassFields(), bypassQualifieds,
+            fromScope, child, fieldNames);
+        remnantQualifieds.addAll(filterRequirement.getRemnantFilterFields());
       }
       if (!qualifieds.isEmpty() || !bypassQualifieds.isEmpty()) {
         if (select.getWhere() != null) {
@@ -4690,16 +4692,17 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
               mustFilterFields.set(i);
             }
             if (bypassQualifieds.remove(qualified)) {
-              // SELECT item #i referenced a bypass column that was not filtered in the WHERE
-              // or HAVING. It becomes a bypass column for our consumer.
+              // SELECT item #i referenced a bypass column that was not filtered
+              // in the WHERE or HAVING. It becomes a bypass column for our
+              // consumer.
               mustFilterBypassFields.set(i);
               projectedNonFilteredBypassField.set(0);
             }
           }
         });
 
-        // If there are must-filter fields that are not in the SELECT clause and there were no
-        // bypass-fields on this table, this is an error.
+        // If there are must-filter fields that are not in the SELECT clause and
+        // there were no bypass-fields on this table, this is an error.
         if (!qualifieds.isEmpty() && !projectedNonFilteredBypassField.get(0)) {
           throw newValidationError(select,
               RESOURCE.mustFilterFieldsMissing(

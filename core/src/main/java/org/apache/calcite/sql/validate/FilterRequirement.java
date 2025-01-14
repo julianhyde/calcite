@@ -23,63 +23,95 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * Class that encapsulates filtering requirements when overloading SemanticTable. <br>
+ * Filtering requirements of a query, describing "must-filter" fields and
+ * "bypass" fields.
  *
- * <p>A few examples of the behavior:<br>
+ * <p>"Must-filter" fields must be filtered for a query to be considered valid;
+ * and "bypass" fields can defuse the errors if they are filtered on as an
+ * alternative.
  *
- * <p>Table <code>t</code> has a must-filter field <code>f</code> and bypass-fields <code>b0</code>
- * and <code>b1</code>.<br>
- * SQL: <code>select f from t;</code><br> -> Errors because there's no filter on f. <br>
- * SQL: <code>select * from (select f from t);</code><br> -> Errors at the inner query because
- * there's no filter on f. <br>
- * SQL: <code>select f from t where f = 1;</code><br> -> Valid because there is a filter on f.<br>
- * SQL: <code>select * from (select f from t) where f = 1;</code><br> -> Valid because there is a
- * filter on f. <br>
- * SQL: <code>select f from t where b0 = 1;</code><br> -> Valid because there is a filter on
- * bypass-field b0.<br>
+ * <p>Filter requirements originate in a {@link SemanticTable} in the model
+ * and propagate to any query that uses that table.
  *
- * <p>Some notes on remnantFilterFields.<br>
- * remnantFilterFields is used to identify whether the query should error
- * at the top level query. It is populated with the filter-field value when a filter-field is not
- * selected or filtered on, but a bypass-field for the table is selected.
- * The remnantFilterFields are no longer accessible by the enclosing query and hence can no
- * longer be defused by filtering on it; however, it can be defused if the bypass-field is
- * filtered on, hence we need to keep track of it.
-
- * Example:<br>
- * Table <code>t</code> has a must-filter field <code>f</code> and bypass-fields <code>b0</code>
- *  and <code>b1</code>.<br>
- * SQL: <code>select b0, b1 from t;</code><br>
+ * <p>For example, consider table {@code t},
+ * which has a must-filter field {@code f}
+ * and bypass-fields {@code b0} and {@code b1},
+ * and the following queries:
  *
- * <p>This results in: <br>
- * filterFields:[]<br>
- * bypassFields:[b0, b1]<br>
- * remnantFilterFields: [f]<br>
- * -> Errors because it is a top level query and remnantFilterFields is not empty. <br>
+ * <ol>
+ * <li>Query {@code select f from t}
+ * is invalid because there is no filter on {@code f}.
  *
- * <p>SQL: <code>select * from (select b0, b1 from t) where b0 = 1;</code><br>
- * When unwrapping the inner query we get the same FilterRequirement as the previous example:<br>
- * filterFields:[]<br>
- * bypassFields:[b0, b1]<br>
- * remnantFilterFields: [f]<br>
- * When unwrapping the top level query, the filter on b0 defuses the remnantFilterField requirement
- * of [f] because it originated from the same table, resulting in the following: <br>
- * filterFields:[]<br>
- * bypassFields:[b0, b1]<br>
- * remnantFilterFields: []<br>
- * -> Valid because remnantFilterFields is empty now.
+ * <li>Query {@code select * from (select f from t)} gives an error in the
+ * subquery because there is no filter on {@code f}.
+ *
+ * <li>Query {@code select f from t where f = 1} is valid because there is a
+ * filter on {@code f}.
+ *
+ * <li>Query {@code select * from (select f from t) where f = 1} is valid
+ * because there is a filter on {@code f}.
+ *
+ * <li>Query {@code select f from t where b0 = 1} is valid because there is a
+ * filter on the bypass-field {@code b0}.
+ * </ol>
+ *
+ * <h4>Notes on remnantFilterFields</h4>
+ *
+ * {@link #remnantFilterFields} identifies whether the query should error
+ * at the top level query. It is populated with the filter-field value when a
+ * filter-field is not selected or filtered on, but a bypass-field for the
+ * table is selected.
+ *
+ * <p>Remnant-filter-fields are no longer accessible by the enclosing query and
+ * hence can no longer be defused by filtering on it; however, it can be defused
+ * if the bypass-field is filtered on, hence we need to keep track of it.
+ *
+ * <p>For example, consider table {@code t} with a must-filter field {@code f}
+ * and bypass-fields {@code b0} and {@code b1}.
+ *
+ * <ol>
+ * <li>Query {@code select b0, b1 from t} results in
+ * {@code filterFields} = [],
+ * {@code bypassFields} = [{@code b0}, {@code b1}],
+ * {@code remnantFilterFields} = [{@code f}].
+ * The query is invalid because it is a top-level query and
+ * {@link #remnantFilterFields} is not empty.
+ *
+ * <li>Query {@code select * from (select b0, b1 from t) where b0 = 1} is valid.
+ * When unwrapping the subquery we get the same {@code FilterRequirement}
+ * as the previous example:
+ * {@code filterFields} = [],
+ * {@code bypassFields} = [{@code b0}, {@code b1}],
+ * {@code remnantFilterFields} = [{@code f}].
+ * But when unwrapping the top-level query, the filter on {@code b0} defuses
+ * the {@code remnantFilterField} requirement of [{@code f}] because it
+ * originated in the same table, resulting in the following:
+ * {@code filterFields} = [],
+ * {@code bypassFields} = [{@code b0}, {@code b1}],
+ * {@code remnantFilterFields} = [].
+ * The query is valid because {@link #remnantFilterFields} is now empty.
+ * </ol>
+ *
+ * @see SqlValidatorNamespace#getFilterRequirement()
  */
-final class FilterRequirement {
+public class FilterRequirement {
+  /** Empty filter requirement. */
+  public static final FilterRequirement EMPTY =
+      new FilterRequirement(ImmutableBitSet.of(), ImmutableBitSet.of(),
+          ImmutableSet.of());
 
-  /** The ordinals (in the row type) of the "must-filter" fields,
-   * fields that must be filtered in a query.*/
+  /** Ordinals (in the row type) of the "must-filter" fields,
+   * fields that must be filtered in a query. */
   private final ImmutableBitSet filterFields;
-  /** The ordinals (in the row type) of the "bypass" fields,
-   * fields that can defuse validation errors on filterFields if filtered on. */
+
+  /** Ordinals (in the row type) of the "bypass" fields,
+   * fields that can defuse validation errors on {@link #filterFields}
+   * if filtered on. */
   private final ImmutableBitSet bypassFields;
-  /** Set of filterField SqlQualifieds that have not been defused
-   * in the current query, but can still be defused by filtering on a bypass field in the
-   * enclosing query.*/
+
+  /** Set of {@link SqlQualified} instances representing fields that have not
+   * been defused in the current query, but can still be defused by filtering
+   * on a bypass field in the enclosing query. */
   private final ImmutableSet<SqlQualified> remnantFilterFields;
 
   /**
@@ -90,17 +122,13 @@ final class FilterRequirement {
    * @param remnantFilterFields Filter fields that can no longer be filtered on,
    * but can only be defused if a bypass field is filtered on.
    */
-  FilterRequirement(ImmutableBitSet filterFields,
-      ImmutableBitSet bypassFields, Set<SqlQualified> remnantFilterFields) {
+  FilterRequirement(Iterable<Integer> filterFields,
+      Iterable<Integer> bypassFields, Set<SqlQualified> remnantFilterFields) {
     this.filterFields = ImmutableBitSet.of(filterFields);
     this.bypassFields = ImmutableBitSet.of(bypassFields);
     this.remnantFilterFields = ImmutableSet.copyOf(remnantFilterFields);
   }
 
-  /** Creates an empty FilterRequirement. */
-  FilterRequirement() {
-    this(ImmutableBitSet.of(), ImmutableBitSet.of(), ImmutableSet.of());
-  }
   /** Returns filterFields. */
   public ImmutableBitSet getFilterFields() {
     return filterFields;

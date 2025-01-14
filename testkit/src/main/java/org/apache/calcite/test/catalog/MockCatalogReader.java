@@ -1044,7 +1044,8 @@ public abstract class MockCatalogReader extends CalciteCatalogReader {
         MockSchema schema, String name, boolean stream, double rowCount,
         @Nullable ColumnResolver resolver,
         InitializerExpressionFactory initializerExpressionFactory,
-        boolean temporal, Map<String, String> fieldFilters, List<Integer> bypassFieldList) {
+        boolean temporal, Map<String, String> fieldFilters,
+        List<Integer> bypassFieldList) {
       MustFilterMockTable table =
           new MustFilterMockTable(catalogReader, schema.getCatalogName(),
               schema.name, name, stream, temporal, rowCount, resolver,
