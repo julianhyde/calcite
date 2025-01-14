@@ -55,9 +55,12 @@ import java.util.Set;
  * filter on the bypass-field {@code b0}.
  * </ol>
  *
+ * <p>{@code FilterRequirement} is immutable, and has an instance {@link #EMPTY}
+ * with no filters.
+ *
  * <h4>Notes on remnantFilterFields</h4>
  *
- * {@link #remnantFilterFields} identifies whether the query should error
+ * <p>{@link #remnantFilterFields} identifies whether the query should error
  * at the top level query. It is populated with the filter-field value when a
  * filter-field is not selected or filtered on, but a bypass-field for the
  * table is selected.
@@ -102,45 +105,30 @@ public class FilterRequirement {
 
   /** Ordinals (in the row type) of the "must-filter" fields,
    * fields that must be filtered in a query. */
-  private final ImmutableBitSet filterFields;
+  public final ImmutableBitSet filterFields;
 
   /** Ordinals (in the row type) of the "bypass" fields,
    * fields that can defuse validation errors on {@link #filterFields}
    * if filtered on. */
-  private final ImmutableBitSet bypassFields;
+  public final ImmutableBitSet bypassFields;
 
   /** Set of {@link SqlQualified} instances representing fields that have not
    * been defused in the current query, but can still be defused by filtering
    * on a bypass field in the enclosing query. */
-  private final ImmutableSet<SqlQualified> remnantFilterFields;
+  public final ImmutableSet<SqlQualified> remnantFilterFields;
 
   /**
-   * Creates a <code>FilterRequirement</code>.
+   * Creates a {@code FilterRequirement}.
    *
-   * @param filterFields Ordinals of the "must-filter" fields.
-   * @param bypassFields Ordinals of the "bypass" fields.
+   * @param filterFields Ordinals of the "must-filter" fields
+   * @param bypassFields Ordinals of the "bypass" fields
    * @param remnantFilterFields Filter fields that can no longer be filtered on,
-   * but can only be defused if a bypass field is filtered on.
+   * but can only be defused if a bypass field is filtered on
    */
   FilterRequirement(Iterable<Integer> filterFields,
       Iterable<Integer> bypassFields, Set<SqlQualified> remnantFilterFields) {
     this.filterFields = ImmutableBitSet.of(filterFields);
     this.bypassFields = ImmutableBitSet.of(bypassFields);
     this.remnantFilterFields = ImmutableSet.copyOf(remnantFilterFields);
-  }
-
-  /** Returns filterFields. */
-  public ImmutableBitSet getFilterFields() {
-    return filterFields;
-  }
-
-  /** Returns bypassFields. */
-  public ImmutableBitSet getBypassFields() {
-    return bypassFields;
-  }
-
-  /** Returns remnantFilterFields. */
-  public ImmutableSet<SqlQualified> getRemnantFilterFields() {
-    return remnantFilterFields;
   }
 }

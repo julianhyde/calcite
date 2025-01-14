@@ -1223,13 +1223,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // 2) A top-level namespace must not have any remnant-must-filter fields.
         // Remnant must filter fields are fields that are not selected and cannot
         // be defused unless a bypass field defuses it.
-        if (!filterRequirement.getFilterFields().isEmpty()
-            || !filterRequirement.getRemnantFilterFields().isEmpty()) {
+        if (!filterRequirement.filterFields.isEmpty()
+            || !filterRequirement.remnantFilterFields.isEmpty()) {
           Stream<String> mustFilterStream =
-              StreamSupport.stream(filterRequirement.getFilterFields().spliterator(), false)
+              StreamSupport.stream(filterRequirement.filterFields.spliterator(), false)
                   .map(namespace.getRowType().getFieldNames()::get);
           Stream<String> remnantStream =
-              filterRequirement.getRemnantFilterFields().stream()
+              filterRequirement.remnantFilterFields.stream()
                   .map(q -> q.suffix().get(0));
 
           // Set of field names, sorted alphabetically for determinism.
@@ -4651,11 +4651,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             child.namespace.getRowType().getFieldNames();
         final FilterRequirement filterRequirement =
             child.namespace.getFilterRequirement();
-        toQualifieds(filterRequirement.getFilterFields(), qualifieds, fromScope,
+        toQualifieds(filterRequirement.filterFields, qualifieds, fromScope,
             child, fieldNames);
-        toQualifieds(filterRequirement.getBypassFields(), bypassQualifieds,
+        toQualifieds(filterRequirement.bypassFields, bypassQualifieds,
             fromScope, child, fieldNames);
-        remnantQualifieds.addAll(filterRequirement.getRemnantFilterFields());
+        remnantQualifieds.addAll(filterRequirement.remnantFilterFields);
       }
       if (!qualifieds.isEmpty() || !bypassQualifieds.isEmpty()) {
         if (select.getWhere() != null) {
