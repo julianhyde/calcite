@@ -38,6 +38,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -124,6 +125,16 @@ class ImmutableBitSetTest {
       buf.append(i);
     }
     assertEquals(expected, buf.toString());
+
+    // Now check that bitSet.stream() does the same as bitSet.iterator().
+    buf.setLength(0);
+    bitSet.stream().forEach(i -> {
+      if (buf.length() > 0) {
+        buf.append(", ");
+      }
+      buf.append(i);
+    });
+    assertEquals(expected, buf.toString());
   }
 
   /**
@@ -132,6 +143,16 @@ class ImmutableBitSetTest {
    */
   @Test void testToList() {
     check((bitSet, list) -> assertThat(bitSet.toList(), equalTo(list)));
+  }
+
+  /**
+   * Tests the method
+   * {@link ImmutableBitSet#stream()}.
+   */
+  @Test void testStream() {
+    check((bitSet, list) ->
+        assertThat(bitSet.stream().boxed().collect(Collectors.toList()),
+            equalTo(list)));
   }
 
   /**
