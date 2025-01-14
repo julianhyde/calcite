@@ -161,7 +161,6 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -1226,8 +1225,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if (!filterRequirement.filterFields.isEmpty()
             || !filterRequirement.remnantFilterFields.isEmpty()) {
           Stream<String> mustFilterStream =
-              StreamSupport.stream(filterRequirement.filterFields.spliterator(), false)
-                  .map(namespace.getRowType().getFieldNames()::get);
+              filterRequirement.filterFields.stream()
+                  .mapToObj(namespace.getRowType().getFieldNames()::get);
           Stream<String> remnantStream =
               filterRequirement.remnantFilterFields.stream()
                   .map(q -> q.suffix().get(0));
