@@ -2734,7 +2734,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
    */
   @Test void testOverNullTreatmentWindow() {
     final String sql = "select\n"
-        + "lead(deptno, 1) over w,\n "
+        + "lead(deptno, 1) over w,\n"
         + "lead(deptno, 2) ignore nulls over w,\n"
         + "lead(deptno, 3) respect nulls over w,\n"
         + "lead(deptno, 1) over w,\n"
@@ -2877,10 +2877,13 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
         new RelDotWriter(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
     rel.explain(planWriter);
     pw.flush();
-    TestUtil.assertEqualsVerbose(
-        "digraph {\n"
-            + "\"LogicalValues\\ntuples = [{ true }]\\n\" -> \"LogicalProject\\nEXPR$0 = +(1, 2)"
-            + "\\nEXPR$1 = 3\\n\" [label=\"0\"]\n"
+    TestUtil.assertEqualsVerbose("digraph {\n"
+            + "\"LogicalValues\\n"
+            + "tuples = [{ true }]\\n"
+            + "\" -> \"LogicalProject\\n"
+            + "EXPR$0 = +(1, 2)\\n"
+            + "EXPR$1 = 3\\n"
+            + "\" [label=\"0\"]\n"
             + "}\n",
         Util.toLinux(sw.toString()));
   }
