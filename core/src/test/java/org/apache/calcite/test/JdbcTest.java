@@ -3293,8 +3293,8 @@ public class JdbcTest {
   }
 
   /** Test cases for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-5984">[CALCITE-5984]</a>
-   * Disabling trimming of unused fields via config and program. */
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5984">[CALCITE-5984]
+   * Disabling trimming of unused fields via config and program</a>. */
   @ParameterizedTest
   @MethodSource("disableTrimmingConfigsTestArguments")
   void testJoinWithTrimmingConfigs(boolean enableTrimmingByConfig,
@@ -8684,9 +8684,9 @@ public class JdbcTest {
   }
 
   /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]</a>
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]
    * Convert between standard Gregorian and proleptic Gregorian calendars for
-   * literal dates in local time zone. */
+   * literal dates in local time zone</a>. */
   @Test void testLiteralDateToSqlTimestamp() {
     CalciteAssert.that()
         .with(CalciteConnectionProperty.TIME_ZONE, TimeZone.getDefault().getID())
@@ -8704,9 +8704,9 @@ public class JdbcTest {
   }
 
   /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]</a>
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]
    * Convert between standard Gregorian and proleptic Gregorian calendars for
-   * literal timestamps in local time zone. */
+   * literal timestamps in local time zone</a>. */
   @Test void testLiteralTimestampToSqlTimestamp() {
     CalciteAssert.that()
         .with(CalciteConnectionProperty.TIME_ZONE, TimeZone.getDefault().getID())
@@ -8725,9 +8725,9 @@ public class JdbcTest {
   }
 
   /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]</a>
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]
    * Convert between standard Gregorian and proleptic Gregorian calendars for
-   * dynamic dates in local time zone. */
+   * dynamic dates in local time zone</a>. */
   @Test void testDynamicDateToSqlTimestamp() {
     final Date date = Date.valueOf("1500-04-30");
     CalciteAssert.that()
@@ -8747,9 +8747,9 @@ public class JdbcTest {
   }
 
   /** Test case for
-   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]</a>
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5414">[CALCITE-5414]
    * Convert between standard Gregorian and proleptic Gregorian calendars for
-   * dynamic timestamps in local time zone. */
+   * dynamic timestamps in local time zone</a>. */
   @Test void testDynamicTimestampToSqlTimestamp() {
     final Timestamp timestamp = Timestamp.valueOf("1500-04-30 12:00:00");
     CalciteAssert.that()

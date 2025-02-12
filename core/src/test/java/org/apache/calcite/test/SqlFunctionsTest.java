@@ -310,7 +310,7 @@ class SqlFunctionsTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6450">[CALCITE-6450]
-   * Postgres CONCAT_WS function </a>. */
+   * Postgres CONCAT_WS function</a>. */
   @Test void testConcatMultiObjectWithSeparator() {
     assertThat(concatMultiObjectWithSeparator("a"), is(""));
     assertThat(concatMultiObjectWithSeparator(",", "a b", "cd"), is("a b,cd"));

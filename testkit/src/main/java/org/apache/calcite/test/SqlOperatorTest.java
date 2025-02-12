@@ -2649,7 +2649,7 @@ public class SqlOperatorTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6450">[CALCITE-6450]
-   * Postgres CONCAT_WS function </a>. */
+   * Postgres CONCAT_WS function</a>. */
   private static void checkConcatWithSeparatorInPostgres(SqlOperatorFixture f) {
     f.setFor(SqlLibraryOperators.CONCAT_WS_POSTGRESQL);
     f.checkFails("^concat_ws(array['a'])^", INVALID_ARGUMENTS_NUMBER, false);
@@ -6193,6 +6193,12 @@ public class SqlOperatorTest {
     f.checkNull("upper(cast(null as varchar(1)))");
   }
 
+  /** Tests the {@code LEFT} function.
+   *
+   * <p>Contains a test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5859">[CALCITE-5859]
+   * Compile-time evaluation of LEFT(NULL, n) should not throw
+   * RuntimeException</a>. */
   @Test void testLeftFunc() {
     final SqlOperatorFixture f0 = fixture();
     final Consumer<SqlOperatorFixture> consumer = f -> {
@@ -6203,8 +6209,7 @@ public class SqlOperatorTest {
       f.checkString("left('abcd', -2)", "", "VARCHAR(4) NOT NULL");
       f.checkNull("left(cast(null as varchar(1)), -2)");
       f.checkNull("left('abcd', cast(null as Integer))");
-      // Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-5859">[CALCITE-5859]
-      // Compile-time evaluation of LEFT(NULL, n) should not throw RuntimeException</a>
+      // [CALCITE-5859] test case
       f.checkNull("left(null, 3)");
 
       // test for ByteString
@@ -11360,8 +11365,7 @@ public class SqlOperatorTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6663">[CALCITE-6663]
-   * Support SPLIT_PART function for PostgreSql  </a>.
-   */
+   * Support SPLIT_PART function for PostgreSql</a>. */
   @Test void testSplitPartFunction() {
     final SqlOperatorFixture f0 = fixture().setFor(SqlLibraryOperators.SPLIT_PART);
     f0.checkFails("^split_part('hello', ',', 1)^",
@@ -12042,8 +12046,7 @@ public class SqlOperatorTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6397">[CALCITE-6397]
-   * Add NVL2 function (enabled in Oracle, Spark library) </a>.
-   */
+   * Add NVL2 function (enabled in Oracle, Spark library)</a>. */
   @Test void testNvl2Func() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlLibraryOperators.NVL2, VmName.EXPAND);

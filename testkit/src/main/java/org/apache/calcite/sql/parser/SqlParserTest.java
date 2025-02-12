@@ -5517,8 +5517,7 @@ public class SqlParserTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4802">[CALCITE-4802]
-   * Babel parser doesn't parse IF(condition, then, else) statements </a>.
-   */
+   * Babel parser doesn't parse IF(condition, then, else) statements</a>. */
   @Test void testIf() {
     expr("if(true, 1, 0)")
         .ok("`IF`(TRUE, 1, 0)");
@@ -5784,9 +5783,12 @@ public class SqlParserTest {
     sql("select translate(name using utf8) as newName from t")
         .ok("SELECT TRANSLATE(`NAME` USING `UTF8`) AS `NEWNAME`\n"
             + "FROM `T`");
+  }
 
-    // Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-5996">[CALCITE-5996]</a>
-    // TRANSLATE operator is incorrectly unparsed
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-5996">[CALCITE-5996]
+   * TRANSLATE operator is incorrectly unparsed</a>. */
+  @Test void testTranslate() {
     sql("select translate(col using utf8)\n"
         + "from (select 'a' as col\n"
         + " from (values(true)))\n")

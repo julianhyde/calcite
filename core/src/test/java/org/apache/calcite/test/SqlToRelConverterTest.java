@@ -3493,11 +3493,9 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  /**
-   * Test case for
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-694">[CALCITE-694]
-   * Scan HAVING clause for sub-queries and IN-lists</a> relating to IN.
-   */
+   * Scan HAVING clause for sub-queries and IN-lists</a> relating to IN. */
   @Test void testHavingAggrFunctionIn() {
     final String sql = "select deptno\n"
         + "from emp\n"
@@ -3507,12 +3505,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  /**
-   * Test case for
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-694">[CALCITE-694]
    * Scan HAVING clause for sub-queries and IN-lists</a>, with a sub-query in
-   * the HAVING clause.
-   */
+   * the HAVING clause. */
   @Test void testHavingInSubQueryWithAggrFunction() {
     final String sql = "select sal\n"
         + "from emp\n"
@@ -3525,12 +3521,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  /**
-   * Test case for
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-716">[CALCITE-716]
    * Scalar sub-query and aggregate function in SELECT or HAVING clause gives
-   * AssertionError</a>; variant involving HAVING clause.
-   */
+   * AssertionError</a>; variant involving HAVING clause. */
   @Test void testAggregateAndScalarSubQueryInHaving() {
     final String sql = "select deptno\n"
         + "from emp\n"
@@ -3539,12 +3533,10 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
     sql(sql).ok();
   }
 
-  /**
-   * Test case for
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-716">[CALCITE-716]
    * Scalar sub-query and aggregate function in SELECT or HAVING clause gives
-   * AssertionError</a>; variant involving SELECT clause.
-   */
+   * AssertionError</a>; variant involving SELECT clause. */
   @Test void testAggregateAndScalarSubQueryInSelect() {
     final String sql = "select deptno,\n"
         + "  max(emp.empno) > (SELECT min(emp.empno) FROM emp) as b\n"

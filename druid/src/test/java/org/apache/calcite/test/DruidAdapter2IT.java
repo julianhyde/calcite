@@ -52,8 +52,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Tests for the {@code org.apache.calcite.adapter.druid} package.
  *
  * <p>Druid must be up and running with foodmart and wikipedia datasets loaded. Follow the
- * instructions on <a href="https://github.com/zabetak/calcite-druid-dataset">calcite-druid-dataset
- * </a> to setup Druid before launching these tests.
+ * instructions on <a href="https://github.com/zabetak/calcite-druid-dataset">calcite-druid-dataset</a>
+ * to set up Druid before launching these tests.
  *
  * <p>Features not yet implemented:
  * <ul>
