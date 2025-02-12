@@ -518,9 +518,11 @@ public class SqlToRelConverter {
           + "preserve datatypes:\n"
           + "validated type:\n"
           + validatedRowType.getFullTypeString()
-          + "\nconverted type:\n"
+          + "\n"
+          + "converted type:\n"
           + convertedRowType.getFullTypeString()
-          + "\nrel:\n"
+          + "\n"
+          + "rel:\n"
           + RelOptUtil.toString(result));
     }
   }

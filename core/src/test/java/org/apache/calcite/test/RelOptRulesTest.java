@@ -4568,7 +4568,8 @@ class RelOptRulesTest extends RelOptTestBase {
   @Test void testEmptyIntersect() {
     final String sql = "select * from (values (30, 3))"
         + "intersect\n"
-        + "select *\nfrom (values (10, 1), (30, 3)) as t (x, y) where x > 50\n"
+        + "select *\n"
+        + "from (values (10, 1), (30, 3)) as t (x, y) where x > 50\n"
         + "intersect\n"
         + "select * from (values (30, 3))";
     sql(sql)

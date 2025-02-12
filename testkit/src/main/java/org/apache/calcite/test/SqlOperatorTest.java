@@ -4088,6 +4088,7 @@ public class SqlOperatorTest {
   @Test void testNotLikeOperator() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.NOT_LIKE, VM_EXPAND);
+    // lint:skip 5 (newline in string literal)
     f.checkBoolean("'abc' not like '_b_'", false);
     f.checkBoolean("'ab\ncd' not like 'ab%'", false);
     f.checkBoolean("'123\n\n45\n' not like '%'", false);
@@ -4242,6 +4243,7 @@ public class SqlOperatorTest {
     f.checkBoolean("'ab'   like '_b'", true);
     f.checkBoolean("'abcd' like '_d'", false);
     f.checkBoolean("'abcd' like '%d'", true);
+    // lint:skip 5 (newline in string literal)
     f.checkBoolean("'ab\ncd' like 'ab%'", true);
     f.checkBoolean("'abc\ncd' like 'ab%'", true);
     f.checkBoolean("'123\n\n45\n' like '%'", true);
@@ -4282,6 +4284,7 @@ public class SqlOperatorTest {
     f1.checkBoolean("'abcd' ilike '_d'", false);
     f1.checkBoolean("'abcd' ilike '%d'", true);
     f1.checkBoolean("'abcd' ilike '%D'", true);
+    // lint:skip 8 (newline in string literal)
     f1.checkBoolean("'ab\ncd' ilike 'ab%'", true);
     f1.checkBoolean("'ab\ncd' ilike 'aB%'", true);
     f1.checkBoolean("'abc\ncd' ilike 'ab%'", true);
@@ -4300,6 +4303,7 @@ public class SqlOperatorTest {
     f.setFor(SqlLibraryOperators.REGEXP_LIKE, VmName.EXPAND);
 
     final Consumer<SqlOperatorFixture> consumer = f1 -> {
+      // lint:skip 15 (newline in string literal)
       f1.checkBoolean("REGEXP_LIKE('teststr', 'TEST', 'i')", true);
       f1.checkBoolean("REGEXP_LIKE('ateststr', 'TEST', 'c')", false);
       f1.checkBoolean("REGEXP_LIKE('atest\nstr', 'test.str', '')", false);
@@ -4373,6 +4377,7 @@ public class SqlOperatorTest {
     f.checkBoolean("'ab'   similar to '_b'", true);
     f.checkBoolean("'abcd' similar to '_d'", false);
     f.checkBoolean("'abcd' similar to '%d'", true);
+    // lint:skip 5 (newline in string literal)
     f.checkBoolean("'ab\ncd' similar to 'ab%'", true);
     f.checkBoolean("'abc\ncd' similar to 'ab%'", true);
     f.checkBoolean("'123\n\n45\n' similar to '%'", true);
@@ -4480,12 +4485,16 @@ public class SqlOperatorTest {
     f.checkBoolean("'abcd' like 'a.*d'", false);
 
     // some negative tests
-    f.checkFails("'y' similar to 'x+*y'", ".*Dangling meta character '\\*' near index 2\n"
-        + "x\\+\\*y\n"
-        + "  \\^.*", true);
-    f.checkFails("'y' similar to 'x?*y'", ".*Dangling meta character '\\*' near index 2\n"
-        + "x\\?\\*y\n"
-        + "  \\^.*", true);
+    f.checkFails("'y' similar to 'x+*y'",
+        ".*Dangling meta character '\\*' near index 2\n"
+            + "x\\+\\*y\n"
+            + "  \\^.*",
+        true);
+    f.checkFails("'y' similar to 'x?*y'",
+        ".*Dangling meta character '\\*' near index 2\n"
+            + "x\\?\\*y\n"
+            + "  \\^.*",
+        true);
 
     f.checkFails("'yd' similar to '[x-ze-a]d'",
         ".*Illegal character range near index 6\n"
@@ -5670,9 +5679,11 @@ public class SqlOperatorTest {
       f.checkString("from_base64('VGhpcyBpcyBhIHRlc\t3QgU3RyaW5nLg==')",
           "546869732069732061207465737420537472696e672e",
           "VARBINARY");
+      // lint:skip (newline in string literal)
       f.checkString("from_base64('VGhpcyBpcyBhIHRlc\t3QgU3\nRyaW5nLg==')",
           "546869732069732061207465737420537472696e672e",
           "VARBINARY");
+      // lint:skip (newline in string literal)
       f.checkString("from_base64('VGhpcyB  pcyBhIHRlc3Qg\tU3Ry\naW5nLg==')",
           "546869732069732061207465737420537472696e672e",
           "VARBINARY");
@@ -6760,7 +6771,10 @@ public class SqlOperatorTest {
   @Test void testJsonPretty() {
     final SqlOperatorFixture f = fixture();
     f.checkString("json_pretty('{\"foo\":100}')",
-        "{\n  \"foo\" : 100\n}", "VARCHAR(2000)");
+        "{\n"
+        + "  \"foo\" : 100\n"
+        + "}",
+        "VARCHAR(2000)");
     f.checkString("json_pretty('[1,2,3]')",
         "[ 1, 2, 3 ]", "VARCHAR(2000)");
     f.checkString("json_pretty('null')",
@@ -9894,8 +9908,10 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.ROUND, VmName.EXPAND);
     f.checkFails("^round(42, CAST(2 as BIGINT))^",
-        "Cannot apply 'ROUND' to arguments of type 'ROUND\\(<INTEGER>, <BIGINT>\\)'\\. "
-            + "Supported form\\(s\\): 'ROUND\\(<NUMERIC>\\)'\nROUND\\(<NUMERIC>, <INTEGER>\\)",
+        "Cannot apply 'ROUND' to arguments of type "
+            + "'ROUND\\(<INTEGER>, <BIGINT>\\)'\\. "
+            + "Supported form\\(s\\): 'ROUND\\(<NUMERIC>\\)'\n"
+            + "ROUND\\(<NUMERIC>, <INTEGER>\\)",
         false);
   }
 
@@ -9912,8 +9928,10 @@ public class SqlOperatorTest {
             + "TRUNCATE\\(<NUMERIC>, <INTEGER>\\)",
         false);
     f.checkFails("^trunc(42, CAST(2 as BIGINT))^",
-        "Cannot apply 'TRUNC' to arguments of type 'TRUNC\\(<INTEGER>, <BIGINT>\\)'\\. "
-            + "Supported form\\(s\\): 'TRUNC\\(<NUMERIC>\\)'\nTRUNC\\(<NUMERIC>, <INTEGER>\\)",
+        "Cannot apply 'TRUNC' to arguments of type "
+            + "'TRUNC\\(<INTEGER>, <BIGINT>\\)'\\. "
+            + "Supported form\\(s\\): 'TRUNC\\(<NUMERIC>\\)'\n"
+            + "TRUNC\\(<NUMERIC>, <INTEGER>\\)",
         false);
   }
 
@@ -11372,11 +11390,13 @@ public class SqlOperatorTest {
       f.checkFails(
           String.format(Locale.ROOT, "^substring('string', CAST(%d AS DOUBLE), "
               + "CAST(%d AS DOUBLE))^", Byte.MIN_VALUE, Byte.MAX_VALUE + 10),
+          // lint:skip 2 (newline in string literal)
           "Cannot apply 'SUBSTRING' to arguments of type "
             + ".*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*", false);
       f.checkFails(
           String.format(Locale.ROOT, "^substring('string', CAST(%d AS DECIMAL), "
               + "CAST(%d AS DECIMAL))^", Byte.MIN_VALUE, Byte.MAX_VALUE + 10),
+          // lint:skip 2 (newline in string literal)
           "Cannot apply 'SUBSTRING' to arguments of type "
               + ".*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*",
           false);
@@ -12217,11 +12237,15 @@ public class SqlOperatorTest {
     f.checkAggType("listagg(12)", "VARCHAR NOT NULL");
     f.enableTypeCoercion(false)
         .checkFails("^listagg(12)^",
-            "Cannot apply 'LISTAGG' to arguments of type .*'\n.*'", false);
+            "Cannot apply 'LISTAGG' to arguments of type .*'\n"
+                + ".*'",
+            false);
     f.checkAggType("listagg(cast(12 as double))", "VARCHAR NOT NULL");
     f.enableTypeCoercion(false)
         .checkFails("^listagg(cast(12 as double))^",
-            "Cannot apply 'LISTAGG' to arguments of type .*'\n.*'", false);
+            "Cannot apply 'LISTAGG' to arguments of type .*'\n"
+                + ".*'",
+            false);
     f.checkFails("^listagg()^",
         "Invalid number of arguments to function 'LISTAGG'. Was expecting 1 arguments",
         false);
@@ -12572,9 +12596,12 @@ public class SqlOperatorTest {
     f.checkScalar("extract(day from interval '4-2' year to month)",
         "0", "BIGINT NOT NULL");
 
-    final String fail = "Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<.*> "
-        + "FROM <INTERVAL YEAR TO MONTH>\\)'\\. Supported form\\(s\\): "
-        + ".*\\n.*\\n.*";
+    final String fail = "Cannot apply 'EXTRACT' to arguments of type "
+        + "'EXTRACT\\(<.*> FROM <INTERVAL YEAR TO MONTH>\\)'\\. "
+        + "Supported form\\(s\\): "
+        + ".*\\n"
+        + ".*\\n"
+        + ".*";
 
     f.checkFails("^extract(doy from interval '4-2' year to month)^", fail, false);
     f.checkFails("^extract(dow from interval '4-2' year to month)^", fail, false);
@@ -12640,8 +12667,11 @@ public class SqlOperatorTest {
         "2",
         "BIGINT NOT NULL");
 
-    final String fail = "Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<.*> "
-        + "FROM <INTERVAL DAY TO SECOND>\\)'\\. Supported form\\(s\\): .*\\n.*\\n.*";
+    final String fail = "Cannot apply 'EXTRACT' to arguments of type "
+        + "'EXTRACT\\(<.*> FROM <INTERVAL DAY TO SECOND>\\)'\\. "
+        + "Supported form\\(s\\): .*\\n"
+        + ".*\\n"
+        + ".*";
 
     f.checkFails("^extract(doy from interval '2 3:4:5.678' day to second)^", fail, false);
     f.checkFails("^extract(dow from interval '2 3:4:5.678' day to second)^", fail, false);
@@ -12742,9 +12772,11 @@ public class SqlOperatorTest {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.EXTRACT, VM_JAVA);
 
-    final String fail = "Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<.*> "
-        + "FROM <TIME\\(0\\)>\\)'\\. "
-        + "Supported form\\(s\\): .*\\n.*\\n.*";
+    final String fail = "Cannot apply 'EXTRACT' to arguments of type"
+        + " 'EXTRACT\\(<.*> FROM <TIME\\(0\\)>\\)'\\. "
+        + "Supported form\\(s\\): .*\\n"
+        + ".*\\n"
+        + ".*";
 
     f.checkFails("extract(^a^ from time '12:34:56')",
         "'A' is not a valid time frame", false);

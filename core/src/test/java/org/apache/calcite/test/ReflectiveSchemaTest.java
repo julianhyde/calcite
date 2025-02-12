@@ -717,7 +717,9 @@ public class ReflectiveSchemaTest {
           } catch (SQLException e) {
             throw TestUtil.rethrow(e);
           }
-          assertThat(buf, hasToString("0\n2147483647\n"));
+          assertThat(buf,
+              hasToString("0\n"
+                  + "2147483647\n"));
         });
   }
 

@@ -40,6 +40,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -429,7 +430,9 @@ public class MongoAdapterTest implements SchemaFactory {
         .query(
             "select state, count(*) as c from zips group by state order by state")
         .limit(3)
-        .returns("STATE=AK; C=3\nSTATE=AL; C=3\nSTATE=AR; C=3\n")
+        .returns("STATE=AK; C=3\n"
+            + "STATE=AL; C=3\n"
+            + "STATE=AR; C=3\n")
         .queryContains(
             mongoChecker(
                 "{$project: {STATE: '$state'}}",
@@ -444,7 +447,8 @@ public class MongoAdapterTest implements SchemaFactory {
         .query(
             "select count(*) as c, state from zips group by state order by state")
         .limit(2)
-        .returns("C=3; STATE=AK\nC=3; STATE=AL\n")
+        .returns("C=3; STATE=AK\n"
+            + "C=3; STATE=AL\n")
         .queryContains(
             mongoChecker(
                 "{$project: {STATE: '$state'}}",
@@ -456,10 +460,13 @@ public class MongoAdapterTest implements SchemaFactory {
 
   @Test void testGroupByAvg() {
     assertModel(MODEL)
-        .query(
-            "select state, avg(pop) as a from zips group by state order by state")
+        .query("select state, avg(pop) as a\n"
+            + "from zips\n"
+            + "group by state\n"
+            + "order by state")
         .limit(2)
-        .returns("STATE=AK; A=26856\nSTATE=AL; A=43383\n")
+        .returns("STATE=AK; A=26856\n"
+            + "STATE=AL; A=43383\n")
         .queryContains(
             mongoChecker(
                 "{$project: {STATE: '$state', POP: '$pop'}}",
@@ -789,7 +796,7 @@ public class MongoAdapterTest implements SchemaFactory {
    * @param expected Expected query (as array)
    * @return validation function
    */
-  private static Consumer<List> mongoChecker(final String... expected) {
+  private static Consumer<List> mongoChecker(final String @Nullable... expected) {
     return actual -> {
       if (expected == null) {
         assertThat("null mongo Query", actual, nullValue());
@@ -836,6 +843,7 @@ public class MongoAdapterTest implements SchemaFactory {
             + "group by \"STATE\" "
             + "order by \"AVG(pop)\"")
         .limit(2)
-        .returns("STATE=VT; AVG(pop)=26408\nSTATE=AK; AVG(pop)=26856\n");
+        .returns("STATE=VT; AVG(pop)=26408\n"
+            + "STATE=AK; AVG(pop)=26856\n");
   }
 }

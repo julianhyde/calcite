@@ -693,6 +693,7 @@ class SqlFunctionsTest {
       assertThat(fromBase64(toBase64(expected)),
           is(new ByteString(expected.getBytes(UTF_8))));
     }
+    // lint:skip 2 (newline in string)
     assertThat("546869732069732061207465737420537472696e672e",
         is(fromBase64("VGhpcyB  pcyBh\rIHRlc3Qg\tU3Ry\naW5nLg==").toString()));
     assertThat(fromBase64("-1"), nullValue());
