@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.rel.rel2sql;
 
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteJdbc41Factory;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.Driver;
@@ -146,6 +147,14 @@ class DialectTestConfig {
         () -> "dialect " + dialectCode);
   }
 
+  /** Which phase of query execution. */
+  public enum Phase {
+    /** Parses the query but does not validate. */
+    PARSE,
+    PREPARE,
+    EXECUTE,
+  }
+
   /** Definition of a dialect. */
   static class Dialect {
     /** The name of this dialect. */
@@ -236,9 +245,9 @@ class DialectTestConfig {
           expectedQuery, expectedError);
     }
 
-    /** Performs an action with the dialect's connection and returns true;
-     * if no connection, no-ops and returns false. */
-    public boolean withConnection(Consumer<Connection> consumer) {
+    /** Performs an action with the dialect's connection. */
+    public void withConnection(CalciteAssert.SchemaSpec schemaSpec,
+        Consumer<Connection> consumer) {
       switch (code) {
       case CALCITE:
         final CalciteJdbc41Factory factory = new CalciteJdbc41Factory();
@@ -251,23 +260,30 @@ class DialectTestConfig {
             CalciteAssert.SchemaSpec.SCOTT,
             CalciteAssert.SchemaSpec.SCOTT_WITH_TEMPORAL,
             CalciteAssert.SchemaSpec.TPCH);
+        final Properties info = new Properties();
+        // Hive for RLIKE, Postgres for ILIKE, etc.
+        info.put(CalciteConnectionProperty.FUN.name(),
+            "standard,hive,postgresql");
+        info.put(CalciteConnectionProperty.SCHEMA.name(),
+            schemaSpec.schemaName);
         try (Connection connection =
-                 factory.newConnection(driver, factory, url, new Properties(),
+                 factory.newConnection(driver, factory, url, info,
                      rootSchema, null)) {
           consumer.accept(connection);
-          return true;
+          return;
         } catch (SQLException e) {
           throw new RuntimeException(e);
         }
       default:
-        return false;
+        return;
       }
     }
 
     /** Performs an action with a statement from the dialect's connection,
      * or no-ops if no connection. */
-    public boolean withStatement(Consumer<Statement> consumer) {
-      return withConnection(connection -> {
+    public void withStatement(CalciteAssert.SchemaSpec schemaSpec,
+        Consumer<Statement> consumer) {
+      withConnection(schemaSpec, connection -> {
         try (Statement statement = connection.createStatement()) {
           consumer.accept(statement);
         } catch (SQLException e) {

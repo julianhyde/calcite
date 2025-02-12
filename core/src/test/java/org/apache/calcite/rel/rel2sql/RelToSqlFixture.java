@@ -50,13 +50,16 @@ import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -108,6 +111,7 @@ class RelToSqlFixture {
   private final CalciteAssert.SchemaSpec schemaSpec;
   private final String sql;
   private final DialectTestConfig.Dialect dialect;
+  private final DialectTestConfig.Phase phase;
   private final Set<SqlLibrary> librarySet;
   private final @Nullable Function<RelBuilder, RelNode> relFn;
   private final List<Function<RelNode, RelNode>> relTransforms;
@@ -117,8 +121,8 @@ class RelToSqlFixture {
   private final UnaryOperator<SqlWriterConfig> writerTransform;
 
   RelToSqlFixture(Token token, CalciteAssert.SchemaSpec schemaSpec, String sql,
-      DialectTestConfig.Dialect dialect, SqlParser.Config parserConfig,
-      Set<SqlLibrary> librarySet,
+      DialectTestConfig.Dialect dialect, DialectTestConfig.Phase phase,
+      SqlParser.Config parserConfig, Set<SqlLibrary> librarySet,
       UnaryOperator<SqlToRelConverter.Config> configTransform,
       @Nullable Function<RelBuilder, RelNode> relFn,
       List<Function<RelNode, RelNode>> relTransforms,
@@ -128,6 +132,7 @@ class RelToSqlFixture {
     this.schemaSpec = schemaSpec;
     this.sql = sql;
     this.dialect = dialect;
+    this.phase = requireNonNull(phase, "phase");
     this.librarySet = librarySet;
     this.relFn = relFn;
     this.relTransforms = ImmutableList.copyOf(relTransforms);
@@ -146,7 +151,7 @@ class RelToSqlFixture {
   }
 
   public RelToSqlFixture schema(CalciteAssert.SchemaSpec schemaSpec) {
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -155,7 +160,7 @@ class RelToSqlFixture {
     if (sql.equals(this.sql)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -169,7 +174,7 @@ class RelToSqlFixture {
     if (dialect.equals(this.dialect)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -178,7 +183,7 @@ class RelToSqlFixture {
     if (parserConfig.equals(this.parserConfig)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -194,8 +199,14 @@ class RelToSqlFixture {
     if (librarySet1.equals(this.librarySet)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet1, configTransform, relFn, relTransforms,
+        testConfig, writerTransform);
+  }
+
+  public RelToSqlFixture withPhase(DialectTestConfig.Phase phase) {
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
+        parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
 
@@ -204,7 +215,7 @@ class RelToSqlFixture {
     if (configTransform.equals(this.configTransform)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -213,7 +224,7 @@ class RelToSqlFixture {
     if (relFn.equals(this.relFn)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -222,7 +233,7 @@ class RelToSqlFixture {
       Function<RelNode, RelNode> relTransform) {
     final List<Function<RelNode, RelNode>> relTransforms2 =
         FlatLists.append(relTransforms, relTransform);
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms2,
         testConfig, writerTransform);
   }
@@ -230,7 +241,7 @@ class RelToSqlFixture {
   public RelToSqlFixture withTestConfig(
       UnaryOperator<DialectTestConfig> transform) {
     DialectTestConfig testConfig = transform.apply(this.testConfig);
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -240,7 +251,7 @@ class RelToSqlFixture {
     if (writerTransform.equals(this.writerTransform)) {
       return this;
     }
-    return new RelToSqlFixture(token, schemaSpec, sql, dialect,
+    return new RelToSqlFixture(token, schemaSpec, sql, dialect, phase,
         parserConfig, librarySet, configTransform, relFn, relTransforms,
         testConfig, writerTransform);
   }
@@ -443,28 +454,42 @@ class RelToSqlFixture {
   public RelToSqlFixture done() {
     token.close();
 
-    final List<String> referenceResultSet;
+    final AtomicReference<List<String>> referenceResultSet = new AtomicReference<>();
+    final AtomicReference<List<String>> referenceValid = new AtomicReference<>();
     if (testConfig.refDialectCode != null) {
       DialectTestConfig.Dialect referenceDialect =
           testConfig.get(testConfig.refDialectCode);
-      final List<String> rows = new ArrayList<>();
       final String referenceSql =
           testConfig.refDialectCode == CALCITE && relFn == null
               ? sql
               : dialect(testConfig.refDialectCode).exec();
-      if (referenceDialect.withStatement(statement -> {
-        try (ResultSet resultSet = statement.executeQuery(referenceSql)) {
-          CalciteAssert.toStringList(resultSet, rows);
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
-        }
-      })) {
-        referenceResultSet = ImmutableList.copyOf(rows);
-      } else {
-        referenceResultSet = null;
+      switch (phase) {
+      case PREPARE:
+        referenceDialect.withConnection(schemaSpec, c -> {
+          try (PreparedStatement ps = c.prepareStatement(referenceSql)) {
+            List<String> columnNames = new ArrayList<>();
+            final ResultSetMetaData metaData = ps.getMetaData();
+            for (int i = 0; i < metaData.getColumnCount(); i++) {
+              columnNames.add(metaData.getColumnName(i + 1));
+            }
+            referenceValid.set(ImmutableList.copyOf(columnNames));
+          } catch (SQLException e) {
+            throw new RuntimeException("while preparing [" + referenceSql + "]", e);
+          }
+        });
+        break;
+
+      case EXECUTE:
+        referenceDialect.withStatement(schemaSpec, statement -> {
+          try (ResultSet resultSet = statement.executeQuery(referenceSql)) {
+            final List<String> rows = new ArrayList<>();
+            CalciteAssert.toStringList(resultSet, rows);
+            referenceResultSet.set(ImmutableList.copyOf(rows));
+          } catch (SQLException e) {
+            throw new RuntimeException(e);
+          }
+        });
       }
-    } else {
-      referenceResultSet = null;
     }
 
     // Generate the query in all enabled dialects, and check results if there
@@ -491,11 +516,11 @@ class RelToSqlFixture {
         }
 
         if (dialect.execute) {
-          dialect.withStatement(statement -> {
+          dialect.withStatement(schemaSpec, statement -> {
             try {
               final ResultSet resultSet = statement.executeQuery(sql);
-              if (referenceResultSet != null) {
-                assertThat(resultSet, returnsUnordered(referenceResultSet));
+              if (referenceResultSet.get() != null) {
+                assertThat(resultSet, returnsUnordered(referenceResultSet.get()));
               }
             } catch (SQLException e) {
               throw new RuntimeException(e);
