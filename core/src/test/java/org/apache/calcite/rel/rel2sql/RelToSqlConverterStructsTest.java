@@ -41,9 +41,10 @@ class RelToSqlConverterStructsTest {
     final DialectTestConfig testConfig =
         DialectTestConfigs.INSTANCE_SUPPLIER.get();
     final DialectTestConfig.Dialect calcite = testConfig.get(CALCITE);
+    final DialectTestConfig.Phase phase = DialectTestConfig.Phase.PREPARE;
     return new RelToSqlFixture(token,
         CalciteAssert.SchemaSpec.MY_DB, "?",
-        calcite, SqlParser.Config.DEFAULT, ImmutableSet.of(),
+        calcite, phase, SqlParser.Config.DEFAULT, ImmutableSet.of(),
         UnaryOperator.identity(), null, ImmutableList.of(),
         DialectTestConfigs.INSTANCE_SUPPLIER.get(),
         RelToSqlFixture::transformWriter);
