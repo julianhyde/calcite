@@ -22,6 +22,9 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.ProjectOverSumToSum0Rule;
+import org.apache.calcite.rel.rules.ProjectToWindowRule;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.schema.SchemaPlus;
@@ -41,6 +44,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSet;
+import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Token;
 import org.apache.calcite.util.Util;
@@ -405,6 +409,17 @@ class RelToSqlFixture {
           ImmutableList.of());
     };
     return withExtraTransform(relTransform);
+  }
+
+  RelToSqlFixture optimizeOver() {
+    HepProgramBuilder builder = new HepProgramBuilder();
+    builder.addRuleClass(ProjectOverSumToSum0Rule.class);
+    builder.addRuleClass(ProjectToWindowRule.class);
+    HepPlanner hepPlanner = new HepPlanner(builder.build());
+    RuleSet rules =
+        RuleSets.ofList(CoreRules.PROJECT_OVER_SUM_TO_SUM0_RULE,
+            CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW);
+    return optimize(rules, hepPlanner);
   }
 
   RelToSqlFixture ok(String expectedQuery) {

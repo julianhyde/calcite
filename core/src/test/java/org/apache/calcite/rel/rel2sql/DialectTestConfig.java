@@ -21,6 +21,7 @@ import org.apache.calcite.jdbc.CalciteJdbc41Factory;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.test.CalciteAssert;
 
 import com.google.common.collect.ImmutableMap;
@@ -255,17 +256,20 @@ class DialectTestConfig {
         final String url = "jdbc:calcite:";
         final CalciteSchema rootSchema = CalciteSchema.createRootSchema(false);
         CalciteAssert.addSchema(rootSchema.plus(),
+            CalciteAssert.SchemaSpec.BOOKSTORE,
             CalciteAssert.SchemaSpec.JDBC_FOODMART,
             CalciteAssert.SchemaSpec.POST,
             CalciteAssert.SchemaSpec.SCOTT,
             CalciteAssert.SchemaSpec.SCOTT_WITH_TEMPORAL,
             CalciteAssert.SchemaSpec.TPCH);
         final Properties info = new Properties();
-        // Hive for RLIKE, Postgres for ILIKE, etc.
+        // Hive for RLIKE, Postgres for ILIKE, Spark for EXISTS, etc.
         info.put(CalciteConnectionProperty.FUN.name(),
-            "standard,hive,postgresql");
+            "standard,postgresql,bigquery,hive,spark");
         info.put(CalciteConnectionProperty.SCHEMA.name(),
             schemaSpec.schemaName);
+        info.put(CalciteConnectionProperty.CONFORMANCE.name(),
+            SqlConformanceEnum.LENIENT.name());
         try (Connection connection =
                  factory.newConnection(driver, factory, url, info,
                      rootSchema, null)) {
