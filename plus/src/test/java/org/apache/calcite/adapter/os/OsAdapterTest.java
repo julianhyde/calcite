@@ -38,6 +38,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
@@ -153,6 +155,53 @@ class OsAdapterTest {
     sql("select distinct type from files")
         .returnsUnordered("type=d",
             "type=f");
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-7496">[CALCITE-7496]
+   * files(path) table function passes leading-dash path directly to find,
+   * allowing command injection</a>.
+   *
+   * <p>GNU {@code find} treats an argument beginning with '{@code -}' as an
+   * expression primary rather than a filesystem path. The exploit path
+   * {@code -delete} causes {@code find} to delete every file reachable from
+   * the working directory instead of enumerating a named directory.
+   *
+   * <p>This test creates a sentinel file in the working directory. Without the
+   * fix, {@code find -delete -printf ...} executes as an expression starting
+   * from '{@code .}', deletes the sentinel (along with all other reachable
+   * files), and returns a non-empty result set. With the fix,
+   * {@code find -- -delete -printf ...} treats '{@code -delete}' as a
+   * (non-existent) path, returns an empty result set, and leaves the sentinel
+   * untouched.
+   *
+   * <p><b>WARNING:</b> Running this test against unfixed code will invoke
+   * {@code find -delete} starting from the process working directory, deleting
+   * all reachable files. Only do so in a controlled, disposable environment.
+   */
+  @Test void testFilesLeadingDashPath() throws IOException {
+    assumeFalse(isWindows(), "Skip: the 'files' table does not work on Windows");
+    // Create a sentinel file in the working directory. Without the fix,
+    // 'find -delete' runs as an expression from '.', deleting this file.
+    Path sentinel =
+        Files.createTempFile(Path.of("."), "calcite-7496-", ".sentinel");
+    try {
+      sql("select * from table(\"files\"('-delete'))").returns(r -> {
+        try {
+          assertThat("files('-delete') returned rows; find interpreted "
+              + "'-delete' as an expression and deleted files from the "
+              + "working directory",
+              r.next(), is(false));
+        } catch (SQLException e) {
+          throw rethrow(e);
+        }
+      });
+      assertThat("sentinel file was deleted by find -delete; "
+          + "the -delete expression ran against the working directory",
+          Files.exists(sentinel), is(true));
+    } finally {
+      Files.deleteIfExists(sentinel);
+    }
   }
 
   @Test void testPs() {
