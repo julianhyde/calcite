@@ -89,7 +89,7 @@ public class FilesTableFunction {
 
       private Enumerable<String> sourceLinux() {
         final String[] args = {
-            "find", path, "-printf", ""
+            "find", "--", path, "-printf", ""
               + "%A@\\0" // access_time
               + "%b\\0" // block_count
               + "%C@\\0" // change_time
@@ -119,8 +119,8 @@ public class FilesTableFunction {
           throw new IllegalArgumentException(SINGLE_QUOTE);
         }
         // BSD stat format specifiers: https://man.freebsd.org/cgi/man.cgi?query=stat
-        final String[] args = {"/bin/sh", "-c", "find '" + path
-              + "' | xargs stat -f "
+        final String[] args = {"/bin/sh", "-c", "find -- '" + path
+              + "' -print0 | xargs -0 stat -f "
               + "%a%n" // access_time
               + "%b%n" // block_count
               + "%c%n" // change_time
@@ -152,8 +152,8 @@ public class FilesTableFunction {
         // GNU stat format specifiers:
         // https://www.gnu.org/software/coreutils/manual/html_node/stat-invocation.html
         // format string must have exactly 20 lines per file to match the schema
-        final String[] args = {"/bin/sh", "-c", "find '" + path
-              + "' | xargs stat -c '"
+        final String[] args = {"/bin/sh", "-c", "find -- '" + path
+              + "' -print0 | xargs -0 stat -c '"
               + "%X\n" // access_time
               + "%b\n" // block_count
               + "%Z\n" // change_time
