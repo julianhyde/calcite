@@ -186,7 +186,7 @@ class OsAdapterTest {
     Path sentinel =
         Files.createTempFile(Path.of("."), "calcite-7496-", ".sentinel");
     try {
-      sql("select * from table(\"files\"('-delete'))").returns(r -> {
+      sql("select * from files('-delete')").returns(r -> {
         try {
           assertThat("files('-delete') returned rows; find interpreted "
               + "'-delete' as an expression and deleted files from the "
