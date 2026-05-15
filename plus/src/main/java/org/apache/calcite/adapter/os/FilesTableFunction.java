@@ -87,6 +87,15 @@ public class FilesTableFunction {
         // %p file name (including argument)
       }
 
+      /** Wraps {@code path} in single quotes for use in a shell command,
+       * throwing if it contains a single quote. */
+      private String quotePath(String path) {
+        if (path.contains("'")) {
+          throw new IllegalArgumentException(SINGLE_QUOTE);
+        }
+        return "'" + path + "'";
+      }
+
       private Enumerable<String> sourceLinux() {
         final String[] args = {
             "find", "--", path, "-printf", ""
@@ -112,15 +121,6 @@ public class FilesTableFunction {
               + "%Y\\0" // type
         };
         return Processes.processLines('\0', args);
-      }
-
-      /** Wraps {@code path} in single quotes for use in a shell command,
-       * throwing if it contains a single quote. */
-      private static String quotePath(String path) {
-        if (path.contains("'")) {
-          throw new IllegalArgumentException(SINGLE_QUOTE);
-        }
-        return "'" + path + "'";
       }
 
       private Enumerable<String> sourceMacOs() {
