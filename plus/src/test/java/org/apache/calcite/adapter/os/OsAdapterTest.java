@@ -157,8 +157,8 @@ class OsAdapterTest {
 
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-7496">[CALCITE-7496]
-   * files(path) table function passes leading-dash path directly to find,
-   * allowing command injection</a>.
+   * The 'files(path)' table function passes leading-dash path directly to
+   * `find`, allowing command injection</a>.
    *
    * <p>GNU {@code find} treats an argument beginning with '{@code -}' as an
    * expression primary rather than a filesystem path. The dangerous case is an
