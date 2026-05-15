@@ -40,6 +40,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
@@ -179,24 +180,15 @@ class OsAdapterTest {
    * {@code find -delete} starting from the process working directory, deleting
    * all reachable files. Only do so in a controlled, disposable environment.
    */
-  @Disabled
   @Test void testFilesLeadingDashPath() throws IOException {
     assumeFalse(isWindows(), "Skip: the 'files' table does not work on Windows");
     // Create a sentinel file in the working directory. Without the fix,
     // 'find -delete' runs as an expression from '.', deleting this file.
     Path sentinel =
-        Files.createTempFile(Path.of("."), "calcite-7496-", ".sentinel");
+        Files.createTempFile(Paths.get("."), "calcite-7496-", ".sentinel");
     try {
-      sql("select * from files('-delete')").returns(r -> {
-        try {
-          assertThat("files('-delete') returned rows; find interpreted "
-              + "'-delete' as an expression and deleted files from the "
-              + "working directory",
-              r.next(), is(false));
-        } catch (SQLException e) {
-          throw rethrow(e);
-        }
-      });
+      sql("select * from files('-delete')")
+          .throws_("Path with leading dash character is not supported");
       assertThat("sentinel file was deleted by find -delete; "
           + "the -delete expression ran against the working directory",
           Files.exists(sentinel), is(true));
