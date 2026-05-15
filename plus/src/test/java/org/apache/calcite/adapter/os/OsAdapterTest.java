@@ -179,6 +179,7 @@ class OsAdapterTest {
    * {@code find -delete} starting from the process working directory, deleting
    * all reachable files. Only do so in a controlled, disposable environment.
    */
+  @Disabled
   @Test void testFilesLeadingDashPath() throws IOException {
     assumeFalse(isWindows(), "Skip: the 'files' table does not work on Windows");
     // Create a sentinel file in the working directory. Without the fix,
