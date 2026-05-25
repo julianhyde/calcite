@@ -29,13 +29,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -80,7 +82,7 @@ public class ModelHandlerTest {
     SchemaPlus root = CalciteSchema.createRootSchema(false, false).plus();
     // java.lang.String is not in the standard denylist; the custom
     // filter denies the whole java.lang. package.
-    ClassNameFilter strict = ClassNameFilter.of("java.lang.", "");
+    ClassNameFilter strict = ClassNameFilter.of("java.lang.");
     String model = "inline:{"
         + "  version: '1.0',"
         + "  defaultSchema: 'X',"
@@ -92,16 +94,14 @@ public class ModelHandlerTest {
         + "    } ]"
         + "  } ]"
         + "}";
-    RuntimeException e =
+    Throwable e =
         assertThrows(RuntimeException.class, () ->
             new ModelHandler(root, model, strict));
-    Throwable cause = e;
-    while (cause != null && !(cause instanceof SecurityException)) {
-      cause = cause.getCause();
+    while (e != null && !(e instanceof SecurityException)) {
+      e = e.getCause();
     }
-    assertThat("expected SecurityException in chain",
-        cause != null, is(true));
-    assertThat(requireNonNull(cause, "cause").getMessage(), containsString("java.lang."));
+    assertThat("expected SecurityException in chain", e, notNullValue());
+    assertThat(e.getMessage(), containsString("java.lang."));
   }
 
   @Test void testAddFunctionsWithExplicitFilterDeniesClass() {
@@ -115,7 +115,7 @@ public class ModelHandlerTest {
     assertThat(e.getMessage(), containsString("javax.naming."));
   }
 
-  @Test void testDenyFactory() throws SQLException {
+  @Test void testDenyFactory() {
     String model = "inline:{"
         + "  version: '1.0',"
         + "  defaultSchema: 'X',"
@@ -177,15 +177,15 @@ public class ModelHandlerTest {
 
   @Test void testFactoryMethodsCacheInstances() {
     // standard() returns a single cached instance.
-    assertThat(ClassNameFilter.standard() == ClassNameFilter.standard(),
-        is(true));
+    assertThat(ClassNameFilter.standard(),
+        sameInstance(ClassNameFilter.standard()));
     // of() returns the same instance for equal inputs.
-    ClassNameFilter a = ClassNameFilter.of("com.evil.", "");
-    ClassNameFilter b = ClassNameFilter.of("com.evil.", "");
-    assertThat(a == b, is(true));
+    ClassNameFilter a = ClassNameFilter.of("com.evil.");
+    ClassNameFilter b = ClassNameFilter.of("com.evil.");
+    assertThat(a, sameInstance(b));
     // Different inputs produce different instances.
-    ClassNameFilter c = ClassNameFilter.of("com.evil.", "com.example.");
-    assertThat(a == c, is(false));
+    ClassNameFilter c = ClassNameFilter.of("com.evil.,com.example.");
+    assertThat(a, not(sameInstance(c)));
     // The cached filter behaves as configured.
     assertThat(a.test("com.evil.Payload"), is(false));
     assertThat(a.test("javax.naming.InitialContext"), is(true));

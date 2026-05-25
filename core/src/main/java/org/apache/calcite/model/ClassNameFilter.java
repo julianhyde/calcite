@@ -31,23 +31,13 @@ import java.util.function.Predicate;
  * model: user-defined functions, custom schemas, custom tables, JDBC
  * drivers, dialect factories, and lattice statistic providers.
  *
- * <p>An attacker who can supply the {@code model=...} portion of a JDBC
- * URL (or write a model JSON file the application reads) can otherwise
- * register any class on the JVM classpath as a UDF or schema factory and
- * trigger arbitrary code execution. This filter rejects a denylist of
- * class-name patterns known to enable that abuse, and optionally
- * requires class names to match an allowlist as well.
- *
  * <p>{@link #standard()} returns the filter applied by
- * {@link ModelHandler}. Its denylist is the built-in
- * {@link #DEFAULT_DENYLIST} together with any patterns from
+ * {@link ModelHandler}: the built-in {@link #DEFAULT_DENYLIST} together
+ * with any patterns from
  * {@link CalciteSystemProperty#MODEL_CLASSES_DENIED} (which
- * <em>extends</em> the denylist). Its allowlist is set from
- * {@link CalciteSystemProperty#MODEL_CLASSES_ALLOWED} (which
- * <em>replaces</em> the allowlist; empty by default, meaning the
- * denylist alone decides).
+ * <em>extends</em> the denylist).
  *
- * <p>Both lists are comma-separated pattern strings. A pattern ending
+ * <p>The denylist is a comma-separated pattern string. A pattern ending
  * in {@code "."} matches any class in that package or its sub-packages;
  * otherwise the pattern matches a class name exactly. Whitespace around
  * commas is ignored.
@@ -85,51 +75,40 @@ class ClassNameFilter implements Predicate<String> {
       + "jdk.internal.";
 
   /** Cache shared by all factory calls; filters are immutable and small,
-   * so identical (denylist, allowlist) inputs need only be parsed once. */
+   * so identical denylist inputs need only be parsed once. */
   private static final ConcurrentMap<String, ClassNameFilter> CACHE =
       new ConcurrentHashMap<>();
 
   /** The standard filter, built once from the built-in denylist plus
-   * the {@link CalciteSystemProperty} pair. Initialized via {@link #of}
-   * so it shares the same cache. */
+   * the {@link CalciteSystemProperty#MODEL_CLASSES_DENIED} extension.
+   * Initialized via {@link #of} so it shares the same cache. */
   private static final ClassNameFilter STANDARD =
       of(
           append(DEFAULT_DENYLIST,
-              CalciteSystemProperty.MODEL_CLASSES_DENIED.value()),
-          CalciteSystemProperty.MODEL_CLASSES_ALLOWED.value());
+          CalciteSystemProperty.MODEL_CLASSES_DENIED.value()));
 
   private final ImmutableList<String> denylist;
-  private final ImmutableList<String> allowlist;
 
-  private ClassNameFilter(String denylist, String allowlist) {
+  private ClassNameFilter(String denylist) {
     this.denylist = parse(denylist);
-    this.allowlist = parse(allowlist);
   }
 
   /** Returns the standard filter used by {@link ModelHandler}: the
    * built-in {@link #DEFAULT_DENYLIST} (extended by
-   * {@link CalciteSystemProperty#MODEL_CLASSES_DENIED}) plus the
-   * allowlist from
-   * {@link CalciteSystemProperty#MODEL_CLASSES_ALLOWED}. */
+   * {@link CalciteSystemProperty#MODEL_CLASSES_DENIED}). */
   static ClassNameFilter standard() {
     return STANDARD;
   }
 
-  /** Returns a filter parsed from comma-separated {@code denylist} and
-   * {@code allowlist} pattern strings; either may be empty. Filters are
-   * cached, so repeated calls with the same arguments return the same
-   * instance. */
-  static ClassNameFilter of(String denylist, String allowlist) {
-    // NUL is forbidden in JVM class names, so concatenating with NUL is
-    // an injection-proof cache key.
-    String key = denylist + '\0' + allowlist;
-    return CACHE.computeIfAbsent(key,
-        k -> new ClassNameFilter(denylist, allowlist));
+  /** Returns a filter parsed from a comma-separated denylist pattern
+   * string; may be empty. Filters are cached, so repeated calls with
+   * the same argument return the same instance. */
+  static ClassNameFilter of(String denylist) {
+    return CACHE.computeIfAbsent(denylist, ClassNameFilter::new);
   }
 
-  /** Returns whether {@code classRef} is allowed: not on the denylist
-   * and (if the allowlist is non-empty) on the allowlist. A null
-   * reference is allowed.
+  /** Returns whether {@code classRef} is allowed (not on the denylist).
+   * A null reference is allowed.
    *
    * <p>{@code classRef} may be a plain class name or the
    * {@code "ClassName#STATIC_FIELD"} form accepted by
@@ -145,19 +124,11 @@ class ClassNameFilter implements Predicate<String> {
         return false;
       }
     }
-    if (allowlist.isEmpty()) {
-      return true;
-    }
-    for (String pattern : allowlist) {
-      if (matches(pattern, className)) {
-        return true;
-      }
-    }
-    return false;
+    return true;
   }
 
-  /** Throws {@link SecurityException} if {@code classRef} is not allowed
-   * by this filter. A null reference is a no-op. */
+  /** Throws {@link SecurityException} if {@code classRef} is on the
+   * denylist. A null reference is a no-op. */
   void check(@Nullable String classRef) {
     if (classRef == null) {
       return;
@@ -171,15 +142,6 @@ class ClassNameFilter implements Predicate<String> {
             + "If this load is unintended, adjust the model; the "
             + "denylist cannot be loosened at runtime.");
       }
-    }
-    if (!allowlist.isEmpty()) {
-      for (String pattern : allowlist) {
-        if (matches(pattern, className)) {
-          return;
-        }
-      }
-      throw new SecurityException("Class '" + className
-          + "' is not permitted by the Calcite class-name allowlist.");
     }
   }
 
